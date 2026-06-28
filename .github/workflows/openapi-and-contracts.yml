@@ -1,0 +1,45 @@
+name: OpenAPI Validate & Contract Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate-openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install swagger-cli
+        run: npm install -g @apidevtools/swagger-cli
+      - name: Validate OpenAPI specs
+        run: |
+          echo "Validating admin/docs/openapi-public-v2.yaml"
+          swagger-cli validate admin/docs/openapi-public-v2.yaml
+          if [ -d docs/openapi ]; then
+            echo "Validating docs/openapi/*.yaml (legacy path)"
+            swagger-cli validate docs/openapi/*.yaml
+          fi
+
+  contract-tests:
+    runs-on: ubuntu-latest
+    needs: validate-openapi
+    if: ${{ secrets.CONTRACT_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+      - name: Install composer deps
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Run contract tests
+        env:
+          RUN_CONTRACT_TESTS: '1'
+          CONTRACT_BASE_URL: ${{ secrets.CONTRACT_BASE_URL }}
+        run: vendor/bin/phpunit --testsuite Contract

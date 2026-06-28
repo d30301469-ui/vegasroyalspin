@@ -1,0 +1,177 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Bearer token pass-through (Apache strips Authorization by default)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # CMS uploads: /uploads/* → storage/uploads/*
+    RewriteRule ^uploads/(.*)$ storage/uploads/$1 [L]
+
+    # Drakon callback lives only under admin/backend API.
+    # Separate admin vhost: https://admin.example.com/api/v2/drakon_callback
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/drakon_callback/?$ admin/api/v2/drakon_callback.php [END,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/drakon_callback/drakon_api/?$ admin/api/v2/drakon_callback.php [END,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/drakon_callback\.php/?$ admin/api/v2/drakon_callback.php [END,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/drakon_callback\.php/drakon_api/?$ admin/api/v2/drakon_callback.php [END,QSA]
+
+    # Backend-only fallback: callback routes must stay on admin host.
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^admin/api/v2/drakon_callback/?$ admin/api/v2/drakon_callback.php [END,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^admin/api/v2/drakon_callback/drakon_api/?$ admin/api/v2/drakon_callback.php [END,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^admin/api/v2/drakon_callback\.php/?$ admin/api/v2/drakon_callback.php [END,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^admin/api/v2/drakon_callback\.php/drakon_api/?$ admin/api/v2/drakon_callback.php [END,QSA]
+
+    # Legacy provider-panel paths are compatibility bridges only; implementation stays in admin/backend.
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^(?:drakon_callback|drakon_callback\.php|drakon_callback/drakon_api|drakon-callback|drakon_api|drakon_api/drakon_api|drakon_api/drakon_api\.php)/?$ admin/api/v2/drakon_callback.php [END,QSA]
+
+    # ─── BGaming wallet callbacks — admin host only ──────────────────
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/bgaming-wallet/?(.*)$ admin/api/v2/bgaming_callback.php?endpoint=$1 [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/bgaming/?(.*)$ admin/api/v2/bgaming_callback.php?endpoint=$1 [L,QSA]
+
+    # ─── MegaPayz callback — admin host only ────────────────────────
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/megapayz-callback/?$ admin/index.php [L,QSA]
+
+    # ─── Private paths: never serve directly from webroot ─────────────
+    RewriteRule ^(?:app|bin|config|database|docs|drakon|logs|repositories|scripts|services|storage|tests|tools|vendor)(?:/|$) - [F,L]
+
+    # Block project metadata, generated output, and credential/token artifacts from root docroot deployments.
+    RewriteRule ^(?:\.env(?:\..*)?|env|ENV\.example|composer\.(?:json|lock)|phpunit\.xml|jwt\.txt|test-output\.txt|phpunit_[^/]+\.txt|README\.md|CICD_SETUP_GUIDE\.md|GLOBAL_ARCHITECTURE_GUIDE\.md|GUNCEL_SISTEM_ANALIZ_RAPORU\.md)$ - [F,L,NC]
+    RewriteRule (^|/)\.env(?:\..*)?$ - [F,L,NC]
+    RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
+
+    # Block sensitive file types anywhere, including stray logs/dumps outside private dirs.
+    RewriteRule (^|/)[^/]+\.(?:log|sql|sqlite|db|bak|backup|old|orig|save|swp|tmp|env|ini|conf|config|pem|key|crt|p12|pfx|ps1|sh|bat|cmd|py|zip|tar|gz|tgz|7z|rar)$ - [F,L,NC]
+
+    # Allow public uploads such as images, but never executable/server/data artifacts.
+    RewriteRule ^uploads/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|bat|cmd|ps1|asp|aspx|jsp|html?|js|json|xml|svg|sql|log|ini|env|pem|key|zip|tar|gz|tgz|7z|rar)$ - [F,L,NC]
+
+    # Redirect all public API requests to the api subdomain to enforce api.vegasroyalspin.test usage
+    # 307 Temporary Redirect is used to preserve POST/PUT methods and JSON request payloads
+    RewriteCond %{HTTP_HOST} !^(?:api\.vegasroyalspin\.test|admin\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/(.*)$ http://api.vegasroyalspin.test/api/v2/$1 [R=307,L]
+
+    RewriteCond %{HTTP_HOST} !^(?:api\.vegasroyalspin\.test|admin\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/(.*)$ http://api.vegasroyalspin.test/api/$1 [R=307,L]
+
+    # Admin API implementation files are backend-host only; public API uses /api/v2 via front controllers.
+    RewriteCond %{HTTP_HOST} !^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^admin/api/v2(?:/|$) - [F,L]
+
+    # Backend host (bo-nexthub.site + api.bo-nexthub.site + local test domains) → admin/api/v2 entry point
+    # Direct api/v2 requests
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/(.+)$ admin/api/v2/index.php?route=$1 [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/v2/?$ admin/api/v2/index.php [L,QSA]
+
+    # Map api/member/... -> admin/api/v2/index.php?route=...
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/member/(.+)$ admin/api/v2/index.php?route=$1 [L,QSA]
+
+    # Map api/content/... -> admin/api/v2/index.php?route=content/...
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/content/(.+)$ admin/api/v2/index.php?route=content/$1 [L,QSA]
+
+    # Legacy routes mapped directly to api/v2 routes
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/sliders(?:\.php)?$ admin/api/v2/index.php?route=content/sliders [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/auth-sliders(?:\.php)?$ admin/api/v2/index.php?route=content/auth-sliders [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/site-settings(?:\.php)?$ admin/api/v2/index.php?route=site_settings.php [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/winners(?:\.php)?$ admin/api/v2/index.php?route=winners.php [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/announcements(?:\.php)?$ admin/api/v2/index.php?route=announcements.php [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/track-visit(?:\.php)?$ admin/api/v2/index.php?route=track_visit.php [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/games(?:\.php)?$ admin/api/v2/index.php?route=games [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/games-provider(?:\.php)?$ admin/api/v2/index.php?route=games_provider.php [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/footer(?:\.php)?$ admin/api/v2/index.php?route=content/footer [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/mobile-menu(?:\.php)?$ admin/api/v2/index.php?route=content/mobile-menu [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/homepage-sections(?:\.php)?$ admin/api/v2/index.php?route=content/homepage-sections [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/promotions(?:\.php)?$ admin/api/v2/index.php?route=content/promotions [L,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/footer-pages(?:\.php)?$ admin/api/v2/index.php?route=content/footer-pages [L,QSA]
+
+    # Catch-all for any other /api/... requests on backend hosts
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^api/(.+)$ admin/api/v2/index.php?route=$1 [L,QSA]
+
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^(.+)\.html$ admin/index.php [L,QSA]
+
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteCond %{DOCUMENT_ROOT}/admin/$1 -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/admin/$1 -d
+    RewriteRule ^(.+)$ admin/$1 [L]
+
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^$ admin/index.php [L,QSA]
+
+    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site|admin\.vegasroyalspin\.test|api\.vegasroyalspin\.test)(?::[0-9]+)?$ [NC]
+    RewriteRule ^.*$ admin/index.php [L,QSA]
+
+    # ─── /admin/* panel route'ları ───────────────────────────────────
+    RewriteRule ^admin/app/ - [F,L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^admin(?:/.*)?$ admin/index.php [L,QSA]
+
+    # ─── Dahili PHP dosyalarına doğrudan erişimi engelle ────────────
+    # (inc/ ve partials/ içindeki JS/CSS/font gibi statik dosyalar serbest)
+    RewriteRule ^core/.*\.php$        - [F,L]
+    RewriteRule ^controllers/.*\.php$ - [F,L]
+    RewriteRule ^config/.*\.php$      - [F,L]
+    RewriteRule ^views/.*\.php$       - [F,L]
+    # inc/*.php engelle (API artık /api/winners vb. üzerinden)
+    RewriteRule ^inc/.*\.php$ - [F,L]
+    RewriteRule ^includes/.*\.php$    - [F,L]
+    RewriteRule ^partials/.*\.php$    - [F,L]
+    RewriteRule ^pages/.*\.php$       - [F,L]
+
+    # ─── Drakon API → game launch fallback only ─────────────────────
+    RewriteRule ^drakon_api/game\.php$ index.php [L,QSA]
+    RewriteRule ^gold_api/?$ gold_api/api.php [L]
+    RewriteRule ^tbs2/?$ tbs2/api.php [L]
+    RewriteRule ^r/([a-zA-Z0-9_-]+)$ signup_tracker.php?ref=$1 [L,QSA]
+
+    # ─── Sanal API yolları: api/ gerçek helper klasörü olsa bile public API
+    #     istekleri front controller tarafından karşılanır. Aksi halde alt dizin
+    #     kurulumlarında Apache gerçek api/ klasörüne düşüp 403 üretebilir.
+    RewriteRule ^api/ public/index.php [L,QSA]
+
+    # ─── Gerçek dosya veya klasör varsa dokunma ─────────────────────
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # ─── Her şeyi Front Controller'a yönlendir ──────────────────────
+    RewriteRule ^(.*)$ public/index.php [L,QSA]
+</IfModule>
+
+<IfModule mod_dir.c>
+    DirectorySlash Off
+</IfModule>
+
+DirectoryIndex index.php
+Options -Indexes

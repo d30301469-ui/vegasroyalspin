@@ -1,0 +1,70 @@
+/**
+ * Beni Ara — mobil şablon (body.mobile-site)
+ * Container 5px override, safe-area, alt bar için alt boşluk
+ */
+
+body.mobile-site .beni-ara-page {
+  /* Sticky header altında nefes payı */
+  padding-top: max(2rem, env(safe-area-inset-top, 0px) + 1rem);
+  padding-bottom: max(5rem, env(safe-area-inset-bottom, 0px) + 3.5rem);
+}
+
+body.mobile-site .beni-ara-page .container {
+  max-width: 100%;
+  padding-left: max(1rem, env(safe-area-inset-left, 0px) + 0.5rem);
+  padding-right: max(1rem, env(safe-area-inset-right, 0px) + 0.5rem);
+}
+
+/* Sadece dış grid; .beni-ara-form-row’a dokunma */
+body.mobile-site .beni-ara-page > .container > .row:not(.beni-ara-form-row) {
+  margin-left: -6px;
+  margin-right: -6px;
+}
+
+body.mobile-site .beni-ara-page > .container > .row:not(.beni-ara-form-row) > [class*="col-"] {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+body.mobile-site .beni-ara-header {
+  padding-top: 1.625rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+body.mobile-site .beni-ara-form {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+body.mobile-site .beni-ara-alert {
+  margin-left: 1.25rem;
+  margin-right: 1.25rem;
+}
+
+@media (max-width: 576px) {
+  body.mobile-site .beni-ara-page {
+    padding-top: max(1.75rem, env(safe-area-inset-top, 0px) + 0.75rem);
+  }
+
+  body.mobile-site .beni-ara-header {
+    padding-top: 1.5rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  body.mobile-site .beni-ara-form {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  body.mobile-site .beni-ara-form-row > [class*="col-"] {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  body.mobile-site .beni-ara-alert {
+    margin-left: 1.25rem;
+    margin-right: 1.25rem;
+  }
+}

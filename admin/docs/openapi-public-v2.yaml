@@ -1,0 +1,137 @@
+openapi: 3.1.0
+info:
+  title: Metropol Casino Public API v2
+  version: 2.0.0
+  description: Frontend üye API — bo-nexthub.site/api/v2
+servers:
+  - url: https://bo-nexthub.site/api/v2
+paths:
+  /auth/login:
+    post:
+      summary: Üye girişi
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                login: { type: string }
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: JWT token
+  /auth/refresh:
+    post:
+      summary: JWT yenile
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Yeni token
+  /me:
+    get:
+      summary: Profil + tercihler + limitler
+      tags: [Account]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Üye profili
+  /me/preferences:
+    get:
+      summary: Bildirim/dil tercihleri
+      tags: [Account]
+      security: [{ bearerAuth: [] }]
+    patch:
+      summary: Tercihleri güncelle
+      tags: [Account]
+      security: [{ bearerAuth: [] }]
+  /me/limits:
+    get:
+      summary: Sorumlu oyun limitleri
+      tags: [ResponsibleGaming]
+      security: [{ bearerAuth: [] }]
+    patch:
+      summary: Limitleri güncelle
+      tags: [ResponsibleGaming]
+      security: [{ bearerAuth: [] }]
+  /kyc/status:
+    get:
+      summary: KYC talep durumu
+      tags: [KYC]
+      security: [{ bearerAuth: [] }]
+  /kyc/documents:
+    post:
+      summary: KYC belgesi yükle
+      tags: [KYC]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                document_type: { type: string, enum: [identity, address, source_of_funds, selfie] }
+                document_path: { type: string }
+                document_base64: { type: string }
+  /notifications:
+    get:
+      summary: Bildirim listesi
+      tags: [Notifications]
+      security: [{ bearerAuth: [] }]
+  /notifications/read-all:
+    post:
+      summary: Tümünü okundu işaretle
+      tags: [Notifications]
+      security: [{ bearerAuth: [] }]
+  /support/tickets:
+    get:
+      summary: Destek talepleri
+      tags: [Support]
+      security: [{ bearerAuth: [] }]
+    post:
+      summary: Yeni destek talebi
+      tags: [Support]
+      security: [{ bearerAuth: [] }]
+  /content/sliders:
+    get:
+      summary: Slider listesi
+      tags: [CMS]
+  /content/footer:
+    get:
+      summary: Footer ayarları
+      tags: [CMS]
+  /content/auth-sliders:
+    get:
+      summary: Login/register slider
+      tags: [CMS]
+  /games.php:
+    get:
+      summary: Oyun kataloğu
+      tags: [Casino]
+  /game_launch.php:
+    post:
+      summary: Oyun başlat
+      tags: [Casino]
+  /payment/methods:
+    get:
+      summary: Ödeme yöntemleri
+      tags: [Finance]
+  /sports:
+    get:
+      summary: Spor servisi durumu
+      tags: [Sports]
+  /sports/launch:
+    post:
+      summary: Spor iframe launch
+      tags: [Sports]
+      security: [{ bearerAuth: [] }]
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

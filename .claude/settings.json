@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\laragon\\\\www\\\\metropolcasino\\\\admin\\\\app\\\\Views\\\\promotions\")",
+      "Read(//c/laragon/www/metropolcasino/admin/database/migrations/**)",
+      "PowerShell(cd c:\\\\laragon\\\\www\\\\metropolcasino; Compress-Archive -Path admin -DestinationPath admin.zip -Force; $size = \\(Get-Item admin.zip\\).Length / 1MB; Write-Output \\(\"admin.zip guncellendi: {0:N2} MB\" -f $size\\))",
+      "Read(//c/Users/User/.claude/projects/c--laragon-www-metropolcasino/**)",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\User\\\\.claude\\\\projects\\\\c--laragon-www-metropolcasino\\\\733256b8-729a-4449-bc05-2fe95185b1bf.jsonl\" -Raw; $idx = $content.IndexOf\\('\"Provider List\"'\\); if\\($idx -ge 0\\) { $content.Substring\\([Math]::Max\\(0,$idx-100\\), [Math]::Min\\(2000, $content.Length-$idx\\)\\) } else { \"Not found - trying alternative...\" ; $idx2 = $content.IndexOf\\('provider list'\\); if\\($idx2 -ge 0\\) { $content.Substring\\([Math]::Max\\(0,$idx2-100\\), 2000\\) } })"
+    ]
+  }
+}

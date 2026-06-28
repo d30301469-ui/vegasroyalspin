@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"c:\\\\laragon\\\\www\\\\metropolcasino\" -Depth 1 -Directory | ForEach-Object { $_.Name } | Sort-Object)",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\User\\\\.claude\\\\projects\\\\c--laragon-www-metropolcasino\\\\733256b8-729a-4449-bc05-2fe95185b1bf.jsonl\" -Raw; $idx = $content.IndexOf\\('games\\\\/provider'\\); if\\($idx -ge 0\\) { $content.Substring\\([Math]::Max\\(0,$idx-500\\), 1500\\) } else { \"Not found\" })",
+      "PowerShell($lines = Get-Content \"C:\\\\Users\\\\User\\\\.claude\\\\projects\\\\c--laragon-www-metropolcasino\\\\733256b8-729a-4449-bc05-2fe95185b1bf.jsonl\"; $userLines = $lines | Where-Object { $_ -match '\"role\":\"user\"' } | Select-Object -First 5; $userLines | ForEach-Object { $_.Substring\\(0, [Math]::Min\\(500, $_.Length\\)\\) })"
+    ]
+  }
+}

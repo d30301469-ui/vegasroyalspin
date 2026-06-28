@@ -1,0 +1,330 @@
+{
+  "started_at": "2026-06-24T13:36:52.619661+00:00",
+  "summary": {
+    "FIXED": 13,
+    "OK": 26,
+    "WARN": 1
+  },
+  "findings": [
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "frontend .env oluşturuldu ← deploy/env/frontend.vegasroyalspin.env.example",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "backend .env oluşturuldu ← deploy/env/backend.env.example",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "Güncellendi: admin\\.env.example",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "Güncellendi: ENV.example",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "Güncellendi: deploy\\env\\backend.env.example",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "Yeni MEMBER_JWT_SECRET üretildi (her iki .env)",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "Yeni FRONTEND_CMS_PURGE_SECRET üretildi",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "frontend APP_KEY üretildi",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "backend APP_KEY üretildi",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "OK",
+      "category": "REPO",
+      "message": "Tüm kritik split-deploy dosyaları mevcut (15)",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "REPO",
+      "message": "BackendMemberApiProxy admin ile senkron",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "REPO",
+      "message": "auth-shared.js JWT oturum düzeltmeleri mevcut",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "AUTH_STACK",
+      "message": "PHP JWT oturum yardımcıları mevcut",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "AUTH_STACK",
+      "message": "header-balance-poll.js JWT ile poll",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "AUTH_STACK",
+      "message": "Frontend zip: vegasroyalspin-frontend.zip (0.2 saat önce)",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "ENV_FRONTEND",
+      "message": ".env okundu: C:\\laragon\\www\\metropolcasino\\.env",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "ENV_FRONTEND",
+      "message": "MEMBER_JWT_SECRET uzunluk=64",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "ENV_FRONTEND",
+      "message": "ALLOWED_URL_HOSTS 5 host",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "ENV_BACKEND",
+      "message": ".env okundu: C:\\laragon\\www\\metropolcasino\\admin\\.env",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "ENV_BACKEND",
+      "message": "MEMBER_JWT_SECRET uzunluk=64",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "ENV_BACKEND",
+      "message": "ALLOWED_URL_HOSTS 5 host",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "ENV_SYNC",
+      "message": "MEMBER_JWT_SECRET frontend ↔ backend eşleşiyor",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "PHP",
+      "message": "Install wizard smoke: PASS",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "PHP",
+      "message": "Services sync: PASS",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "PHP",
+      "message": "Full layer tests: PASS",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "HTTP",
+      "message": "frontend-ping: HTTP 200",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "HTTP",
+      "message": "frontend-health: HTTP 200",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "HTTP",
+      "message": "backend-ping: HTTP 200",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "HTTP",
+      "message": "api-site-settings: HTTP 200",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "HTTP",
+      "message": "frontend-sliders: HTTP 200",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "HTTP",
+      "message": "frontend-auth-session-anon: HTTP 401 (oturum yok — beklenen)",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "HTTP",
+      "message": "api-balance-anon: HTTP 401 (koruma aktif)",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "HTTP",
+      "message": "api-subdomain-ping: HTTP 200",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "OK",
+      "category": "CORS",
+      "message": "CORS preflight balance: HTTP 204, ACAO=https://vegasroyalspin.com",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "WARN",
+      "category": "AUTH",
+      "message": "Login→balance akışı atlandı (--login / --password verin)",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "Çalıştırıldı: fix-frontend-env.php (frontend)",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "Split deploy verify: PASS (fix sonrası)",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "All layers test: PASS (fix sonrası)",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "FIXED",
+      "category": "FIX",
+      "message": "dist/*.zip yeniden oluşturuldu",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": true
+    },
+    {
+      "severity": "OK",
+      "category": "ENV_SYNC",
+      "message": "MEMBER_JWT_SECRET frontend ↔ backend eşleşiyor",
+      "hint": "",
+      "fixable": false,
+      "fix_applied": false
+    }
+  ]
+}

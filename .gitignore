@@ -1,0 +1,36 @@
+# Bağımlılıklar
+/vendor/
+
+# Ortam ve hassas yapılandırma
+.env
+.env.local
+.env.*.local
+jwt.txt
+
+# Loglar (içerik takip edilmesin)
+/logs/*.log
+/logs/*.txt
+!/logs/.gitkeep
+/storage/logs/*.log
+/storage/logs/*.txt
+!/storage/logs/.gitkeep
+
+# Test ve geçici komut çıktıları
+/phpunit_*.txt
+/test-output.txt
+
+# IDE ve işletim sistemi
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Geçici / arşiv (isteğe bağlı)
+/temp/
+/archive/
+*.tmp
+
+# Composer
+composer.phar

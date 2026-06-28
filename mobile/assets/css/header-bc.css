@@ -1,0 +1,29 @@
+/**
+ * Mobil header — yalnızca BC CSS değişkenleri (görünüm: bc-mobile-header-original.css)
+ */
+html.is-mobile,
+body.mobile-site,
+body.mobile-site #root.layout-bc {
+  --mobile-header-main-section-height: 46px;
+  --mobile-header-additional-height: 40px;
+  --mobile-header-guest-shortcuts-height: 34px;
+  --mobile-header-crypto-height: 36px;
+  --dynamic-header: 44px;
+  --mobile-header-navigation-height: 44px;
+  --padding-page-aside: 10px;
+  /* BC tema (ribbon, nav, ikon pill) — rgba(var(--hero)) vb. için */
+  --hero: 78, 78, 78;
+  --hero-sc: 255, 255, 255;
+  --menu: 0, 11, 36;
+  --menu-sc: 245, 249, 255;
+  --b: 0, 0, 0;
+  --b-sc: 255, 255, 255;
+  --default-transition-duration: 0.3s;
+  --oc-1: 156, 77, 177;
+  --border-radius: 3px;
+  --slow-transition-duration: 0.3s;
+}
+
+body.mobile-site:not(.has-header-info) {
+  --mobile-header-additional-height: 0px;
+}

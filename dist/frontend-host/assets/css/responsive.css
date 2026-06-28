@@ -1,0 +1,140 @@
+/* Responsive stiller */
+
+@media (min-width: 768px) {
+    .sidebarMain {
+        display: block!important;
+    }
+}
+
+@media (min-width: 1024px) {
+    .modal-xl {
+        max-width: 1140px;
+    }
+}
+
+@media (max-width: 1699px) {
+    .search-box {
+        left: inherit;
+        right: 15%;
+    }
+    .mainMenu ul li a {
+        padding: 7px 13px;
+    }
+    header.headBar .disclamer {
+        font-size: 13px;
+    }
+    header.headBar .disclamer i.fas.fa-times {
+        font-size: 15.5px;
+        line-height: inherit;
+    }
+}
+
+@media (max-width: 1670px) {
+    .centerWrap {
+        padding: 0 15px;
+        max-width: 100%;
+    }
+    .centerWrap.porfileWrap {
+        padding: 0 15px;
+    }
+}
+
+@media (max-width: 1600px) {
+    #comm100-container > div > div {
+        bottom: 7.5% !important;
+    }
+}
+
+@media (max-width: 1599px) {
+    .search-box .listProvider ul li {
+        width: 18%;
+    }
+    .mainMenu ul li a {
+        font-size: 14px;
+    }
+    .mainMenu ul li a .menuIconImg {
+        height: 16.5px;
+    }
+    header.headBar .disclamer {
+        font-size: 11.5px;
+    }
+}
+
+@media (max-width: 1449px) {
+    .mainMenu ul li a {
+        padding: 7px 12px;
+    }
+}
+
+@media (max-width: 1399px) {
+    .resendotp {
+        font-size: 12px;
+    }
+    .mainMenu ul li a .menuIconImg {
+        height: 16px;
+    }
+    #comm100-container > div > div {
+        bottom: 8.5% !important;
+    }
+    header.headBar .disclamer {
+        line-height: 12px;
+        padding-right: 25px;
+        font-size: 10.5px;
+    }
+    header.headBar .disclamer i.fas.fa-times {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 1299px) {
+    .tableFilter .form-group {
+        margin: 0 0 0 0.5rem;
+    }
+    .amoutvalue .btn {
+        padding: 0.480rem 0.50rem;
+    }
+}
+
+@media (max-width: 1200px) {
+    header.headBar .disclamer {
+        position: fixed;
+        width: 100%;
+        left: 0;
+        top: 0;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 18.5px 20px;
+        line-height: 18px;
+        align-items: flex-start !important;
+        z-index: 9;
+        font-size: 12px;
+        text-align: center;
+        justify-content: center;
+    }
+    header.headBar .disclamer i.fas.fa-times {
+        font-size: 17px;
+    }
+}
+
+@media (max-width: 1199px) {
+    .search-box {
+        width: 95%;
+        left: 0;
+        right: 0;
+    }
+    .selectCurrency .dropdown-menu {
+        width: 100%;
+    }
+    .selectCurrency .dropdown-item {
+        width: 46%;
+    }
+    .amoutvalue .btn {
+        font-size: 12px;
+        padding: 0.180rem 0.30rem;
+    }
+    .depositRow .amoutvalue li {
+        margin: 0;
+    }
+    .mainMenu ul li a {
+        padding: 7px 14px;
+    }
+}

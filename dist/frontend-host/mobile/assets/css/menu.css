@@ -1,0 +1,268 @@
+/**
+ * Mobil tam ekran menü — BC hdr-nav-menu-holder-bc (alttan yukarı slide)
+ */
+
+body.mobile-site {
+  --default-transition-duration: 0.3s;
+}
+
+/* Kapalı: viewport altında */
+body.mobile-site .hdr-nav-menu-holder-bc {
+  position: fixed;
+  width: 100%;
+  left: 0;
+  right: 0;
+  top: var(--mobile-promo-sheet-top, calc(var(--mobile-header-main-section-height, 46px) + env(safe-area-inset-top, 0px)));
+  bottom: calc(var(--tab-navigation-height, 48px) + env(safe-area-inset-bottom, 0px));
+  z-index: 949;
+  height: auto;
+  padding: 0;
+  box-sizing: border-box;
+  transform: translate3d(0, 100%, 0);
+  animation: none !important;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform var(--default-transition-duration, 0.3s) ease-in-out,
+    visibility 0s linear var(--default-transition-duration, 0.3s);
+}
+
+/* Açık: orijinal BC hareketi (alttan yukarı) */
+body.mobile-site .hdr-nav-menu-holder-bc.is-open {
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform var(--default-transition-duration, 0.3s) ease-in-out,
+    visibility 0s;
+}
+
+/* Menü açıkken orijinalde yalnızca ana header satırı görünür; ürün/shortcut şeritleri menünün üstüne binmemeli. */
+body.mobile-site.navigation-is-visible .layout-header-holder-bc .hdr-additional-info,
+body.mobile-site.navigation-is-visible .layout-header-holder-bc .hdr-guest-shortcuts,
+body.mobile-site.navigation-is-visible .layout-header-holder-bc .hdr-crypto-content,
+body.mobile-site.navigation-is-visible .layout-header-holder-bc .hdr-navigation-scrollable-bc-holder {
+  display: none !important;
+}
+
+body.mobile-site.navigation-is-visible .layout-header-holder-bc.mobile-bc-header {
+  z-index: 1050;
+}
+
+body.mobile-site.navigation-is-visible .layout-header-holder-bc .header-bc {
+  min-height: var(--mobile-header-main-section-height, 46px);
+}
+
+/* Back-to-top ve benzeri floating butonlar menü içinde görünmemeli. */
+body.mobile-site.navigation-is-visible .center-bottom-btn,
+body.mobile-site.navigation-is-visible .center-bottom-btn > .btn.nav-floating-btn,
+body.mobile-site.navigation-is-visible #backToTopWrap,
+body.mobile-site.navigation-is-visible #scrollToTopBtn {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-navigation-container-bc {
+  width: 100%;
+  height: 100%;
+  background: #0a0719;
+  position: relative;
+  border-top: 1px solid rgba(133, 15, 131, 0.65);
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-title-row-bc {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-title-content-bc {
+  padding: 0 10px;
+  font-size: 15px !important;
+  line-height: 44px;
+  font-weight: 500;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .closed-n-p-bc {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  width: 42px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 18px;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .closed-n-p-bc .bc-i-close-remove::before {
+  font-size: 18px !important;
+  line-height: 1;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-info-w-container-bc {
+  width: 100%;
+  height: calc(100% - 44px);
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-sab-container-bc {
+  display: block;
+  position: static;
+  width: 100%;
+  height: auto;
+  padding: 0;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-menu-list-bc {
+  width: 100%;
+  height: 100%;
+  padding: 14px 16px 16px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-items-list-item-bc {
+  position: relative;
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0 0 10px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #333335 0%, #343638 52%, #527f51 100%);
+  color: rgba(var(--b-sc, 255, 255, 255), 0.7) !important;
+  text-decoration: none !important;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-icon-bc {
+  flex: 0 0 29px;
+  width: 29px;
+  height: 29px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  font-size: 18px !important;
+  line-height: 28px;
+  color: rgba(255, 255, 255, 0.68) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-icon-bc::after {
+  display: none !important;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-list-item-title-bc {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  font-size: 14px !important;
+  font-weight: 500;
+  line-height: 16px;
+  color: rgba(255, 255, 255, 0.68);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-category {
+  flex-shrink: 0;
+  font-size: 12px !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .m-nav-section-title {
+  margin: 20px 0 8px;
+  padding: 0;
+  font-size: 12px !important;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+body.mobile-site.mobileMenu-locked {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+/* Eski soldan panel / overlay — devre dışı */
+body.mobile-site .mobileMenu-overlay,
+body.mobile-site .m-nav-collapsed-container-bc.mobileMenu {
+  display: none !important;
+}
+
+body.mobile-site .mobile-quick-actions-row,
+body.mobile-site .mobile-quick-actions-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px !important;
+  margin: 10px 0 14px !important;
+  padding: 0 !important;
+}
+
+body.mobile-site .mobile-quick-action {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 72px !important;
+  height: auto !important;
+  padding: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 10px !important;
+  background: rgba(20, 8, 40, 0.9) !important;
+  color: #fff !important;
+  text-decoration: none !important;
+  animation: none !important;
+}
+
+body.mobile-site .mobile-quick-action .product-banner-icon-bc {
+  font-size: 24px !important;
+  color: #deb33f !important;
+  margin-bottom: 6px;
+}
+
+body.mobile-site .mobile-quick-action span {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+body.mobile-site .informative-widget-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+body.mobile-site .informative-widget-actions .bc-i-call {
+  color: #4a9eff;
+  font-size: 22px;
+}
+
+body.mobile-site .informative-widget-actions .bc-i-whatsapp {
+  color: #52bf2b;
+  font-size: 22px;
+}

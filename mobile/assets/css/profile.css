@@ -1,0 +1,13 @@
+@media (max-width: 992px) {
+  .centerWrap.porfileWrap {
+    display: block;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .profileRow {
+    width: 100%;
+    padding: 1rem;
+  }
+}

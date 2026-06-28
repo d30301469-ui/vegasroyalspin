@@ -1,0 +1,57 @@
+/**
+ * Alt tab bar — BC tab-navigation-w-bc (bc-mobile-index) + ince düzeltmeler
+ */
+
+html.is-mobile,
+html.mobile-root {
+  --tab-navigation: 10, 7, 25;
+  --tab-navigation-sc: 255, 255, 255;
+  --tab-navigation-height: 48px;
+}
+
+body.mobile-site .layout-navigation-holder-bc .tab-navigation-w-bc {
+  display: flex !important;
+}
+
+body.mobile-site .tab-navigation-w-bc .tab-nav-item-bc {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+
+body.mobile-site .tab-navigation-w-bc button.tab-nav-item-bc {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+body.mobile-site .tab-navigation-w-bc .tab-nav-item-bc.menu {
+  user-select: none;
+}
+
+body.mobile-site .tab-navigation-w-bc .tab-nav-title-bc {
+  display: block;
+  margin: 0;
+}
+
+body.mobile-site .tab-navigation-w-bc .tab-nav-icon-bc {
+  display: block;
+}
+
+/* Canlı sayacı — count-odd-animation::after (data-badge) */
+body.mobile-site .tab-navigation-w-bc .tab-nav-item-bc.count-odd-animation[data-badge=""]::after,
+body.mobile-site .tab-navigation-w-bc .tab-nav-item-bc.count-odd-animation:not([data-badge])::after {
+  content: none !important;
+}
+
+body.mobile-site .layout-bc.navigation-is-visible .tab-nav-item-bc.menu#menu-toggle {
+  color: rgba(var(--tab-navigation-sc), 1);
+}
+
+body.mobile-site .layout-bc:not(.navigation-is-visible) .tab-nav-item-bc.active {
+  color: rgba(var(--tab-navigation-sc), 1);
+}

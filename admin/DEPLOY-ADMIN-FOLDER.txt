@@ -1,0 +1,34 @@
+ADMIN KLASÖRÜ — bağımsız backend (bo-nexthub.site)
+
+Bu admin/ klasörünün TAMAMINI sunucu köküne yükleyin:
+  Hedef: /www/wwwroot/bo-nexthub.site/
+
+Dizin yapısı:
+  index.php
+  .htaccess
+  .env.example
+  composer.json
+  app/              — admin panel + framework (Database, Config)
+  api/              — bootstrap + v2 member API + callbacks
+  services/         — MegaPayz, Drakon, BGaming, MemberJwt, …
+  config/           — app.php, database.php, env.php
+  database/         — migrations
+  controllers/
+  repositories/
+  core/
+  storage/
+
+Kurulum:
+  cd /www/wwwroot/bo-nexthub.site
+  composer install --no-dev
+  cp .env.example .env
+  # .env içinde DB_* ve MEMBER_JWT_SECRET doldurun
+
+Doğrulama:
+  ls services/MegaPayzService.php
+  ls api/bootstrap.php
+  ls config/database.php
+
+Yerelde yenilemek:
+  php scripts/sync-admin-bundle-into-admin.php
+

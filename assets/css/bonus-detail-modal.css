@@ -1,0 +1,698 @@
+/**
+ * Bonus Detay Modal — koyu mor temalı bonus detay popup
+ * assets/css/bonus-detail-modal.css
+ */
+
+/* ========== Overlay ========== */
+.bonus-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    padding: 16px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.bonus-modal-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* body overflow JS ile ayarlanıyor (close/open) */
+
+/* ========== Modal container ========== */
+.bonus-modal {
+    position: relative;
+    width: 100%;
+    max-width: 920px;
+    min-height: 0;
+    max-height: calc(100vh - 32px);
+    margin: auto;
+    background: #14001f;
+    color: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.42);
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.98);
+    transition: transform 0.25s ease;
+    contain: layout paint;
+}
+
+.bonus-modal-overlay.is-open .bonus-modal {
+    transform: scale(1);
+}
+
+.bonus-modal[role="dialog"] {
+    outline: none;
+}
+
+/* ========== Close button ========== */
+.bonus-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.bonus-modal-close:hover,
+.bonus-modal-close:focus-visible {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
+}
+
+/* Geri — masaüstünde gizli; mobil şablonda gösterilir */
+.bonus-modal-back {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: rgba(210, 210, 220, 0.42);
+    color: rgba(35, 35, 42, 0.95);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.bonus-modal-back:active {
+    transform: scale(0.96);
+}
+
+.bonus-modal-back:focus-visible {
+    outline: 2px solid rgba(139, 92, 246, 0.7);
+    outline-offset: 2px;
+}
+
+.bonus-modal-back-icon {
+    display: block;
+    margin-left: -2px;
+}
+
+/* ========== Header ========== */
+.bonus-modal-header {
+    padding: 16px 56px 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.bonus-modal-title {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 23px;
+    font-weight: 700;
+    color: #ffffff;
+    text-transform: uppercase;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+}
+
+/* ========== Body (two columns) ========== */
+.bonus-modal-body {
+    display: grid;
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+    gap: 24px;
+    padding: 18px 20px 20px;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: calc(100vh - 140px);
+    overflow: auto;
+    align-content: start;
+}
+
+/* ========== Left column — bonus image ========== */
+.bonus-modal-left {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.bonus-image-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    max-height: 260px;
+    overflow: hidden;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.bonus-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ========== Right column — accordion ========== */
+.bonus-modal-right {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.bonus-accordion-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.bonus-accordion-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bonus-accordion-item:last-child {
+    border-bottom: none;
+}
+
+.bonus-accordion-trigger {
+    width: 100%;
+    min-height: 56px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.bonus-accordion-trigger:hover,
+.bonus-accordion-trigger:focus-visible {
+    background: rgba(255, 255, 255, 0.05);
+    outline: none;
+}
+
+.bonus-accordion-icon {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.9);
+    transition: transform 0.25s ease;
+}
+
+.bonus-accordion-item.is-open .bonus-accordion-icon {
+    transform: rotate(180deg);
+}
+
+.bonus-accordion-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+.bonus-accordion-title {
+    flex: 1;
+}
+
+/* Kapalıyken içerik tamamen gizli; açıkken max-height ile açılır */
+.bonus-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    transition: max-height 0.3s ease-out, visibility 0.2s;
+}
+
+.bonus-accordion-item.is-open .bonus-accordion-content {
+    max-height: 640px;
+    visibility: visible;
+}
+
+.bonus-accordion-content > .bonus-accordion-content-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.bonus-accordion-content-inner {
+    padding: 14px 16px 16px 36px;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 15px;
+    line-height: 1.6;
+    font-weight: 400;
+}
+
+.bonus-accordion-content-inner p {
+    margin: 0 0 0.75em;
+}
+
+.bonus-accordion-content-inner p:last-child {
+    margin-bottom: 0;
+}
+
+/* ========== Responsive — tablet ========== */
+@media (max-width: 991px) {
+    .bonus-modal-body {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        align-content: start;
+    }
+
+    .bonus-modal-left {
+        order: 1;
+    }
+
+    .bonus-modal-right {
+        order: 2;
+    }
+
+    .bonus-modal-left {
+        margin-left: -20px;
+        margin-right: -20px;
+        width: calc(100% + 40px);
+    }
+
+    .bonus-modal-left .bonus-image-wrap {
+        border-radius: 0;
+    }
+
+    .bonus-image-wrap {
+        aspect-ratio: 16 / 9;
+        max-height: 240px;
+        height: auto;
+    }
+
+    .bonus-image-wrap img {
+        object-position: top center;
+    }
+
+    .bonus-modal {
+        min-height: auto;
+        max-height: calc(100vh - 32px);
+    }
+
+    .bonus-modal-title {
+        font-size: 21px;
+        padding-right: 40px;
+    }
+}
+
+/* ========== Responsive — mobil (tam ekran, kaydırma, dokunma) ========== */
+@media (max-width: 767px) {
+    .bonus-modal-overlay {
+        padding: 0;
+        align-items: stretch;
+        overflow: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .bonus-modal-overlay.is-open {
+        display: flex;
+    }
+
+    .bonus-modal {
+        width: 100%;
+        max-width: none;
+        max-height: 100vh;
+        max-height: 100dvh;
+        min-height: 0;
+        height: auto;
+        border-radius: 0;
+        margin: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .bonus-modal-body {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        align-content: start;
+        gap: 14px;
+    }
+
+    .bonus-modal-left,
+    .bonus-modal-right {
+        min-height: 0;
+    }
+
+    .bonus-accordion-list {
+        width: 100%;
+    }
+}
+
+@media (max-width: 575px) {
+    .bonus-modal-overlay {
+        padding: 0;
+    }
+
+    .bonus-modal {
+        max-height: 100vh;
+        max-height: 100dvh;
+    }
+
+    .bonus-modal-header {
+        padding: 12px max(52px, calc(44px + env(safe-area-inset-right))) 12px max(18px, env(safe-area-inset-left));
+    }
+
+    .bonus-modal-title {
+        font-size: 16px;
+        line-height: 1.35;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .bonus-modal-close {
+        top: max(12px, env(safe-area-inset-top));
+        right: max(12px, env(safe-area-inset-right));
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 28px;
+    }
+
+    .bonus-modal-body {
+        padding: 10px max(18px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+        align-content: start;
+        gap: 12px;
+    }
+
+    .bonus-modal-left {
+        margin-left: calc(-1 * max(18px, env(safe-area-inset-left)));
+        margin-right: calc(-1 * max(18px, env(safe-area-inset-right)));
+        width: calc(100% + max(18px, env(safe-area-inset-left)) + max(18px, env(safe-area-inset-right)));
+    }
+
+    .bonus-image-wrap {
+        height: auto;
+        aspect-ratio: 16 / 10;
+        max-height: min(42vh, 240px);
+        min-height: 140px;
+    }
+
+    .bonus-image-wrap img {
+        object-fit: cover;
+        object-position: top center;
+    }
+
+    .bonus-accordion-trigger {
+        font-size: 13px;
+        min-height: 48px;
+        padding: 0 max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left));
+        gap: 8px;
+    }
+
+    .bonus-accordion-icon {
+        width: 24px;
+        height: 24px;
+    }
+
+    .bonus-accordion-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .bonus-accordion-content-inner {
+        padding: 10px max(14px, env(safe-area-inset-right)) 14px max(40px, calc(28px + env(safe-area-inset-left)));
+        font-size: 14px;
+        line-height: 1.55;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .bonus-accordion-item.is-open .bonus-accordion-content {
+        max-height: 1200px;
+    }
+}
+
+/* Çok küçük ekranlar */
+@media (max-width: 380px) {
+    .bonus-modal-title {
+        font-size: 15px;
+    }
+
+    .bonus-accordion-trigger {
+        font-size: 13px;
+        min-height: 48px;
+    }
+
+    .bonus-accordion-content-inner {
+        font-size: 13px;
+    }
+
+    .bonus-image-wrap {
+        max-height: 150px;
+        min-height: 120px;
+    }
+}
+
+/* ========== Mobil site (m.) — MobileRightSheet ile aynı katman (1048); logo şeridi 1050 üstte ========== */
+body.mobile-site .bonus-modal-overlay {
+    inset: auto;
+    top: var(--mobile-promo-sheet-top, var(--mobile-top-bar-height, 64px));
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 0;
+    box-sizing: border-box;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow: hidden;
+    -webkit-overflow-scrolling: touch;
+    z-index: 1048;
+}
+
+body.mobile-site .bonus-modal {
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+    box-shadow: none;
+}
+
+body.mobile-site .bonus-modal-overlay.is-open .bonus-modal {
+    transform: translateX(0);
+}
+
+body.mobile-site .bonus-modal-close {
+    display: none !important;
+}
+
+body.mobile-site .bonus-modal-back {
+    display: inline-flex;
+}
+
+body.mobile-site .bonus-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+    font-size: 13px;
+    line-height: 1.3;
+    background: #1c1c22;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+body.mobile-site .bonus-modal-back {
+    width: 1.3em;
+    height: 1.3em;
+    min-width: 1.3em;
+    min-height: 1.3em;
+}
+
+body.mobile-site .bonus-modal-back-icon {
+    width: 1em;
+    height: 1em;
+}
+
+body.mobile-site .bonus-modal-title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding-right: 0;
+    font-size: 1em;
+    line-height: inherit;
+    letter-spacing: 0.03em;
+}
+
+body.mobile-site .bonus-modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    align-content: start;
+    gap: 12px;
+    padding: 10px max(14px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+}
+
+body.mobile-site .bonus-modal-left {
+    margin-left: calc(-1 * max(14px, env(safe-area-inset-left)));
+    margin-right: calc(-1 * max(14px, env(safe-area-inset-right)));
+    width: calc(100% + max(14px, env(safe-area-inset-left)) + max(14px, env(safe-area-inset-right)));
+}
+
+body.mobile-site .bonus-image-wrap {
+    height: auto;
+    aspect-ratio: 16 / 10;
+    max-height: min(42vh, 240px);
+    min-height: 130px;
+    border-radius: 0;
+}
+
+body.mobile-site .bonus-image-wrap img {
+    object-fit: cover;
+    object-position: top center;
+}
+
+body.mobile-site .bonus-accordion-trigger {
+    font-size: 12px;
+    min-height: 46px;
+    padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+    gap: 8px;
+}
+
+body.mobile-site .bonus-accordion-content-inner {
+    padding: 10px max(12px, env(safe-area-inset-right)) 14px max(36px, calc(24px + env(safe-area-inset-left)));
+    font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.mobile-site .bonus-modal {
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ========== Bonus talebi (POST /api/v1/promotions.php) ========== */
+.bonus-modal-claim {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bonus-modal-claim[hidden] {
+    display: none !important;
+}
+
+.bonus-modal-claim-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.bonus-modal-claim-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 22px;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+    transition: filter 0.2s, transform 0.15s;
+}
+
+.bonus-modal-claim-submit:hover:not(:disabled) {
+    filter: brightness(1.06);
+}
+
+.bonus-modal-claim-submit:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.bonus-modal-claim-login {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 20px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid rgba(139, 92, 246, 0.5);
+    color: #e9d5ff;
+    background: rgba(109, 40, 217, 0.2);
+}
+
+.bonus-modal-claim-login:hover {
+    background: rgba(109, 40, 217, 0.35);
+    color: #fff;
+}
+
+.bonus-modal-claim-login[hidden] {
+    display: none !important;
+}
+
+.bonus-modal-claim-status {
+    margin: 12px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 1.25em;
+}
+
+.bonus-modal-claim-status.is-success {
+    color: #86efac;
+}
+
+.bonus-modal-claim-status.is-error {
+    color: #fca5a5;
+}
+
+body.mobile-site .bonus-modal-claim-submit,
+body.mobile-site .bonus-modal-claim-login {
+    width: 100%;
+    justify-content: center;
+}

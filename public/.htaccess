@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
+    RewriteRule (^|/)[^/]+\.(?:log|sql|sqlite|db|bak|backup|old|orig|save|swp|tmp|env|ini|conf|config|pem|key|crt|p12|pfx|ps1|sh|bat|cmd|py|zip|tar|gz|tgz|7z|rar)$ - [F,L,NC]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+DirectoryIndex index.php
+Options -Indexes
+

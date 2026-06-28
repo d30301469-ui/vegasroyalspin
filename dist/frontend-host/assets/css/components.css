@@ -1,0 +1,668 @@
+/* Bileşen stilleri */
+
+app-landing-dashboard {
+    flex: auto;
+}
+.centerWrap {
+    width: 100%;
+    margin: 102px auto 0;
+    max-width: 1670px;
+}
+.porfileWrap {
+    max-width: 100%;
+    /* Sidebar artık flex satırında (profile.css); fixed + sol padding kullanılmıyor */
+    padding: 0;
+}
+
+/* Event / Bet slip / Tabs */
+.eventTabs .nav-link {
+    background: none;
+    color: var(--white-color)!important;
+    font-weight: 700;
+    border-radius: 0;
+    padding: 0.7rem 1.4rem;
+    border: none;
+}
+.eventTabs .nav-link i {
+    margin-right: 5px;
+}
+.eventTabs .nav-pills .nav-link.active {
+    background: none;
+    border-bottom: 2px solid var(--primary);
+    color: var(--primary)!important;
+}
+.betSlipMain .topbtn .active {
+    box-shadow: 0 4px 4px #00000040;
+}
+.betSlipMain .stakeBox .form-control {
+    background: #303030;
+    border-color: #303030;
+    color: var(--white-color);
+}
+.slipTabs .nav-link {
+    border-radius: 32px;
+    background: none;
+    color: var(--white-color)!important;
+    font-weight: 700;
+    margin-right: 5px;
+    padding: 0.2rem 1.4rem;
+}
+.slipTabs .nav-link:hover {
+    background: var(--hover-color);
+    cursor: pointer;
+}
+.slipTabs .nav-pills .nav-link.active {
+    background: var(--hover-color);
+}
+.betDetail .stakeBox .form-control {
+    background: none;
+    border-color: var(--hover-color);
+}
+.betBtn-Wrap .btn:hover {
+    opacity: 0.8;
+}
+
+.carousel-item.active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: gradient 2s linear infinite;
+    background: linear-gradient(120deg, rgba(255,255,255,0.2), var(--secondary), rgba(255,255,255,0.2), var(--secondary));
+    background-size: 300% 100%;
+}
+.secTitle .viewMore .fa {
+    font-size: 16px;
+    margin: 0 0 0 5px;
+}
+
+.tabsthin .nav {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: nowrap;
+}
+.tabsthin .nav li {
+    display: flex;
+    flex: auto;
+}
+.tabsthin a.nav-link {
+    padding: 0.3rem 1.5rem;
+    flex-grow: 1;
+    display: block;
+    text-align: center;
+}
+
+/* Header tabs row */
+.tabsRow {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 7px 0 0;
+    position: absolute;
+    right: 60px;
+}
+.tabsRow .lo-logo {
+    height: 25px;
+    object-fit: contain;
+    margin: 0 0 20px;
+}
+.tabsRow .nav {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+.tabsRow a.nav-link {
+    color: var(--tabText) !important;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    font-size: 12px;
+}
+.tabsRow .btn {
+    padding: 4px 8px !important;
+    font-size: 12px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    display: inline-block !important;
+    width: auto !important;
+    color: #fff !important;
+}
+.tabsRow .signBtn {
+    border: none;
+    background: none !important;
+    color: rgba(var(--textwhite), .8) !important;
+    font-size: 14px;
+    text-decoration: underline !important;
+}
+.tabsRow .active {
+    display: none !important;
+}
+
+.event-TabRow .s-col .d-icon,
+.event-TabRow .s-col .fa-solid {
+    font-size: 24px;
+}
+.event-TabRow .active {
+    background: none;
+    opacity: inherit;
+}
+.event-TabRow .active .noMC {
+    background: #ffc107;
+    color: var(--black-color);
+}
+.bonusBTN-row .active .sportText {
+    color: var(--menu-text);
+}
+.bonusRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Filter / Table */
+.filterRow ul li.active {
+    border: 1px solid #fff;
+    color: var(--primary);
+}
+.tableFilter .form-group {
+    margin: 0 1rem 0 0;
+}
+.tableFilter .form-control {
+    border-color: var(--secondary);
+    font-size: 12px;
+    font-weight: 400;
+    box-shadow: none;
+    background: rgba(218,209,177,0.1);
+    border-radius: 4px;
+    color: var(--white-color);
+}
+.form-control option {
+    color: var(--black-color);
+}
+.docButton .btn {
+    border-radius: 40px!important;
+    width: 30px;
+    height: 30px;
+}
+.table-responsive {
+    background: var(--darkBG);
+    font-size: 14px;
+    min-height: calc(100dvh - 300px);
+}
+.table-responsive .border {
+    border-color: var(--primary)!important;
+}
+.table-responsive .table td,
+.table th {
+    border-color: rgba(255,255,252,0.3);
+    padding: 0.3rem 0.8rem;
+    font-weight: 400;
+}
+.table thead th {
+    border-bottom: none;
+}
+.balText {
+    margin: 0 0 0 1rem;
+    color: var(--menu-text);
+    border: none;
+    background: none;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 0;
+}
+.depositBtn {
+    margin: 0 0 0 2rem;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.kycTabs ul li:hover,
+.kycTabs .active {
+    border-bottom: 3px solid var(--login-button-bg);
+    color: var(--login-button-bg);
+    background: none;
+}
+.thumbnail-img .fa {
+    position: absolute;
+    right: -20px;
+    top: -10px;
+    color: #fff;
+}
+app-g1-live-sport-iframe .centerWrap {
+    padding: 45px 0 0;
+}
+.withdraw-deposit-ui .table-responsive {
+    min-height: calc(100dvh - 480px);
+}
+.paymentSec .btn-primary {
+    padding: 10px 25px;
+}
+.bank_details .deposit-listing .btn-outline-primary {
+    border-color: var(--secondary)!important;
+}
+
+/* Deposit / Currency */
+.cryptoCoinList a.active {
+    background: linear-gradient(90deg, var(--pick-color) 0%, var(--pick-color2) 100%)!important;
+}
+.selectCurrency .btn {
+    width: 100%;
+    padding: 7.5px 12px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 400;
+    background: rgba(218,209,177,0.1)!important;
+    border: 1px solid var(--secondary)!important;
+    color: var(--white-color);
+    display: flex;
+    align-items: center;
+    gap: 0 10px;
+    position: relative;
+}
+.selectCurrency .dropdown-toggle::after {
+    content: '\25BC';
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--white-color);
+    border: none;
+    position: absolute;
+    right: 17px;
+    top: 10px;
+}
+.selectCurrency .dropdown-menu {
+    width: 255px;
+    background: var(--secondary);
+    border: 1px solid var(--secondary);
+    z-index: 9;
+    display: block;
+    flex-wrap: wrap;
+    height: auto;
+    overflow-y: auto;
+}
+.selectCurrency .dropdown-item {
+    width: 93.5%;
+    height: 40px;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 5px;
+    color: var(--white-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 0 10px;
+    margin: 0 0 10px 8px;
+    border: 1px solid var(--darkGray);
+}
+.selectCurrency .dropdown-item:hover,
+.selectCurrency .dropdown-item:focus {
+    background: var(--primary)!important;
+}
+.selectCurrency .dropdown-item.active,
+.selectCurrency .dropdown-item:active {
+    background: var(--primary)!important;
+}
+.amoutvalue .btn {
+    background: none!important;
+    padding: 0.480rem 0.75rem;
+}
+.amoutvalue .active {
+    background: var(--primary)!important;
+}
+.deposit-listing .btn-outline-primary {
+    font-size: 12px;
+}
+@keyframes glowing {
+    0% { background-position: 0 0; }
+    50% { background-position: 400% 0; }
+    100% { background-position: 0 0; }
+}
+app-image-viewer .modal-content {
+    background: none!important;
+    border: none;
+}
+.depositRow .amounttab {
+    padding: .520rem .75rem;
+}
+.depositRow .amoutvalue li {
+    margin: 0 5px 0 0;
+}
+@keyframes gradient {
+    0% { background-position: 100% 0%; }
+    100% { background-position: 0% 0%; }
+}
+@keyframes fadeinout {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-out {
+    0% { opacity: 0; transform: translateY(-50px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Content box / Gateway / Filter tab */
+.contentBox h3 {
+    color: var(--white-color);
+    margin: 0 0 10px;
+    padding: 0;
+}
+.contentBox h5 {
+    color: var(--white-color);
+    margin: 0 0 5px;
+    padding: 0;
+}
+.contentBox h6 {
+    color: var(--white-color);
+    margin: 0 0 5px;
+    padding: 0;
+}
+.contentBox p {
+    color: var(--white-color);
+    margin: 0 0 10px;
+    padding: 0;
+}
+.contentBox ul {
+    list-style: disc;
+    margin: 0 0 20px 30px;
+}
+.contentBox li {
+    color: var(--white-color);
+    margin: 0 0 5px;
+}
+.topGateway .gateBox .gateBTN .fa {
+    clip-path: polygon(15% 0, 100% 0, 100% 85%, 95% 100%, 0 100%, 0 15%);
+    height: 38px;
+    width: 40px;
+    color: #000;
+    background: var(--white-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    right: 0;
+}
+.filterTab {
+    margin: 0 0 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+.filterTab ul {
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    scroll-behavior: smooth;
+    overflow-y: auto;
+    width: 100%;
+    margin: 0 auto;
+    gap: 0 5px;
+}
+.filterTab ul::-webkit-scrollbar {
+    display: none;
+}
+.filterTab ul li a {
+    min-height: 38px;
+    padding: 3px 10px;
+    text-transform: uppercase;
+    font-weight: 500;
+    background: rgba(255,255,255,0.14);
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    color: rgba(var(--textwhite), .7);
+}
+.filterTab ul li a i {
+    margin: 0 0.7rem 0 0;
+    font-size: 1.3rem;
+}
+.filterTab ul li a svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--white-color);
+    margin: 0.2rem 0.5rem 0 0;
+}
+.filterTab ul li a.active svg {
+    fill: var(--white-color);
+}
+.filterTab ul li a.active {
+    background: var(--primary);
+    color: #fff;
+}
+.filterTab .arrowTabs {
+    height: 38px;
+    width: 3rem;
+    display: flex;
+    align-items: center;
+    color: var(--white-color);
+    font-size: 11px;
+    position: absolute;
+    z-index: 1;
+    padding: 0 10px;
+}
+.filterTab .arrowLeft {
+    left: 0;
+    box-shadow: inset 55px -10px 15px -20px rgba(0, 0, 0, 0.8);
+    justify-content: flex-start;
+}
+.filterTab .arrowRight {
+    right: 0;
+    box-shadow: inset -50px -10px 15px -20px rgba(0, 0, 0, 0.8);
+    justify-content: flex-end;
+}
+
+/* Bonus iframe / Player sidebar / Setting bar */
+#comm100-container > div > div {
+    bottom: 6% !important;
+    padding-right: 6px;
+}
+.bonus-requestIframeStyle .modal-body {
+    padding: 0;
+    overflow: hidden;
+}
+.bonus-requestIframeStyle iframe.ifreamview {
+    width: 103.5%;
+}
+.bonus-requestIframeStyle button.close {
+    color: var(--white-color);
+    font-size: 16px;
+    margin: 5px 0px 0 auto !important;
+}
+
+.playersidebarMain {
+    display: block!important;
+}
+.setting-show .settingBar {
+    display: block!important;
+}
+.settingBar {
+    display: none !important;
+}
+
+.loginModal .form-group {
+    margin-bottom: 1.7rem;
+}
+
+/* Kailash / small modal / filter / inner search */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+.loginModal .form-control[type="password"] {
+    padding-right: 45px;
+}
+.porfileWrap span.validation-message {
+    position: absolute;
+    line-height: 12px;
+}
+.langSelect.loginFormSltDropdown {
+    padding: 0px;
+    border: 0px !important;
+    margin-right: 0;
+}
+.loginFormSltDropdown .dropdown-toggle::after {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    right: 15px;
+    opacity: .8;
+    font-size: 12px;
+}
+.loginFormSltDropdown.langSelect .dropdown-item {
+    color: rgba(var(--textwhite), .5) !important;
+}
+.loginFormSltDropdown .dropdown-menu {
+    width: 100%;
+    transform: translate3d(0px, 39px, 0px) !important;
+    padding: 10px 10px;
+}
+.loginFormSltDropdown .dropdown-menu .dropdown-item:hover {
+    color: rgba(var(--textwhite), 1) !important;
+}
+
+.smallModal .modal-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 552px;
+    padding: 15px;
+}
+.smallModal .col-12.col-md-6 {
+    width: 100%;
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding: 0;
+}
+.loginModal.smallModal .modal-footer {
+    background: rgba(var(--textwhite), .05);
+}
+.loginModal.smallModal .row.justify-content-center.mb-5 {
+    margin: 0px !important;
+}
+.filterTab .arrowTabs {
+    color: rgba(var(--textwhite), .7);
+}
+.filterRow ul li.active {
+    justify-content: center;
+    color: #fff;
+    background: rgba(var(--textwhite), .15);
+    border: 1px solid rgba(var(--textwhite), .7);
+}
+.filterRow ul li i.fa-solid.fa-table-cells {
+    margin: 0 0.7rem 0 0;
+    font-size: 1.3rem;
+}
+.innerSearch .input-group {
+    width: 300px;
+}
+.innerSearch .fadeOff .input-group {
+    max-width: 38.5px;
+    position: relative;
+    cursor: pointer;
+    z-index: 1;
+}
+.customselectArrow select.form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    min-height: 52px;
+}
+.customselectArrow .fa-calendar-days.inputCustomIcon {
+    font: 19.5px / 12px var(--font-sans);
+}
+.custom-datepicker .form-control {
+    z-index: 5;
+}
+
+#comm100-container {
+    display: none;
+}
+
+/* ----- Back To Top (casinomilyon591 — center-bottom-btn) ----- */
+.center-bottom-btn {
+  transition: opacity var(--default-transition-duration, 0.24s) ease;
+}
+
+.center-bottom-btn > .btn.nav-floating-btn {
+  position: fixed;
+  bottom: 90px;
+  right: 0;
+  left: 0;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 9990;
+  transition: top var(--default-transition-duration, 0.24s) ease,
+              background-color var(--default-transition-duration, 0.24s) ease,
+              color var(--default-transition-duration, 0.24s) ease;
+}
+
+.nav-floating-btn-hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.center-bottom-btn > .btn.nav-floating-btn {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none !important;
+  outline: none;
+  box-shadow: none !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.center-bottom-btn > .btn.nav-floating-btn::before {
+  content: "\EA61";
+  display: block;
+  font-family: BetConstruct-Icons !important;
+  font-size: 20px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.82);
+  background: none;
+  mask: none;
+  -webkit-mask: none;
+}
+
+.center-bottom-btn > .btn.nav-floating-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: rgba(255, 255, 255, 1);
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.center-bottom-btn > .btn.nav-floating-btn:hover::before {
+  color: #fff;
+}
+
+.center-bottom-btn > .btn.nav-floating-btn:focus {
+  outline: none;
+  box-shadow: none !important;
+}
+
+@media (max-width: 767px) {
+  .center-bottom-btn > .btn.nav-floating-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    bottom: calc(var(--mobile-footer-height, 48px) + env(safe-area-inset-bottom, 0px) + 14px);
+  }
+
+  .center-bottom-btn > .btn.nav-floating-btn::before {
+    font-size: 18px;
+  }
+}

@@ -1,0 +1,12 @@
+YUKLEME — bo-nexthub.site services/ klasörü
+
+1. Bu klasördeki TÜM .php dosyalarını seçin
+2. FTP / aaPanel → /www/wwwroot/bo-nexthub.site/services/ içine yükleyin
+3. Mevcut boş services/ varsa üzerine yazın
+4. Kontrol:
+     ls /www/wwwroot/bo-nexthub.site/services/MegaPayzService.php
+
+Tam admin kurulumu için tercihen:
+  php scripts/package-admin-server.php
+  → dist/admin-host/* tüm site köküne yüklenir
+

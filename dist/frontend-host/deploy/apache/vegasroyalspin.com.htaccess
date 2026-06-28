@@ -1,0 +1,61 @@
+# Apache — vegasroyalspin.com split frontend (aaPanel + Apache)
+# Upload to: /www/wwwroot/vegasroyalspin.com/.htaccess
+# Kurulum: deploy/aapanel/APACHE-ONLY-TR.md
+#
+# ÖNEMLİ: Zip içeriğini /www/wwwroot/vegasroyalspin.com/ köküne açın (alt klasör değil).
+# DocumentRoot = site kökü (public/ DEĞİL). aaPanel Force HTTPS = KAPAT (Cloudflare Flexible).
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Bearer token pass-through (Apache strips Authorization by default)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Eksik kurulum: sonsuz rewrite döngüsünü önle
+    RewriteCond %{REQUEST_URI} !^/(?:index\.php|install-status\.php|ping\.php|health\.php|diagnose\.php)(?:/|$) [NC]
+    RewriteCond %{DOCUMENT_ROOT}/index.php !-f
+    RewriteRule ^ - [R=503,L]
+
+    # Kurulum sihirbazı
+    RewriteRule ^install(?:/.*)?$ index.php [L,QSA]
+
+    # Private paths
+    RewriteRule ^(?:app|bin|config|database|docs|logs|repositories|scripts|services|storage|tests|tools|vendor)(?:/|$) - [F,L]
+
+    # Sensitive root files
+    RewriteRule ^(?:\.env(?:\..*)?|env|ENV\.example|composer\.(?:json|lock)|phpunit\.xml)$ - [F,L,NC]
+    RewriteRule ^install\.php$ - [F,L,NC]
+    RewriteRule (^|/)\.env(?:\..*)?$ - [F,L,NC]
+    RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
+
+    # Block direct PHP in internal dirs
+    RewriteRule ^(?:core|controllers)/.*\.php$ - [F,L]
+    RewriteRule ^app/ - [F,L]
+
+    # API → kök index.php (backend proxy; api/ altındaki .htaccess devre dışı)
+    RewriteRule ^api(?:/.*)?$ index.php [L,QSA]
+
+    # Legacy bridges
+    RewriteRule ^gold_api/?$ gold_api/api.php [L]
+    RewriteRule ^tbs2/?$ tbs2/api.php [L]
+    RewriteRule ^r/([a-zA-Z0-9_-]+)$ signup_tracker.php?ref=$1 [L,QSA]
+
+    # Loyalty badge görselleri (eski /content/... yolu)
+    RewriteRule ^content/images/loyalty_points/(bronze|silver|gold|platinum|diamond)\.png$ /assets/images/loyalty/badges/$1.svg [L,NC]
+
+    # Gerçek dosyalar (dizinleri front controller'a bırak — / kök döngüsünü önler)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # Site sayfaları
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+<IfModule mod_dir.c>
+    DirectoryIndex index.php index.html
+    DirectorySlash Off
+</IfModule>
+
+Options -Indexes

@@ -1,0 +1,51 @@
+/* Ana sayfa jackpot|kazananlar sekmeleri — slot mobil üst bölüm ile aynı kenarlık / aralık */
+.mobile-site .home-jackpot-winners-section .slot-hero-tabs {
+  width: 100%;
+  gap: 0;
+}
+
+.mobile-site .home-jackpot-winners-section .slot-hero-tablist {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.mobile-site .home-jackpot-winners-section .slot-hero-tab {
+  padding: 12px 10px;
+  font-size: 11px;
+}
+
+.mobile-site .home-jackpot-winners-section .slot-hero-tabpanel[data-slot-hero-panel="winners"] {
+  min-height: min(48vh, 480px);
+}
+
+@media (max-width: 992px) {
+  /* 6 ürün banner’ı (3x2): kutular arası boşluk + lig şeridinden ayrım */
+  .mobile-site .hm-row-bc:not(.has-slider) {
+    margin-top: 0;
+    margin-bottom: 14px;
+    padding: 0;
+    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mobile-site .ligler-container {
+    margin-top: 0;
+    margin-bottom: 12px;
+    padding: 0;
+  }
+
+  .mobile-site .ligler-row {
+    gap: 10px;
+  }
+
+  .home-jackpot-winners-section {
+    margin-top: 0;
+    padding: 0;
+  }
+
+  .home-jackpot-winners-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
