@@ -69,6 +69,30 @@ if (!function_exists('frontend_is_local_request')) {
     }
 }
 
+if (!function_exists('frontend_open_config_pdo')) {
+    /** Shared PDO factory used by frontend_domain_setting() and frontend_provider_config_row(). */
+    function frontend_open_config_pdo(): PDO
+    {
+        $host     = frontend_env_value(['DATABASE_HOST', 'DB_HOST', 'ADMIN_DB_HOST'], '127.0.0.1');
+        $port     = (int) frontend_env_value(['DATABASE_PORT', 'DB_PORT', 'ADMIN_DB_PORT'], '3306');
+        $database = frontend_env_value(['DATABASE_NAME', 'DATABASE_DATABASE', 'DB_DATABASE', 'ADMIN_DB_DATABASE'], 'metropol_db');
+        $username = frontend_env_value(['DATABASE_USERNAME', 'DB_USERNAME', 'ADMIN_DB_USERNAME'], 'root');
+        $password = frontend_env_value(['DATABASE_PASSWORD', 'DB_PASSWORD', 'ADMIN_DB_PASSWORD'], '');
+        $charset  = frontend_env_value(['DATABASE_CHARSET', 'DB_CHARSET', 'ADMIN_DB_CHARSET'], 'utf8mb4');
+        $options  = function_exists('metropol_pdo_options') ? metropol_pdo_options() : [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ];
+
+        return new PDO(
+            sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
+            $username,
+            $password,
+            $options
+        );
+    }
+}
+
 if (!function_exists('frontend_domain_setting')) {
     function frontend_domain_setting(string $key, string $default = ''): string
     {
@@ -80,24 +104,9 @@ if (!function_exists('frontend_domain_setting')) {
         if ($settings === null) {
             $settings = [];
             try {
-                $host = frontend_env_value(['DATABASE_HOST', 'DB_HOST', 'ADMIN_DB_HOST'], '127.0.0.1');
-                $port = (int) frontend_env_value(['DATABASE_PORT', 'DB_PORT', 'ADMIN_DB_PORT'], '3306');
-                $database = frontend_env_value(['DATABASE_NAME', 'DATABASE_DATABASE', 'DB_DATABASE', 'ADMIN_DB_DATABASE'], 'metropol_db');
-                $username = frontend_env_value(['DATABASE_USERNAME', 'DB_USERNAME', 'ADMIN_DB_USERNAME'], 'root');
-                $password = frontend_env_value(['DATABASE_PASSWORD', 'DB_PASSWORD', 'ADMIN_DB_PASSWORD'], '');
-                $charset = frontend_env_value(['DATABASE_CHARSET', 'DB_CHARSET', 'ADMIN_DB_CHARSET'], 'utf8mb4');
-                $pdoOptions = function_exists('metropol_pdo_options') ? metropol_pdo_options() : [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                ];
-                $pdo = new PDO(
-                    sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
-                    $username,
-                    $password,
-                    $pdoOptions
-                );
+                $pdo  = frontend_open_config_pdo();
                 $stmt = $pdo->query('SELECT frontend_url, backend_url, backend_api_base_url, allowed_url_hosts FROM site_ayarlar ORDER BY id ASC LIMIT 1');
-                $row = $stmt !== false ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+                $row  = $stmt !== false ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
                 $settings = is_array($row) ? $row : [];
             } catch (Throwable) {
                 $settings = [];
@@ -125,30 +134,14 @@ if (!function_exists('frontend_provider_config_row')) {
         }
 
         try {
-            $host = frontend_env_value(['DATABASE_HOST', 'DB_HOST', 'ADMIN_DB_HOST'], '127.0.0.1');
-            $port = (int) frontend_env_value(['DATABASE_PORT', 'DB_PORT', 'ADMIN_DB_PORT'], '3306');
-            $database = frontend_env_value(['DATABASE_NAME', 'DATABASE_DATABASE', 'DB_DATABASE', 'ADMIN_DB_DATABASE'], 'metropol_db');
-            $username = frontend_env_value(['DATABASE_USERNAME', 'DB_USERNAME', 'ADMIN_DB_USERNAME'], 'root');
-            $password = frontend_env_value(['DATABASE_PASSWORD', 'DB_PASSWORD', 'ADMIN_DB_PASSWORD'], '');
-            $charset = frontend_env_value(['DATABASE_CHARSET', 'DB_CHARSET', 'ADMIN_DB_CHARSET'], 'utf8mb4');
-            $pdoOptions = function_exists('metropol_pdo_options') ? metropol_pdo_options() : [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            ];
-            $pdo = new PDO(
-                sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
-                $username,
-                $password,
-                $pdoOptions
-            );
-
             $allowedTables = ['drakon_config', 'bgaming_config', 'megapayz_config'];
             if (!in_array($table, $allowedTables, true)) {
                 return $rows[$table] = [];
             }
 
+            $pdo  = frontend_open_config_pdo();
             $stmt = $pdo->query('SELECT * FROM ' . $table . ' ORDER BY id ASC LIMIT 1');
-            $row = $stmt !== false ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+            $row  = $stmt !== false ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
             return $rows[$table] = is_array($row) ? $row : [];
         } catch (Throwable) {
             return $rows[$table] = [];
