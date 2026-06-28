@@ -31,16 +31,9 @@ return static function (Router $router): void {
     $router->any('/api/member/{any}', [new PublicMemberApiController(), '__invoke'], $security);
     $router->any('/api/content/{any}', [new PublicMemberApiController(), 'content'], $security);
 
+    // Catch-all: Router::match() returns [] for '/{any}' on every path including '/',
+    // so a separate '/' route would never be reached — one handler is enough.
     $router->any('/{any}', static function (Request $request): void {
-        if ($request->isAdminHost()) {
-            (new LegacyAdminController())($request);
-            return;
-        }
-
-        (new LegacyPublicController())($request);
-    }, $security);
-
-    $router->any('/', static function (Request $request): void {
         if ($request->isAdminHost()) {
             (new LegacyAdminController())($request);
             return;

@@ -4,7 +4,12 @@
  * Bootstrap (core/bootstrap.php) tamamlandıktan sonra çalışır.
  * Hem index.php (doğrudan giriş) hem de LegacyPublicController (PSR-4 router köprüsü)
  * tarafından include edilir; startup kontrolleri burada tekrar çalışmaz.
+ *
+ * global bildirimi: PSR-4 router köprüsü üzerinden geldiğinde (LegacyPublicController
+ * legacyRequire metodu) bu dosya bir method scope içinde include edilir; bootstrap'ta
+ * global olarak atanan değişkenlere erişmek için açık global bildirimi gerekir.
  */
+global $ayar, $loggedIn, $siteMeta, $siteBranding, $siteContactLinks, $siteSettingsPayload;
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri = is_string($uri) ? $uri : '/';
