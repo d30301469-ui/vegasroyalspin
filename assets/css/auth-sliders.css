@@ -1,0 +1,98 @@
+/* Admin kontrollü login/register modal slider katmanı */
+
+.entrance-popup-bc.has-auth-slider,
+.register-modal-content.has-auth-slider {
+    position: relative !important;
+    overflow: hidden !important;
+    background: #07071a !important;
+}
+
+.auth-slider-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: #07071a;
+}
+
+.auth-slider-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background:
+        linear-gradient(180deg, rgba(6, 4, 18, 0.08) 0%, rgba(7, 7, 26, 0.58) 58%, rgba(7, 7, 26, 0.98) 100%),
+        radial-gradient(110% 90% at 50% 0%, rgba(133, 15, 131, 0.22) 0%, rgba(133, 15, 131, 0) 62%);
+}
+
+.auth-slider-bg__slide {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    opacity: 0;
+}
+
+.auth-slider-bg[data-auth-slider-count="1"] .auth-slider-bg__slide {
+    opacity: 1;
+}
+
+.auth-slider-bg:not([data-auth-slider-count="1"]) .auth-slider-bg__slide {
+    animation: auth-slider-fade calc(var(--auth-slide-count) * 5s) infinite;
+    animation-delay: calc(var(--auth-slide-index) * 5s);
+}
+
+.auth-slider-bg__image {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.entrance-popup-bc.has-auth-slider > .e-p-content-holder-bc,
+.register-modal-content.has-auth-slider > .e-p-content-holder-bc {
+    position: relative;
+    z-index: 1;
+}
+
+#registerModal .register-modal-content.has-auth-slider > .e-p-content-holder-bc {
+    background: linear-gradient(180deg, rgba(19, 7, 38, 0.93) 0%, rgba(11, 11, 33, 0.96) 45%, rgba(7, 7, 26, 0.98) 100%) !important;
+}
+
+@media (min-width: 992px) {
+    #registerModal .auth-slider-bg {
+        right: 50%;
+    }
+
+    #registerModal .auth-slider-bg::after {
+        background: linear-gradient(90deg, rgba(7, 7, 26, 0) 0%, rgba(7, 7, 26, 0.18) 74%, rgba(7, 7, 26, 0.84) 100%);
+    }
+}
+
+body.mobile-site .auth-slider-bg::after {
+    background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(4, 5, 20, 0.1) 43%, rgba(5, 5, 20, 0.98) 67%),
+        radial-gradient(100% 72% at 50% 0%, rgba(102, 23, 96, 0.16) 0%, rgba(102, 23, 96, 0) 64%);
+}
+
+body.mobile-site #registerModal .auth-slider-bg::after {
+    background:
+        linear-gradient(180deg, rgba(12, 4, 30, 0.72) 0%, rgba(4, 5, 20, 0.92) 54%, #050514 100%),
+        radial-gradient(100% 72% at 50% 0%, rgba(102, 23, 96, 0.18) 0%, rgba(102, 23, 96, 0) 64%);
+}
+
+body.mobile-site #login2 .entrance-popup-bc.sign-in.has-auth-slider {
+    background: #050514 !important;
+}
+
+@keyframes auth-slider-fade {
+    0%,
+    42% {
+        opacity: 1;
+    }
+    52%,
+    100% {
+        opacity: 0;
+    }
+}

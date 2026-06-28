@@ -1,0 +1,233 @@
+/**
+ * MaltaBet mobil — BC bundle üzerine ince düzeltmeler (orijinal m.casinomilyon591)
+ */
+
+html.is-mobile,
+html.mobile-root {
+  --padding-page-aside: 10px;
+}
+
+body.mobile-site {
+  background: #0a0719 !important;
+  padding-bottom: 0 !important;
+}
+
+body.mobile-site #root.layout-bc {
+  min-height: 100vh !important;
+  width: 100% !important;
+}
+
+body.mobile-site #root .layout-content-holder-bc {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+body.mobile-site #root .layout-navigation-holder-bc {
+  height: auto;
+}
+
+/* Mobil header: bc-mobile-header-original.css (orijinal BC DOM) */
+
+body.mobile-site .layout-header-holder-bc .hdr-dynamic-content {
+  min-height: 0;
+}
+
+body.mobile-site .layout-header-holder-bc .hdr-dynamic-content .product-banner-container-bc:empty {
+  display: none !important;
+}
+
+body.mobile-site .mainContentWrap {
+  padding-top: 0 !important;
+  padding-left: var(--padding-page-aside, 10px);
+  padding-right: var(--padding-page-aside, 10px);
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header {
+  display: none !important;
+}
+
+/* Header katmanı slider’dan üstte kalsın */
+body.mobile-site .layout-header-holder-bc.mobile-bc-header {
+  isolation: isolate;
+}
+
+body.mobile-site .layout-content-holder-bc {
+  position: relative;
+  z-index: 0;
+}
+
+/* Tam ekran menü — mobile/assets/css/menu.css (hdr-nav-menu-holder-bc) */
+
+body.mobile-site .layout-header-holder-bc .mainMenu {
+  display: none !important;
+}
+
+/* Arama paneli: mobilde header.css yok — akışa düşmesin (üstte "Spor'da ara" şeridi) */
+body.mobile-site .search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1018;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+body.mobile-site .search-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.mobile-site .search-panel {
+  position: fixed;
+  top: var(--mobile-promo-sheet-top, var(--header-sticky-top, 46px));
+  right: 0;
+  bottom: calc(var(--tab-navigation-height, 48px) + env(safe-area-inset-bottom, 0px));
+  width: 100%;
+  max-width: 420px;
+  z-index: 1019;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.mobile-site .search-panel.is-open {
+  transform: translateX(0);
+  pointer-events: auto;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.45);
+}
+
+/* Alt tab bar: bottom-bar.css + bc-mobile-index .tab-navigation-w-bc */
+
+/* —— Mobil: overlay paneller (header.css mobilde yok; kapalıyken akışa düşmesin) —— */
+body.mobile-site .hdr-smart-panel-holder-arrow-bc {
+  display: none !important;
+}
+
+body.mobile-site .hdr-smart-panel-fixed {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: 8px;
+  width: 50px;
+  z-index: 10060;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  pointer-events: none;
+}
+
+body.mobile-site .hdr-smart-panel-fixed:not(.is-open) {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.mobile-site .hdr-smart-panel-fixed.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+body.mobile-site .right-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 99998;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+body.mobile-site .right-sidebar-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.mobile-site .right-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(100%, 360px);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  box-shadow: none;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: none;
+}
+
+body.mobile-site .right-sidebar.is-open {
+  transform: translateX(0);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+}
+
+body.mobile-site #notificationDrawer.right-sidebar,
+body.mobile-site #favoritesDrawer.right-sidebar,
+body.mobile-site #settingsDrawer.right-sidebar,
+body.mobile-site #searchDrawer.right-sidebar {
+  display: none !important;
+}
+
+body.mobile-site .betslip-panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100049;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.mobile-site .betslip-panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 100050;
+  display: none;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Slider — slider-mobile-bc.css (full-bleed + BC is-mobile boyutları) */
+
+body.mobile-site .mobile-home-widgets .product-banner-info-bc.mobile-quick-action {
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* Lig kutuları — mor neon çerçeveyi kaldır */
+body.mobile-site .lig-item {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 4px;
+}
+
+body.mobile-site .lig-item img {
+  border: none !important;
+  box-shadow: none !important;
+  filter: brightness(0.92);
+}

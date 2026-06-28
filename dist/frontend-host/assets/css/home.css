@@ -1,0 +1,695 @@
+/* Ana sayfa banner satırı – boxed ortalanmış, masaüstü 6 banner arası 1rem */
+.hm-row-bc {
+  width: 100%;
+  max-width: var(--max-width, 2860px);
+  margin: 15px auto 0;
+  padding: 0 15px;
+  box-sizing: border-box;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: auto;
+  justify-content: center;
+  align-items: stretch;
+  overflow: visible;
+}
+
+/* ============================================================
+   PRODUCT BANNERS – Nefes Animasyonu + Hover Efekti
+   ============================================================ */
+
+@keyframes bannerBreath {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.03); }
+}
+
+.hm-row-bc .product-banner-bc {
+  animation: bannerBreath 4s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Her banner farklı fazda başlasın – dalgalı görünüm */
+.hm-row-bc .product-banner-bc:nth-child(1) { animation-delay:  0s;     }
+.hm-row-bc .product-banner-bc:nth-child(2) { animation-delay: -0.57s;  }
+.hm-row-bc .product-banner-bc:nth-child(3) { animation-delay: -1.14s;  }
+.hm-row-bc .product-banner-bc:nth-child(4) { animation-delay: -1.71s;  }
+.hm-row-bc .product-banner-bc:nth-child(5) { animation-delay: -2.28s;  }
+.hm-row-bc .product-banner-bc:nth-child(6) { animation-delay: -2.85s;  }
+
+/* Hover: animasyonu durdur, büyüt – glow/ışık yok (PNG bozulmasın) */
+.hm-row-bc .product-banner-bc:hover {
+  animation: none;
+  transform: scale(1.08);
+  z-index: 5;
+  position: relative;
+}
+
+@media (max-width: 1199px) {
+  .hm-row-bc:not(.has-slider) { grid-template-columns: repeat(6, 1fr); }
+}
+@media (max-width: 1023px) {
+  .hm-row-bc:not(.has-slider) { grid-template-columns: repeat(5, 1fr); }
+}
+/* Mobil: bannerlar 3 sütun x 2 satır (slider satırı hariç) */
+@media (max-width: 768px) {
+  .hm-row-bc:not(.has-slider) { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+}
+
+/* ========== Ana sayfa stilleri ========== */
+
+/* Jackpot (3) + son kazananlar (1) – slot sayfası ile aynı parça sınıfları (winners.js yükseklik eşlemesi) */
+.home-jackpot-winners-section {
+  width: 100%;
+  max-width: var(--max-width, 2860px);
+  margin: 20px auto 0;
+  padding: 0 15px;
+  box-sizing: border-box;
+}
+
+.home-jackpot-winners-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.home-jackpot-winners-row .slot-jackpot-wrap {
+  flex: 3 1 0;
+  min-width: 0;
+}
+
+.home-jackpot-winners-row .slot-jackpot-wrap .jp-section {
+  margin: 0;
+}
+
+.home-jackpot-winners-row .slot-winners-wrap {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+
+@media (max-width: 1024px) {
+  .home-jackpot-winners-row {
+    flex-direction: column;
+  }
+
+  .home-jackpot-winners-row .slot-winners-wrap {
+    width: 100%;
+  }
+}
+
+/* Banner linkleri */
+.product-banner-info-bc {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  transition: transform 0.35s ease, box-shadow 0.35s ease, filter 0.35s ease;
+}
+
+.product-banner-info-bc::after,
+.live-casino-banner::after,
+.lig-item::after,
+.game-cta::after,
+.game-item::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 70%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 30%,
+    rgba(139, 92, 246, 0.5) 45%,
+    rgba(167, 139, 250, 0.85) 50%,
+    rgba(139, 92, 246, 0.5) 55%,
+    transparent 70%,
+    transparent 100%
+  );
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
+  transition: left 0.5s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.product-banner-info-bc:hover::after,
+.live-casino-banner:hover::after,
+.lig-item:hover::after,
+.game-cta:hover::after,
+.game-item:hover::after {
+  left: 100%;
+}
+
+.product-banner-img-bc {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* Çekim limiti kampanya banner – boxed (1440px) hizalı */
+.live-casino-banner-wrap {
+  width: 100%;
+  margin: 1rem auto;
+  padding: 0 15px;
+  box-sizing: border-box;
+}
+
+.live-casino-banner {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.live-casino-banner img {
+  width: 100%;
+  height: auto;
+  display: block;
+  vertical-align: middle;
+}
+
+/* Ligler şeridi */
+.ligler-container {
+  margin: 20px auto 10px;
+  max-width: var(--max-width);
+  padding: 0 15px;
+}
+
+.ligler-row {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.lig-item {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.lig-item img {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  display: block;
+  object-fit: contain;
+  filter: brightness(0.85);
+}
+
+.lig-item:hover {
+  transform: scale(1.1);
+}
+
+.lig-item:hover img {
+  filter: brightness(1);
+}
+
+@media (max-width: 992px) {
+  .ligler-row {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .ligler-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+
+  .ligler-row .lig-item {
+    flex: none;
+  }
+}
+
+/* ========== Başlık, oyun grid, CTA ========== */
+.title-container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 6px 15px 2px;
+}
+
+.title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+  padding-bottom: 6px;
+  position: relative;
+}
+
+.title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--secondary) 20%,
+    var(--secondary) 80%,
+    transparent 100%
+  );
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.title h2 {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.title h2:first-child {
+  color: var(--secondary);
+}
+
+.title a {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1.5px solid var(--secondary);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.title a:hover {
+  background: var(--secondary);
+  color: #111;
+  transform: translateY(-1px);
+}
+
+.live-casino-title .live-casino-heading {
+  color: var(--secondary);
+}
+
+.games-container {
+  padding: 10px 0 40px;
+  width: 100%;
+}
+
+.games-inner {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 8px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .games-inner {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .games-inner {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .games-inner {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 10px;
+  }
+  .game-cta {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-bottom: 0;
+  }
+  .game-item {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .games-inner {
+    padding: 0 6px;
+    gap: 10px;
+  }
+}
+
+.game-grid {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 8px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1200px) {
+  .game-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .game-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .game-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-grid {
+    padding: 0 6px;
+    gap: 10px;
+  }
+}
+
+.game-cta,
+.game-item {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  aspect-ratio: 44 / 31;
+  background: #130922;
+}
+
+.game-cta {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.game-cta img,
+.game-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #130922;
+  transform: scale(var(--home-image-scale, 1));
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.game-item:hover img,
+.game-cta:hover img {
+  filter: blur(6px);
+  transform: scale(calc(var(--home-image-scale, 1) * 1.05));
+}
+
+.game-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+  border-radius: 6px;
+  cursor: pointer;
+  pointer-events: none;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+
+.game-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: rgba(35, 20, 55, 0.66);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-item:hover .game-overlay,
+.game-cta:hover .game-overlay {
+  pointer-events: auto;
+}
+
+.game-item:hover .game-overlay::before,
+.game-cta:hover .game-overlay::before {
+  opacity: 1;
+}
+
+.game-grid .game-overlay {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-grid .game-item:hover .game-overlay {
+  opacity: 1;
+}
+
+.game-overlay-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.game-fav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.game-fav i {
+  font-size: 16px;
+  opacity: 0.95;
+}
+
+.game-info-btn {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-size: 18px;
+  text-decoration: none;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+.game-info-btn:hover {
+  opacity: 1;
+}
+
+.game-title-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 40px;
+}
+
+.game-title-text {
+  margin: 0;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+}
+
+.game-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e89b2c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  min-width: 90px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.play-btn:hover,
+.play-btn:focus {
+  background: #f0a500;
+  color: #fff;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.demo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #fff;
+  border: 1px solid #fff;
+  border-radius: 4px;
+  padding: 10px 20px;
+  min-width: 90px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.demo-btn:hover,
+.demo-btn:focus {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-color: #fff;
+  outline: none;
+}
+
+.game-overlay-top,
+.game-title-wrap,
+.game-actions {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.game-item:hover .game-overlay .game-overlay-top,
+.game-item:hover .game-overlay .game-title-wrap,
+.game-item:hover .game-overlay .game-actions,
+.game-cta:hover .game-overlay .game-overlay-top,
+.game-cta:hover .game-overlay .game-title-wrap,
+.game-cta:hover .game-overlay .game-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-banner-info-bc::after,
+  .live-casino-banner::after,
+  .lig-item::after,
+  .game-cta::after,
+  .game-item::after {
+    display: none;
+  }
+}
+
+/* Mobil ana sayfa: tam genişlik, yatay padding yok, keskin köşeler */
+@media (max-width: 768px) {
+  .hm-row-bc:not(.has-slider) {
+    margin: 0 auto;
+    padding: 0;
+    gap: 0;
+    max-width: none;
+  }
+
+  .home-jackpot-winners-section {
+    margin: 0 auto;
+    padding: 0;
+    max-width: none;
+  }
+
+  .home-jackpot-winners-row {
+    gap: 0;
+  }
+
+  .product-banner-info-bc {
+    border-radius: 0;
+  }
+
+  .live-casino-banner-wrap {
+    margin: 0 auto;
+    padding: 0;
+    max-width: none;
+  }
+
+  .live-casino-banner {
+    border-radius: 0;
+  }
+
+  .ligler-container {
+    margin: 8px auto;
+    padding: 0;
+    max-width: none;
+  }
+
+  .ligler-row {
+    gap: 0;
+  }
+
+  .title-container {
+    padding-left: 0;
+    padding-right: 0;
+    max-width: none;
+  }
+
+  .games-container {
+    padding: 8px 0 28px;
+  }
+
+  .games-inner {
+    padding: 0;
+    max-width: none;
+  }
+
+  .game-grid {
+    padding: 0;
+    max-width: none;
+  }
+
+  .game-cta,
+  .game-item,
+  .game-overlay,
+  .game-overlay::before {
+    border-radius: 0;
+  }
+}
+

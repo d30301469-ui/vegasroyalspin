@@ -1,0 +1,66 @@
+# Apache — bo-nexthub.site standalone admin/backend
+# Upload to: /www/wwwroot/bo-nexthub.site/.htaccess
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Bearer token pass-through (Apache strips Authorization by default)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Kurulum sihirbazı
+    RewriteRule ^install(?:/.*)?$ index.php [L,QSA]
+
+    # Admin CMS uploads: /uploads/* → storage/uploads/*
+    RewriteRule ^uploads/(.*)$ storage/uploads/$1 [L]
+
+    # Eksik kurulum koruması
+    RewriteCond %{REQUEST_URI} !^/(?:index\.php|install-status\.php|ping\.php|health\.php)(?:/|$) [NC]
+    RewriteCond %{DOCUMENT_ROOT}/index.php !-f
+    RewriteRule ^ - [R=503,L]
+
+    # ─── Private paths ───────────────────────────────────────────────
+    RewriteRule ^(?:app|bin|config|database|docs|logs|repositories|scripts|services|storage|tests|tools|vendor)(?:/|$) - [F,L]
+
+    # ─── Sensitive root files ─────────────────────────────────────────
+    RewriteRule ^(?:\.env(?:\..*)?|env|ENV\.example|composer\.(?:json|lock)|phpunit\.xml)$ - [F,L,NC]
+    RewriteRule ^install\.php$ - [F,L,NC]
+    RewriteRule (^|/)\.env(?:\..*)?$ - [F,L,NC]
+    RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
+
+    # ─── Block direct PHP in internal dirs ────────────────────────────
+    RewriteRule ^(?:core|controllers)/.*\.php$ - [F,L]
+    RewriteRule ^app/ - [F,L]
+
+    # ─── Provider callbacks (direct PHP endpoints) ───────────────────
+    # Drakon resmi webhook: POST {site}/drakon_api
+    RewriteRule ^drakon_api/?$ drakon_api.php [L,QSA]
+    RewriteRule ^drakon_api/drakon_api/?$ drakon_api.php [L,QSA]
+    RewriteRule ^api/v2/drakon_callback/?$ api/v2/drakon_callback.php [L,QSA]
+    RewriteRule ^api/v2/drakon_callback/drakon_api/?$ api/v2/drakon_callback.php [L,QSA]
+    RewriteRule ^api/v2/drakon_callback\.php/?$ api/v2/drakon_callback.php [L,QSA]
+    RewriteRule ^api/v2/drakon_callback\.php/drakon_api/?$ api/v2/drakon_callback.php [L,QSA]
+    RewriteRule ^(?:drakon_callback|drakon_callback\.php|drakon_callback/drakon_api|drakon-callback|drakon_api|drakon_api/drakon_api|drakon_api/drakon_api\.php)/?$ api/v2/drakon_callback.php [L,QSA]
+    RewriteRule ^api/v2/bgaming-wallet/?(.*)$ api/v2/bgaming_callback.php?endpoint=$1 [L,QSA]
+    RewriteRule ^api/v2/bgaming/?(.*)$ api/v2/bgaming_callback.php?endpoint=$1 [L,QSA]
+    RewriteRule ^api/v2/megapayz-callback/?$ index.php [L,QSA]
+
+    # ─── API v2 front controller ──────────────────────────────────────
+    RewriteRule ^api/v2/index\.php$ - [L]
+    RewriteRule ^api/v2/?$ api/v2/index.php [L,QSA]
+    RewriteRule ^api/v2/(.+)$ api/v2/index.php?route=$1 [L,QSA]
+
+    # ─── Static assets (files only — avoid directory pass-through loops) ─
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # ─── Everything else → admin front controller ─────────────────────
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+<IfModule mod_dir.c>
+    DirectoryIndex index.php index.html
+</IfModule>
+
+Options -Indexes

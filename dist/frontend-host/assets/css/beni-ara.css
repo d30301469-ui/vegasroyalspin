@@ -1,0 +1,218 @@
+/**
+ * Beni Ara sayfası — tasarım sistemi ile uyumlu (variables, register stilleri)
+ */
+
+.beni-ara-page {
+    background: var(--body-bg);
+    min-height: 50vh;
+    /* py-5 projede tanımlı değil; sayfa üst boşluğu buradan */
+    padding-top: 2.5rem;
+    padding-bottom: 60px;
+}
+
+.beni-ara-card {
+    background: linear-gradient(180deg, rgba(31, 9, 66, 0.6) 0%, rgba(14, 1, 36, 0.95) 100%);
+    border: 1px solid rgba(104, 9, 76, 0.5);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(104, 9, 76, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    color: var(--white-color);
+}
+
+.beni-ara-header {
+    padding: 28px 28px 20px;
+    background: linear-gradient(135deg, rgba(81, 33, 223, 0.15) 0%, rgba(104, 9, 76, 0.2) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.beni-ara-title {
+    font-size: 24px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #fff;
+    margin: 0 0 10px;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
+}
+
+.beni-ara-lead {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.78);
+    margin: 0;
+    line-height: 1.55;
+}
+
+.beni-ara-form {
+    padding: 28px 28px 32px;
+    background: transparent;
+}
+
+.beni-ara-form-row {
+    margin: 0 -10px 20px;
+}
+
+.beni-ara-form-row:last-of-type {
+    margin-bottom: 0;
+}
+
+.beni-ara-form-row > [class*="col-"] {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.beni-ara-field .form-group,
+.beni-ara-field-full .form-group {
+    margin-bottom: 0;
+}
+
+.beni-ara-form .form-group {
+    margin-bottom: 18px;
+}
+
+.beni-ara-form .beni-ara-form-row .form-group {
+    margin-bottom: 0;
+}
+
+.beni-ara-form .beni-ara-form-row + .beni-ara-actions {
+    margin-top: 28px;
+}
+
+.beni-ara-textarea-wrap .form-control-title-bc {
+    top: 16px;
+    transform: translateY(0);
+}
+
+.beni-ara-textarea-wrap.focused .form-control-title-bc,
+.beni-ara-textarea-wrap.has-value .form-control-title-bc {
+    top: 8px;
+}
+
+.beni-ara-textarea.form-control-input-bc {
+    height: auto;
+    min-height: 120px;
+    padding: 24px 20px 12px;
+    resize: vertical;
+}
+
+.beni-ara-actions {
+    margin-top: 24px;
+    padding-top: 8px;
+}
+
+.beni-ara-submit-btn {
+    width: 100%;
+    height: 52px;
+    background: linear-gradient(135deg, var(--primary) 0%, rgba(104, 9, 76, 0.9) 100%);
+    color: #fff !important;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(81, 33, 223, 0.35);
+}
+
+.beni-ara-submit-btn:hover {
+    background: linear-gradient(135deg, rgba(81, 33, 223, 0.95) 0%, rgba(104, 9, 76, 0.95) 100%);
+    color: #fff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(81, 33, 223, 0.45);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.beni-ara-submit-btn:active {
+    transform: translateY(0);
+}
+
+.beni-ara-alert {
+    margin: 20px 24px;
+    padding: 14px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.beni-ara-alert-success {
+    background: rgba(81, 33, 223, 0.25);
+    color: var(--white-color);
+    border-color: var(--secondary);
+}
+
+.beni-ara-card .beni-ara-alert-success:first-of-type {
+    margin-top: 20px;
+}
+
+.beni-ara-alert-danger {
+    background: rgba(220, 53, 69, 0.2);
+    color: #ffb3b3;
+    border-color: rgba(220, 53, 69, 0.5);
+}
+
+/* Mobil */
+@media (max-width: 767px) {
+    .beni-ara-form-row .beni-ara-field .form-group {
+        margin-bottom: 16px;
+    }
+    .beni-ara-form-row .beni-ara-field:last-child .form-group {
+        margin-bottom: 0;
+    }
+    .beni-ara-form-row {
+        margin-bottom: 18px;
+    }
+}
+
+@media (max-width: 576px) {
+    .beni-ara-page {
+        padding-bottom: 40px;
+    }
+
+    .beni-ara-header {
+        padding: 20px 18px 16px;
+    }
+
+    .beni-ara-title {
+        font-size: 20px;
+    }
+
+    .beni-ara-lead {
+        font-size: 13px;
+    }
+
+    .beni-ara-form {
+        padding: 20px 20px 24px;
+    }
+
+    .beni-ara-form-row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    .beni-ara-form-row > [class*="col-"] {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .beni-ara-form .form-group {
+        margin-bottom: 14px;
+    }
+
+    .beni-ara-textarea.form-control-input-bc {
+        min-height: 100px;
+        padding: 24px 12px 12px;
+    }
+
+    .beni-ara-alert {
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .beni-ara-submit-btn {
+        height: 48px;
+    }
+}

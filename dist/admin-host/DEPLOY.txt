@@ -1,0 +1,28 @@
+ADMIN HOST BUNDLE — upload ALL contents to bo-nexthub.site
+
+Domain:  https://bo-nexthub.site/
+API:     https://bo-nexthub.site/api/v2/
+Target:  /www/wwwroot/bo-nexthub.site/
+
+This folder is SELF-CONTAINED. Do not upload frontend views/pages here.
+Do not upload vegasroyalspin.com frontend files to this backend host.
+
+vendor/ is PRE-BUNDLED in this zip — do NOT run composer on the server.
+
+After upload (FRESH install — delete old .env and storage/install.lock if present):
+  php scripts/post-upload-check.php
+  Open https://bo-nexthub.site/install-status.php then /install
+Must exist on server (site root):
+  services/MegaPayzService.php
+  services/DrakonService.php
+  services/BgamingService.php
+  services/MemberJwtService.php
+  config/app.php
+  app/Config/admin.php
+  api/v2/index.php
+  database/migrations/
+
+If only services/ is missing, run locally:
+  php scripts/package-admin-services.php
+  → upload dist/admin-services/* to .../services/
+

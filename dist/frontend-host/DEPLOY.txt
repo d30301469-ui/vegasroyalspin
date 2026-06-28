@@ -1,0 +1,32 @@
+FRONTEND HOST BUNDLE вЂ” upload ALL contents to vegasroyalspin.com
+
+Domain:  https://vegasroyalspin.com/
+Target:  /www/wwwroot/vegasroyalspin.com/
+
+This folder is SELF-CONTAINED for the public site.
+NO admin/, NO database/, NO DB credentials.
+
+Talks to backend ONLY via:
+  https://bo-nexthub.site/api/v2/*
+
+Provider/payment integrations are NOT included in this bundle.
+They run only on the backend host (dist/admin-host).
+
+MySQL/PDO is DISABLED on this host (production + FRONTEND_API_ONLY).
+Never set DB_HOST / DB_DATABASE in frontend .env.
+
+vendor/ is PRE-BUNDLED in this zip вЂ” do NOT run composer on the server.
+
+After upload (FRESH install вЂ” delete old .env and storage/install.lock if present):
+  php scripts/post-upload-check.php
+  Open https://vegasroyalspin.com/install-status.php then /install
+  Complete the wizard (backend URL, MEMBER_JWT_SECRET from bo-nexthub.site)
+  Or CLI: php bin/install-frontend.php --frontend-url=https://vegasroyalspin.com \
+    --backend-url=https://bo-nexthub.site --member-jwt-secret=YOUR-SECRET
+
+Manual .env: cp ENV.example .env (only if not using /install wizard)
+
+Backend .env must include:
+  FRONTEND_URL=https://vegasroyalspin.com
+  ALLOWED_URL_HOSTS=vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,bo-nexthub.site
+

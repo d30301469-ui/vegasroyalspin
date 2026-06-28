@@ -1,0 +1,50 @@
+# Environment example
+APP_ENV=development
+APP_DEBUG=true
+BACKEND_HOST=bo-nexthub.site
+APP_KEY=change-me-to-a-random-32-byte-secret
+MEMBER_JWT_SECRET=change-me-to-a-different-random-32-byte-secret
+
+# Production requirements:
+# - APP_ENV=production
+# - APP_KEY and MEMBER_JWT_SECRET must be unique, non-placeholder values with at least 32 characters.
+# - Never deploy with root/empty database credentials.
+# - Configure public SITE_URL/FRONTEND_URL/BACKEND_URL values; localhost and *.test hosts are rejected in production.
+
+# Development convenience only. Set to 0 in production and run migrations during deploy.
+# Controls JWT tracking table preparation and provider runtime schema changes.
+ALLOW_RUNTIME_MIGRATIONS=1
+METROPOL_RUNTIME_PROVIDER_BOOTSTRAP=0
+
+# Provider callback secrets. Required when the related provider is active.
+DRAKON_CALLBACK_SECRET=
+DRAKON_CALLBACK_ALLOWED_IPS=
+BGAMING_WALLET_SECRET=
+MEGAPAYZ_PRIVATE_KEY=
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=metropol_db
+DB_USERNAME=root
+DB_PASSWORD=
+DB_CHARSET=utf8mb4
+
+# The runtime also accepts these names. Prefer DB_* for local development and
+# DATABASE_* / ADMIN_DB_* when separate deployment environments need them.
+DATABASE_HOST=
+DATABASE_PORT=
+DATABASE_NAME=
+DATABASE_USERNAME=
+DATABASE_PASSWORD=
+DATABASE_CHARSET=
+
+ADMIN_DB_HOST=
+ADMIN_DB_PORT=
+ADMIN_DB_DATABASE=
+ADMIN_DB_USERNAME=
+ADMIN_DB_PASSWORD=
+ADMIN_DB_CHARSET=
+
+# Optional
+ADMIN_EMAIL=admin@example.com

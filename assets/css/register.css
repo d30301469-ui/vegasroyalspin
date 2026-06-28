@@ -1,0 +1,1549 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+
+
+
+body {
+    font-family: var(--font-sans);
+    background: var(--body-bg);
+    color: var(--white-color);
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Browser UI Simulation */
+
+
+
+
+
+
+
+
+/* App Header */
+
+
+
+
+
+
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+}
+
+/* Bootstrap modal yapısını bozmamak için
+   global .modal / .modal-content override'ları kaldırıldı. */
+
+/* Kayıt modali: body bg ile uyumlu */
+#registerModal .modal-content {
+    background-color: var(--body-bg) !important;
+}
+
+/* Form Container */
+
+
+
+/* Form Fields */
+label {
+    margin-bottom: 0.3rem;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #cccccc;
+    font-size: 14px;
+    font-weight: 500;
+}.form-select {
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--menuBG);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: var(--white-color);
+    font-size: 16px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--secondary);
+    background-color: rgba(81, 33, 223, 0.2);
+}
+
+.form-select option {
+    background: var(--menuBG);
+    color: var(--white-color);
+}
+
+/* Date Input with Calendar Icon */
+
+
+/* Country Select with Flag */
+
+
+
+/* Register Button (base) - tema renkleri */
+.register-btn,
+.login-btn {
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--secondary);
+    color: var(--btntText);
+    border: 1px solid var(--secondary);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+.register-btn:hover,
+.login-btn:hover {
+    background: transparent;
+    color: var(--secondary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(252, 172, 0, 0.3);
+}
+
+.register-btn:active,
+.login-btn:active {
+    transform: translateY(0);
+}/* Floating Action Button */
+
+
+/* Android Navigation */
+
+
+.nav-btn.active {
+    color: var(--secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+
+    .form-input,
+    .form-select {
+        padding: 14px 16px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    .register-btn,
+    .login-btn {
+        padding: 14px 16px;
+    }
+}
+
+/* Loading Animation (base) */
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #ffffff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Success/Error Messages */
+
+
+.message.error {
+    background: rgba(81, 33, 223, 0.2);
+    color: var(--secondary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Alert Styles */
+
+
+
+/* Error text */
+
+/* Toggle Forms */
+
+
+/* Overrides from inline <style> in register.php */
+/* Button styles - tema renkleri (REGISTER) */
+.register-btn {
+    background-color: var(--primary);
+    color: var(--btntText);
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    height: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.register-btn:hover {
+    background-color: transparent;
+    color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(81, 33, 223, 0.4);
+}
+
+.register-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(81, 33, 223, 0.3);
+}
+
+.btn-text {
+    transition: opacity 0.3s ease;
+}
+
+.loading {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -10px;
+    margin-left: -10px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Button loading state */
+.register-btn.loading .btn-text {
+    opacity: 0;
+}
+
+.register-btn.loading .loading {
+    display: block !important;
+}
+
+/* Alert container */
+.alert-container {
+    margin-bottom: 20px;
+}
+
+/* Alert styles */
+.alert {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    border: none;
+}
+
+.alert-danger {
+    background-color: rgba(81, 33, 223, 0.3);
+    color: var(--white-color);
+    border: 1px solid var(--secondary);
+}
+
+.alert-success {
+    background-color: rgba(81, 33, 223, 0.3);
+    color: var(--white-color);
+    border: 1px solid var(--secondary);
+}
+
+/* Feedback styles */
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.small {
+    font-size: 0.875em;
+}
+
+.d-none {
+    display: none !important;
+}
+
+.mt-1 {
+    margin-top: 0.25rem !important;
+}
+
+/* Password wrapper */
+
+.password-input {
+    padding-right: 40px;
+}/* ============================
+   HEADER KAYIT MODAL (İKİ ADIMLI)
+   ============================ */
+
+.register-modal-dialog {
+    max-width: 624px; /* +%20 (520 * 1.2) */
+    margin: 0 auto;
+}
+
+.register-modal-content {
+    background: var(--body-bg);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: var(--white-color);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--primary);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.register-modal-header-text {
+    flex-shrink: 0;
+    padding: 16px 24px 12px 24px;
+    background: var(--menuBG);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.register-modal-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.register-top-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.register-logo {
+    display: flex;
+    align-items: center;
+}
+
+.register-logo-img {
+    height: 32px;
+    width: auto;
+    max-width: 140px;
+    object-fit: contain;
+    display: block;
+}
+
+.register-modal-login-link {
+    background: transparent;
+    border: none;
+    color: var(--secondary);
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.register-modal-login-link:hover {
+    color: var(--primary);
+}
+
+.register-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--white-color);
+    font-size: 18px;
+    cursor: pointer;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    line-height: 1;
+}
+
+.register-modal-small {
+    font-size: 13px;
+    color: #a0a0a0;
+    margin-bottom: 6px;
+}
+
+.register-modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-transform: uppercase;
+    color: #ffffff;
+}
+
+.register-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 14px 24px 18px 24px;
+    background: var(--body-bg);
+}
+
+.register-step-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #b3b3b3;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.register-step {
+    margin-bottom: 16px;
+}
+
+.register-form-group {
+    margin-bottom: 12px;
+}
+
+.register-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background-color: var(--menuBG) !important;
+    color: var(--white-color);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.register-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.register-input:focus {
+    border-color: var(--secondary) !important;
+    background-color: rgba(81, 33, 223, 0.15) !important;
+}
+
+.register-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    padding-right: 30px;
+}
+
+/* Sabit select görünümü – dropdown ile aynı stil (component) */
+.bc-fixed-select {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    height: 50px;
+    padding: 10px 30px 10px 20px;
+    background: var(--menuBG);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    box-sizing: border-box;
+    cursor: default;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+}
+.bc-fixed-select__label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.2;
+}
+.bc-fixed-select__value {
+    font-size: 13px;
+    color: rgba(245, 240, 255, 0.95);
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+/* Sabit alan pasif (tıklanamaz, ok yok) – örn. telefon ülke kodu */
+.bc-fixed-select--passive {
+    pointer-events: none;
+    cursor: default;
+    background-image: none !important;
+    padding-right: 20px;
+}
+
+/* Telefon kodu: header ile aynı Türk bayrağı (SVG) */
+.bc-fixed-select__value--with-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.bc-fixed-select__value--with-flag .flag-icon {
+    display: inline-block;
+    width: 20px;
+    height: 15px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    border-radius: 2px;
+}
+.bc-fixed-select__value--with-flag .flag-icon-tr {
+    background-image: url("../images/flag/tr.svg");
+}
+
+/* Özel dropdown (bc-custom-select) – cinsiyet vb. açılışta hafif kayma efekti */
+.bc-custom-select {
+    position: relative;
+}
+.bc-custom-select__native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+.bc-custom-select__trigger {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    height: 50px;
+    padding: 10px 30px 10px 20px;
+    text-align: left;
+    background: var(--menuBG);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    color: inherit;
+    cursor: pointer;
+    box-sizing: border-box;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.bc-custom-select__trigger:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+}
+.bc-custom-select__trigger[aria-expanded="true"] {
+    border-color: var(--secondary);
+    background-color: rgba(81, 33, 223, 0.15);
+}
+.bc-custom-select__trigger[aria-expanded="true"] .bc-custom-select__arrow {
+    transform: translateY(-50%) rotate(180deg);
+}
+.bc-custom-select__label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.2;
+}
+.bc-custom-select__value {
+    font-size: 13px;
+    color: rgba(245, 240, 255, 0.95);
+    font-weight: 500;
+    line-height: 1.3;
+}
+.bc-custom-select__arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center;
+    background-size: 14px;
+    transition: transform 0.2s ease;
+    pointer-events: none;
+}
+.bc-custom-select__panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--menuBG);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0.2s;
+}
+.bc-custom-select.is-open .bc-custom-select__panel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.bc-custom-select__panel[hidden] {
+    display: block !important;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    pointer-events: none;
+}
+.bc-custom-select__option {
+    padding: 12px 20px;
+    font-size: 13px;
+    color: rgba(245, 240, 255, 0.95);
+    background: rgba(81, 33, 223, 0.12);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.bc-custom-select__option:last-child {
+    border-bottom: none;
+}
+.bc-custom-select__option:hover {
+    background: rgba(81, 33, 223, 0.25);
+}
+
+/* Hata metni stili global.css'te (.register-error-text – login ile aynı) */
+
+.register-input.error {
+    border-color: var(--secondary) !important;
+}
+
+.register-actions {
+    margin-top: 14px;
+}
+
+.register-actions-row {
+    display: flex;
+    gap: 8px;
+}
+
+/* Register sayfasına özel: primary/secondary butonlar */
+.register-primary-btn,
+.register-secondary-btn {
+    height: 40px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.register-primary-btn {
+    background: var(--primary);
+    color: #ffffff !important;
+    border: 1px solid var(--primary);
+}
+
+.register-primary-btn:hover {
+    background: transparent;
+    color: var(--primary) !important;
+    box-shadow: 0 4px 12px rgba(81, 33, 223, 0.4);
+}
+
+.register-secondary-btn {
+    background: transparent;
+    color: var(--white-color);
+    border: 1px solid var(--primary);
+}
+
+/* Register: özel tarih seçici (görselle aynı koyu takvim) */
+.register-dob-wrap {
+    position: relative;
+    margin-top: 6px;
+    overflow: visible;
+}
+.register-dob-picker {
+    overflow: visible;
+}
+/* Doğum tarihi: floating label kullanma, label üstte placeholder altta olsun (üst üste binmesin) */
+.register-dob-trigger .form-control-title-bc.register-dob-label {
+    position: static;
+    left: auto;
+    top: auto;
+    transform: none;
+}
+.register-dob-input-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+.register-dob-trigger {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    min-height: 52px;
+    padding: 8px 44px 10px 20px;
+    text-align: left;
+    background: var(--menuBG);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    color: inherit;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+.register-dob-trigger:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+}
+.register-dob-trigger-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 2px;
+    min-width: 0;
+}
+.register-dob-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.2;
+    display: block;
+    flex-shrink: 0;
+}
+.register-dob-value {
+    font-size: 13px;
+    color: rgba(245, 240, 255, 0.95);
+    line-height: 1.3;
+    display: block;
+    margin-top: 2px;
+}
+.register-dob-value.is-placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+.register-dob-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+    pointer-events: none;
+}
+.register-dob-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.register-dob-icon i.bc-i-datepicker {
+    font-size: 20px;
+    line-height: 1;
+    display: block;
+}
+.register-datepicker-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: auto;
+    margin-top: 6px;
+    padding: 8px;
+    width: 240px;
+    max-width: 100%;
+    background: var(--menuBG);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 200;
+    overflow: visible;
+}
+.register-datepicker-panel[hidden] {
+    display: none !important;
+}
+.register-datepicker-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.register-datepicker-prev {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+}
+.register-datepicker-prev:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+.register-datepicker-month,
+.register-datepicker-year {
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    padding: 0 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+}
+/* Yıl/ay select açılır listesinin kesilmemesi için option stilleri (tarayıcı desteklediği kadar) */
+.register-datepicker-year option,
+.register-datepicker-month option {
+    background: var(--menuBG);
+    color: #fff;
+    padding: 6px 8px;
+}
+.register-datepicker-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    margin-bottom: 4px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+}
+.register-datepicker-weekdays span {
+    padding: 2px 0;
+}
+.register-datepicker-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    margin-bottom: 8px;
+    min-height: 0;
+}
+.register-datepicker-day {
+    aspect-ratio: 1;
+    max-height: 26px;
+    min-height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(81, 33, 223, 0.15);
+    border: 1px solid transparent;
+    border-radius: 2px;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 11px;
+    cursor: pointer;
+}
+.register-datepicker-day:hover {
+    background: rgba(81, 33, 223, 0.3);
+}
+.register-datepicker-day.other-month {
+    color: rgba(255, 255, 255, 0.35);
+}
+.register-datepicker-day.selected {
+    background: #e67e22;
+    color: #fff;
+    border: 2px solid #f1c40f;
+}
+.register-datepicker-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.register-datepicker-cancel,
+.register-datepicker-apply {
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.register-datepicker-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+.register-datepicker-apply {
+    background: var(--secondary);
+    border: 1px solid var(--secondary);
+    color: #fff;
+}
+.register-datepicker-apply:hover {
+    background: rgba(81, 33, 223, 0.85);
+}
+
+/* WalletConnect buton – register sayfasına özel */
+.register-walletconnect-btn {
+    border: 1px solid var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--white-color);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    min-height: 40px;
+    padding: 10px 20px;
+}
+
+.register-walletconnect-btn:hover {
+    background: rgba(61, 35, 110, 0.25);
+    border-color: var(--primary);
+    color: var(--white-color);
+}
+
+.register-walletconnect-full {
+    width: 100%;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-transform: none;
+    font-size: 13px;
+}
+
+.register-walletconnect-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white-color);
+}
+
+.register-walletconnect-icon svg {
+    height: 18px;
+    width: auto;
+    max-width: 120px;
+    fill: currentColor;
+}
+
+.register-walletconnect-icon svg path {
+    fill: currentColor;
+}
+
+
+.register-phone-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.register-phone-code {
+    flex: 0 0 auto;
+    width: 90px;
+    min-width: 90px;
+}
+
+.register-phone-code .bc-fixed-select {
+    height: 50px;
+    min-height: 50px;
+}
+
+.register-phone-number {
+    flex: 1;
+    min-width: 0;
+}
+
+.register-phone-number .register-input {
+    height: 50px;
+    min-height: 50px;
+    box-sizing: border-box;
+}
+
+.register-phone-label {
+    display: block;
+    font-size: 11px;
+    color: #b3b3b3;
+    margin-bottom: 4px;
+}
+
+.register-sms-btn {
+    width: 100%;
+    height: 40px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--menuBG);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    cursor: default;
+    padding: 0 12px;
+    white-space: normal;
+}
+
+.register-sms-btn:hover {
+    background: rgba(81, 33, 223, 0.2);
+}
+
+.register-terms {
+    margin-top: 8px;
+}
+
+.register-terms-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.45;
+}
+
+.register-terms-checkbox {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: rgba(60, 50, 80, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.register-terms-checkbox:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.register-terms-checkbox:checked {
+    background: var(--secondary);
+    border-color: var(--secondary);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px;
+}
+
+.register-terms-text {
+    white-space: normal;
+}
+
+.register-terms-label a {
+    color: rgba(255, 255, 255, 0.95);
+    text-decoration: underline;
+}
+
+.register-terms-label a:hover {
+    color: #fff;
+}
+
+.register-terms-secondary-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    margin-left: 28px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: underline;
+}
+
+.register-terms-secondary-link:hover {
+    color: #fff;
+}
+
+.register-terms-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2380c4e6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8'/%3E%3Cpath d='M3 3v5h5'/%3E%3Cpath d='M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16'/%3E%3Cpath d='M21 21v-5h-5'/%3E%3C/svg%3E") no-repeat center;
+    background-size: 16px;
+    flex-shrink: 0;
+}
+
+.register-footer-bar {
+    flex-shrink: 0;
+    border-top: 1px solid var(--primary);
+    margin-top: 12px;
+    padding-top: 10px;
+    padding-bottom: 4px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.register-support-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    font-weight: 400;
+    text-transform: none;
+    cursor: pointer;
+    text-decoration: underline;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0;
+}
+
+/* Smart menü ile aynı ikon: BetConstruct font (header.css'teki sp-button-icon-bc) */
+.register-support-btn .sp-button-icon-bc.bc-i-live-chat,
+.register-support-btn .bc-i-live-chat {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+@media (max-height: 720px) {
+    .register-modal-content {
+        max-height: 85vh;
+    }
+}
+
+/* Kayıt başarılı kutusu */
+#registerSuccessModal .register-success-box {
+    background: var(--menuBG);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 0;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.register-success-body {
+    padding: 24px 20px;
+    text-align: center;
+}
+.register-success-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 14px;
+    background: rgba(39, 174, 96, 0.25);
+    border: 2px solid #27ae60;
+    border-radius: 50%;
+    color: #27ae60;
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 44px;
+}
+.register-success-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+}
+.register-success-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 18px;
+    line-height: 1.4;
+}
+.register-success-ok {
+    margin-top: 0;
+    min-width: 120px;
+}
+
+/* Tarih alanı stilleri global.css'te (.register-input[type="date"]) */
+
+/* ===============================
+   Casinomilyon-style Register Skin
+   =============================== */
+.register-modal-content {
+    background:
+        radial-gradient(120% 140% at 0% 0%, rgba(133, 15, 131, 0.28) 0%, rgba(133, 15, 131, 0) 50%),
+        radial-gradient(140% 140% at 100% 100%, rgba(54, 17, 133, 0.24) 0%, rgba(54, 17, 133, 0) 55%),
+        linear-gradient(180deg, #130726 0%, #0b0b21 45%, #07071a 100%);
+    border: 1px solid rgba(133, 15, 131, 0.75) !important;
+    box-shadow: 0 0 0 1px rgba(133, 15, 131, 0.25), 0 22px 58px rgba(0, 0, 0, 0.72), 0 0 24px rgba(133, 15, 131, 0.32);
+}
+
+.register-modal-header-text {
+    background: linear-gradient(180deg, rgba(102, 23, 96, 0.3) 0%, rgba(23, 10, 54, 0.2) 100%);
+    border-bottom-color: rgba(133, 15, 131, 0.55);
+}
+
+.register-logo-img {
+    filter: drop-shadow(0 0 8px rgba(133, 15, 131, 0.45));
+}
+
+.register-modal-small {
+    color: rgba(230, 214, 255, 0.78);
+}
+
+.register-modal-title {
+    color: #f8f4ff;
+    text-shadow: 0 0 12px rgba(133, 15, 131, 0.42);
+}
+
+.register-input,
+.bc-fixed-select,
+.bc-custom-select__trigger,
+.register-dob-trigger {
+    background: rgba(16, 12, 40, 0.92) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+.register-input:focus,
+.bc-custom-select__trigger[aria-expanded="true"],
+.register-dob-trigger:focus,
+.register-dob-trigger:hover {
+    border-color: rgba(255, 180, 255, 0.78) !important;
+    box-shadow: 0 0 0 1px rgba(191, 107, 255, 0.36), 0 0 14px rgba(133, 15, 131, 0.35);
+}
+
+.register-primary-btn {
+    background: linear-gradient(120deg, #661760 0%, #2a0b57 52%, #850f83 100%);
+    border-color: rgba(203, 139, 255, 0.62);
+    box-shadow: 0 8px 18px rgba(69, 23, 114, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.register-primary-btn:hover {
+    background: linear-gradient(120deg, #782073 0%, #33116a 52%, #9c1a99 100%);
+    color: #fff !important;
+    border-color: rgba(232, 192, 255, 0.85);
+    box-shadow: 0 12px 24px rgba(84, 30, 140, 0.5), 0 0 16px rgba(133, 15, 131, 0.45);
+}
+
+.register-secondary-btn {
+    background: rgba(24, 18, 52, 0.9);
+    border-color: rgba(133, 15, 131, 0.7);
+}
+
+.register-secondary-btn:hover {
+    border-color: rgba(207, 153, 255, 0.72);
+    background: rgba(33, 24, 67, 0.94);
+}
+
+/* ============================================================
+   DESKTOP >= 992px: Casinomilyon Register Popup - SINGLE BLOCK
+   ============================================================ */
+@media (min-width: 992px) {
+
+    /* --- Dialog width --- */
+    #registerModal .modal-dialog {
+        max-width: 840px !important;
+        width: 840px !important;
+        margin: auto !important;
+    }
+
+    /* --- Modal shell: left-half image, right-half dark, fixed height --- */
+    #registerModal .modal-content {
+        height: 77vh !important;
+        min-height: 560px !important;
+        max-height: 900px !important;
+        border-radius: 20px !important;
+        overflow: hidden !important;
+        border: none !important;
+        box-shadow: 0 18px 54px rgba(0,0,0,0.75) !important;
+        /* Left 50% = background image; right 50% = dark */
+        background:
+            url("/assets/images/register-bg.jpg")
+            no-repeat 0 0 / 50% 100% !important;
+        /* Push all content to right half */
+        padding-left: 420px !important;
+        display: block !important;
+    }
+
+    /* --- Content wrapper fills right half height --- */
+    #registerModal .e-p-content-holder-bc {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        background: linear-gradient(180deg, #130726 0%, #0b0b21 45%, #07071a 100%) !important;
+    }
+
+    #registerModal .e-p-content-bc {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* --- Header bar (logo + close) --- */
+    #registerModal .register-modal-header-text.e-p-header-bc {
+        flex-shrink: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        min-height: 68px !important;
+        padding: 0 18px !important;
+        background: linear-gradient(180deg, rgba(125, 33, 120, 0.4) 0%, rgba(21, 16, 57, 0.5) 100%) !important;
+        border-bottom: 1px solid rgba(172, 102, 255, 0.3) !important;
+        width: 100% !important;
+    }
+
+    /* Top bar: actions pushed to far right */
+    #registerModal .register-modal-top-bar {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        width: 100% !important;
+    }
+
+    #registerModal .register-logo {
+        display: none !important;
+    }
+
+    #registerModal .register-logo-img {
+        display: none !important;
+    }
+
+    /* Right side: GİRİŞ + close */
+    #registerModal .register-top-right.e-p-sections-bc {
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+    }
+
+    #registerModal .register-modal-login-link {
+        background: transparent !important;
+        border: 1px solid rgba(172, 102, 255, 0.5) !important;
+        border-radius: 6px !important;
+        color: #e0d8ff !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.04em !important;
+        padding: 5px 14px !important;
+        cursor: pointer !important;
+        text-transform: uppercase !important;
+        transition: background 0.2s !important;
+    }
+
+    #registerModal .register-modal-login-link:hover {
+        background: rgba(172, 102, 255, 0.15) !important;
+        border-color: rgba(172, 102, 255, 0.8) !important;
+    }
+
+    #registerModal .register-modal-close {
+        background: transparent !important;
+        border: none !important;
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-size: 28px !important;
+        line-height: 1 !important;
+        padding: 6px 10px !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        opacity: 0.9 !important;
+    }
+
+    #registerModal .register-modal-close:hover {
+        opacity: 1 !important;
+        color: #fff !important;
+    }
+
+    /* Hide subtitle text in header, keep logo */
+    #registerModal .register-modal-small,
+    #registerModal .register-modal-title,
+    #registerModal .register-step-title {
+        display: none !important;
+    }
+
+    /* --- Body area fills remaining height --- */
+    #registerModal .register-modal-body.e-p-body-bc {
+        flex: 1 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 8px 18px !important;
+        width: 100% !important;
+    }
+
+    #registerModal .reg-form-block-bc,
+    #registerModal .entrance-form-bc.registration.popup {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+
+    /* --- Scrollable form area --- */
+    #registerModal .register-steps-scroll.entrance-form-content-bc.single-side.step-0 {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        max-height: none !important;
+        padding-right: 4px !important;
+    }
+
+    #registerModal .reg-form-content {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* Header rows above form */
+    #registerModal .sg-n-text-row-1-bc {
+        font-size: 12px !important;
+        color: rgba(200, 185, 255, 0.7) !important;
+        margin: 4px 0 2px !important;
+        font-weight: 600 !important;
+    }
+
+    #registerModal .sg-n-text-row-2-bc {
+        font-size: 14px !important;
+        color: #fff !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.03em !important;
+        margin: 0 0 10px !important;
+        text-transform: uppercase !important;
+    }
+
+    #registerModal .reg-form-fields {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0 !important;
+    }
+
+    /* Each step block: flex column with spacing between form groups */
+    #registerModal .register-step.register-step-1,
+    #registerModal .register-step.register-step-2 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    /* Gap between step-1 and step-2 */
+    #registerModal .register-step.register-step-2 {
+        margin-top: 10px !important;
+    }
+
+    /* Form group: no extra margin (gap handles spacing) */
+    #registerModal .entrance-f-item-bc {
+        margin-bottom: 0 !important;
+    }
+
+    /* --- Hide step navigation --- */
+    #registerModal #registerNextStep,
+    #registerModal #registerPrevStep,
+    #registerModal .register-step-1 .register-walletconnect-full {
+        display: none !important;
+    }
+
+    /* --- Input container --- */
+    #registerModal .form-control-label-bc.inputs {
+        display: block !important;
+        position: relative !important;
+        width: 100% !important;
+        border-radius: 6px !important;
+    }
+
+    /* --- Input element --- */
+    #registerModal .register-input,
+    #registerModal .form-control-input-bc {
+        width: 100% !important;
+        height: 48px !important;
+        padding: 22px 16px 8px 16px !important;
+        font-size: 13px !important;
+        color: #ece7ff !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(172, 102, 255, 0.3) !important;
+        border-radius: 6px !important;
+        outline: none !important;
+        box-sizing: border-box !important;
+        transition: border-color 0.2s ease, background 0.2s ease !important;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+    }
+
+    #registerModal .form-control-input-bc:focus {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(172, 102, 255, 0.75) !important;
+        box-shadow: 0 0 0 2px rgba(172, 102, 255, 0.2) !important;
+    }
+
+    #registerModal .form-control-input-bc::placeholder {
+        color: transparent !important;
+    }
+
+    /* --- Floating label text --- */
+    #registerModal .form-control-title-bc {
+        position: absolute !important;
+        left: 16px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        font-size: 12px !important;
+        color: rgba(200, 185, 255, 0.65) !important;
+        pointer-events: none !important;
+        transition: top 0.2s ease, transform 0.2s ease, font-size 0.2s ease !important;
+        white-space: nowrap !important;
+        line-height: 1 !important;
+    }
+
+    /* Focused / has-value: float label up */
+    #registerModal .form-control-label-bc.focused .form-control-title-bc,
+    #registerModal .form-control-label-bc.has-value .form-control-title-bc {
+        top: 10px !important;
+        transform: translateY(0) !important;
+        font-size: 10px !important;
+        color: rgba(172, 102, 255, 0.9) !important;
+    }
+
+    /* --- Select & custom dropdowns --- */
+    #registerModal .bc-fixed-select,
+    #registerModal .bc-custom-select__trigger,
+    #registerModal .register-dob-trigger {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(172, 102, 255, 0.3) !important;
+        border-radius: 6px !important;
+        color: #ece7ff !important;
+        height: 48px !important;
+    }
+
+    #registerModal .bc-custom-select__label,
+    #registerModal .bc-fixed-select__label {
+        color: rgba(200, 185, 255, 0.65) !important;
+    }
+
+    /* Error state */
+    #registerModal .form-control-input-bc.error {
+        border-color: rgba(220, 53, 69, 0.7) !important;
+        background: rgba(220, 53, 69, 0.08) !important;
+    }
+
+    /* --- Submit button: target gradient --- */
+    #registerModal .register-primary-btn {
+        background: linear-gradient(227deg, #661760 0%, rgb(0,11,36) 50%, #850f83 100%) !important;
+        box-shadow: 0 0 7px 2px rgba(255,255,255,0.2) !important;
+        border-color: rgba(236, 197, 255, 0.78) !important;
+        color: #fff !important;
+        width: 100% !important;
+    }
+
+    #registerModal .register-primary-btn:hover {
+        background: linear-gradient(227deg, #7b2374 0%, rgb(9,17,52) 50%, #9f1d9b 100%) !important;
+    }
+
+    #registerModal .register-secondary-btn {
+        background: rgba(91, 94, 133, 0.55) !important;
+        border-color: rgba(148, 152, 210, 0.42) !important;
+    }
+
+    /* --- Footer bar --- */
+    #registerModal .register-footer-bar {
+        flex-shrink: 0 !important;
+        border-top-color: rgba(172, 102, 255, 0.3) !important;
+    }
+
+    #registerModal .register-terms-text,
+    #registerModal .register-terms-secondary-link {
+        color: rgba(220, 214, 245, 0.86) !important;
+    }
+}

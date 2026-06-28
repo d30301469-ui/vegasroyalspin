@@ -1,0 +1,5115 @@
+/**
+ * Profile sayfası – tüm profil ile ilgili stiller
+ * (formlar, sidebar, modal, bakiye, responsive)
+ */
+
+/* ── Profile form / satır (profil sayfası form alanları) ── */
+.profileRow {
+    background: var(--darkBG);
+    padding: 2rem;
+    width: 75%;
+}
+.profileRow .col-form-label {
+    color: var(--white-color);
+}
+.profileRow .form-control {
+    border-color: var(--secondary);
+    font-size: 12px;
+    background: rgba(218,209,177,0.1);
+    border-radius: 4px;
+    height: 42px;
+    padding: .375rem 2rem .375rem .75rem;
+    color: rgba(255,255,255,0.3);
+}
+.profileRow .form-control:focus {
+    border: 1px solid var(--primary);
+    box-shadow: none;
+}
+
+.porfileWrap .profileRow .form-group {
+    margin-bottom: 1.3rem;
+}
+
+/* ── Bakiye satırı (profil / deposit-withdraw) ── */
+.balanceRow {
+    padding: 0.4rem 0.5rem 0.4rem 1rem;
+    background: rgba(0,0,0,0.4);
+    border: 2px solid var(--secondary);
+    border-radius: 5px;
+    margin: 0 0 1rem;
+    color: var(--white-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ── Setting / profil sayfası layout ── */
+.setting-show .centerWrap {
+    padding: 80px 0 0 0;
+}
+.setting-show .sidebarMain {
+    margin-top: 120px;
+    height: calc(100vh - 120px);
+}
+
+/* Profil sayfalarında sidebar + içerik kolonunu sabit yan yana tutar.
+   Yukarıdaki .centerWrap margin-top (components.css) ile hizalı yükseklik; sol/sağ ayrı kayar. */
+/* Tam sayfa SPA geçişi: içerik gelene kadar hafif geri bildirim */
+#profilePlayerMain.is-shell-loading {
+    opacity: 0.72;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+}
+
+.centerWrap.porfileWrap {
+    --profile-layout-top-offset: 102px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0;
+    min-height: calc(100dvh - var(--profile-layout-top-offset));
+    max-height: calc(100dvh - var(--profile-layout-top-offset));
+    overflow: hidden;
+}
+/* Oyuncu profil sidebar: sayfa içinde fixed yerine akışta, sol kolon */
+.centerWrap.porfileWrap > .sidebarMain.playersidebarMain.profile-sidebar-v2 {
+    position: relative;
+    left: auto;
+    top: auto;
+    flex: 0 0 250px;
+    width: 250px;
+    min-width: 250px;
+    max-width: 250px;
+    align-self: stretch;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 6;
+}
+aside#profilePlayerSidebar {
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+}
+/* Sağ kolon: script/style gibi ara düğümleri hariç tutmak için açık seçiciler (KYC .container, referanslar .container-fluid, vb.) */
+.centerWrap.porfileWrap > .profile-main-content,
+.centerWrap.porfileWrap > main#profilePlayerMain,
+.centerWrap.porfileWrap > .container,
+.centerWrap.porfileWrap > .container-fluid,
+.centerWrap.porfileWrap > app-all-player-account-details {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    align-self: stretch;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Header’sız profil iframe: tam pencere yüksekliği (.centerWrap offset’siz) */
+body.profile-modal-body .centerWrap.porfileWrap {
+    min-height: 100dvh;
+    max-height: 100dvh;
+    height: 100dvh;
+}
+body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain.profile-sidebar-v2 {
+    flex: 0 0 calc(275px * 1.21 * 0.9);
+    width: calc(275px * 1.21 * 0.9);
+    min-width: calc(275px * 1.21 * 0.9);
+    max-width: calc(275px * 1.21 * 0.9);
+}
+
+/* ── Profile content (sidebar panel – kullanıcı + bakiye) ── */
+.profile-content .edit-user {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+}
+.profile-content .avatar-holder {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+    line-height: 32px;
+    flex-shrink: 0;
+    text-align: center;
+    text-transform: uppercase;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.4);
+}
+.profile-content .user-right {
+    padding-left: 10px;
+    flex: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+.profile-content .username {
+    margin-bottom: 2px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+}
+.profile-content .user-id {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.5);
+}
+.profile-content .user-id i {
+    margin-left: 6px;
+}
+.profile-content .main-balance {
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    background: #109121;
+}
+.profile-content .main-balance.bonus {
+    background-color: var(--menuBG);
+}
+.profile-content .user-balance {
+    display: flex;
+    flex-direction: column;
+}
+.profile-content .eye-icon {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    text-align: center;
+    cursor: pointer;
+    color: #fff9;
+    font-size: 16px;
+    line-height: 1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, .1);
+}
+.profile-content .total-balance {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+}
+.profile-content .amount {
+    font-size: 20px;
+    line-height: 22px;
+    font-weight: 700;
+    color: var(--white-color);
+    opacity: .9;
+}
+.profile-content .buttons-bottom {
+    display: flex;
+    justify-content: center;
+}
+.profile-content .buttons-bottom .btn {
+    padding: 0 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 34px;
+    text-transform: uppercase;
+    font-size: 13px;
+    font-weight: 400;
+    border-radius: 4px;
+    color: var(--white-color);
+    background: rgba(255, 255, 255, .25);
+}
+.profile-content .buttons-bottom .btn:hover {
+    color: var(--white-color);
+    background: rgba(255, 255, 255, .15);
+}
+.profile-content .buttons-bottom .btn.withdraw-bc {
+    margin-left: 6px;
+}
+.profile-content .buttons-bottom .btn.withdraw-bc img {
+    margin-right: 6px;
+    max-width: 15px;
+}
+.profile-content .buttons-bottom .btn i {
+    margin-right: 6px;
+}
+.profile-content .bonus .amount {
+    margin-bottom: 6px;
+}
+
+/* ── Profile sidebar v2 (profil sayfası sol menü) ── */
+.profile-sidebar-v2 .profile-content {
+    margin-bottom: 14px;
+    padding: 8px;
+    background: #1a2246;
+}
+.profile-sidebar-v2 .profile-header.edit-user {
+    margin-bottom: 8px;
+    min-height: 56px;
+    padding: 8px 10px;
+    background: #1c2450;
+    border-radius: 4px 4px 0 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.profile-sidebar-v2 .profile-content .avatar-holder {
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+    line-height: 34px;
+    background: #747d9e;
+    color: rgba(245, 247, 255, 0.95);
+}
+.profile-sidebar-v2 .profile-content .user-right {
+    padding-left: 10px;
+}
+.profile-sidebar-v2 .profile-content .username {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(248, 250, 255, 0.96);
+    display: block;
+    line-height: 1.1;
+    margin-bottom: 4px;
+}
+.profile-sidebar-v2 .profile-content .user-id {
+    font-size: 11px;
+    color: rgba(214, 220, 242, 0.65);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    line-height: 1;
+    justify-content: flex-start;
+    text-align: left;
+    width: 100%;
+}
+.profile-sidebar-v2 .profile-content .user-id:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+.profile-sidebar-v2 .profile-content .copy-id-icon {
+    font-size: 12px;
+    opacity: 0.7;
+}
+.profile-sidebar-v2 .main-balance-card {
+    position: relative;
+    padding: 11px 12px 12px;
+    border-radius: 4px;
+    background: linear-gradient(140deg, #20a838 0%, #289d3f 100%);
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+.profile-sidebar-v2 .main-balance-card .balance-label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 3px;
+}
+.profile-sidebar-v2 .main-balance-card .total-balance {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.profile-sidebar-v2 .main-balance-card .amount {
+    font-size: 30px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+.profile-sidebar-v2 .main-balance-card .eye-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.profile-sidebar-v2 .main-balance-card .balance-watermark {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 32px;
+    opacity: 0.14;
+    color: #fff;
+    pointer-events: none;
+}
+.profile-sidebar-v2 .main-balance-card .buttons-bottom {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.profile-sidebar-v2 .main-balance-card .buttons-bottom .btn {
+    flex: 1;
+    height: 32px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.28);
+    color: #fff;
+    border: none;
+}
+.profile-sidebar-v2 .main-balance-card .buttons-bottom .btn.withdraw-bc img {
+    margin-right: 6px;
+    max-width: 20px;
+}
+.profile-sidebar-v2 .bonus-balance-card {
+    position: relative;
+    padding: 9px 11px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #c9a227 0%, #b8860b 100%);
+    margin-bottom: 9px;
+    overflow: hidden;
+}
+.profile-sidebar-v2 .bonus-balance-card .balance-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 4px;
+}
+.profile-sidebar-v2 .bonus-balance-card .amount {
+    font-size: 30px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+.profile-sidebar-v2 .bonus-balance-card .bonus-footer {
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.9);
+}
+.profile-sidebar-v2 .bonus-balance-card .bonus-footer .amount {
+    font-size: 12px;
+}
+.profile-sidebar-v2 .bonus-balance-card .balance-watermark.bonus {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 28px;
+    opacity: 0.2;
+    color: #fff;
+    pointer-events: none;
+}
+.profile-sidebar-v2 .loyalty-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 11px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #9d7444 0%, #b1834a 100%);
+    color: #fff;
+    font-size: 12px;
+}
+.profile-sidebar-v2 .loyalty-bar .loyalty-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-item {
+    margin-bottom: 5px;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #272657;
+    color: var(--white-color) !important;
+    text-decoration: none;
+    border-radius: 4px;
+    border-left: 0;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    transition: background 0.2s, border-color 0.2s;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-trigger:hover {
+    background: #2f2d66;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-trigger.active {
+    background: #34316f;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-trigger .spCol {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-trigger .spCol i {
+    font-size: 13px;
+    width: 16px;
+    text-align: center;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-chevron {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-item.open .accordion-chevron {
+    transform: rotate(180deg);
+}
+.profile-sidebar-v2 .profile-accordion .accordion-sub {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: #2a285a;
+    border-radius: 3px;
+    margin-top: 3px;
+    padding: 3px 0 3px 0;
+    border-left: 0;
+    display: none;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-item.open .accordion-sub {
+    display: block;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-sub li {
+    margin: 0;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-sub a {
+    display: block;
+    padding: 8px 12px 8px 18px;
+    color: rgba(255, 255, 255, 0.84) !important;
+    font-size: 11px;
+    text-decoration: none;
+    text-transform: uppercase;
+    border-radius: 1px;
+    transition: background 0.2s;
+}
+.profile-sidebar-v2 .profile-accordion .accordion-sub a:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+.profile-sidebar-v2 .profile-accordion .accordion-sub a.active {
+    background: rgba(120, 118, 177, 0.38);
+    color: #fff !important;
+}
+.profile-sidebar-v2 .accordion-trigger--badge {
+    position: relative;
+}
+.profile-sidebar-v2 .accordion-badge {
+    position: absolute;
+    right: 28px;
+    top: 50%;
+    transform: translateY(-50%);
+    min-width: 20px;
+    height: 18px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+    background: #000;
+    color: #fff;
+    border-radius: 4px;
+}
+.profile-sidebar-v2 .accordion-badge:empty {
+    display: none;
+}
+.profile-sidebar-v2 .accordion-sub .sub-badge {
+    margin-left: 6px;
+    padding: 0 5px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    background: #000;
+    color: #fff;
+    border-radius: 3px;
+}
+.profile-sidebar-v2 .accordion-sub .sub-badge:empty {
+    display: none;
+}
+/* Profil sidebar promosyon: modal, tam sayfa ve mobil aynı .profile-sidebar-v2 */
+.profile-sidebar-v2 .profile-sidebar-promo {
+    margin-top: 14px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+}
+.profile-sidebar-v2 .profile-sidebar-promo-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+.profile-sidebar-v2 .profile-sidebar-promo-input,
+.profile-sidebar-v2 .profile-sidebar-promo-select,
+.profile-sidebar-v2 .profile-sidebar-promo-note {
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-family: inherit;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(36, 36, 90, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.profile-sidebar-v2 .profile-sidebar-promo-select,
+.profile-sidebar-v2 .profile-sidebar-promo-input {
+    flex: 1;
+    min-width: 0;
+}
+.profile-sidebar-v2 .profile-sidebar-promo-input {
+    text-transform: uppercase;
+}
+.profile-sidebar-v2 .profile-sidebar-promo-select {
+    text-transform: none;
+}
+.profile-sidebar-v2 .profile-sidebar-promo-note {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    text-transform: none;
+    font-size: 11px;
+}
+.profile-sidebar-v2 .profile-sidebar-promo-input::placeholder,
+.profile-sidebar-v2 .profile-sidebar-promo-note::placeholder {
+    color: rgba(255, 255, 255, 0.42);
+}
+.profile-sidebar-v2 .profile-sidebar-promo-btn {
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(36, 36, 90, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.profile-sidebar-v2 .profile-sidebar-promo-btn:hover {
+    background: rgba(120, 118, 177, 0.35);
+}
+.profile-sidebar-v2 .profile-sidebar-promo-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.profile-sidebar-v2 .profile-promocodes-heading,
+.profile-sidebar-v2 .profile-promocodes-subheading {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 6px;
+}
+.profile-sidebar-v2 .profile-promocodes-subheading {
+    margin-top: 12px;
+}
+.profile-sidebar-v2 .profile-promocodes-status {
+    font-size: 11px;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 6px;
+    min-height: 1.2em;
+}
+.profile-sidebar-v2 .profile-promocodes-status--error {
+    color: rgba(255, 160, 140, 0.95);
+}
+.profile-sidebar-v2 .profile-promocodes-status--error {
+    color: #f5a4a4;
+}
+.profile-sidebar-v2 .profile-sidebar-promo-btn--secondary {
+    font-weight: 600;
+    opacity: 0.92;
+}
+.profile-sidebar-v2 .sidebar-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.profile-sidebar-v2 .sidebar-logout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85) !important;
+    text-decoration: none;
+    background: var(--menuBG);
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+    transition: background 0.2s, border-color 0.2s;
+}
+.profile-sidebar-v2 .sidebar-logout:hover {
+    background: rgba(0, 0, 0, 0.5);
+    border-left-color: #c0392b;
+    color: #fff !important;
+}
+.profile-sidebar-v2 .sidebar-logout i {
+    font-size: 14px;
+}
+
+/* ── Ödeme / para yatırma uyarı–hata diyaloğu (060d43 + yeşil vurgu) ── */
+.app-feedback-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100050;
+    background: rgba(0, 0, 0, 0.62);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+.app-feedback-dialog-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.app-feedback-dialog {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    z-index: 100051;
+    width: calc(100vw - 32px);
+    max-width: 420px;
+    transform: translate(-50%, -50%) scale(0.94);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.22s ease, visibility 0.22s ease;
+}
+.app-feedback-dialog.is-open {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.app-feedback-dialog__card {
+    position: relative;
+    background: linear-gradient(165deg, #0a1152 0%, #060d43 45%, #050a2e 100%);
+    border: 1px solid rgba(154, 166, 233, 0.28);
+    border-radius: 14px;
+    padding: 28px 24px 22px;
+    box-shadow:
+        0 24px 48px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(39, 174, 96, 0.12) inset;
+    text-align: center;
+}
+.app-feedback-dialog__card::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 0;
+    height: 3px;
+    border-radius: 0 0 4px 4px;
+    background: linear-gradient(90deg, #1e8449, #2ecc71, #27ae60);
+    opacity: 0.95;
+}
+
+.app-feedback-dialog__dismiss {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+}
+.app-feedback-dialog__dismiss:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.app-feedback-dialog__icon-wrap {
+    width: 56px;
+    height: 56px;
+    margin: 6px auto 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.35);
+}
+.app-feedback-dialog--warning .app-feedback-dialog__icon-wrap {
+    background: rgba(241, 196, 15, 0.14);
+    color: #f1c40f;
+    border-color: rgba(241, 196, 15, 0.4);
+}
+.app-feedback-dialog--error .app-feedback-dialog__icon-wrap {
+    background: rgba(231, 76, 60, 0.14);
+    color: #e74c3c;
+    border-color: rgba(231, 76, 60, 0.38);
+}
+
+.app-feedback-dialog__title {
+    margin: 0 0 10px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #fff;
+    line-height: 1.25;
+}
+
+.app-feedback-dialog__message {
+    margin: 0 0 22px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.app-feedback-dialog__primary {
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(180deg, #2ecc71 0%, #27ae60 45%, #1e8449 100%);
+    box-shadow: 0 4px 16px rgba(39, 174, 96, 0.35);
+    transition: filter 0.15s, transform 0.12s;
+}
+.app-feedback-dialog__primary:hover {
+    filter: brightness(1.06);
+}
+.app-feedback-dialog__primary:active {
+    transform: translateY(1px);
+}
+
+/* ── Profil sayfası modalı (header’dan açılan) ── */
+/* ~%80 alan; ortalanmış panel + dışarıda karartma (overlay tıklanınca kapanır) */
+.profile-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.58);
+    z-index: 99998;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+.profile-modal-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.profile-modal {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 80vw;
+    max-width: calc(100vw - 24px);
+    height: 80vh;
+    height: 80dvh;
+    max-height: calc(100dvh - 24px);
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    transform: translate(-50%, -50%) scale(0.96);
+    background: #060d43;
+    border: 1px solid rgba(154, 166, 233, 0.22);
+    border-radius: 10px;
+    box-shadow: 0 28px 64px rgba(0, 0, 0, 0.55);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease, visibility 0.22s ease;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+.profile-modal.is-open {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    visibility: visible;
+}
+
+.profile-modal__frame-wrap {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    border-radius: inherit;
+    position: relative;
+    overflow: hidden;
+    border: 0;
+    box-shadow: none;
+    background: #060d43;
+}
+.profile-modal__loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(7, 10, 43, 0.88);
+    border-radius: inherit;
+    z-index: 1;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.profile-modal__loading.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+.profile-modal__spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.12);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: profile-modal-spin 0.7s linear infinite;
+}
+.profile-modal__loading-text {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+}
+@keyframes profile-modal-spin {
+    to { transform: rotate(360deg); }
+}
+.profile-modal__content {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #060d43;
+    /* Fetch ile gelen parçada .centerWrap olmasa bile sidebar + main yan yana */
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+}
+
+/* Modal içinde profil layout: solda tam yükseklik sidebar + boşluksuz içerik */
+.profile-modal__content .centerWrap.porfileWrap {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    max-height: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+.profile-modal__content .sidebarMain.playersidebarMain.profile-sidebar-v2 {
+    position: relative;
+    top: 0;
+    flex: 0 0 calc(275px * 1.21 * 0.9);
+    width: calc(275px * 1.21 * 0.9);
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    border-top: 0;
+    padding-top: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+/* Sağ kolon: üst şerit (başlık + X) sabit; kaydırma yalnızca .profile-section-body içinde */
+.profile-modal__content .profile-main-content {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+.profile-modal__content .personal-details-page {
+    margin: 0;
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+}
+.profile-modal__content .personal-details-card {
+    padding: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.profile-modal__content .personal-details-header {
+    margin: 0;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+.profile-modal__content .profile-section-body {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ── Profil içerik alanı (kişisel detaylar + güvenlik alt sayfaları) ── */
+.centerWrap.porfileWrap > .profile-main-content {
+    width: 100%;
+    min-width: 0;
+    /* Kaydırma .porfileWrap > .sidebar ~ * kuralında; burada flex kaldırıldı (içerik yüksekliği doğal akar) */
+}
+.personal-details-page {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 1rem 1.2rem 1.4rem;
+    background:
+        radial-gradient(circle at 85% 10%, rgba(197, 67, 255, 0.2) 0%, rgba(14, 12, 60, 0) 42%),
+        linear-gradient(118deg, #060f4a 0%, #050a39 48%, #100033 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+}
+@media (min-width: 992px) {
+    .personal-details-page {
+        padding: 0.9rem 1rem 1.2rem;
+    }
+}
+@media (max-width: 991px) {
+    .personal-details-page {
+        padding: 0.9rem;
+    }
+}
+.personal-details-page--password,
+.personal-details-page--twofa,
+.personal-details-page--freeze {
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* Ortak profil içerik kartı: başlık üstte chrome; kart yalnızca .profile-section-body sarmalayıcısı */
+.personal-details-card {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0 0 8px 8px;
+    background: rgba(10, 18, 70, 0.35);
+    border: 1px solid rgba(154, 166, 233, 0.16);
+    border-top: none;
+    border-bottom: none;
+    padding: 0;
+    color: #fff;
+    overflow: hidden;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.personal-details-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem 1rem;
+    min-height: 42px;
+    background: linear-gradient(90deg, rgba(16, 26, 78, 0.95) 0%, rgba(76, 28, 103, 0.92) 100%);
+    border-radius: 8px 8px 0 0;
+    border: 1px solid rgba(154, 166, 233, 0.16);
+    border-bottom: none;
+}
+.personal-details-title {
+    margin: 0;
+    font-size: 0.96rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.96);
+}
+.personal-details-close {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 1.2rem;
+    text-decoration: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    line-height: 1;
+    transition: color 0.2s, background 0.2s;
+}
+.personal-details-close:hover {
+    color: #fff;
+    background: transparent;
+}
+.profile-section-body {
+    padding: 0.85rem 1rem 1rem;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+@media (max-width: 991px) {
+    .personal-details-title {
+        font-size: 1.05rem;
+    }
+}
+
+/* ── Profil güvenlik alt sayfaları (şifre / 2FA / dondur) ── */
+.profile-security-single {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+}
+.profile-security-single--freeze {
+    max-width: 680px;
+    margin-left: 0;
+    margin-right: auto;
+    text-align: left;
+}
+.profile-security-single--twofa {
+    margin-left: 0;
+    margin-right: auto;
+    text-align: left;
+}
+.profile-security-single--password {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.personal-details-page--deposit-withdraw .profile-section-body {
+    padding: 0.5rem 0.65rem 0.85rem;
+    min-width: 0;
+    overflow-x: hidden;
+}
+@media (max-width: 576px) {
+    .personal-details-page--deposit-withdraw .profile-section-body {
+        padding: 0.35rem 0.45rem 0.7rem;
+    }
+}
+.personal-details-page--tx-history .profile-section-body,
+.personal-details-page--withdrawal-status .profile-section-body {
+    padding: 0.65rem 0.5rem 0.85rem;
+}
+@media (min-width: 576px) {
+    .personal-details-page--tx-history .profile-section-body,
+    .personal-details-page--withdrawal-status .profile-section-body {
+        padding: 0.65rem 0.85rem 0.9rem;
+    }
+}
+
+.profile-security-section-stack {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0;
+    padding-bottom: 0.5rem;
+}
+.password-change-header,
+.twofa-header,
+.freeze-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: none;
+}
+.password-change-header,
+.twofa-header {
+    background: #12121a;
+}
+.freeze-header {
+    background: #1a0f24;
+}
+.password-change-title,
+.twofa-title,
+.freeze-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #fff;
+    text-transform: uppercase;
+}
+.password-change-close,
+.twofa-close,
+.freeze-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.1rem;
+    padding: 0.2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.88;
+}
+.password-change-close:hover,
+.twofa-close:hover,
+.freeze-close:hover {
+    opacity: 1;
+    color: #fff;
+}
+.password-change-form {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+.personal-details-page--password .password-change-form {
+    padding-top: 0.15rem;
+}
+.password-change-field {
+    margin-bottom: 0.875rem;
+}
+.password-change-field:last-of-type {
+    margin-bottom: 1.15rem;
+}
+.password-change-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 0.9rem;
+    transition: border-color 0.2s, background 0.2s;
+}
+.password-change-input::placeholder {
+    color: rgba(196, 192, 214, 0.82);
+}
+.password-change-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.09);
+}
+.password-change-footer {
+    display: flex;
+    justify-content: flex-start;
+    align-self: flex-start;
+    width: 100%;
+}
+.password-change-btn {
+    padding: 11px 40px;
+    border-radius: 5px;
+    border: none;
+    background: #2c3348;
+    color: rgba(255, 255, 255, 0.94);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.12s;
+}
+.password-change-btn:hover {
+    background: #363e55;
+    color: #fff;
+}
+.password-change-btn:active {
+    transform: scale(0.99);
+}
+/* 2FA — içerik doğrudan gövdede (ayrı kart yok) */
+.twofa-status {
+    margin: 0 0 1.1rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: rgba(220, 216, 232, 0.72);
+    font-weight: 400;
+}
+.twofa-activate-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.twofa-left-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    min-width: 0;
+    flex: 1;
+}
+.twofa-icon-wrap {
+    flex-shrink: 0;
+}
+.twofa-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.twofa-icon-ga {
+    display: block;
+}
+.twofa-activate-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.35;
+    color: #fff;
+    text-transform: uppercase;
+    text-align: left;
+    align-self: flex-start;
+}
+.twofa-toggle {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
+    align-self: center;
+    cursor: pointer;
+}
+.twofa-toggle-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.twofa-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.28);
+    border-radius: 26px;
+    transition: background 0.25s;
+}
+.twofa-toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(245, 245, 248, 0.95);
+    border-radius: 50%;
+    transition: transform 0.25s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.twofa-toggle-input:checked + .twofa-toggle-slider {
+    background: rgba(120, 90, 180, 0.95);
+}
+.twofa-toggle-input:checked + .twofa-toggle-slider::before {
+    transform: translateY(-50%) translateX(22px);
+}
+.twofa-toggle-input:focus-visible + .twofa-toggle-slider {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+@media (max-width: 480px) {
+    .twofa-activate-row {
+        flex-wrap: wrap;
+    }
+    .twofa-toggle {
+        align-self: flex-end;
+        margin-left: auto;
+    }
+}
+/* Hesabı dondur — içerik doğrudan gövdede, özel radyo, sol geniş buton */
+.freeze-text {
+    margin: 0 0 1.35rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    font-weight: 400;
+    color: #fff;
+}
+.freeze-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+}
+.freeze-radio {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    cursor: pointer;
+    margin: 0;
+}
+.freeze-radio-input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin: 0;
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    background: #14101f;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.freeze-radio-input:hover {
+    border-color: #fff;
+}
+.freeze-radio-input:checked {
+    background: #fff;
+    box-shadow: inset 0 0 0 4px #1f1528;
+}
+.freeze-radio-input:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.45);
+    outline-offset: 2px;
+}
+.freeze-radio-label {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.02em;
+}
+.freeze-footer {
+    margin-top: 1.45rem;
+    display: flex;
+    justify-content: flex-start;
+}
+.freeze-btn {
+    min-width: 11.5rem;
+    padding: 12px 28px;
+    border-radius: 6px;
+    border: none;
+    background: #2c3348;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+.freeze-btn:hover {
+    background: #363e55;
+    color: #fff;
+}
+.freeze-btn:active {
+    transform: scale(0.99);
+}
+
+/* ── Profile responsive ── */
+@media (max-width: 1699px) {
+    .profileRow {
+        width: 80%;
+    }
+}
+
+@media (max-width: 1599px) {
+    .profileRow {
+        width: 88%;
+    }
+}
+
+@media (max-width: 1449px) {
+    .profileRow {
+        width: 90%;
+    }
+}
+
+@media (max-width: 1399px) {
+    .profileRow .col-form-label {
+        font-size: 12px;
+    }
+    .profileRow {
+        width: 100%;
+    }
+}
+
+@media (max-width: 992px) {
+    .profile-content .main-balance {
+        padding: 8px 10px;
+    }
+    .profile-content .buttons-bottom .btn {
+        height: 32px;
+        text-transform: capitalize;
+    }
+}
+
+@media (max-width: 767px) {
+    .profileRow {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 950px) and (min-width: 768px) {
+    .profileRow {
+        padding: 0.1rem;
+    }
+    .porfileWrap span.validation-message {
+        font-size: 10px !important;
+    }
+}
+
+/* ═══ İşlem geçmişi (tx-history) ═══ */
+.tx-history-main {
+    flex: 1;
+    padding: 0;
+    background: transparent;
+    min-width: 0;
+    min-height: 0;
+}
+.tx-history-kind-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.5rem 0.65rem 0;
+}
+.tx-history-kind-tab {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.45rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(45, 45, 61, 0.4);
+    color: rgba(255, 255, 255, 0.65);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.tx-history-kind-tab:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+}
+.tx-history-kind-tab.is-active {
+    color: #fff;
+    border-color: rgba(123, 44, 255, 0.55);
+    background: rgba(123, 44, 255, 0.22);
+}
+.tx-history-filters {
+    padding: 0.5rem 0.65rem;
+    background: rgba(45, 45, 61, 0.55);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tx-filter-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.45rem 0.55rem;
+}
+.tx-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+    min-width: 0;
+    flex: 1 1 140px;
+}
+.tx-filter-field:first-child {
+    flex: 1 1 160px;
+}
+.tx-filter-field:nth-child(2) {
+    flex: 1 1 120px;
+    max-width: 200px;
+}
+.tx-filter-field--dates {
+    flex: 2 1 260px;
+    min-width: min(100%, 240px);
+}
+.tx-filter-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.58);
+    text-transform: uppercase;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+.tx-filter-select,
+.tx-filter-input {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0.42rem 1.75rem 0.42rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(60, 55, 85, 0.5);
+    color: #fff;
+    font-size: 0.8rem;
+    appearance: none;
+    min-height: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,0.6)' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+}
+.tx-filter-select:focus,
+.tx-filter-input:focus {
+    outline: none;
+    border-color: rgba(123, 44, 255, 0.45);
+}
+.tx-filter-date-range {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+}
+.tx-filter-date-range .tx-filter-date-wrap {
+    flex: 1;
+    min-width: 0;
+}
+.tx-filter-date-sep {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.85rem;
+    line-height: 1;
+    flex-shrink: 0;
+    padding-bottom: 0.06rem;
+}
+.tx-filter-date-wrap {
+    position: relative;
+}
+.tx-filter-date-wrap .tx-filter-input {
+    background-image: none;
+    padding-right: 2.15rem;
+    cursor: pointer;
+    min-height: 36px;
+}
+.tx-filter-date-icon {
+    position: absolute;
+    right: 0.45rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.45);
+    pointer-events: none;
+}
+.tx-filter-btn-show {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0.42rem 0.85rem;
+    border-radius: 6px;
+    border: none;
+    background: #3d4a3d;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-left: auto;
+    align-self: flex-end;
+}
+@media (max-width: 519px) {
+    .tx-filter-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .tx-filter-field,
+    .tx-filter-field:nth-child(2) {
+        flex: 1 1 auto;
+        max-width: none;
+    }
+    .tx-filter-field--dates {
+        min-width: 0;
+    }
+    .tx-filter-btn-show {
+        width: 100%;
+        margin-left: 0;
+    }
+}
+@media (min-width: 900px) {
+    .tx-history-filters {
+        padding: 0.55rem 0.85rem;
+    }
+    .tx-filter-toolbar {
+        gap: 0.5rem 0.65rem;
+    }
+}
+.tx-filter-btn-show:hover {
+    background: #4a5a4a;
+}
+.tx-history-content {
+    padding: 1rem 1rem 1.25rem;
+    min-height: 220px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.tx-history-empty {
+    margin: auto;
+    padding: 2rem 1rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.52);
+    text-align: center;
+    line-height: 1.45;
+}
+.tx-history-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0;
+    border-radius: 8px;
+}
+.tx-history-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    color: #fff;
+}
+.tx-history-table th,
+.tx-history-table td {
+    padding: 0.7rem 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tx-history-table th {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+.tx-history-cell-center {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 2rem 0.75rem !important;
+}
+.tx-history-cell-err {
+    color: #e57373;
+}
+.tx-badge {
+    display: inline-block;
+    padding: 0.28rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.tx-badge-pending { background: #b8860b; color: #fff; }
+.tx-badge-approved,
+.tx-badge-confirmed,
+.tx-badge-completed { background: #2e7d32; color: #fff; }
+.tx-badge-rejected,
+.tx-badge-failed { background: #c62828; color: #fff; }
+.tx-badge-cancelled { background: #555; color: #fff; }
+.tx-badge-processing { background: #1565c0; color: #fff; }
+
+@media (max-width: 640px) {
+    .tx-history-table {
+        min-width: 0;
+    }
+    .tx-history-table thead {
+        display: none;
+    }
+    .tx-history-table tbody,
+    .tx-history-table tr,
+    .tx-history-table td {
+        display: block;
+        width: 100%;
+    }
+    .tx-history-table tr.transaction-row {
+        background: rgba(40, 38, 58, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        margin-bottom: 0.65rem;
+        padding: 0.5rem 0.75rem 0.65rem;
+    }
+    .tx-history-table tr.transaction-row td {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 0.4rem 0;
+    }
+    .tx-history-table tr.transaction-row td:last-child {
+        border-bottom: none;
+    }
+    .tx-history-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.55);
+        display: block;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.2rem;
+    }
+    .tx-history-table tbody tr:not(.transaction-row) td {
+        border-radius: 8px;
+        background: rgba(40, 38, 58, 0.35);
+    }
+    .tx-history-table tbody tr:not(.transaction-row) td::before {
+        display: none;
+    }
+}
+
+/* ═══ Bahis geçmişi ═══ */
+.bet-history-main {
+    flex: 1;
+    padding: 0;
+    background: transparent;
+    min-width: 0;
+    min-height: 0;
+}
+/* Kart + gövde: components.css .table-responsive min-height (100dvh−300px) burada devre dışı; modalda taşma/çift kaydırma önlenir */
+.personal-details-page--bet-history {
+    align-items: stretch;
+}
+.personal-details-page--bet-history > .personal-details-card {
+    min-width: 0;
+    min-height: 0;
+    /* yatay kaydırma yalnızca .table-responsive içinde kalsın */
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+.personal-details-page--bet-history .profile-section-body {
+    padding-top: 0;
+}
+.bet-history-filters {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.45rem 0.55rem;
+    margin: 0 -1rem;
+    padding: 0.5rem 1rem;
+    background: rgba(45, 45, 61, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+.bhf-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    min-width: 0;
+}
+.bhf-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.58);
+    text-transform: uppercase;
+    line-height: 1.2;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin: 0;
+}
+.bhf-input,
+.bhf-select {
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0.42rem 0.55rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(60, 55, 85, 0.5);
+    color: #fff;
+    font-size: 0.8rem;
+}
+.bhf-input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+.bhf-select {
+    appearance: none;
+    min-width: 5.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,0.6)' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    padding-right: 1.75rem;
+}
+/* Bahis kimliği / spor arama — tek satır araç çubuğuna sabit genişlik */
+.bet-history-filters > .bhf-group > .bhf-input {
+    width: 7.25rem;
+}
+.bet-history-filters > .bhf-group > .bhf-input-wrap {
+    width: 9rem;
+    min-width: 7rem;
+}
+.bet-history-filters > .bhf-group > .bhf-input-wrap .bhf-input {
+    width: 100%;
+}
+.bet-history-filters > .bhf-group > .bhf-select[name="bet_type"] {
+    min-width: 8rem;
+}
+.bhf-input-wrap {
+    position: relative;
+}
+.bhf-input-wrap .bhf-input {
+    padding-right: 2rem;
+}
+.bhf-icon {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+}
+.bhf-actions {
+    margin-left: auto;
+    align-self: center;
+}
+.bhf-btn-show {
+    min-height: 36px;
+    padding: 0.42rem 0.85rem;
+    border-radius: 6px;
+    border: none;
+    background: #3d4a3d;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.bhf-btn-show:hover {
+    background: #4a5a4a;
+}
+.bhf-date-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.bhf-date-sep {
+    color: rgba(255, 255, 255, 0.5);
+}
+.bhf-period-custom {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+    max-width: 100%;
+}
+.bhf-period-custom .bhf-input {
+    min-width: 7.5rem;
+    width: auto;
+}
+.personal-details-page--bet-history .bet-history-filters label {
+    color: #fff;
+}
+.bet-history-content {
+    min-height: 200px;
+    padding: 0.65rem 0 1rem;
+    position: relative;
+}
+/* Global .table-responsive (components.css) min-height burada iptal */
+.personal-details-page--bet-history .bet-history-content .table-responsive {
+    min-height: 0 !important;
+    background: transparent !important;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+}
+.bet-history-empty {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+}
+.personal-details-page--bet-history .bet-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    color: #fff;
+}
+.personal-details-page--bet-history .bet-history-table th,
+.personal-details-page--bet-history .bet-history-table td {
+    padding: 0.65rem 0.5rem;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.8rem;
+}
+.personal-details-page--bet-history .bet-history-table th {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+.spor-details-btn,
+.game-history-details-btn {
+    padding: 1px 6px;
+    font-size: 0.7rem;
+}
+.personal-details-page--bet-history .game-history-details .badge {
+    font-size: 0.65rem;
+    padding: 0.2em 0.4em;
+}
+.personal-details-page--bet-history .game-history-details .small {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+}
+/* Profil modalında (transform) iç içe modal + backdrop üstte kalsın */
+.profile-modal__content .modal {
+    z-index: 200;
+}
+.profile-modal__content .modal-backdrop {
+    z-index: 199;
+}
+@media (max-width: 767px) {
+    .personal-details-page--bet-history .bet-history-filters {
+        margin: 0 -0.9rem;
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
+    }
+    .bet-history-filters {
+        flex-wrap: wrap;
+        align-items: stretch;
+        overflow-x: visible;
+        row-gap: 0.5rem;
+    }
+    .bhf-group {
+        flex: 1 1 calc(50% - 0.35rem);
+        min-width: min(100%, 9.5rem);
+    }
+    .bhf-group > .bhf-input-wrap {
+        flex: 1;
+        min-width: 0;
+        width: auto !important;
+    }
+    .bhf-group > .bhf-input:first-child {
+        flex: 1;
+        width: auto !important;
+        min-width: 0;
+    }
+    .bhf-period-custom {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+    .bhf-actions {
+        margin-left: 0;
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+    .bhf-btn-show {
+        width: 100%;
+    }
+    .personal-details-page--bet-history .bet-history-table,
+    .personal-details-page--bet-history .bet-history-table thead,
+    .personal-details-page--bet-history .bet-history-table tbody,
+    .personal-details-page--bet-history .bet-history-table th,
+    .personal-details-page--bet-history .bet-history-table td,
+    .personal-details-page--bet-history .bet-history-table tr {
+        display: block;
+        width: 100%;
+    }
+    .personal-details-page--bet-history .bet-history-table thead tr {
+        display: none;
+    }
+    .personal-details-page--bet-history .bet-history-table tr.transaction-row {
+        margin-bottom: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px 10px;
+        background: rgba(0, 0, 0, 0.2);
+    }
+    .personal-details-page--bet-history .bet-history-table td {
+        text-align: right;
+        padding: 5px 10px;
+        position: relative;
+    }
+    .personal-details-page--bet-history .bet-history-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-weight: 600;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.7rem;
+    }
+    .personal-details-page--bet-history .bet-history-table td[data-label="Detaylar"] {
+        text-align: left;
+        padding-top: 1.35rem;
+        padding-bottom: 0.65rem;
+    }
+    .personal-details-page--bet-history .bet-history-table td[data-label="Detaylar"]::before {
+        top: 0.4rem;
+        transform: none;
+    }
+}
+
+/* ═══ Para çekme durumu ═══ */
+.withdrawal-status-main {
+    flex: 1;
+    padding: 0;
+    background: transparent;
+    min-width: 0;
+    min-height: 0;
+}
+.withdrawal-status-table-bar {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 0.85fr 1.15fr 0.75fr 0.9fr 0.55fr;
+    gap: 0.4rem 0.5rem;
+    padding: 0.65rem 0.85rem;
+    background: rgba(30, 28, 40, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.withdrawal-status-table-bar .wsc {
+    white-space: nowrap;
+}
+.withdrawal-status-body {
+    padding: 0.85rem 1rem 1.1rem;
+    min-height: 180px;
+    position: relative;
+}
+.withdrawal-status-empty {
+    margin: 0;
+    padding: 2.5rem 1rem;
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    line-height: 1.45;
+}
+.withdrawal-status-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    color: #fff;
+}
+.withdrawal-status-table td {
+    padding: 0.7rem 0.45rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    vertical-align: middle;
+    word-break: break-word;
+}
+.withdrawal-status-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+.wst-badge {
+    display: inline-block;
+    padding: 0.28rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+.wst-badge.wst-pending { background: #b8860b; color: #fff; }
+.wst-badge.wst-approved,
+.wst-badge.wst-confirmed,
+.wst-badge.wst-completed { background: #2e7d32; color: #fff; }
+.wst-badge.wst-rejected { background: #c62828; color: #fff; }
+.wst-badge.wst-cancelled { background: #555; color: #fff; }
+.wst-badge.wst-processing { background: #1565c0; color: #fff; }
+.wst-cancel {
+    min-height: 40px;
+    min-width: 72px;
+    padding: 0.4rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+.wst-cancel:hover {
+    background: rgba(200, 80, 80, 0.3);
+    border-color: rgba(200, 80, 80, 0.6);
+}
+
+@media (max-width: 900px) {
+    .withdrawal-status-table-bar {
+        display: none;
+    }
+    .withdrawal-status-table tbody tr {
+        display: block;
+        background: rgba(40, 38, 58, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        margin-bottom: 0.65rem;
+        padding: 0.5rem 0.75rem 0.65rem;
+    }
+    .withdrawal-status-table td {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.35rem 0.75rem;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .withdrawal-status-table td:last-child {
+        border-bottom: none;
+    }
+    .withdrawal-status-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.52);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        flex: 0 0 38%;
+        max-width: 11rem;
+    }
+    .withdrawal-status-table tbody tr:hover {
+        background: rgba(40, 38, 58, 0.65);
+    }
+}
+
+@media (max-width: 380px) {
+    .withdrawal-status-table td {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .withdrawal-status-table td::before {
+        max-width: none;
+        flex-basis: auto;
+        margin-bottom: 0.15rem;
+    }
+}
+
+/* ═══ Mesajlar (gelen / gönderildi / yeni) — kişisel detaylar içerik kabuğu ile aynı şablon ═══ */
+.personal-details-page--messages .profile-section-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0.65rem 0.75rem 0.85rem;
+}
+@media (min-width: 576px) {
+    .personal-details-page--messages .profile-section-body {
+        padding: 0.65rem 0.85rem 0.9rem;
+    }
+}
+/* Gelen kutusu — dış kart yok; filtre + liste doğrudan içerik alanında (genel padding’i ezer) */
+.personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .personal-details-card,
+.personal-details-page--messages-sent .personal-details-card,
+.personal-details-page--messages-new .personal-details-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+}
+.profile-modal__content
+    .personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new)
+    .personal-details-card,
+.profile-modal__content .personal-details-page--messages-sent .personal-details-card,
+.profile-modal__content .personal-details-page--messages-new .personal-details-card {
+    background: transparent;
+    border: none;
+    /* Tam sayfada overflow:visible; modalda başlık sabit + gövde scroll için clip gerekir */
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .personal-details-header,
+.personal-details-page--messages-sent .personal-details-header,
+.personal-details-page--messages-new .personal-details-header {
+    background: transparent;
+    padding-left: 0;
+    padding-right: 0;
+    min-height: auto;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.15rem;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .profile-section-body {
+    padding: 0.35rem 0 0.85rem;
+}
+@media (min-width: 576px) {
+    .personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .profile-section-body {
+        padding: 0.35rem 0 0.9rem;
+    }
+}
+.personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .inbox-list-wrap {
+    padding-top: 0;
+}
+.personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .inbox-footer {
+    border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.personal-details-page--messages .profile-messages-body {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+.personal-details-page--messages .inbox-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem 1rem;
+    padding: 0 0 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.65rem;
+    flex-shrink: 0;
+}
+.personal-details-page--messages .inbox-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.personal-details-page--messages .inbox-filter-label {
+    font-size: 0.77rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-weight: 500;
+}
+.personal-details-page--messages .inbox-date-wrap {
+    position: relative;
+    width: 140px;
+}
+.personal-details-page--messages .inbox-date-input {
+    width: 100%;
+    height: 40px;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(16, 26, 76, 0.72);
+    color: #fff;
+    font-size: 0.85rem;
+    transition: border-color 0.2s, background 0.2s;
+}
+.personal-details-page--messages .inbox-date-input:focus {
+    outline: none;
+    border-color: rgba(219, 214, 255, 0.45);
+    background: rgba(23, 35, 96, 0.84);
+}
+.personal-details-page--messages .inbox-date-input::-webkit-calendar-picker-indicator {
+    opacity: 0;
+}
+.personal-details-page--messages .inbox-date-icon {
+    position: absolute;
+    right: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.42);
+    pointer-events: none;
+    font-size: 0.85rem;
+}
+.personal-details-page--messages .inbox-filter-actions {
+    margin-left: auto;
+}
+.personal-details-page--messages .inbox-btn-show {
+    min-width: 120px;
+    height: 34px;
+    padding: 0 1rem;
+    border-radius: 3px;
+    border: none;
+    background: rgba(176, 184, 206, 0.2);
+    color: rgba(231, 236, 255, 0.72);
+    font-size: 0.73rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.personal-details-page--messages .inbox-btn-show:hover {
+    background: rgba(176, 184, 206, 0.36);
+    color: rgba(255, 255, 255, 0.95);
+}
+.personal-details-page--messages .inbox-list-wrap {
+    flex: 1;
+    min-height: 140px;
+    max-height: min(52vh, 480px);
+    overflow-y: auto;
+    padding: 0.15rem 0 0.5rem;
+}
+.personal-details-page--messages .inbox-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.personal-details-page--messages .inbox-item {
+    margin-bottom: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.personal-details-page--messages .inbox-list .inbox-item:last-child {
+    border-bottom: none;
+}
+.personal-details-page--messages .inbox-item-inner {
+    position: relative;
+    padding: 0.65rem 0;
+    background: transparent;
+    border-radius: 0;
+    border: none;
+}
+.personal-details-page--messages .inbox-item-dot {
+    position: absolute;
+    top: 0.72rem;
+    right: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(120, 200, 255, 0.85);
+    display: none;
+}
+.personal-details-page--messages .inbox-item.unread .inbox-item-dot {
+    display: block;
+}
+.personal-details-page--messages .inbox-item-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+    padding-right: 2.25rem;
+}
+.personal-details-page--messages .inbox-item-icon {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.personal-details-page--messages .inbox-item-title {
+    font-weight: 600;
+    color: #fff;
+    font-size: 0.88rem;
+}
+.personal-details-page--messages .inbox-item-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.personal-details-page--messages .inbox-item-date {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+.personal-details-page--messages .inbox-item-expand {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+.personal-details-page--messages .inbox-item-expand:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+.personal-details-page--messages .inbox-item-expand i {
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+}
+.personal-details-page--messages .inbox-item.is-expanded .inbox-item-expand i {
+    transform: rotate(180deg);
+}
+.personal-details-page--messages .inbox-item-body {
+    margin-top: 0.5rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.personal-details-page--messages .inbox-item-bodyrichtext {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.5;
+    word-break: break-word;
+}
+.personal-details-page--messages .inbox-item-bodyrichtext a {
+    color: #9ab8ff;
+    text-decoration: underline;
+}
+.personal-details-page--messages .inbox-item-link-wrap {
+    margin: 0.65rem 0 0;
+    font-size: 0.8rem;
+}
+.personal-details-page--messages .inbox-item-link-wrap a {
+    color: #9ab8ff;
+    font-weight: 600;
+}
+.personal-details-page--messages .inbox-empty-hint {
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+.personal-details-page--messages .inbox-footer {
+    padding: 0.85rem 0 0;
+    margin-top: 0.35rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    text-align: right;
+}
+.personal-details-page--messages .inbox-btn-new {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 1.1rem;
+    border-radius: 3px;
+    border: 1px solid rgba(154, 166, 233, 0.22);
+    background: rgba(176, 184, 206, 0.12);
+    color: rgba(231, 236, 255, 0.85);
+    font-size: 0.73rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.personal-details-page--messages .inbox-btn-new:hover {
+    background: rgba(176, 184, 206, 0.22);
+    color: #fff;
+    border-color: rgba(219, 214, 255, 0.35);
+}
+
+/* Gönderildi — dış kart yok; liste satırları doğrudan içerik alanında (Yeni ile aynı mantık) */
+.personal-details-page--messages-sent .profile-section-body {
+    padding-top: 0.35rem;
+    padding-left: 0;
+    padding-right: 0;
+}
+.personal-details-page--messages .inbox-list--sent {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.personal-details-page--messages-sent .inbox-list-wrap {
+    padding-top: 0;
+}
+.personal-details-page--messages .sent-item {
+    margin-bottom: 0;
+    border-radius: 0;
+    overflow: visible;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.personal-details-page--messages .inbox-list--sent .sent-item:last-child {
+    border-bottom: none;
+}
+.personal-details-page--messages .sent-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0 0.25rem;
+    background: transparent;
+    color: #fff;
+}
+.personal-details-page--messages .sent-item-subject {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.personal-details-page--messages .sent-item-delete {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+.personal-details-page--messages .sent-item-delete:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+}
+.personal-details-page--messages .sent-item-delete i {
+    font-size: 0.85rem;
+}
+.personal-details-page--messages .sent-item-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 0.65rem;
+    background: transparent;
+    color: #fff;
+}
+.personal-details-page--messages .sent-item-date {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+.personal-details-page--messages .sent-item-expand {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+.personal-details-page--messages .sent-item-expand:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+.personal-details-page--messages .sent-item-expand i {
+    font-size: 0.7rem;
+}
+.personal-details-page--messages .inbox-btn-new--sent {
+    border-color: rgba(140, 180, 140, 0.35);
+    background: rgba(80, 120, 80, 0.2);
+    color: rgba(220, 240, 220, 0.9);
+}
+.personal-details-page--messages .inbox-btn-new--sent:hover {
+    background: rgba(80, 120, 80, 0.32);
+    color: #fff;
+}
+.personal-details-page--messages-sent .inbox-footer {
+    border-top-color: rgba(255, 255, 255, 0.08);
+    padding-top: 0.75rem;
+}
+
+/* Yeni mesaj — iç kart yok; form doğrudan içerik (sayfa) alanında */
+.personal-details-page--messages-new .profile-section-body {
+    padding-top: 0.35rem;
+    padding-left: 0;
+    padding-right: 0;
+}
+.personal-details-page--messages-new .profile-messages-body {
+    max-width: 100%;
+}
+.personal-details-page--messages-new .new-msg-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
+    min-height: 0;
+    padding-top: 0.15rem;
+}
+.personal-details-page--messages .new-msg-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.personal-details-page--messages .new-msg-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.62);
+    text-transform: uppercase;
+}
+.personal-details-page--messages .new-msg-input,
+.personal-details-page--messages .new-msg-textarea {
+    width: 100%;
+    padding: 0.55rem 0.8rem;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(16, 26, 76, 0.72);
+    color: #fff;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s, background 0.2s;
+}
+.personal-details-page--messages .new-msg-input::placeholder,
+.personal-details-page--messages .new-msg-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+.personal-details-page--messages .new-msg-input:focus,
+.personal-details-page--messages .new-msg-textarea:focus {
+    outline: none;
+    border-color: rgba(219, 214, 255, 0.45);
+    background: rgba(23, 35, 96, 0.84);
+}
+.personal-details-page--messages .new-msg-textarea {
+    min-height: 200px;
+    resize: vertical;
+}
+.personal-details-page--messages .new-msg-footer {
+    padding-top: 0.35rem;
+    text-align: left;
+}
+.personal-details-page--messages .new-msg-btn-send {
+    min-width: 160px;
+    height: 34px;
+    padding: 0 1.1rem;
+    border-radius: 3px;
+    border: none;
+    background: rgba(176, 184, 206, 0.2);
+    color: rgba(231, 236, 255, 0.72);
+    font-size: 0.73rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.personal-details-page--messages .new-msg-btn-send:hover {
+    background: rgba(176, 184, 206, 0.36);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 576px) {
+    .personal-details-page--messages .inbox-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .personal-details-page--messages .inbox-date-wrap {
+        width: 100%;
+    }
+    .personal-details-page--messages .inbox-filter-actions {
+        margin-left: 0;
+    }
+    .personal-details-page--messages .inbox-btn-show {
+        width: 100%;
+    }
+}
+/* ── Profil PHP dosyalarından taşınan <style> blokları (profile.css’e birleştirilir) ── */
+
+/* views/layouts/profile_modal_head.php — profil iframe gövdesi */
+body.profile-modal-body {
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(circle at 86% 8%, rgba(194, 66, 255, 0.17) 0%, rgba(14, 12, 60, 0) 40%),
+                linear-gradient(118deg, #060f4a 0%, #050a39 48%, #100033 100%);
+    min-height: 100dvh;
+    overflow: hidden;
+}
+body.profile-modal-body .centerWrap {
+    margin: 0;
+    max-width: 100%;
+}
+body.profile-modal-body .centerWrap.porfileWrap {
+    margin: 0;
+    padding: 0;
+}
+body.profile-modal-body .sidebarMain.playersidebarMain.profile-sidebar-v2 {
+    width: calc(275px * 1.21 * 0.9);
+    top: 0;
+    min-height: 0;
+    padding-top: 0;
+    border-top: 0;
+    background: #050d41;
+}
+body.profile-modal-body .profile-sidebar-v2 .profile-content {
+    padding-top: 0;
+    margin-top: 0;
+}
+body.profile-modal-body .personal-details-page.is-modal {
+    padding-top: 0;
+    margin-top: 0;
+    background: radial-gradient(circle at 85% 10%, rgba(197, 67, 255, 0.2) 0%, rgba(14, 12, 60, 0) 42%),
+                linear-gradient(118deg, #060f4a 0%, #050a39 48%, #100033 100%);
+}
+body.profile-modal-body .personal-details-page.is-modal .personal-details-header {
+    margin-top: 0;
+}
+
+/* pages/profile/details.php — kişisel detaylar formu */
+.personal-details-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.personal-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem 0.95rem;
+}
+.field-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.field-row.full {
+    grid-column: 1 / -1;
+}
+.field-row.half {
+    grid-column: span 1;
+}
+.field-label {
+    font-size: 0.77rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-weight: 500;
+}
+.field-label .required {
+    color: rgba(255, 255, 255, 0.82);
+}
+.field-input,
+.field-select {
+    width: 100%;
+    height: 40px;
+    padding: 0.5rem 0.8rem;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(16, 26, 76, 0.72);
+    color: #fff;
+    font-size: 0.9rem;
+    transition: border-color 0.2s, background 0.2s;
+}
+.field-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+.field-input:focus,
+.field-select:focus {
+    outline: none;
+    border-color: rgba(219, 214, 255, 0.45);
+    background: rgba(23, 35, 96, 0.84);
+}
+.field-input[readonly] {
+    opacity: 0.85;
+    cursor: default;
+}
+.personal-details-status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 0.85rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(16, 26, 76, 0.55);
+    color: rgba(255, 255, 255, 0.92);
+}
+.personal-details-status-badge--active {
+    border-color: rgba(72, 199, 116, 0.45);
+    background: rgba(32, 86, 58, 0.45);
+    color: #b8f5cf;
+}
+.personal-details-status-badge--pending {
+    border-color: rgba(230, 180, 80, 0.5);
+    background: rgba(86, 64, 20, 0.42);
+    color: #ffe6a8;
+}
+.personal-details-status-badge--banned {
+    border-color: rgba(230, 90, 90, 0.5);
+    background: rgba(86, 28, 28, 0.42);
+    color: #ffc9c9;
+}
+.personal-details-status-badge--unknown {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+.field-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.field-input-wrap .field-input {
+    padding-right: 2.5rem;
+}
+.field-input-wrap .field-icon {
+    position: absolute;
+    right: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.42);
+    pointer-events: none;
+}
+/* type="date": tarayıcı picker ikonu + .field-icon çift görünmesin */
+.field-input-wrap .field-input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+}
+.field-input-wrap .field-input[type="date"]::-moz-calendar-picker-indicator {
+    opacity: 0;
+}
+.field-input-wrap--flag {
+    gap: 0.5rem;
+}
+.field-input-wrap--flag .field-input {
+    flex: 1;
+}
+.field-input-wrap--flag .flag-icon {
+    flex-shrink: 0;
+}
+.field-toggle-pwd {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 0.35rem;
+    cursor: pointer;
+    line-height: 1;
+}
+.field-toggle-pwd:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+.personal-details-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.14);
+    margin: 1.2rem 0 0.95rem;
+}
+.personal-details-hint {
+    margin: 0 0 0.95rem;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.74);
+    text-align: center;
+}
+.personal-details-footer {
+    margin-top: 1.05rem;
+    display: flex;
+    justify-content: flex-end;
+}
+.personal-details-submit {
+    min-width: 240px;
+    height: 34px;
+    padding: 0 1.1rem;
+    border-radius: 3px;
+    border: none;
+    background: rgba(176, 184, 206, 0.2);
+    color: rgba(231, 236, 255, 0.52);
+    font-size: 0.73rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.personal-details-submit:hover:not(:disabled) {
+    background: rgba(176, 184, 206, 0.36);
+    color: rgba(255, 255, 255, 0.95);
+}
+.personal-details-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+
+@media (max-width: 991px) {
+    .personal-details-submit {
+        min-width: 200px;
+    }
+}
+@media (max-width: 576px) {
+    .personal-details-grid {
+        grid-template-columns: 1fr;
+    }
+    .field-row.half {
+        grid-column: 1 / -1;
+    }
+}
+
+/* pages/profile/kyc.php — yalnızca .kyc-profile-page içinde (global .btn-warning ile çakışmasın) */
+.kyc-profile-page .stack-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.kyc-profile-page .stack-item {
+    background: #121212;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #222;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.kyc-profile-page .stack-title {
+    font-weight: bold;
+    color: #00b894;
+}
+.kyc-profile-page .stack-value {
+    color: #fff;
+}
+.kyc-profile-page .card.bg-dark {
+    background-color: #1b1b1b !important;
+}
+.kyc-profile-page .form-control.bg-secondary {
+    background-color: #2a2a2a !important;
+    color: #fff;
+    border: 1px solid #333;
+}
+.kyc-profile-page .btn-warning {
+    background-color: #00b894;
+    border-color: #00b894;
+    color: #fff;
+}
+.kyc-profile-page .btn-warning:hover {
+    background-color: #019973;
+    border-color: #019973;
+    color: #fff;
+}
+.kyc-profile-page .alert-danger {
+    background-color: #7b0000;
+    color: #fff;
+    border: none;
+}
+.kyc-profile-page .alert-success {
+    background-color: #006633;
+    color: #fff;
+    border: none;
+}
+
+/* pages/profile/references.php */
+.referrals-container {
+    width: 80%;
+    margin: 50px auto;
+    padding: 20px;
+    font-family: var(--font-sans);
+    color: #333;
+}
+.referrals-title {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 2.2em;
+    font-weight: bold;
+}
+.referral-card-custom {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    margin-bottom: 40px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+}
+.referral-card-custom h4 {
+    color: #34495e;
+    font-size: 1.5em;
+    margin-bottom: 10px;
+}
+.referral-card-custom p.muted-text {
+    color: #7f8c8d;
+    font-size: 0.95em;
+    margin-bottom: 25px;
+}
+.referral-code-display-custom {
+    background-color: #ecf0f1;
+    border: 1px solid #bdc3c7;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-size: 1.4em;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px auto 15px auto;
+    max-width: 450px;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+.referral-code-value {
+    color: #2980b9;
+    flex-grow: 1;
+    text-align: left;
+    padding-right: 15px;
+}
+.copy-button-custom {
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.copy-button-custom:hover {
+    background-color: #27ae60;
+    transform: translateY(-1px);
+}
+.copy-button-custom:active {
+    background-color: #219d53;
+    transform: translateY(0);
+}
+.share-link-text {
+    font-size: 0.85em;
+    color: #555;
+    margin-top: 15px;
+    display: block;
+}
+.share-link-value {
+    font-weight: bold;
+    color: #2980b9;
+}
+.table-card-custom {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+}
+.table-card-header-custom {
+    background-color: #3498db;
+    color: white;
+    padding: 18px 25px;
+    font-size: 1.3em;
+    font-weight: bold;
+    text-align: left;
+}
+.referral-table-custom {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0;
+}
+.referral-table-custom th,
+.referral-table-custom td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #ecf0f1;
+}
+.referral-table-custom thead th {
+    background-color: #2980b9;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+.referral-table-custom tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+.referral-table-custom tbody tr:hover {
+    background-color: #e8f6ff;
+}
+.referral-table-custom td.text-center-custom {
+    text-align: center;
+    padding: 20px;
+    color: #7f8c8d;
+}
+.message-center-custom {
+    text-align: center;
+    padding: 20px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+.swal-high-zindex {
+    z-index: 99999 !important;
+}
+
+/* pages/profile/freespin.php */
+.freespin-main {
+    flex: 1;
+    padding: 1rem;
+    min-height: calc(100vh - 120px);
+    background: linear-gradient(to top right, #050a1a 0%, #1a1528 40%, #2d0a2d 80%, #4a154a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.freespin-card {
+    max-width: 900px;
+    width: 100%;
+    background: rgba(30, 25, 50, 0.35);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+.freespin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: rgba(45, 45, 61, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.freespin-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-transform: uppercase;
+}
+.freespin-close {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.25rem;
+    text-decoration: none;
+    padding: 0.25rem;
+    line-height: 1;
+}
+.freespin-close:hover {
+    color: #fff;
+}
+.freespin-tabs {
+    display: flex;
+    padding: 0.5rem 1rem;
+    gap: 0;
+    background: rgba(35, 35, 50, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.freespin-tab {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: #fff;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 8px;
+    background: rgba(50, 45, 70, 0.5);
+    transition: background 0.2s;
+}
+.freespin-tab:hover {
+    background: rgba(60, 55, 85, 0.6);
+    color: #fff;
+}
+.freespin-tab.active {
+    background: rgba(90, 75, 120, 0.6);
+    color: #fff;
+}
+.freespin-content {
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+.freespin-empty {
+    margin: 0;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+}
+.freespin-list {
+    display: grid;
+    gap: 12px;
+    width: 100%;
+}
+.freespin-item {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    color: #fff;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(180px, .7fr);
+    padding: 14px;
+}
+.freespin-item strong,
+.freespin-item b {
+    display: block;
+    font-size: 15px;
+}
+.freespin-item span,
+.freespin-item small {
+    color: rgba(255, 255, 255, 0.68);
+    display: block;
+    font-size: 12px;
+    margin-top: 3px;
+}
+@media (max-width: 768px) {
+    .freespin-item {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* pages/profile/bonus-history.php */
+.bonus-history-main {
+    flex: 1;
+    padding: 1rem;
+    min-height: calc(100vh - 120px);
+    background: linear-gradient(135deg, #0a0a14 0%, #1a1528 50%, #16122a 100%);
+}
+.bonus-history-card {
+    max-width: 900px;
+    margin: 0 auto;
+    background: rgba(30, 25, 50, 0.5);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+.bonus-history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: rgba(45, 45, 61, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.bonus-history-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-transform: uppercase;
+}
+.bonus-history-close {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.25rem;
+    text-decoration: none;
+    padding: 0.25rem;
+    line-height: 1;
+}
+.bonus-history-close:hover {
+    color: #fff;
+}
+.bonus-history-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem 1rem;
+    padding: 1rem 1.25rem;
+    background: rgba(45, 45, 61, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.bghf-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.bghf-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+}
+.bghf-select,
+.bghf-input {
+    min-width: 140px;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(60, 55, 85, 0.5);
+    color: #fff;
+    font-size: 0.85rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,0.6)' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    padding-right: 1.75rem;
+}
+.bghf-actions {
+    margin-left: auto;
+}
+.bghf-btn-show {
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    border: none;
+    background: #3d4a3d;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.bghf-btn-show:hover {
+    background: #4a5a4a;
+}
+.bghf-date-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.bghf-date-sep {
+    color: rgba(255, 255, 255, 0.5);
+}
+.bghf-period-custom .bghf-input {
+    min-width: 130px;
+    background-image: none;
+    padding-right: 0.75rem;
+}
+.bonus-claims-lead {
+    margin: 0;
+    padding: 0.75rem 1.25rem 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.65);
+}
+.bonus-claims-toolbar {
+    align-items: flex-end;
+}
+.bonus-claims-status {
+    min-height: 1.25rem;
+    padding: 0 1.25rem;
+    font-size: 0.8rem;
+    color: rgba(255, 194, 102, 0.95);
+}
+.bonus-claims-status:empty {
+    display: none;
+}
+.bonus-claims-loading {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.9rem;
+}
+.bonus-claims-loading.is-hidden,
+.bonus-claims-empty.is-hidden,
+.bonus-claims-table-wrap.is-hidden {
+    display: none !important;
+}
+.bonus-claims-content {
+    min-height: 220px;
+}
+.bonus-history-content {
+    padding: 1rem;
+    min-height: 200px;
+    position: relative;
+}
+.bonus-history-empty {
+    margin: 0;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    padding: 2rem 1rem;
+}
+.bonus-claims-empty {
+    position: static;
+    transform: none;
+}
+.bonus-claims-table .bcm-status {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+.bonus-claims-table .bcm-status--pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+.bonus-claims-table .bcm-status--approved {
+    background: rgba(76, 175, 80, 0.22);
+    color: #81c784;
+}
+.bonus-claims-table .bcm-status--rejected {
+    background: rgba(244, 67, 54, 0.2);
+    color: #ef9a9a;
+}
+.bonus-claims-table .bcm-note {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.75);
+    max-width: 12rem;
+}
+.bonus-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    color: #fff;
+}
+.bonus-history-table th,
+.bonus-history-table td {
+    padding: 0.65rem 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    vertical-align: middle;
+}
+.bonus-history-table th {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+/* pages/profile/bonus-spor.php */
+.bonus-spor-main {
+    flex: 1;
+    padding: 1rem;
+    min-height: calc(100vh - 120px);
+    background: linear-gradient(135deg, #05051a 0%, #0f0f28 40%, #1a0a2e 70%, #3b0a45 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bonus-spor-card {
+    max-width: 900px;
+    width: 100%;
+    background: rgba(30, 25, 50, 0.4);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+.bonus-spor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: rgba(45, 45, 61, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.bonus-spor-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-transform: uppercase;
+}
+.bonus-spor-close {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.25rem;
+    text-decoration: none;
+    padding: 0.25rem;
+    line-height: 1;
+}
+.bonus-spor-close:hover {
+    color: #fff;
+}
+.bonus-spor-content {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+.bonus-spor-empty {
+    margin: 0;
+    font-size: 1rem;
+    color: #fff;
+    text-align: center;
+}
+
+/* pages/profile/bonus-casino.php */
+.bonus-casino-main {
+    flex: 1;
+    padding: 1rem;
+    min-height: calc(100vh - 120px);
+    background: linear-gradient(to right, #050a1e 0%, #4b0d4b 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bonus-casino-card {
+    max-width: 900px;
+    width: 100%;
+    background: rgba(30, 25, 50, 0.4);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+.bonus-casino-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: rgba(45, 45, 61, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.bonus-casino-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-transform: uppercase;
+}
+.bonus-casino-close {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.25rem;
+    text-decoration: none;
+    padding: 0.25rem;
+    line-height: 1;
+}
+.bonus-casino-close:hover {
+    color: #fff;
+}
+.bonus-casino-content {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+.bonus-casino-empty {
+    margin: 0;
+    font-size: 1rem;
+    color: #fff;
+    text-align: center;
+}
+
+.bonus-spor-content.js-profile-active-bonus,
+.bonus-casino-content.js-profile-active-bonus {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+}
+.profile-active-bonus-loading {
+    margin: 0;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.75);
+    text-align: center;
+}
+.profile-active-bonus-empty {
+    max-width: 28rem;
+}
+.profile-active-bonus-error {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #ffb4b4;
+    text-align: center;
+}
+.profile-active-bonus-card {
+    width: 100%;
+    max-width: 36rem;
+    margin: 0 auto;
+    background: rgba(15, 15, 35, 0.55);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1.25rem 1.5rem;
+    color: #fff;
+    text-align: left;
+}
+.profile-active-bonus-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #fff;
+}
+.profile-active-bonus-sub {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.72);
+}
+.profile-active-bonus-dl {
+    margin: 0 0 1rem;
+    display: grid;
+    grid-template-columns: minmax(6rem, 42%) 1fr;
+    gap: 0.35rem 1rem;
+    font-size: 0.88rem;
+}
+.profile-active-bonus-dl dt {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 600;
+}
+.profile-active-bonus-dl dd {
+    margin: 0;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+.profile-active-bonus-progress {
+    height: 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    margin-bottom: 0.35rem;
+}
+.profile-active-bonus-progress-bar {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #7c3aed, #c026d3);
+    transition: width 0.35s ease;
+}
+.profile-active-bonus-pct {
+    margin: 0 0 1rem;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.65);
+}
+.profile-active-bonus-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+.profile-active-bonus-badge,
+.profile-active-bonus-cat {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(124, 58, 237, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.92);
+}
+.profile-active-bonus-cat {
+    background: rgba(255, 255, 255, 0.08);
+    font-weight: 600;
+}
+.profile-active-bonus-dates {
+    margin: 0;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.5;
+}
+
+/* ═══ Para yatır/çek (Vega) — eski _profile-payment-vega-style.inc.php; :root yerine .vega-app, .profile-bilgi-panel ═══ */
+/* Para yatır / çekim — MaltaBet referans mor tema */
+    .vega-app, .profile-bilgi-panel {
+        --bg: #1a1124;
+        --panel: #231830;
+        --panel-dark: #2a1a38;
+        --text: #ffffff;
+        --muted: #b8aed0;
+        --accent: #c76bff;
+        --accent-glow: rgba(200, 120, 255, 0.55);
+        --primary: #9d4edd;
+        --secondary: #FCAC00;
+        --hover-color: #b565ff;
+        --btn: #2a1f42;
+        --neon-border: rgba(186, 104, 255, 0.65);
+    }
+    .vega-app {
+        max-width: 100%;
+        min-width: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+        border-radius: 12px;
+        border: 1px solid rgba(120, 70, 180, 0.25);
+        overflow: hidden;
+    }
+    /* Profil kabuğu (personal-details-card + üstte tek başlık/çarpı): iç içe kart ve çift başlık olmasın */
+    .personal-details-page--deposit-withdraw .vega-app--in-profile-shell {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: visible;
+    }
+    .personal-details-page--withdraw-only .vega-app--in-profile-shell {
+        --bg: #1a0b2e;
+        --panel: #241036;
+        --panel-dark: #1e0d2e;
+    }
+    .vega-header {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.2rem 0.2rem;
+        gap: 0.8rem;
+        background: var(--panel-dark);
+        border-radius: 10px;
+        margin: 1rem;
+        border: 1px solid rgba(133, 106, 0, 0.1);
+    }
+    .vega-header h1 {
+        margin: 0;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .vega-header h1 span {
+        color: var(--accent);
+        margin-right: 4px;
+    }
+    .vega-banner {
+        margin: 0 1.2rem 1.4rem;
+        border-radius: 12px;
+        padding: 1rem;
+        background: linear-gradient(90deg, rgba(133, 106, 0, 0.2), rgba(107, 87, 0, 0.3));
+        border: 1px solid rgba(133, 106, 0, 0.3);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+    .vega-banner strong {
+        display:block;
+        font-size:1rem;
+        margin-bottom:0.2rem;
+        color: var(--accent);
+    }
+    .deposit-section, .withdraw-section {
+        margin: 0;
+        padding: 0 1rem 1.35rem;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .deposit-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1rem 0.5rem;
+        margin: 0;
+        flex-shrink: 0;
+    }
+    .deposit-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: #fff;
+        text-transform: uppercase;
+    }
+    .deposit-close {
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 1.15rem;
+        padding: 0.2rem;
+        cursor: pointer;
+        line-height: 1;
+        opacity: 0.88;
+    }
+    .deposit-close:hover { opacity: 1; color: #fff; }
+    .deposit-promo-banner {
+        margin: 0 0 1rem;
+        padding: 0.85rem 1rem;
+        flex-shrink: 0;
+        border-radius: 10px;
+        background: linear-gradient(90deg, rgba(45, 25, 65, 0.95) 0%, rgba(75, 30, 85, 0.75) 100%);
+        border: 1px solid rgba(180, 100, 255, 0.35);
+        box-shadow: 0 0 20px rgba(100, 40, 140, 0.25);
+    }
+    .deposit-promo-brand {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    .deposit-promo-logo {
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: 0.06em;
+        color: #fff;
+        text-transform: uppercase;
+        white-space: nowrap;
+        text-shadow: 0 0 18px rgba(200, 120, 255, 0.45);
+    }
+    .deposit-promo-copy { flex: 1; min-width: 200px; }
+    .deposit-promo-line {
+        margin: 0 0 0.35rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: #fff;
+        text-transform: uppercase;
+        line-height: 1.35;
+    }
+    .deposit-promo-warn {
+        margin: 0;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        color: #ff7ab8;
+        text-transform: uppercase;
+        line-height: 1.4;
+    }
+    .deposit-tabs {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        margin: 0 0 0.75rem;
+        padding: 0.25rem 0 0.45rem;
+        flex-shrink: 0;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(186, 104, 255, 0.45) rgba(0, 0, 0, 0.2);
+    }
+    .deposit-tabs::-webkit-scrollbar {
+        height: 5px;
+    }
+    .deposit-tabs::-webkit-scrollbar-thumb {
+        background: rgba(186, 104, 255, 0.5);
+        border-radius: 999px;
+    }
+    .deposit-tabs::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 999px;
+    }
+    .deposit-tab {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        padding: 0.55rem 0.95rem;
+        border-radius: 12px;
+        border: 1px solid rgba(186, 104, 255, 0.75);
+        background: rgba(22, 14, 34, 0.96);
+        box-shadow:
+            0 0 0 1px rgba(120, 60, 180, 0.15),
+            0 0 14px rgba(160, 80, 255, 0.28),
+            0 0 28px rgba(120, 40, 160, 0.12);
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        white-space: nowrap;
+    }
+    .deposit-tab i, .deposit-tab .deposit-tab-icon-p {
+        font-size: 0.88rem;
+        opacity: 0.98;
+        flex-shrink: 0;
+    }
+    .deposit-tab .deposit-tab-icon-p {
+        font-weight: 900;
+        font-family: system-ui, sans-serif;
+        width: 1.35em;
+        height: 1.35em;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        font-size: 0.72rem;
+        text-align: center;
+    }
+    .deposit-tab:hover {
+        border-color: rgba(230, 170, 255, 0.95);
+        color: #fff;
+        box-shadow:
+            0 0 0 1px rgba(200, 120, 255, 0.35),
+            0 0 20px rgba(200, 120, 255, 0.42),
+            0 0 36px rgba(160, 80, 255, 0.2);
+    }
+    .deposit-tab.active {
+        background: linear-gradient(165deg, rgba(72, 38, 98, 0.98) 0%, rgba(42, 24, 62, 0.99) 100%);
+        border-color: rgba(240, 190, 255, 0.95);
+        color: #fff;
+        box-shadow:
+            0 0 0 1px rgba(255, 200, 255, 0.2),
+            0 0 22px rgba(210, 130, 255, 0.55),
+            0 0 40px rgba(160, 80, 200, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .deposit-method-select-wrap,
+    .withdraw-method-select-wrap {
+        margin-bottom: 1rem;
+    }
+    .deposit-method-select-wrap label,
+    .withdraw-method-select-wrap label,
+    .deposit-method-select-wrap .deposit-method-grid-label,
+    .withdraw-method-select-wrap .deposit-method-grid-label {
+        display: block;
+        margin-bottom: 0.4rem;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+    .deposit-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.6rem;
+    }
+    /* Ödeme yöntemleri: logo + isim yan yana, mümkün olduğunca çok sütun */
+    .dw-methods-grid.deposit-grid {
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr));
+    }
+    .deposit-grid .dw-methods-empty,
+    #withdrawGrid .dw-methods-empty {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding: 0.75rem 0;
+        color: var(--muted, #b8aed0);
+        font-size: 0.8rem;
+    }
+    @media (min-width: 1100px) {
+        .deposit-grid { grid-template-columns: repeat(4, 1fr); }
+        .dw-methods-grid.deposit-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .deposit-card {
+        border-radius: 10px;
+        padding: 0.75rem 2rem 0.75rem 0.75rem;
+        background: rgba(25, 18, 38, 0.92);
+        border: 1px solid var(--neon-border);
+        box-shadow: 0 0 10px rgba(80, 40, 120, 0.2);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        text-align: left;
+        min-height: 56px;
+        font-size: 0.72rem;
+        cursor: pointer;
+        transition: all 0.22s ease;
+        position: relative;
+    }
+    button.deposit-card {
+        width: 100%;
+        margin: 0;
+        font: inherit;
+        color: inherit;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    .deposit-card:hover {
+        border-color: rgba(230, 170, 255, 0.85);
+        box-shadow: 0 0 20px rgba(180, 100, 255, 0.28);
+    }
+    .deposit-card img {
+        width: 36px;
+        height: 36px;
+        margin: 0 0.65rem 0 0;
+        object-fit: contain;
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+    .deposit-card-name {
+        flex: 1;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        line-height: 1.25;
+        min-width: 0;
+    }
+    .deposit-card-arrow {
+        position: absolute;
+        right: 0.65rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.45);
+        font-weight: 700;
+    }
+    .deposit-card .vega-provider-badge,
+    .deposit-card .deposit-badge {
+        position: absolute;
+        top: -7px;
+        left: 8px;
+        right: auto;
+        font-size: 7px;
+        padding: 3px 6px;
+        border-radius: 4px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+        z-index: 1;
+    }
+    .vega-provider-badge.megapayz { background: #3d6b47; color: #fff; }
+    .vega-provider-badge.jetodeme { background: #c73e1a; color: #fff; }
+    .deposit-badge.badge-featured {
+        background: linear-gradient(180deg, #f0c860, #c49a1e);
+        color: #1a1124;
+    }
+    .deposit-badge.badge-popular {
+        background: linear-gradient(180deg, #f06292, #ad1457);
+        color: #fff;
+    }
+    .deposit-badge.badge-new {
+        background: linear-gradient(180deg, #ef5350, #c62828);
+        color: #fff;
+    }
+    .vega-grid { display: none; }
+    /* Çekim filtre şeridi — para yatır ile aynı mor pill görünümü */
+    .withdraw-tabs.deposit-tabs {
+        margin: 0 0 0.75rem;
+    }
+    .withdraw-tabs.deposit-tabs .withdraw-tab.deposit-tab {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        padding: 0.55rem 0.95rem;
+        border-radius: 12px;
+        border: 1px solid rgba(186, 104, 255, 0.75);
+        background: rgba(22, 14, 34, 0.96);
+        box-shadow:
+            0 0 0 1px rgba(120, 60, 180, 0.15),
+            0 0 14px rgba(160, 80, 255, 0.28),
+            0 0 28px rgba(120, 40, 160, 0.12);
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        white-space: nowrap;
+    }
+    .withdraw-tabs.deposit-tabs .withdraw-tab.deposit-tab i,
+    .withdraw-tabs.deposit-tabs .withdraw-tab.deposit-tab .deposit-tab-icon-p {
+        font-size: 0.88rem;
+        opacity: 0.98;
+        flex-shrink: 0;
+    }
+    .withdraw-tabs.deposit-tabs .withdraw-tab.deposit-tab:hover {
+        border-color: rgba(230, 170, 255, 0.95);
+        color: #fff;
+        box-shadow:
+            0 0 0 1px rgba(200, 120, 255, 0.35),
+            0 0 20px rgba(200, 120, 255, 0.42),
+            0 0 36px rgba(160, 80, 255, 0.2);
+    }
+    .withdraw-tabs.deposit-tabs .withdraw-tab.deposit-tab.active {
+        background: linear-gradient(165deg, rgba(72, 38, 98, 0.98) 0%, rgba(42, 24, 62, 0.99) 100%);
+        border-color: rgba(240, 190, 255, 0.95);
+        color: #fff;
+        box-shadow:
+            0 0 0 1px rgba(255, 200, 255, 0.2),
+            0 0 22px rgba(210, 130, 255, 0.55),
+            0 0 40px rgba(160, 80, 200, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .personal-details-page--withdraw-only .vega-app:not(.vega-app--in-profile-shell) {
+        --bg: #1a0b2e;
+        --panel: #241036;
+        --panel-dark: #1e0d2e;
+        background: var(--bg);
+        border-color: rgba(94, 42, 140, 0.45);
+    }
+
+    /* BİLGİ — personal-details-card içinde, vega-app ile aynı mor tema çerçevesi */
+    .profile-bilgi-panel {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        max-width: 100%;
+        min-height: 0;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+        border-radius: 12px;
+        border: 1px solid rgba(120, 70, 180, 0.25);
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+    .personal-details-page.is-bilgi-active .vega-app {
+        display: none !important;
+    }
+    .personal-details-page.is-bilgi-active .personal-details-card {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+    .personal-details-page.is-bilgi-active .profile-section-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+    /* [hidden] UA !important — göstermek için panelde sınıf + !important */
+    .profile-bilgi-panel.is-bilgi-shown {
+        display: flex !important;
+        flex-direction: column;
+        flex: 1;
+        min-height: min(62vh, 520px);
+    }
+    .bilgi-tabs {
+        display: flex;
+        gap: 0;
+        padding: 0;
+        flex-shrink: 0;
+        background: #1a0f2a;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .bilgi-tab {
+        flex: 1;
+        padding: 1rem 1rem 1.05rem;
+        border: none;
+        background: #1a0f2a;
+        color: rgba(255, 255, 255, 0.42);
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        text-align: center;
+    }
+    .bilgi-tab:hover { color: rgba(255, 255, 255, 0.72); }
+    .bilgi-tab.active {
+        background: #2f2a3d;
+        color: #fff;
+        box-shadow: none;
+    }
+    .bilgi-list-wrap {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        padding: 0;
+    }
+    .profile-bilgi-panel .bilgi-table-scroll {
+        max-height: min(58vh, 520px);
+    }
+    .bilgi-list {
+        display: none;
+        flex: 1;
+        min-height: 0;
+        flex-direction: column;
+    }
+    .bilgi-list.bilgi-list-active { display: flex; }
+    .bilgi-table-scroll {
+        flex: 1;
+        overflow: auto;
+        padding: 0.85rem 1rem 1.15rem;
+        -webkit-overflow-scrolling: touch;
+    }
+    .bilgi-table {
+        min-width: 640px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+    .bilgi-row {
+        display: grid;
+        grid-template-columns: 108px minmax(120px, 1.6fr) 76px 100px 80px 92px;
+        gap: 0.5rem 0.65rem;
+        align-items: center;
+        padding: 0.65rem 0.65rem;
+        background: transparent;
+        border-radius: 0;
+        border: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .bilgi-row:last-child {
+        border-bottom: none;
+    }
+    .bilgi-cell-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.22rem;
+        align-items: flex-start;
+        min-width: 0;
+    }
+    .bilgi-cell-lbl {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.38);
+        line-height: 1.2;
+    }
+    .bilgi-cell-stack > .bilgi-cell-val {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.25;
+    }
+    .bilgi-cell-stack > .bilgi-cell-val--muted {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.9);
+    }
+    .bilgi-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        min-height: 56px;
+        padding: 0.4rem 0.35rem;
+        background: rgba(0, 0, 0, 0.28);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        text-align: center;
+    }
+    .bilgi-tile img {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.06);
+    }
+    .bilgi-tile-label {
+        font-size: 0.5rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        line-height: 1.15;
+        color: rgba(255, 255, 255, 0.88);
+        text-transform: uppercase;
+        max-width: 100%;
+        word-break: break-word;
+    }
+    .bilgi-cell-val {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #fff;
+        line-height: 1.25;
+    }
+    .bilgi-cell-val--muted {
+        font-size: 0.76rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.88);
+    }
+
+    .vega-panel {
+        background: linear-gradient(180deg, #24152f 0%, #1a1124 100%);
+        padding: 1.25rem 1.35rem 1.5rem;
+        border-radius: 16px 16px 0 0;
+        border: 1px solid var(--neon-border);
+        border-bottom: none;
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        transform: translateY(100%);
+        color: #fff;
+        max-height: 85vh;
+        overflow-y: auto;
+        pointer-events: none;
+        visibility: hidden;
+    }
+    .vega-panel.active {
+        transform: translateY(0);
+        pointer-events: auto;
+        visibility: visible;
+    }
+    .vega-panel h2 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 0.88rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: #fff;
+        text-align: center;
+        text-transform: uppercase;
+    }
+    .vega-panel .panel-info-table {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0;
+        margin-bottom: 1rem;
+        font-size: 0.72rem;
+        background: rgba(22, 14, 32, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .vega-panel .panel-info-cell {
+        background: transparent;
+        padding: 0.65rem 0.45rem;
+        border-radius: 0;
+        text-align: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .vega-panel .panel-info-cell:last-child { border-right: none; }
+    .vega-panel .panel-info-cell strong {
+        display: block;
+        color: rgba(255, 255, 255, 0.55);
+        margin-bottom: 4px;
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    .vega-panel .panel-info-cell span { color: #fff; font-weight: 700; font-size: 0.78rem; }
+    .vega-panel .panel-instruction {
+        margin: 0 0 1rem;
+        padding: 0.85rem 1rem;
+        background: rgba(35, 24, 50, 0.9);
+        border: 1px solid rgba(180, 100, 255, 0.2);
+        border-radius: 8px;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.9);
+    }
+    .vega-panel .panel-instruction strong,
+    .vega-panel .panel-instruction-warn {
+        color: #ff7ab8;
+        font-weight: 800;
+    }
+    .vega-panel .panel-balance-stats {
+        background: rgba(45, 45, 61, 0.8);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+    }
+    .vega-panel .panel-balance-stats .balance-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.35rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .vega-panel .panel-balance-stats .balance-row:last-child { border-bottom: none; }
+    .vega-panel .panel-balance-stats .balance-label { color: rgba(255,255,255,0.7); }
+    .vega-panel .panel-balance-stats .balance-value { color: #fff; font-weight: 600; }
+    .vega-panel .panel-actions button.withdraw-btn {
+        width: 100%;
+        max-width: none;
+        background: #2d2d3d;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    .vega-panel .panel-actions button.withdraw-btn:hover {
+        background: #3d3d50;
+        color: rgba(255, 255, 255, 0.95);
+    }
+    .vega-panel p.note {
+        margin: .8rem 0 1rem;
+        color: rgba(255,255,255,0.9);
+        font-size: .82rem;
+        font-weight: 600;
+        text-align: center;
+        background: rgba(123, 44, 255, 0.15);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(123, 44, 255, 0.3);
+    }
+    .vega-panel small {
+        color: rgba(255,255,255,0.6);
+        display: block;
+        font-size: .75rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    .vega-panel img {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 10px;
+        object-fit: contain;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.08);
+        padding: 8px;
+    }
+    .vega-panel .form-group { margin-bottom: 1rem; }
+    .vega-panel .form-group label {
+        display: block;
+        color: rgba(255,255,255,0.8);
+        font-size: 0.8rem;
+        margin-bottom: 0.4rem;
+    }
+    .vega-panel input,
+    .vega-panel select {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        padding: 0.8rem 1rem;
+        font-size: 0.88rem;
+        margin-bottom: 0;
+        background: rgba(30, 22, 45, 0.95);
+        color: #fff;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+    .vega-panel select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23cfa8ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.85rem center;
+        padding-right: 2.25rem;
+    }
+    .vega-panel input::placeholder { color: rgba(255,255,255,0.45); }
+    .vega-panel .panel-actions { margin-top: 1.15rem; }
+    .vega-panel .panel-actions button:not(.withdraw-btn) {
+        width: 100%;
+        max-width: none;
+        padding: 0.95rem 1.25rem;
+        border-radius: 8px;
+        border: 1px solid rgba(140, 90, 200, 0.45);
+        background: linear-gradient(180deg, #352050, #251838);
+        color: #fff;
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+        box-shadow: 0 0 16px rgba(120, 60, 180, 0.25);
+    }
+    .vega-panel .panel-actions button:not(.withdraw-btn):hover {
+        background: linear-gradient(180deg, #453060, #302048);
+        color: #fff;
+        box-shadow: 0 0 22px var(--accent-glow);
+    }
+
+    /* Para yatır alt panel — referans: koyu mavi kart, özet şerit, hoş geldin, mat mavi buton */
+    .vega-panel.vega-panel--deposit {
+        background: rgba(18, 14, 28, 0.97);
+        border: none;
+        border-top: 1px solid rgba(120, 90, 160, 0.35);
+        box-shadow: 0 -16px 56px rgba(0, 0, 0, 0.6);
+        padding: 0.85rem 1rem 1.35rem;
+    }
+    .vega-panel.vega-panel--deposit #panelTitle {
+        display: none;
+    }
+    .vega-deposit-sheet {
+        background: linear-gradient(165deg, #1e2d4a 0%, #172238 45%, #141c30 100%);
+        border-radius: 12px;
+        border: 1px solid rgba(90, 120, 180, 0.28);
+        padding: 1rem 1.1rem 1.2rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    .vega-panel--deposit .vega-deposit-summary,
+    .deposit-inline-flow.vega-panel--deposit .vega-deposit-summary {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 0;
+        margin-bottom: 0.9rem;
+        padding: 0.7rem 0.5rem;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .vega-panel--deposit .vega-deposit-summary .panel-info-cell,
+    .deposit-inline-flow.vega-panel--deposit .vega-deposit-summary .panel-info-cell {
+        flex: 1 1 0;
+        min-width: 0;
+        text-align: center;
+        padding: 0.35rem 0.4rem;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        background: transparent;
+    }
+    .vega-panel--deposit .vega-deposit-summary .panel-info-cell:last-child,
+    .deposit-inline-flow.vega-panel--deposit .vega-deposit-summary .panel-info-cell:last-child {
+        border-right: none;
+    }
+    .vega-panel--deposit .vega-deposit-summary .panel-info-cell strong,
+    .deposit-inline-flow.vega-panel--deposit .vega-deposit-summary .panel-info-cell strong {
+        display: block;
+        margin-bottom: 0.35rem;
+        color: rgba(255, 255, 255, 0.48);
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+    .vega-panel--deposit .vega-deposit-summary .panel-info-cell span,
+    .deposit-inline-flow.vega-panel--deposit .vega-deposit-summary .panel-info-cell span {
+        display: block;
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 600;
+        font-size: 0.76rem;
+        line-height: 1.25;
+        word-break: break-word;
+    }
+    .deposit-inline-flow.vega-panel--deposit {
+        margin: 1.15rem 0 0;
+        padding: 0;
+    }
+    .deposit-inline-flow.vega-panel--deposit input,
+    .deposit-inline-flow.vega-panel--deposit select {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 0;
+    }
+    .deposit-inline-flow.vega-panel--deposit .form-group label {
+        display: block;
+    }
+    .vega-panel--deposit .vega-deposit-welcome,
+    .deposit-inline-flow.vega-panel--deposit .vega-deposit-welcome {
+        margin: 0 0 1rem;
+        padding: 0.85rem 1rem;
+        background: rgba(0, 0, 0, 0.28);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 10px;
+        font-size: 0.78rem;
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.88);
+        font-weight: 500;
+    }
+    .vega-panel--deposit .vega-deposit-welcome .panel-instruction-warn {
+        color: #ffb4d0;
+        font-weight: 800;
+    }
+    .vega-panel--deposit .form-group,
+    .deposit-inline-flow.vega-panel--deposit .form-group {
+        margin-bottom: 0.9rem;
+    }
+    .vega-panel--deposit .form-group label,
+    .deposit-inline-flow.vega-panel--deposit .form-group label {
+        font-size: 0.72rem;
+        color: rgba(255, 255, 255, 0.52);
+        margin-bottom: 0.35rem;
+    }
+    .vega-panel--deposit input,
+    .vega-panel--deposit select {
+        background: #2c3548 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 10px !important;
+        padding: 0.85rem 1rem !important;
+        font-size: 0.88rem !important;
+    }
+    .vega-panel--deposit select {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a8b8d8' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 0.75rem center !important;
+        background-size: 12px 12px !important;
+        padding-right: 2.25rem !important;
+    }
+    .vega-panel--deposit .panel-actions {
+        margin-top: 0.25rem;
+    }
+    .vega-panel--deposit .vega-deposit-submit {
+        width: 100%;
+        padding: 0.95rem 1.25rem !important;
+        border-radius: 10px !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        background: linear-gradient(180deg, #5a7ab0 0%, #4a6494 100%) !important;
+        color: #fff !important;
+        font-size: 0.82rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.14em !important;
+        text-transform: uppercase !important;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(40, 60, 100, 0.35) !important;
+        transition: filter 0.2s, transform 0.15s;
+    }
+    .vega-panel--deposit .vega-deposit-submit:hover,
+    .deposit-inline-flow.vega-panel--deposit .vega-deposit-submit:hover {
+        filter: brightness(1.08);
+        transform: translateY(-1px);
+    }
+
+    /* Çekim — koyu mor arka plan, referans kart ızgarası */
+    #withdrawGrid.deposit-grid.withdraw-methods-grid,
+    #withdrawGrid.withdraw-methods-grid {
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr));
+        gap: 0.6rem;
+    }
+    @media (min-width: 1100px) {
+        #withdrawGrid.withdraw-methods-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+    #withdrawGrid .deposit-card {
+        border: 1px solid rgba(157, 78, 221, 0.55);
+        border-top: 1px solid rgba(186, 104, 255, 0.65);
+        box-shadow: 0 0 12px rgba(80, 40, 120, 0.2);
+    }
+    #withdrawGrid .deposit-card:hover {
+        border-color: rgba(230, 170, 255, 0.85);
+        box-shadow: 0 0 20px rgba(140, 80, 200, 0.3);
+    }
+    .vega-panel.vega-panel--withdraw {
+        background: rgba(18, 14, 28, 0.97);
+        border: none;
+        border-top: 1px solid rgba(123, 17, 100, 0.4);
+        box-shadow: 0 -16px 56px rgba(0, 0, 0, 0.6);
+        padding: 0.85rem 1rem 1.35rem;
+    }
+    .vega-panel--withdraw #panelTitle {
+        display: none;
+    }
+    .vega-withdraw-sheet {
+        background: linear-gradient(165deg, #252a3d 0%, #1e2435 45%, #1a1f2e 100%);
+        border-radius: 12px;
+        border: 1px solid rgba(90, 110, 150, 0.3);
+        padding: 1rem 1.1rem 1.2rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    .vega-panel--withdraw .vega-withdraw-summary {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 0;
+        margin-bottom: 0.9rem;
+        padding: 0.7rem 0.5rem;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .vega-panel--withdraw .vega-withdraw-summary .panel-info-cell {
+        flex: 1 1 0;
+        min-width: 0;
+        text-align: center;
+        padding: 0.35rem 0.4rem;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        background: transparent;
+    }
+    .vega-panel--withdraw .vega-withdraw-summary .panel-info-cell:last-child {
+        border-right: none;
+    }
+    .vega-panel--withdraw .vega-withdraw-summary .panel-info-cell strong {
+        display: block;
+        margin-bottom: 0.35rem;
+        color: rgba(255, 255, 255, 0.48);
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+    .vega-panel--withdraw .vega-withdraw-summary .panel-info-cell span {
+        display: block;
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 600;
+        font-size: 0.76rem;
+        line-height: 1.25;
+        word-break: break-word;
+    }
+    .vega-withdraw-balance {
+        background: rgba(46, 49, 65, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 0.65rem 0.9rem;
+        margin-bottom: 0.9rem;
+    }
+    .vega-withdraw-balance-head {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.88);
+        margin: 0 0 0.45rem;
+        padding-bottom: 0.45rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .vega-withdraw-balance-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.38rem 0;
+        font-size: 0.78rem;
+    }
+    .vega-withdraw-balance-label {
+        color: rgba(255, 255, 255, 0.52);
+        font-weight: 500;
+    }
+    .vega-withdraw-balance-value {
+        color: #fff;
+        font-weight: 600;
+    }
+    .vega-panel--withdraw .vega-withdraw-welcome {
+        margin: 0 0 1rem;
+        padding: 0.85rem 1rem;
+        background: rgba(0, 0, 0, 0.28);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 10px;
+        font-size: 0.78rem;
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 500;
+    }
+    .vega-panel--withdraw .vega-withdraw-field {
+        margin-bottom: 0.85rem;
+    }
+    .vega-panel--withdraw .vega-withdraw-field input {
+        width: 100%;
+        background: #2e3141 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 10px !important;
+        padding: 0.88rem 1rem !important;
+        font-size: 0.88rem !important;
+        color: #fff !important;
+    }
+    .vega-panel--withdraw .vega-withdraw-field input::placeholder {
+        color: rgba(255, 255, 255, 0.42);
+    }
+    .vega-panel--withdraw .panel-actions {
+        margin-top: 0.2rem;
+    }
+    .vega-panel--withdraw .vega-withdraw-submit {
+        width: 100%;
+        padding: 0.95rem 1.25rem !important;
+        border-radius: 10px !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        background: linear-gradient(180deg, #4d5d8c 0%, #3d4a6e 100%) !important;
+        color: #fff !important;
+        font-size: 0.82rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.14em !important;
+        text-transform: uppercase !important;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(40, 50, 90, 0.35) !important;
+        transition: filter 0.2s, transform 0.15s;
+    }
+    .vega-panel--withdraw .vega-withdraw-submit:hover {
+        filter: brightness(1.08);
+        transform: translateY(-1px);
+        color: #fff !important;
+    }
+
+    .vega-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 999;
+        display: none;
+    }
+    .vega-overlay.active {
+        display: block;
+    }
+    .active-tab {
+        display: block;
+    }
+    .inactive-tab {
+        display: none;
+    }
+    .popup-container {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.7);
+        align-items: center;
+        justify-content: center;
+    }
+    .popup-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        width: 90%;
+        max-width: 450px;
+        text-align: center;
+        position: relative;
+        animation: fadeIn 0.3s ease-out;
+    }
+    .popup-content h2 {
+        color: #856A00;
+    }
+    .popup-footer .btn-primary {
+        background: #856A00;
+        color: white;
+        border: none;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    @media (max-width: 768px) {
+        .deposit-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .deposit-card img {
+            width: 32px;
+            height: 32px;
+        }
+        .vega-panel:not(.vega-panel--deposit) .panel-info-table {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .vega-panel:not(.vega-panel--deposit) .panel-info-cell {
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .vega-panel:not(.vega-panel--deposit) .panel-info-cell:nth-child(2n) { border-right: none; }
+        .vega-panel--deposit .vega-deposit-summary,
+        .deposit-inline-flow.vega-panel--deposit .vega-deposit-summary {
+            flex-wrap: wrap;
+            gap: 0;
+        }
+        .vega-panel--deposit .vega-deposit-summary .panel-info-cell,
+        .deposit-inline-flow.vega-panel--deposit .vega-deposit-summary .panel-info-cell {
+            flex: 1 1 33%;
+            min-width: 5.5rem;
+            border-right: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 0.5rem 0.35rem;
+        }
+        .vega-panel--deposit .vega-deposit-summary .panel-info-cell:nth-child(3n),
+        .deposit-inline-flow.vega-panel--deposit .vega-deposit-summary .panel-info-cell:nth-child(3n) {
+            border-right: none;
+        }
+        .vega-panel--withdraw .vega-withdraw-summary {
+            flex-wrap: wrap;
+        }
+        .vega-panel--withdraw .vega-withdraw-summary .panel-info-cell {
+            flex: 1 1 33%;
+            min-width: 5.5rem;
+            border-right: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 0.5rem 0.35rem;
+        }
+        .withdraw-inline-sheet .withdraw-inline-summary {
+            flex-wrap: wrap;
+        }
+        .withdraw-inline-sheet .withdraw-inline-summary .panel-info-cell {
+            flex: 1 1 33%;
+            min-width: 5.5rem;
+            border-right: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 0.5rem 0.35rem;
+        }
+        .vega-panel img {
+            width: 70px;
+            height: 50px;
+        }
+        .profile-bilgi-panel .bilgi-table-scroll {
+            max-height: min(52vh, 440px);
+        }
+        .bilgi-tab {
+            padding: 0.85rem 0.5rem;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+        }
+        .bilgi-table-scroll {
+            padding: 0.65rem 0.5rem 1rem;
+        }
+        .bilgi-table {
+            min-width: 600px;
+        }
+        .bilgi-row {
+            grid-template-columns: 96px minmax(100px, 1.5fr) 70px 88px 72px 84px;
+            gap: 0.4rem 0.45rem;
+        }
+        .bilgi-cell-lbl {
+            font-size: 0.55rem;
+        }
+        .bilgi-tile {
+            min-height: 52px;
+            padding: 0.35rem 0.25rem;
+        }
+        .bilgi-tile img {
+            width: 26px;
+            height: 26px;
+        }
+        .bilgi-tile-label {
+            font-size: 0.48rem;
+        }
+        .bilgi-cell-val {
+            font-size: 0.72rem;
+        }
+        .deposit-section, .withdraw-section {
+            padding: 0 0.65rem 1.1rem;
+        }
+        .deposit-promo-banner {
+            margin: 0 0 0.85rem;
+            padding: 0.65rem 0.75rem;
+        }
+        .deposit-tabs, .withdraw-tabs {
+            margin: 0 0 0.85rem;
+        }
+        .deposit-tabs {
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .deposit-header {
+            padding: 0.75rem 0.15rem 0.5rem;
+        }
+        .withdraw-tabs.deposit-tabs .withdraw-tab.deposit-tab {
+            font-size: 0.62rem;
+            padding: 0.45rem 0.72rem;
+        }
+    }
+    @media (max-width: 480px) {
+        .vega-panel:not(.vega-panel--deposit) .panel-info-table {
+            grid-template-columns: 1fr;
+        }
+        .vega-panel:not(.vega-panel--deposit) .panel-info-cell {
+            border-right: none;
+        }
+        .vega-panel--deposit .vega-deposit-summary .panel-info-cell,
+        .deposit-inline-flow.vega-panel--deposit .vega-deposit-summary .panel-info-cell {
+            flex: 1 1 100%;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .vega-panel--withdraw .vega-withdraw-summary .panel-info-cell {
+            flex: 1 1 100%;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .withdraw-inline-sheet .withdraw-inline-summary .panel-info-cell {
+            flex: 1 1 100%;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .deposit-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        .deposit-card {
+            padding: 0.6rem 1.75rem 0.6rem 0.55rem;
+            min-height: 80px;
+            font-size: 0.7rem;
+        }
+        .deposit-card img {
+            width: 32px;
+            height: 32px;
+        }
+        .deposit-tabs { gap: 0.35rem; padding-left: 0; padding-right: 0; }
+        .deposit-tab { padding: 0.45rem 0.72rem; font-size: 0.62rem; }
+    }
+
+    #depositGrid .deposit-card.is-selected,
+    #withdrawGrid .deposit-card.is-selected {
+        border-color: rgba(240, 190, 255, 0.95);
+        box-shadow: 0 0 18px rgba(200, 120, 255, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    #depositGrid.dw-methods-grid .deposit-card img,
+    #withdrawGrid.dw-methods-grid .deposit-card img {
+        width: 78%;
+        max-width: 150px;
+        height: 54px;
+        margin: 0;
+        border-radius: 8px;
+        object-fit: contain;
+        object-position: center;
+        background: rgba(255, 255, 255, 0.04);
+        transform: none;
+    }
+    #depositGrid.dw-methods-grid .deposit-card,
+    #withdrawGrid.dw-methods-grid .deposit-card {
+        justify-content: center;
+        min-height: 78px;
+        padding: 0.5rem;
+        overflow: hidden;
+    }
+    #depositGrid.dw-methods-grid .deposit-card .deposit-card-name,
+    #withdrawGrid.dw-methods-grid .deposit-card .deposit-card-name,
+    #depositGrid.dw-methods-grid .deposit-card .deposit-card-arrow,
+    #withdrawGrid.dw-methods-grid .deposit-card .deposit-card-arrow {
+        display: none;
+    }
+    @media (max-width: 768px) {
+        #depositGrid.dw-methods-grid .deposit-card img,
+        #withdrawGrid.dw-methods-grid .deposit-card img {
+            width: 78%;
+            max-width: 130px;
+            height: 48px;
+            margin: 0;
+            transform: none;
+        }
+    }
+    .withdraw-inline-sheet {
+        margin-top: 1.15rem;
+        padding: 1rem 1.05rem 1.2rem;
+        background: linear-gradient(165deg, #252a3d 0%, #1e2435 45%, #1a1f2e 100%);
+        border-radius: 12px;
+        border: 1px solid rgba(90, 110, 150, 0.32);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+    /* Profil kabuğu: çekim formu dış çerçevesi tekrar kart olmasın (üstte tek başlık/çarpı) */
+    .personal-details-page--withdraw-only .withdraw-inline-sheet {
+        margin-top: 1rem;
+        padding: 0;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    .withdraw-inline-sheet .withdraw-inline-summary {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 0;
+        margin-bottom: 0.85rem;
+        padding: 0.7rem 0.5rem;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .withdraw-inline-sheet .withdraw-inline-summary .panel-info-cell {
+        flex: 1 1 0;
+        min-width: 0;
+        text-align: center;
+        padding: 0.35rem 0.4rem;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        background: transparent;
+    }
+    .withdraw-inline-sheet .withdraw-inline-summary .panel-info-cell:last-child {
+        border-right: none;
+    }
+    .withdraw-inline-sheet .withdraw-inline-summary .panel-info-cell strong {
+        display: block;
+        margin-bottom: 0.35rem;
+        color: rgba(255, 255, 255, 0.48);
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+    .withdraw-inline-sheet .withdraw-inline-summary .panel-info-cell span {
+        display: block;
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 600;
+        font-size: 0.76rem;
+        line-height: 1.25;
+        word-break: break-word;
+    }
+    .withdraw-inline-msg {
+        background: rgba(55, 72, 98, 0.55) !important;
+        border: 1px solid rgba(120, 140, 180, 0.35) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+        margin-bottom: 1rem !important;
+    }
+    .withdraw-inline-fields .form-group,
+    .withdraw-inline-fields .vega-withdraw-field {
+        margin-bottom: 0.85rem;
+    }
+    .withdraw-inline-fields input {
+        width: 100%;
+        background: #2e3141 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 10px !important;
+        padding: 0.88rem 1rem !important;
+        font-size: 0.88rem !important;
+        color: #fff !important;
+        box-sizing: border-box;
+    }
+    .withdraw-inline-fields input::placeholder {
+        color: rgba(255, 255, 255, 0.42);
+    }
+    .withdraw-inline-actions {
+        margin-top: 0.35rem;
+    }
+    .withdraw-inline-actions .vega-withdraw-submit {
+        width: 100%;
+        max-width: 100%;
+        padding: 0.95rem 1.25rem !important;
+        border-radius: 10px !important;
+        border: 1px solid rgba(120, 60, 160, 0.5) !important;
+        background: linear-gradient(180deg, #6b2d9e 0%, #5e2a8c 48%, #4a1f70 100%) !important;
+        color: #fff !important;
+        font-size: 0.82rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.14em !important;
+        text-transform: uppercase !important;
+        cursor: pointer;
+        box-shadow: 0 4px 18px rgba(80, 30, 120, 0.45) !important;
+        transition: filter 0.2s, transform 0.15s;
+    }
+    .withdraw-inline-actions .vega-withdraw-submit:hover {
+        filter: brightness(1.08);
+        transform: translateY(-1px);
+        color: #fff !important;
+    }
+    .withdraw-inline-sheet .vega-withdraw-welcome.withdraw-inline-msg {
+        margin: 0 0 1rem;
+        padding: 0.85rem 1rem;
+        background: rgba(0, 0, 0, 0.22);
+        border: 1px solid rgba(157, 78, 221, 0.22);
+        border-radius: 10px;
+        font-size: 0.78rem;
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.88);
+        font-weight: 500;
+    }
