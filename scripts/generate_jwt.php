@@ -13,17 +13,11 @@ if ($userId === 0 && $username === '') {
     exit(2);
 }
 
-$config = require __DIR__ . '/../config/database.php';
-$host = $config['host'] ?? '127.0.0.1';
-$port = $config['port'] ?? 3306;
-$dbname = $config['database'] ?? 'metropol_db';
-$user = $config['username'] ?? 'root';
-$pass = $config['password'] ?? '';
-$charset = $config['charset'] ?? 'utf8mb4';
-
-$dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $dbname, $charset);
+if (!class_exists('AdminDatabase', false)) {
+    require_once __DIR__ . '/../admin/app/Core/AdminDatabase.php';
+}
 try {
-    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $pdo = AdminDatabase::pdo();
 } catch (Throwable $e) {
     fwrite(STDERR, "DB connection failed: " . $e->getMessage() . "\n");
     exit(3);

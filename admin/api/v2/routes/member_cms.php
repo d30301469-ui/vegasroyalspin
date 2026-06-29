@@ -73,7 +73,7 @@ if ($method === 'GET' && $route === 'member_inbox_messages.php') {
         'data' => ['messages' => $rows],
     ]);
 }
-if (in_array($method, ['GET', 'POST'], true) && $route === 'track_visit.php') {
+if (in_array($method, ['GET', 'POST'], true) && in_array($route, ['track_visit.php', 'track-visit'], true)) {
     $pdo = AdminDatabase::pdo();
 
     // Run schema DDL only when the table is missing. The ALTER attempts below

@@ -87,7 +87,7 @@ if (!defined('MOBILE_PATH')) {
 }
 
 if (!$isApiRequest) {
-    $csrfKey = 'vegasroyalspin_csrf_token';
+    $csrfKey = (string) (getenv('CSRF_TOKEN_KEY') ?: (defined('SITE_CSRF_KEY') ? SITE_CSRF_KEY : 'site_csrf_token'));
     if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
         $_SESSION[$csrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
             ? $_SESSION['csrf_token']

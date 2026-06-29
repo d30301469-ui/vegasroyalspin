@@ -28,14 +28,29 @@ if (session_status() === PHP_SESSION_NONE
         : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
     $params = session_get_cookie_params();
+    // Resolve SESSION_COOKIE_DOMAIN early (env not yet loaded at this point)
+    $__sessionDomain = trim((string) (getenv('SESSION_COOKIE_DOMAIN') ?: ''));
+    if ($__sessionDomain === '') {
+        $__envFile = admin_project_path('.env');
+        if (admin_is_readable_file($__envFile)) {
+            foreach (file($__envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $__line) {
+                if (strncmp($__line, 'SESSION_COOKIE_DOMAIN=', 22) === 0) {
+                    $__sessionDomain = trim(substr($__line, 22), " \t\"'");
+                    break;
+                }
+            }
+        }
+        unset($__envFile, $__line);
+    }
     session_set_cookie_params([
         'lifetime' => 0,
         'path' => (string) ($params['path'] ?? '/'),
-        'domain' => (string) ($params['domain'] ?? ''),
+        'domain' => $__sessionDomain !== '' ? $__sessionDomain : (string) ($params['domain'] ?? ''),
         'secure' => $isHttps,
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
+    unset($__sessionDomain, $params, $isHttps, $cloudflareConfig);
     session_start();
 }
 

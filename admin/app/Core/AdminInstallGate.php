@@ -148,28 +148,18 @@ final class AdminInstallGate
             require_once $configEnv;
         }
 
-        $host = self::envValue(['DB_HOST', 'ADMIN_DB_HOST'], '127.0.0.1');
-        $port = (int) self::envValue(['DB_PORT', 'ADMIN_DB_PORT'], '3306');
-        $database = self::envValue(['DB_DATABASE', 'ADMIN_DB_DATABASE'], '');
-        $username = self::envValue(['DB_USERNAME', 'ADMIN_DB_USERNAME'], 'root');
-        $password = self::envValue(['DB_PASSWORD', 'ADMIN_DB_PASSWORD'], '');
-        $charset = self::envValue(['DB_CHARSET', 'ADMIN_DB_CHARSET'], 'utf8mb4');
-
-        if ($database === '') {
-            throw new RuntimeException('DB_DATABASE is not configured.');
+        if (!class_exists('AdminDatabase', false)) {
+            require_once __DIR__ . '/AdminDatabase.php';
         }
 
-        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset);
-
-        $options = function_exists('metropol_pdo_options')
-            ? metropol_pdo_options()
-            : [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ];
-
-        return new PDO($dsn, $username, $password, $options);
+        return AdminDatabase::connectWithParams([
+            'host'     => self::envValue(['DB_HOST', 'ADMIN_DB_HOST'], '127.0.0.1'),
+            'port'     => (int) self::envValue(['DB_PORT', 'ADMIN_DB_PORT'], '3306'),
+            'database' => self::envValue(['DB_DATABASE', 'ADMIN_DB_DATABASE'], ''),
+            'username' => self::envValue(['DB_USERNAME', 'ADMIN_DB_USERNAME'], 'root'),
+            'password' => self::envValue(['DB_PASSWORD', 'ADMIN_DB_PASSWORD'], ''),
+            'charset'  => self::envValue(['DB_CHARSET', 'ADMIN_DB_CHARSET'], 'utf8mb4'),
+        ]);
     }
 
     public static function writeLock(string $root, array $meta = []): void
