@@ -12,6 +12,9 @@ return static function (): array {
             if ($value !== false && trim((string) $value) !== '') {
                 return trim((string) $value);
             }
+            if (isset($_ENV[$key]) && trim((string) $_ENV[$key]) !== '') {
+                return trim((string) $_ENV[$key]);
+            }
         }
 
         return $default;
@@ -21,7 +24,7 @@ return static function (): array {
     $config = [
         'host' => $env(['ADMIN_DB_HOST', 'DB_HOST', 'DATABASE_HOST'], '127.0.0.1'),
         'port' => (int) $env(['ADMIN_DB_PORT', 'DB_PORT', 'DATABASE_PORT'], '3306'),
-        'database' => $env(['ADMIN_DB_DATABASE', 'DB_DATABASE', 'DATABASE_NAME', 'DATABASE_DATABASE'], 'metropol_db'),
+        'database' => $env(['ADMIN_DB_DATABASE', 'DB_DATABASE', 'DATABASE_NAME', 'DATABASE_DATABASE'], ''),
         'username' => $env(['ADMIN_DB_USERNAME', 'DB_USERNAME', 'DATABASE_USERNAME'], 'root'),
         'password' => $env(['ADMIN_DB_PASSWORD', 'DB_PASSWORD', 'DATABASE_PASSWORD'], ''),
         'charset' => $env(['ADMIN_DB_CHARSET', 'DB_CHARSET', 'DATABASE_CHARSET'], 'utf8mb4'),

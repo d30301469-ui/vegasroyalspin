@@ -1242,21 +1242,6 @@ class ApiAuthController
             return null;
         }
 
-        $db = $config['db'];
-        $host = (string) ($db['host'] ?? '127.0.0.1');
-        $port = (int) ($db['port'] ?? 3306);
-        $database = (string) ($db['database'] ?? 'metropol_db');
-        $charset = (string) ($db['charset'] ?? 'utf8mb4');
-
-        return new \PDO(
-            sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
-            (string) ($db['username'] ?? 'root'),
-            (string) ($db['password'] ?? ''),
-            function_exists('metropol_pdo_options') ? metropol_pdo_options() : [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-                \PDO::ATTR_EMULATE_PREPARES => false,
-            ]
-        );
+        return AdminDatabase::connectWithParams($config['db']);
     }
 }
