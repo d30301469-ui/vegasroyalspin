@@ -1,7 +1,8 @@
 <?php
 // En üstte, BOM veya boşluk olmadan session başlat
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 
 // Hata raporlama
@@ -64,20 +65,19 @@ $providerBadges = [
 ];
 
 sort($allUniqueProviders);
-?>
+<?php
+// En üstte, BOM veya boşluk olmadan session başlat
+if (session_status() === PHP_SESSION_NONE) {
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
+}
 
-<?php require_once __DIR__ . '/../../views/layouts/head_full.php'; ?>
-<?php include __DIR__ . '/../../views/partials/header.php'; ?>
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
 
-<!-- Slot üst: Slider -->
-<section class="slot-top-section" aria-label="Slot sayfası üst alan">
-    <?php $sliderApiCategory = 'slots'; include __DIR__ . '/../../views/partials/slider.php'; ?>
-    <div class="slot-below-hero">
-        <div class="slot-jackpot-wrap">
-            <?php include __DIR__ . '/../../views/partials/jackpot.php'; ?>
-        </div>
-        <div class="slot-winners-wrap">
-            <?php include __DIR__ . '/../../views/partials/winners.php'; ?>
+require_once __DIR__ . '/../../core/bootstrap.php';
+require_once __DIR__ . '/../../services/SlotGamesQuery.php';
         </div>
     </div>
 </section>

@@ -5,13 +5,13 @@
 
 // Oturumu başlat
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 
 // Hata gösterimi
 $appDebug = filter_var((string) getenv('APP_DEBUG'), FILTER_VALIDATE_BOOLEAN);
-    require_once __DIR__ . '/../config/frontend_session.php';
-    metropol_frontend_session_start();
+ini_set('display_errors', $appDebug ? '1' : '0');
 ini_set('display_startup_errors', $appDebug ? '1' : '0');
 error_reporting(E_ALL);
 

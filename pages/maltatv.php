@@ -1,6 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 require_once __DIR__ . '/../views/layouts/head_full.php';
 include __DIR__ . '/../views/partials/header.php';
@@ -12,6 +13,5 @@ include __DIR__ . '/../views/partials/header.php';
             <p class="lead text-muted">Bu sayfa yakında eklenecektir.</p>
         </div>
     </div>
-    require_once __DIR__ . '/../config/frontend_session.php';
-    metropol_frontend_session_start();
+</section>
 <?php include __DIR__ . '/../views/partials/footer.php'; ?>

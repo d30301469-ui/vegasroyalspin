@@ -9,7 +9,8 @@ require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ 
 require_once (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/services/BackendApiClient.php';
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 if (empty($_SESSION['username'])) {
     echo json_encode(['success' => false, 'message' => 'Oturum bulunamadı.']);

@@ -1,7 +1,8 @@
 <?php
 // En üstte, BOM veya boşluk olmadan session başlat
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 
 // Hata raporlama

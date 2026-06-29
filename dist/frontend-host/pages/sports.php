@@ -9,7 +9,8 @@ error_reporting(E_ALL);
 
 // Oturum başlat
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 ?>
 
@@ -17,8 +18,7 @@ if (session_status() === PHP_SESSION_NONE) {
 <?php require_once __DIR__ . '/../views/layouts/head_full.php'; ?>
 <?php include __DIR__ . '/../views/partials/header.php' ?>
 <br>
-    require_once __DIR__ . '/../config/frontend_session.php';
-    metropol_frontend_session_start();
+<br>
 <br>
 <br>
 <br>

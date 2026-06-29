@@ -4,8 +4,6 @@ header('Content-Type: application/json');
 
 require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
 require_once (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/services/BackendApiClient.php';
-
-session_start();
 if (!isset($_SESSION['username'])) {
     echo json_encode(['success' => false, 'message' => 'User not logged in.']);
     exit;

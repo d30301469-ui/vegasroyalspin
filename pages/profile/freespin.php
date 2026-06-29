@@ -1,6 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 include __DIR__ . '/database.php';
 
@@ -54,7 +55,8 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 
     <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content freespin-main">
         <div class="freespin-card">
-            <div class="freespin-header">
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
                 <h1 class="freespin-title">CASİNO FREESPİNLERİ</h1>
                 <a href="/" class="freespin-close" aria-label="Kapat"><i class="fa-solid fa-times"></i></a>
             </div>
