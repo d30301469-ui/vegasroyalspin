@@ -6,7 +6,8 @@ ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 include __DIR__ . '/database.php';
 require_once dirname(__DIR__, 2) . '/services/ProfileApiHelper.php';
@@ -102,7 +103,8 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 
     <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content kyc-main">
     <div class="container mt-4 kyc-profile-page">
-        <ul class="breadcrumb">
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
             <li class="breadcrumb-item"><a href="/">Ana Sayfa</a></li>
             <li class="breadcrumb-item active">Hesap Doğrulama</li>
         </ul>

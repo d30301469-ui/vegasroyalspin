@@ -43,7 +43,8 @@ function writeLog($message, $level = 'INFO') {
 
 // Oturumu başlat
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 
 // HTML çıktısı için UTF-8 charset gönder

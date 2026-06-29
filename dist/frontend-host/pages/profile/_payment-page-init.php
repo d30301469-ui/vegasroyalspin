@@ -8,10 +8,8 @@ ini_set('log_errors', 1);
 ini_set('error_log', (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/logs/error.log');
 
 if (session_status() === PHP_SESSION_NONE) {
-    if (function_exists('maltabet_configure_session_security')) {
-        maltabet_configure_session_security();
-    }
-    session_start();
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 
 $csrfKey = 'vegasroyalspin_csrf_token';

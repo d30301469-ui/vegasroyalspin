@@ -10,7 +10,8 @@ ini_set('display_startup_errors', $appDebug ? '1' : '0');
 error_reporting(E_ALL);
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 
 if (empty($_SESSION['user_id']) || empty($_SESSION['username'])) {
