@@ -1243,13 +1243,27 @@ class ApiAuthController
         }
 
         $db = $config['db'];
-        $host = (string) ($db['host'] ?? '127.0.0.1');
-        $port = (int) ($db['port'] ?? 3306);
-        $database = (string) ($db['database'] ?? 'metropol_db');
-        $charset = (string) ($db['charset'] ?? 'utf8mb4');
-
+        if (!class_exists('AdminDatabase', false)) {
+            $adminDbFile = defined('BASE_PATH') ? BASE_PATH . '/admin/app/Core/AdminDatabase.php' : null;
+            if ($adminDbFile !== null && is_file($adminDbFile)) {
+                require_once $adminDbFile;
+            }
+        }
+        if (method_exists('AdminDatabase', 'connectWithParams')) {
+            return AdminDatabase::connectWithParams($db);
+        }
+        $database = trim((string) ($db['database'] ?? ''));
+        if ($database === '') {
+            return null;
+        }
         return new \PDO(
-            sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
+            sprintf(
+                'mysql:host=%s;port=%d;dbname=%s;charset=%s',
+                (string) ($db['host'] ?? '127.0.0.1'),
+                (int) ($db['port'] ?? 3306),
+                $database,
+                (string) ($db['charset'] ?? 'utf8mb4')
+            ),
             (string) ($db['username'] ?? 'root'),
             (string) ($db['password'] ?? ''),
             function_exists('metropol_pdo_options') ? metropol_pdo_options() : [

@@ -24,6 +24,9 @@ $env = static function (array $keys, string $default = ''): string {
         if ($value !== false && trim((string) $value) !== '') {
             return trim((string) $value);
         }
+        if (isset($_ENV[$key]) && trim((string) $_ENV[$key]) !== '') {
+            return trim((string) $_ENV[$key]);
+        }
     }
 
     return $default;
@@ -33,7 +36,7 @@ $isProduction = in_array(strtolower($env(['APP_ENV'], 'development')), ['product
 $config = [
     'host' => $env(['DATABASE_HOST', 'DB_HOST', 'ADMIN_DB_HOST'], '127.0.0.1'),
     'port' => (int) $env(['DATABASE_PORT', 'DB_PORT', 'ADMIN_DB_PORT'], '3306'),
-    'database' => $env(['DATABASE_NAME', 'DATABASE_DATABASE', 'DB_DATABASE', 'ADMIN_DB_DATABASE'], 'metropol_db'),
+    'database' => $env(['DATABASE_NAME', 'DATABASE_DATABASE', 'DB_DATABASE', 'ADMIN_DB_DATABASE'], ''),
     'username' => $env(['DATABASE_USERNAME', 'DB_USERNAME', 'ADMIN_DB_USERNAME'], 'root'),
     'password' => $env(['DATABASE_PASSWORD', 'DB_PASSWORD', 'ADMIN_DB_PASSWORD'], ''),
     'charset' => $env(['DATABASE_CHARSET', 'DB_CHARSET', 'ADMIN_DB_CHARSET'], 'utf8mb4'),
