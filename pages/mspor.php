@@ -29,7 +29,8 @@ if ($API_KEY === '' || $API_SECRET === '') {
 // Parametreleri al veya varsayılan ata
 $userId   = $_SESSION['user_id'];
 $username = $_SESSION['username'];
-$type     = isset($_GET['type']) ? $_GET['type'] : 'match';
+$allowedTypes = ['match', 'live', 'esports', 'virtual', 'prematch'];
+$type     = isset($_GET['type']) && in_array($_GET['type'], $allowedTypes, true) ? $_GET['type'] : 'match';
 $balance  = $_SESSION['balance'] ?? $_SESSION['ana_bakiye'] ?? '0';
 
 // Spor API'sine gönderilecek veri
@@ -58,22 +59,26 @@ curl_close($ch);
 
 // Hata kontrolü
 if ($response === false) {
-    die("Spor sistemine bağlanırken hata oluştu");
+    http_response_code(502);
+    exit('Spor sistemine bağlanırken hata oluştu');
 }
 
 if ($httpCode !== 200) {
-    die("Spor sistemi HTTP hata kodu: " . $httpCode);
+    http_response_code(502);
+    exit('Spor sistemi HTTP hata kodu: ' . $httpCode);
 }
 
 // Yanıtı işle
 $responseData = json_decode($response, true);
 
 if (!$responseData || !isset($responseData['success']) || $responseData['success'] !== true) {
-    die("Spor sisteminden geçersiz yanıt alındı: " . $response);
+    http_response_code(502);
+    exit('Spor sisteminden geçersiz yanıt alındı');
 }
 
 if (!isset($responseData['iframe_url'])) {
-    die("Spor sisteminden iframe URL alınamadı");
+    http_response_code(502);
+    exit('Spor sisteminden iframe URL alınamadı');
 }
 
 // iframe URL'i al

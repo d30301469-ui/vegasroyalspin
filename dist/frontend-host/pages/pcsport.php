@@ -88,9 +88,11 @@ if ($API_KEY === '' || $API_SECRET === '') {
     exit('Spor servisi yapılandırması eksik.');
 }
 
-// Parametreler
-$type = isset($_GET['type']) ? $_GET['type'] : 'match';
-$lang = isset($_GET['lang']) ? $_GET['lang'] : 'tr';
+// Parametreler — beyaz liste doğrulaması
+$allowedTypes = ['match', 'live', 'esports', 'virtual', 'prematch'];
+$allowedLangs = ['tr', 'en', 'de', 'fr', 'es', 'ru', 'ar'];
+$type = isset($_GET['type']) && in_array($_GET['type'], $allowedTypes, true) ? $_GET['type'] : 'match';
+$lang = isset($_GET['lang']) && in_array($_GET['lang'], $allowedLangs, true) ? $_GET['lang'] : 'tr';
 
 writeLog("İstek tipi: $type, Dil: $lang");
 
@@ -140,7 +142,8 @@ curl_close($ch);
 // Hata kontrolü
 if ($response === false) {
     writeLog("CURL Error: $curlError", 'ERROR');
-    die('Spor sistemine bağlanılamıyor. Lütfen daha sonra tekrar deneyin.');
+    http_response_code(502);
+    exit('Spor sistemine bağlanılamıyor. Lütfen daha sonra tekrar deneyin.');
 }
 
 writeLog("API Response - HTTP Code: $httpCode");
@@ -150,9 +153,11 @@ if ($httpCode !== 200) {
     
     // Özel hata mesajları
     if ($httpCode == 400) {
-        die('Geçersiz istek. Lütfen bakiyenizi kontrol edin ve tekrar deneyin.');
+        http_response_code(400);
+        exit('Geçersiz istek. Lütfen bakiyenizi kontrol edin ve tekrar deneyin.');
     } else {
-        die('Spor sistemi geçici olarak hizmet veremiyor. Lütfen daha sonra tekrar deneyin.');
+        http_response_code(502);
+        exit('Spor sistemi geçici olarak hizmet veremiyor. Lütfen daha sonra tekrar deneyin.');
     }
 }
 
@@ -160,18 +165,21 @@ $responseData = json_decode($response, true);
 
 if (!$responseData) {
     writeLog("JSON decode failed - Response: $response", 'ERROR');
-    die('Spor sistemi yanıtı işlenemedi.');
+    http_response_code(502);
+    exit('Spor sistemi yanıtı işlenemedi.');
 }
 
 if (!isset($responseData['success']) || $responseData['success'] !== true) {
     $errorMsg = isset($responseData['message']) ? $responseData['message'] : 'Bilinmeyen hata';
     writeLog("API Error: $errorMsg", 'ERROR');
-    die("Spor sistemi hatası: $errorMsg");
+    http_response_code(502);
+    exit('Spor sistemi hatası: ' . $errorMsg);
 }
 
 if (!isset($responseData['iframe_url'])) {
     writeLog("iframe_url missing in response", 'ERROR');
-    die('Spor sistemi yanıtı eksik.');
+    http_response_code(502);
+    exit('Spor sistemi yanıtı eksik.');
 }
 
 $iframeUrl = $responseData['iframe_url'];
@@ -180,7 +188,8 @@ writeLog("Başarılı - Iframe URL alındı");
 // Iframe URL'sini kontrol et ve düzelt
 if (strpos($iframeUrl, 'spor.okkogaming.com') === false) {
     writeLog("Geçersiz iframe URL: $iframeUrl", 'ERROR');
-    die('Geçersiz spor URL alındı.');
+    http_response_code(502);
+    exit('Geçersiz spor URL alındı.');
 }
 
 // URL'deki gereksiz virgülü temizle

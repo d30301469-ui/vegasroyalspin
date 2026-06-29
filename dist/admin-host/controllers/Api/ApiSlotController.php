@@ -27,6 +27,7 @@ class ApiSlotController extends Controller
         $result = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $sort);
 
         if (!empty($result['apiError'])) {
+            http_response_code(503);
             echo json_encode([
                 'ok'             => false,
                 'error'          => 'API yanıt vermedi',
