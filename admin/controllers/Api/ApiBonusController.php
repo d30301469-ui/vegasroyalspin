@@ -12,7 +12,8 @@ class ApiBonusController
         header('Content-Type: application/json; charset=utf-8');
 
         if (!isset($_SESSION['username'])) {
-            echo json_encode(['mesaj' => 'Kullanıcı oturumu bulunamadı.']);
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'mesaj' => 'Kullanıcı oturumu bulunamadı.']);
             return;
         }
 
@@ -22,7 +23,8 @@ class ApiBonusController
         $kod           = isset($data->kod) ? $data->kod : null;
 
         if ($kod === null || $kod === '') {
-            echo json_encode(['mesaj' => 'Geçersiz istek.']);
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'mesaj' => 'Geçersiz istek.']);
             return;
         }
 
@@ -32,7 +34,8 @@ class ApiBonusController
         ]);
 
         if ($res === null) {
-            echo json_encode(['mesaj' => 'Backend API yanıt vermedi.']);
+            http_response_code(503);
+            echo json_encode(['status' => 'error', 'mesaj' => 'Backend API yanıt vermedi.']);
             return;
         }
 
@@ -41,6 +44,6 @@ class ApiBonusController
             return;
         }
 
-        echo json_encode(['mesaj' => $res['mesaj'] ?? $res['message'] ?? 'İşlem başarısız.']);
+        echo json_encode(['status' => 'error', 'mesaj' => $res['mesaj'] ?? $res['message'] ?? 'İşlem başarısız.']);
     }
 }

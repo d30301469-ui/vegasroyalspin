@@ -18,7 +18,8 @@ class UserRepository
     {
         unset($username);
         if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+            require_once __DIR__ . '/../config/frontend_session.php';
+            metropol_frontend_session_start();
         }
         $jwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
         if ($jwt === '') {
@@ -45,7 +46,8 @@ class UserRepository
     public function findById(int $id): ?array
     {
         if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+            require_once __DIR__ . '/../config/frontend_session.php';
+            metropol_frontend_session_start();
         }
         $jwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
         if ($jwt === '') {

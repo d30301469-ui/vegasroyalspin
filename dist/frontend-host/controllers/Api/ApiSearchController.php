@@ -7,7 +7,8 @@ class ApiSearchController
     public function advancedSearch(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+            require_once __DIR__ . '/../../config/frontend_session.php';
+            metropol_frontend_session_start();
         }
 
         header('Content-Type: text/html; charset=utf-8');

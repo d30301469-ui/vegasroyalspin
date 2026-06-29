@@ -17,8 +17,6 @@ if (session_status() == PHP_SESSION_NONE) {
     if (is_readable(BASE_PATH . '/config/frontend_session.php')) {
         require_once BASE_PATH . '/config/frontend_session.php';
         metropol_frontend_session_start();
-    } else {
-        session_start();
     }
 }
 

@@ -10,7 +10,8 @@ final class ProfileApiHelper
     public static function resolveMemberJwt(): string
     {
         if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+            require_once __DIR__ . '/../config/frontend_session.php';
+            metropol_frontend_session_start();
         }
 
         $jwt = trim((string) ($_SESSION['member_jwt'] ?? ''));

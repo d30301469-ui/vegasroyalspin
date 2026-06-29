@@ -13,12 +13,14 @@ class ApiReferralsController
 
         $username = $_SESSION['username'] ?? '';
         if ($username === '') {
+            http_response_code(401);
             echo json_encode(['status' => 'error', 'message' => 'Oturum açık değil. Lütfen giriş yapın.']);
             return;
         }
 
         $res = BackendApiClient::request('GET', BackendApiClient::SVC_MAIN, '/referrals', ['username' => $username]);
         if ($res === null) {
+            http_response_code(503);
             echo json_encode(['status' => 'error', 'message' => 'Backend API yanıt vermedi.']);
             return;
         }
