@@ -10,7 +10,8 @@ class ApiSignupTrackerController
     public function index(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+            require_once __DIR__ . '/../../config/frontend_session.php';
+            metropol_frontend_session_start();
         }
 
         $ref = isset($_GET['ref']) ? (string) $_GET['ref'] : '';

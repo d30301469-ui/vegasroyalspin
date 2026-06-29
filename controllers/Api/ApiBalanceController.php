@@ -10,6 +10,7 @@ class ApiBalanceController
         header('Content-Type: application/json; charset=UTF-8');
 
         if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+            http_response_code(401);
             echo json_encode(['status' => 'error', 'message' => 'Kullanıcı oturumu açmamış.']);
             return;
         }

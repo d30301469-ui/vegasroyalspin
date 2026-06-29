@@ -428,6 +428,7 @@ class ApiAuthController
             return;
         }
 
+        http_response_code(400);
         echo json_encode(['success' => false, 'code' => 400, 'message' => 'Geçersiz istek.'], JSON_UNESCAPED_UNICODE);
     }
 
@@ -806,6 +807,7 @@ class ApiAuthController
         self::jsonHeaders();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
             echo json_encode(['success' => false, 'message' => 'Geçersiz istek.']);
 
             return;
@@ -815,6 +817,7 @@ class ApiAuthController
         $password_input = (string) ($_POST['password'] ?? '');
 
         if ($username_input === '' || $password_input === '') {
+            http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Kullanıcı adı ve şifre gerekli.']);
 
             return;

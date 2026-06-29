@@ -92,19 +92,8 @@ if (!headers_sent()) {
     header('Content-Type: application/json; charset=UTF-8');
 }
 
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.use_strict_mode', '1');
-    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path' => '/',
-        'secure' => $https,
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
-    session_start();
-}
+require_once BASE_PATH . '/config/frontend_session.php';
+metropol_frontend_session_start();
 
 $csrfKey = 'vegasroyalspin_csrf_token';
 if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
