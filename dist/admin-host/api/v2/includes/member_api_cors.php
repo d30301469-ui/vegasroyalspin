@@ -141,6 +141,15 @@ if (!function_exists('member_api_allowed_origins')) {
             }
         }
 
+        // LOCAL_URL_HOSTS: geliştirim ortamına özgü host listesi (ör. vegasroyalspin.test,m.vegasroyalspin.test)
+        foreach (array_filter(array_map('trim', explode(',', member_api_env_value('LOCAL_URL_HOSTS')))) as $host) {
+            $host = strtolower($host);
+            if ($host !== '') {
+                $origins[] = 'https://' . $host;
+                $origins[] = 'http://' . $host;
+            }
+        }
+
         $cache = array_values(array_unique(array_filter($origins)));
 
         return $cache;
@@ -153,7 +162,21 @@ if (!function_exists('member_api_apply_cors')) {
         $origin = trim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
         $allowed = member_api_allowed_origins();
 
-        if ($origin !== '' && in_array($origin, $allowed, true)) {
+        $originAllowed = $origin !== '' && in_array($origin, $allowed, true);
+
+        // Geliştirim modu: APP_ENV production değilse *.test originleri otomatik izin ver (Laragon/Herd)
+        // .test TLD prodüksiyonda hiçbir zaman origin olarak gelmez; APP_ENV boşsa da güvenli.
+        if (!$originAllowed && $origin !== '') {
+            $env = strtolower(member_api_env_value('APP_ENV'));
+            if (!in_array($env, ['production', 'prod'], true)) {
+                $originHost = strtolower((string) (parse_url($origin, PHP_URL_HOST) ?: ''));
+                if ($originHost !== '' && str_ends_with($originHost, '.test')) {
+                    $originAllowed = true;
+                }
+            }
+        }
+
+        if ($originAllowed) {
             header('Access-Control-Allow-Origin: ' . $origin);
             header('Access-Control-Allow-Credentials: true');
             header('Vary: Origin');
@@ -164,7 +187,7 @@ if (!function_exists('member_api_apply_cors')) {
         header('Access-Control-Max-Age: 86400');
 
         if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? '')) === 'OPTIONS') {
-            http_response_code($origin !== '' && in_array($origin, $allowed, true) ? 204 : 403);
+            http_response_code($originAllowed ? 204 : 403);
             exit;
         }
     }

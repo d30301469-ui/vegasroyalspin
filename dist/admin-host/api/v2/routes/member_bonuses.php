@@ -333,7 +333,9 @@ if ($method === 'POST' && in_array($route, ['sports/launch', 'sports_launch.php'
         $memberEnvelope(503, ['success' => false, 'code' => 503, 'message' => 'Spor servisi yapılandırması eksik.']);
     }
     $input = $memberInput($payload);
-    $type = trim((string) ($input['type'] ?? 'match'));
+    $allowedTypes = ['match', 'live', 'esports', 'virtual', 'prematch'];
+    $rawType = trim((string) ($input['type'] ?? 'match'));
+    $type = in_array($rawType, $allowedTypes, true) ? $rawType : 'match';
     $lang = trim((string) ($input['lang'] ?? 'tr'));
     $sportsPayload = [
         'api_key' => $apiKey,

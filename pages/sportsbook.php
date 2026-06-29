@@ -27,13 +27,10 @@ if ($API_KEY === '' || $API_SECRET === '') {
     exit('Spor servisi yapılandırması eksik.');
 }
 
-// Kullanıcı bilgilerini oturumdan al
-$userId   = $_SESSION['user_id'];
-$username = $_SESSION['username'];
+// Tip parametresi — beyaz liste doğrulaması
+$allowedTypes = ['match', 'live', 'esports', 'virtual', 'prematch'];
+$type = isset($_GET['type']) && in_array($_GET['type'], $allowedTypes, true) ? $_GET['type'] : 'match';
 $balance  = $_SESSION['balance'] ?? $_SESSION['ana_bakiye'] ?? '0';
-
-// Tip parametresi (genellikle GET'den alınır)
-$type = isset($_GET['type']) ? $_GET['type'] : 'match';
 
 // Spor API'sine gönderilecek veri
 $postData = [
@@ -46,7 +43,7 @@ $postData = [
 ];
 
 // Spor API URL'i
-$sporApiUrl = 'https://okkogaming.com/spor-launch';
+$sporApiUrl = trim((string) (getenv('OKKO_SPORTS_LAUNCH_URL') ?: (defined('OKKO_SPORTS_LAUNCH_URL') ? OKKO_SPORTS_LAUNCH_URL : 'https://okkogaming.com/spor-launch')));
 
 // cURL ile istek gönder
 $ch = curl_init($sporApiUrl);
@@ -61,22 +58,26 @@ curl_close($ch);
 
 // Hata kontrolü
 if ($response === false) {
-    die("Spor sistemine bağlanırken hata oluştu");
+    http_response_code(502);
+    exit('Spor sistemine bağlanirken hata oluştu');
 }
 
 if ($httpCode !== 200) {
-    die("Spor sistemi HTTP hata kodu: " . $httpCode);
+    http_response_code(502);
+    exit('Spor sistemi HTTP hata kodu: ' . $httpCode);
 }
 
 // Yanıtı işle
 $responseData = json_decode($response, true);
 
 if (!$responseData || !isset($responseData['success']) || $responseData['success'] !== true) {
-    die("Spor sisteminden geçersiz yanıt alındı: " . $response);
+    http_response_code(502);
+    exit('Spor sisteminden geçersiz yanıt alındı');
 }
 
 if (!isset($responseData['iframe_url'])) {
-    die("Spor sisteminden iframe URL alınamadı");
+    http_response_code(502);
+    exit('Spor sisteminden iframe URL alınamadı');
 }
 
 // iframe URL'i al
