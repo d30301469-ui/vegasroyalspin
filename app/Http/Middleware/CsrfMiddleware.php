@@ -17,7 +17,7 @@ final class CsrfMiddleware
             return;
         }
 
-        $key = (string) Config::get('security.csrf_key', 'vegasroyalspin_csrf_token');
+        $key = (string) Config::get('security.csrf_key', (string) (getenv('CSRF_TOKEN_KEY') ?: 'site_csrf_token'));
         if (empty($_SESSION[$key]) || !is_string($_SESSION[$key])) {
             $_SESSION[$key] = bin2hex(random_bytes(32));
         }

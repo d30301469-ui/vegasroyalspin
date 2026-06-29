@@ -105,8 +105,14 @@ if (!function_exists('metropol_csp_connect_src_directive')) {
             }
         }
         foreach ($urlCandidates as $candidate) {
-            $host = strtolower((string) (parse_url((string) $candidate, PHP_URL_HOST) ?: ''));
+            $parsedCandidate = parse_url((string) $candidate);
+            $host = strtolower((string) ($parsedCandidate['host'] ?? ''));
             if ($host !== '') {
+                $scheme = strtolower((string) ($parsedCandidate['scheme'] ?? 'https'));
+                if ($scheme === 'http') {
+                    $sources[] = 'http://' . $host;
+                    $sources[] = 'ws://' . $host;
+                }
                 $sources[] = 'https://' . $host;
                 $sources[] = 'wss://' . $host;
             }

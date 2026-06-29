@@ -70,26 +70,13 @@ if (!function_exists('frontend_is_local_request')) {
 }
 
 if (!function_exists('frontend_open_config_pdo')) {
-    /** Shared PDO factory used by frontend_domain_setting() and frontend_provider_config_row(). */
+    /** Returns the shared admin PDO singleton (AdminDatabase::pdo()). */
     function frontend_open_config_pdo(): PDO
     {
-        $host     = frontend_env_value(['DATABASE_HOST', 'DB_HOST', 'ADMIN_DB_HOST'], '127.0.0.1');
-        $port     = (int) frontend_env_value(['DATABASE_PORT', 'DB_PORT', 'ADMIN_DB_PORT'], '3306');
-        $database = frontend_env_value(['DATABASE_NAME', 'DATABASE_DATABASE', 'DB_DATABASE', 'ADMIN_DB_DATABASE'], 'metropol_db');
-        $username = frontend_env_value(['DATABASE_USERNAME', 'DB_USERNAME', 'ADMIN_DB_USERNAME'], 'root');
-        $password = frontend_env_value(['DATABASE_PASSWORD', 'DB_PASSWORD', 'ADMIN_DB_PASSWORD'], '');
-        $charset  = frontend_env_value(['DATABASE_CHARSET', 'DB_CHARSET', 'ADMIN_DB_CHARSET'], 'utf8mb4');
-        $options  = function_exists('metropol_pdo_options') ? metropol_pdo_options() : [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ];
-
-        return new PDO(
-            sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
-            $username,
-            $password,
-            $options
-        );
+        if (!class_exists('AdminDatabase', false)) {
+            require_once __DIR__ . '/../app/Core/AdminDatabase.php';
+        }
+        return AdminDatabase::pdo();
     }
 }
 

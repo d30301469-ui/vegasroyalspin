@@ -1,4 +1,4 @@
-# /api — güvenlik + v2 front controller. Panel yönlendirmesi kök .htaccess'te yapılır.
+﻿# /api — security + v2 front controller routing.
 <IfModule mod_authz_core.c>
     Require all granted
 </IfModule>
@@ -16,12 +16,14 @@
     RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
     RewriteRule (^|/)[^/]+\.(?:log|sql|sqlite|db|bak|backup|old|orig|save|swp|tmp|env|ini|conf|config|pem|key|crt|p12|pfx|ps1|sh|bat|cmd|py|zip|tar|gz|tgz|7z|rar)$ - [F,L,NC]
 
-    # Üye API v2 — CORS burada işlenir (api/v2/index.php)
+    # Monorepo deployment: admin/api/v2/index.php exists → route all v2/* requests to it.
+    # Works for any domain (frontend, api subdomain, admin subdomain) without hardcoded names.
+    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/index.php -f
+    RewriteRule ^v2/(.+)$ ../admin/api/v2/index.php?route=$1 [END,QSA]
+    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/index.php -f
+    RewriteRule ^v2/?$ ../admin/api/v2/index.php [END,QSA]
+
+    # Standalone deployment fallback: no admin panel → use local api/v2/index.php
     RewriteRule ^v2/?$ v2/index.php [L,QSA]
     RewriteRule ^v2/(.+)$ v2/index.php?route=$1 [L,QSA]
-
-    # Monorepo: docroot/admin/index.php varsa eski /api yolları (v2 hariç) panele
-    RewriteCond %{DOCUMENT_ROOT}/admin/index.php -f
-    RewriteCond %{HTTP_HOST} ^(?:bo-nexthub\.site|api\.bo-nexthub\.site)(?::[0-9]+)?$ [NC]
-    RewriteRule ^(?!v2(?:/|$)).*$ ../admin/index.php [QSA,L]
 </IfModule>

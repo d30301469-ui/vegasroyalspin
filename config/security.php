@@ -18,7 +18,7 @@ require_once __DIR__ . '/deploy_domains.php';
 
 
 
-$adminHost = getenv('ADMIN_URL_HOST') ?: getenv('BACKEND_HOST') ?: (defined('BACKEND_HOST') ? BACKEND_HOST : (parse_url((string) (getenv('BACKEND_FALLBACK_URL') ?: deploy_domain('backend_url')), PHP_URL_HOST) ?: 'bo-nexthub.site'));
+$adminHost = getenv('ADMIN_URL_HOST') ?: getenv('BACKEND_HOST') ?: (defined('BACKEND_HOST') ? BACKEND_HOST : (parse_url((string) (getenv('BACKEND_FALLBACK_URL') ?: deploy_domain('backend_url')), PHP_URL_HOST) ?: ''));
 
 if (function_exists('frontend_app_is_production') && frontend_app_is_production()) {
 
@@ -38,9 +38,9 @@ return [
 
     'admin_host' => $adminHost,
 
-    'backend_hosts' => function_exists('deploy_backend_hosts') ? deploy_backend_hosts() : ['bo-nexthub.site', 'api.bo-nexthub.site'],
+    'backend_hosts' => function_exists('deploy_backend_hosts') ? deploy_backend_hosts() : [],
 
-    'csrf_key' => 'vegasroyalspin_csrf_token',
+    'csrf_key' => (string) (getenv('CSRF_TOKEN_KEY') ?: 'site_csrf_token'),
 
     'member_jwt_cookie' => 'member_token',
 

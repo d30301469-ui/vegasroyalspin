@@ -358,7 +358,7 @@ if ($method === 'GET' && ($route === 'games/search' || $route === 'games/search.
     ]);
 }
 
-if ($method === 'GET' && $route === 'winners.php') {
+if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
     $pdo = AdminDatabase::pdo();
     DrakonService::bootstrap($pdo);
     BgamingService::bootstrap($pdo);
