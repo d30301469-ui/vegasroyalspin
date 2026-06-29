@@ -1,5 +1,8 @@
 <?php
-session_start(); // Oturumu başlat
+require_once __DIR__ . '/../config/frontend_session.php';
+if (session_status() === PHP_SESSION_NONE) {
+	metropol_frontend_session_start();
+}
 
 // Oturumdaki tüm değişkenleri temizle
 $_SESSION = [];

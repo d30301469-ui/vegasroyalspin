@@ -12,4 +12,5 @@ include __DIR__ . '/../views/partials/header.php';
         <p class="mt-4"><a href="/" class="btn btn-outline-light">Ana Sayfaya Dön</a></p>
     </div>
 </section>
-<?php include __DIR__ . '/../views/partials/footer.php'; ?>
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();

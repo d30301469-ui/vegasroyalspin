@@ -4,7 +4,8 @@
  * Login sayfası gibi ayrı sayfa; modal header içinde views/partials/register.php ile yüklenir.
  */
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 
 require_once __DIR__ . '/../views/layouts/head_full.php';
