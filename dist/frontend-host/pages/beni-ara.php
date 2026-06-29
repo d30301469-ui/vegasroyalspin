@@ -12,7 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (
         !isset($_POST['csrf_token'], $_SESSION['csrf_token']) ||
         !hash_equals((string) $_SESSION['csrf_token'], (string) $_POST['csrf_token'])
-    ) {
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();
         $hata = 'Güvenlik doğrulaması başarısız. Lütfen sayfayı yenileyip tekrar deneyin.';
     } else {
         $ad = trim($_POST['ad'] ?? '');

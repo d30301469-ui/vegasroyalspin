@@ -6,7 +6,8 @@ ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
 }
 include __DIR__ . '/database.php';
 

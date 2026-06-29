@@ -17,7 +17,8 @@ if (session_status() === PHP_SESSION_NONE) {
 <?php require_once __DIR__ . '/../views/layouts/head_full.php'; ?>
 <?php include __DIR__ . '/../views/partials/header.php' ?>
 <br>
-<br>
+    require_once __DIR__ . '/../config/frontend_session.php';
+    metropol_frontend_session_start();
 <br>
 <br>
 <br>
