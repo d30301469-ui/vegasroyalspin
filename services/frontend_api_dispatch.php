@@ -88,7 +88,14 @@ function metropol_handle_public_api_request(?string $requestUri = null): void
     $requestUri ??= (string) ($_SERVER['REQUEST_URI'] ?? '/');
     $path = '/' . trim((string) (parse_url($requestUri, PHP_URL_PATH) ?: ''), '/');
     if (!metropol_request_is_fast_public_api($path)) {
-        return;
+        // Bu fonksiyon /api/ prefix koşulundan sonra çağrılır; path uyuşmazlığı
+        // normalizelemeden kaynaklanıyor olabilir — güvenli taraf olarak 404 dön.
+        if (!headers_sent()) {
+            http_response_code(404);
+            header('Content-Type: application/json; charset=UTF-8');
+        }
+        echo json_encode(['success' => false, 'ok' => false, 'code' => 404, 'message' => 'Not found.'], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 
     metropol_dispatch_frontend_public_api($requestUri);

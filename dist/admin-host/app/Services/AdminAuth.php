@@ -9,6 +9,9 @@ final class AdminAuth
         return require ADMIN_APP_PATH . '/Config/admin.php';
     }
 
+    /** Admin oturum hareketsizlik zaman aşımı (dakika). Değiştirmek için env: ADMIN_SESSION_TIMEOUT_MINUTES */
+    private const SESSION_TIMEOUT_MINUTES = 120;
+
     public static function check(): bool
     {
         $config = self::config();
@@ -16,7 +19,23 @@ final class AdminAuth
 
         $user = isset($_SESSION[$key]) && is_array($_SESSION[$key]) ? $_SESSION[$key] : [];
 
-        return !empty($user['id']) && !empty($user['username']);
+        if (empty($user['id']) || empty($user['username'])) {
+            return false;
+        }
+
+        $timeoutMinutes = (int) (getenv('ADMIN_SESSION_TIMEOUT_MINUTES') ?: self::SESSION_TIMEOUT_MINUTES);
+        $timeoutSeconds = max(300, $timeoutMinutes * 60);
+        $lastActivity = (int) ($_SESSION['admin_last_activity'] ?? 0);
+
+        if ($lastActivity > 0 && (time() - $lastActivity) > $timeoutSeconds) {
+            $_SESSION[$key] = [];
+            unset($_SESSION['admin_last_activity']);
+            return false;
+        }
+
+        $_SESSION['admin_last_activity'] = time();
+
+        return true;
     }
 
     public static function userName(): string
@@ -144,34 +163,34 @@ final class AdminAuth
     public static function attempt(string $email, string $password): bool
     {
         $config = self::config();
-        $email = trim($email);
-        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        $identity = trim($email);
+        if ($identity === '') {
             return false;
         }
 
-        $admin = self::findAdminByEmail($email);
+        $admin = self::findAdminByIdentity($identity);
         if ($admin === null) {
-            self::writeLog('', 'login_failed', 'auth', 'failed', $email);
+            self::writeLog('', 'login_failed', 'auth', 'failed', $identity);
             return false;
         }
 
         $hash = (string) ($admin['password'] ?? '');
         if ($hash === '' || !password_verify($password, $hash)) {
-            self::writeLog('', 'login_failed', 'auth', 'failed', $email);
+            self::writeLog('', 'login_failed', 'auth', 'failed', $identity);
             return false;
         }
 
         session_regenerate_id(true);
         $_SESSION[(string) $config['session_key']] = [
             'id' => (int) ($admin['id'] ?? 0),
-            'username' => (string) ($admin['username'] ?? $email),
+            'username' => (string) ($admin['username'] ?? $identity),
             'email' => (string) ($admin['email'] ?? ''),
             'role' => (string) ($admin['role'] ?? 'admin'),
             'login_at' => time(),
         ];
         self::ensureAdminTables();
         self::recordSession();
-        self::writeLog((string) ($admin['username'] ?? $email), 'login', 'auth', 'success');
+        self::writeLog((string) ($admin['username'] ?? $identity), 'login', 'auth', 'success');
 
         return true;
     }
@@ -249,7 +268,7 @@ final class AdminAuth
         return '/dashboard';
     }
 
-    private static function findAdminByEmail(string $email): ?array
+    private static function findAdminByIdentity(string $identity): ?array
     {
         try {
             $pdo = AdminDatabase::pdo();
@@ -262,10 +281,13 @@ final class AdminAuth
             }
 
             $sql = $hasActiveColumn
-                ? 'SELECT * FROM admins WHERE LOWER(email) = LOWER(:email) AND is_active = 1 LIMIT 1'
-                : 'SELECT * FROM admins WHERE LOWER(email) = LOWER(:email) LIMIT 1';
+                ? 'SELECT * FROM admins WHERE (LOWER(email) = LOWER(:identity_email) OR LOWER(username) = LOWER(:identity_username)) AND is_active = 1 LIMIT 1'
+                : 'SELECT * FROM admins WHERE LOWER(email) = LOWER(:identity_email) OR LOWER(username) = LOWER(:identity_username) LIMIT 1';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute(['email' => $email]);
+            $stmt->execute([
+                'identity_email' => $identity,
+                'identity_username' => $identity,
+            ]);
             $admin = $stmt->fetch();
 
             return is_array($admin) ? $admin : null;

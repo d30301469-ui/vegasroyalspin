@@ -176,6 +176,35 @@ if (!function_exists('frontend_has_database_credentials')) {
     }
 }
 
+if (!function_exists('metropol_is_backend_host')) {
+    function metropol_is_backend_host(string $httpHost): bool
+    {
+        $host = strtolower(preg_replace('/:\d+$/', '', trim($httpHost)) ?? '');
+        if ($host === '') {
+            return false;
+        }
+        $candidates = [
+            (string) (getenv('ADMIN_URL_HOST') ?: ''),
+            (string) (getenv('BACKEND_HOST') ?: ''),
+            (string) (parse_url((string) (getenv('BACKEND_URL') ?: ''), PHP_URL_HOST) ?: ''),
+            (string) (parse_url((string) (getenv('BACKEND_FALLBACK_URL') ?: ''), PHP_URL_HOST) ?: ''),
+        ];
+        if (defined('BACKEND_HOST') && (string) BACKEND_HOST !== '') {
+            $candidates[] = (string) BACKEND_HOST;
+        }
+        $list = function_exists('deploy_backend_hosts')
+            ? deploy_backend_hosts()
+            : ['bo-nexthub.site', 'api.bo-nexthub.site'];
+        foreach (array_merge($candidates, $list) as $candidate) {
+            $c = strtolower(preg_replace('/:\d+$/', '', trim((string) $candidate)) ?? '');
+            if ($c !== '' && $c === $host) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 if (!function_exists('frontend_database_allowed')) {
     /**
      * Direct MySQL/PDO is allowed only on the admin/backend host (or local monorepo dev).
@@ -1072,6 +1101,8 @@ if (!function_exists('metropol_proxy_drakon_webhook')) {
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => 20,
             CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
         ]);
         if ($rawBody !== '') {
             curl_setopt($ch, CURLOPT_POSTFIELDS, $rawBody);

@@ -30,24 +30,16 @@ if (function_exists('frontend_database_allowed') && !frontend_database_allowed()
 }
 
 $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
-$adminHostCandidates = array_merge(
-    [
+$isAdminHost = function_exists('metropol_is_backend_host')
+    ? metropol_is_backend_host($host)
+    : in_array($host, array_filter(array_map('trim', [
         defined('BACKEND_HOST') ? (string) BACKEND_HOST : '',
         getenv('ADMIN_URL_HOST') ?: '',
         getenv('BACKEND_HOST') ?: '',
         parse_url((string) (getenv('BACKEND_URL') ?: ''), PHP_URL_HOST) ?: '',
         parse_url((string) (getenv('BACKEND_FALLBACK_URL') ?: ''), PHP_URL_HOST) ?: '',
-    ],
-    function_exists('deploy_backend_hosts') ? deploy_backend_hosts() : ['bo-nexthub.site', 'api.bo-nexthub.site']
-);
-$adminHosts = [];
-foreach ($adminHostCandidates as $candidate) {
-    $candidateHost = strtolower(preg_replace('/:\d+$/', '', trim((string) $candidate)) ?? '');
-    if ($candidateHost !== '') {
-        $adminHosts[] = $candidateHost;
-    }
-}
-$isAdminHost = in_array($host, array_unique($adminHosts), true);
+        'bo-nexthub.site', 'api.bo-nexthub.site',
+    ])), true);
 $isDrakonWebhookPath = strpos($uri, '/drakon_api') === 0
     || strpos($uri, '/drakon_callback') === 0
     || strpos($uri, '/drakon-callback') === 0

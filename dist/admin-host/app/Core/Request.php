@@ -32,6 +32,10 @@ final class Request
             return false;
         }
 
+        if (function_exists('metropol_is_backend_host')) {
+            return metropol_is_backend_host($host);
+        }
+
         return in_array($host, $this->configuredAdminHosts(), true);
     }
 

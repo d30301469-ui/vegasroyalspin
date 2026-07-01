@@ -641,6 +641,8 @@ final class DrakonService
 
         if ($signature === '' && $token === '') {
             // Drakon panel webhooks are unsigned; optional callback_secret only applies when a header is sent.
+            // Log a warning so operators know the secret is configured but not being enforced for this request.
+            error_log('[DrakonService] callback_secret is set but webhook arrived without a signature/token header; accepted via IP-only policy. Remote: ' . ($server['REMOTE_ADDR'] ?? '-'));
             return ['valid' => true];
         }
         if ($signature !== '') {

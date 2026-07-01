@@ -70,10 +70,10 @@ $siteInitials = 'NH';
             <form class="auth-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/login'), ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
                 <div class="field">
-                    <label class="field-label" for="email">Email</label>
+                    <label class="field-label" for="email">Email veya Kullanıcı Adı</label>
                     <div class="input-icon">
                         <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
-                        <input id="email" class="input" name="email" type="email" placeholder="admin@example.com" autocomplete="email" required>
+                        <input id="email" class="input" name="email" type="text" placeholder="admin@example.com veya admin" autocomplete="username" required>
                     </div>
                 </div>
                 <div class="field">

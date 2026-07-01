@@ -6,6 +6,14 @@ require_once __DIR__ . '/Core/AdminPaths.php';
 admin_paths_bootstrap();
 
 if (session_status() === PHP_SESSION_NONE) {
+    $adminSessionName = trim((string) (getenv('ADMIN_SESSION_NAME') ?: 'ADMINSESSID'));
+    if ($adminSessionName === '') {
+        $adminSessionName = 'ADMINSESSID';
+    }
+    if (session_name() !== $adminSessionName) {
+        session_name($adminSessionName);
+    }
+
     $cloudflareConfig = admin_project_path('config/cloudflare.php');
     if (admin_is_readable_file($cloudflareConfig)) {
         require_once $cloudflareConfig;

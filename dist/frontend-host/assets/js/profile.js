@@ -1075,6 +1075,9 @@
         }
 
         function closeModal() {
+            if (document.activeElement && modal.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
             overlay.classList.remove('is-open');
             modal.classList.remove('is-open');
             overlay.setAttribute('aria-hidden', 'true');
