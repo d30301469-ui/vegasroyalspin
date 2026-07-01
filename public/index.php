@@ -24,6 +24,21 @@ if (str_starts_with($requestPath, '/api/')) {
     metropol_handle_public_api_request((string) ($_SERVER['REQUEST_URI'] ?? '/'));
 }
 
+// Drakon webhook proxy: /drakon_api on frontend host → proxy to admin backend.
+// (Apache catch-all routes here; router.php proxy only runs on PHP built-in server.)
+if ($requestPath === '/drakon_api' || rtrim($requestPath, '/') === '/drakon_api') {
+    require_once $root . '/config/env.php';
+    if (function_exists('metropol_proxy_drakon_webhook')) {
+        metropol_proxy_drakon_webhook();
+    }
+    if (!headers_sent()) {
+        http_response_code(502);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode(['error' => 'DRAKON_PROXY_UNAVAILABLE'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 require_once $root . '/app/bootstrap.php';
 
 use App\Core\Request;

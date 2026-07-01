@@ -1,3 +1,0 @@
-vendor/ is pre-installed in this deploy package.
-Do NOT run composer install on the production server unless you know why.
-Bundled at: 2026-06-24T22:56:38+00:00
