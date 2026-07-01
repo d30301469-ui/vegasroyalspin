@@ -987,25 +987,37 @@ final class DrakonService
 
         $publicProbe = self::probePublicWebhook($pdo, $mode === 'fun' ? self::demoUserId() : $userId);
         if (empty($publicProbe['ok'])) {
-            $allowedIps = trim((string) ($config['callback_allowed_ips'] ?? ''));
-            if ($allowedIps === '') {
-                $allowedIps = trim((string) (getenv('DRAKON_CALLBACK_ALLOWED_IPS') ?: ''));
+            $probeHttp = (int) ($publicProbe['http'] ?? 0);
+            $isNetworkTimeout = $probeHttp === 0;
+            $appEnv = strtolower(trim((string) (getenv('APP_ENV') ?: ($_ENV['APP_ENV'] ?? 'local'))));
+            $isProduction = in_array($appEnv, ['production', 'prod'], true);
+            if ($isNetworkTimeout && !$isProduction) {
+                self::logApiResponseIssue('Drakon webhook probe timeout (non-blocking in dev)', [
+                    'url' => (string) ($publicProbe['url'] ?? ''),
+                    'error' => (string) ($publicProbe['error'] ?? 'timeout'),
+                    'mode' => $mode,
+                ]);
+            } else {
+                $allowedIps = trim((string) ($config['callback_allowed_ips'] ?? ''));
+                if ($allowedIps === '') {
+                    $allowedIps = trim((string) (getenv('DRAKON_CALLBACK_ALLOWED_IPS') ?: ''));
+                }
+                $ipHint = $allowedIps !== ''
+                    ? ' Admin → Drakon → Callback Allowed IPs alanı dolu; Drakon sunucuları engellenmiş olabilir — BOŞ bırakın.'
+                    : ' Cloudflare/WAF Drakon IP\'lerini engelliyor olabilir (bo-nexthub.site için proxy gri/DNS only önerilir).';
+                return [
+                    'success' => false,
+                    'code' => 422,
+                    'message' => 'Drakon webhook dışarıdan erişilemiyor: '
+                        . (string) ($publicProbe['error'] ?? 'WEBHOOK_UNREACHABLE')
+                        . $ipHint
+                        . ' Drakon agent panel Site URL: '
+                        . $siteRoot
+                        . ' (vegasroyalspin.com veya api.bo-nexthub.site DEĞİL) — webhook: '
+                        . (string) ($publicProbe['url'] ?? self::webhookPublicUrl($siteRoot)),
+                    'error' => (string) ($publicProbe['error'] ?? 'WEBHOOK_UNREACHABLE'),
+                ];
             }
-            $ipHint = $allowedIps !== ''
-                ? ' Admin → Drakon → Callback Allowed IPs alanı dolu; Drakon sunucuları engellenmiş olabilir — BOŞ bırakın.'
-                : ' Cloudflare/WAF Drakon IP\'lerini engelliyor olabilir (bo-nexthub.site için proxy gri/DNS only önerilir).';
-            return [
-                'success' => false,
-                'code' => 422,
-                'message' => 'Drakon webhook dışarıdan erişilemiyor: '
-                    . (string) ($publicProbe['error'] ?? 'WEBHOOK_UNREACHABLE')
-                    . $ipHint
-                    . ' Drakon agent panel Site URL: '
-                    . $siteRoot
-                    . ' (vegasroyalspin.com veya api.bo-nexthub.site DEĞİL) — webhook: '
-                    . (string) ($publicProbe['url'] ?? self::webhookPublicUrl($siteRoot)),
-                'error' => (string) ($publicProbe['error'] ?? 'WEBHOOK_UNREACHABLE'),
-            ];
         }
 
         if ($mode === 'real') {
@@ -1143,6 +1155,7 @@ final class DrakonService
     private static function firstValidLaunchUrl(array $candidates, array $response = []): string
     {
         $lastInvalid = '';
+        $hasGameError = false;
         foreach ($candidates as $candidate) {
             $url = trim((string) $candidate);
             if ($url === '') {
@@ -1151,9 +1164,23 @@ final class DrakonService
             if (self::isValidLaunchUrl($url)) {
                 return $url;
             }
+            $urlPath = strtolower(trim((string) (parse_url($url, PHP_URL_PATH) ?? ''), '/'));
+            if ($urlPath === 'game-error' || str_ends_with($urlPath, '/game-error')) {
+                $hasGameError = true;
+            }
             if (self::isDrakonInfrastructureLaunchUrl($url)) {
                 $lastInvalid = $url;
             }
+        }
+
+        if ($hasGameError) {
+            throw new RuntimeException(
+                'Drakon oyun başlatılamadı (game-error). Olası nedenler: '
+                . '(1) Drakon agent panelinde bu oyun ajan hesabınız için etkinleştirilmemiş. '
+                . '(2) Webhook URL\'i Drakon\'un sunucularından erişilemiyor — ngrok tüneli aktif mi? '
+                . '(3) Agent hesabı henüz onaylanmamış veya test modunda. '
+                . 'Drakon destek ekibiyle iletişime geçin.'
+            );
         }
 
         if ($lastInvalid !== '') {
@@ -1863,7 +1890,7 @@ final class DrakonService
             $headers,
             strtoupper($method) === 'GET' ? [] : $params,
             $timeout,
-            $path === '/games/game_launch' ? 1 : 3
+            $path === '/games/game_launch' ? 2 : 3
         );
         $raw = $requestResult['raw'];
         $err = $requestResult['error'];
@@ -2000,7 +2027,10 @@ final class DrakonService
                 return $lastResult;
             }
             $redirectHost = strtolower((string) (parse_url($redirectUrl, PHP_URL_HOST) ?: ''));
-            if ($redirectHost !== '' && self::isDrakonInfrastructureHost($redirectHost)) {
+            $currentHost = strtolower((string) (parse_url($currentUrl, PHP_URL_HOST) ?: ''));
+            if ($redirectHost !== '' && self::isDrakonInfrastructureHost($redirectHost)
+                && !self::isDrakonInfrastructureHost($currentHost)
+            ) {
                 return $lastResult;
             }
             if (self::isValidLaunchUrl($redirectUrl)) {
@@ -2060,17 +2090,23 @@ final class DrakonService
         }
 
         $host = strtolower((string) $parts['host']);
-        if (self::isDrakonInfrastructureHost($host)) {
-            return false;
-        }
-
         $path = strtolower(trim((string) ($parts['path'] ?? ''), '/'));
         if ($path === '' || $path === 'index.php') {
             return false;
         }
 
+        // Reject API gateway paths and Drakon-specific error/infrastructure paths.
         $query = strtolower((string) ($parts['query'] ?? ''));
         if (str_contains($path, 'games/game_launch') || str_contains($path, 'drakon_callback') || str_contains($path, 'drakon_api')) {
+            return false;
+        }
+        // Reject Drakon error page URLs (game-error is Drakon's failure page).
+        if ($path === 'game-error' || str_ends_with($path, '/game-error')) {
+            return false;
+        }
+        // Reject API gateway host (gator.*) as game player URLs — these are infrastructure, not CDN.
+        // Other *.drakonapi.tech subdomains (CDN, launcher, etc.) are allowed.
+        if (self::isDrakonInfrastructureHost($host) && str_starts_with($host, 'gator.')) {
             return false;
         }
         if (preg_match('/(?:^|&)(?:agent_token|agent_secret|agent_secret_key|agent_code)=/i', $query) === 1) {
@@ -2160,40 +2196,46 @@ final class DrakonService
             'effective_url' => $url,
         ];
 
-        for ($attempt = 0; $attempt < 2; $attempt++) {
+        for ($attempt = 0; $attempt < 6; $attempt++) {
             $ch = curl_init();
             curl_setopt_array($ch, [
-                CURLOPT_URL => $currentUrl,
+                CURLOPT_URL            => $currentUrl,
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HEADER => true,
-                CURLOPT_POST => true,
+                CURLOPT_HEADER         => true,
+                CURLOPT_POST           => true,
                 CURLOPT_CONNECTTIMEOUT => 5,
-                CURLOPT_TIMEOUT => 15,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_MAXREDIRS => 4,
-                CURLOPT_POSTREDIR => 7,
-                CURLOPT_HTTPHEADER => ['Accept: application/json', 'Authorization: Bearer ' . $auth],
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_FOLLOWLOCATION => false,
+                CURLOPT_HTTPHEADER     => ['Accept: application/json', 'Authorization: Bearer ' . $auth],
             ]);
-            $raw = curl_exec($ch);
-            $err = curl_error($ch);
-            $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-            $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-            $contentType = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+            $raw          = curl_exec($ch);
+            $err          = curl_error($ch);
+            $code         = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            $headerSize   = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+            $contentType  = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
             $effectiveUrl = (string) curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
             curl_close($ch);
 
-            $headers = is_string($raw) && $headerSize > 0 ? substr($raw, 0, $headerSize) : '';
-            $body = is_string($raw) && $headerSize > 0 ? substr($raw, $headerSize) : $raw;
+            $headers    = is_string($raw) && $headerSize > 0 ? substr($raw, 0, $headerSize) : '';
+            $body       = is_string($raw) && $headerSize > 0 ? substr($raw, $headerSize) : $raw;
             $lastResult = [
-                'body' => $body,
-                'error' => $err,
-                'status' => $code,
+                'body'         => $body,
+                'error'        => $err,
+                'status'       => $code,
                 'content_type' => $contentType,
                 'effective_url' => $effectiveUrl !== '' ? $effectiveUrl : $currentUrl,
             ];
 
-            if (self::isTransientHttpStatus($code) && $attempt < 2) {
-                usleep(150000 * ($attempt + 1));
+            if (in_array($code, [301, 302, 307, 308], true)) {
+                $location = self::redirectLocationFromHeaders($headers, $currentUrl);
+                if ($location !== '' && $location !== $currentUrl) {
+                    $currentUrl = $location;
+                    continue;
+                }
+            }
+
+            if (self::isTransientHttpStatus($code)) {
+                usleep(150000 * min($attempt + 1, 3));
                 continue;
             }
 
@@ -2283,10 +2325,7 @@ final class DrakonService
     public static function integrationDiagnostics(PDO $pdo): array
     {
         $config = self::config($pdo);
-        $panelUrl = rtrim(trim((string) ($config['site_endpoint'] ?? '')), '/');
-        if ($panelUrl === '') {
-            $panelUrl = rtrim(self::siteEndpoint(), '/');
-        }
+        $panelUrl = rtrim(self::launchSiteEndpoint($config), '/');
         $webhookUrl = self::webhookPublicUrl($panelUrl);
         $webhook = self::testWebhookIntegration($pdo, 1);
 
@@ -2367,8 +2406,8 @@ final class DrakonService
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CUSTOMREQUEST => strtoupper($method),
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_CONNECTTIMEOUT => 6,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_CONNECTTIMEOUT => 4,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTPHEADER => $headers,
         ]);
@@ -2444,7 +2483,7 @@ final class DrakonService
 
     public static function webhookPublicUrl(string $siteEndpoint = ''): string
     {
-        $override = trim((string) (getenv('DRAKON_WEBHOOK_BASE_URL') ?: ''));
+        $override = trim(self::drakonEnv('DRAKON_WEBHOOK_BASE_URL'));
         if ($override !== '') {
             $override = preg_replace('#/drakon_api(?:/.*)?$#i', '', $override) ?? $override;
 
@@ -2719,11 +2758,7 @@ final class DrakonService
     private static function launchSiteEndpoint(array $config): string
     {
         $configured = rtrim(trim((string) ($config['site_endpoint'] ?? '')), '/');
-        if ($configured !== '') {
-            return self::normalizeSiteEndpoint($configured);
-        }
-
-        return self::canonicalBackendSiteUrl();
+        return self::backendSiteEndpoint($configured);
     }
 
     public static function resolveLaunchGameId(PDO $pdo, string $gameId): string
@@ -2774,6 +2809,30 @@ final class DrakonService
         return false;
     }
 
+    /**
+     * Read a DRAKON env var, falling back through $_ENV and $_SERVER when putenv is disabled.
+     */
+    private static function drakonEnv(string $key): string
+    {
+        $v = getenv($key);
+        if (is_string($v) && $v !== '') {
+            return $v;
+        }
+        if (isset($_ENV[$key]) && is_string($_ENV[$key]) && $_ENV[$key] !== '') {
+            return $_ENV[$key];
+        }
+        if (isset($_SERVER[$key]) && is_string($_SERVER[$key]) && $_SERVER[$key] !== '') {
+            return $_SERVER[$key];
+        }
+        if (function_exists('frontend_env_string')) {
+            $fe = frontend_env_string($key, '');
+            if ($fe !== '') {
+                return $fe;
+            }
+        }
+        return '';
+    }
+
     private static function siteEndpoint(): string
     {
         $canonical = self::canonicalBackendSiteUrl();
@@ -2793,19 +2852,24 @@ final class DrakonService
 
     private static function backendSiteEndpoint(string $configuredEndpoint = ''): string
     {
+        $envEndpoint = trim(self::drakonEnv('DRAKON_SITE_ENDPOINT') ?: self::drakonEnv('DRAKON_PUBLIC_BASE_URL'));
+        if ($envEndpoint !== '') {
+            // Env ile açıkça yapılandırılmış — normalizasyon atlanır, değer olduğu gibi kullanılır.
+            $host = strtolower((string) (parse_url($envEndpoint, PHP_URL_HOST) ?: ''));
+            if ($host !== '') {
+                return rtrim($envEndpoint, '/');
+            }
+        }
+
+        $webhookBase = trim(self::drakonEnv('DRAKON_WEBHOOK_BASE_URL'));
+        if ($webhookBase !== '') {
+            $webhookBase = preg_replace('#/drakon_api(?:/.*)?$#i', '', $webhookBase) ?? $webhookBase;
+            return self::normalizeSiteEndpoint(rtrim($webhookBase, '/'));
+        }
+
         $configuredEndpoint = trim($configuredEndpoint);
         if ($configuredEndpoint !== '') {
             return self::normalizeSiteEndpoint($configuredEndpoint);
-        }
-
-        $envEndpoint = trim((string) (getenv('DRAKON_SITE_ENDPOINT') ?: ''));
-        if ($envEndpoint !== '') {
-            return self::normalizeSiteEndpoint($envEndpoint);
-        }
-
-        $publicBaseUrl = trim((string) (getenv('DRAKON_PUBLIC_BASE_URL') ?: ''));
-        if ($publicBaseUrl !== '') {
-            return self::normalizeSiteEndpoint(rtrim($publicBaseUrl, '/'));
         }
 
         return self::siteEndpoint();
@@ -2866,7 +2930,7 @@ final class DrakonService
             return true;
         }
 
-        $explicitEndpoint = trim((string) (getenv('DRAKON_SITE_ENDPOINT') ?: ''));
+        $explicitEndpoint = trim(self::drakonEnv('DRAKON_SITE_ENDPOINT'));
         if ($explicitEndpoint !== '') {
             $explicitHost = strtolower((string) (parse_url($explicitEndpoint, PHP_URL_HOST) ?: ''));
             if ($explicitHost !== '' && $host === $explicitHost) {

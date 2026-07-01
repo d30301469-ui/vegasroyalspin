@@ -1052,17 +1052,19 @@ if (!function_exists('frontend_emit_backend_only_response')) {
 if (!function_exists('metropol_drakon_webhook_backend_url')) {
     function metropol_drakon_webhook_backend_url(): string
     {
-        $override = trim((string) (getenv('DRAKON_WEBHOOK_BASE_URL') ?: ''));
-        if ($override !== '') {
-            $override = preg_replace('#/drakon_api(?:/.*)?$#i', '', $override) ?? $override;
-
-            return rtrim($override, '/') . '/drakon_api';
+        // Bu fonksiyon dahili proxy hedefi içindir: BACKEND_URL (admin sunucusu) kullan.
+        // DRAKON_WEBHOOK_BASE_URL halkla açık Drakon callback URL'idir (örn. ngrok); proxy
+        // hedefi olarak kullanılmamalı — aksi takdirde self-referential döngü oluşur.
+        // Env yüklenmemişse yükle (router.php blağından çağrılırsa).
+        if (function_exists('frontend_load_dotenv')) {
+            frontend_load_dotenv();
         }
-
         $backend = trim((string) (
             (defined('BACKEND_URL') ? (string) BACKEND_URL : '')
-            ?: (getenv('BACKEND_URL') ?: '')
-            ?: (getenv('BACKEND_FALLBACK_URL') ?: '')
+            ?: (function_exists('frontend_env_raw') ? (frontend_env_raw('BACKEND_URL') ?? '') : '')
+            ?: (getenv('BACKEND_URL') ?: ($_ENV['BACKEND_URL'] ?? ''))
+            ?: (function_exists('frontend_env_raw') ? (frontend_env_raw('BACKEND_FALLBACK_URL') ?? '') : '')
+            ?: (getenv('BACKEND_FALLBACK_URL') ?: ($_ENV['BACKEND_FALLBACK_URL'] ?? ''))
         ));
         if ($backend === '' && function_exists('deploy_domain')) {
             $backend = deploy_domain('backend_url');

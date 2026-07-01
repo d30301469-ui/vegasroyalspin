@@ -1,8 +1,0 @@
-# Split frontend — /api/* istekleri kök .htaccess ile index.php'ye gider.
-# Bu dosya api/ altında backend yönlendirmesi yapmaz (monorepo kuralları frontend'te döngü/404 üretir).
-<IfModule mod_authz_core.c>
-    Require all granted
-</IfModule>
-<IfModule !mod_authz_core.c>
-    Allow from all
-</IfModule>

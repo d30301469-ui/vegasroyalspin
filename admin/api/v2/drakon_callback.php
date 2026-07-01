@@ -18,6 +18,9 @@ if (getenv('DRAKON_WEBHOOK_ACCESS_LOG') === '1') {
     );
 }
 
-admin_require_project_file('controllers/Api/ApiDrakonController.php');
-
+$controllerPath = dirname(__DIR__, 2) . '/controllers/Api/ApiDrakonController.php';
+if (!is_file($controllerPath) || !is_readable($controllerPath)) {
+    throw new RuntimeException(sprintf('Required admin webhook controller not found: %s', $controllerPath));
+}
+require_once $controllerPath;
 (new ApiDrakonController())->index();

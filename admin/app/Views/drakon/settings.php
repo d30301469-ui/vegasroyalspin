@@ -69,7 +69,7 @@ $webhookUrl = (string) ($diagnostics['drakon_webhook_url'] ?? $diagnostics['drak
             <input id="site_endpoint" type="hidden" name="site_endpoint" value="<?= $text($panelUrl) ?>">
             <input class="input" type="url" value="<?= $text($panelUrl) ?>" readonly>
             <p class="text-muted" style="margin:.35rem 0 0;font-size:12px">Drakon agent paneline yazılacak site adresi (otomatik): <code><?= $text($panelUrl) ?></code></p>
-            <p class="text-muted" style="margin:.35rem 0 0;font-size:12px"><strong>Drakon agent panel:</strong> yalnızca <code><?= $text($backendBase) ?></code> yazın — <strong>/drakon_api eklemeyin</strong>. Drakon otomatik <code><?= $text($webhookUrl) ?></code> adresine POST atar.</p>
+            <p class="text-muted" style="margin:.35rem 0 0;font-size:12px"><strong>Drakon agent panel:</strong> yalnızca <code><?= $text($panelUrl) ?></code> yazın — <strong>/drakon_api eklemeyin</strong>. Drakon otomatik <code><?= $text($webhookUrl) ?></code> adresine POST atar.</p>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -110,7 +110,7 @@ $webhookUrl = (string) ($diagnostics['drakon_webhook_url'] ?? $diagnostics['drak
                 <?php endif; ?>
             </div>
         <?php endif; ?>
-        <p class="text-muted" style="margin:0 0 12px;font-size:12px">422 alıyorsanız ve curl testi OK ise: <strong>Drakon agent panelinde</strong> (gator.drakon.casino) Site URL = <code><?= $text($panelUrl) ?></code> olmalı — yalnızca admin panel yeterli değil.</p>
+        <p class="text-muted" style="margin:0 0 12px;font-size:12px">422 alıyorsanız ve curl testi OK ise: <strong>Drakon agent panelinde</strong> (gator.drakon.casino) Site URL = <code><?= $text($panelUrl) ?></code> olmalı — bu URL ngrok ise panelde de aynı ngrok adresi olmalı.</p>
         <div class="drakon-stat" style="flex-direction:column;align-items:flex-start;gap:4px"><span>curl test</span><code class="drakon-secret" style="word-break:break-all;font-size:11px">curl -X POST "<?= $text($webhookUrl) ?>" -H "Content-Type: application/json" -d '{"method":"user_balance","user_id":"1"}'</code></div>
         <div class="drakon-stat"><span>Provider</span><strong><?= (int) ($providersCount ?? 0) ?></strong></div>
         <div class="drakon-stat"><span>Oyun</span><strong><?= (int) ($gamesCount ?? 0) ?></strong></div>

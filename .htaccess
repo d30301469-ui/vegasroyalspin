@@ -48,6 +48,11 @@
     RewriteCond %{ENV:IS_BACKEND_HOST} 1
     RewriteRule ^api/v2/megapayz-callback/?$ admin/index.php [END,QSA]
 
+    # ─── Admin panel Drakon pages (must route via front controller) ─
+    # Avoid collision with private-path deny rule for /drakon/* URLs.
+    RewriteCond %{ENV:IS_BACKEND_HOST} 1
+    RewriteRule ^drakon(?:/.*)?$ admin/index.php [END,QSA]
+
     # ─── Private paths: never serve directly from webroot ─────────────
     RewriteRule ^(?:app|bin|config|database|docs|drakon|logs|repositories|scripts|services|storage|tests|tools|vendor)(?:/|$) - [F,L]
 
