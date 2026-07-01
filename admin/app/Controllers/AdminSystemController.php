@@ -71,6 +71,13 @@ final class AdminSystemController extends AdminController
         $password = (string) ($_POST['password'] ?? '');
         $role = trim((string) ($_POST['role'] ?? 'admin')) ?: 'admin';
 
+        // Superadmin rolü yalnızca mevcut superadmin tarafından atanabilir.
+        if (in_array($role, ['superadmin', 'super_admin', 'owner'], true) && !AdminAuth::isSuperAdmin()) {
+            http_response_code(403);
+            $this->flash('Superadmin rolü oluşturma yetkiniz yok.');
+            $this->redirect(AdminAuth::url('/signup'));
+        }
+
         if ($username === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false || strlen($password) < 6) {
             $this->flash('Kullanıcı adı, geçerli email ve en az 6 karakter şifre girilmelidir.');
             $this->redirect(AdminAuth::url('/signup'));

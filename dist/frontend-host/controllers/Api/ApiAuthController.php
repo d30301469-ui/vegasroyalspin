@@ -891,7 +891,32 @@ class ApiAuthController
             return;
         }
 
-        if (empty($_SESSION['loggedin']) || empty($_SESSION['member_jwt'])) {
+        // 1. PHP session (tarayıcı istemcileri)
+        $jwt = !empty($_SESSION['member_jwt']) ? (string) $_SESSION['member_jwt'] : '';
+
+        // 2. JWT Bearer token fallback (mobil / API istemcileri)
+        if ($jwt === '') {
+            $authHeader = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
+            if ($authHeader === '' && function_exists('getallheaders')) {
+                $hdrs = getallheaders();
+                if (is_array($hdrs)) {
+                    $authHeader = (string) ($hdrs['Authorization'] ?? $hdrs['authorization'] ?? '');
+                }
+            }
+            if (preg_match('/^\s*Bearer\s+(.+)\s*$/i', $authHeader, $m) === 1) {
+                $candidate = trim((string) ($m[1] ?? ''));
+                if ($candidate !== '') {
+                    if (is_file(SERVICE_PATH . '/MemberJwtVerify.php')) {
+                        require_once SERVICE_PATH . '/MemberJwtVerify.php';
+                    }
+                    if (class_exists('MemberJwtVerify', false) && MemberJwtVerify::signatureValid($candidate)) {
+                        $jwt = $candidate;
+                    }
+                }
+            }
+        }
+
+        if ($jwt === '') {
             self::respondJson(401, [
                 'success' => false,
                 'code'    => 401,
@@ -901,8 +926,6 @@ class ApiAuthController
 
             return;
         }
-
-        $jwt = (string) $_SESSION['member_jwt'];
         $res = MemberLoginService::backendSession($jwt);
 
         if ($res === null) {

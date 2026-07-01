@@ -207,7 +207,7 @@ final class ApiPromotions
                 break;
             }
             $api = ApiClient::postWithBase($base, '/content/promotions', $payload, 30, $auth);
-            if ($api !== null) {
+            if ($api !== null && ApiEnvelope::isOk($api)) {
                 return $api;
             }
         }

@@ -1,6 +1,4 @@
 <?php
-// Gömülü LiveChat widget'ı — mobil delegasyonundan önce, her iki akışta da bir kez.
-include __DIR__ . '/live-chat.php';
 if (function_exists('isMobile') && isMobile() && defined('MOBILE_PATH')) {
     $mobileFooter = MOBILE_PATH . '/views/partials/footer.php';
     if (file_exists($mobileFooter)) {

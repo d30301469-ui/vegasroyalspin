@@ -295,12 +295,25 @@ final class MegaPayzService
                 'withdrawal_enabled' => (bool) ($row['withdraw_enabled'] ?? false),
                 'min_amount' => (float) ($row['min_amount'] ?? 0),
                 'max_amount' => (float) ($row['max_amount'] ?? 0),
-                'logo_url' => (string) ($row['logo_url'] ?? ''),
+                'logo_url' => self::sanitizeLogoUrl((string) ($row['logo_url'] ?? '')),
                 'input_fields' => $fields,
                 'processing_time' => 'Anlık',
             ];
         }
         return $out;
+    }
+
+    private static function sanitizeLogoUrl(string $url): string
+    {
+        if ($url === '' || !str_starts_with($url, 'http')) {
+            return $url;
+        }
+        $parsed = parse_url($url);
+        $path = (string) ($parsed['path'] ?? '');
+        if (str_starts_with($path, '/assets/') || str_starts_with($path, '/uploads/')) {
+            return $path;
+        }
+        return $url;
     }
 
     public static function findMethod(PDO $pdo, string $key, string $direction): ?array

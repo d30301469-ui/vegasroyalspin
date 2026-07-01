@@ -35,25 +35,13 @@ foreach ($blockedDirs as $dir) {
 }
 
 // Drakon callback admin/backend API altında yaşar; frontend callback route'u yoktur.
+// config/env.php'deki metropol_is_backend_host() merkezi host kontrolünü yükle.
+if (!function_exists('metropol_is_backend_host')) {
+    require_once __DIR__ . '/config/env.php';
+}
 $trimmedForDrakon = rtrim($uri, '/');
 $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
-$backendHostCandidates = array_merge(
-    [
-        getenv('ADMIN_URL_HOST') ?: '',
-        getenv('BACKEND_HOST') ?: '',
-        parse_url((string) (getenv('BACKEND_URL') ?: ''), PHP_URL_HOST) ?: '',
-        parse_url((string) (getenv('BACKEND_FALLBACK_URL') ?: ''), PHP_URL_HOST) ?: '',
-    ],
-    function_exists('deploy_backend_hosts') ? deploy_backend_hosts() : ['bo-nexthub.site', 'api.bo-nexthub.site']
-);
-$backendHosts = [];
-foreach ($backendHostCandidates as $candidate) {
-    $candidateHost = strtolower(preg_replace('/:\d+$/', '', trim((string) $candidate)) ?? '');
-    if ($candidateHost !== '') {
-        $backendHosts[] = $candidateHost;
-    }
-}
-$isBackendHost = in_array($host, array_unique($backendHosts), true);
+$isBackendHost = metropol_is_backend_host($host);
 if (str_starts_with($trimmedForDrakon, '/admin/api/v2') && !$isBackendHost) {
     http_response_code(404);
     echo '404 Not Found';

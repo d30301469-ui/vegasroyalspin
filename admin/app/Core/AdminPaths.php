@@ -81,10 +81,21 @@ if (!function_exists('admin_paths_bootstrap')) {
         $installRoot = admin_detect_install_root();
 
         // Self-contained admin deploy: services/config live under admin/ (or flat site root).
+        // Monorepo guard: if installRoot is named 'admin' and its parent has project markers,
+        // the parent is the actual monorepo root — prefer it over the admin subdirectory.
         if (
             admin_is_readable_file($installRoot . '/services/MegaPayzService.php')
             || admin_is_readable_file($installRoot . '/config/app.php')
         ) {
+            $maybeMonorepoParent = dirname($installRoot);
+            if (
+                basename($installRoot) === 'admin'
+                && $maybeMonorepoParent !== $installRoot
+                && admin_path_is_allowed($maybeMonorepoParent)
+                && admin_has_project_marker($maybeMonorepoParent)
+            ) {
+                return $root = $maybeMonorepoParent;
+            }
             return $root = $installRoot;
         }
 

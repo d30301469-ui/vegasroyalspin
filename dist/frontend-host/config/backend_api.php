@@ -137,6 +137,11 @@ if (!function_exists('frontend_coerce_public_api_url')) {
             return $fallback;
         }
 
+        // Local .test / localhost URLs are valid in non-production; only reject them in production.
+        if (!frontend_backend_api_is_production()) {
+            return $url;
+        }
+
         $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
         if (
             $host === ''
