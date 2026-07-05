@@ -3,7 +3,7 @@
 require_once SERVICE_PATH . '/BackendApiClient.php';
 
 /**
- * Legacy /game/launch uyumluluğu. Gerçek launch artık /api/v2/game-launch üzerinden Drakon ile yapılır.
+ * Legacy /game/launch uyumlulugu. Gercek launch artik /api/v2/game-launch uzerinden BGaming ile yapilir.
  */
 class GameController
 {
@@ -21,7 +21,7 @@ class GameController
         }
 
         if ($mode === 'real' && !isset($_SESSION['username'])) {
-            $_SESSION['toast_message'] = 'Lütfen hesabınıza giriş yapınız!';
+            $_SESSION['toast_message'] = 'LÃ¼tfen hesabÄ±nÄ±za giriÅŸ yapÄ±nÄ±z!';
             $_SESSION['toast_type'] = 'warning';
             header('Location: /');
             exit;
@@ -58,11 +58,11 @@ class GameController
     private function renderLaunchError(string $error_msg, int $error_code, string $game_name, string $vendor_name, string $channel): void
     {
         $messages = [
-            5  => 'Kullanıcı bulunamadı. Lütfen tekrar giriş yapın.',
-            8  => 'Yetersiz bakiye. Lütfen bakiye yükleyin.',
-            12 => 'Geçersiz oyun sağlayıcısı.',
-            13 => 'Geçersiz parametre.',
-            14 => 'Network hatası. Lütfen tekrar deneyin.',
+            5  => 'KullanÄ±cÄ± bulunamadÄ±. LÃ¼tfen tekrar giriÅŸ yapÄ±n.',
+            8  => 'Yetersiz bakiye. LÃ¼tfen bakiye yÃ¼kleyin.',
+            12 => 'GeÃ§ersiz oyun saÄŸlayÄ±cÄ±sÄ±.',
+            13 => 'GeÃ§ersiz parametre.',
+            14 => 'Network hatasÄ±. LÃ¼tfen tekrar deneyin.',
         ];
         $display_message = $messages[$error_code] ?? $error_msg;
         $device          = $channel === 'mobile' ? 'Mobile' : 'Desktop';

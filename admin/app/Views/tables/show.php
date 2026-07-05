@@ -13,7 +13,7 @@ $tableError = trim((string) ($tableError ?? ''));
 $totalPages = max(1, (int) ceil($total / $perPage));
 $module = is_array($module ?? null) ? $module : [];
 $moduleKey = isset($moduleKey) ? (string) $moduleKey : '';
-$isReadOnlyModule = in_array($moduleKey, ['deposits', 'withdrawals'], true);
+$isReadOnlyModule = in_array($moduleKey, ['deposits', 'withdrawals', 'promocode-requests'], true);
 $isWriteProtectedTable = in_array($table, [
     'users',
     'admin_permissions',
@@ -22,14 +22,16 @@ $isWriteProtectedTable = in_array($table, [
     'megapayz_config',
     'megapayz_transactions',
     'megapayz_callbacks',
-    'drakon_config',
-    'drakon_transactions',
-    'drakon_webhook_logs',
     'bgaming_config',
     'bgaming_transactions',
     'bgaming_wallet_logs',
+    'drakon_config',
+    'drakon_providers',
+    'drakon_games',
+    'drakon_transactions',
+    'drakon_webhook_logs',
 ], true);
-$actionColumnWidth = $moduleKey === 'withdrawals'
+$actionColumnWidth = in_array($moduleKey, ['withdrawals', 'promocode-requests'], true)
     ? '17%'
     : (($isReadOnlyModule || $isWriteProtectedTable) ? '7%' : '12%');
 $visibleColumnNames = is_array($visibleColumnNames ?? null) ? $visibleColumnNames : [];
@@ -697,6 +699,18 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                     <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
                                     <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
                                     <button class="admin-tx-action admin-tx-action--reject" aria-label="Reject withdraw" title="Reddet" type="submit"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Red</button>
+                                </form>
+                            <?php endif; ?>
+                            <?php if ($moduleKey === 'promocode-requests' && (string) ($row['status'] ?? '') === 'pending'): ?>
+                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/promocode-request/approve'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu promo talep onaylansın ve üye bakiyesine eklensin mi?">
+                                    <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
+                                    <button class="admin-tx-action admin-tx-action--approve" aria-label="Approve promo request" title="Onayla" type="submit"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Onayla</button>
+                                </form>
+                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/promocode-request/reject'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu promo talep reddedilsin mi?">
+                                    <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
+                                    <button class="admin-tx-action admin-tx-action--reject" aria-label="Reject promo request" title="Reddet" type="submit"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Red</button>
                                 </form>
                             <?php endif; ?>
                             <?php if (!$isReadOnlyModule && !$isWriteProtectedTable): ?>

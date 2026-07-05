@@ -34,16 +34,9 @@
     RewriteRule ^app/ - [F,L]
 
     # ─── Provider callbacks (direct PHP endpoints) ───────────────────
-    # Drakon resmi webhook: POST {site}/drakon_api
-    RewriteRule ^drakon_api/?$ drakon_api.php [L,QSA]
-    RewriteRule ^drakon_api/drakon_api/?$ drakon_api.php [L,QSA]
-    RewriteRule ^api/v2/drakon_callback/?$ api/v2/drakon_callback.php [L,QSA]
-    RewriteRule ^api/v2/drakon_callback/drakon_api/?$ api/v2/drakon_callback.php [L,QSA]
-    RewriteRule ^api/v2/drakon_callback\.php/?$ api/v2/drakon_callback.php [L,QSA]
-    RewriteRule ^api/v2/drakon_callback\.php/drakon_api/?$ api/v2/drakon_callback.php [L,QSA]
-    RewriteRule ^(?:drakon_callback|drakon_callback\.php|drakon_callback/drakon_api|drakon-callback|drakon_api|drakon_api/drakon_api|drakon_api/drakon_api\.php)/?$ api/v2/drakon_callback.php [L,QSA]
     RewriteRule ^api/v2/bgaming-wallet/?(.*)$ api/v2/bgaming_callback.php?endpoint=$1 [L,QSA]
     RewriteRule ^api/v2/bgaming/?(.*)$ api/v2/bgaming_callback.php?endpoint=$1 [L,QSA]
+    RewriteRule ^api/v2/sportsbook-wallet/?$ api/v2/sportsbook_callback.php [L,QSA]
     RewriteRule ^api/v2/megapayz-callback/?$ index.php [L,QSA]
 
     # ─── API v2 front controller ──────────────────────────────────────

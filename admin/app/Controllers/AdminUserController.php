@@ -27,28 +27,28 @@ final class AdminUserController extends AdminController
             'deposits' => $this->rows("SELECT id, method, 'megapayz' AS provider, amount, fee, status, trx, created_at, updated_at FROM megapayz_transactions WHERE user_id = :user_id AND type = 'deposit' ORDER BY id DESC LIMIT 30", $userId),
             'withdrawals' => $this->rows("SELECT id, method, 'megapayz' AS provider, amount, fee, currency, status, NULL AS admin_status, trx, created_at, updated_at FROM megapayz_transactions WHERE user_id = :user_id AND type = 'withdraw' ORDER BY id DESC LIMIT 30", $userId),
             'adjustments' => $this->rows('SELECT id, wallet, action, amount, before_balance, after_balance, note, admin_username, created_at FROM admin_balance_adjustments WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 30', $userId),
-            'games' => $this->rows("SELECT
-                t.id,
-                COALESCE(NULLIF(t.user_full_name, ''), TRIM(CONCAT(COALESCE(u.name, ''), ' ', COALESCE(u.surname, ''))), u.username) AS user_full_name,
-                COALESCE(NULLIF(t.username, ''), u.username) AS username,
-                t.transaction_id,
-                t.round_id,
-                COALESCE(NULLIF(t.image_url, ''), NULLIF(g.image_url, ''), NULLIF(g.banner, '')) AS image_url,
-                COALESCE(NULLIF(t.game_name, ''), g.game_name, t.game_id) AS game_name,
-                COALESCE(NULLIF(t.provider_name, ''), g.provider_name, '') AS provider_name,
-                t.txn_type,
-                t.status,
-                t.bet_amount,
-                t.win_amount,
-                t.before_balance,
-                t.after_balance AS balance_after,
-                t.created_at
-            FROM drakon_transactions t
-            LEFT JOIN users u ON u.id = t.user_id
-            LEFT JOIN drakon_games g ON g.game_id = t.game_id
-            WHERE t.user_id = :user_id
-            ORDER BY t.created_at DESC
-            LIMIT 20", $userId),
+            'games' => [],
+            'sportsbookCoupons' => $this->rows(
+                "SELECT
+                    id,
+                    txn_code AS transaction_id,
+                    COALESCE(wager_id, '-') AS coupon_id,
+                    COALESCE(round_id, '-') AS round_id,
+                    COALESCE(vendor_code, '-') AS vendor_code,
+                    COALESCE(game_code, '-') AS game_code,
+                    txn_type,
+                    amount,
+                    before_balance,
+                    after_balance,
+                    currency,
+                    CASE WHEN is_finished = 1 THEN 'completed' ELSE 'active' END AS status,
+                    created_at
+                 FROM sportsbook_transactions
+                 WHERE user_id = :user_id
+                 ORDER BY id DESC
+                 LIMIT 100",
+                $userId
+            ),
             'bonusClaims' => $this->rows('SELECT id, bonus_name, requested_amount, status, processed_by, processed_at, created_at FROM bonus_claim_requests WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 20', $userId),
             'activeBonuses' => $this->rows('SELECT id, name, initial_amount, current_bonus_balance, status, deadline, created_at FROM user_active_bonuses WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 20', $userId),
             'notes' => $this->notesForUser($userId),

@@ -1,7 +1,7 @@
 <?php
 /**
- * Birleşik "Hepsi" oyun listesi - type (casino|live) parametresi ile.
- * Drakon katalog listesi, arama ve load more.
+ * BirleÅŸik "Hepsi" oyun listesi - type (casino|live) parametresi ile.
+ * BGaming katalog listesi, arama ve load more.
  */
 require_once __DIR__ . '/../../core/bootstrap.php';
 require_once __DIR__ . '/../../services/BackendApiClient.php';
@@ -60,14 +60,14 @@ $initialOffset = $initialLimit;
 <div class="search-bar">
     <form method="GET" action="">
         <input type="hidden" name="type" value="casino">
-        <input type="text" id="provider-input" name="search" placeholder="Oyun adını yazın..." value="<?= htmlspecialchars($searchTerm ?? '', ENT_QUOTES); ?>">
+        <input type="text" id="provider-input" name="search" placeholder="Oyun adÄ±nÄ± yazÄ±n..." value="<?= htmlspecialchars($searchTerm ?? '', ENT_QUOTES); ?>">
         <button type="submit"><i class="fas fa-search"></i></button>
     </form>
 </div>
 <?php endif; ?>
 <div class="game-grid" id="game-grid">
     <?php if (empty($games)): ?>
-        <p>Hiç oyun bulunamadı.</p>
+        <p>HiÃ§ oyun bulunamadÄ±.</p>
     <?php else: ?>
         <?php foreach ($games as $game): ?>
             <div class="game-item" data-provider="<?= htmlspecialchars((string) ($game['provider_name'] ?? ''), ENT_QUOTES); ?>">
@@ -79,7 +79,7 @@ $initialOffset = $initialLimit;
     <?php endif; ?>
 </div>
 <div class="button-container">
-    <button id="show-more-btn" class="btn" onclick="loadMoreGames()">Daha Fazla Oyun Göster</button>
+    <button id="show-more-btn" class="btn" onclick="loadMoreGames()">Daha Fazla Oyun GÃ¶ster</button>
 </div>
 <br><br><br>
 <script>
@@ -93,7 +93,7 @@ $initialOffset = $initialLimit;
     window.loadMoreGames = function() {
         if (loading) return;
         loading = true;
-        document.getElementById('show-more-btn').innerText = 'Yükleniyor...';
+        document.getElementById('show-more-btn').innerText = 'YÃ¼kleniyor...';
         document.getElementById('show-more-btn').disabled = true;
 
         let url = loadMoreUrl + '&offset=' + offset + '&limit=' + limit;
@@ -105,7 +105,7 @@ $initialOffset = $initialLimit;
         const xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
         xhr.onload = function() {
-            document.getElementById('show-more-btn').innerText = 'Daha Fazla Oyun Göster';
+            document.getElementById('show-more-btn').innerText = 'Daha Fazla Oyun GÃ¶ster';
             document.getElementById('show-more-btn').disabled = false;
             if (this.status === 200) {
                 const json = JSON.parse(this.responseText);
@@ -120,8 +120,8 @@ $initialOffset = $initialLimit;
                 }) : [];
                 const gameGrid = document.getElementById('game-grid');
                 if (newGames.length === 0) {
-                    if (window.MaltabetToast) MaltabetToast.info('Artık daha fazla oyun yok.');
-                    else alert('Artık daha fazla oyun yok.');
+                    if (window.MaltabetToast) MaltabetToast.info('ArtÄ±k daha fazla oyun yok.');
+                    else alert('ArtÄ±k daha fazla oyun yok.');
                 } else {
                     var esc = function(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
                     var html = newGames.map(function(game) {
@@ -132,17 +132,17 @@ $initialOffset = $initialLimit;
                     offset += newGames.length;
                 }
             } else {
-                if (window.MaltabetToast) MaltabetToast.error('Oyunları yüklerken bir hata oluştu. Lütfen tekrar deneyin.');
-                else alert('Oyunları yüklerken bir hata oluştu. Lütfen tekrar deneyin.');
+                if (window.MaltabetToast) MaltabetToast.error('OyunlarÄ± yÃ¼klerken bir hata oluÅŸtu. LÃ¼tfen tekrar deneyin.');
+                else alert('OyunlarÄ± yÃ¼klerken bir hata oluÅŸtu. LÃ¼tfen tekrar deneyin.');
             }
             loading = false;
         };
         xhr.onerror = function() {
-            document.getElementById('show-more-btn').innerText = 'Daha Fazla Oyun Göster';
+            document.getElementById('show-more-btn').innerText = 'Daha Fazla Oyun GÃ¶ster';
             document.getElementById('show-more-btn').disabled = false;
             loading = false;
-            if (window.MaltabetToast) MaltabetToast.error('AJAX isteği başarısız oldu.');
-            else alert('AJAX isteği başarısız oldu.');
+            if (window.MaltabetToast) MaltabetToast.error('AJAX isteÄŸi baÅŸarÄ±sÄ±z oldu.');
+            else alert('AJAX isteÄŸi baÅŸarÄ±sÄ±z oldu.');
         };
         xhr.send();
     };

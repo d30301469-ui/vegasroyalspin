@@ -64,10 +64,10 @@ final class ApiProductBanners
 
         return [
             ['href' => '/slot', 'aria' => 'SLOT', 'img' => 'slot.webp', 'alt' => 'Slot'],
-            ['href' => '/sports', 'aria' => 'Spor', 'img' => 'spor.webp', 'alt' => 'Spor'],
+            ['href' => '/sportbook', 'aria' => 'Spor Bahisleri', 'img' => 'spor.webp', 'alt' => 'Spor Bahisleri'],
             ['href' => '/livecasino', 'aria' => 'Canlı Casino', 'img' => 'canlicasino.webp', 'alt' => 'Canlı Casino'],
             ['href' => '/promotions', 'aria' => 'Promosyonlar', 'img' => 'arkadasbonusu.webp', 'alt' => 'Promosyonlar'],
-            self::depositRow($loggedIn),
+            ['href' => '/beni-ara', 'aria' => 'Aranma Talebi', 'img' => 'cozummerkezi.webp', 'alt' => 'Aranma Talebi'],
             ['href' => $supportUrl, 'aria' => 'Destek', 'img' => 'telegram.webp', 'alt' => 'Canlı Destek'],
         ];
     }

@@ -52,10 +52,22 @@ if ($method === 'GET' && $route === 'active_bonus.php') {
 if ($method === 'GET' && $route === 'promocodes.php') {
     $pdo = AdminDatabase::pdo();
     $now = date('Y-m-d H:i:s');
+    $promocodeHasDurum = false;
+    try {
+        $colStmt = $pdo->query("SHOW COLUMNS FROM promocodes LIKE 'durum'");
+        $promocodeHasDurum = $colStmt !== false && (bool) $colStmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        $promocodeHasDurum = false;
+    }
+    $activeFilter = $promocodeHasDurum ? '(durum = 1 OR durum IS NULL) AND ' : '';
     try {
         $stmt = $pdo->prepare('SELECT id, kod, miktar, son_gecerlilik_tarihi, kullanim_limiti, mevcut_kullanim
                                FROM promocodes
-                               WHERE son_gecerlilik_tarihi >= :now
+                               WHERE ' . $activeFilter . '(
+                                     son_gecerlilik_tarihi IS NULL
+                                     OR son_gecerlilik_tarihi >= :now
+                                     OR DATE(son_gecerlilik_tarihi) >= CURDATE()
+                                 )
                                ORDER BY son_gecerlilik_tarihi ASC, id DESC');
         $stmt->execute(['now' => $now]);
         $rawRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -128,9 +140,23 @@ if ($method === 'POST' && $route === 'bonus_use_code.php') {
     }
     $pdo = AdminDatabase::pdo();
     $now = date('Y-m-d H:i:s');
+    $promocodeHasDurum = false;
+    try {
+        $colStmt = $pdo->query("SHOW COLUMNS FROM promocodes LIKE 'durum'");
+        $promocodeHasDurum = $colStmt !== false && (bool) $colStmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        $promocodeHasDurum = false;
+    }
+    $activeFilter = $promocodeHasDurum ? ' AND (durum = 1 OR durum IS NULL)' : '';
     $promo = $pdo->prepare('SELECT id, kod, miktar, kullanim_limiti, mevcut_kullanim, son_gecerlilik_tarihi
                             FROM promocodes
-                            WHERE kod = :kod AND son_gecerlilik_tarihi >= :now
+                            WHERE LOWER(TRIM(kod)) = LOWER(TRIM(:kod))'
+                            . $activeFilter .
+                            ' AND (
+                                  son_gecerlilik_tarihi IS NULL
+                                  OR son_gecerlilik_tarihi >= :now
+                                  OR DATE(son_gecerlilik_tarihi) >= CURDATE()
+                              )
                             LIMIT 1');
     $promo->execute(['kod' => $code, 'now' => $now]);
     $row = $promo->fetch(PDO::FETCH_ASSOC);
@@ -319,73 +345,4 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
         'user_message' => trim((string) ($input['message'] ?? '')) ?: null,
     ]);
     $memberEnvelope(200, ['success' => true, 'code' => 200, 'message' => 'Bonus talebi oluşturuldu', 'data' => ['requestId' => (string) $pdo->lastInsertId()]]);
-}
-
-if ($method === 'POST' && in_array($route, ['sports/launch', 'sports_launch.php'], true)) {
-    $userId = $memberRequireLogin();
-    $user = $memberUserById(AdminDatabase::pdo(), $userId);
-    if (!is_array($user)) {
-        $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'Kullanıcı bulunamadı.']);
-    }
-    $apiKey = trim((string) getenv('OKKO_SPORTS_API_KEY'));
-    $apiSecret = trim((string) getenv('OKKO_SPORTS_API_SECRET'));
-    if ($apiKey === '' || $apiSecret === '') {
-        $memberEnvelope(503, ['success' => false, 'code' => 503, 'message' => 'Spor servisi yapılandırması eksik.']);
-    }
-    $input = $memberInput($payload);
-    $allowedTypes = ['match', 'live', 'esports', 'virtual', 'prematch'];
-    $rawType = trim((string) ($input['type'] ?? 'match'));
-    $type = in_array($rawType, $allowedTypes, true) ? $rawType : 'match';
-    $lang = trim((string) ($input['lang'] ?? 'tr'));
-    $sportsPayload = [
-        'api_key' => $apiKey,
-        'api_secret' => $apiSecret,
-        'user_id' => (string) ($user['id'] ?? $userId),
-        'username' => (string) ($user['username'] ?? ''),
-        'balance' => (string) max(0.01, (float) ($user['ana_bakiye'] ?? $user['balance'] ?? 0)),
-        'type' => $type !== '' ? $type : 'match',
-        'lang' => $lang !== '' ? $lang : 'tr',
-        'currency' => 'TRY',
-        'country' => 'TR',
-        'ip' => (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
-        'timestamp' => time(),
-    ];
-    $sportsLaunchUrl = trim((string) (getenv('OKKO_SPORTS_LAUNCH_URL') ?: (defined('OKKO_SPORTS_LAUNCH_URL') ? OKKO_SPORTS_LAUNCH_URL : 'https://my.okkogaming.com/spor-launch')));
-    $ch = curl_init($sportsLaunchUrl);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($sportsPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_SSL_VERIFYHOST => 2,
-    ]);
-    $response = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
-    if (!is_string($response) || $response === '') {
-        $memberEnvelope(503, ['success' => false, 'code' => 503, 'message' => 'Spor sistemine bağlanılamıyor.', 'error' => $curlError]);
-    }
-    $decoded = json_decode($response, true);
-    if ($httpCode !== 200 || !is_array($decoded) || ($decoded['success'] ?? false) !== true || empty($decoded['iframe_url'])) {
-        $memberEnvelope(503, [
-            'success' => false,
-            'code' => 503,
-            'message' => 'Spor sistemi geçici olarak hizmet veremiyor.',
-            'providerStatus' => $httpCode,
-        ]);
-    }
-    $memberEnvelope(200, [
-        'success' => true,
-        'code' => 200,
-        'message' => 'Spor launch hazır',
-        'data' => [
-            'iframe_url' => (string) $decoded['iframe_url'],
-            'type' => $sportsPayload['type'],
-            'lang' => $sportsPayload['lang'],
-        ],
-    ]);
 }

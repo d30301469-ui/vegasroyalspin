@@ -7,7 +7,7 @@ declare(strict_types=1);
  * Backend DB: eski dev host URL'lerini (admin.metropolcasino.test vb.) production hostlarına çevirir.
  *
  * Usage:
- *   php deploy/aapanel/fix-stale-cms-urls.php [/path/to/bo-nexthub.site]
+ *   php deploy/aapanel/fix-stale-cms-urls.php [/path/to/admin.vegasroyalspin.com]
  */
 
 $root = dirname(__DIR__, 2);
@@ -26,7 +26,7 @@ if (is_readable($envFile)) {
 }
 
 if (!is_file($root . '/admin/app/Core/AdminDatabase.php')) {
-    fwrite(STDERR, "AdminDatabase not found — run on backend host (bo-nexthub.site).\n");
+    fwrite(STDERR, "AdminDatabase not found — run on backend host (admin.vegasroyalspin.com).\n");
     exit(1);
 }
 

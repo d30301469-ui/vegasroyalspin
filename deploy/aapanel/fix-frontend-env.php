@@ -161,7 +161,7 @@ if (
     require_once $root . '/services/BackendConnectivityProbe.php';
     $backendHost = trim($values['BACKEND_HOST'] ?? '');
     if ($backendHost === '') {
-        $backendHost = $mainBackendHost !== '' ? $mainBackendHost : 'bo-nexthub.site';
+        $backendHost = $mainBackendHost !== '' ? $mainBackendHost : 'admin.vegasroyalspin.com';
     }
     $detected = BackendConnectivityProbe::detectInternalConfig($backendHost);
     if ($detected !== null) {

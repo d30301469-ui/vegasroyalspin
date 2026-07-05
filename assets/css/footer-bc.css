@@ -278,7 +278,7 @@ html.is-web .layout-footer-holder-bc .expandableContentData .container.col-3 .co
 .layout-footer-holder-bc .footerHeader {
   width: 100%;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   flex-wrap: wrap;
   box-shadow: 0 -1px rgba(var(--b-sc), 0.1) inset;
@@ -291,6 +291,10 @@ html.is-web .layout-footer-holder-bc .expandableContentData .container.col-3 .co
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.layout-footer-holder-bc .footerInnerLeftCol {
+  margin-right: auto;
 }
 
 .layout-footer-holder-bc .footerSocialLinks {
@@ -358,7 +362,65 @@ html.is-web .layout-footer-holder-bc .expandableContentData .container.col-3 .co
   background: rgba(0, 0, 0, 0.35);
   color: rgba(var(--b-sc), 0.85);
   font-size: 12px;
-  cursor: default;
+  cursor: pointer;
+}
+
+.layout-footer-holder-bc .footerLanguageDropdown {
+  position: relative;
+}
+
+.layout-footer-holder-bc .footerLanguageDropdown.is-open .footerLanguageChevron {
+  transform: rotate(-90deg);
+}
+
+.layout-footer-holder-bc .footerLanguageMenu {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 4px;
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  z-index: 50;
+  min-width: 88px;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--b-sc), 0.16);
+  background: rgba(17, 19, 27, 0.96);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.layout-footer-holder-bc .footerLanguageMenu li + li {
+  margin-top: 3px;
+}
+
+.layout-footer-holder-bc .footerLanguageOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: rgba(var(--b-sc), 0.9);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 5px 8px;
+}
+
+.layout-footer-holder-bc .footerLanguageOption .flag-icon {
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.layout-footer-holder-bc .footerLanguageOption .code {
+  letter-spacing: .04em;
+}
+
+.layout-footer-holder-bc .footerLanguageOption:hover,
+.layout-footer-holder-bc .footerLanguageOption.is-active {
+  background: rgba(var(--b-sc), 0.17);
+  color: #fff;
 }
 
 .layout-footer-holder-bc .footerLanguageFlag {

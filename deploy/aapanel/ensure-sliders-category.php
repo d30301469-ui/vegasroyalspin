@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 /**
  * sliders.category ENUM → VARCHAR(80) veya ENUM'a bgaming ekler (backend SSH).
- * Usage: php deploy/aapanel/ensure-sliders-category.php [/path/to/bo-nexthub.site]
+ * Usage: php deploy/aapanel/ensure-sliders-category.php [/path/to/admin.vegasroyalspin.com]
  */
 
 $root = dirname(__DIR__, 2);

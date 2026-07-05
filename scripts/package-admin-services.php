@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 /**
- * Admin/backend host için eksiksiz services/ paketi.
- * Sadece services/ eksikse FTP ile yüklemek için: dist/admin-services/*
+ * Admin/backend host iÃ§in eksiksiz services/ paketi.
+ * Sadece services/ eksikse FTP ile yÃ¼klemek iÃ§in: dist/admin-services/*
  * Hedef sunucu: /www/wwwroot/bo-nexthub.site/services/
  *
  * Usage: php scripts/package-admin-services.php [output-dir]
@@ -15,10 +15,9 @@ $outputRoot = isset($argv[1]) && trim((string) $argv[1]) !== ''
     ? rtrim(str_replace('\\', '/', (string) $argv[1]), '/')
     : $projectRoot . '/dist/admin-services';
 
-/** Zorunlu — admin bootstrap ve api/v2 bunları require eder */
+/** Zorunlu â€” admin bootstrap ve api/v2 bunlarÄ± require eder */
 $requiredFiles = [
     'MegaPayzService.php',
-    'DrakonService.php',
     'BgamingService.php',
     'MemberJwtService.php',
     'BackendApiClient.php',
@@ -37,23 +36,22 @@ $requiredFiles = [
 ];
 
 $fileDescriptions = [
-    'MegaPayzService.php' => 'Ödeme entegrasyonu (MegaPayz yatırım/çekim, callback)',
-    'DrakonService.php' => 'Oyun sağlayıcı (Drakon launch, webhook, katalog)',
-    'BgamingService.php' => 'Oyun sağlayıcı (BGaming wallet, launch, katalog)',
-    'MemberJwtService.php' => 'Üye JWT oturum tokenları',
+    'MegaPayzService.php' => 'Ã–deme entegrasyonu (MegaPayz yatÄ±rÄ±m/Ã§ekim, callback)',
+    'BgamingService.php' => 'Oyun saÄŸlayÄ±cÄ± (BGaming wallet, launch, katalog)',
+    'MemberJwtService.php' => 'Ãœye JWT oturum tokenlarÄ±',
     'BackendApiClient.php' => 'HTTP API istemcisi',
-    'MemberLoginService.php' => 'Login/register API köprüsü',
-    'MemberRegisterService.php' => 'Üye kayıt API köprüsü',
-    'MemberRegisterPayload.php' => 'Kayıt payload yardımcısı',
+    'MemberLoginService.php' => 'Login/register API kÃ¶prÃ¼sÃ¼',
+    'MemberRegisterService.php' => 'Ãœye kayÄ±t API kÃ¶prÃ¼sÃ¼',
+    'MemberRegisterPayload.php' => 'KayÄ±t payload yardÄ±mcÄ±sÄ±',
     'MemberViewDataService.php' => 'Bakiye/profil (admin host)',
-    'ProfileApiHelper.php' => 'Profil API köprüsü',
+    'ProfileApiHelper.php' => 'Profil API kÃ¶prÃ¼sÃ¼',
     'SlotGamesQuery.php' => 'Oyun katalog sorgusu',
-    'ProviderDisplayBadgeMap.php' => 'Sağlayıcı rozet haritası',
-    'BalanceService.php' => 'Bakiye API köprüsü',
-    'PaymentCallbackService.php' => 'Ödeme callback iş mantığı',
-    'PublicApiV2Dispatcher.php' => 'Public API yönlendirici',
-    'BackendMemberApiProxy.php' => 'Frontend→backend API proxy',
-    'TurkishNationalId.php' => 'TC kimlik doğrulama',
+    'ProviderDisplayBadgeMap.php' => 'SaÄŸlayÄ±cÄ± rozet haritasÄ±',
+    'BalanceService.php' => 'Bakiye API kÃ¶prÃ¼sÃ¼',
+    'PaymentCallbackService.php' => 'Ã–deme callback iÅŸ mantÄ±ÄŸÄ±',
+    'PublicApiV2Dispatcher.php' => 'Public API yÃ¶nlendirici',
+    'BackendMemberApiProxy.php' => 'Frontendâ†’backend API proxy',
+    'TurkishNationalId.php' => 'TC kimlik doÄŸrulama',
 ];
 
 $sourceDir = $projectRoot . '/services';
@@ -94,7 +92,7 @@ $manifestLines = [
 ];
 foreach ($requiredFiles as $file) {
     $desc = $fileDescriptions[$file] ?? '';
-    $manifestLines[] = '  ' . $file . ($desc !== '' ? ' — ' . $desc : '');
+    $manifestLines[] = '  ' . $file . ($desc !== '' ? ' â€” ' . $desc : '');
 }
 $manifestLines[] = '';
 $manifestLines[] = 'Verify on server:';
@@ -102,25 +100,25 @@ $manifestLines[] = '  ls /www/wwwroot/bo-nexthub.site/services/MegaPayzService.p
 file_put_contents($outputRoot . '/MANIFEST.txt', implode("\n", $manifestLines) . "\n");
 
 file_put_contents($outputRoot . '/UPLOAD.txt', implode("\n", [
-    'YUKLEME — bo-nexthub.site services/ klasörü',
+    'YUKLEME â€” bo-nexthub.site services/ klasÃ¶rÃ¼',
     '',
-    '1. Bu klasördeki TÜM .php dosyalarını seçin',
-    '2. FTP / aaPanel → /www/wwwroot/bo-nexthub.site/services/ içine yükleyin',
-    '3. Mevcut boş services/ varsa üzerine yazın',
+    '1. Bu klasÃ¶rdeki TÃœM .php dosyalarÄ±nÄ± seÃ§in',
+    '2. FTP / aaPanel â†’ /www/wwwroot/bo-nexthub.site/services/ iÃ§ine yÃ¼kleyin',
+    '3. Mevcut boÅŸ services/ varsa Ã¼zerine yazÄ±n',
     '4. Kontrol:',
     '     ls /www/wwwroot/bo-nexthub.site/services/MegaPayzService.php',
     '',
-    'Tam admin kurulumu için tercihen:',
+    'Tam admin kurulumu iÃ§in tercihen:',
     '  php scripts/package-admin-server.php',
-    '  → dist/admin-host/* tüm site köküne yüklenir',
+    '  â†’ dist/admin-host/* tÃ¼m site kÃ¶kÃ¼ne yÃ¼klenir',
     '',
 ]) . "\n");
 
 echo "Copied " . count($copied) . " files to {$outputRoot}\n";
 foreach ($copied as $file) {
-    echo "  ✓ {$file}\n";
+    echo "  âœ“ {$file}\n";
 }
-echo "\nUpload dist/admin-services/* → /www/wwwroot/bo-nexthub.site/services/\n";
+echo "\nUpload dist/admin-services/* â†’ /www/wwwroot/bo-nexthub.site/services/\n";
 
 function removeTree(string $path): void
 {

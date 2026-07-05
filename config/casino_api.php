@@ -1,7 +1,7 @@
 <?php
 /**
- * Legacy ApiGate yapılandırması tasfiye edildi.
- * Oyun launch ve wallet callback akışı DrakonService üzerinden çalışır.
+ * Legacy ApiGate yapÄ±landÄ±rmasÄ± tasfiye edildi.
+ * Oyun launch ve wallet callback akÄ±ÅŸÄ± BGaming Ã¼zerinden Ã§alÄ±ÅŸÄ±r.
  */
 
 if (!defined('CONFIG_PATH')) {
@@ -49,6 +49,6 @@ function casino_api_log(string $type, string $message, $data = null): void
 
 function casino_api_request(array $data): array
 {
-    casino_api_log('ERROR', 'Legacy ApiGate request blocked after Drakon migration', $data);
+    casino_api_log('ERROR', 'Legacy ApiGate request blocked after provider migration', $data);
     return ['status' => 410, 'msg' => 'LEGACY_PROVIDER_DISABLED'];
 }

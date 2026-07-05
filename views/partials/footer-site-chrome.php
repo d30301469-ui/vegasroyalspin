@@ -7,12 +7,11 @@ $footerPhoneHref = $footerContactPhone !== '' ? 'tel:' . preg_replace('/[^0-9+]/
 ?>
 <!-- Lisans rozeti + sosyal (sayfa altı, footerRow dışı) -->
 <div style="text-align:center; margin-top:20px; margin-bottom:16px;">
-    <a href="/cert.gcb.cw/index.html" target="_blank"
-       style="display:inline-block; transition:transform 0.3s ease;">
+    <span style="display:inline-block; transition:transform 0.3s ease;">
         <img loading="lazy" src="https://seal.cgcb.info/1c0246df-1aa7-485a-a24c-21ae5e730000"
              alt="Lisans Logosu" width="130" height="65"
              style="height:65px; width:auto; display:block; margin:0 auto; border-radius:6px;">
-    </a>
+    </span>
 </div>
 
 <div class="license-social-wrapper" style="text-align:center; margin-bottom:32px;">

@@ -62,14 +62,6 @@ function metropol_public_api_route_from_path(string $path): string
         '/api/promotions.php' => 'content/promotions',
         '/api/footer-pages' => 'content/footer-pages',
         '/api/footer_pages.php' => 'content/footer-pages',
-        '/api/sports' => 'sports',
-        '/api/sports.php' => 'sports.php',
-        '/api/sports-events' => 'sports-events',
-        '/api/sports_events.php' => 'sports_events.php',
-        '/api/sports-leagues' => 'sports-leagues',
-        '/api/sports_leagues.php' => 'sports_leagues.php',
-        '/api/sports-markets' => 'sports-markets',
-        '/api/sports_markets.php' => 'sports_markets.php',
     ];
 
     if (isset($legacy[$path])) {

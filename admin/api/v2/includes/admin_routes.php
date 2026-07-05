@@ -30,10 +30,7 @@ $routes = [
             'users' => (int) $scalar($pdo, 'SELECT COUNT(*) FROM users'),
             'deposits_confirmed' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE type='deposit' AND status='confirmed'"),
             'withdrawals_pending' => (int) $scalar($pdo, "SELECT COUNT(*) FROM megapayz_transactions WHERE type='withdraw' AND status='pending'"),
-            'games_active' => (int) $scalar($pdo, 'SELECT (
-                (SELECT COUNT(*) FROM drakon_games WHERE is_active = 1)
-                + (SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1)
-            )'),
+            'games_active' => (int) $scalar($pdo, 'SELECT (SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1) + (SELECT COUNT(*) FROM drakon_games WHERE is_active = 1)'),
             'call_requests_pending' => (int) $scalar($pdo, "SELECT COUNT(*) FROM call_me_requests WHERE status='pending'"),
             'support_tickets_open' => (int) $scalar($pdo, "SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','answered')"),
             'aml_alerts_open' => ComplianceService::countOpen($pdo, 'aml_alerts'),
@@ -739,26 +736,39 @@ $routes = [
         }
         $success(['user_id' => $userId, 'created' => false], ['status' => 'use_users_balance_adjust']);
     }],
-    ['GET', 'casino/providers', static function () use ($requirePermission, $success): void {
-        $requirePermission('drakon-providers');
+    ['GET', 'casino/providers', static function () use ($requireAnyPermission, $success): void {
+        $requireAnyPermission(['bgaming-games', 'drakon-settings']);
         $pdo = AdminDatabase::pdo();
-        DrakonService::bootstrap($pdo);
-        $success(['items' => DrakonService::providers($pdo, [])]);
+        $drakonProviders = [];
+        try {
+            $pStmt = $pdo->query("SELECT provider_code, provider_name, rtp, is_active FROM drakon_providers ORDER BY provider_name ASC");
+            $drakonProviders = $pStmt ? $pStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable) {}
+        $success(['items' => $drakonProviders]);
     }],
     ['GET', 'casino/games', static function (array $params, array $payload) use ($requireAnyPermission, $success): void {
-        $requireAnyPermission(['drakon-games', 'bgaming-games']);
-        $pdo = AdminDatabase::pdo();
-        DrakonService::bootstrap($pdo);
-        $success(DrakonService::games($pdo, $payload['query'] ?? []));
+        $requireAnyPermission(['bgaming-games', 'drakon-settings']);
+        $pdo          = AdminDatabase::pdo();
+        $bgamingGames = BgamingService::games($pdo, $payload['query'] ?? []);
+        $drakonData   = [];
+        try {
+            $drakonData = DrakonService::games($pdo, $payload['query'] ?? []);
+        } catch (Throwable) {}
+        $allGames = array_merge(
+            (array) ($bgamingGames['games'] ?? $bgamingGames['items'] ?? []),
+            (array) ($drakonData['games'] ?? $drakonData['items'] ?? [])
+        );
+        $success(array_merge($bgamingGames, ['games' => $allGames, 'items' => $allGames,
+            'total' => (int) ($bgamingGames['total'] ?? 0) + (int) ($drakonData['total'] ?? 0)]));
     }],
     ['POST', 'casino/games/{id}/enable', static function (array $params, array $payload) use ($requireAnyPermission, $validateCsrf, $success, $error): void {
-        $requireAnyPermission(['drakon-games', 'bgaming-games']);
+        $requireAnyPermission(['bgaming-games', 'drakon-settings']);
         $validateCsrf($payload);
         $gameId = trim((string) ($params['id'] ?? ''));
         if ($gameId === '') { $error(422, 'Geçersiz oyun ID.'); }
         $pdo = AdminDatabase::pdo();
         $updated = false;
-        foreach (['drakon_games', 'bgaming_games'] as $table) {
+        foreach (['bgaming_games', 'drakon_games'] as $table) {
             try {
                 $stmt = $pdo->prepare("UPDATE $table SET is_active = 1 WHERE id = :id OR game_id = :gid");
                 $stmt->execute(['id' => is_numeric($gameId) ? (int) $gameId : 0, 'gid' => $gameId]);
@@ -769,13 +779,13 @@ $routes = [
         $success(['id' => $gameId, 'enabled' => true]);
     }],
     ['POST', 'casino/games/{id}/disable', static function (array $params, array $payload) use ($requireAnyPermission, $validateCsrf, $success, $error): void {
-        $requireAnyPermission(['drakon-games', 'bgaming-games']);
+        $requireAnyPermission(['bgaming-games', 'drakon-settings']);
         $validateCsrf($payload);
         $gameId = trim((string) ($params['id'] ?? ''));
         if ($gameId === '') { $error(422, 'Geçersiz oyun ID.'); }
         $pdo = AdminDatabase::pdo();
         $updated = false;
-        foreach (['drakon_games', 'bgaming_games'] as $table) {
+        foreach (['bgaming_games', 'drakon_games'] as $table) {
             try {
                 $stmt = $pdo->prepare("UPDATE $table SET is_active = 0 WHERE id = :id OR game_id = :gid");
                 $stmt->execute(['id' => is_numeric($gameId) ? (int) $gameId : 0, 'gid' => $gameId]);
@@ -786,10 +796,15 @@ $routes = [
         $success(['id' => $gameId, 'enabled' => false]);
     }],
     ['POST', 'internal/jobs/sync-games', static function (array $params, array $payload) use ($requireAnyPermission, $validateCsrf, $success): void {
-        $requireAnyPermission(['drakon-games', 'bgaming-games']);
+        $requireAnyPermission(['bgaming-games', 'drakon-settings']);
         $validateCsrf($payload);
+        @set_time_limit(0);
         $pdo = AdminDatabase::pdo();
-        $success(['drakon' => DrakonService::syncGames($pdo), 'bgaming' => BgamingService::syncGames($pdo)]);
+        $drakonResult = [];
+        try {
+            $drakonResult = DrakonService::syncGames($pdo);
+        } catch (Throwable) {}
+        $success(['bgaming' => BgamingService::syncGames($pdo), 'drakon' => $drakonResult]);
     }],
     ['POST', 'internal/jobs/sync-odds', static function (array $params, array $payload) use ($requireAuth, $validateCsrf, $success): void {
         $requireAuth();

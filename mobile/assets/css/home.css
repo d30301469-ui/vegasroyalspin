@@ -19,6 +19,67 @@
   min-height: min(48vh, 480px);
 }
 
+/* Fallback home jackpot markup (wrapper yokken de düzenli görünsün) */
+.mobile-site .jp-section {
+  margin: 8px auto 10px;
+  padding: 0 8px;
+}
+
+.mobile-site .jp-bg {
+  min-height: 430px;
+  border-radius: 10px;
+  padding: 16px 12px 14px;
+}
+
+.mobile-site .jp-main-card,
+.mobile-site .jp-sub-card {
+  border-radius: 8px;
+}
+
+/* Jackpot altındaki kampanya görseli çok basık kalmasın */
+.mobile-site .live-casino-banner-wrap {
+  margin: 8px auto 10px;
+  padding: 0 8px;
+}
+
+.mobile-site .live-casino-banner {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mobile-site .live-casino-banner img {
+  width: 100%;
+  min-height: 110px;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+.mobile-site .home-jackpot-winners-section {
+  padding: 8px 8px 10px;
+}
+
+.mobile-site .home-jackpot-winners-row {
+  gap: 10px;
+}
+
+.mobile-site .home-jackpot-winners-section .slot-hero-tablist {
+  border-radius: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobile-site .home-jackpot-winners-section .slot-jackpot-wrap .jp-bg {
+  min-height: 430px;
+  border-radius: 10px;
+  padding: 16px 12px 14px;
+}
+
+.mobile-site .home-jackpot-winners-section .slot-jackpot-wrap .jp-main-card,
+.mobile-site .home-jackpot-winners-section .slot-jackpot-wrap .jp-sub-card {
+  border-radius: 8px;
+}
+
 @media (max-width: 992px) {
   /* 6 ürün banner’ı (3x2): kutular arası boşluk + lig şeridinden ayrım */
   .mobile-site .hm-row-bc:not(.has-slider) {
@@ -49,3 +110,4 @@
     gap: 0;
   }
 }
+

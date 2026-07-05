@@ -1111,7 +1111,6 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
         }
         .megapayz-card,
         .bgaming-card,
-        .drakon-card,
         .payment-method-card,
         .suite-card,
         .permissions-stat,
@@ -1121,7 +1120,6 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
         }
         .megapayz-grid,
         .bgaming-grid,
-        .drakon-grid,
         .payment-methods-grid,
         .suite-layout,
         .user-detail-page {
@@ -1129,21 +1127,18 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
         }
         .megapayz-help,
         .bgaming-help,
-        .drakon-help,
         .field-help {
             color: var(--t-muted);
             font-size: 11px !important;
             line-height: 1.45;
         }
         .megapayz-stat,
-        .bgaming-stat,
-        .drakon-stat {
+        .bgaming-stat {
             font-size: 12px;
             padding: 10px 0 !important;
         }
         .megapayz-stat strong,
-        .bgaming-stat strong,
-        .drakon-stat strong {
+        .bgaming-stat strong {
             color: var(--t-base);
             font-size: 12px;
             overflow-wrap: anywhere;
@@ -1161,7 +1156,6 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
         .permissions-card,
         .megapayz-card,
         .bgaming-card,
-        .drakon-card,
         .footer-card,
         .mobile-card,
         .homepage-card,
@@ -1180,7 +1174,6 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
         .permissions-layout,
         .megapayz-grid,
         .bgaming-grid,
-        .drakon-grid,
         .footer-layout,
         .mobile-layout,
         .homepage-layout,

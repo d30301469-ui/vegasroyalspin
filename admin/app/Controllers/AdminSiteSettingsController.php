@@ -126,8 +126,8 @@ final class AdminSiteSettingsController extends AdminController
                 'caption' => 'Frontend, backend ve izinli hostlar',
                 'fields' => [
                     ['name' => 'frontend_url', 'label' => 'Frontend URL', 'type' => 'url', 'placeholder' => 'https://example.com'],
-                    ['name' => 'backend_url', 'label' => 'Backend URL', 'type' => 'url', 'placeholder' => 'https://bo-nexthub.site'],
-                    ['name' => 'backend_api_base_url', 'label' => 'API base URL', 'type' => 'url', 'placeholder' => 'https://bo-nexthub.site/api/v2'],
+                    ['name' => 'backend_url', 'label' => 'Backend URL', 'type' => 'url', 'placeholder' => 'https://admin.vegasroyalspin.com'],
+                    ['name' => 'backend_api_base_url', 'label' => 'API base URL', 'type' => 'url', 'placeholder' => 'https://api.vegasroyalspin.com/api/v2'],
                     ['name' => 'allowed_url_hosts', 'label' => 'İzinli hostlar', 'type' => 'textarea', 'help' => 'Virgülle ayırın: site.com,admin.site.com'],
                 ],
             ],

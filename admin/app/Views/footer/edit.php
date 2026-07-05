@@ -17,50 +17,16 @@ $jsonLabels = [
     'partner_logos' => 'Sponsor / Lig Logoları (Ana Sayfa Şeridi)',
     'jackpot_config' => 'Jackpot Widget Ayarları (epoch + providers JSON)',
 ];
-$flattenJson = static function (mixed $value, string $prefix = '') use (&$flattenJson): array {
-    if (is_array($value)) {
-        $rows = [];
-        foreach ($value as $key => $child) {
-            $path = $prefix === '' ? (string) $key : $prefix . '.' . (string) $key;
-            $rows = array_merge($rows, $flattenJson($child, $path));
-        }
-        return $rows;
-    }
-
-    if (is_bool($value)) {
-        return [['path' => $prefix, 'type' => 'boolean', 'value' => $value ? 'true' : 'false']];
-    }
-    if (is_int($value) || is_float($value)) {
-        return [['path' => $prefix, 'type' => 'number', 'value' => (string) $value]];
-    }
-    if ($value === null) {
-        return [['path' => $prefix, 'type' => 'null', 'value' => '']];
-    }
-
-    return [['path' => $prefix, 'type' => 'string', 'value' => (string) $value]];
-};
-$jsonFieldRows = static function (string $field) use ($jsonFields, $flattenJson): array {
-    $decoded = json_decode((string) ($jsonFields[$field] ?? '[]'), true);
-    return is_array($decoded) ? $flattenJson($decoded) : [];
-};
+$flattenJson = static fn () => [];  // reserved, not used
+$jsonFieldRows = static fn (string $field) => [];  // reserved, not used
 ?>
 <style>
-    .footer-payload-editor { background:var(--bg-card); border:1px solid var(--border-soft); border-radius:12px; color:var(--t-base); overflow:hidden; }
-    .footer-payload-editor-head { align-items:center; background:color-mix(in srgb, var(--bg-muted) 86%, var(--bg-card)); color:var(--t-base); display:flex; font-size:12px; font-weight:900; justify-content:space-between; padding:10px 12px; }
-    .footer-payload-table-wrap { overflow:auto; scrollbar-color:var(--border) transparent; scrollbar-width:thin; }
-    .footer-payload-table-wrap::-webkit-scrollbar { height:6px; width:6px; }
-    .footer-payload-table-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:999px; }
-    .footer-payload-table { border-collapse:separate; border-spacing:0; min-width:760px; width:100%; }
-    .footer-payload-table th,
-    .footer-payload-table td { border-bottom:1px solid var(--border-soft); padding:8px; text-align:left; vertical-align:middle; }
-    .footer-payload-table th { background:color-mix(in srgb, var(--bg-muted) 86%, var(--bg-card)); color:var(--t-light); font-size:11px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
-    .footer-payload-table td { background:var(--bg-card); color:var(--t-base); }
-    .footer-payload-table tbody tr:nth-child(even) td { background:color-mix(in srgb, var(--bg-muted) 30%, var(--bg-card)); }
-    .footer-payload-table tbody tr:hover td { background:color-mix(in srgb, var(--primary-soft) 64%, var(--bg-card)); }
-    .footer-payload-table tbody tr:last-child td { border-bottom:0; }
-    .footer-payload-table .input,
-    .footer-payload-table .select { min-height:34px; padding:7px 9px; }
-    .footer-payload-action-cell { text-align:right !important; white-space:nowrap; width:86px; }
+    .json-editor-wrap { position:relative; }
+    .json-editor-wrap .textarea { font-family: 'Courier New', Courier, monospace; font-size:12px; min-height:180px; white-space:pre; }
+    .json-editor-status { font-size:11px; font-weight:700; margin-top:4px; }
+    .json-editor-status.ok  { color: var(--success, #22c55e); }
+    .json-editor-status.err { color: var(--danger, #ef4444); }
+    .json-editor-format-btn { position:absolute; top:8px; right:8px; }
 </style>
 <section class="hero">
     <div class="hero-text">
@@ -73,6 +39,13 @@ $jsonFieldRows = static function (string $field) use ($jsonFields, $flattenJson)
         <button class="btn btn--primary" type="submit" form="footerSettingsForm">Kaydet</button>
     </div>
 </section>
+
+<?php if ($flash !== ''): ?>
+    <div class="alert success admin-alert-spaced">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div class="body"><?= $h($flash) ?></div>
+    </div>
+<?php endif; ?>
 
 <?php if ($error !== ''): ?>
     <div class="alert danger admin-alert-spaced">
@@ -165,147 +138,106 @@ $jsonFieldRows = static function (string $field) use ($jsonFields, $flattenJson)
             <section class="col-12 card">
                 <div class="card-head">
                     <div class="card-title-wrap">
-                        <span class="eyebrow">İşlenmiş Veri</span>
+                        <span class="eyebrow">JSON Verisi</span>
                         <h2 class="card-title"><?= $h($label) ?></h2>
                     </div>
                     <span class="badge solid"><?= $h($field) ?></span>
                 </div>
                 <div class="field span-2">
-                    <input type="hidden" name="<?= $h($field) ?>" value="<?= $h($jsonFields[$field] ?? '[]') ?>" data-footer-payload-value>
-                    <div class="footer-payload-editor" data-footer-payload-editor>
-                        <div class="footer-payload-editor-head">
-                            <span>Alan yolu, tip ve değer olarak düzenlenir</span>
-                            <button class="btn btn--ghost" type="button" data-footer-payload-add>Alan Ekle</button>
-                        </div>
-                        <div class="footer-payload-table-wrap">
-                            <table class="footer-payload-table">
-                                <thead>
-                                    <tr>
-                                        <th>Alan Yolu</th>
-                                        <th>Tip</th>
-                                        <th>Değer</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody data-footer-payload-rows>
-                                    <?php foreach ($jsonFieldRows($field) as $row): ?>
-                                        <tr data-footer-payload-row>
-                                            <td><input class="input" data-footer-payload-path value="<?= $h($row['path'] ?? '') ?>" placeholder="0.title veya 0.links.0.href"></td>
-                                            <td>
-                                                <select class="select" data-footer-payload-type>
-                                                    <?php foreach (['string' => 'Metin', 'number' => 'Sayı', 'boolean' => 'Doğru/Yanlış', 'null' => 'Boş'] as $optionValue => $optionLabel): ?>
-                                                        <option value="<?= $h($optionValue) ?>" <?= (string) ($row['type'] ?? 'string') === $optionValue ? 'selected' : '' ?>><?= $h($optionLabel) ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </td>
-                                            <td><input class="input" data-footer-payload-scalar value="<?= $h($row['value'] ?? '') ?>" placeholder="Değer"></td>
-                                            <td class="footer-payload-action-cell"><button class="btn btn--ghost" type="button" data-footer-payload-remove>Sil</button></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="json-editor-wrap">
+                        <button class="btn btn--ghost json-editor-format-btn" type="button" data-json-format="<?= $h($field) ?>">Formatla</button>
+                        <textarea
+                            id="json_<?= $h($field) ?>"
+                            class="textarea"
+                            name="<?= $h($field) ?>"
+                            rows="12"
+                            spellcheck="false"
+                            autocomplete="off"
+                            data-json-editor="<?= $h($field) ?>"
+                        ><?= $h($jsonFields[$field] ?? '[]') ?></textarea>
+                        <div class="json-editor-status ok" data-json-status="<?= $h($field) ?>">✓ Geçerli JSON</div>
                     </div>
-                    <div class="field-help">Bu alan API payload içindeki <code><?= $h($field) ?></code> dizisini satır bazlı yönetir.</div>
+                    <div class="field-help">Bu alan API payload içindeki <code><?= $h($field) ?></code> değerini düzenler. Geçerli bir JSON dizisi veya nesnesi olmalıdır.</div>
                 </div>
             </section>
         <?php endforeach; ?>
     </div>
 
-        <div class="form-actions admin-action-spaced">
+    <div class="form-actions admin-action-spaced">
         <span class="badge dot success">API: /api/v2/content/footer</span>
         <span class="spacer"></span>
         <button class="btn btn--primary" type="submit">Footer Ayarlarını Kaydet</button>
     </div>
 </form>
-<template id="footerPayloadRowTemplate">
-    <table><tbody>
-        <tr data-footer-payload-row>
-            <td><input class="input" data-footer-payload-path value="" placeholder="0.title veya 0.links.0.href"></td>
-            <td>
-                <select class="select" data-footer-payload-type>
-                    <option value="string">Metin</option>
-                    <option value="number">Sayı</option>
-                    <option value="boolean">Doğru/Yanlış</option>
-                    <option value="null">Boş</option>
-                </select>
-            </td>
-            <td><input class="input" data-footer-payload-scalar value="" placeholder="Değer"></td>
-            <td class="footer-payload-action-cell"><button class="btn btn--ghost" type="button" data-footer-payload-remove>Sil</button></td>
-        </tr>
-    </tbody></table>
-</template>
 <script>
     (function () {
+        function validateJson(textarea, statusEl) {
+            var val = textarea.value.trim();
+            if (val === '') {
+                textarea.value = '[]';
+                val = '[]';
+            }
+            try {
+                var parsed = JSON.parse(val);
+                if (typeof parsed !== 'object' || parsed === null) {
+                    throw new Error('Dizi veya nesne gerekli');
+                }
+                statusEl.textContent = '✓ Geçerli JSON';
+                statusEl.className = 'json-editor-status ok';
+                return true;
+            } catch (e) {
+                statusEl.textContent = '✗ Geçersiz JSON: ' + e.message;
+                statusEl.className = 'json-editor-status err';
+                return false;
+            }
+        }
+
+        function formatJson(textarea, statusEl) {
+            try {
+                var parsed = JSON.parse(textarea.value.trim());
+                textarea.value = JSON.stringify(parsed, null, 2);
+                statusEl.textContent = '✓ Geçerli JSON';
+                statusEl.className = 'json-editor-status ok';
+            } catch (e) {
+                statusEl.textContent = '✗ Geçersiz JSON: ' + e.message;
+                statusEl.className = 'json-editor-status err';
+            }
+        }
+
+        document.querySelectorAll('[data-json-editor]').forEach(function (textarea) {
+            var field = textarea.dataset.jsonEditor;
+            var statusEl = document.querySelector('[data-json-status="' + field + '"]');
+            if (!statusEl) return;
+            validateJson(textarea, statusEl);
+            textarea.addEventListener('input', function () { validateJson(textarea, statusEl); });
+        });
+
+        document.querySelectorAll('[data-json-format]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var field = btn.dataset.jsonFormat;
+                var textarea = document.querySelector('[data-json-editor="' + field + '"]');
+                var statusEl = document.querySelector('[data-json-status="' + field + '"]');
+                if (textarea && statusEl) formatJson(textarea, statusEl);
+            });
+        });
+
         var form = document.getElementById('footerSettingsForm');
-        var template = document.getElementById('footerPayloadRowTemplate');
-        if (!form || !template) return;
-
-        function castValue(type, value) {
-            if (type === 'number') {
-                var number = Number(value);
-                return Number.isFinite(number) ? number : 0;
-            }
-            if (type === 'boolean') return value === 'true' || value === '1' || value === 'on' || value === 'evet';
-            if (type === 'null') return null;
-            return value;
-        }
-
-        function isListKey(key) {
-            return /^\d+$/.test(key);
-        }
-
-        function assignPath(root, path, value) {
-            var parts = path.split('.').map(function (part) { return part.trim(); }).filter(Boolean);
-            if (!parts.length) return;
-            var cursor = root;
-            parts.forEach(function (part, index) {
-                var last = index === parts.length - 1;
-                if (last) {
-                    cursor[part] = value;
-                    return;
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                var hasError = false;
+                document.querySelectorAll('[data-json-editor]').forEach(function (textarea) {
+                    var field = textarea.dataset.jsonEditor;
+                    var statusEl = document.querySelector('[data-json-status="' + field + '"]');
+                    if (statusEl && !validateJson(textarea, statusEl)) {
+                        hasError = true;
+                    }
+                });
+                if (hasError) {
+                    e.preventDefault();
+                    var firstErr = document.querySelector('.json-editor-status.err');
+                    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-                var nextPart = parts[index + 1];
-                if (cursor[part] === undefined || cursor[part] === null || typeof cursor[part] !== 'object') {
-                    cursor[part] = isListKey(nextPart) ? [] : {};
-                }
-                cursor = cursor[part];
             });
         }
-
-        function syncEditor(editor) {
-            var hidden = editor.parentElement.querySelector('[data-footer-payload-value]');
-            if (!hidden) return;
-            var payload = [];
-            editor.querySelectorAll('[data-footer-payload-row]').forEach(function (row) {
-                var path = row.querySelector('[data-footer-payload-path]').value.trim();
-                if (!path) return;
-                var type = row.querySelector('[data-footer-payload-type]').value;
-                var value = row.querySelector('[data-footer-payload-scalar]').value;
-                assignPath(payload, path, castValue(type, value));
-            });
-            hidden.value = JSON.stringify(payload);
-        }
-
-        document.addEventListener('click', function (event) {
-            var add = event.target.closest('[data-footer-payload-add]');
-            if (add) {
-                var editor = add.closest('[data-footer-payload-editor]');
-                var rows = editor ? editor.querySelector('[data-footer-payload-rows]') : null;
-                var rowTemplate = template.content ? template.content.querySelector('tr') : null;
-                if (rows) rows.insertAdjacentHTML('beforeend', rowTemplate ? rowTemplate.outerHTML : template.innerHTML);
-                return;
-            }
-
-            var remove = event.target.closest('[data-footer-payload-remove]');
-            if (remove) {
-                var row = remove.closest('[data-footer-payload-row]');
-                if (row) row.remove();
-            }
-        });
-
-        form.addEventListener('submit', function () {
-            form.querySelectorAll('[data-footer-payload-editor]').forEach(syncEditor);
-        });
     })();
 </script>

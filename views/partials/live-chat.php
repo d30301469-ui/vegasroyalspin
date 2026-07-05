@@ -1,3 +1,3 @@
-﻿<?php
+<?php
 // LiveChat widget removed.
 return;

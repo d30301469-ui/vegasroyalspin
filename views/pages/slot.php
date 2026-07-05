@@ -8,12 +8,19 @@ $slotPageBaseUrl = isset($slotPageBaseUrl) ? (string) $slotPageBaseUrl : '/slot'
 $slotPageTitle = isset($slotPageTitle) ? (string) $slotPageTitle : 'OYUNLAR';
 $slotEmptyTitle = isset($slotEmptyTitle) ? (string) $slotEmptyTitle : 'Slot oyunu bulunamadı';
 $slotEmptyText = isset($slotEmptyText) ? (string) $slotEmptyText : 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin';
-$slotApiParams = is_array($slotApiParams ?? null) ? $slotApiParams : [];
+$slotApiParams = isset($slotApiParams) && is_array($slotApiParams) ? $slotApiParams : [];
+$searchTerm = isset($searchTerm) ? (string) $searchTerm : '';
+$selectedProviders = isset($selectedProviders) && is_array($selectedProviders) ? $selectedProviders : [];
+$currentSort = isset($currentSort) ? (string) $currentSort : '';
+$allUniqueProviders = isset($allUniqueProviders) && is_array($allUniqueProviders) ? $allUniqueProviders : [];
+$remainingGames = isset($remainingGames) ? (int) $remainingGames : 0;
+$showLoadMore = !empty($showLoadMore);
 $slotGameType = isset($slotGameType) ? (int) $slotGameType : 0;
 $slotShowActionButtons = !empty($slotShowActionButtons);
 $slotHideProviders = !empty($slotHideProviders);
 $apiError = !empty($apiError ?? false);
-$slotJsVer = (string) (is_file(BASE_PATH . '/assets/js/slot.js') ? filemtime(BASE_PATH . '/assets/js/slot.js') : time());
+$slotJsPath = BASE_PATH . '/assets/js/slot.js';
+$slotJsVer = (string) ((is_file($slotJsPath) ? filemtime($slotJsPath) : time()) . '-' . (is_file($slotJsPath) ? filesize($slotJsPath) : '0'));
 $slotFavoriteKind = $slotGameType === 1 ? 'live' : ((($slotApiParams['source'] ?? '') === 'bgaming') ? 'bgaming' : 'slot');
 
 $slotPlayTarget = static function (array $game) use ($loggedIn): string {
@@ -120,7 +127,7 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
 <?php include VIEW_PATH . '/layouts/head.php'; ?>
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 
-<div class="slot-page-root">
+<div class="slot-page-root slot-page-root--unified" data-slot-game-type="<?= (int) $slotGameType ?>">
 <section class="slot-top-section" aria-label="Slot sayfası üst alan">
     <?php $sliderApiCategory = isset($sliderApiCategory) ? (string) $sliderApiCategory : 'slots'; include VIEW_PATH . '/partials/slider.php'; ?>
     <div class="slot-below-hero">
@@ -200,9 +207,10 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
 
         <div class="casinoProviderRow<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>">
             <?php if (!$slotHideProviders): ?>
-            <p class="casinoProviderBlockTitle" id="lineSidebarToggleLabel" title="Sağlayıcıları aç/kapat"><i class="casinoProviderBlockIcon bc-i-small-arrow-left" id="lineSidebarToggleIcon"></i><span>Sağlayıcılar</span></p>
+            <p class="casinoProviderBlockTitle" id="lineSidebarToggle" title="Sağlayıcıları aç/kapat"><i class="casinoProviderBlockIcon bc-i-small-arrow-left" id="lineSidebarToggleIcon"></i><span id="lineSidebarToggleLabel">Sağlayıcılar</span></p>
             <?php endif; ?>
-            <p class="casinoGameListTitle"><?= htmlspecialchars($slotPageTitle, ENT_QUOTES, 'UTF-8') ?></p>
+            <p class="casinoGameListTitle"><?= htmlspecialchars($slotGameType === 1 ? 'CANLI CASINO OYUNLARI' : 'CASINO OYUNLARI', ENT_QUOTES, 'UTF-8') ?></p>
+            <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">TÜMÜ</a>
         </div>
 
         <div class="casinoProviderAndGame slots-layout<?= $slotHideProviders ? ' slots-layout--full-games' : '' ?>" id="slotsLayout">
@@ -243,21 +251,33 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
             <div class="casinoGameListBlock games-main" id="gamesScrollContainer">
                 <div class="casinoGameListBlockHeader">
                     <div class="casinoTitleSearch ">
-                        <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç" hidden></button>
+                        <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç">
+                            <span class="mobile-sidebar-toggle__pill">
+                                <i class="fas fa-filter" aria-hidden="true"></i>
+                                <span class="mobile-sidebar-toggle__pill-text">Sağlayıcılar</span>
+                            </span>
+                            <span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span>
+                        </button>
                         <div class="selectedProviderBlock"></div>
-                        <div class="casinoInputWrp">
-                            <div class="searchInputWrp active">
-                                <input type="text"
-                                       class="searchInput games-search-input"
-                                       placeholder="Oyun Ara"
-                                       id="searchModalInput"
-                                       value="<?= htmlspecialchars($searchTerm, ENT_QUOTES); ?>">
-                                <p class="searchInputIcon bc-i-search" id="searchClearBtn" title="Aramayı temizle" aria-label="Aramayı temizle"></p>
+                        <div class="games-search-expand" id="gamesSearchExpand" aria-expanded="false">
+                            <div class="casinoInputWrp">
+                                <div class="searchInputWrp active games-search-bar">
+                                    <input type="text"
+                                           class="searchInput games-search-input"
+                                           placeholder="Oyun Ara"
+                                           id="searchModalInput"
+                                           value="<?= htmlspecialchars($searchTerm, ENT_QUOTES); ?>">
+                                    <p class="searchInputIcon bc-i-search games-search-icon-btn" id="searchClearBtn" title="Aramayı temizle" aria-label="Aramayı temizle"></p>
+                                </div>
                             </div>
                         </div>
+                        <button type="button" class="random-game-btn" id="randomGameBtn" title="Rastgele Oyun Oyna" aria-label="Rastgele Oyun Oyna">Rastgele Oyun Oyna</button>
                         <div class="tooltipIconWrapper">
                             <button class="bc-i-sort iconButtonBlock" type="button" id="sortToggleBtn" title="Sıralama" aria-label="Sıralama"></button>
                         </div>
+                    </div>
+                    <div class="active-filters-row" style="display:none;">
+                        <div id="active-filters-box" class="active-filters-box" style="display:none;"></div>
                     </div>
                 </div>
 
@@ -338,5 +358,5 @@ window.SLOT_CONFIG = {
 };
 </script>
 <script src="/assets/js/jackpot.js"></script>
-<script src="/assets/js/winners.js"></script>
-<script src="/assets/js/slot.js?v=<?= htmlspecialchars($slotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="/assets/js/winners.js?v=<?= htmlspecialchars($slotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="/assets/js/slot.js?v=<?= rawurlencode($slotJsVer) ?>"></script>

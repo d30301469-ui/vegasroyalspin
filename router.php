@@ -1,9 +1,9 @@
 <?php
 /**
  * Router for PHP built-in development server.
- * Tüm istekleri front controller (index.php) üzerinden yönetir.
+ * TÃ¼m istekleri front controller (index.php) Ã¼zerinden yÃ¶netir.
  *
- * Kullanım: php -S localhost:8080 router.php
+ * KullanÄ±m: php -S localhost:8080 router.php
  */
 
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
@@ -24,7 +24,7 @@ foreach (['/app/', '/admin/app/', '/config/', '/database/', '/docs/', '/logs/', 
     }
 }
 
-// Dahili PHP dosyalarına doğrudan erişimi engelle (statik dosyalar serbest)
+// Dahili PHP dosyalarÄ±na doÄŸrudan eriÅŸimi engelle (statik dosyalar serbest)
 $blockedDirs = ['/core/', '/controllers/', '/config/', '/views/', '/partials/', '/pages/', '/repositories/', '/services/', '/mobile/views/'];
 foreach ($blockedDirs as $dir) {
     if (strpos($uri, $dir) === 0 && preg_match('/\.php$/i', $uri)) {
@@ -34,64 +34,42 @@ foreach ($blockedDirs as $dir) {
     }
 }
 
-// Drakon callback admin/backend API altında yaşar; frontend callback route'u yoktur.
-// config/env.php'deki metropol_is_backend_host() merkezi host kontrolünü yükle.
+// config/env.php'deki metropol_is_backend_host() merkezi host kontrolÃ¼nÃ¼ yÃ¼kle.
 if (!function_exists('metropol_is_backend_host')) {
     require_once __DIR__ . '/config/env.php';
 }
-$trimmedForDrakon = rtrim($uri, '/');
+$trimmedUri = rtrim($uri, '/');
 $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
 $isBackendHost = metropol_is_backend_host($host);
-if (str_starts_with($trimmedForDrakon, '/admin/api/v2') && !$isBackendHost) {
+if (str_starts_with($trimmedUri, '/admin/api/v2') && !$isBackendHost) {
     http_response_code(404);
     echo '404 Not Found';
     return true;
 }
 
-if (in_array($trimmedForDrakon, ['/api/v2/drakon_callback', '/api/v2/drakon_callback.php', '/api/v2/drakon_callback/drakon_api', '/admin/api/v2/drakon_callback', '/admin/api/v2/drakon_callback.php', '/admin/api/v2/drakon_callback/drakon_api'], true)) {
-    if (!$isBackendHost) {
-        http_response_code(404);
-        echo '404 Not Found';
-        return true;
-    }
-    require __DIR__ . '/admin/api/v2/drakon_callback.php';
-    return true;
-}
-if (in_array($trimmedForDrakon, ['/drakon_api', '/drakon_api/drakon_api', '/drakon_api/drakon_api.php', '/drakon_callback', '/drakon_callback/drakon_api', '/drakon_callback.php', '/drakon-callback'], true)) {
-    if ($isBackendHost) {
-        require __DIR__ . '/admin/api/v2/drakon_callback.php';
-        return true;
-    }
-    if (is_readable(__DIR__ . '/config/env.php')) {
-        require_once __DIR__ . '/config/env.php';
-    }
-    if (function_exists('metropol_proxy_drakon_webhook')) {
-        metropol_proxy_drakon_webhook();
-    }
-    http_response_code(404);
-    echo '404 Not Found';
-    return true;
-}
-
-// API isteklerinde public ve backend yüzeyleri ayrı front controller kullanır.
+// API isteklerinde public ve backend yÃ¼zeyleri ayrÄ± front controller kullanÄ±r.
 if (strpos($uri, '/api/v2') === 0 || strpos($uri, '/api/member/') === 0 || strpos($uri, '/api/content/') === 0) {
     require $isBackendHost ? __DIR__ . '/admin/index.php' : __DIR__ . '/public/index.php';
     return true;
 }
-
-// Eski api-gates callback URL'i → front controller (casino callback)
+// Drakon Casino webhook — Drakon agent panelinde site_endpoint/drakon_api olarak kayıtlı
+if ($trimmedUri === '/drakon_api' || str_starts_with($trimmedUri, '/drakon_api/')) {
+    require __DIR__ . '/admin/index.php';
+    return true;
+}
+// Eski api-gates callback URL'i â†’ front controller (casino callback)
 $trimmedForLegacy = rtrim($uri, '/');
 if ($trimmedForLegacy === '/api-gates') {
     require __DIR__ . '/index.php';
     return true;
 }
 
-// Gerçek dosya veya klasör varsa doğrudan sun
+// GerÃ§ek dosya veya klasÃ¶r varsa doÄŸrudan sun
 if ($uri !== '/' && file_exists(__DIR__ . $uri)) {
     return false;
 }
 
-// Özel API endpoint'leri (drakon artık index.php route ile; gold_api, tbs2 aynı)
+// Ã–zel API endpoint'leri
 $specialRoutes = [
     '/gold_api'            => '/gold_api/api.php',
     '/tbs2'                => '/tbs2/api.php',
@@ -113,6 +91,6 @@ if (preg_match('#^/r/([a-zA-Z0-9_-]+)$#', $trimmedUri, $matches)) {
     return true;
 }
 
-// Tüm diğer istekler → front controller
+// TÃ¼m diÄŸer istekler â†’ front controller
 require __DIR__ . '/index.php';
 return true;

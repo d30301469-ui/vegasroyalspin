@@ -629,7 +629,9 @@
 
             var isSidebarProfileLink = !!link.closest('#profilePlayerSidebar');
             var isCasinoHistoryFilterLink = !!link.closest('.casino-history-filter-tabs');
-            if (!isSidebarProfileLink && !isCasinoHistoryFilterLink) return;
+            var isMessagesMainNavLink = !!link.closest('#profilePlayerMain .profile-messages-body');
+            var isFreespinTabLink = !!link.closest('#profilePlayerMain .freespin-tabs');
+            if (!isSidebarProfileLink && !isCasinoHistoryFilterLink && !isMessagesMainNavLink && !isFreespinTabLink) return;
             if ((link.getAttribute('target') || '').toLowerCase() === '_blank') return;
 
             if (isSidebarProfileLink && link.classList.contains('accordion-trigger') && link.getAttribute('data-toggle-sub') != null) {
@@ -3516,33 +3518,67 @@
     function initBetHistory() {
         if (typeof window.jQuery === 'undefined' || (!document.getElementById('sporDetailsContent') && !document.getElementById('gameHistoryContent'))) return;
         var $ = window.jQuery;
+        function renderDetailLoading(targetId) {
+            var el = document.getElementById(targetId);
+            if (!el) return;
+            el.innerHTML = '<div class="profile-detail-loading">Detaylar yukleniyor...</div>';
+        }
+        function renderDetailError(targetId, message) {
+            var el = document.getElementById(targetId);
+            if (!el) return;
+            el.innerHTML = '<div class="profile-detail-error">' + escapeHtml(message || 'Detaylar yuklenemedi.') + '</div>';
+        }
+        function extractAjaxError(xhr, fallback) {
+            var msg = fallback || 'Detaylar yuklenemedi.';
+            if (!xhr) return msg;
+            if (xhr.status === 401) return 'Oturum suresi dolmus olabilir. Lutfen tekrar giris yapin.';
+            if (xhr.status === 404) return 'Kayit bulunamadi veya detay endpointine erisim saglanamadi.';
+            var rt = (xhr.responseText || '').trim();
+            if (rt) {
+                try {
+                    var parsed = JSON.parse(rt);
+                    if (parsed && typeof parsed.message === 'string' && parsed.message.trim() !== '') {
+                        return parsed.message;
+                    }
+                } catch (e) {}
+            }
+            return msg;
+        }
         function showSporModal() { if (window.showModalById) window.showModalById('sporDetailsModal'); }
         function showGameHistoryModalEl() { if (window.showModalById) window.showModalById('gameHistoryModal'); }
         function showSporDetails(betId) {
+            renderDetailLoading('sporDetailsContent');
+            showSporModal();
             $.ajax({
                 url: apiUrl('/api/v2/profile/spor-bet-detail'),
                 type: 'GET',
                 data: { bet_id: betId },
+                headers: memberAuthHeaders({ Accept: 'text/html' }),
                 success: function(response) {
-                    $('#sporDetailsContent').html(response);
-                    showSporModal();
+                    $('#sporDetailsContent').html(response || '<div class="profile-detail-error">Detay bilgisi bulunamadi.</div>');
                 },
-                error: function() {
-                    toastNotify('error', 'Detaylar yüklenemedi', 'Hata');
+                error: function(xhr) {
+                    var errorMsg = extractAjaxError(xhr, 'Detaylar yuklenemedi');
+                    renderDetailError('sporDetailsContent', errorMsg);
+                    toastNotify('error', errorMsg, 'Hata');
                 }
             });
         }
         function showGameHistoryDetails(historyId) {
+            renderDetailLoading('gameHistoryContent');
+            showGameHistoryModalEl();
             $.ajax({
                 url: apiUrl('/api/v2/profile/game-history-detail'),
                 type: 'GET',
                 data: { history_id: historyId },
+                headers: memberAuthHeaders({ Accept: 'text/html' }),
                 success: function(response) {
-                    $('#gameHistoryContent').html(response);
-                    showGameHistoryModalEl();
+                    $('#gameHistoryContent').html(response || '<div class="profile-detail-error">Oyun gecmisi detayi bulunamadi.</div>');
                 },
-                error: function() {
-                    toastNotify('error', 'Oyun geçmişi detayları yüklenemedi', 'Hata');
+                error: function(xhr) {
+                    var errorMsg = extractAjaxError(xhr, 'Oyun gecmisi detaylari yuklenemedi');
+                    renderDetailError('gameHistoryContent', errorMsg);
+                    toastNotify('error', errorMsg, 'Hata');
                 }
             });
         }
@@ -3556,11 +3592,132 @@
         });
         var bhPeriod = document.getElementById('bhPeriod');
         var bhPeriodCustomWrap = document.getElementById('bhPeriodCustomWrap');
-        if (bhPeriod && bhPeriodCustomWrap && $) {
-            $(bhPeriod).off('change.betHistPer').on('change.betHistPer', function() {
-                $(bhPeriodCustomWrap).toggle($(this).val() === 'custom');
+        var bhStart = document.getElementById('bhPeriodStart');
+        var bhEnd = document.getElementById('bhPeriodEnd');
+        var bhDatePresets = document.getElementById('bhDatePresets');
+        var bhForm = document.getElementById('betHistoryFilterForm');
+
+        function toIso(d) {
+            if (!(d instanceof Date) || isNaN(d.getTime())) return '';
+            var year = String(d.getFullYear());
+            var month = String(d.getMonth() + 1).padStart(2, '0');
+            var day = String(d.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        function markPreset(range) {
+            if (!bhDatePresets) return;
+            bhDatePresets.querySelectorAll('.bhf-date-preset').forEach(function(btn) {
+                btn.classList.toggle('is-active', btn.getAttribute('data-range') === range);
             });
         }
+
+        function applyPreset(range) {
+            if (!bhStart || !bhEnd) return;
+            var today = new Date();
+            var end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            var start = new Date(end);
+            if (range === 'today') {
+                // same day
+            } else if (range === 'last7') {
+                start.setDate(start.getDate() - 6);
+            } else if (range === 'last30') {
+                start.setDate(start.getDate() - 29);
+            }
+            bhStart.value = toIso(start);
+            bhEnd.value = toIso(end);
+            syncDateBounds();
+            markPreset(range);
+        }
+
+        function syncDateBounds() {
+            if (!bhStart || !bhEnd) return;
+            if (bhStart.value) bhEnd.min = bhStart.value;
+            else bhEnd.removeAttribute('min');
+            if (bhEnd.value) bhStart.max = bhEnd.value;
+            else bhStart.removeAttribute('max');
+        }
+
+        function openNativePicker(inputEl) {
+            if (!inputEl) return;
+            inputEl.focus();
+            if (typeof inputEl.showPicker === 'function') {
+                try {
+                    inputEl.showPicker();
+                } catch (e) {}
+            }
+        }
+
+        function updateCustomState() {
+            var isCustom = bhPeriod && bhPeriod.value === 'custom';
+            if (bhPeriodCustomWrap) {
+                $(bhPeriodCustomWrap).toggle(!!isCustom);
+            }
+            if (bhStart) bhStart.required = !!isCustom;
+            if (bhEnd) bhEnd.required = !!isCustom;
+            if (isCustom) syncDateBounds();
+        }
+
+        if (bhPeriod && bhPeriodCustomWrap && $) {
+            $(bhPeriod).off('change.betHistPer').on('change.betHistPer', function() {
+                updateCustomState();
+            });
+        }
+
+        if (bhStart && bhEnd) {
+            bhStart.addEventListener('change', function() {
+                syncDateBounds();
+                markPreset('');
+            });
+            bhEnd.addEventListener('change', function() {
+                syncDateBounds();
+                markPreset('');
+            });
+
+            var startWrap = bhStart.closest('.bhf-date-input-wrap');
+            var endWrap = bhEnd.closest('.bhf-date-input-wrap');
+            if (startWrap) {
+                startWrap.addEventListener('click', function(e) {
+                    if (e.target === bhStart) return;
+                    openNativePicker(bhStart);
+                });
+            }
+            if (endWrap) {
+                endWrap.addEventListener('click', function(e) {
+                    if (e.target === bhEnd) return;
+                    openNativePicker(bhEnd);
+                });
+            }
+        }
+
+        if (bhDatePresets) {
+            $(bhDatePresets).off('click.betHistPreset').on('click.betHistPreset', '.bhf-date-preset', function() {
+                if (!(bhPeriod && bhPeriod.value === 'custom')) {
+                    if (bhPeriod) {
+                        bhPeriod.value = 'custom';
+                    }
+                    updateCustomState();
+                }
+                applyPreset(String(this.getAttribute('data-range') || ''));
+            });
+        }
+
+        if (bhForm && bhStart && bhEnd) {
+            bhForm.addEventListener('submit', function(e) {
+                if (!(bhPeriod && bhPeriod.value === 'custom')) return;
+                if (!bhStart.value || !bhEnd.value) {
+                    e.preventDefault();
+                    toastNotify('warning', 'Lutfen baslangic ve bitis tarihini secin.', 'Tarih araligi');
+                    return;
+                }
+                if (bhStart.value > bhEnd.value) {
+                    e.preventDefault();
+                    toastNotify('warning', 'Baslangic tarihi, bitis tarihinden buyuk olamaz.', 'Tarih araligi');
+                }
+            });
+        }
+
+        updateCustomState();
     }
 
     // ----- 8. Referanslar (jQuery) -----

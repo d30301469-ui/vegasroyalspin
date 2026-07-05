@@ -19,9 +19,9 @@
   
 
 img[src*="media_18755179_721f01a"] {
-  width: 120% !important;
-  height: 120% !important;
-  padding-bottom: 15px !important;
+  width: 100% !important;
+  height: auto !important;
+  padding-bottom: 0 !important;
 }
     
 
@@ -199,8 +199,9 @@ body.mobile-site .layout-header-holder-bc .hdr-dynamic-content {
     padding: 10px 40px 10px 10px;
     background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
 }
-body {
-      background: url(https://uploads.onecompiler.io/43kt7pygm/43mxhc3ht/1.jpg)  no-repeat fixed 50% 50% / cover !important;
+body.mobile-site {
+  background: url(https://uploads.onecompiler.io/43kt7pygm/43mxhc3ht/1.jpg) no-repeat 50% 50% / cover !important;
+  background-attachment: scroll !important;
 }
 .footerWrapper .footerContainerWrapper .sliderGroup > .horizontalList > .horizontalSliderWrapper:first-child > .horizontalSliderRow:first-child {
     display: grid;
@@ -533,7 +534,7 @@ img.promotionsArticleThumbnail-bc {
 }
 .sign-in .sg-n-text-row-2-bc {
   color: transparent !important;
-  padding-bottom: 300px !important;
+  padding-bottom: 0 !important;
 }
 .sign-in .e-p-header-bc {
   display: none !important;
@@ -544,6 +545,71 @@ img.promotionsArticleThumbnail-bc {
 }
 .sign-in .live-chat-adviser-bc {
   padding: 15px 15px !important;
+}
+
+/* Mobile auth modal stability overrides */
+body.mobile-site #login2 .sign-in .sg-n-text-row-2-bc,
+body.mobile-site #login2 .sg-n-text-row-2-bc {
+  padding-bottom: 0 !important;
+  margin: 0 !important;
+  height: clamp(120px, 24vh, 190px) !important;
+  max-height: clamp(120px, 24vh, 190px) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+body.mobile-site #login2 .sign-in .e-p-header-bc,
+body.mobile-site #login2 .login-modal-header.e-p-header-bc {
+  display: flex !important;
+}
+
+body.mobile-site #registerModal .register-modal-body,
+body.mobile-site #registerModal .register-modal-body.e-p-body-bc {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+body.mobile-site #registerModal .register-steps-scroll,
+body.mobile-site #registerModal .register-steps-scroll.entrance-form-content-bc.single-side.step-0 {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  padding: 0 14px 18px !important;
+}
+
+body.mobile-site #registerModal .reg-form-content,
+body.mobile-site #registerModal #modalRegisterForm[data-active-step="1"] .reg-form-content {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  min-height: auto !important;
+  height: auto !important;
+  padding-top: 0 !important;
+  padding-bottom: 18px !important;
+}
+
+body.mobile-site #login2 .auth-slider-bg,
+body.mobile-site #registerModal .auth-slider-bg {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+body.mobile-site #login2 .entrance-popup-bc.has-auth-slider > .e-p-content-holder-bc,
+body.mobile-site #registerModal .register-modal-content.has-auth-slider > .e-p-content-holder-bc {
+  position: relative !important;
+  z-index: 1 !important;
+  flex: 1 1 auto !important;
 }
 /* Siyah arka planı saydam yapmak */
 .featuredGameItem.Soccer, /* canli skor kartı */
@@ -630,8 +696,11 @@ img.promotionsArticleThumbnail-bc {
    ===================================== */
 
 /* Aynı satırda custom görseller varsa */
-.hm-row-bc {
-    display: block !important;
+.hm-row-bc.custom-banner,
+.hm-row-bc.custom-images,
+.hm-row-bc.custom-slider,
+.hm-row-bc.my-custom-images {
+  display: block !important;
 }
 
 /* Custom eklenen banner / image alanı */

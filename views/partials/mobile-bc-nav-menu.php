@@ -1,14 +1,10 @@
 <?php
 /** Orijinal: hdr-navigation-scrollable-bc-holder > scrollable > nav.hdr-navigation-scrollable-content > a.hdr-navigation-link-bc */
 $mobileNavItems = [
-    ['href' => '/sports', 'label' => 'ÖZEL ORAN', 'badge' => 'Özel', 'badgeClass' => 'badge-exclusive'],
-    ['href' => '/canli-bahis', 'label' => 'CANLI BAHİS'],
-    ['href' => '/sports', 'label' => 'MAÇ ÖNCESİ'],
+    ['href' => '/sportbook', 'label' => 'SPOR', 'badge' => 'Özel', 'badgeClass' => 'badge-exclusive'],
     ['href' => '/slot', 'label' => 'CASİNO'],
     ['href' => '/livecasino', 'label' => 'CANLI CASİNO'],
     ['href' => '/slot', 'label' => 'OYUNLAR'],
-    ['href' => '/sports', 'label' => 'E-SPORLAR'],
-    ['href' => '/sports', 'label' => 'SANAL SPORLAR'],
     ['href' => '/promotions', 'label' => 'PROMOSYONLAR'],
 ];
 ?>

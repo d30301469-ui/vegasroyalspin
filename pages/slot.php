@@ -31,7 +31,7 @@ $games = $result['games'];
 $allUniqueProviders = array_values(array_filter(getAllUniqueProviders(), static function (string $provider): bool {
     return stripos($provider, 'bgaming') === false && stripos($provider, 'b gaming') === false;
 }));
-$slotApiParams = ['source' => 'drakon'];
+$slotApiParams = [];
 $totalSlots = $result['total'];
 $perPage = $result['perPage'];
 $currentPage = $result['page'];
@@ -205,7 +205,13 @@ $slotDemoHref = static function (array $game): string {
             <div class="casinoGameListBlock games-main" id="gamesScrollContainer">
                 <div class="casinoGameListBlockHeader">
                     <div class="casinoTitleSearch">
-                        <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç" hidden></button>
+                        <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç">
+                            <span class="mobile-sidebar-toggle__pill">
+                                <i class="fas fa-filter" aria-hidden="true"></i>
+                                <span class="mobile-sidebar-toggle__pill-text">Sağlayıcılar</span>
+                            </span>
+                            <span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span>
+                        </button>
                         <div class="selectedProviderBlock"></div>
                         <div class="casinoInputWrp games-search-expand<?= !empty($searchTerm) ? ' is-expanded' : '' ?>"
                              id="gamesSearchExpand"
@@ -227,7 +233,7 @@ $slotDemoHref = static function (array $game): string {
                 </div>
                 <button type="button" class="all-games-btn iconButtonBlock" id="allGamesBtn" title="Tüm Oyunlar" aria-label="Tüm Oyunlar" hidden></button>
                 <button type="button" class="view-module-btn iconButtonBlock" id="viewModuleBtn" title="Modül görünümü" aria-label="Modül görünümü" aria-pressed="false" hidden></button>
-                <button class="random-game-btn" id="randomGameBtn" title="Rastgele Bir Oyun Oyna" hidden></button>
+                <button class="random-game-btn" id="randomGameBtn" title="Rastgele Oyun Oyna" aria-label="Rastgele Oyun Oyna">Rastgele Oyun Oyna</button>
 
                 <!-- Active Filters (AJAX güncellemesi için her zaman DOM'da) -->
                 <div class="active-filters-row" id="active-filters-row" style="<?= (empty($searchTerm) && empty($selectedProviders)) ? 'display:none' : '' ?>">
@@ -323,5 +329,9 @@ window.SLOT_CONFIG = {
 };
 </script>
 <script src="/assets/js/jackpot.js"></script>
-<script src="/assets/js/winners.js"></script>
-<script src="/assets/js/slot.js"></script>
+<script src="/assets/js/winners.js?v=<?= urlencode((string) (is_file(BASE_PATH . '/assets/js/winners.js') ? filemtime(BASE_PATH . '/assets/js/winners.js') : time())) ?>"></script>
+<?php
+$slotJsPath = BASE_PATH . '/assets/js/slot.js';
+$slotJsVer = (string) ((is_file($slotJsPath) ? filemtime($slotJsPath) : time()) . '-' . (is_file($slotJsPath) ? filesize($slotJsPath) : '0'));
+?>
+<script src="/assets/js/slot.js?v=<?= rawurlencode($slotJsVer) ?>"></script>

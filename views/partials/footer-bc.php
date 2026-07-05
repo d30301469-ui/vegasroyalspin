@@ -15,7 +15,6 @@ $footerCopyrightText = ($footerCopyrightSince === $footerCopyrightYear)
             <div class="footerContainerWrapper">
                 <div class="footerContainer">
                     <div class="footerHeader">
-                        <div class="footerTopButtonGroup"></div>
                         <div class="footerInnerLeftCol">
                             <ul class="footerSocialLinks">
                                 <?php foreach ($footerSocialIcons as $icon): ?>
@@ -48,6 +47,26 @@ $footerCopyrightText = ($footerCopyrightSince === $footerCopyrightYear)
                                     <span class="footerLanguageCode">TUR</span>
                                     <i class="bc-i-small-arrow-right footerLanguageChevron" aria-hidden="true"></i>
                                 </button>
+                                <ul class="footerLanguageMenu" role="listbox" hidden>
+                                    <li>
+                                        <a class="footerLanguageOption is-active" role="option" aria-selected="true" data-lang="tr" href="?lang=tr">
+                                            <span class="flag-icon flag-icon-tr" aria-hidden="true"></span>
+                                            <span class="code">TUR</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="footerLanguageOption" role="option" aria-selected="false" data-lang="en" href="?lang=en">
+                                            <span class="flag-icon flag-icon-us" aria-hidden="true"></span>
+                                            <span class="code">ENG</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="footerLanguageOption" role="option" aria-selected="false" data-lang="de" href="?lang=de">
+                                            <span class="flag-icon flag-icon-de" aria-hidden="true"></span>
+                                            <span class="code">DEU</span>
+                                        </a>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -108,7 +127,9 @@ $footerCopyrightText = ($footerCopyrightSince === $footerCopyrightYear)
                                                             title="Lisans doğrulama"
                                                             loading="lazy"
                                                             scrolling="no"
-                                                            frameborder="0"></iframe>
+                                                            frameborder="0"
+                                                            referrerpolicy="no-referrer"
+                                                            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
                                                 </div>
                                             <?php elseif ($itemType === 'image'): ?>
                                                 <a href="<?= htmlspecialchars((string) ($item['href'] ?? '#')) ?>"

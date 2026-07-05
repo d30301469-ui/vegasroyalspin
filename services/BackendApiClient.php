@@ -326,8 +326,20 @@ final class BackendApiClient
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_ENCODING, '');
         $connect = min($timeout, max(2, (int) round($timeout / 2)));
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $connect);
+        if (defined('CURL_HTTP_VERSION_2TLS')) {
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
+        } elseif (defined('CURL_HTTP_VERSION_1_1')) {
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        }
+        if (defined('CURLOPT_TCP_KEEPALIVE')) {
+            curl_setopt($ch, CURLOPT_TCP_KEEPALIVE, 1);
+        }
+        if (defined('CURLOPT_DNS_CACHE_TIMEOUT')) {
+            curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 120);
+        }
         if (defined('CURL_IPRESOLVE_V4')) {
             curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         }

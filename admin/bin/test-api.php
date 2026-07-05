@@ -65,7 +65,6 @@ $tests = [
     ['GET', '/api/v2/favorite-slots', null, [401], 'json'],
     // ── Provider callbacks (imza/veri olmadan reddedilmeli) ────────────
     ['POST', '/api/v2/megapayz-callback', '{"test":1}', [403, 400, 422], 'json'],
-    ['POST', '/api/v2/drakon_callback', '{}', [403, 400, 503], 'json'],
     ['POST', '/api/v2/casino-callback', '{}', [400, 403], 'json'],
     ['GET', '/api/v2/bgaming-wallet', null, [200], 'json'],
     ['POST', '/api/v2/bgaming-wallet/balance', '{}', [400, 403, 422], 'json'],

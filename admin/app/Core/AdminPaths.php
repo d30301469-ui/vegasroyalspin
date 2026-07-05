@@ -303,6 +303,13 @@ if (!function_exists('admin_paths_bootstrap')) {
         }
 
         $configured = getenv('ADMIN_URL_PREFIX');
+        if ($configured === false) {
+            if (array_key_exists('ADMIN_URL_PREFIX', $_ENV)) {
+                $configured = (string) $_ENV['ADMIN_URL_PREFIX'];
+            } elseif (array_key_exists('ADMIN_URL_PREFIX', $_SERVER)) {
+                $configured = (string) $_SERVER['ADMIN_URL_PREFIX'];
+            }
+        }
         if ($configured !== false) {
             $configured = trim(str_replace('\\', '/', $configured));
             if ($configured === '' || $configured === '/') {
@@ -315,6 +322,24 @@ if (!function_exists('admin_paths_bootstrap')) {
         $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
         $detected = rtrim(str_replace('/index.php', '', $scriptName), '/');
         if ($detected === '' || $detected === '.') {
+            $uriPath = str_replace('\\', '/', (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH));
+            $uriPath = '/' . trim($uriPath, '/');
+            if (preg_match('#^/(admin|public)(?:/|$)#i', $uriPath, $m) === 1) {
+                $detected = '/' . strtolower((string) ($m[1] ?? ''));
+            } else {
+                return $prefix = '';
+            }
+        }
+
+        // On dedicated admin hosts (admin.example.com), Apache may still expose
+        // SCRIPT_NAME as /admin/index.php due to shared docroot rewrites.
+        // In that setup links must stay root-based (/dashboard), not /admin/*.
+        $requestHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        $requestHost = preg_replace('/:\\d+$/', '', $requestHost) ?? '';
+        $backendHost = strtolower(admin_env('BACKEND_HOST', ''));
+        $isDedicatedAdminHost = $requestHost !== ''
+            && (str_starts_with($requestHost, 'admin.') || ($backendHost !== '' && $requestHost === $backendHost));
+        if ($isDedicatedAdminHost && in_array($detected, ['/admin', '/public'], true)) {
             return $prefix = '';
         }
 

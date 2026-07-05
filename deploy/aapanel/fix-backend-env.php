@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 /**
  * Backend .env — ALLOWED_URL_HOSTS + API_PUBLIC_BASE_URL doğrulama (CORS için kritik).
- * Usage: php deploy/aapanel/fix-backend-env.php [/path/to/bo-nexthub.site]
+ * Usage: php deploy/aapanel/fix-backend-env.php [/path/to/admin.vegasroyalspin.com]
  */
 
 $root = dirname(__DIR__, 2);
@@ -49,7 +49,6 @@ $patchKeys = [
     'BACKEND_API_BASE_URL',
     'FRONTEND_URL',
     'SITE_URL',
-    'DRAKON_SITE_ENDPOINT',
     'MEMBER_JWT_SECRET',
     'FRONTEND_CMS_PURGE_SECRET',
 ];
@@ -108,11 +107,6 @@ foreach (['API_PUBLIC_BASE_URL', 'API_BACKEND_MAIN_BASE_URL', 'BACKEND_API_BASE_
     if (($values[$apiKey] ?? '') === '' || !str_starts_with($host, 'api.')) {
         $updates[$apiKey] = $apiPublic;
     }
-}
-
-$drakonSite = rtrim($backendUrl, '/');
-if (trim($values['DRAKON_SITE_ENDPOINT'] ?? '') === '' || str_contains(strtolower((string) ($values['DRAKON_SITE_ENDPOINT'] ?? '')), 'vegasroyalspin')) {
-    $updates['DRAKON_SITE_ENDPOINT'] = $drakonSite;
 }
 
 if ($updates === []) {

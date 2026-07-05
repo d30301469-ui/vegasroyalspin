@@ -19,24 +19,29 @@ if (is_readable($installGate)) {
         exit;
     }
 }
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($requestPath, ['/', '/drakon_api', '/sportsbook_api', '/api/v2/sportsbook-wallet', '/api/v2/sportsbook-wallet/'], true)) {
+    $rawBody = (string) file_get_contents('php://input');
+    $payload = json_decode($rawBody, true);
+    if (!is_array($payload) && $_POST !== []) {
+        $payload = $_POST;
+    }
+    if (!is_array($payload) && trim($rawBody) !== '') {
+        parse_str($rawBody, $parsed);
+        if (is_array($parsed) && $parsed !== []) {
+            $payload = $parsed;
+        }
+    }
+    $method = trim((string) ($payload['method'] ?? $payload['action'] ?? ''));
+    $method = strtolower(str_replace(['_', ' '], '', $method));
+    if (in_array($method, ['getbalance', 'changebalance', 'updatedetail'], true)) {
+        require_once $root . '/admin/api/v2/sportsbook_callback.php';
+        exit;
+    }
+}
+
 if (str_starts_with($requestPath, '/api/')) {
     require_once $root . '/services/frontend_api_dispatch.php';
     metropol_handle_public_api_request((string) ($_SERVER['REQUEST_URI'] ?? '/'));
-}
-
-// Drakon webhook proxy: /drakon_api on frontend host → proxy to admin backend.
-// (Apache catch-all routes here; router.php proxy only runs on PHP built-in server.)
-if ($requestPath === '/drakon_api' || rtrim($requestPath, '/') === '/drakon_api') {
-    require_once $root . '/config/env.php';
-    if (function_exists('metropol_proxy_drakon_webhook')) {
-        metropol_proxy_drakon_webhook();
-    }
-    if (!headers_sent()) {
-        http_response_code(502);
-        header('Content-Type: application/json; charset=utf-8');
-    }
-    echo json_encode(['error' => 'DRAKON_PROXY_UNAVAILABLE'], JSON_UNESCAPED_UNICODE);
-    exit;
 }
 
 require_once $root . '/app/bootstrap.php';

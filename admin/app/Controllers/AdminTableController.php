@@ -88,6 +88,7 @@ final class AdminTableController extends AdminController
             $this->flash('Kayıt eklenemedi: ' . $e->getMessage());
             $this->redirect(AdminAuth::url('/table/create?name=' . rawurlencode($table) . '&module=' . rawurlencode(trim((string) ($_POST['module'] ?? '')))));
         }
+        $this->purgeFrontendCmsCacheForTable($table);
         AdminAuth::writeLog(AdminAuth::userName(), 'table_insert', $table, 'success');
         $this->flash('Kayıt eklendi.');
         $this->redirect($this->listUrl($table, trim((string) ($_POST['module'] ?? ''))));
@@ -191,6 +192,7 @@ final class AdminTableController extends AdminController
             $this->flash('Kayıt güncellenemedi: ' . $e->getMessage());
             $this->redirect(AdminAuth::url('/table/edit?name=' . rawurlencode($table) . '&id=' . rawurlencode($id) . '&module=' . rawurlencode(trim((string) ($_POST['module'] ?? '')))));
         }
+        $this->purgeFrontendCmsCacheForTable($table);
         AdminAuth::writeLog(AdminAuth::userName(), 'table_update', $table, 'success', $id);
         $this->flash('Kayıt güncellendi.');
         if ($table === 'users' && $id !== '') {
@@ -209,6 +211,7 @@ final class AdminTableController extends AdminController
         if ($primaryKey !== null) {
             $deleteId = trim((string) ($_POST['_id'] ?? ''));
             $this->tables->delete($table, $primaryKey, $deleteId);
+            $this->purgeFrontendCmsCacheForTable($table);
             AdminAuth::writeLog(AdminAuth::userName(), 'table_delete', $table, 'success', $deleteId);
             $this->flash('Kayıt silindi.');
         }
@@ -270,12 +273,14 @@ final class AdminTableController extends AdminController
             'megapayz_config',
             'megapayz_transactions',
             'megapayz_callbacks',
-            'drakon_config',
-            'drakon_transactions',
-            'drakon_webhook_logs',
             'bgaming_config',
             'bgaming_transactions',
             'bgaming_wallet_logs',
+            'drakon_config',
+            'drakon_providers',
+            'drakon_games',
+            'drakon_transactions',
+            'drakon_webhook_logs',
         ];
     }
 
@@ -387,6 +392,19 @@ final class AdminTableController extends AdminController
         require_once $slidersApi;
         if (class_exists('ApiSliders', false)) {
             ApiSliders::ensureCategoryColumnSupportsBgaming(AdminDatabase::pdo());
+        }
+    }
+
+    private function purgeFrontendCmsCacheForTable(string $table): void
+    {
+        $prefix = match ($table) {
+            'sliders' => 'sliders',
+            'auth_sliders' => 'auth_sliders',
+            default => null,
+        };
+
+        if ($prefix !== null && function_exists('metropol_notify_frontend_cms_purge')) {
+            metropol_notify_frontend_cms_purge($prefix);
         }
     }
 }

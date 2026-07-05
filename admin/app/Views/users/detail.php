@@ -6,6 +6,7 @@ $deposits = is_array($deposits ?? null) ? $deposits : [];
 $withdrawals = is_array($withdrawals ?? null) ? $withdrawals : [];
 $adjustments = is_array($adjustments ?? null) ? $adjustments : [];
 $games = is_array($games ?? null) ? $games : [];
+$sportsbookCoupons = is_array($sportsbookCoupons ?? null) ? $sportsbookCoupons : [];
 $bonusClaims = is_array($bonusClaims ?? null) ? $bonusClaims : [];
 $activeBonuses = is_array($activeBonuses ?? null) ? $activeBonuses : [];
 $notes = is_array($notes ?? null) ? $notes : [];
@@ -185,6 +186,7 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
         ['title' => 'Çekimler', 'rows' => $withdrawals, 'columns' => ['id' => 'ID', 'method' => 'Metot', 'provider' => 'Provider', 'amount' => 'Tutar', 'status' => 'Durum', 'admin_status' => 'Admin', 'created_at' => 'Tarih']],
         ['title' => 'Admin bakiye işlemleri', 'rows' => $adjustments, 'columns' => ['id' => 'ID', 'wallet' => 'Cüzdan', 'action' => 'İşlem', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'admin_username' => 'Admin', 'created_at' => 'Tarih']],
         ['title' => 'Oyun işlemleri', 'type' => 'games', 'rows' => $games, 'columns' => ['id' => 'ID', 'game_name' => 'Oyun', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'txn_type' => 'Tip', 'bet_amount' => 'Bet', 'win_amount' => 'Win', 'balance_after' => 'Bakiye', 'created_at' => 'Tarih']],
+        ['title' => 'Spor kuponları', 'rows' => $sportsbookCoupons, 'columns' => ['id' => 'ID', 'coupon_id' => 'Kupon', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'vendor_code' => 'Vendor', 'game_code' => 'Sport', 'txn_type' => 'Tip', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'currency' => 'Para', 'status' => 'Durum', 'created_at' => 'Tarih']],
         ['title' => 'Bonus talepleri', 'rows' => $bonusClaims, 'columns' => ['id' => 'ID', 'bonus_name' => 'Bonus', 'requested_amount' => 'Tutar', 'status' => 'Durum', 'processed_by' => 'İşleyen', 'processed_at' => 'İşlem tarihi', 'created_at' => 'Tarih']],
         ['title' => 'Aktif bonuslar', 'rows' => $activeBonuses, 'columns' => ['id' => 'ID', 'name' => 'Bonus', 'initial_amount' => 'İlk tutar', 'current_bonus_balance' => 'Mevcut', 'status' => 'Durum', 'deadline' => 'Deadline', 'created_at' => 'Tarih']],
     ];

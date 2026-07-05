@@ -1,5 +1,29 @@
 <?php
-/** Üye API modülü — index.php tarafından include edilir. */
+/**
+ * Üye API modülü — index.php tarafından include edilir.
+ *
+ * Variables injected by the including kernel (member_api_kernel.php).
+ * The ??= assignments are no-ops when the file is properly included.
+ *
+ * @var string $method
+ * @var string $route
+ * @var array{query: array<string,mixed>, body: array<string,mixed>} $payload
+ * @var \Closure(int, array<string,mixed>): void $memberEnvelope
+ * @var \Closure(array<string,mixed>): array<string,mixed> $memberInput
+ * @var \Closure(int, string, array<string,mixed>): void $error
+ * @var \Closure(string): void $requirePermission
+ * @var \Closure(array<string,mixed>): void $validateCsrf
+ */
+
+$method ??= 'GET';
+$route ??= '';
+$payload ??= ['query' => [], 'body' => []];
+$memberEnvelope ??= static function (int $s, array $b): void { http_response_code($s); echo json_encode($b); exit; };
+$memberInput ??= static fn (array $p): array => $p['body'] ?? [];
+$error ??= static function (int $s, string $m, array $t = []): void { http_response_code($s); echo json_encode(['success' => false, 'code' => $s, 'message' => $m, 'meta' => $t]); exit; };
+$requirePermission ??= static function (string $k): void {};
+$validateCsrf ??= static function (array $p): void {};
+
 if ($method === 'GET' && in_array($route, ['site_settings.php', 'site-settings', 'site-settings.php', 'config'], true)) {
     $pdo = AdminDatabase::pdo();
     admin_require_project_file('api/bootstrap.php');

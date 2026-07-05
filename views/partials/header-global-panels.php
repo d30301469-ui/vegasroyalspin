@@ -50,7 +50,13 @@
 <aside class="right-sidebar" id="notificationDrawer" data-right-sidebar="notification" role="dialog" aria-label="Bildirimler" aria-hidden="true">
     <div class="right-sidebar__header">
         <button type="button" class="right-sidebar__close" data-right-sidebar-close aria-label="Kapat">&times;</button>
-        <h2 class="right-sidebar__title">MALTABET YENİLİKLER</h2>
+        <?php
+        $notificationDrawerSite = (string) ($headerSiteName ?? $footerSiteName ?? $ayar['site_adi'] ?? 'SITE');
+        $notificationDrawerSiteUpper = function_exists('mb_strtoupper')
+            ? mb_strtoupper($notificationDrawerSite, 'UTF-8')
+            : strtoupper($notificationDrawerSite);
+        ?>
+        <h2 class="right-sidebar__title"><?= htmlspecialchars($notificationDrawerSiteUpper, ENT_QUOTES, 'UTF-8') ?> YENİLİKLER</h2>
     </div>
     <div class="notification-drawer__toolbar">
         <span class="notification-drawer__date" id="notificationDrawerDate">18 Mart 2026</span>

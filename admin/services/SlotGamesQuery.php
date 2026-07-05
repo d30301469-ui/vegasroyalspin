@@ -315,28 +315,135 @@ final class SlotGamesQuery
             return null;
         }
 
-        require_once __DIR__ . '/DrakonService.php';
-        require_once __DIR__ . '/BgamingService.php';
-
         try {
             $pdo = AdminDatabase::pdo();
-            $source = strtolower(trim((string) ($query['source'] ?? '')));
-            $provider = strtolower(trim((string) ($query['provider'] ?? $query['provider_code'] ?? '')));
-            $sort = strtolower(trim((string) ($query['sort'] ?? $query['category'] ?? '')));
-            $tvOnly = in_array($source, ['bgaming', 'tv'], true)
-                || in_array($provider, ['bgaming'], true)
-                || in_array($sort, ['tv', 'tv-games', 'tv_oyunlari'], true);
-
-            if ($tvOnly) {
-                $catalog = BgamingService::games($pdo, $query);
-            } else {
-                $catalog = DrakonService::games($pdo, $query);
-            }
+            $catalog = self::combinedCatalogPage($pdo, $query, $limit, $page);
             $j = ['success' => true, 'data' => $catalog];
             return self::normalizeGamesResponse($j, $limit, $page, $catalogOrderAfterPopular);
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Combined BGaming + Drakon catalog page filtered by game_type.
+     *
+     * BGaming games are all slots (game_type 0). Drakon games carry a real
+     * game_type column (0 = slot/casino, 1 = live casino). The two sources are
+     * merged with a single UNION so search, provider filtering and pagination
+     * stay correct across both providers.
+     *
+     * @param array<string, mixed> $query
+     * @return array{games: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    private static function combinedCatalogPage(PDO $pdo, array $query, int $limit, int $page): array
+    {
+        $gameType = (int) ($query['game_type'] ?? $query['filter_game_type'] ?? 0);
+        $gameType = $gameType === 1 ? 1 : 0;
+        $limit    = min(200, max(1, $limit));
+        $page     = max(1, $page);
+        $offset   = ($page - 1) * $limit;
+
+        $search       = trim((string) ($query['search'] ?? ''));
+        $provider     = trim((string) ($query['provider'] ?? $query['provider_code'] ?? ''));
+        $onlyFeatured = (string) ($query['is_featured'] ?? '') === '1';
+
+        $union = [];
+        // BGaming catalog is slot-only; include only on the slot lobby.
+        if ($gameType === 0) {
+            $union[] = "SELECT
+                    CONCAT('bgaming:', identifier) AS game_id,
+                    title AS name,
+                    provider AS provider,
+                    provider AS provider_code,
+                    COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
+                    is_featured AS is_featured,
+                    'bgaming' AS source,
+                    CAST(id AS CHAR) AS row_id
+                FROM bgaming_games
+                WHERE is_active = 1";
+        }
+        $union[] = "SELECT
+                CONCAT('drakon:', game_id) AS game_id,
+                game_name AS name,
+                provider_name AS provider,
+                provider_name AS provider_code,
+                COALESCE(NULLIF(image_url, ''), NULLIF(banner, ''), '') AS image_url,
+                is_featured AS is_featured,
+                'drakon' AS source,
+                CAST(id AS CHAR) AS row_id
+            FROM drakon_games
+            WHERE is_active = 1 AND game_type = {$gameType}";
+
+        $unionSql = '(' . implode(' UNION ALL ', $union) . ') AS catalog';
+
+        $where  = [];
+        $params = [];
+        if ($search !== '') {
+            $where[]           = '(name LIKE :search OR provider LIKE :search2)';
+            $params[':search']  = '%' . $search . '%';
+            $params[':search2'] = '%' . $search . '%';
+        }
+        if ($provider !== '' && strtolower($provider) !== 'hepsi') {
+            $where[]             = 'provider = :provider';
+            $params[':provider'] = $provider;
+        }
+        if ($onlyFeatured) {
+            $where[] = 'is_featured = 1';
+        }
+        $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
+
+        $countStmt = $pdo->prepare("SELECT COUNT(*) FROM {$unionSql}{$whereSql}");
+        foreach ($params as $k => $v) {
+            $countStmt->bindValue($k, $v);
+        }
+        $countStmt->execute();
+        $total = (int) $countStmt->fetchColumn();
+
+        $rowsStmt = $pdo->prepare(
+            "SELECT game_id, name, provider, provider_code, image_url, is_featured, source, row_id
+             FROM {$unionSql}{$whereSql}
+             ORDER BY is_featured DESC, name ASC
+             LIMIT :limit OFFSET :offset"
+        );
+        foreach ($params as $k => $v) {
+            $rowsStmt->bindValue($k, $v);
+        }
+        $rowsStmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $rowsStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $rowsStmt->execute();
+        $items = $rowsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $games = array_map(static function (array $r): array {
+            $featured = (int) ($r['is_featured'] ?? 0);
+            return [
+                'id'            => (string) ($r['row_id'] ?? ''),
+                'game_id'       => (string) ($r['game_id'] ?? ''),
+                'name'          => (string) ($r['name'] ?? ''),
+                'image_url'     => (string) ($r['image_url'] ?? ''),
+                'provider'      => (string) ($r['provider'] ?? ''),
+                'provider_code' => (string) ($r['provider_code'] ?? ''),
+                'is_featured'   => $featured,
+                'is_popular'    => $featured === 1,
+                'has_demo'      => true,
+                'source'        => (string) ($r['source'] ?? ''),
+            ];
+        }, is_array($items) ? $items : []);
+
+        return [
+            'games' => $games,
+            'items' => $games,
+            'pagination' => [
+                'page'       => $page,
+                'perPage'    => $limit,
+                'limit'      => $limit,
+                'offset'     => $offset,
+                'total'      => $total,
+                'totalPages' => $total > 0 ? (int) ceil($total / $limit) : 0,
+                'hasNext'    => ($offset + $limit) < $total,
+                'hasPrev'    => $offset > 0,
+            ],
+        ];
     }
 
     private static function localProviders(int $gameType): array
@@ -354,11 +461,21 @@ final class SlotGamesQuery
             return [];
         }
 
-        require_once __DIR__ . '/DrakonService.php';
-
         try {
             $pdo = AdminDatabase::pdo();
-            $rows = DrakonService::providers($pdo, ['game_type' => $gameType]);
+            $gt  = $gameType === 1 ? 1 : 0;
+            $union = [];
+            // BGaming providers are slot-only.
+            if ($gt === 0) {
+                $union[] = "SELECT DISTINCT provider AS provider_name
+                    FROM bgaming_games
+                    WHERE is_active = 1 AND provider <> ''";
+            }
+            $union[] = "SELECT DISTINCT provider_name
+                FROM drakon_games
+                WHERE is_active = 1 AND game_type = {$gt} AND provider_name <> ''";
+            $sql  = implode(' UNION ', $union);
+            $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable) {
             return [];
         }

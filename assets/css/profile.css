@@ -1905,6 +1905,61 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     align-items: center;
     gap: 0.5rem;
 }
+.bhf-date-range-row {
+    flex-wrap: nowrap;
+}
+.bhf-date-input-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+.bhf-date-input-wrap .bhf-input-date {
+    min-width: 10rem;
+    padding-left: 1.9rem;
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(78, 68, 112, 0.72) 0%, rgba(52, 47, 73, 0.75) 100%);
+    border-color: rgba(173, 151, 255, 0.38);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.bhf-date-input-wrap .bhf-input-date:focus {
+    outline: none;
+    border-color: rgba(132, 208, 255, 0.75);
+    box-shadow: 0 0 0 3px rgba(132, 208, 255, 0.2);
+}
+.bhf-date-icon {
+    position: absolute;
+    left: 0.65rem;
+    color: rgba(255, 255, 255, 0.72);
+    pointer-events: none;
+    font-size: 0.82rem;
+}
+.bhf-date-presets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+}
+.bhf-date-preset {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    border-radius: 999px;
+    min-height: 28px;
+    padding: 0.2rem 0.68rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+}
+.bhf-date-preset:hover {
+    background: rgba(150, 212, 255, 0.2);
+    border-color: rgba(150, 212, 255, 0.35);
+}
+.bhf-date-preset.is-active {
+    background: linear-gradient(180deg, rgba(84, 184, 255, 0.4) 0%, rgba(54, 110, 181, 0.45) 100%);
+    border-color: rgba(138, 221, 255, 0.75);
+}
 .bhf-date-sep {
     color: rgba(255, 255, 255, 0.5);
 }
@@ -1986,6 +2041,33 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
 .profile-modal__content .modal-backdrop {
     z-index: 199;
 }
+.profile-detail-modal-content {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(180deg, #282536 0%, #1e1b2b 100%);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.46);
+}
+#sporDetailsContent,
+#gameHistoryContent {
+    min-height: 170px;
+    max-height: min(68vh, 680px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.profile-detail-loading,
+.profile-detail-error {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+}
+.profile-detail-loading {
+    color: rgba(255, 255, 255, 0.82);
+}
+.profile-detail-error {
+    color: #ffd7d7;
+    border-color: rgba(255, 86, 86, 0.35);
+    background: rgba(139, 34, 34, 0.2);
+}
 @media (max-width: 767px) {
     .personal-details-page--bet-history .bet-history-filters {
         margin: 0 -0.9rem;
@@ -2015,6 +2097,20 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     .bhf-period-custom {
         flex: 1 1 100%;
         min-width: 100%;
+    }
+    .bhf-date-range-row {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    .bhf-date-input-wrap {
+        flex: 1 1 100%;
+    }
+    .bhf-date-input-wrap .bhf-input-date {
+        min-width: 0;
+        width: 100%;
+    }
+    .bhf-date-sep {
+        display: none;
     }
     .bhf-actions {
         margin-left: 0;
@@ -3192,8 +3288,8 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
 .freespin-content {
     min-height: 260px;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
     padding: 2rem;
 }
 .freespin-empty {
@@ -3218,6 +3314,37 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     grid-template-columns: minmax(0, 1fr) auto minmax(180px, .7fr);
     padding: 14px;
 }
+.freespin-item-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.freespin-spins {
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+}
+.freespin-status-col {
+    align-items: flex-start;
+}
+.freespin-launch-btn {
+    background: linear-gradient(135deg, #3e6bff, #2656e8);
+    border: 1px solid rgba(120, 160, 255, .45);
+    border-radius: 10px;
+    color: #fff;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 8px;
+    padding: 7px 12px;
+    text-decoration: none;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.freespin-launch-btn:hover {
+    box-shadow: 0 6px 16px rgba(25, 84, 255, .35);
+    color: #fff;
+    transform: translateY(-1px);
+}
 .freespin-item strong,
 .freespin-item b {
     display: block;
@@ -3230,9 +3357,42 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     font-size: 12px;
     margin-top: 3px;
 }
+.freespin-status {
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    margin-bottom: 4px;
+    padding: 4px 10px;
+    text-transform: uppercase;
+}
+.freespin-status--active,
+.freespin-status--new {
+    background: rgba(43, 195, 92, .18);
+    border: 1px solid rgba(43, 195, 92, .35);
+    color: #8cf4b0;
+}
+.freespin-status--played {
+    background: rgba(36, 145, 255, .18);
+    border: 1px solid rgba(36, 145, 255, .35);
+    color: #8cc7ff;
+}
+.freespin-status--expired,
+.freespin-status--canceled {
+    background: rgba(255, 114, 114, .15);
+    border: 1px solid rgba(255, 114, 114, .35);
+    color: #ffb0b0;
+}
 @media (max-width: 768px) {
+    .freespin-content {
+        padding: 1rem;
+    }
     .freespin-item {
         grid-template-columns: 1fr;
+    }
+    .freespin-spins {
+        align-items: flex-start;
     }
 }
 

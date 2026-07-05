@@ -15,14 +15,20 @@ final class ApiSliders
     private const CATEGORY_ALIASES = [
         'slot' => 'slots',
         'slots' => 'slots',
+        'slot_slider' => 'slots',
+        'slots_slider' => 'slots',
         'casino' => 'slots',
         'live' => 'live_casino',
+        'live_slider' => 'live_casino',
         'livecasino' => 'live_casino',
         'live-casino' => 'live_casino',
         'live_casino' => 'live_casino',
+        'live_casino_slider' => 'live_casino',
         'bgaming' => 'bgaming',
         'b-gaming' => 'bgaming',
+        'bgaming_slider' => 'bgaming',
         'home' => 'home',
+        'home_slider' => 'home',
         'homepage' => 'home',
         'main' => 'home',
     ];
@@ -217,32 +223,88 @@ final class ApiSliders
 
         try {
             $pdo = self::pdo();
+            $columns = self::tableColumns($pdo);
+            if ($columns === []) {
+                return [];
+            }
             $category = self::normalizeCategory((string) ($query['category'] ?? $query['page'] ?? ''));
             $surface = self::normalizeSurface((string) ($query['surface'] ?? 'all'));
             $today = date('Y-m-d');
 
-            $where = ["CAST(status AS CHAR) IN ('1', 'active', 'published')"];
+            $where = [];
+            if (isset($columns['status'])) {
+                $where[] = "LOWER(TRIM(CAST(status AS CHAR))) IN ('1', 'active', 'published', 'on', 'true')";
+            } elseif (isset($columns['is_active'])) {
+                $where[] = "LOWER(TRIM(CAST(is_active AS CHAR))) IN ('1', 'active', 'published', 'on', 'true')";
+            }
+
             $params = [
                 'today_start' => $today,
                 'today_end' => $today,
             ];
-            if ($category !== '') {
-                $where[] = 'category = :category';
-                $params['category'] = $category;
-            }
-            // Tarih aralığı: gün bazında (admin’de saat seçilse bile o gün boyunca yayında)
-            $where[] = '(start_date IS NULL OR DATE(start_date) <= :today_start)';
-            $where[] = '(end_date IS NULL OR DATE(end_date) >= :today_end)';
 
-            $sql = 'SELECT id, title, subtitle, description, desktop_path, mobile_path, button_link, `order`, category
+            // Tarih aralığı: gün bazında (admin’de saat seçilse bile o gün boyunca yayında)
+            if (isset($columns['start_date'])) {
+                $where[] = '(start_date IS NULL OR DATE(start_date) <= :today_start)';
+            }
+            if (isset($columns['end_date'])) {
+                $where[] = '(end_date IS NULL OR DATE(end_date) >= :today_end)';
+            }
+
+            $select = [
+                isset($columns['id']) ? 'id' : '0 AS id',
+                isset($columns['title']) ? 'title' : "'' AS title",
+                isset($columns['subtitle']) ? 'subtitle' : "'' AS subtitle",
+                isset($columns['description']) ? 'description' : "'' AS description",
+                isset($columns['desktop_path'])
+                    ? 'desktop_path'
+                    : (isset($columns['desktop_image_url'])
+                        ? 'desktop_image_url AS desktop_path'
+                        : (isset($columns['image_url'])
+                            ? 'image_url AS desktop_path'
+                            : "'' AS desktop_path")),
+                isset($columns['mobile_path'])
+                    ? 'mobile_path'
+                    : (isset($columns['mobile_image_url'])
+                        ? 'mobile_image_url AS mobile_path'
+                        : "'' AS mobile_path"),
+                isset($columns['button_link'])
+                    ? 'button_link'
+                    : (isset($columns['slider_link'])
+                        ? 'slider_link AS button_link'
+                        : (isset($columns['link'])
+                            ? '`link` AS button_link'
+                            : "'' AS button_link")),
+                isset($columns['order']) ? '`order`' : '0 AS `order`',
+                isset($columns['category']) ? 'category' : "'' AS category",
+            ];
+
+            $whereSql = $where !== [] ? implode(' AND ', $where) : '1=1';
+
+            $sql = 'SELECT ' . implode(', ', $select) . '
                     FROM sliders
-                    WHERE ' . implode(' AND ', $where) . '
+                    WHERE ' . $whereSql . '
                     ORDER BY `order` ASC, id DESC';
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            return self::mapRows(is_array($rows) ? $rows : [], $surface);
+            $list = self::mapRows(is_array($rows) ? $rows : [], $surface);
+            if ($category === '') {
+                return $list;
+            }
+
+            return array_values(array_filter(
+                $list,
+                static function (array $slider) use ($category): bool {
+                    $sliderCategory = self::normalizeCategory((string) ($slider['category'] ?? ''));
+                    if ($sliderCategory === '') {
+                        return true;
+                    }
+
+                    return $sliderCategory === $category;
+                }
+            ));
         } catch (Throwable) {
             return [];
         }
@@ -260,8 +322,8 @@ final class ApiSliders
             if (!is_array($row)) {
                 continue;
             }
-            $desktop = trim((string) ($row['desktop_path'] ?? ''));
-            $mobile = trim((string) ($row['mobile_path'] ?? ''));
+            $desktop = trim((string) ($row['desktop_path'] ?? $row['desktop_image_url'] ?? $row['image_url'] ?? ''));
+            $mobile = trim((string) ($row['mobile_path'] ?? $row['mobile_image_url'] ?? ''));
             if ($desktop === '' && $mobile === '') {
                 continue;
             }
@@ -326,8 +388,9 @@ final class ApiSliders
             return $local;
         }
 
+        $paths = ['/content/sliders', '/sliders.php'];
         foreach (self::candidateBases() as $base) {
-            foreach ($apiOnly ? ['/content/sliders'] : ['/content/sliders', '/sliders.php'] as $path) {
+            foreach ($paths as $path) {
                 $api = ApiClient::getWithBase($base, $path, $query, $timeout);
                 $parsed = ApiEnvelope::listFromData($api, 'sliders');
                 if ($parsed !== null) {
@@ -424,27 +487,33 @@ final class ApiSliders
         }
 
         $qs = $query !== [] ? '?' . http_build_query($query) : '';
-        $ch = curl_init('http://127.0.0.1/api/v2/content/sliders' . $qs);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_HTTPHEADER => ['Host: ' . $host, 'Accept: application/json'],
-        ]);
-        if (defined('CURL_IPRESOLVE_V4')) {
-            curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        foreach (['/api/v2/content/sliders', '/api/v2/sliders.php', '/api/sliders'] as $loopbackPath) {
+            $ch = curl_init('http://127.0.0.1' . $loopbackPath . $qs);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_CONNECTTIMEOUT => 4,
+                CURLOPT_HTTPHEADER => ['Host: ' . $host, 'Accept: application/json'],
+            ]);
+            if (defined('CURL_IPRESOLVE_V4')) {
+                curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+            }
+            $body = curl_exec($ch);
+            $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if (!is_string($body) || $body === '' || $code !== 200) {
+                continue;
+            }
+
+            $decoded = json_decode($body, true);
+            $parsed = ApiEnvelope::listFromData(is_array($decoded) ? $decoded : null, 'sliders');
+            if ($parsed !== null) {
+                return $parsed;
+            }
         }
-        $body = curl_exec($ch);
-        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
-        if (!is_string($body) || $body === '' || $code !== 200) {
-            return null;
-        }
-
-        $decoded = json_decode($body, true);
-
-        return ApiEnvelope::listFromData(is_array($decoded) ? $decoded : null, 'sliders');
+        return null;
     }
 
     /**
@@ -516,5 +585,27 @@ final class ApiSliders
         ]);
 
         return (int) $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    private static function tableColumns(PDO $pdo): array
+    {
+        try {
+            $stmt = $pdo->query('SHOW COLUMNS FROM sliders');
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            $columns = [];
+            foreach ($rows as $row) {
+                $name = strtolower((string) ($row['Field'] ?? ''));
+                if ($name !== '') {
+                    $columns[$name] = true;
+                }
+            }
+
+            return $columns;
+        } catch (Throwable) {
+            return [];
+        }
     }
 }

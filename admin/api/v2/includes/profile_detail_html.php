@@ -44,106 +44,144 @@ if (!function_exists('member_profile_render_game_history_detail')) {
             member_profile_emit_html(200, '<div class="alert alert-danger">Geçersiz istek</div>');
         }
 
-        DrakonService::bootstrap($pdo);
-        $stmt = $pdo->prepare("SELECT
-                                   t.id,
-                                   t.transaction_id,
-                                   t.session_id,
-                                   t.round_id,
-                                   t.game_id,
-                                   COALESCE(NULLIF(t.game_name, ''), g.game_name, t.game_id) AS game_name,
-                                   COALESCE(g.provider_code, '') AS provider_code,
-                                   COALESCE(NULLIF(t.provider_name, ''), g.provider_name, '') AS provider_name,
-                                   t.txn_type,
-                                   t.status,
-                                   t.bet_amount,
-                                   t.win_amount,
-                                   t.after_balance AS balance_after,
-                                   t.created_at
-                               FROM drakon_transactions t
-                               LEFT JOIN drakon_games g ON g.game_id = t.game_id
-                               WHERE t.user_id = :user_id
-                                 AND CAST(t.id AS CHAR) = :history_id
-                               LIMIT 1");
-        $stmt->execute(['user_id' => $userId, 'history_id' => $historyId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $source = '';
+        $localId = $historyId;
+        if (str_contains($historyId, ':')) {
+            [$prefix, $rawId] = explode(':', $historyId, 2);
+            $source = strtolower(trim((string) $prefix));
+            $localId = trim((string) $rawId);
+        }
+        if ($localId === '' || !ctype_digit($localId)) {
+            member_profile_emit_html(200, '<div class="alert alert-danger">Geçersiz istek</div>');
+        }
+
+        $id = (int) $localId;
+        $row = null;
+
+        if ($source === '' || $source === 'drakon') {
+            $stmt = $pdo->prepare("SELECT
+                                       t.id,
+                                       'drakon' AS source,
+                                       t.transaction_id,
+                                       t.related_transaction_id,
+                                       t.session_id,
+                                       t.round_id,
+                                       t.game_id,
+                                       COALESCE(NULLIF(t.game_name, ''), g.game_name, t.game_id) AS game_name,
+                                       COALESCE(g.provider_code, '') AS provider_code,
+                                       COALESCE(NULLIF(t.provider_name, ''), g.provider_name, '') AS provider_name,
+                                       COALESCE(g.type, 'casino') AS game_category,
+                                       COALESCE(g.game_type, 0) AS game_type,
+                                       t.txn_type,
+                                       t.status,
+                                       t.bet_amount,
+                                       t.win_amount,
+                                       t.after_balance AS balance_after,
+                                       t.created_at
+                                   FROM drakon_transactions t
+                                   LEFT JOIN drakon_games g ON g.game_id = t.game_id
+                                   WHERE t.user_id = :user_id AND t.id = :id
+                                   LIMIT 1");
+            $stmt->execute(['user_id' => $userId, 'id' => $id]);
+            $candidate = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($candidate)) {
+                $row = $candidate;
+            }
+        }
+
+        if ($row === null && ($source === '' || $source === 'bgaming')) {
+            $stmt = $pdo->prepare("SELECT
+                                       t.id,
+                                       'bgaming' AS source,
+                                       t.casino_tx_id AS transaction_id,
+                                       t.original_action_id AS related_transaction_id,
+                                       t.session_id,
+                                       t.round_id,
+                                       t.game_identifier AS game_id,
+                                       COALESCE(g.title, t.game_identifier) AS game_name,
+                                       COALESCE(NULLIF(g.provider, ''), 'bgaming') AS provider_code,
+                                       COALESCE(NULLIF(g.provider, ''), 'BGaming') AS provider_name,
+                                       COALESCE(NULLIF(g.category, ''), 'slot') AS game_category,
+                                       0 AS game_type,
+                                       t.txn_type,
+                                       'completed' AS status,
+                                       CASE WHEN t.txn_type = 'bet' THEN t.amount ELSE 0 END AS bet_amount,
+                                       CASE WHEN t.txn_type = 'bet' THEN 0 ELSE t.amount END AS win_amount,
+                                       t.after_balance AS balance_after,
+                                       COALESCE(t.processed_at, t.created_at) AS created_at
+                                   FROM bgaming_transactions t
+                                   LEFT JOIN bgaming_games g ON g.identifier = t.game_identifier
+                                   WHERE t.user_id = :user_id AND t.id = :id
+                                   LIMIT 1");
+            $stmt->execute(['user_id' => $userId, 'id' => $id]);
+            $candidate = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($candidate)) {
+                $row = $candidate;
+            }
+        }
+
         if (!is_array($row)) {
             member_profile_emit_html(200, '<div class="alert alert-warning">Oyun işlemi bulunamadı</div>');
         }
 
-        $gName = (string) ($row['game_name'] ?? '');
-        $pName = (string) ($row['provider_name'] ?? '');
+        $providerName = (string) ($row['provider_name'] ?? '');
+        $providerCode = (string) ($row['provider_code'] ?? '');
+        $gameName = (string) ($row['game_name'] ?? '');
+        $txnType = strtolower((string) ($row['txn_type'] ?? 'bet'));
+        if ($txnType === 'rollback') {
+            $txnType = 'refund';
+        } elseif (in_array($txnType, ['promo_win', 'freespins_win'], true)) {
+            $txnType = 'win';
+        }
+        $status = (string) ($row['status'] ?? '');
         $betAmount = (float) ($row['bet_amount'] ?? 0);
         $winAmount = (float) ($row['win_amount'] ?? 0);
-        $txnType = (string) ($row['txn_type'] ?? '');
-        $status = (string) ($row['status'] ?? '');
-        $createdAt = (string) ($row['created_at'] ?? '');
         $balanceAfter = $row['balance_after'] ?? null;
-        $roundId = (string) ($row['round_id'] ?? '');
-        $provTxn = (string) ($row['transaction_id'] ?? '');
-        $sessionTok = (string) ($row['session_id'] ?? '');
-        $gameId = (string) ($row['game_id'] ?? '');
-        $provCode = (string) ($row['provider_code'] ?? '');
-        $net = $winAmount - $betAmount;
+        $createdAt = (string) ($row['created_at'] ?? '');
+        $sourceText = ((string) ($row['source'] ?? '') === 'bgaming')
+            ? 'Slot'
+            : ((((string) ($row['game_category'] ?? 'casino') === 'live') || (int) ($row['game_type'] ?? 0) === 1) ? 'Canlı Casino' : 'Slot');
+        $transactionLabel = match ($txnType) {
+            'win' => 'Kazanç',
+            'refund', 'cancel' => 'İade',
+            default => 'Bahis',
+        };
 
         ob_start();
         ?>
 <div class="game-history-details">
-    <div class="row">
+    <div class="row g-3">
         <div class="col-md-6">
-            <div class="mb-3">
-                <h6 class="text-muted">Oyun bilgileri</h6>
-                <div class="card bg-light">
-                    <div class="card-body">
-                        <p class="mb-1"><strong>Oyun:</strong> <?= member_profile_html_escape($gName !== '' ? $gName : '—') ?></p>
-                        <p class="mb-1"><strong>Sağlayıcı:</strong> <?= member_profile_html_escape($pName !== '' ? $pName : '—') ?></p>
-                        <p class="mb-1"><strong>Game ID:</strong> <?= member_profile_html_escape($gameId !== '' ? $gameId : '—') ?></p>
-                        <p class="mb-1"><strong>Sağlayıcı kodu:</strong> <?= member_profile_html_escape($provCode !== '' ? $provCode : '—') ?></p>
-                        <p class="mb-1"><strong>Round:</strong> <?= member_profile_html_escape($roundId !== '' ? $roundId : '—') ?></p>
-                        <p class="mb-1"><strong>Kaynak:</strong> casino</p>
-                        <p class="mb-1"><strong>Cüzdan:</strong> main</p>
-                    </div>
-                </div>
-            </div>
+            <h6 class="text-muted">Oyun bilgileri</h6>
+            <table class="table table-sm table-bordered mb-0">
+                <tr><th style="width:40%;">Kaynak</th><td><?= member_profile_html_escape($sourceText) ?></td></tr>
+                <tr><th>Oyun</th><td><?= member_profile_html_escape($gameName !== '' ? $gameName : '-') ?></td></tr>
+                <tr><th>Sağlayıcı</th><td><?= member_profile_html_escape($providerName !== '' ? $providerName : '-') ?></td></tr>
+                <tr><th>Provider Kodu</th><td><code><?= member_profile_html_escape($providerCode !== '' ? $providerCode : '-') ?></code></td></tr>
+                <tr><th>Oyun ID</th><td><code><?= member_profile_html_escape((string) ($row['game_id'] ?? '-')) ?></code></td></tr>
+            </table>
         </div>
         <div class="col-md-6">
-            <div class="mb-3">
-                <h6 class="text-muted">İşlem</h6>
-                <div class="card bg-light">
-                    <div class="card-body">
-                        <p class="mb-1"><strong>İşlem türü:</strong> <?= member_profile_html_escape($txnType !== '' ? $txnType : '—') ?></p>
-                        <p class="mb-1"><strong>Durum:</strong> <?= member_profile_html_escape($status !== '' ? $status : '—') ?></p>
-                        <p class="mb-1"><strong>Bahis:</strong> <span class="text-danger">-<?= number_format($betAmount, 2) ?> ₺</span></p>
-                        <p class="mb-1"><strong>Kazanç:</strong> <span class="text-success">+<?= number_format($winAmount, 2) ?> ₺</span></p>
-                        <p class="mb-1"><strong>Net:</strong>
-                            <span class="<?= $net >= 0 ? 'text-success' : 'text-danger' ?>">
-                                <?= $net >= 0 ? '+' : '' ?><?= number_format($net, 2) ?> ₺
-                            </span>
-                        </p>
-                        <?php if ($balanceAfter !== null && $balanceAfter !== ''): ?>
-                        <p class="mb-1"><strong>İşlem sonrası bakiye:</strong> <?= number_format((float) $balanceAfter, 2) ?> ₺</p>
-                        <?php endif; ?>
-                        <p class="mb-1"><strong>Sağlayıcı işlem no:</strong> <small><?= member_profile_html_escape($provTxn !== '' ? $provTxn : '—') ?></small></p>
-                        <?php if ($sessionTok !== ''): ?>
-                        <p class="mb-1"><strong>Oturum:</strong> <small><?= member_profile_html_escape($sessionTok) ?></small></p>
-                        <?php endif; ?>
-                    </div>
-                </div>
+            <h6 class="text-muted">İşlem bilgileri</h6>
+            <table class="table table-sm table-bordered mb-0">
+                <tr><th style="width:40%;">İşlem</th><td><?= member_profile_html_escape($transactionLabel) ?></td></tr>
+                <tr><th>Status</th><td><?= member_profile_html_escape($status !== '' ? $status : 'completed') ?></td></tr>
+                <tr><th>Transaction</th><td><code><?= member_profile_html_escape((string) ($row['transaction_id'] ?? '-')) ?></code></td></tr>
+                <tr><th>Round</th><td><code><?= member_profile_html_escape((string) ($row['round_id'] ?? '-')) ?></code></td></tr>
+                <tr><th>Oturum</th><td><code><?= member_profile_html_escape((string) ($row['session_id'] ?? '-')) ?></code></td></tr>
+            </table>
+        </div>
+        <div class="col-md-12">
+            <h6 class="text-muted">Finansal özet</h6>
+            <div class="row g-2">
+                <div class="col-md-4"><div class="card bg-light"><div class="card-body py-2"><small class="text-muted">Bahis</small><div class="fw-bold text-danger"><?= number_format($betAmount, 2) ?> ₺</div></div></div></div>
+                <div class="col-md-4"><div class="card bg-light"><div class="card-body py-2"><small class="text-muted">Kazanç</small><div class="fw-bold text-success"><?= number_format($winAmount, 2) ?> ₺</div></div></div></div>
+                <div class="col-md-4"><div class="card bg-light"><div class="card-body py-2"><small class="text-muted">Bakiye Sonrası</small><div class="fw-bold text-primary"><?= number_format((float) $balanceAfter, 2) ?> ₺</div></div></div></div>
             </div>
         </div>
-    </div>
-    <div class="row">
-        <div class="col-12">
-            <div class="mb-3">
-                <h6 class="text-muted">Zaman</h6>
-                <div class="card bg-light">
-                    <div class="card-body">
-                        <p class="mb-0"><strong>Oluşturulma:</strong>
-                            <?= $createdAt !== '' ? member_profile_html_escape(date('d.m.Y H:i:s', strtotime($createdAt))) : '—' ?>
-                        </p>
-                    </div>
-                </div>
-            </div>
+        <div class="col-md-12">
+            <h6 class="text-muted">Zaman</h6>
+            <div class="alert alert-secondary mb-0"><?= $createdAt !== '' ? member_profile_html_escape(date('d.m.Y H:i:s', strtotime($createdAt))) : '—' ?></div>
         </div>
     </div>
 </div>

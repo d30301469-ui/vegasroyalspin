@@ -44,7 +44,7 @@
                                             <li><a class="footLink border-0" href="javascript:void(0)" title="Bonus Talep">Bonus Talep</a></li>
                                             <li><a class="footLink" href="javascript:void(0)" title="MaltaBet TV">MaltaBet TV</a></li>
                                             <li><a class="footLink" href="javascript:void(0)" title="Canlı Karşılaşmalar">Canlı Karşılaşmalar</a></li>
-                                            <li><a class="footLink" href="/sports" title="Spor Bahisleri">Spor Bahisleri</a></li>
+                                            <li><a class="footLink" href="/sportbook" title="Spor Bahisleri">Spor Bahisleri</a></li>
                                             <li><a class="footLink" href="/slot" title="Slot Oyunları">Slot Oyunları</a></li>
                                             <li><a class="footLink" href="/livecasino" title="Canlı Casino">Canlı Casino</a></li>
                                             <li><a class="footLink" href="javascript:void(0)" title="KYC Policies">KYC Policies</a></li>

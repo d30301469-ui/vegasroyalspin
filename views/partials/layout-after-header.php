@@ -37,11 +37,21 @@ if (!function_exists('metropol_member_api_layout_vars')) {
 $memberApiLayout = metropol_member_api_layout_vars();
 ?>
 <?php include __DIR__ . '/member-api-layout-script.php'; ?>
+<?php
+$loginJsPath = BASE_PATH . '/assets/js/login.js';
+$loginJsVer = (string) ((is_file($loginJsPath) ? filemtime($loginJsPath) : '1') . '-' . (is_file($loginJsPath) ? filesize($loginJsPath) : '0'));
+$registerJsPath = BASE_PATH . '/assets/js/register.js';
+$registerJsVer = (string) ((is_file($registerJsPath) ? filemtime($registerJsPath) : '1') . '-' . (is_file($registerJsPath) ? filesize($registerJsPath) : '0'));
+?>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/global.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/member-api-console.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/toastify-helper.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/header.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php
+$headerJsPath = BASE_PATH . '/assets/js/header.js';
+$headerJsVer = (string) ((is_file($headerJsPath) ? filemtime($headerJsPath) : '1') . '-' . (is_file($headerJsPath) ? filesize($headerJsPath) : '0'));
+?>
+<script defer src="/assets/js/header.js?v=<?= rawurlencode($headerJsVer) ?>"></script>
 <?php
 $headerBalancePollPath = BASE_PATH . '/assets/js/header-balance-poll.js';
 $headerBalancePollVer = (string) (is_file($headerBalancePollPath) ? filemtime($headerBalancePollPath) : '1');
@@ -55,8 +65,8 @@ $headerBalancePollVer = (string) (is_file($headerBalancePollPath) ? filemtime($h
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-bonus.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-kyc.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/login.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/register.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script defer src="/assets/js/login.js?v=<?= rawurlencode($loginJsVer) ?>"></script>
+<script defer src="/assets/js/register.js?v=<?= rawurlencode($registerJsVer) ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/footer.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/footer-bc.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php

@@ -59,8 +59,7 @@ final class ApiMobileMenu
     public static function defaultTabBar(): array
     {
         return [
-            ['type' => 'link', 'label' => 'Canlı', 'href' => '/canli-bahis', 'icon' => 'bc-i-live', 'badge' => '', 'enabled' => true, 'aria_label' => 'Canlı'],
-            ['type' => 'link', 'label' => 'BAHİS', 'href' => '/sports', 'icon' => 'bc-i-prematch', 'badge' => '', 'enabled' => true, 'aria_label' => 'BAHİS'],
+            ['type' => 'link', 'label' => 'SPOR', 'href' => '/sportbook', 'icon' => 'bc-i-prematch', 'badge' => '', 'enabled' => true, 'aria_label' => 'SPOR'],
             ['type' => 'button', 'label' => 'KUPON', 'href' => '', 'icon' => 'bc-i-betslip', 'badge' => '', 'enabled' => true, 'id' => 'mob-bet-kupon', 'aria_label' => 'KUPON'],
             ['type' => 'link', 'label' => 'CASİNO', 'href' => '/slot', 'icon' => 'bc-i-slots', 'badge' => '', 'enabled' => true, 'aria_label' => 'CASİNO'],
             ['type' => 'menu', 'label' => 'MENÜ', 'href' => '', 'icon' => 'bc-i-burger', 'badge' => '', 'enabled' => true, 'id' => 'menu-toggle', 'aria_label' => 'MENÜ'],
@@ -73,12 +72,10 @@ final class ApiMobileMenu
     public static function defaultDesktopNav(): array
     {
         return [
-            ['label' => 'CANLI BAHİS', 'href' => '/canli-bahis', 'icon' => 'bc-i-live', 'enabled' => true],
-            ['label' => 'BAHİS BÜLTENİ', 'href' => '/sports', 'icon' => 'bc-i-prematch', 'enabled' => true],
+            ['label' => 'SPOR', 'href' => '/sportbook', 'icon' => 'bc-i-prematch', 'enabled' => true],
             ['label' => 'SLOT', 'href' => '/slot', 'icon' => 'bc-i-slots', 'enabled' => true],
             ['label' => 'CANLI CASINO', 'href' => '/livecasino', 'icon' => 'bc-i-livecasino', 'enabled' => true],
             ['label' => 'BGAMING', 'href' => '/bgaming', 'icon' => 'bc-i-tv-games', 'enabled' => true],
-            ['label' => 'SANAL SPORLAR', 'href' => '/sanal-sporlar', 'icon' => 'bc-i-virtualbetting', 'enabled' => true],
             ['label' => 'TURNUVALAR', 'href' => '/turnuvalar', 'icon' => 'bc-i-tournament', 'enabled' => true],
             ['label' => 'BENİ ARA', 'href' => '/beni-ara', 'icon' => 'bc-i-call', 'enabled' => true],
             ['label' => 'PROMOSYONLAR', 'href' => '/promotions', 'icon' => 'bc-i-promotions-3', 'enabled' => true],
@@ -99,12 +96,10 @@ final class ApiMobileMenu
                     'title' => '',
                     'layout' => 'grid',
                     'items' => [
-                        ['label' => 'Canlı Bahis', 'href' => '/canli-bahis', 'icon' => 'bc-i-live', 'badge' => '', 'target' => '_self', 'enabled' => true],
-                        ['label' => 'Bahis Bülteni', 'href' => '/sports', 'icon' => 'bc-i-prematch', 'badge' => '', 'target' => '_self', 'enabled' => true],
+                        ['label' => 'Spor', 'href' => '/sportbook', 'icon' => 'bc-i-prematch', 'badge' => '', 'target' => '_self', 'enabled' => true],
                         ['label' => 'Slot', 'href' => '/slot', 'icon' => 'bc-i-slots', 'badge' => '', 'target' => '_self', 'enabled' => true],
                         ['label' => 'Canlı Casino', 'href' => '/livecasino', 'icon' => 'bc-i-livecasino', 'badge' => '', 'target' => '_self', 'enabled' => true],
                         ['label' => 'BGaming', 'href' => '/bgaming', 'icon' => 'bc-i-tv-games', 'badge' => '', 'target' => '_self', 'enabled' => true],
-                        ['label' => 'Sanal Sporlar', 'href' => '/sanal-sporlar', 'icon' => 'bc-i-virtualbetting', 'badge' => '', 'target' => '_self', 'enabled' => true],
                         ['label' => 'Turnuvalar', 'href' => '/turnuvalar', 'icon' => 'bc-i-tournament', 'badge' => '', 'target' => '_self', 'enabled' => true],
                         ['label' => 'Promosyonlar', 'href' => '/promotions', 'icon' => 'bc-i-promotions-3', 'badge' => '', 'target' => '_self', 'enabled' => true],
                     ],
@@ -127,18 +122,17 @@ final class ApiMobileMenu
                 [
                     'title' => 'SPOR',
                     'items' => [
-                        ['label' => 'Canlı Bahisler', 'href' => '/canli-bahis', 'icon' => 'bc-i-live', 'badge' => 'EN İYİ', 'target' => '_self', 'enabled' => true],
-                        ['label' => 'Maç Öncesi', 'href' => '/sports', 'icon' => 'bc-i-prematch', 'badge' => 'EN İYİ', 'target' => '_self', 'enabled' => true],
+                        ['label' => 'Spor Bahisleri', 'href' => '/sportbook', 'icon' => 'bc-i-prematch', 'badge' => 'EN İYİ', 'target' => '_self', 'enabled' => true],
                     ],
                 ],
             ],
             'product_banner_base' => 'assets/images/banners',
             'product_banners' => [
                 ['href' => '/slot', 'aria' => 'SLOT', 'img' => 'slot.webp', 'alt' => 'Slot', 'enabled' => true],
-                ['href' => '/sports', 'aria' => 'Spor', 'img' => 'spor.webp', 'alt' => 'Spor', 'enabled' => true],
+                ['href' => '/sportbook', 'aria' => 'Spor Bahisleri', 'img' => 'spor.webp', 'alt' => 'Spor Bahisleri', 'enabled' => true],
                 ['href' => '/livecasino', 'aria' => 'Canlı Casino', 'img' => 'canlicasino.webp', 'alt' => 'Canlı Casino', 'enabled' => true],
                 ['href' => '/promotions', 'aria' => 'Promosyonlar', 'img' => 'arkadasbonusu.webp', 'alt' => 'Promosyonlar', 'enabled' => true],
-                ['login_gate' => true, 'aria' => 'Yatırım', 'img' => 'cozummerkezi.webp', 'alt' => 'Yatırım', 'enabled' => true],
+                ['href' => '/beni-ara', 'aria' => 'Aranma Talebi', 'img' => 'cozummerkezi.webp', 'alt' => 'Aranma Talebi', 'enabled' => true],
                 ['href' => '{{LIVE_SUPPORT_URL}}', 'aria' => 'Destek', 'img' => 'telegram.webp', 'alt' => 'Canlı Destek', 'enabled' => true],
             ],
         ];

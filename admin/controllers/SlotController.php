@@ -27,7 +27,7 @@ class SlotController extends Controller
 
 
 
-        $result             = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $currentSort, ['source' => 'drakon']);
+        $result             = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $currentSort, []);
 
         $games              = $result['games'];
 
@@ -51,7 +51,7 @@ class SlotController extends Controller
 
         $providerBadges = $this->getProviderBadges();
 
-        $slotApiParams = ['source' => 'drakon'];
+        $slotApiParams = [];
 
         $slotGameType = 0;
 

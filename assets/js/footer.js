@@ -146,6 +146,69 @@
         window.location.href = "/play?game_id=" + encodeURIComponent(gameId) + "&mode=real&wallet=main";
     }
 
+    function initFooterLanguageDropdown() {
+        var wrap = document.querySelector(".footerLanguageDropdown");
+        if (!wrap) return;
+        var trigger = wrap.querySelector(".footerLanguageTrigger");
+        var menu = wrap.querySelector(".footerLanguageMenu");
+        var codeEl = wrap.querySelector(".footerLanguageCode");
+        var flagEl = wrap.querySelector(".footerLanguageFlag");
+        if (!trigger || !menu || !codeEl || !flagEl) return;
+
+        var codeByLang = { tr: "TUR", en: "ENG", de: "DEU" };
+        var flagByLang = {
+            tr: "/assets/images/flag/tr.svg",
+            en: "/assets/images/flag/gb.svg",
+            de: "/assets/images/flag/de.svg"
+        };
+
+        function setOpen(open) {
+            wrap.classList.toggle("is-open", open);
+            trigger.setAttribute("aria-expanded", open ? "true" : "false");
+            if (open) {
+                menu.removeAttribute("hidden");
+            } else {
+                menu.setAttribute("hidden", "");
+            }
+        }
+
+        function setActiveLang(lang) {
+            var normalized = (lang || "tr").toLowerCase();
+            if (!codeByLang[normalized]) normalized = "tr";
+            codeEl.textContent = codeByLang[normalized];
+            flagEl.src = flagByLang[normalized];
+            flagEl.alt = codeByLang[normalized];
+
+            menu.querySelectorAll(".footerLanguageOption").forEach(function (opt) {
+                var isActive = (opt.getAttribute("data-lang") || "").toLowerCase() === normalized;
+                opt.classList.toggle("is-active", isActive);
+                opt.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+        }
+
+        trigger.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(!wrap.classList.contains("is-open"));
+        });
+
+        document.addEventListener("click", function (e) {
+            if (!wrap.contains(e.target)) setOpen(false);
+        });
+
+        menu.querySelectorAll(".footerLanguageOption").forEach(function (opt) {
+            opt.addEventListener("click", function () {
+                var lang = (this.getAttribute("data-lang") || "tr").toLowerCase();
+                setActiveLang(lang);
+                setOpen(false);
+            });
+        });
+
+        var currentLang = (new URLSearchParams(window.location.search)).get("lang") || "tr";
+        setActiveLang(currentLang);
+        setOpen(false);
+    }
+
     function bonusKoduKullan() {
         if (typeof Swal === "undefined") {
             console.error("SweetAlert2 (Swal) yüklü değil.");
@@ -191,6 +254,38 @@
     }
 
     function initHeaderScripts() {
+        function isLoggedInUser() {
+            if (typeof window.__USER_LOGGED_IN__ === "boolean") {
+                return window.__USER_LOGGED_IN__;
+            }
+            if (document.body && document.body.classList) {
+                if (document.body.classList.contains("hdr-auth-user")) return true;
+                if (document.body.classList.contains("hdr-auth-guest")) return false;
+            }
+            return false;
+        }
+
+        function openLoginModalFor(nextPath) {
+            var nextEl = document.getElementById("loginFormNext");
+            if (nextEl) {
+                nextEl.value = nextPath || "/";
+            }
+            if (typeof window.__openLoginModal === "function") {
+                window.__openLoginModal();
+                return true;
+            }
+            if (window.MaltabetAuth && typeof window.MaltabetAuth.showLoginModal === "function") {
+                window.MaltabetAuth.showLoginModal();
+                return true;
+            }
+            var loginBtn = document.getElementById("Giris");
+            if (loginBtn && typeof loginBtn.click === "function") {
+                loginBtn.click();
+                return true;
+            }
+            return false;
+        }
+
         // Kullanıcı menüsü: toggle davranışı header.js + profile modal (__openProfileModalInitial); çift dinleyici kaldırıldı.
         var bonusRequestLink = document.getElementById("bonusRequestLink");
         var bonusModal = document.getElementById("custome-promotion");
@@ -283,6 +378,20 @@
             modalLink.addEventListener("click", function () { closeNewSmartPanel(); }, true);
         });
 
+        document.querySelectorAll('a[href="/sportbook"], a[href="/sportsbook"]').forEach(function (sportsbookLink) {
+            sportsbookLink.addEventListener("click", function (event) {
+                if (isLoggedInUser()) {
+                    return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                closeNewSmartPanel();
+                if (!openLoginModalFor("/sportbook")) {
+                    window.location.href = "/login?next=" + encodeURIComponent("/sportbook");
+                }
+            }, true);
+        });
+
         // Right sidebar (genel: bildirim, favoriler vb.)
         var rightSidebarOverlay = document.getElementById("rightSidebarOverlay");
         var rightSidebarPanels = document.querySelectorAll(".right-sidebar[data-right-sidebar]");
@@ -297,6 +406,79 @@
         }
 
         var announcementsLoadToken = 0;
+        function fetchJsonSafe(url) {
+            return fetch(url, { credentials: "same-origin", headers: memberAuthHeaders({ Accept: "application/json" }) })
+                .then(function (r) {
+                    return r.text().then(function (text) {
+                        if (!text) return null;
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            return null;
+                        }
+                    });
+                })
+                .catch(function () {
+                    return null;
+                });
+        }
+
+        function fetchFreespinNotificationItems() {
+            var aktifUrl = appendQuery(apiUrl("/api/v2/freespins.php"), "tab=aktif");
+            var yeniUrl = appendQuery(apiUrl("/api/v2/freespins.php"), "tab=yeni");
+
+            return Promise.all([fetchJsonSafe(aktifUrl), fetchJsonSafe(yeniUrl)]).then(function (responses) {
+                var merged = [];
+                var seen = {};
+
+                responses.forEach(function (json) {
+                    var items = json && json.success && json.data && Array.isArray(json.data.items) ? json.data.items : [];
+                    items.forEach(function (row) {
+                        var code = row && row.campaign_code != null ? String(row.campaign_code) : '';
+                        var status = row && row.status != null ? String(row.status) : 'active';
+                        var uniq = code + '::' + status;
+                        if (!code || seen[uniq]) {
+                            return;
+                        }
+                        seen[uniq] = true;
+                        merged.push(row);
+                    });
+                });
+
+                return merged;
+            });
+        }
+
+        function notifyFreespinToast(items) {
+            if (!window.MaltabetToast || !Array.isArray(items) || items.length === 0) {
+                return;
+            }
+
+            var activeCount = items.filter(function (x) {
+                var st = String((x && x.status) || '').toLowerCase();
+                return st === 'active' || st === 'new';
+            }).length;
+            if (activeCount <= 0) {
+                return;
+            }
+
+            var fingerprint = items
+                .map(function (x) { return String((x && x.campaign_code) || '') + ':' + String((x && x.status) || ''); })
+                .sort()
+                .join('|');
+            var key = 'metropol_freespin_notice_' + fingerprint;
+            try {
+                if (sessionStorage.getItem(key) === '1') {
+                    return;
+                }
+                sessionStorage.setItem(key, '1');
+            } catch (e) {
+                // ignore storage errors
+            }
+
+            MaltabetToast.warning(activeCount + ' adet kullanılabilir freespin bulundu. Profil > Casino Freespinleri bölümünü kontrol edin.', 'Freespin Uyarısı');
+        }
+
         function loadAnnouncementsForDrawer() {
             var drawerList = document.getElementById("notificationDrawerList");
             if (!drawerList) return;
@@ -304,30 +486,24 @@
             var url = appendQuery(apiUrl(baseUrl), "action=all");
             var token = ++announcementsLoadToken;
             drawerList.innerHTML = "<p class=\"notification-drawer__loading\" role=\"status\">Yükleniyor…</p>";
-            fetch(url, { credentials: "same-origin", headers: memberAuthHeaders({ Accept: "application/json" }) })
-                .then(function (r) {
-                    return r.text().then(function (text) {
-                        var json = null;
-                        try {
-                            json = text ? JSON.parse(text) : null;
-                        } catch (e) {
-                            json = null;
-                        }
-                        return json;
-                    });
-                })
-                .then(function (json) {
+            Promise.all([fetchJsonSafe(url), fetchFreespinNotificationItems()])
+                .then(function (result) {
                     if (token !== announcementsLoadToken) return;
+                    var json = result[0];
+                    var freespinItems = Array.isArray(result[1]) ? result[1] : [];
                     if (json === null) {
                         drawerList.innerHTML = "";
-                        var parseErr = document.createElement("p");
-                        parseErr.className = "notification-drawer__error";
-                        parseErr.setAttribute("role", "alert");
-                        parseErr.textContent = "Duyurular yüklenemedi. Lütfen tekrar deneyin.";
-                        drawerList.appendChild(parseErr);
-                        updateNotificationBadge(0);
-                        return;
+                        if (freespinItems.length === 0) {
+                            var parseErr = document.createElement("p");
+                            parseErr.className = "notification-drawer__error";
+                            parseErr.setAttribute("role", "alert");
+                            parseErr.textContent = "Bildirimler yüklenemedi. Lütfen tekrar deneyin.";
+                            drawerList.appendChild(parseErr);
+                            updateNotificationBadge(0);
+                            return;
+                        }
                     }
+
                     var items = [];
                     if (json && json.success && json.data && Array.isArray(json.data.announcements)) {
                         items = json.data.announcements.filter(function (a) {
@@ -372,7 +548,49 @@
                         item.appendChild(closeBtn);
                         drawerList.appendChild(item);
                     });
-                    updateNotificationBadge(items.length);
+
+                    freespinItems.forEach(function (row, index) {
+                        var campaignCode = row && row.campaign_code != null ? String(row.campaign_code) : '';
+                        var status = String((row && row.status) || 'active');
+                        var spins = Number((row && row.freespins_per_player) || 0);
+                        var game = String((row && row.game_identifier) || '');
+                        var detailText = spins + ' spin · Durum: ' + status + (game ? ' · Oyun: ' + game : '');
+
+                        var item = document.createElement("div");
+                        item.className = "notification-drawer__item";
+                        item.setAttribute("data-id", "freespin-" + index);
+
+                        var icons = document.createElement("span");
+                        icons.className = "notification-drawer__icons";
+                        icons.innerHTML = "<i class=\"sp-button-icon-bc bc-i-promotions-3\" aria-hidden=\"true\"></i><i class=\"fa-solid fa-star notification-drawer__star\" aria-hidden=\"true\"></i>";
+
+                        var body = document.createElement("div");
+                        body.className = "notification-drawer__body";
+
+                        var text = document.createElement("span");
+                        text.className = "notification-drawer__text";
+                        text.textContent = 'Freespin: ' + (campaignCode || 'Kampanya');
+                        body.appendChild(text);
+
+                        var det = document.createElement("p");
+                        det.className = "notification-drawer__detail";
+                        det.textContent = detailText;
+                        body.appendChild(det);
+
+                        var closeBtn = document.createElement("button");
+                        closeBtn.type = "button";
+                        closeBtn.className = "notification-drawer__item-close";
+                        closeBtn.setAttribute("aria-label", "Kaldır");
+                        closeBtn.innerHTML = "&times;";
+
+                        item.appendChild(icons);
+                        item.appendChild(body);
+                        item.appendChild(closeBtn);
+                        drawerList.appendChild(item);
+                    });
+
+                    updateNotificationBadge(items.length + freespinItems.length);
+                    notifyFreespinToast(freespinItems);
                 })
                 .catch(function () {
                     if (token !== announcementsLoadToken) return;
@@ -394,6 +612,9 @@
             var list = document.getElementById("notificationDrawerList");
             if (!drawer || !toolbar || !list) return;
 
+            var titleEl = drawer.querySelector(".right-sidebar__title");
+            var dynamicTitle = titleEl && titleEl.textContent ? titleEl.textContent.trim() : "YENILIKLER";
+
             closeRightSidebar();
 
             updateNotificationDrawerDate();
@@ -409,7 +630,7 @@
             wrap.appendChild(list);
 
             window.MobileRightSheet.open({
-                title: "MALTABET YENİLİKLER",
+                title: dynamicTitle,
                 bodyElement: wrap,
                 onClose: function () {
                     var headerEl = drawer.querySelector(".right-sidebar__header");
@@ -831,6 +1052,7 @@
     onReady(function () {
         // Türkiye saati sadece header.js tarafından güncelleniyor (çift setInterval CPU yükü önlendi)
         updateTurkeyTime();
+        initFooterLanguageDropdown();
         initHeaderScripts();
         initFooterPaymentScroll();
         runSyncHeaderStickyTopAfterLayout();

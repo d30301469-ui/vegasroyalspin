@@ -86,48 +86,12 @@ if ($method === 'GET' && in_array($route, ['loyalty.php', 'loyalty/me', 'loyalty
 
 if ($method === 'GET' && in_array($route, ['freespins.php', 'me/freespins', 'profile/freespins'], true)) {
     $userId = $memberRequireLogin();
-    $pdo = AdminDatabase::pdo();
     $tab = strtolower(trim((string) ($_GET['tab'] ?? 'yeni'))) === 'aktif' ? 'aktif' : 'yeni';
-    $rows = [];
-    try {
-        DrakonService::bootstrap($pdo);
-        $where = ['p.user_id = :user_id', "p.status <> 'removed'"];
-        $params = ['user_id' => $userId];
-        if ($tab === 'aktif') {
-            $where[] = 'c.active = 1';
-            $where[] = '(c.expires_at IS NULL OR c.expires_at = 0 OR c.expires_at >= UNIX_TIMESTAMP())';
-            $where[] = "c.status NOT IN ('canceled', 'cancelled')";
-        }
-        $stmt = $pdo->prepare(
-            'SELECT p.status AS player_status,
-                    p.created_at AS assigned_at,
-                    c.campaign_code,
-                    c.vendor,
-                    c.currency_code,
-                    c.freespins_per_player,
-                    c.begins_at,
-                    c.expires_at,
-                    c.active,
-                    c.status
-             FROM drakon_campaign_players p
-             INNER JOIN drakon_campaigns c ON c.campaign_code = p.campaign_code
-             WHERE ' . implode(' AND ', $where) . '
-             ORDER BY p.id DESC
-             LIMIT 50'
-        );
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    } catch (Throwable) {
-        $rows = [];
-    }
     $memberEnvelope(200, [
         'success' => true,
         'code' => 200,
         'message' => 'Freespin listesi',
-        'data' => [
-            'tab' => $tab,
-            'items' => $rows,
-        ],
+        'data' => ['tab' => $tab, 'items' => BgamingService::memberFreespins(AdminDatabase::pdo(), $userId, $tab)],
     ]);
 }
 

@@ -1,0 +1,43 @@
+# Laragon monorepo â€” proje kÃ¶kÃ¼ (.env olarak kopyalayÄ±n)
+# Frontend: http://vegasroyalspin.test
+# Admin/API: http://admin.vegasroyalspin.test  +  http://api.vegasroyalspin.test
+
+APP_ENV=local
+APP_DEBUG=true
+
+SITE_URL=http://vegasroyalspin.test
+FRONTEND_URL=http://vegasroyalspin.test
+FRONTEND_FALLBACK_URL=http://vegasroyalspin.test
+SESSION_COOKIE_DOMAIN=.vegasroyalspin.test
+
+BACKEND_HOST=admin.vegasroyalspin.test
+BACKEND_URL=http://admin.vegasroyalspin.test
+BACKEND_FALLBACK_URL=http://admin.vegasroyalspin.test
+BACKEND_API_BASE_URL=http://api.vegasroyalspin.test/api/v2
+API_BACKEND_MAIN_BASE_URL=http://api.vegasroyalspin.test/api/v2
+API_BACKEND_FALLBACK_BASE_URL=http://admin.vegasroyalspin.test/api/v2
+
+PUBLIC_URL_HOSTS=vegasroyalspin.test,www.vegasroyalspin.test,m.vegasroyalspin.test
+ALLOWED_URL_HOSTS=vegasroyalspin.test,www.vegasroyalspin.test,m.vegasroyalspin.test,admin.vegasroyalspin.test,api.vegasroyalspin.test
+DEFAULT_ALLOWED_URL_HOSTS=vegasroyalspin.test,www.vegasroyalspin.test,m.vegasroyalspin.test,admin.vegasroyalspin.test,api.vegasroyalspin.test
+
+# Monorepo: doÄŸrudan DB kullanÄ±labilir (FRONTEND_API_ONLY=0)
+FRONTEND_API_ONLY=0
+FRONTEND_DIRECT_MEMBER_API=1
+
+APP_KEY=867b12ed50b35df630885094d889131b
+MEMBER_JWT_SECRET=72f0b4f58ca7fa24bf5211bef2a5ef41
+FRONTEND_CMS_PURGE_SECRET=c981de918ad3a10482eb7a278f37d4b2
+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=vegasroyalspin
+DB_USERNAME=root
+DB_PASSWORD=
+
+ALLOW_RUNTIME_MIGRATIONS=1
+METROPOL_RUNTIME_PROVIDER_BOOTSTRAP=1
+
+LIVE_SUPPORT_URL=https://direct.lc.chat/19301899/
+TELEGRAM_URL=https://t.me
+

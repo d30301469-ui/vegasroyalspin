@@ -1,7 +1,7 @@
 # Environment example
 APP_ENV=development
 APP_DEBUG=true
-BACKEND_HOST=bo-nexthub.site
+BACKEND_HOST=
 APP_KEY=change-me-to-a-random-32-byte-secret
 MEMBER_JWT_SECRET=change-me-to-a-different-random-32-byte-secret
 
@@ -17,10 +17,12 @@ ALLOW_RUNTIME_MIGRATIONS=1
 METROPOL_RUNTIME_PROVIDER_BOOTSTRAP=0
 
 # Provider callback secrets. Required when the related provider is active.
-DRAKON_CALLBACK_SECRET=
-DRAKON_CALLBACK_ALLOWED_IPS=
 BGAMING_WALLET_SECRET=
 MEGAPAYZ_PRIVATE_KEY=
+
+# Drakon Casino integration
+DRAKON_SITE_ENDPOINT=https://hanky-cytoplasm-worshiper.ngrok-free.dev
+DRAKON_CALLBACK_SECRET=
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1

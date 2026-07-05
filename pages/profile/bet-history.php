@@ -63,7 +63,6 @@ $userId = (int) $user['id'];
 // Sağlayıcı adlarını oyun adlarına çevirme fonksiyonu
 function getGameNameFromProvider($provider) {
     $providerGameMap = [
-        'drakon' => 'Dragon Kingdom',
         'pragmatic' => 'Pragmatic Play',
         'netent' => 'NetEnt',
         'microgaming' => 'Microgaming',
@@ -91,9 +90,18 @@ function getSporProviderName($providerCode) {
         1 => 'TLT',
         2 => 'Nexsus',
         3 => 'TBS2',
-        4 => 'LX'
+        4 => 'LX',
+        'sports-betby' => 'BetBy Sportsbook',
+        'betby' => 'BetBy Sportsbook',
+        'sports' => 'Sportsbook',
     ];
-    return $providerMap[$providerCode] ?? 'Bilinmeyen Sağlayıcı';
+    if (is_numeric($providerCode)) {
+        $key = (int) $providerCode;
+        return $providerMap[$key] ?? 'Bilinmeyen Sağlayıcı';
+    }
+
+    $key = strtolower(trim((string) $providerCode));
+    return $providerMap[$key] ?? ((string) $providerCode !== '' ? (string) $providerCode : 'Bilinmeyen Sağlayıcı');
 }
 
 // Spor bahis durumlarını çevirme fonksiyonu
@@ -255,23 +263,20 @@ foreach ($casinoTransactions as $transaction) {
 // Spor bahislerini işle
 $processedSporTransactions = [];
 foreach ($sporTransactions as $transaction) {
-    // Spor bahisi için özel alanları ekle
-    $transaction['final_game_name'] = $transaction['game_code'];
-    $transaction['type'] = 'bet'; // Spor bahisleri için type
-    $transaction['amount'] = $transaction['bet_amount'];
-    $transaction['provider_name'] = getSporProviderName($transaction['game_provider']);
+    $txnType = strtolower((string) ($transaction['txn_type'] ?? $transaction['type'] ?? 'bet'));
+    $isWin = in_array($txnType, ['win', 'cancel'], true);
+    $defaultAmount = $isWin
+        ? (float) ($transaction['get_amount'] ?? $transaction['amount'] ?? 0)
+        : (float) ($transaction['bet_amount'] ?? $transaction['amount'] ?? 0);
+
+    $transaction['bet_type'] = 'spor';
+    $transaction['final_game_name'] = (string) ($transaction['sport_name'] ?? $transaction['game_name'] ?? $transaction['game_code'] ?? 'Spor Kuponu');
+    $transaction['type'] = $isWin ? 'win' : 'bet';
+    $transaction['amount'] = abs($defaultAmount);
+    $transaction['provider_name'] = getSporProviderName($transaction['game_provider'] ?? $transaction['provider_name'] ?? '');
     $transaction['status_name'] = getSporStatusName($transaction['status']);
     $transaction['status_color'] = getSporStatusColor($transaction['status']);
-    
-    // Kazanç miktarı varsa ayrıca işlem olarak ekle
-    if ($transaction['get_amount'] > 0) {
-        $winTransaction = $transaction;
-        $winTransaction['type'] = 'win';
-        $winTransaction['amount'] = $transaction['get_amount'];
-        $winTransaction['final_game_name'] = $transaction['game_code'] . ' (Kazanç)';
-        $processedSporTransactions[] = $winTransaction;
-    }
-    
+
     $processedSporTransactions[] = $transaction;
 }
 
@@ -501,10 +506,21 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
                 </div>
                 <div class="bhf-group bhf-period-custom" id="bhPeriodCustomWrap" style="<?= $period !== 'custom' ? 'display:none' : '' ?>">
                     <label class="bhf-label">BAŞLANGIÇ – BİTİŞ</label>
-                    <div class="bhf-date-row">
-                        <input type="date" name="period_start" class="bhf-input" value="<?= htmlspecialchars($period_start) ?>">
+                    <div class="bhf-date-row bhf-date-range-row">
+                        <div class="bhf-date-input-wrap">
+                            <i class="fa-regular fa-calendar bhf-date-icon" aria-hidden="true"></i>
+                            <input type="date" id="bhPeriodStart" name="period_start" class="bhf-input bhf-input-date" value="<?= htmlspecialchars($period_start) ?>" aria-label="Başlangıç tarihi">
+                        </div>
                         <span class="bhf-date-sep">–</span>
-                        <input type="date" name="period_end" class="bhf-input" value="<?= htmlspecialchars($period_end) ?>">
+                        <div class="bhf-date-input-wrap">
+                            <i class="fa-regular fa-calendar bhf-date-icon" aria-hidden="true"></i>
+                            <input type="date" id="bhPeriodEnd" name="period_end" class="bhf-input bhf-input-date" value="<?= htmlspecialchars($period_end) ?>" aria-label="Bitiş tarihi">
+                        </div>
+                    </div>
+                    <div class="bhf-date-presets" id="bhDatePresets" role="group" aria-label="Hızlı tarih aralıkları">
+                        <button type="button" class="bhf-date-preset" data-range="today">Bugün</button>
+                        <button type="button" class="bhf-date-preset" data-range="last7">Son 7 gün</button>
+                        <button type="button" class="bhf-date-preset" data-range="last30">Son 30 gün</button>
                     </div>
                 </div>
                 <div class="bhf-group bhf-actions">
@@ -548,8 +564,8 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
                         
                         // Spor bahis detay butonu için
                         $detailsButton = '';
-                        if (!empty($transaction['spor_details']) && $transaction['spor_details'] !== 'null') {
-                            $detailsButton = '<button class="btn btn-xs btn-info ms-2 spor-details-btn" data-bet-id="' . $transaction['id'] . '">Detay</button>';
+                        if (!empty($transaction['id'])) {
+                            $detailsButton = '<button class="btn btn-xs btn-info ms-2 spor-details-btn" data-bet-id="' . htmlspecialchars((string) $transaction['id'], ENT_QUOTES, 'UTF-8') . '">Detay</button>';
                         }
                         
                         $detailsHtml = $infoText . $detailsButton;
@@ -648,7 +664,7 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 <!-- Spor Bahis Detayları Modalı -->
 <div class="modal fade" id="sporDetailsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+        <div class="modal-content profile-detail-modal-content">
             <div class="modal-header bg-info text-white">
                 <h5 class="modal-title">Spor Bahis Detayları</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -666,7 +682,7 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 <!-- Oyun Geçmişi Detayları Modalı -->
 <div class="modal fade" id="gameHistoryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+        <div class="modal-content profile-detail-modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Oyun Geçmişi Detayları</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
