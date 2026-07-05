@@ -4,13 +4,13 @@
 declare(strict_types=1);
 
 /**
- * P1 — BGaming / Drakon / MegaPayz yapılandırma + callback URL canlılık testi.
+ * P1 - BGaming / MegaPayz yapilandirma + callback URL canlilik testi.
  *
  * Backend SSH:
- *   php deploy/aapanel/probe-p1-providers.php --backend [/path/to/bo-nexthub.site]
+ *   php deploy/aapanel/probe-p1-providers.php --backend [/path/to/admin.vegasroyalspin.com]
  *
  * Yerel veya frontend (sadece HTTP probe):
- *   php deploy/aapanel/probe-p1-providers.php [--url=https://bo-nexthub.site]
+ *   php deploy/aapanel/probe-p1-providers.php [--url=https://admin.vegasroyalspin.com]
  */
 
 $root = dirname(__DIR__, 2);
@@ -42,7 +42,7 @@ $line = static function (string $level, string $msg) use (&$fail, &$warn): void 
 
 $probeHttp = static function (string $method, string $url, ?string $body = null, array $headers = []) use ($line): array {
     if (!function_exists('curl_init')) {
-        $line('FAIL', "cURL yok — {$method} {$url}");
+        $line('FAIL', "cURL yok â€” {$method} {$url}");
         return ['http' => 0, 'body' => '', 'error' => 'curl_missing'];
     }
     $ch = curl_init($url);
@@ -83,7 +83,7 @@ $backendUrl = $baseUrlOverride !== ''
     : rtrim((string) (getenv('BACKEND_URL') ?: deploy_domain('backend_url')), '/');
 
 if ($backendUrl === '') {
-    $backendUrl = 'https://bo-nexthub.site';
+    $backendUrl = 'https://admin.vegasroyalspin.com';
 }
 
 echo "Metropol P1 Provider Probe\n";
@@ -108,13 +108,13 @@ if ($isBackend || is_file($root . '/admin/app/Core/AdminDatabase.php') || is_fil
         try {
             $pdo = AdminDatabase::pdo();
         } catch (Throwable $e) {
-            $line('WARN', 'DB bağlantısı yok: ' . $e->getMessage());
+            $line('WARN', 'DB baÄŸlantÄ±sÄ± yok: ' . $e->getMessage());
         }
         break;
     }
 }
 
-// ─── BGaming ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ BGaming â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 echo "=== BGaming ===\n";
 $expectedWallet = $backendUrl . '/api/v2/bgaming-wallet';
@@ -124,107 +124,53 @@ if ($pdo instanceof PDO) {
         $stmt = $pdo->query('SELECT server_id, casino_id, api_base_url, wallet_secret, wallet_url, is_active FROM bgaming_config WHERE id = 1 LIMIT 1');
         $bgConfig = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     } catch (Throwable $e) {
-        $line('WARN', 'bgaming_config okunamadı: ' . $e->getMessage());
+        $line('WARN', 'bgaming_config okunamadÄ±: ' . $e->getMessage());
     }
 }
 
 if (!is_array($bgConfig)) {
-    $line('WARN', 'bgaming_config kaydı yok (migration / admin panel)');
+    $line('WARN', 'bgaming_config kaydÄ± yok (migration / admin panel)');
 } else {
     $active = (int) ($bgConfig['is_active'] ?? 0) === 1;
     $line($active ? 'OK' : 'WARN', 'is_active=' . ($active ? '1' : '0'));
     foreach (['server_id', 'api_base_url', 'wallet_secret'] as $key) {
         $val = trim((string) ($bgConfig[$key] ?? ''));
-        $line($val !== '' ? 'OK' : ($active ? 'FAIL' : 'WARN'), "{$key}: " . ($val !== '' ? 'set' : 'BOŞ'));
+        $line($val !== '' ? 'OK' : ($active ? 'FAIL' : 'WARN'), "{$key}: " . ($val !== '' ? 'set' : 'BOÅž'));
     }
     $walletUrl = trim((string) ($bgConfig['wallet_url'] ?? ''));
     if ($walletUrl === '') {
-        $line($active ? 'FAIL' : 'WARN', 'wallet_url boş — BGaming paneline: ' . $expectedWallet);
+        $line($active ? 'FAIL' : 'WARN', 'wallet_url boÅŸ â€” BGaming paneline: ' . $expectedWallet);
     } elseif (!str_contains(strtolower($walletUrl), 'bgaming-wallet')) {
-        $line('FAIL', "wallet_url hatalı: {$walletUrl} (beklenen: .../api/v2/bgaming-wallet)");
+        $line('FAIL', "wallet_url hatalÄ±: {$walletUrl} (beklenen: .../api/v2/bgaming-wallet)");
     } elseif (!str_contains($walletUrl, parse_url($backendUrl, PHP_URL_HOST) ?: 'bo-nexthub')) {
-        $line('WARN', "wallet_url backend host ile uyuşmuyor: {$walletUrl}");
+        $line('WARN', "wallet_url backend host ile uyuÅŸmuyor: {$walletUrl}");
     } else {
         $line('OK', "wallet_url: {$walletUrl}");
     }
-    echo "  Panel → Wallet URL: {$expectedWallet}\n";
+    echo "  Panel â†’ Wallet URL: {$expectedWallet}\n";
 }
 
 $bgHealth = $probeHttp('GET', $expectedWallet);
 if ($bgHealth['http'] === 200 && str_contains($bgHealth['body'], '"status"')) {
-    $line('OK', "GET {$expectedWallet} → HTTP 200 (health)");
+    $line('OK', "GET {$expectedWallet} â†’ HTTP 200 (health)");
 } elseif ($bgHealth['http'] === 404) {
-    $line('FAIL', "GET {$expectedWallet} → 404 (rewrite / deploy eksik)");
+    $line('FAIL', "GET {$expectedWallet} â†’ 404 (rewrite / deploy eksik)");
 } elseif ($bgHealth['http'] >= 500) {
-    $line('FAIL', "GET {$expectedWallet} → HTTP {$bgHealth['http']}");
+    $line('FAIL', "GET {$expectedWallet} â†’ HTTP {$bgHealth['http']}");
 } else {
-    $line('WARN', "GET {$expectedWallet} → HTTP {$bgHealth['http']}");
+    $line('WARN', "GET {$expectedWallet} â†’ HTTP {$bgHealth['http']}");
 }
 
 $bgBalance = $probeHttp('POST', $expectedWallet . '/balance', '{}');
 if ($bgBalance['http'] === 404) {
-    $line('FAIL', 'POST bgaming-wallet/balance → 404');
+    $line('FAIL', 'POST bgaming-wallet/balance â†’ 404');
 } elseif (in_array($bgBalance['http'], [400, 401, 403, 422], true)) {
-    $line('OK', "POST bgaming-wallet/balance → HTTP {$bgBalance['http']} (endpoint erişilebilir, imza bekleniyor)");
+    $line('OK', "POST bgaming-wallet/balance â†’ HTTP {$bgBalance['http']} (endpoint eriÅŸilebilir, imza bekleniyor)");
 } else {
-    $line('WARN', "POST bgaming-wallet/balance → HTTP {$bgBalance['http']}");
+    $line('WARN', "POST bgaming-wallet/balance â†’ HTTP {$bgBalance['http']}");
 }
 
-// ─── Drakon ────────────────────────────────────────────────────────────────
-
-echo "\n=== Drakon ===\n";
-$drakonWebhook = $backendUrl . '/drakon_api';
-$drConfig = null;
-if ($pdo instanceof PDO) {
-    try {
-        $stmt = $pdo->query('SELECT agent_code, agent_token, agent_secret, api_base_url, site_endpoint, callback_secret, is_active FROM drakon_config WHERE id = 1 LIMIT 1');
-        $drConfig = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    } catch (Throwable $e) {
-        $line('WARN', 'drakon_config okunamadı: ' . $e->getMessage());
-    }
-}
-
-if (!is_array($drConfig)) {
-    $line('WARN', 'drakon_config kaydı yok');
-} else {
-    $active = (int) ($drConfig['is_active'] ?? 0) === 1;
-    $line($active ? 'OK' : 'WARN', 'is_active=' . ($active ? '1' : '0'));
-    foreach (['agent_code', 'agent_token', 'agent_secret'] as $key) {
-        $val = trim((string) ($drConfig[$key] ?? ''));
-        $line($val !== '' ? 'OK' : ($active ? 'FAIL' : 'WARN'), "{$key}: " . ($val !== '' ? 'set' : 'BOŞ'));
-    }
-    $siteEp = trim((string) ($drConfig['site_endpoint'] ?? ''));
-    if ($siteEp === '') {
-        $line($active ? 'WARN' : 'OK', 'site_endpoint boş — Drakon panel site kökü: ' . $backendUrl);
-    } elseif (str_contains(strtolower($siteEp), 'drakon_api')) {
-        $line('WARN', "site_endpoint path içermemeli (sadece kök): {$siteEp}");
-    } else {
-        $line('OK', "site_endpoint: {$siteEp}");
-    }
-    echo "  Panel → Webhook URL: {$drakonWebhook}\n";
-}
-
-$drHealth = $probeHttp('GET', $drakonWebhook);
-if ($drHealth['http'] === 404) {
-    $line('FAIL', "GET {$drakonWebhook} → 404 (drakon_api rewrite eksik)");
-} elseif (in_array($drHealth['http'], [200, 403], true)) {
-    $line('OK', "GET {$drakonWebhook} → HTTP {$drHealth['http']} (endpoint erişilebilir)");
-} elseif ($drHealth['http'] === 405) {
-    $line('WARN', "GET {$drakonWebhook} → 405");
-} else {
-    $line('WARN', "GET {$drakonWebhook} → HTTP {$drHealth['http']}");
-}
-
-$drPost = $probeHttp('POST', $drakonWebhook, json_encode(['method' => 'user_balance', 'user_id' => '0'], JSON_UNESCAPED_UNICODE));
-if ($drPost['http'] === 404) {
-    $line('FAIL', 'POST drakon_api → 404');
-} elseif (in_array($drPost['http'], [401, 403, 422], true)) {
-    $line('OK', "POST drakon_api → HTTP {$drPost['http']} (webhook erişilebilir)");
-} else {
-    $line('WARN', "POST drakon_api → HTTP {$drPost['http']}");
-}
-
-// ─── MegaPayz ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ MegaPayz â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 echo "\n=== MegaPayz ===\n";
 $mpCallback = $backendUrl . '/api/v2/megapayz-callback';
@@ -234,56 +180,55 @@ if ($pdo instanceof PDO) {
         $stmt = $pdo->query("SELECT sid, private_key, api_base_url, is_active FROM megapayz_config WHERE code = 'default' LIMIT 1");
         $mpConfig = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     } catch (Throwable $e) {
-        $line('WARN', 'megapayz_config okunamadı: ' . $e->getMessage());
+        $line('WARN', 'megapayz_config okunamadÄ±: ' . $e->getMessage());
     }
 }
 
 if (!is_array($mpConfig)) {
-    $line('WARN', 'megapayz_config kaydı yok');
+    $line('WARN', 'megapayz_config kaydÄ± yok');
 } else {
     $active = (int) ($mpConfig['is_active'] ?? 0) === 1;
     $line($active ? 'OK' : 'WARN', 'is_active=' . ($active ? '1' : '0'));
     foreach (['sid', 'private_key'] as $key) {
         $val = trim((string) ($mpConfig[$key] ?? ''));
-        $line($val !== '' ? 'OK' : ($active ? 'FAIL' : 'WARN'), "{$key}: " . ($val !== '' ? 'set' : 'BOŞ'));
+        $line($val !== '' ? 'OK' : ($active ? 'FAIL' : 'WARN'), "{$key}: " . ($val !== '' ? 'set' : 'BOÅž'));
     }
-    echo "  Panel → Callback URL: {$mpCallback}\n";
+    echo "  Panel â†’ Callback URL: {$mpCallback}\n";
 }
 
 $mpToken = trim((string) (getenv('MEGAPAYZ_CALLBACK_TOKEN') ?: ''));
 if ($mpToken !== '') {
-    $line('OK', 'MEGAPAYZ_CALLBACK_TOKEN tanımlı (callback testi token gerektirir)');
+    $line('OK', 'MEGAPAYZ_CALLBACK_TOKEN tanÄ±mlÄ± (callback testi token gerektirir)');
 } else {
-    $line('OK', 'MEGAPAYZ_CALLBACK_TOKEN boş (callback IP/token doğrulaması kapalı)');
+    $line('OK', 'MEGAPAYZ_CALLBACK_TOKEN boÅŸ (callback IP/token doÄŸrulamasÄ± kapalÄ±)');
 }
 
 $mpGet = $probeHttp('GET', $mpCallback);
 if ($mpGet['http'] === 404) {
-    $line('FAIL', "GET {$mpCallback} → 404");
+    $line('FAIL', "GET {$mpCallback} â†’ 404");
 } elseif ($mpGet['http'] === 405) {
-    $line('OK', "GET {$mpCallback} → 405 (POST bekleniyor — route OK)");
+    $line('OK', "GET {$mpCallback} â†’ 405 (POST bekleniyor â€” route OK)");
 } else {
-    $line('WARN', "GET {$mpCallback} → HTTP {$mpGet['http']}");
+    $line('WARN', "GET {$mpCallback} â†’ HTTP {$mpGet['http']}");
 }
 
 $mpHeaders = $mpToken !== '' ? ['X-MegaPayz-Callback-Token: ' . $mpToken] : [];
 $mpPost = $probeHttp('POST', $mpCallback, json_encode(['trx' => 'probe-p1', 'status' => 'test'], JSON_UNESCAPED_UNICODE), $mpHeaders);
 if ($mpPost['http'] === 404) {
-    $line('FAIL', "POST {$mpCallback} → 404 (rewrite eksik)");
+    $line('FAIL', "POST {$mpCallback} â†’ 404 (rewrite eksik)");
 } elseif (in_array($mpPost['http'], [200, 403], true)) {
-    $line('OK', "POST {$mpCallback} → HTTP {$mpPost['http']} (callback endpoint erişilebilir)");
+    $line('OK', "POST {$mpCallback} â†’ HTTP {$mpPost['http']} (callback endpoint eriÅŸilebilir)");
 } else {
-    $line('WARN', "POST {$mpCallback} → HTTP {$mpPost['http']}");
+    $line('WARN', "POST {$mpCallback} â†’ HTTP {$mpPost['http']}");
 }
 
-// ─── Özet ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Ã–zet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-echo "\n=== ÖZET ===\n";
+echo "\n=== Ã–ZET ===\n";
 echo "FAIL: {$fail}  WARN: {$warn}\n";
-echo "\nProvider panel URL'leri (backend'e işaret etmeli):\n";
+echo "\nProvider panel URL'leri (backend'e iÅŸaret etmeli):\n";
 echo "  BGaming wallet : {$expectedWallet}\n";
-echo "  Drakon webhook : {$drakonWebhook}\n";
 echo "  MegaPayz callback: {$mpCallback}\n";
-echo "\nSonraki adım: php deploy/aapanel/probe-member-flow.php --login USER --password PASS\n";
+echo "\nSonraki adÄ±m: php deploy/aapanel/probe-member-flow.php --login USER --password PASS\n";
 
 exit($fail > 0 ? 1 : 0);

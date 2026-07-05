@@ -6,7 +6,7 @@
 
 if (function_exists('isMobile') && isMobile() && defined('MOBILE_PATH')) {
     $mobileHead = MOBILE_PATH . '/views/layouts/head.php';
-    if (file_exists($mobileHead)) {
+  if (is_file($mobileHead) && filesize($mobileHead) > 0) {
         include $mobileHead;
         return;
     }
@@ -14,7 +14,11 @@ if (function_exists('isMobile') && isMobile() && defined('MOBILE_PATH')) {
 
 $assetCssDir  = BASE_PATH . '/assets/css';
 $assetVer     = (string) (file_exists($assetCssDir . '/global.css') ? filemtime($assetCssDir . '/global.css') : 0) ?: '1';
-$headerCssVer = (string) (file_exists($assetCssDir . '/header.css') ? filemtime($assetCssDir . '/header.css') : $assetVer);
+$headerCssVer = (string) (
+  file_exists($assetCssDir . '/header.css')
+    ? filemtime($assetCssDir . '/header.css') . '-' . filesize($assetCssDir . '/header.css')
+    : $assetVer
+);
 $modalCssVer    = (string) (file_exists($assetCssDir . '/modal.css') ? filemtime($assetCssDir . '/modal.css') : $assetVer);
 $registerCssVer = (string) (file_exists($assetCssDir . '/register.css') ? filemtime($assetCssDir . '/register.css') : $assetVer);
 $loginCssVer    = (string) (file_exists($assetCssDir . '/login.css') ? filemtime($assetCssDir . '/login.css') : $assetVer);
@@ -39,8 +43,8 @@ if ($isPromosyonlar || $isPromotions) {
     $promoVer      = (string) (file_exists($assetCssDir . '/promosyonlar.css') ? filemtime($assetCssDir . '/promosyonlar.css') : $assetVer);
     $bonusModalVer = (string) (file_exists($assetCssDir . '/bonus-detail-modal.css') ? filemtime($assetCssDir . '/bonus-detail-modal.css') : $assetVer);
 }
-$headBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-$headMeta = is_array($siteMeta ?? null) ? $siteMeta : [];
+$headBranding = (isset($siteBranding) && is_array($siteBranding)) ? $siteBranding : [];
+$headMeta = (isset($siteMeta) && is_array($siteMeta)) ? $siteMeta : [];
 $headSiteName = (string) ($headBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
 $headDescription = (string) ($headMeta['description'] ?? $headBranding['description'] ?? $ayar['site_aciklama'] ?? '');
 $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headDescription));
@@ -92,6 +96,33 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/login.css?v=<?= $loginCssVer ?>" rel="stylesheet">
   <link href="/assets/css/auth-sliders.css?v=<?= $authSlidersCssVer ?>" rel="stylesheet">
   <link href="/assets/css/daterangepicker.css?v=<?= $assetVer ?>" rel="stylesheet">
+    <style>
+      body.mobile-site .hdr-smart-panel-fixed {
+        left: auto !important;
+        right: 8px !important;
+        top: calc(var(--header-sticky-top, 60px) + 8px) !important;
+        bottom: auto !important;
+        height: auto !important;
+        max-height: 320px !important;
+        overflow: hidden !important;
+        transform: none !important;
+      }
+      body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc {
+        max-height: 320px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
+      body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc .sp-button-bc {
+        width: 50px !important;
+        height: 44px !important;
+        font-size: 11px !important;
+        line-height: 1 !important;
+        padding: 0 !important;
+      }
+      body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc .sp-button-icon-bc {
+        font-size: 15px !important;
+      }
+    </style>
   <?php if ($requestPath === '/'): ?>
     <link href="/assets/css/home.css?v=<?= $homeCssVer ?>" rel="stylesheet">
     <link href="/assets/css/jackpot.css?v=<?= $assetVer ?>" rel="stylesheet">
@@ -135,7 +166,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   }
   $cspConnectSrc = function_exists('metropol_csp_connect_src_directive')
       ? metropol_csp_connect_src_directive()
-      : "connect-src 'self' wss://*.sptpub.com https://*.sptpub.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://*.livechatinc.com wss://*.livechatinc.com https://*.livechat.com wss://*.livechat.com https://*.livechat-static.com https://api.bo-nexthub.site https://bo-nexthub.site";
+      : "connect-src 'self' wss://*.sptpub.com https://*.sptpub.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://*.livechatinc.com wss://*.livechatinc.com https://*.livechat.com wss://*.livechat.com https://*.livechat-static.com https://api.vegasroyalspin.com https://admin.vegasroyalspin.com";
   ?>
   <meta http-equiv="Content-Security-Policy" content="<?= htmlspecialchars($cspConnectSrc, ENT_QUOTES, 'UTF-8') ?>">
 

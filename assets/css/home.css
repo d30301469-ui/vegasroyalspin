@@ -74,6 +74,85 @@
   box-sizing: border-box;
 }
 
+@keyframes homeJackpotReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 1025px) {
+  .home-jackpot-winners-row {
+    position: relative;
+    gap: 18px;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      radial-gradient(1000px 240px at -8% 118%, rgba(255, 0, 148, 0.14) 0%, rgba(255, 0, 148, 0) 64%),
+      radial-gradient(520px 220px at 108% -12%, rgba(86, 170, 255, 0.12) 0%, rgba(86, 170, 255, 0) 70%),
+      linear-gradient(145deg, rgba(22, 11, 56, 0.7) 0%, rgba(11, 7, 40, 0.82) 48%, rgba(13, 8, 36, 0.75) 100%);
+    box-shadow: 0 20px 44px rgba(7, 5, 22, 0.44);
+    animation: homeJackpotReveal 420ms ease-out both;
+  }
+
+  .home-jackpot-winners-row::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(110deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 32%, rgba(255, 255, 255, 0) 62%);
+    opacity: 0.35;
+  }
+
+  .home-jackpot-winners-row .slot-jackpot-wrap {
+    flex: 1 1 auto;
+  }
+
+  .home-jackpot-winners-row .slot-jackpot-wrap .jp-section {
+    position: relative;
+    z-index: 1;
+  }
+
+  .home-jackpot-winners-row .slot-jackpot-wrap .jp-bg {
+    min-height: 410px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .home-jackpot-winners-row .slot-winners-wrap {
+    flex: 0 0 clamp(340px, 27vw, 430px);
+    max-width: clamp(340px, 27vw, 430px);
+    position: relative;
+    z-index: 1;
+  }
+
+  .home-jackpot-winners-row .slot-winners-wrap .winners-section {
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 14px 34px rgba(7, 5, 22, 0.35);
+    backdrop-filter: blur(3px);
+  }
+
+  .home-jackpot-winners-row .slot-winners-wrap .winners-main-tab {
+    padding-top: 17px;
+    padding-bottom: 17px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  .home-jackpot-winners-row .slot-winners-wrap .winners-list {
+    padding-top: 12px;
+    padding-bottom: 10px;
+  }
+}
+
 .home-jackpot-winners-row .slot-jackpot-wrap {
   flex: 3 1 0;
   min-width: 0;
@@ -286,22 +365,47 @@
 }
 
 .title a {
+  --all-btn-border-a: rgba(var(--secondary-rgb), 0.95);
+  --all-btn-border-b: rgba(255, 255, 255, 0.88);
+  --all-btn-sheen: rgba(var(--secondary-rgb), 0.28);
   display: inline-block;
   padding: 4px 16px;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--secondary);
+  border-radius: 3px;
+  background: rgba(8, 12, 28, 0.35);
+  color: #ecfff2;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
   text-decoration: none;
-  border: 1.5px solid var(--secondary);
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(rgba(8, 12, 28, 0.35), rgba(8, 12, 28, 0.35)),
+    linear-gradient(120deg, var(--all-btn-border-a), var(--all-btn-border-b), var(--all-btn-border-a));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 220% 100%;
+  background-position: 0 0, 0% 0;
+  box-shadow: inset 0 0 0 1px rgba(var(--secondary-rgb), 0.14);
+  transition: color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  animation: all-link-border-shift 2.2s linear infinite;
 }
 
 .title a:hover {
-  background: var(--secondary);
-  color: #111;
+  color: #ffffff;
   transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--secondary-rgb), 0.2),
+    0 0 12px var(--all-btn-sheen);
+}
+
+@keyframes all-link-border-shift {
+  0% {
+    background-position: 0 0, 0% 0;
+  }
+  100% {
+    background-position: 0 0, 220% 0;
+  }
 }
 
 .live-casino-title .live-casino-heading {
@@ -646,13 +750,19 @@
   }
 
   .live-casino-banner-wrap {
-    margin: 0 auto;
-    padding: 0;
+    margin: 8px auto;
+    padding: 0 8px;
     max-width: none;
   }
 
   .live-casino-banner {
-    border-radius: 0;
+    border-radius: 10px;
+  }
+
+  .live-casino-banner img {
+    min-height: 110px !important;
+    object-fit: cover !important;
+    object-position: center !important;
   }
 
   .ligler-container {
@@ -690,6 +800,21 @@
   .game-overlay,
   .game-overlay::before {
     border-radius: 0;
+  }
+
+  .game-actions {
+    gap: 6px;
+  }
+
+  .play-btn,
+  .demo-btn {
+    min-width: 0;
+    max-width: none;
+    width: calc(50% - 3px);
+    padding: 7px 8px;
+    font-size: 10px;
+    line-height: 1;
+    border-radius: 5px;
   }
 }
 

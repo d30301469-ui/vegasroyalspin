@@ -40,9 +40,7 @@ final class ApiMediaUrl
             $normalized = '/' . $normalized;
         }
 
-        if (preg_match('#^/drakon/#i', $normalized)) {
-            return 'https://gator.drakon.casino/storage' . $normalized;
-        }
+        $normalized = self::normalizeLegacyMediaPath($normalized);
 
         if (self::isBackendHostedPath($normalized)) {
             $backend = self::backendOrigin();
@@ -228,6 +226,7 @@ final class ApiMediaUrl
         if ($path === '') {
             $path = '/';
         }
+        $path = self::normalizeLegacyMediaPath($path);
 
         $query = parse_url($url, PHP_URL_QUERY);
         $fragment = parse_url($url, PHP_URL_FRAGMENT);
@@ -263,6 +262,11 @@ final class ApiMediaUrl
 
     private static function isStaleDevHost(string $host): bool
     {
+        // Trusted media CDN hostlarini mutlak birak: admin uploads host'una rewrite edilmemeli.
+        if (preg_match('/^icons\.casinomilyon\d+\.com$/i', $host) === 1) {
+            return false;
+        }
+
         if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
             return true;
         }
@@ -314,5 +318,20 @@ final class ApiMediaUrl
         }
 
         return '';
+    }
+
+    private static function normalizeLegacyMediaPath(string $path): string
+    {
+        $normalized = '/' . ltrim(str_replace('\\', '/', $path), '/');
+        $lower = strtolower($normalized);
+
+        if (str_starts_with($lower, '/storage/medias/')) {
+            return '/uploads/medias/' . ltrim(substr($normalized, strlen('/storage/medias/')), '/');
+        }
+        if (str_starts_with($lower, '/storage/media/')) {
+            return '/uploads/media/' . ltrim(substr($normalized, strlen('/storage/media/')), '/');
+        }
+
+        return $normalized;
     }
 }

@@ -299,25 +299,6 @@ if ($method === 'POST' && in_array($route, ['loyalty/redeem', 'loyalty/redeem-po
     ]);
 }
 
-// ─── Spor meta (liste endpoint'leri) ───────────────────────────────────────
-
-if ($method === 'GET' && in_array($route, ['sports.php', 'sports', 'sports/meta', 'sports_events.php', 'sports_events', 'sports_leagues.php', 'sports_leagues', 'sports_markets.php', 'sports_markets'], true)) {
-    $configured = trim((string) getenv('OKKO_SPORTS_API_KEY')) !== ''
-        && trim((string) getenv('OKKO_SPORTS_API_SECRET')) !== '';
-    $memberEnvelope(200, [
-        'success' => true,
-        'code' => 200,
-        'message' => $configured ? 'Spor servisi yapılandırıldı.' : 'Spor servisi henüz yapılandırılmadı.',
-        'data' => [
-            'items' => [],
-            'provider' => 'okko',
-            'configured' => $configured,
-            'launch_route' => '/api/v2/sports/launch',
-        ],
-        'meta' => ['resource' => $route, 'status' => $configured ? 'ready' : 'not_configured'],
-    ]);
-}
-
 // ─── Sorumlu oyun (REST alias → me/limits) ─────────────────────────────────
 
 if (in_array($method, ['POST', 'PATCH', 'PUT'], true) && $route === 'responsible-gaming/limits') {

@@ -205,7 +205,7 @@ if (!function_exists('metropol_is_backend_host')) {
 
         $list = function_exists('deploy_backend_hosts')
             ? deploy_backend_hosts()
-            : ['bo-nexthub.site', 'api.bo-nexthub.site'];
+            : [];
 
         foreach (array_merge($candidates, $list) as $candidate) {
             $c = strtolower(preg_replace('/:\d+$/', '', trim((string) $candidate)) ?? '');
@@ -356,17 +356,16 @@ if (!function_exists('frontend_uri_is_backend_only')) {
             '/bgaming-wallet',
             '/api/casino-callback',
             '/api-gates',
-            '/api/v2/drakon_callback',
             '/api/v2/bgaming',
             '/api/v2/bgaming-wallet',
             '/api/v2/megapayz',
-            '/drakon_callback',
-            '/drakon_api',
-            '/drakon-callback',
-            '/admin/api/v2/drakon_callback',
             '/megapayz-callback',
             '/bgaming_callback',
             '/casino-callback',
+            '/drakon_api',
+            '/api/v2/drakon_callback',
+            '/api/v2/sportsbook-wallet',
+            '/api/v2/sportsbook_callback',
         ];
 
         foreach ($prefixes as $prefix) {
@@ -603,7 +602,7 @@ if (!function_exists('metropol_backend_internal_probe_request')) {
             $host = trim((string) (getenv('API_BACKEND_INTERNAL_HOST') ?: getenv('BACKEND_HOST') ?: ''));
             if ($host === '') {
                 $backendUrl = trim((string) (getenv('BACKEND_URL') ?: ''));
-                $host = strtolower((string) (parse_url($backendUrl, PHP_URL_HOST) ?: 'bo-nexthub.site'));
+                $host = strtolower((string) (parse_url($backendUrl, PHP_URL_HOST) ?: ''));
             }
         }
 
@@ -1044,107 +1043,6 @@ if (!function_exists('frontend_emit_backend_only_response')) {
             'code' => 404,
             'error' => 'BACKEND_CALLBACK_ONLY',
             'message' => 'Provider callback endpointleri sadece backend hostunda calisir.',
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        exit;
-    }
-}
-
-if (!function_exists('metropol_drakon_webhook_backend_url')) {
-    function metropol_drakon_webhook_backend_url(): string
-    {
-        // Bu fonksiyon dahili proxy hedefi içindir: BACKEND_URL (admin sunucusu) kullan.
-        // DRAKON_WEBHOOK_BASE_URL halkla açık Drakon callback URL'idir (örn. ngrok); proxy
-        // hedefi olarak kullanılmamalı — aksi takdirde self-referential döngü oluşur.
-        // Env yüklenmemişse yükle (router.php blağından çağrılırsa).
-        if (function_exists('frontend_load_dotenv')) {
-            frontend_load_dotenv();
-        }
-        $backend = trim((string) (
-            (defined('BACKEND_URL') ? (string) BACKEND_URL : '')
-            ?: (function_exists('frontend_env_raw') ? (frontend_env_raw('BACKEND_URL') ?? '') : '')
-            ?: (getenv('BACKEND_URL') ?: ($_ENV['BACKEND_URL'] ?? ''))
-            ?: (function_exists('frontend_env_raw') ? (frontend_env_raw('BACKEND_FALLBACK_URL') ?? '') : '')
-            ?: (getenv('BACKEND_FALLBACK_URL') ?: ($_ENV['BACKEND_FALLBACK_URL'] ?? ''))
-        ));
-        if ($backend === '' && function_exists('deploy_domain')) {
-            $backend = deploy_domain('backend_url');
-        }
-        if ($backend === '') {
-            $backend = 'https://bo-nexthub.site';
-        }
-
-        return rtrim($backend, '/') . '/drakon_api';
-    }
-}
-
-if (!function_exists('metropol_proxy_drakon_webhook')) {
-    /**
-     * Drakon agent paneli yanlışlıkla frontend Site URL kullanırsa webhook'u backend'e ilet.
-     */
-    function metropol_proxy_drakon_webhook(): never
-    {
-        if (!function_exists('curl_init')) {
-            frontend_emit_backend_only_response();
-        }
-
-        $targetUrl = metropol_drakon_webhook_backend_url();
-        $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
-        $rawBody = file_get_contents('php://input');
-        $rawBody = is_string($rawBody) ? $rawBody : '';
-
-        $headers = ['Accept: application/json'];
-        $contentType = trim((string) ($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
-        if ($contentType !== '') {
-            $headers[] = 'Content-Type: ' . $contentType;
-        }
-        foreach ($_SERVER as $key => $value) {
-            if (!is_string($key) || !is_string($value) || $value === '') {
-                continue;
-            }
-            if (!str_starts_with($key, 'HTTP_X_')) {
-                continue;
-            }
-            $headerName = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
-            $headers[] = $headerName . ': ' . $value;
-        }
-
-        $ch = curl_init($targetUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-        ]);
-        if ($rawBody !== '') {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $rawBody);
-        }
-        if (defined('CURL_IPRESOLVE_V4')) {
-            curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-        }
-
-        $response = curl_exec($ch);
-        $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if (!headers_sent()) {
-            header('Content-Type: application/json; charset=utf-8');
-            header('Cache-Control: no-store');
-            http_response_code($http > 0 ? $http : 502);
-        }
-
-        if (is_string($response) && $response !== '') {
-            echo $response;
-            exit;
-        }
-
-        echo json_encode([
-            'status' => false,
-            'error' => 'DRAKON_PROXY_FAILED',
-            'message' => 'Drakon webhook backend proxy failed.',
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }

@@ -112,7 +112,9 @@ $mobileFooterLinkHref = static function (array $link): string {
                       title="Lisans doğrulama"
                       loading="lazy"
                       scrolling="no"
-                      frameborder="0"></iframe>
+                      frameborder="0"
+                      referrerpolicy="no-referrer"
+                      sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
             </span>
           <?php elseif ($itemType === 'image'): ?>
             <a class="mobile-footer-bc__partner"

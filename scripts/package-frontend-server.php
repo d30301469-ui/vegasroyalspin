@@ -95,7 +95,6 @@ $forbiddenPaths = [
 
 $forbiddenRelativeFiles = [
     'services/MegaPayzService.php',
-    'services/DrakonService.php',
     'services/BgamingService.php',
     'services/MemberJwtService.php',
     'services/PaymentCallbackService.php',
@@ -130,7 +129,7 @@ foreach ($copyFiles as $file) {
 $htaccessSource = $projectRoot . '/deploy/apache/vegasroyalspin.com.htaccess';
 if (is_file($htaccessSource)) {
     copy($htaccessSource, $outputRoot . '/.htaccess');
-    echo "Copied deploy/apache/vegasroyalspin.com.htaccess → .htaccess\n";
+    echo "Copied deploy/apache/vegasroyalspin.com.htaccess â†’ .htaccess\n";
 } elseif (is_file($projectRoot . '/.htaccess')) {
     copy($projectRoot . '/.htaccess', $outputRoot . '/.htaccess');
     echo "Copied .htaccess (fallback)\n";
@@ -139,13 +138,13 @@ if (is_file($htaccessSource)) {
 $frontendApiHtaccess = $projectRoot . '/deploy/apache/frontend-api.htaccess';
 if (is_file($frontendApiHtaccess) && is_dir($outputRoot . '/api')) {
     copy($frontendApiHtaccess, $outputRoot . '/api/.htaccess');
-    echo "Copied deploy/apache/frontend-api.htaccess → api/.htaccess\n";
+    echo "Copied deploy/apache/frontend-api.htaccess â†’ api/.htaccess\n";
 }
 
 $fallbackIndex = $projectRoot . '/deploy/apache/fallback-index.html';
 if (is_file($fallbackIndex)) {
     copy($fallbackIndex, $outputRoot . '/index.html');
-    echo "Copied deploy/apache/fallback-index.html → index.html (index.php eksikse yedek)\n";
+    echo "Copied deploy/apache/fallback-index.html â†’ index.html (index.php eksikse yedek)\n";
 }
 
 $frontendComposerTemplate = $projectRoot . '/deploy/composer.frontend.json';
@@ -155,19 +154,19 @@ if (is_file($frontendComposerTemplate)) {
         mkdir($deployDir, 0755, true);
     }
     copy($frontendComposerTemplate, $deployDir . '/composer.frontend.json');
-    echo "Copied deploy/composer.frontend.json (sunucuda composer dГјzeltmesi iГ§in)\n";
+    echo "Copied deploy/composer.frontend.json (sunucuda composer dÐ“Ñ˜zeltmesi iÐ“Â§in)\n";
 }
 
 $aapanelDeploy = $projectRoot . '/deploy/aapanel';
 if (is_dir($aapanelDeploy)) {
     copyTree($aapanelDeploy, $outputRoot . '/deploy/aapanel');
-    echo "Copied deploy/aapanel/ (aaPanel kurulum notlarД±)\n";
+    echo "Copied deploy/aapanel/ (aaPanel kurulum notlarÐ”Â±)\n";
 }
 
 $apacheDeploy = $projectRoot . '/deploy/apache';
 if (is_dir($apacheDeploy)) {
     copyTree($apacheDeploy, $outputRoot . '/deploy/apache');
-    echo "Copied deploy/apache/ (Apache .htaccess + vhost Г¶rnekleri)\n";
+    echo "Copied deploy/apache/ (Apache .htaccess + vhost Ð“Â¶rnekleri)\n";
 }
 
 $opsScripts = [
@@ -214,7 +213,6 @@ if (is_file($bundledEnv)) {
 
 foreach ([
     'storage/cache/cms_api_circuit.json',
-    'storage/logs/drakon_callback_hits.log',
     'storage/install_csrf.token',
 ] as $devArtifact) {
     $artifactPath = $outputRoot . '/' . $devArtifact;
@@ -235,19 +233,15 @@ if (is_file($writeComposerScript)) {
 
 $excludeRelativePaths = [
     'services/MegaPayzService.php',
-    'services/DrakonService.php',
     'services/BgamingService.php',
     'services/MemberJwtService.php',
     'services/PaymentCallbackService.php',
     'controllers/Api/ApiCallbackController.php',
     'controllers/Api/ApiCasinoCallbackController.php',
     'controllers/Api/ApiBgamingWalletController.php',
-    'controllers/Api/ApiDrakonController.php',
-    'app/Services/Providers/DrakonService.php',
     'app/Services/Providers/BgamingService.php',
     'app/Services/Payments/MegaPayzService.php',
     'app/Http/Controllers/Callback/MegaPayzCallbackController.php',
-    'app/Http/Controllers/Callback/DrakonCallbackController.php',
     'app/Http/Controllers/Callback/BgamingCallbackController.php',
     'app/Http/Controllers/Callback/CasinoCallbackController.php',
     'app/Http/Middleware/ProviderSignatureMiddleware.php',
@@ -272,7 +266,7 @@ if (is_file($bundleVendorScript)) {
         $vendorCode
     );
     if ($vendorCode !== 0 || !is_file($outputRoot . '/vendor/autoload.php')) {
-        fwrite(STDERR, "ERROR: vendor/ bundle failed вЂ” deploy zip must include vendor/autoload.php\n");
+        fwrite(STDERR, "ERROR: vendor/ bundle failed Ð²Ð‚â€ deploy zip must include vendor/autoload.php\n");
         exit(1);
     }
 }
@@ -332,7 +326,7 @@ if ($forbiddenPresent !== []) {
 }
 
 file_put_contents($outputRoot . '/DEPLOY.txt', implode("\n", [
-    'FRONTEND HOST BUNDLE вЂ” upload ALL contents to ' . $frontendDomain,
+    'FRONTEND HOST BUNDLE Ð²Ð‚â€ upload ALL contents to ' . $frontendDomain,
     '',
     'Domain:  ' . $frontendUrl . '/',
     'Target:  /www/wwwroot/' . $frontendDomain . '/',
@@ -349,9 +343,9 @@ file_put_contents($outputRoot . '/DEPLOY.txt', implode("\n", [
     'MySQL/PDO is DISABLED on this host (production + FRONTEND_API_ONLY).',
     'Never set DB_HOST / DB_DATABASE in frontend .env.',
     '',
-    'vendor/ is PRE-BUNDLED in this zip вЂ” do NOT run composer on the server.',
+    'vendor/ is PRE-BUNDLED in this zip Ð²Ð‚â€ do NOT run composer on the server.',
     '',
-    'After upload (FRESH install вЂ” delete old .env and storage/install.lock if present):',
+    'After upload (FRESH install Ð²Ð‚â€ delete old .env and storage/install.lock if present):',
     '  php scripts/post-upload-check.php',
     '  Open https://' . $frontendDomain . '/install-status.php then /install',
     '  Complete the wizard (backend URL, MEMBER_JWT_SECRET from bo-nexthub.site)',

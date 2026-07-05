@@ -403,16 +403,46 @@
             document.body.appendChild(panel);
         }
 
+        function applyMobilePanelSizing() {
+            if (!isMobile || !panel) return;
+            var rootTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mobile-promo-sheet-top'));
+            var safeTop = Number.isFinite(rootTop) && rootTop > 0 ? Math.ceil(rootTop + 8) : 67;
+            panel.style.setProperty('left', 'auto', 'important');
+            panel.style.setProperty('right', '8px', 'important');
+            panel.style.setProperty('top', safeTop + 'px', 'important');
+            panel.style.setProperty('bottom', 'auto', 'important');
+            panel.style.setProperty('height', 'auto', 'important');
+            panel.style.setProperty('max-height', '320px', 'important');
+            panel.style.setProperty('overflow', 'hidden', 'important');
+            panel.style.setProperty('transform', 'none', 'important');
+
+            var holder = panel.querySelector('.hdr-smart-panel-holder-bc');
+            if (holder) {
+                holder.style.setProperty('max-height', '320px', 'important');
+                holder.style.setProperty('overflow-y', 'auto', 'important');
+                holder.style.setProperty('overflow-x', 'hidden', 'important');
+            }
+
+            panel.querySelectorAll('.sp-button-bc').forEach(function (btn) {
+                btn.style.setProperty('width', '50px', 'important');
+                btn.style.setProperty('height', '44px', 'important');
+                btn.style.setProperty('font-size', '11px', 'important');
+                btn.style.setProperty('line-height', '1', 'important');
+                btn.style.setProperty('padding', '0', 'important');
+            });
+
+            panel.querySelectorAll('.sp-button-icon-bc').forEach(function (icon) {
+                icon.style.setProperty('font-size', '15px', 'important');
+            });
+        }
+
         function syncPanelPosition() {
             if (!panel) return;
             var rect = toggle.getBoundingClientRect();
             if (rect.width === 0 && rect.height === 0) return;
             if (isMobile) {
-                var gap = 8;
-                var inset = 8;
-                panel.style.left = 'auto';
-                panel.style.right = Math.max(inset, Math.round(window.innerWidth - rect.right)) + 'px';
-                panel.style.top = Math.round(rect.bottom + gap) + 'px';
+                applyMobilePanelSizing();
+                panel.style.right = Math.max(8, Math.round(window.innerWidth - rect.right)) + 'px';
             } else {
                 panel.style.right = '';
                 panel.style.left = (rect.left + rect.width / 2) + 'px';
@@ -456,6 +486,7 @@
 
         window.addEventListener('resize', syncPanelPosition);
         window.addEventListener('scroll', syncPanelPosition, true);
+        applyMobilePanelSizing();
         syncPanelPosition();
     }
 
@@ -465,7 +496,219 @@
         var searchPanel = document.getElementById('searchPanel');
         var searchClose = document.getElementById('searchPanelClose');
         var searchInput = document.getElementById('searchPanelInput');
+        var searchBody = document.getElementById('searchPanelBody');
         var filterBtns = document.querySelectorAll('.search-panel__filter');
+        var activeFilter = 'sport';
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function inputPlaceholderFor(filter) {
+            if (filter === 'casino') return 'Casino\'da ara';
+            if (filter === 'livecasino') return 'Canlı Casino\'da ara';
+            return 'Spor\'da ara';
+        }
+
+        function gameTypeFor(filter) {
+            if (filter === 'casino') return '0';
+            if (filter === 'livecasino') return '1';
+            return null;
+        }
+
+        function setEmpty(text) {
+            if (!searchBody) return;
+            searchBody.innerHTML = '<p class="search-panel__empty">' + escapeHtml(text) + '</p>';
+        }
+
+        function setLoading() {
+            if (!searchBody) return;
+            searchBody.innerHTML = '<p class="search-panel__empty">Yükleniyor...</p>';
+        }
+
+        function normalizeGameId(game) {
+            if (!game || typeof game !== 'object') return '';
+            var gid = game.game_id || game.id || game.identifier || '';
+            return String(gid || '').trim();
+        }
+
+        function normalizeGameName(game) {
+            if (!game || typeof game !== 'object') return '';
+            return String(game.name || game.title || game.game_name || 'Oyun').trim();
+        }
+
+        function normalizeGameProvider(game) {
+            if (!game || typeof game !== 'object') return '';
+            return String(game.provider || game.provider_name || game.provider_code || '').trim();
+        }
+
+        function normalizeGameImage(game) {
+            if (!game || typeof game !== 'object') return '';
+            return String(game.image_url || game.thumbnail_url || game.banner || '').trim();
+        }
+
+        function normalizeText(value) {
+            return String(value || '')
+                .toLocaleLowerCase('tr-TR')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+        }
+
+        function sortByPopularity(items, filter) {
+            if (!Array.isArray(items) || !items.length) return [];
+
+            var popularByFilter = {
+                casino: [
+                    'gates of olympus',
+                    'gates of olympus 1000',
+                    'sweet bonanza',
+                    'wanted dead or a wild',
+                    'starlight princess',
+                    'big bass',
+                    'sugar rush',
+                    'zeus vs hades'
+                ],
+                livecasino: [
+                    'lightning roulette',
+                    'crazy time',
+                    'mega roulette',
+                    'monopoly live',
+                    'blackjack',
+                    'baccarat',
+                    'sweet bonanza candyland'
+                ]
+            };
+
+            var exactRank = popularByFilter[filter] || [];
+            var mapped = items.slice().map(function (game, index) {
+                var nameNorm = normalizeText(normalizeGameName(game));
+                var providerNorm = normalizeText(normalizeGameProvider(game));
+                var score = 0;
+
+                for (var i = 0; i < exactRank.length; i++) {
+                    if (nameNorm.indexOf(exactRank[i]) !== -1) {
+                        score += 1000 - (i * 25);
+                    }
+                }
+
+                if (providerNorm.indexOf('pragmatic') !== -1) score += 140;
+                if (providerNorm.indexOf('evolution') !== -1 && filter === 'livecasino') score += 120;
+                if (providerNorm.indexOf('play\'n go') !== -1 || providerNorm.indexOf('play n go') !== -1) score += 55;
+
+                return {
+                    game: game,
+                    score: score,
+                    index: index
+                };
+            });
+
+            mapped.sort(function (a, b) {
+                if (b.score !== a.score) return b.score - a.score;
+                return a.index - b.index;
+            });
+
+            return mapped.map(function (row) { return row.game; });
+        }
+
+        function renderGames(items) {
+            if (!searchBody) return;
+            if (!items || !items.length) {
+                setEmpty('Bu filtrede oyun bulunamadı.');
+                return;
+            }
+
+            items = sortByPopularity(items, activeFilter);
+
+            var html = '<div class="search-panel__results">';
+            for (var i = 0; i < items.length; i++) {
+                var game = items[i] || {};
+                var gameId = normalizeGameId(game);
+                if (!gameId) continue;
+                var name = normalizeGameName(game);
+                var provider = normalizeGameProvider(game);
+                var image = normalizeGameImage(game);
+                var safeImage = image !== '' ? escapeHtml(image) : '';
+                var initials = escapeHtml((name || 'O').charAt(0).toUpperCase());
+
+                html += '<button type="button" class="search-panel__game" data-game-id="' + escapeHtml(gameId) + '">';
+                html += '<span class="search-panel__game-thumb">';
+                if (safeImage !== '') {
+                    html += '<img src="' + safeImage + '" alt="' + escapeHtml(name) + '" loading="lazy">';
+                } else {
+                    html += '<span class="search-panel__game-thumb-fallback">' + initials + '</span>';
+                }
+                html += '</span>';
+                html += '<span class="search-panel__game-meta">';
+                html += '<span class="search-panel__game-name">' + escapeHtml(name) + '</span>';
+                if (provider !== '') {
+                    html += '<span class="search-panel__game-provider">' + escapeHtml(provider) + '</span>';
+                }
+                html += '</span>';
+                html += '</button>';
+            }
+            html += '</div>';
+            searchBody.innerHTML = html;
+        }
+
+        function extractItems(payload) {
+            if (!payload || typeof payload !== 'object') return [];
+            var data = payload.data || {};
+            var list = data.items || data.games || [];
+            return Array.isArray(list) ? list : [];
+        }
+
+        function fetchCasinoGames() {
+            var gameType = gameTypeFor(activeFilter);
+            if (gameType === null) {
+                setEmpty('Arama yapmak için yukarıdaki alanı kullanın.');
+                return;
+            }
+
+            var q = searchInput ? String(searchInput.value || '').trim() : '';
+            var params = new URLSearchParams();
+            params.set('limit', '36');
+            params.set('page', '1');
+            params.set('game_type', gameType);
+            if (q !== '') params.set('search', q);
+
+            setLoading();
+            fetch(apiUrl('/api/v2/games?' + params.toString()), {
+                method: 'GET',
+                credentials: 'include',
+                headers: { Accept: 'application/json' }
+            })
+                .then(function (resp) {
+                    if (!resp.ok) {
+                        throw new Error('HTTP ' + resp.status);
+                    }
+                    return resp.json();
+                })
+                .then(function (json) {
+                    renderGames(extractItems(json));
+                })
+                .catch(function () {
+                    setEmpty('Oyunlar yüklenemedi. Lütfen tekrar deneyin.');
+                });
+        }
+
+        function applyFilter(filter) {
+            activeFilter = filter || 'sport';
+            if (searchInput) {
+                searchInput.placeholder = inputPlaceholderFor(activeFilter);
+            }
+            if (activeFilter === 'sport') {
+                setEmpty('Arama yapmak için yukarıdaki alanı kullanın.');
+                return;
+            }
+            fetchCasinoGames();
+        }
+
+        var fetchCasinoGamesDebounced = debounce(fetchCasinoGames, 260);
 
         function openSearchPanel() {
             if (!searchOverlay || !searchPanel) return;
@@ -479,6 +722,8 @@
             searchPanel.setAttribute('aria-hidden', 'false');
             if (searchBtn) searchBtn.setAttribute('aria-expanded', 'true');
             document.body.style.overflow = 'hidden';
+            var activeBtn = document.querySelector('.search-panel__filter.is-active');
+            applyFilter(activeBtn ? (activeBtn.getAttribute('data-filter') || 'sport') : 'sport');
             setTimeout(function () { if (searchInput) searchInput.focus(); }, 300);
         }
 
@@ -510,8 +755,27 @@
             btn.addEventListener('click', function () {
                 filterBtns.forEach(function (b) { b.classList.remove('is-active'); });
                 btn.classList.add('is-active');
+                applyFilter(btn.getAttribute('data-filter') || 'sport');
             });
         });
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                if (activeFilter === 'sport') return;
+                fetchCasinoGamesDebounced();
+            });
+        }
+
+        if (searchBody) {
+            searchBody.addEventListener('click', function (e) {
+                var gameBtn = e.target && e.target.closest ? e.target.closest('.search-panel__game[data-game-id]') : null;
+                if (!gameBtn) return;
+                var gameId = (gameBtn.getAttribute('data-game-id') || '').trim();
+                if (!gameId) return;
+                closeSearchPanel();
+                openGame(gameId);
+            });
+        }
     }
 
     function initMainMenuScroll() {

@@ -21,7 +21,7 @@ final class Database
             require_once __DIR__ . '/AdminDatabase.php';
         }
 
-        self::$pdo = AdminDatabase::pdo();
+        self::$pdo = \AdminDatabase::pdo();
 
         return self::$pdo;
     }

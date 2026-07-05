@@ -76,6 +76,14 @@ $sliderFullSized     = $sliderFullSized ?? ($sliderApiCategory === 'home');
 $sliderMobileBc    = !empty($sliderMobileBc);
 $sliders             = ApiSliders::fetchForCategory($sliderApiCategory);
 $sliders             = array_values(array_filter($sliders, 'slider_item_has_media'));
+if ($sliders === []) {
+    $sliders = [[
+        'title' => 'Home',
+        'desktopImageUrl' => 'assets/games-img/sweet-bonanza-1000.svg',
+        'mobileImageUrl' => 'assets/games-img/sweet-bonanza-1000.svg',
+        'sliderLink' => '/slot',
+    ]];
+}
 ?>
 <?php if (!empty($sliders)): ?>
 <?php if ($sliderMobileBc): ?>

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Front Controller - TГјm istekler buradan geГ§er.
  */

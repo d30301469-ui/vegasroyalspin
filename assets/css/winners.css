@@ -32,6 +32,45 @@
   overflow: hidden;
 }
 
+@media (min-width: 1025px) {
+  .winners-section {
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background:
+      radial-gradient(420px 180px at 0% -10%, rgba(255, 0, 157, 0.16) 0%, rgba(255, 0, 157, 0) 72%),
+      linear-gradient(160deg, rgba(31, 16, 68, 0.84) 0%, rgba(18, 9, 51, 0.9) 52%, rgba(12, 7, 37, 0.94) 100%);
+    box-shadow: 0 14px 34px rgba(7, 5, 22, 0.38);
+  }
+
+  .winners-main-tab {
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  .winners-main-tab.active {
+    box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .winners-list-item {
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: linear-gradient(140deg, rgba(45, 34, 77, 0.84) 0%, rgba(34, 26, 62, 0.9) 100%);
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .winners-list-item:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.16);
+    background: linear-gradient(140deg, rgba(54, 40, 92, 0.9) 0%, rgba(39, 30, 73, 0.94) 100%);
+  }
+
+  .winners-item-amount {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+}
+
 .winners-inner {
   display: flex;
   flex-direction: column;
@@ -140,7 +179,6 @@
   margin: 0;
   padding: 10px 12px 0 12px;
   -webkit-overflow-scrolling: touch;
-  /* Firefox: ince scrollbar, oklar yok (thin varsayılan) */
   scrollbar-width: thin;
   scrollbar-color: rgba(233, 30, 140, 0.6) rgba(255, 255, 255, 0.06);
 }
@@ -261,9 +299,25 @@
   background: #e91e8c;
 }
 
-/* Köşe birleşimini temizle */
 .winners-list::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+@media (min-width: 1025px) {
+  .winners-list {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .winners-list::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+  }
+}
+
+.winners-list--auto {
+  scroll-behavior: auto;
 }
 
 .winners-list-item {

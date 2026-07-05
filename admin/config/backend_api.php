@@ -38,13 +38,12 @@
  *   POST /wallet/seamless  (ApiGate JSON gövdesi aynen; yanıt aynen döner)
  *   GET  /games/by-code?code=  -> { vendor_code, vendor_name, game_name, ... }
  *
- * GAMES (Drakon katalog, launch ve kampanya API'leri; boşsa MAIN kullanılır):
+ * GAMES (BGaming katalog, launch API'leri; boşsa MAIN kullanılır):
  *   GET /games.php?search=&page=&limit=&game_type=0&popular=… (slot listesi; envelope)
  *   GET /games_provider.php
  *   POST /game_launch.php
  *   GET /game_history.php
  *   GET /winners.php
- *   POST /drakon_campaigns.php
  *
  * SSL (curl): Önce API_BACKEND_CURL_CAINFO (dosya yolu), yoksa config/cacert.pem kullanılır; doğrulama yine başarısızsa sunucunun sistem CA deposuyla otomatik ikinci deneme yapılır. Ayrıca outbound istekler IPv4 ile yapılır (bazı sunucularda kırık IPv6 bağlantı hatası önlenir).
  *
@@ -135,6 +134,25 @@ if (!function_exists('frontend_coerce_public_api_url')) {
         $fallback = rtrim(trim((string) ($fallback ?? deploy_domain('backend_api_base_url'))), '/');
         if ($url === '') {
             return $fallback;
+        }
+
+        $runtimeHost = strtolower(trim((string) ($_SERVER['HTTP_HOST'] ?? '')));
+        $runtimeHost = preg_replace('/:\\d+$/', '', $runtimeHost) ?? '';
+        $runtimeLooksPublic = $runtimeHost !== ''
+            && $runtimeHost !== 'localhost'
+            && $runtimeHost !== '127.0.0.1'
+            && !str_ends_with($runtimeHost, '.test')
+            && !str_ends_with($runtimeHost, '.local');
+
+        if ($runtimeLooksPublic) {
+            $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
+            if ($host === '' || $host === 'localhost' || $host === '127.0.0.1' || str_ends_with($host, '.test') || str_ends_with($host, '.local')) {
+                if ($fallback !== '' && $url !== $fallback) {
+                    error_log('[metropol] Runtime host is public (' . $runtimeHost . '), coercing API backend URL "' . $url . '" to fallback ' . $fallback);
+                }
+
+                return $fallback !== '' ? $fallback : $url;
+            }
         }
 
         // Local .test / localhost URLs are valid in non-production; only reject them in production.

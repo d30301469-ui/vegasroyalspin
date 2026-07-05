@@ -68,7 +68,7 @@ final class AdminFooterController extends AdminController
         }
 
         $pdo = AdminDatabase::pdo();
-        ApiFooter::fetch(); // Ensures footer_settings exists and has a default row.
+        ApiFooter::ensureStorage($pdo, ApiFooter::defaultPayload());
         $pdo->exec('UPDATE footer_settings SET is_active = 0');
 
         $stmt = $pdo->prepare('SELECT id FROM footer_settings WHERE name = :name ORDER BY id DESC LIMIT 1');

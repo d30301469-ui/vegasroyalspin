@@ -87,16 +87,12 @@ final class ApiFooter
                     'title' => 'BAHİS',
                     'icon' => 'Football',
                     'links' => [
-                        ['title' => 'Maç Öncesi', 'href' => '/sports', 'target' => '_self', 'icon' => ''],
-                        ['title' => 'Canlı Bahis', 'href' => '/canli-bahis', 'target' => '_self', 'icon' => ''],
+                        ['title' => 'Spor Bahisleri', 'href' => '/sportbook', 'target' => '_self', 'icon' => ''],
                     ],
                 ],
             ],
             'payments' => [],
             'licence_rows' => [
-                [
-                    ['type' => 'iframe', 'src' => '/assets/footer/licence-widget.html'],
-                ],
                 [
                     ['type' => 'text', 'html' => '<p>' . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . ' — lisans ve iletişim bilgileri admin panelden yönetilir.</p>'],
                 ],

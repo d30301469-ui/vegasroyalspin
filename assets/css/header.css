@@ -878,6 +878,110 @@
   line-height: 1.5;
 }
 
+.search-panel__results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 4px 2px 10px;
+}
+
+.search-panel__game {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 9px;
+  padding: 6px;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.12s ease;
+}
+
+.search-panel__game:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+
+.search-panel__game-thumb {
+  width: 100%;
+  height: 66px;
+  border-radius: 7px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a2a;
+}
+
+.search-panel__game-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.search-panel__game-thumb-fallback {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.search-panel__game-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.search-panel__game-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  min-height: 3.3em;
+  overflow: hidden;
+}
+
+.search-panel__game-provider {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.58);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 420px) {
+  .search-panel__results {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .search-panel__game {
+    padding: 5px;
+  }
+
+  .search-panel__game-thumb {
+    height: 58px;
+  }
+
+  .search-panel__game-name {
+    font-size: 11px;
+  }
+
+  .search-panel__game-provider {
+    font-size: 9px;
+  }
+}
+
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Right sidebar (genel: bildirim, favoriler vb. saÃƒâ€žÃ…Â¸dan aÃƒÆ’Ã‚Â§Ãƒâ€žÃ‚Â±lan panel) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .right-sidebar-overlay {
   position: fixed;
@@ -1498,7 +1602,7 @@ button.betslip-panel__settings {
 .favorites-sidebar__body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px 20px;
+  padding: 10px 12px 14px;
   min-height: 0;
   display: block;
 }
@@ -1522,21 +1626,27 @@ button.betslip-panel__settings {
 .favorites-game-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 2px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 .favorites-game-row {
+  width: 100%;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
 }
 .favorites-game-row__thumb {
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
+  width: 100%;
+  height: 66px;
+  border-radius: 7px;
   overflow: hidden;
-  flex-shrink: 0;
   background: rgba(0, 0, 0, 0.25);
 }
 .favorites-game-row__thumb img {
@@ -1546,22 +1656,25 @@ button.betslip-panel__settings {
   display: block;
 }
 .favorites-game-row__meta {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 .favorites-game-row__name {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.92);
-  white-space: nowrap;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-height: 1.25;
+  min-height: 3.3em;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .favorites-game-row__provider {
-  font-size: 12px;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.5);
   white-space: nowrap;
   overflow: hidden;
@@ -1569,13 +1682,13 @@ button.betslip-panel__settings {
 }
 .favorites-game-row__actions {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  flex-shrink: 0;
-  align-items: flex-end;
+  margin-top: auto;
 }
 .favorites-game-row__play {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   color: #6eb3ff;
   text-decoration: none;
@@ -1587,9 +1700,10 @@ button.betslip-panel__settings {
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.45);
-  font-size: 12px;
+  font-size: 10px;
   cursor: pointer;
   padding: 2px 0;
+  margin-left: auto;
 }
 .favorites-game-row__remove:hover {
   color: rgba(255, 255, 255, 0.75);
@@ -1601,6 +1715,37 @@ button.betslip-panel__settings {
   line-height: 1.5;
   max-width: 280px;
   margin: 12px auto 0;
+}
+
+@media (max-width: 520px) {
+  .favorites-game-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .favorites-game-row {
+    padding: 5px;
+  }
+
+  .favorites-game-row__thumb {
+    height: 58px;
+  }
+
+  .favorites-game-row__name {
+    font-size: 11px;
+  }
+
+  .favorites-game-row__provider,
+  .favorites-game-row__play,
+  .favorites-game-row__remove {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 390px) {
+  .favorites-game-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .favorites-sidebar__empty--tab {
   margin-top: 8px;
@@ -3401,7 +3546,7 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
 .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc {
   width: 50px !important;
   min-height: 0 !important;
-  max-height: 80vh !important;
+  max-height: 320px !important;
   padding: 0 !important;
   background: linear-gradient(316deg, #818181 0%, rgb(36, 0, 121) 50%, #850f83 100%) !important;
   border-radius: 4px !important;
@@ -3412,7 +3557,7 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
 
 .sp-button-bc {
   width: 50px !important;
-  height: 56px !important;
+  height: 44px !important;
   color: rgba(255, 255, 255, 0.85) !important;
   background: rgba(255, 255, 255, 0.12) !important;
 }
@@ -3428,7 +3573,7 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
 }
 
 .sp-button-icon-bc {
-  font-size: 18px !important;
+  font-size: 15px !important;
 }
 
 .sp-button-icon-bc.bc-i-betslip {

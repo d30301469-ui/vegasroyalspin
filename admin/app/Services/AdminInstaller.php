@@ -323,9 +323,8 @@ final class AdminInstaller
         }
 
         $lines[] = '';
-        if (!isset($values['DRAKON_CALLBACK_SECRET'])) {
+        if (!isset($values['BGAMING_WALLET_SECRET'])) {
             $lines[] = '# Provider secrets (panelden veya buradan yapılandırın)';
-            $lines[] = 'DRAKON_CALLBACK_SECRET=';
             $lines[] = 'BGAMING_WALLET_SECRET=';
             $lines[] = 'MEGAPAYZ_PRIVATE_KEY=';
             $lines[] = 'MEGAPAYZ_CALLBACK_TOKEN=';

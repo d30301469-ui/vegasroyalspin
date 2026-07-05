@@ -76,6 +76,10 @@ final class ApiBgamingWalletController
         }
 
         $signature = (string) ($_SERVER['HTTP_X_REQUEST_SIGN'] ?? $_SERVER['HTTP_X_REQUEST_SIGNATURE'] ?? '');
+        $requestId = trim((string) ($_SERVER['HTTP_X_REQUEST_ID'] ?? ''));
+        if ($requestId !== '' && empty($payload['request_id']) && empty($payload['nonce'])) {
+            $payload['request_id'] = $requestId;
+        }
         if ($endpoint === 'auth/token_rotation') {
             $replayError = $this->tokenRotationReplayError($payload);
             if ($replayError !== null) {
@@ -101,8 +105,13 @@ final class ApiBgamingWalletController
      */
     private function tokenRotationReplayError(array $payload): ?array
     {
-        $timestamp = (int) ($payload['timestamp'] ?? $payload['ts'] ?? 0);
-        if ($timestamp <= 0 || abs(time() - $timestamp) > 300) {
+        $rotationDatetime = trim((string) ($payload['rotation_datetime'] ?? ''));
+        if ($rotationDatetime === '') {
+            return ['code' => 'STALE_REQUEST', 'message' => 'Token rotation timestamp is missing or stale'];
+        }
+
+        $rotationAt = strtotime($rotationDatetime);
+        if ($rotationAt === false || $rotationAt < (time() - 31 * 86400)) {
             return ['code' => 'STALE_REQUEST', 'message' => 'Token rotation timestamp is missing or stale'];
         }
 

@@ -4,7 +4,10 @@
 
 html.is-mobile,
 html.mobile-root {
-  --padding-page-aside: 10px;
+  --padding-page-aside: 7px;
+  --mobile-header-navigation-height: 40px;
+  --tab-navigation-height: 53px;
+  --border-radius: 4px;
 }
 
 body.mobile-site {
@@ -32,7 +35,14 @@ body.mobile-site #root .layout-navigation-holder-bc {
 /* Mobil header: bc-mobile-header-original.css (orijinal BC DOM) */
 
 body.mobile-site .layout-header-holder-bc .hdr-dynamic-content {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  max-height: 500px;
+  z-index: 953;
   min-height: 0;
+  opacity: 1;
+  transition: all var(--slow-transition-duration, 0.25s);
 }
 
 body.mobile-site .layout-header-holder-bc .hdr-dynamic-content .product-banner-container-bc:empty {
@@ -40,7 +50,7 @@ body.mobile-site .layout-header-holder-bc .hdr-dynamic-content .product-banner-c
 }
 
 body.mobile-site .mainContentWrap {
-  padding-top: 0 !important;
+  padding-top: calc(var(--mobile-header-main-height, 46px) + var(--mobile-header-navigation-height, 40px)) !important;
   padding-left: var(--padding-page-aside, 10px);
   padding-right: var(--padding-page-aside, 10px);
 }
@@ -115,10 +125,15 @@ body.mobile-site .hdr-smart-panel-holder-arrow-bc {
 
 body.mobile-site .hdr-smart-panel-fixed {
   position: fixed;
-  top: auto;
+  top: clamp(44px, var(--mobile-promo-sheet-top, var(--header-sticky-top, 86px)), 140px);
   left: auto;
-  right: 8px;
+  right: 4px;
   width: 50px;
+  bottom: calc(var(--tab-navigation-height, 53px) + 8px + env(safe-area-inset-bottom, 0px));
+  max-height: calc(100vh - clamp(44px, var(--mobile-promo-sheet-top, var(--header-sticky-top, 86px)), 140px) - var(--tab-navigation-height, 53px) - 16px - env(safe-area-inset-bottom, 0px));
+  border-radius: 10px 0 0 10px;
+  background: linear-gradient(180deg, rgba(179, 78, 216, 0.95) 0%, rgba(116, 73, 194, 0.94) 55%, rgba(95, 63, 161, 0.92) 100%);
+  box-shadow: -10px 0 26px rgba(0, 0, 0, 0.4);
   z-index: 10060;
   opacity: 0;
   visibility: hidden;
@@ -159,14 +174,15 @@ body.mobile-site .right-sidebar-overlay.is-open {
 
 body.mobile-site .right-sidebar {
   position: fixed;
-  top: 0;
+  top: clamp(44px, var(--mobile-promo-sheet-top, var(--header-sticky-top, 86px)), 140px);
   right: 0;
-  bottom: 0;
-  width: min(100%, 360px);
+  bottom: calc(var(--tab-navigation-height, 53px) + 8px + env(safe-area-inset-bottom, 0px));
+  width: 56px;
   z-index: 99999;
   display: flex;
   flex-direction: column;
-  background: #1a1a1a;
+  background: linear-gradient(180deg, rgba(179, 78, 216, 0.95) 0%, rgba(116, 73, 194, 0.94) 55%, rgba(95, 63, 161, 0.92) 100%);
+  border-radius: 12px 0 0 12px;
   box-shadow: none;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -176,9 +192,34 @@ body.mobile-site .right-sidebar {
   pointer-events: none;
 }
 
+body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc {
+  width: 50px !important;
+  max-height: inherit !important;
+  border-radius: 10px 0 0 10px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+body.mobile-site .hdr-smart-panel-fixed .sp-button-bc {
+  width: 50px !important;
+  height: 46px !important;
+}
+
+body.mobile-site .hdr-smart-panel-fixed .sp-button-icon-bc {
+  font-size: 17px !important;
+}
+
+body.mobile-site .hdr-smart-panel-fixed .sp-badge {
+  top: 4px;
+  right: 6px;
+  min-width: 14px;
+  height: 14px;
+  font-size: 8px;
+}
+
 body.mobile-site .right-sidebar.is-open {
   transform: translateX(0);
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+  box-shadow: -10px 0 28px rgba(0, 0, 0, 0.46);
   pointer-events: auto;
 }
 
@@ -216,6 +257,43 @@ body.mobile-site .mobile-home-widgets .product-banner-info-bc.mobile-quick-actio
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: none !important;
   animation: none !important;
+}
+
+/* Mobil stabilizasyon: üst navigasyon sıkışması ve yatay taşma */
+body.mobile-site,
+body.mobile-site #root,
+body.mobile-site #root .layout-bc,
+body.mobile-site #root .layout-content-holder-bc,
+body.mobile-site #root .mainContentWrap {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body.mobile-site .hdr-navigation-scrollable-bc-holder {
+  min-height: 36px;
+  max-height: 44px;
+}
+
+body.mobile-site .hdr-navigation-scrollable-bc {
+  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
+  box-shadow: 0 0 7px 2px #850f83;
+}
+
+body.mobile-site .hdr-navigation-scrollable-content {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.mobile-site .hdr-navigation-scrollable-content .hdr-navigation-link-bc {
+  flex: 0 0 auto;
+  min-width: max-content;
+  padding: 0 12px;
+}
+
+body.mobile-site .hdr-navigation-scrollable-content .nav-menu-title {
+  font-size: 11px;
+  line-height: 1.15;
 }
 
 /* Lig kutuları — mor neon çerçeveyi kaldır */

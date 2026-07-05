@@ -118,6 +118,24 @@ body.mobile-site .hdr-nav-menu-holder-bc .m-nav-info-w-container-bc {
   overflow: hidden;
 }
 
+body.mobile-site .center-bottom-btn > .btn.nav-floating-btn {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 90px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 9990;
+}
+
+body.mobile-site .center-bottom-btn > .btn.nav-floating-btn::before {
+  font-size: 18px;
+}
+
 body.mobile-site .hdr-nav-menu-holder-bc .m-nav-sab-container-bc {
   display: block;
   position: static;

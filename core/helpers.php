@@ -34,7 +34,16 @@ function asset_url(string $path): string
 
     if (!array_key_exists($relative, $versionCache)) {
         $fullPath = BASE_PATH . '/' . $relative;
-        $versionCache[$relative] = file_exists($fullPath) ? (string) filemtime($fullPath) : '1';
+        if (file_exists($fullPath)) {
+            $hash = @md5_file($fullPath);
+            if ($hash !== false) {
+                $versionCache[$relative] = substr($hash, 0, 12) . '-' . (string) filesize($fullPath);
+            } else {
+                $versionCache[$relative] = (string) filemtime($fullPath) . '-' . (string) filesize($fullPath);
+            }
+        } else {
+            $versionCache[$relative] = '1';
+        }
     }
 
     if ($basePath === null) {
@@ -106,9 +115,6 @@ function maintenance_request_uri_allowed(string $uri): bool
         '/api/announcements.php',
         '/api/v2/announcements',
         '/api/v2/announcements.php',
-        '/drakon_api',
-        '/drakon_api/index.php',
-        '/drakon_api/drakon_api',
     ];
 
     if (in_array($uri, $exact, true)) {

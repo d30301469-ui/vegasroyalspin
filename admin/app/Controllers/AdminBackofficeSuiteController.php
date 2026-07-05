@@ -103,7 +103,7 @@ final class AdminBackofficeSuiteController extends AdminController
                 'title' => 'Bonus Engine',
                 'status' => 'partial',
                 'statusText' => 'Kısmi',
-                'description' => 'Aktif bonus, bonus talebi, promocode ve Drakon freespin kampanyaları mevcut.',
+                'description' => 'Aktif bonus, bonus talebi ve promocode kayitlari mevcut.',
                 'reference' => 'bonus-wizard1.webp',
                 'localRoute' => '/module?key=bonus-claims',
                 'localLabel' => 'Bonus talepleri',

@@ -16,7 +16,7 @@ final class ApiFooterPages
 
     public static function hrefForTitle(string $title): string
     {
-        return '/footer?slug=' . rawurlencode(self::slugFromTitle($title));
+        return '/footer/' . rawurlencode(self::slugFromTitle($title));
     }
 
     public static function findBySlug(string $slug): ?array

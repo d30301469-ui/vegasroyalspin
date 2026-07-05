@@ -140,3 +140,11 @@ function handlePlay(gameId) {
   window.location.href = url;
 }
 
+function handleDemo(gameId) {
+  if (!gameId) {
+    return;
+  }
+  var url = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=fun&demo=1';
+  window.location.href = url;
+}
+

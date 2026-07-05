@@ -68,7 +68,6 @@ $adminRootFiles = [
     'health.php',
     'ping.php',
     'diagnose.php',
-    'drakon_api.php',
     'admin-ui.js',
     '2026.js',
     'vendors.js',
@@ -174,25 +173,25 @@ if ($removedAdmin !== []) {
 $htaccessSource = $projectRoot . '/deploy/apache/bo-nexthub.site.htaccess';
 if (is_file($htaccessSource)) {
     copy($htaccessSource, $outputRoot . '/.htaccess');
-    echo "Copied deploy/apache/bo-nexthub.site.htaccess → .htaccess\n";
+    echo "Copied deploy/apache/bo-nexthub.site.htaccess â†’ .htaccess\n";
 }
 
 $aapanelDeploy = $projectRoot . '/deploy/aapanel';
 if (is_dir($aapanelDeploy)) {
     copyTree($aapanelDeploy, $outputRoot . '/deploy/aapanel');
-    echo "Copied deploy/aapanel/ (aaPanel kurulum notları)\n";
+    echo "Copied deploy/aapanel/ (aaPanel kurulum notlarÄ±)\n";
 }
 
 $apacheDeploy = $projectRoot . '/deploy/apache';
 if (is_dir($apacheDeploy)) {
     copyTree($apacheDeploy, $outputRoot . '/deploy/apache');
-    echo "Copied deploy/apache/ (Apache .htaccess + vhost örnekleri)\n";
+    echo "Copied deploy/apache/ (Apache .htaccess + vhost Ã¶rnekleri)\n";
 }
 
 $envExample = $projectRoot . '/deploy/env/backend.env.example';
 if (is_readable($envExample)) {
     copy($envExample, $outputRoot . '/ENV.example');
-    echo "Copied deploy/env/backend.env.example → ENV.example\n";
+    echo "Copied deploy/env/backend.env.example â†’ ENV.example\n";
 }
 
 $installLock = $outputRoot . '/storage/install.lock';
@@ -208,7 +207,6 @@ if (is_file($bundledEnv)) {
 
 foreach ([
     'storage/cache/cms_api_circuit.json',
-    'storage/logs/drakon_callback_hits.log',
     'storage/install_csrf.token',
 ] as $devArtifact) {
     $artifactPath = $outputRoot . '/' . $devArtifact;
@@ -234,7 +232,7 @@ if (is_file($bundleVendorScript)) {
         $vendorCode
     );
     if ($vendorCode !== 0 || !is_file($outputRoot . '/vendor/autoload.php')) {
-        fwrite(STDERR, "ERROR: vendor/ bundle failed — deploy zip must include vendor/autoload.php\n");
+        fwrite(STDERR, "ERROR: vendor/ bundle failed â€” deploy zip must include vendor/autoload.php\n");
         exit(1);
     }
 }
@@ -255,7 +253,6 @@ foreach ($opsScripts as $script) {
 
 $requiredFiles = [
     'services/MegaPayzService.php',
-    'services/DrakonService.php',
     'services/BgamingService.php',
     'services/MemberJwtService.php',
     'services/BackendApiClient.php',
@@ -309,7 +306,7 @@ if ($seedValidation !== null) {
 echo "Validated database/seed/metropolcasino.sql\n";
 
 file_put_contents($outputRoot . '/DEPLOY.txt', implode("\n", [
-    'ADMIN HOST BUNDLE — upload ALL contents to bo-nexthub.site',
+    'ADMIN HOST BUNDLE â€” upload ALL contents to bo-nexthub.site',
     '',
     'Domain:  https://bo-nexthub.site/',
     'API:     https://bo-nexthub.site/api/v2/',
@@ -318,14 +315,13 @@ file_put_contents($outputRoot . '/DEPLOY.txt', implode("\n", [
     'This folder is SELF-CONTAINED. Do not upload frontend views/pages here.',
     'Do not upload vegasroyalspin.com frontend files to this backend host.',
     '',
-    'vendor/ is PRE-BUNDLED in this zip — do NOT run composer on the server.',
+    'vendor/ is PRE-BUNDLED in this zip â€” do NOT run composer on the server.',
     '',
-    'After upload (FRESH install — delete old .env and storage/install.lock if present):',
+    'After upload (FRESH install â€” delete old .env and storage/install.lock if present):',
     '  php scripts/post-upload-check.php',
     '  Open https://bo-nexthub.site/install-status.php then /install',
     'Must exist on server (site root):',
     '  services/MegaPayzService.php',
-    '  services/DrakonService.php',
     '  services/BgamingService.php',
     '  services/MemberJwtService.php',
     '  config/app.php',
@@ -335,7 +331,7 @@ file_put_contents($outputRoot . '/DEPLOY.txt', implode("\n", [
     '',
     'If only services/ is missing, run locally:',
     '  php scripts/package-admin-services.php',
-    '  → upload dist/admin-services/* to .../services/',
+    '  â†’ upload dist/admin-services/* to .../services/',
     '',
 ]) . "\n");
 

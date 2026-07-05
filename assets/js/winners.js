@@ -19,6 +19,19 @@
   var LIMIT = typeof window.__WINNERS_LIMIT__ === 'number' && window.__WINNERS_LIMIT__ > 0
     ? Math.min(100, Math.floor(window.__WINNERS_LIMIT__))
     : 8;
+  var autoMotionRaf = null;
+  var autoMotionPaused = false;
+  var autoMotionPauseUntil = 0;
+  var AUTO_SCROLL_SPEED = 0.32;
+
+  function isDesktopWinnersMotionEnabled() {
+    if (document.body && document.body.classList.contains('mobile-site')) {
+      return false;
+    }
+    return typeof window.matchMedia === 'function'
+      ? window.matchMedia('(min-width: 1025px)').matches
+      : (window.innerWidth || 0) >= 1025;
+  }
 
   var cache = Object.create(null);
 
@@ -47,6 +60,78 @@
 
   if (!listEl) return;
 
+  function stopAutoMotion() {
+    if (autoMotionRaf) {
+      cancelAnimationFrame(autoMotionRaf);
+      autoMotionRaf = null;
+    }
+    listEl.classList.remove('winners-list--auto');
+  }
+
+  function prefersReducedMotion() {
+    return typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function autoMotionTick(now) {
+    if (!listEl || listEl.classList.contains('is-loading')) {
+      stopAutoMotion();
+      return;
+    }
+
+    if (autoMotionPaused || (autoMotionPauseUntil > 0 && now < autoMotionPauseUntil)) {
+      autoMotionRaf = requestAnimationFrame(autoMotionTick);
+      return;
+    }
+
+    var maxScroll = Math.max(0, listEl.scrollHeight - listEl.clientHeight);
+    if (maxScroll <= 1) {
+      stopAutoMotion();
+      return;
+    }
+
+    listEl.scrollTop += AUTO_SCROLL_SPEED;
+    if (listEl.scrollTop >= maxScroll - 0.5) {
+      listEl.scrollTop = 0;
+      autoMotionPauseUntil = now + 1200;
+    }
+
+    autoMotionRaf = requestAnimationFrame(autoMotionTick);
+  }
+
+  function startAutoMotion() {
+    stopAutoMotion();
+    if (!isDesktopWinnersMotionEnabled()) {
+      return;
+    }
+    if (prefersReducedMotion()) {
+      return;
+    }
+    if (listEl.classList.contains('is-loading')) {
+      return;
+    }
+    listEl.classList.add('winners-list--auto');
+    autoMotionRaf = requestAnimationFrame(autoMotionTick);
+  }
+
+  listEl.addEventListener('mouseenter', function () {
+    autoMotionPaused = true;
+  });
+
+  listEl.addEventListener('mouseleave', function () {
+    autoMotionPaused = false;
+    autoMotionPauseUntil = performance.now() + 450;
+  });
+
+  listEl.addEventListener('touchstart', function () {
+    autoMotionPaused = true;
+  }, { passive: true });
+
+  listEl.addEventListener('touchend', function () {
+    autoMotionPaused = false;
+    autoMotionPauseUntil = performance.now() + 900;
+  }, { passive: true });
+
   function getTab() {
     var el = document.querySelector('.winners-main-tab.active');
     return el ? el.getAttribute('data-winners-tab') : 'recent';
@@ -73,6 +158,7 @@
   }
 
   function renderSkeleton() {
+    stopAutoMotion();
     listEl.classList.add('is-loading');
     listEl.innerHTML = skeletonHtml();
   }
@@ -150,6 +236,7 @@
   function render(rows, tab) {
     listEl.classList.remove('is-loading');
     if (!rows || !rows.length) {
+      stopAutoMotion();
       listEl.innerHTML = '<div class="winners-list-empty">Kayıt bulunamadı.</div>';
       return;
     }
@@ -161,6 +248,8 @@
         '<div class="winners-item-info"><span class="winners-item-user">' + esc(r.user_mask) + '</span><span class="winners-item-game">' + esc(r.game_name) + '</span></div>' +
         '<div class="winners-item-amount">' + esc(fmt(r.amount)) + '</div></div>';
     }).join('');
+
+      startAutoMotion();
   }
 
   function load(tab, period, done) {

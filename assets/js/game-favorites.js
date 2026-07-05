@@ -1,5 +1,5 @@
 /**
- * Slot kartı yıldızı: Drakon game_id (data-game-id) ile favori API.
+ * Slot karti yildizi: game_id (data-game-id) ile favori API.
  */
 (function () {
     var Shared = window.BetcoAuthShared || {};
@@ -117,12 +117,12 @@
         var kind = resolveFavoriteKind(item);
         var apiBase = favoriteApiBase(kind);
         if (!apiBase) {
-            toastWarn("BGaming oyunları için favori henüz desteklenmiyor.");
+            toastWarn("BGaming oyunlarÄ± iÃ§in favori henÃ¼z desteklenmiyor.");
             return;
         }
         var gameId = extractGameId(item);
         if (!gameId) {
-            toastWarn("Bu oyun için katalog kimliği yok; favori eklenemiyor.");
+            toastWarn("Bu oyun iÃ§in katalog kimliÄŸi yok; favori eklenemiyor.");
             return;
         }
         var isFav = fav.classList.contains("is-favorite");
@@ -142,11 +142,11 @@
                         setFavoriteVisual(fav, false);
                         document.dispatchEvent(new CustomEvent("favorites:changed", { detail: { kind: kind, game_id: gameId, favorited: false } }));
                     } else {
-                        toastWarn((j && j.message) || "Favoriden çıkarılamadı.");
+                        toastWarn((j && j.message) || "Favoriden Ã§Ä±karÄ±lamadÄ±.");
                     }
                 })
                 .catch(function () {
-                    toastWarn("Bağlantı hatası.");
+                    toastWarn("BaÄŸlantÄ± hatasÄ±.");
                 });
             return;
         }
@@ -173,7 +173,7 @@
                 }
             })
             .catch(function () {
-                toastWarn("Bağlantı hatası.");
+                toastWarn("BaÄŸlantÄ± hatasÄ±.");
             });
     }, true);
 })();

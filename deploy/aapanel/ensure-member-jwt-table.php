@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 /**
  * member_jwt_tokens tablosunu oluşturur / doğrular (backend SSH).
- * Usage: php deploy/aapanel/ensure-member-jwt-table.php [/path/to/bo-nexthub.site]
+ * Usage: php deploy/aapanel/ensure-member-jwt-table.php [/path/to/admin.vegasroyalspin.com]
  */
 
 $root = dirname(__DIR__, 2);

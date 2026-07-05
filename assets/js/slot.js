@@ -348,6 +348,20 @@
         }
     }
 
+    function applyMobileActionButtonSizing() {
+        if (!document.body.classList.contains('mobile-site')) return;
+        var buttons = document.querySelectorAll('.slot-page-root .play-btn, .slot-page-root .demo-btn, .slots-games-container .play-btn, .slots-games-container .demo-btn, .casinoCategoryGames .play-btn, .casinoCategoryGames .demo-btn');
+        buttons.forEach(function (btn) {
+            btn.style.width = 'calc(50% - 4px)';
+            btn.style.minWidth = '0';
+            btn.style.maxWidth = 'none';
+            btn.style.padding = '7px 8px';
+            btn.style.fontSize = '10px';
+            btn.style.lineHeight = '1';
+            btn.style.borderRadius = '5px';
+        });
+    }
+
     function realPlayClickJs(gameUrlJs) {
         if (slotLoggedIn) {
             return "window.location.href='" + gameUrlJs + "'";
@@ -507,6 +521,59 @@
         });
     }
 
+    function syncMobileFilterControls() {
+        if (!document.body.classList.contains('mobile-site')) return;
+        if (gamesSearchExpandEl) {
+            gamesSearchExpandEl.classList.add('is-expanded');
+            gamesSearchExpandEl.setAttribute('aria-expanded', 'true');
+            var searchBar = gamesSearchExpandEl.querySelector('.games-search-bar');
+            var searchField = gamesSearchExpandEl.querySelector('.games-search-input');
+            if (searchBar) {
+                searchBar.style.width = '100%';
+                searchBar.style.flex = '1 1 auto';
+            }
+            if (searchField) {
+                searchField.style.position = 'relative';
+                searchField.style.opacity = '1';
+                searchField.style.pointerEvents = 'auto';
+                searchField.style.width = 'auto';
+                searchField.style.height = 'auto';
+                searchField.style.clip = 'auto';
+                searchField.style.margin = '0';
+            }
+        }
+        if (!mobileSidebarToggle) return;
+        if (!mobileSidebarToggle.querySelector('.mobile-sidebar-toggle__pill')) {
+            mobileSidebarToggle.innerHTML = '';
+            var pill = document.createElement('span');
+            pill.className = 'mobile-sidebar-toggle__pill';
+            var icon = document.createElement('i');
+            icon.className = 'fas fa-filter';
+            icon.setAttribute('aria-hidden', 'true');
+            var txt = document.createElement('span');
+            txt.className = 'mobile-sidebar-toggle__pill-text';
+            txt.textContent = 'Sağlayıcılar';
+            pill.appendChild(icon);
+            pill.appendChild(txt);
+            mobileSidebarToggle.appendChild(pill);
+        }
+        var countNode = mobileSidebarToggle.querySelector('.mobile-sidebar-toggle__count');
+        if (!countNode) {
+            countNode = document.createElement('span');
+            countNode.className = 'mobile-sidebar-toggle__count';
+            countNode.id = 'mobileSidebarToggleCount';
+            countNode.setAttribute('aria-hidden', 'true');
+            mobileSidebarToggle.appendChild(countNode);
+        }
+        var providerCount = state.providers.length;
+        if (countNode) {
+            countNode.textContent = providerCount > 0 ? ('+' + providerCount) : '';
+            countNode.style.display = providerCount > 0 ? 'inline-flex' : 'none';
+        }
+        mobileSidebarToggle.setAttribute('title', providerCount > 0 ? ('Sağlayıcılar +' + providerCount) : 'Sağlayıcılar');
+        mobileSidebarToggle.setAttribute('aria-label', providerCount > 0 ? ('Sağlayıcılar +' + providerCount) : 'Sağlayıcılar');
+    }
+
     function updateUrl() {
         const url = new URL(window.location.href);
         url.searchParams.delete('search');
@@ -523,11 +590,13 @@
         state.search = String(val).trim();
         state.nextPage = 2;
         if (searchInput) searchInput.value = state.search;
+        syncMobileFilterControls();
     }
 
     function removeProvider(provider) {
         state.providers = state.providers.filter(function(p) { return p !== provider; });
         state.nextPage = 2;
+        syncMobileFilterControls();
     }
 
     function clearFilters() {
@@ -535,6 +604,7 @@
         state.providers = [];
         state.nextPage = 2;
         if (searchInput) searchInput.value = '';
+        syncMobileFilterControls();
     }
 
     function setSort(sortVal) {
@@ -590,6 +660,7 @@
                     if (!append) {
                         updateActiveFiltersRow();
                         updateSidebarActive();
+                        syncMobileFilterControls();
                         updateUrl();
                     }
                     return;
@@ -605,8 +676,10 @@
                         gameGrid.innerHTML = games.map(renderGameItem).join('');
                         updateActiveFiltersRow();
                         updateSidebarActive();
+                        syncMobileFilterControls();
                         updateUrl();
                     }
+                    applyMobileActionButtonSizing();
                     state.isLoadingMore = false;
                     requestAnimationFrame(function() {
                         checkLoadMore();
@@ -695,12 +768,6 @@
                     if (searchInput) {
                         searchInput.focus();
                     }
-                    return;
-                }
-                if (searchInput && searchInput.value.trim().length === 0) {
-                    e.preventDefault();
-                    expand.classList.remove('is-expanded');
-                    syncGamesSearchExpandAria();
                     return;
                 }
             }
@@ -974,12 +1041,12 @@
     function toggleProvider(provider) {
         const idx = state.providers.indexOf(provider);
         if (idx !== -1) {
-            state.providers = state.providers.filter(function(p) { return p !== provider; });
+            state.providers = [];
         } else {
-            state.providers = state.providers.slice();
-            state.providers.push(provider);
+            state.providers = [provider];
         }
         state.nextPage = 2;
+        syncMobileFilterControls();
         loadSlots(false);
     }
 
@@ -1103,7 +1170,20 @@
     });
 
     /* ── Random Game ── */
-    const randomGameBtn = document.getElementById('randomGameBtn');
+    var randomGameBtn = document.getElementById('randomGameBtn');
+    if (!randomGameBtn && document.body.classList.contains('mobile-site')) {
+        var searchRow = slotPageRoot ? slotPageRoot.querySelector('.casinoTitleSearch') : document.querySelector('.casinoTitleSearch');
+        if (searchRow) {
+            randomGameBtn = document.createElement('button');
+            randomGameBtn.type = 'button';
+            randomGameBtn.className = 'random-game-btn';
+            randomGameBtn.id = 'randomGameBtn';
+            randomGameBtn.title = 'Rastgele Oyun Oyna';
+            randomGameBtn.setAttribute('aria-label', 'Rastgele Oyun Oyna');
+            randomGameBtn.textContent = 'Rastgele Oyun Oyna';
+            searchRow.appendChild(randomGameBtn);
+        }
+    }
     if (randomGameBtn) {
         randomGameBtn.addEventListener('click', function() {
             const gameItems = document.querySelectorAll('.casinoGameItemContent[data-game-id]');
@@ -1127,9 +1207,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             setActiveCategoryTab();
             scrollActiveCategoryIntoView();
+            syncMobileFilterControls();
         });
     } else {
         setActiveCategoryTab();
         scrollActiveCategoryIntoView();
+        syncMobileFilterControls();
     }
 })();

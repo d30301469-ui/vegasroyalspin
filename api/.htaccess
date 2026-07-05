@@ -1,4 +1,4 @@
-﻿# /api — security + v2 front controller routing.
+# /api — security + v2 front controller routing.
 <IfModule mod_authz_core.c>
     Require all granted
 </IfModule>

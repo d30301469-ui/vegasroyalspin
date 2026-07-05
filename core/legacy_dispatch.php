@@ -1,13 +1,13 @@
 <?php
 /**
- * Legacy front-controller dispatch — URI çözümleme ve route eşleştirme.
- * Bootstrap (core/bootstrap.php) tamamlandıktan sonra çalışır.
- * Hem index.php (doğrudan giriş) hem de LegacyPublicController (PSR-4 router köprüsü)
- * tarafından include edilir; startup kontrolleri burada tekrar çalışmaz.
+ * Legacy front-controller dispatch â€” URI Ã§Ã¶zÃ¼mleme ve route eÅŸleÅŸtirme.
+ * Bootstrap (core/bootstrap.php) tamamlandÄ±ktan sonra Ã§alÄ±ÅŸÄ±r.
+ * Hem index.php (doÄŸrudan giriÅŸ) hem de LegacyPublicController (PSR-4 router kÃ¶prÃ¼sÃ¼)
+ * tarafÄ±ndan include edilir; startup kontrolleri burada tekrar Ã§alÄ±ÅŸmaz.
  *
- * global bildirimi: PSR-4 router köprüsü üzerinden geldiğinde (LegacyPublicController
- * legacyRequire metodu) bu dosya bir method scope içinde include edilir; bootstrap'ta
- * global olarak atanan değişkenlere erişmek için açık global bildirimi gerekir.
+ * global bildirimi: PSR-4 router kÃ¶prÃ¼sÃ¼ Ã¼zerinden geldiÄŸinde (LegacyPublicController
+ * legacyRequire metodu) bu dosya bir method scope iÃ§inde include edilir; bootstrap'ta
+ * global olarak atanan deÄŸiÅŸkenlere eriÅŸmek iÃ§in aÃ§Ä±k global bildirimi gerekir.
  */
 global $ayar, $loggedIn, $siteMeta, $siteBranding, $siteContactLinks, $siteSettingsPayload;
 
@@ -40,16 +40,6 @@ $isAdminHost = function_exists('metropol_is_backend_host')
         parse_url((string) (getenv('BACKEND_FALLBACK_URL') ?: ''), PHP_URL_HOST) ?: '',
         'bo-nexthub.site', 'api.bo-nexthub.site',
     ])), true);
-$isDrakonWebhookPath = strpos($uri, '/drakon_api') === 0
-    || strpos($uri, '/drakon_callback') === 0
-    || strpos($uri, '/drakon-callback') === 0
-    || strpos($uri, '/api/v2/drakon_callback') === 0
-    || strpos($uri, '/admin/api/v2/drakon_callback') === 0;
-if (!$isAdminHost && $isDrakonWebhookPath) {
-    if (function_exists('metropol_proxy_drakon_webhook')) {
-        metropol_proxy_drakon_webhook();
-    }
-}
 if (!$isAdminHost && (
     strpos($uri, '/callbacks/') === 0
     || $uri === '/callbacks'
@@ -57,6 +47,7 @@ if (!$isAdminHost && (
     || strpos($uri, '/api/v2/bgaming') === 0
     || strpos($uri, '/api/v2/bgaming-wallet') === 0
     || strpos($uri, '/api/v2/megapayz') === 0
+    || strpos($uri, '/api/v2/sportsbook-wallet') === 0
 )) {
     header('Content-Type: application/json; charset=UTF-8');
     http_response_code(404);
@@ -84,8 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($uri, '/api/') !== 0 && (
     exit;
 }
 
-// ─── Tanımlı Route'lar ────────────────────────────────────────
-// [URI => [ControllerSınıfı, metot]]
+// â”€â”€â”€ TanÄ±mlÄ± Route'lar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// [URI => [ControllerSÄ±nÄ±fÄ±, metot]]
 $routes = [
     '/'                      => ['HomeController',   'index'],
     '/slot'                  => ['SlotController',   'index'],
@@ -97,7 +88,7 @@ $routes = [
     '/payment/megapayz'      => ['PaymentController', 'megapayzDeposit'],
     '/api'                   => ['ApiCallbackController', 'index'],
     '/api-gates'             => ['ApiCasinoCallbackController', 'index'],
-    // Üye + CMS public API → metropol_handle_public_api_request() → PublicApiV2Dispatcher
+    // Ãœye + CMS public API â†’ metropol_handle_public_api_request() â†’ PublicApiV2Dispatcher
     '/search_handler.php'    => ['ApiSearchController', 'advancedSearch'],
     '/track_visit.php'       => ['ApiTrackVisitController', 'index'],
     '/slot_api.php'          => ['ApiSlotController', 'index'],
@@ -114,7 +105,7 @@ $routes = [
     '/game/launch'           => ['GameController', 'launch'],
 ];
 
-// ─── Route Eşleştirme ────────────────────────────────────────
+// â”€â”€â”€ Route EÅŸleÅŸtirme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if (isset($routes[$uri])) {
     [$controllerName, $method] = $routes[$uri];
     if (!frontend_database_allowed() && frontend_controller_is_backend_only($controllerName)) {
@@ -130,7 +121,7 @@ if (isset($routes[$uri])) {
     exit;
 }
 
-// ─── Legacy Fallback: Henüz dönüştürülmemiş sayfalar ─────────
+// â”€â”€â”€ Legacy Fallback: HenÃ¼z dÃ¶nÃ¼ÅŸtÃ¼rÃ¼lmemiÅŸ sayfalar â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $segments = explode('/', trim($uri, '/'));
 
 $cmsFooterSlugs = ['gizlilik-politikasi', 'genel-sartlar'];
@@ -183,5 +174,5 @@ if (count($segments) === 1 && $segments[0] !== '') {
 http_response_code(404);
 header('Content-Type: text/html; charset=UTF-8');
 echo '<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>404</title></head><body>';
-echo '<h1>404 - Sayfa bulunamadı</h1>';
+echo '<h1>404 - Sayfa bulunamadÄ±</h1>';
 echo '</body></html>';

@@ -15,14 +15,20 @@ final class ApiSliders
     private const CATEGORY_ALIASES = [
         'slot' => 'slots',
         'slots' => 'slots',
+        'slot_slider' => 'slots',
+        'slots_slider' => 'slots',
         'casino' => 'slots',
         'live' => 'live_casino',
+        'live_slider' => 'live_casino',
         'livecasino' => 'live_casino',
         'live-casino' => 'live_casino',
         'live_casino' => 'live_casino',
+        'live_casino_slider' => 'live_casino',
         'bgaming' => 'bgaming',
         'b-gaming' => 'bgaming',
+        'bgaming_slider' => 'bgaming',
         'home' => 'home',
+        'home_slider' => 'home',
         'homepage' => 'home',
         'main' => 'home',
     ];
@@ -226,10 +232,6 @@ final class ApiSliders
                 'today_start' => $today,
                 'today_end' => $today,
             ];
-            if ($category !== '') {
-                $where[] = 'category = :category';
-                $params['category'] = $category;
-            }
             // Tarih aralığı: gün bazında (admin’de saat seçilse bile o gün boyunca yayında)
             $where[] = '(start_date IS NULL OR DATE(start_date) <= :today_start)';
             $where[] = '(end_date IS NULL OR DATE(end_date) >= :today_end)';
@@ -242,7 +244,22 @@ final class ApiSliders
             $stmt->execute($params);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            return self::mapRows(is_array($rows) ? $rows : [], $surface);
+            $list = self::mapRows(is_array($rows) ? $rows : [], $surface);
+            if ($category === '') {
+                return $list;
+            }
+
+            return array_values(array_filter(
+                $list,
+                static function (array $slider) use ($category): bool {
+                    $sliderCategory = self::normalizeCategory((string) ($slider['category'] ?? ''));
+                    if ($sliderCategory === '') {
+                        return true;
+                    }
+
+                    return $sliderCategory === $category;
+                }
+            ));
         } catch (Throwable) {
             return [];
         }
@@ -326,8 +343,9 @@ final class ApiSliders
             return $local;
         }
 
+        $paths = ['/content/sliders', '/sliders.php'];
         foreach (self::candidateBases() as $base) {
-            foreach ($apiOnly ? ['/content/sliders'] : ['/content/sliders', '/sliders.php'] as $path) {
+            foreach ($paths as $path) {
                 $api = ApiClient::getWithBase($base, $path, $query, $timeout);
                 $parsed = ApiEnvelope::listFromData($api, 'sliders');
                 if ($parsed !== null) {
@@ -424,27 +442,33 @@ final class ApiSliders
         }
 
         $qs = $query !== [] ? '?' . http_build_query($query) : '';
-        $ch = curl_init('http://127.0.0.1/api/v2/content/sliders' . $qs);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_HTTPHEADER => ['Host: ' . $host, 'Accept: application/json'],
-        ]);
-        if (defined('CURL_IPRESOLVE_V4')) {
-            curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        foreach (['/api/v2/content/sliders', '/api/v2/sliders.php', '/api/sliders'] as $loopbackPath) {
+            $ch = curl_init('http://127.0.0.1' . $loopbackPath . $qs);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_CONNECTTIMEOUT => 4,
+                CURLOPT_HTTPHEADER => ['Host: ' . $host, 'Accept: application/json'],
+            ]);
+            if (defined('CURL_IPRESOLVE_V4')) {
+                curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+            }
+            $body = curl_exec($ch);
+            $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if (!is_string($body) || $body === '' || $code !== 200) {
+                continue;
+            }
+
+            $decoded = json_decode($body, true);
+            $parsed = ApiEnvelope::listFromData(is_array($decoded) ? $decoded : null, 'sliders');
+            if ($parsed !== null) {
+                return $parsed;
+            }
         }
-        $body = curl_exec($ch);
-        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
-        if (!is_string($body) || $body === '' || $code !== 200) {
-            return null;
-        }
-
-        $decoded = json_decode($body, true);
-
-        return ApiEnvelope::listFromData(is_array($decoded) ? $decoded : null, 'sliders');
+        return null;
     }
 
     /**

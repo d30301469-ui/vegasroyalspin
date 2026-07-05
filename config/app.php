@@ -25,6 +25,26 @@ if (!function_exists('frontend_env_value')) {
 }
 
 if (!function_exists('frontend_resolve_site_url')) {
+    function frontend_normalize_public_path(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '' || $path === '/') {
+            return '';
+        }
+
+        $normalized = '/' . trim($path, '/');
+        $lower = strtolower($normalized);
+        if ($lower === '/public') {
+            return '';
+        }
+
+        if (str_ends_with($lower, '/public')) {
+            $normalized = substr($normalized, 0, -7) ?: '/';
+        }
+
+        return $normalized === '/' ? '' : rtrim($normalized, '/');
+    }
+
     function frontend_resolve_site_url(): string
     {
         foreach (['SITE_URL', 'APP_URL'] as $key) {
@@ -45,6 +65,7 @@ if (!function_exists('frontend_resolve_site_url')) {
 
             $scriptDir = str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
             $scriptDir = $scriptDir === '/' || $scriptDir === '.' ? '' : '/' . trim($scriptDir, '/');
+            $scriptDir = frontend_normalize_public_path($scriptDir);
 
             return $scheme . '://' . $host . $scriptDir;
         }
@@ -118,7 +139,7 @@ if (!function_exists('frontend_provider_config_row')) {
         }
 
         try {
-            $allowedTables = ['drakon_config', 'bgaming_config', 'megapayz_config'];
+            $allowedTables = ['bgaming_config', 'megapayz_config'];
             if (!in_array($table, $allowedTables, true)) {
                 return $rows[$table] = [];
             }
@@ -244,7 +265,6 @@ if (metropol_should_run_production_assertions()) {
     frontend_assert_production_disabled_flag('ALLOW_RUNTIME_MIGRATIONS');
     frontend_assert_production_disabled_flag('METROPOL_RUNTIME_PROVIDER_BOOTSTRAP');
     if (!frontend_is_api_only() && !defined('METROPOL_ADMIN_PANEL')) {
-        frontend_assert_active_provider_secret('Drakon', 'DRAKON_CALLBACK_SECRET', 'drakon_config', 'callback_secret');
         frontend_assert_active_provider_secret('BGaming', 'BGAMING_WALLET_SECRET', 'bgaming_config', 'wallet_secret');
         frontend_assert_active_provider_secret('MegaPayz', 'MEGAPAYZ_PRIVATE_KEY', 'megapayz_config', 'private_key');
     }

@@ -27,7 +27,7 @@ class SlotController extends Controller
 
 
 
-        $result             = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $currentSort, ['source' => 'drakon']);
+        $result             = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $currentSort, []);
 
         $games              = $result['games'];
 
@@ -51,7 +51,7 @@ class SlotController extends Controller
 
         $providerBadges = $this->getProviderBadges();
 
-        $slotApiParams = ['source' => 'drakon'];
+        $slotApiParams = [];
 
         $slotGameType = 0;
 
@@ -83,23 +83,23 @@ class SlotController extends Controller
 
         return [
 
-            'pragmatic'       => ['EN İYİ', 'JACKPOT', 'SICAK'],
+            'pragmatic'       => ['EN Ä°YÄ°', 'JACKPOT', 'SICAK'],
 
             'pgsoft'          => ['SICAK'],
 
             'spribe'          => ['JACKPOT', 'SICAK'],
 
-            'hacksaw'         => ['EN İYİ', 'SICAK'],
+            'hacksaw'         => ['EN Ä°YÄ°', 'SICAK'],
 
             'nolimitcity-A'   => ['JACKPOT'],
 
-            'evoplay'         => ['EN İYİ'],
+            'evoplay'         => ['EN Ä°YÄ°'],
 
             'play-son'        => [],
 
             'booming'         => ['JACKPOT'],
 
-            'quickspin'       => ['EN İYİ', 'SICAK'],
+            'quickspin'       => ['EN Ä°YÄ°', 'SICAK'],
 
             'amusnet'         => ['JACKPOT'],
 
@@ -113,7 +113,7 @@ class SlotController extends Controller
 
             'popok-gaming'    => ['PROMOSYON'],
 
-            'habanero'        => ['ÖZEL'],
+            'habanero'        => ['Ã–ZEL'],
 
         ];
 

@@ -16,7 +16,6 @@ require_once __DIR__ . '/Core/AdminPaths.php';
 admin_paths_bootstrap();
 
 if (session_status() === PHP_SESSION_NONE
-    && !(defined('METROPOL_DRAKON_WEBHOOK') && METROPOL_DRAKON_WEBHOOK)
     && !(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
     ini_set('session.use_strict_mode', '1');
     $cloudflareConfig = admin_project_path('config/cloudflare.php');
@@ -69,7 +68,6 @@ require_once ADMIN_APP_PATH . '/Config/admin.php';
 require_once ADMIN_APP_PATH . '/Core/AdminDatabase.php';
 require_once ADMIN_APP_PATH . '/Core/ErrorHandler.php';
 \App\Core\ErrorHandler::register();
-if (!(defined('METROPOL_DRAKON_WEBHOOK') && METROPOL_DRAKON_WEBHOOK)
-    && !(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
+if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
     require_once ADMIN_APP_PATH . '/Services/AdminAuth.php';
 }

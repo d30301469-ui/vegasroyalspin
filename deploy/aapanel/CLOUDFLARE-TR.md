@@ -10,7 +10,7 @@ Ziyaretçi ──HTTPS──► Cloudflare ──HTTP──► aaPanel Apache (1
 
 ## Cloudflare
 
-Her domain (`vegasroyalspin.com`, `bo-nexthub.site`, `www`, `m.`):
+Her domain (`vegasroyalspin.com`, `admin.vegasroyalspin.com`, `www`, `m.`):
 
 1. DNS → **Proxied** (turuncu bulut)
 2. **SSL/TLS → Overview → Encryption mode: Flexible** (kurulum) veya **Full (strict)** + Origin Certificate (canlı)
@@ -116,7 +116,7 @@ Otomatik düzeltme:
 cd /www/wwwroot/vegasroyalspin.com
 php deploy/aapanel/fix-cloudflare-env.php
 
-cd /www/wwwroot/bo-nexthub.site
+cd /www/wwwroot/admin.vegasroyalspin.com
 php deploy/aapanel/fix-cloudflare-env.php
 ```
 
@@ -125,7 +125,7 @@ php deploy/aapanel/fix-cloudflare-env.php
 ## Kurulum sırası
 
 ```
-1. https://bo-nexthub.site/install
+1. https://admin.vegasroyalspin.com/install
 2. MEMBER_JWT_SECRET kopyala
 3. https://vegasroyalspin.com/install
 4. https://vegasroyalspin.com/health.php → "ok": true
@@ -135,7 +135,7 @@ Loopback test (SSH):
 
 ```bash
 curl -sS http://127.0.0.1/ping.php -H "Host: vegasroyalspin.com"
-curl -sS http://127.0.0.1/ping.php -H "Host: bo-nexthub.site"
+curl -sS http://127.0.0.1/ping.php -H "Host: admin.vegasroyalspin.com"
 ```
 
 ---

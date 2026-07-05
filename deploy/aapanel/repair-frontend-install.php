@@ -91,7 +91,7 @@ if (is_readable($root . '/app/Core/FrontendInstallGate.php')) {
     if (!FrontendInstallGate::isValidSecret($jwt)) {
         fwrite(STDERR, "\nMEMBER_JWT_SECRET hala gecersiz.\n");
         fwrite(STDERR, "Backend'den kopyalayin:\n");
-        fwrite(STDERR, "  grep MEMBER_JWT_SECRET /www/wwwroot/bo-nexthub.site/.env\n");
+        fwrite(STDERR, "  grep MEMBER_JWT_SECRET /www/wwwroot/admin.vegasroyalspin.com/.env\n");
         fwrite(STDERR, "Sonra:\n");
         fwrite(STDERR, "  php deploy/aapanel/repair-frontend-install.php --jwt=\"DEGER\" {$root}\n");
         exit(1);

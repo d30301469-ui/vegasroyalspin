@@ -1,4 +1,4 @@
-# aaPanel kurulum — vegasroyalspin.com + bo-nexthub.site
+# aaPanel kurulum — vegasroyalspin.com + admin.vegasroyalspin.com + api.vegasroyalspin.com
 
 > **SSL: Cloudflare edge only** — [CLOUDFLARE-TR.md](CLOUDFLARE-TR.md)  
 > **Web sunucusu: Apache-only.** [APACHE-ONLY-TR.md](APACHE-ONLY-TR.md)
@@ -24,7 +24,7 @@ php deploy/aapanel/fix-cloudflare-env.php   # her iki site kökünde
 
 1. Zip yükle → kökte `.htaccess` (Apache rewrite)
 2. PHP 8.1+, `mod_rewrite` açık, **Apache 80/443** dinlesin (nginx kapalı)
-3. Backend önce: `bo-nexthub.site` → `/install`
+3. Backend önce: `admin.vegasroyalspin.com` → `/install`
 4. Frontend: `vegasroyalspin.com` → `/install`
 5. Test: `https://DOMAIN/ping.php`, `install-status.php`, sonra `health.php`
 
@@ -32,7 +32,7 @@ php deploy/aapanel/fix-cloudflare-env.php   # her iki site kökünde
 
 ## Dosya yükleme
 
-1. `dist/bo-nexthub-admin.zip` → `/www/wwwroot/bo-nexthub.site/`
+1. `dist/bo-nexthub-admin.zip` → `/www/wwwroot/admin.vegasroyalspin.com/`
 2. `dist/vegasroyalspin-frontend.zip` → `/www/wwwroot/vegasroyalspin.com/`
 3. **Yeni kurulum:** eski `storage/install.lock` ve `.env` dosyalarını silin (zip üzerine yazınca kalabilir). Veya: `php scripts/reset-for-install.php --env`
 4. **Site directory** aaPanel'de domain kökü olmalı (`/www/wwwroot/DOMAIN/`) — `public/` alt klasörü **değil**
@@ -41,7 +41,7 @@ php deploy/aapanel/fix-cloudflare-env.php   # her iki site kökünde
 Kurulum sihirbazı gelmiyorsa:
 
 ```bash
-cd /www/wwwroot/bo-nexthub.site   # veya vegasroyalspin.com
+cd /www/wwwroot/admin.vegasroyalspin.com   # veya vegasroyalspin.com
 php scripts/post-upload-check.php
 php scripts/reset-for-install.php --env
 systemctl restart httpd
@@ -52,7 +52,7 @@ curl -sS https://DOMAIN/install-status.php
 
 ## .env
 
-### Backend (`bo-nexthub.site`)
+### Backend (`admin.vegasroyalspin.com`)
 
 ```env
 APP_ENV=production
@@ -71,8 +71,8 @@ FRONTEND_URL=https://vegasroyalspin.com
 APP_ENV=production
 FRONTEND_API_ONLY=1
 SITE_URL=https://vegasroyalspin.com
-BACKEND_URL=https://bo-nexthub.site
-API_BACKEND_MAIN_BASE_URL=https://bo-nexthub.site/api/v2
+BACKEND_URL=https://admin.vegasroyalspin.com
+API_BACKEND_MAIN_BASE_URL=https://api.vegasroyalspin.com/api/v2
 MEMBER_JWT_SECRET=... (backend ile aynı)
 FRONTEND_CMS_PURGE_SECRET=... (backend ile aynı)
 ```
@@ -82,9 +82,9 @@ FRONTEND_CMS_PURGE_SECRET=... (backend ile aynı)
 ## Test
 
 ```bash
-curl -sS https://bo-nexthub.site/ping.php
+curl -sS https://admin.vegasroyalspin.com/ping.php
 curl -sS https://vegasroyalspin.com/ping.php
-curl -sS 'https://bo-nexthub.site/api/v2/content/sliders?category=home'
+curl -sS 'https://api.vegasroyalspin.com/api/v2/content/sliders?category=home'
 curl -sS https://vegasroyalspin.com/diagnose.php
 ```
 
@@ -97,14 +97,14 @@ php scripts/live-probe-checklist.php
 # Dış HTTPS de test etmek için (SSH'tan genelde timeout):
 php scripts/live-probe-checklist.php --public
 # veya
-FRONTEND_URL=https://vegasroyalspin.com BACKEND_URL=https://bo-nexthub.site php scripts/live-probe-checklist.php
+FRONTEND_URL=https://vegasroyalspin.com BACKEND_URL=https://admin.vegasroyalspin.com php scripts/live-probe-checklist.php
 RUN_LIVE_PROBES=1 php scripts/test-all-layers.php
 ```
 
 Manuel loopback (Apache dinliyorsa çalışmalı):
 
 ```bash
-curl -sS -H "Host: bo-nexthub.site" http://127.0.0.1/ping.php
+curl -sS -H "Host: admin.vegasroyalspin.com" http://127.0.0.1/ping.php
 curl -sS -H "Host: vegasroyalspin.com" http://127.0.0.1/ping.php
 # Port 443 only vhost:
 curl -sk -H "Host: vegasroyalspin.com" https://127.0.0.1/ping.php
@@ -126,7 +126,7 @@ Beklenen: backend + frontend ping/health, CMS (`content/sliders`, `content/mobil
 ```bash
 cd /www/wwwroot/vegasroyalspin.com
 php scripts/bootstrap-frontend-env.php
-# MEMBER_JWT_SECRET → bo-nexthub.site .env ile ayni
+# MEMBER_JWT_SECRET → admin.vegasroyalspin.com .env ile ayni
 nano .env
 ```
 
@@ -182,7 +182,7 @@ Apache hâlâ çalışır ama tarayıcı uyarı verir; bazen PHP-FPM istekleri d
 1. **Website** → `vegasroyalspin.com` → **SSL**
 2. **Let's Encrypt** → domain: `vegasroyalspin.com`, `www.vegasroyalspin.com`
 3. **Apply** → **Force HTTPS** (isteğe bağlı)
-4. Aynısını `bo-nexthub.site` için tekrarla
+4. Aynısını `admin.vegasroyalspin.com` için tekrarla
 
 Kontrol:
 
@@ -235,16 +235,16 @@ systemctl restart httpd
 Frontend `.env` doğru ama `backend_reachable: fail:Operation timed out` ise PHP dış HTTPS'e çıkamıyor olabilir:
 
 ```bash
-curl -sS -H "Host: bo-nexthub.site" http://127.0.0.1/ping.php
-curl -sS -H "Host: bo-nexthub.site" http://127.0.0.1/api/v2/site_settings.php
-curl -sS https://bo-nexthub.site/ping.php
+curl -sS -H "Host: admin.vegasroyalspin.com" http://127.0.0.1/ping.php
+curl -sS -H "Host: admin.vegasroyalspin.com" http://127.0.0.1/api/v2/site_settings.php
+curl -sS https://admin.vegasroyalspin.com/ping.php
 ```
 
 Çalışan loopback için `.env`:
 
 ```env
 API_BACKEND_INTERNAL_BASE_URL=http://127.0.0.1/api/v2
-API_BACKEND_INTERNAL_HOST=bo-nexthub.site
+API_BACKEND_INTERNAL_HOST=admin.vegasroyalspin.com
 ```
 
 Sonra: `curl -sS https://vegasroyalspin.com/health.php` → `"ok": true`

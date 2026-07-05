@@ -40,8 +40,12 @@ final class ApiMediaUrl
             $normalized = '/' . $normalized;
         }
 
-        if (preg_match('#^/drakon/#i', $normalized)) {
-            return 'https://gator.drakon.casino/storage' . $normalized;
+        $normalized = self::normalizeLegacyMediaPath($normalized);
+
+        // Legacy links may contain a stale /public prefix.
+        if (preg_match('#^/public(?:/|$)#i', $normalized) === 1) {
+            $normalized = substr($normalized, 7);
+            $normalized = $normalized === '' ? '/' : $normalized;
         }
 
         if (self::isBackendHostedPath($normalized)) {
@@ -54,6 +58,7 @@ final class ApiMediaUrl
         $sitePath = '';
         if (defined('SITE_URL')) {
             $sitePath = (string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?: '');
+            $sitePath = self::normalizePublicPrefix($sitePath);
             $sitePath = $sitePath === '/' ? '' : rtrim($sitePath, '/');
         }
 
@@ -228,6 +233,7 @@ final class ApiMediaUrl
         if ($path === '') {
             $path = '/';
         }
+        $path = self::normalizeLegacyMediaPath($path);
 
         $query = parse_url($url, PHP_URL_QUERY);
         $fragment = parse_url($url, PHP_URL_FRAGMENT);
@@ -263,6 +269,11 @@ final class ApiMediaUrl
 
     private static function isStaleDevHost(string $host): bool
     {
+        // Trusted media CDN hostlarini mutlak birak: admin uploads host'una rewrite edilmemeli.
+        if (preg_match('/^icons\.casinomilyon\d+\.com$/i', $host) === 1) {
+            return false;
+        }
+
         if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
             return true;
         }
@@ -275,6 +286,41 @@ final class ApiMediaUrl
         }
 
         return false;
+    }
+
+    private static function normalizePublicPrefix(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '' || $path === '/') {
+            return '';
+        }
+
+        $normalized = '/' . trim($path, '/');
+        $lower = strtolower($normalized);
+        if ($lower === '/public') {
+            return '';
+        }
+
+        if (str_ends_with($lower, '/public')) {
+            $normalized = substr($normalized, 0, -7) ?: '/';
+        }
+
+        return $normalized === '/' ? '' : rtrim($normalized, '/');
+    }
+
+    private static function normalizeLegacyMediaPath(string $path): string
+    {
+        $normalized = '/' . ltrim(str_replace('\\', '/', $path), '/');
+        $lower = strtolower($normalized);
+
+        if (str_starts_with($lower, '/storage/medias/')) {
+            return '/uploads/medias/' . ltrim(substr($normalized, strlen('/storage/medias/')), '/');
+        }
+        if (str_starts_with($lower, '/storage/media/')) {
+            return '/uploads/media/' . ltrim(substr($normalized, strlen('/storage/media/')), '/');
+        }
+
+        return $normalized;
     }
 
     private static function frontendOrigin(): string

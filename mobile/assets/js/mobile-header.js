@@ -1,4 +1,8 @@
 (function () {
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+
     function syncHeaderLayout() {
         if (typeof window.__syncHeaderStickyTop === 'function') {
             window.__syncHeaderStickyTop();
@@ -63,6 +67,22 @@
         if (wrap) wrap.classList.add('scroll-start');
     }
 
+    function initBackToTopLayout() {
+        var btn = document.getElementById('scrollToTopBtn');
+        if (!btn) return;
+        btn.style.position = 'fixed';
+        btn.style.left = '0';
+        btn.style.right = '0';
+        btn.style.bottom = '90px';
+        btn.style.width = '44px';
+        btn.style.height = '44px';
+        btn.style.minWidth = '44px';
+        btn.style.minHeight = '44px';
+        btn.style.marginLeft = 'auto';
+        btn.style.marginRight = 'auto';
+        btn.style.zIndex = '9990';
+    }
+
     function observeHeaderHeight() {
         var header = document.querySelector('#root.layout-bc .layout-header-holder-bc, .layout-header-holder-bc');
         if (!header) return;
@@ -80,7 +100,12 @@
         initAdditionalToggle();
         initProfileButton();
         initNavScrollStart();
+        initBackToTopLayout();
         observeHeaderHeight();
+
+        if ((location.pathname === '/' || location.pathname === '/index.php') && !location.hash) {
+            window.scrollTo(0, 0);
+        }
     }
 
     if (document.readyState === 'loading') {

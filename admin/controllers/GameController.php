@@ -3,7 +3,7 @@
 require_once SERVICE_PATH . '/BackendApiClient.php';
 
 /**
- * Legacy /game/launch uyumluluğu. Gerçek launch artık /api/v2/game-launch üzerinden Drakon ile yapılır.
+ * Legacy /game/launch uyumlulugu. Gercek launch artik /api/v2/game-launch uzerinden BGaming ile yapilir.
  */
 class GameController
 {

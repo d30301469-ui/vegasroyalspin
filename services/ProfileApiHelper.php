@@ -164,9 +164,44 @@ final class ProfileApiHelper
             $casinoTransactions = $casino['items'];
         }
 
+        $sportsLimit = max(50, min(500, (int) ($query['limit'] ?? 200)));
+        $sportsQuery = [
+            'limit' => $sportsLimit,
+            'offset' => max(0, (int) ($query['offset'] ?? 0)),
+        ];
+        $sportsRaw = self::requestMember('GET', '/sportsbook/history', $sportsQuery);
+        $sportsItems = [];
+        if (is_array($sportsRaw['items'] ?? null)) {
+            $sportsItems = $sportsRaw['items'];
+        } elseif (is_array($sportsRaw['data']['items'] ?? null)) {
+            $sportsItems = $sportsRaw['data']['items'];
+        }
+
+        $sportsTransactions = [];
+        foreach ($sportsItems as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $txnType = strtolower(trim((string) ($row['txn_type'] ?? 'bet')));
+            $amount  = abs((float) ($row['amount'] ?? 0));
+            $sportsTransactions[] = [
+                'id'             => (string) ($row['id'] ?? ''),
+                'transaction_id' => (string) ($row['txn_code'] ?? ''),
+                'wager_id'       => (string) ($row['wager_id'] ?? ''),
+                'game_provider'  => (string) ($row['vendor_code'] ?? 'sports-betby'),
+                'game_code'      => (string) ($row['game_code'] ?? 'sports'),
+                'txn_type'       => $txnType,
+                'status'         => (int) (($row['is_finished'] ?? 0) ? 2 : 1),
+                'bet_amount'     => $txnType === 'bet' ? $amount : 0,
+                'get_amount'     => in_array($txnType, ['win', 'cancel'], true) ? $amount : 0,
+                'amount'         => $amount,
+                'created_at'     => (string) ($row['created_at'] ?? ''),
+            ];
+        }
+
         return [
             'casino_transactions' => is_array($casinoTransactions) ? $casinoTransactions : [],
-            'spor_transactions' => [],
+            'spor_transactions' => $sportsTransactions,
         ];
     }
 

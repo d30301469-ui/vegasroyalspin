@@ -18,61 +18,177 @@
         }
     }
 
+    function applyMobileAuthLayoutFix(modalId) {
+        if (!document.body.classList.contains('mobile-site')) return;
+        var modalEl = document.getElementById(modalId);
+        if (!modalEl) return;
+
+        var run = function () {
+            var authSliderBg = modalEl.querySelector('.auth-slider-bg');
+            if (authSliderBg) {
+                authSliderBg.style.position = 'absolute';
+                authSliderBg.style.inset = '0';
+                authSliderBg.style.zIndex = '0';
+                authSliderBg.style.pointerEvents = 'none';
+                authSliderBg.style.overflow = 'hidden';
+            }
+
+            var contentHolder = modalEl.querySelector('.has-auth-slider > .e-p-content-holder-bc');
+            if (contentHolder) {
+                contentHolder.style.position = 'relative';
+                contentHolder.style.zIndex = '1';
+                contentHolder.style.flex = '1 1 auto';
+            }
+
+            if (modalId === 'login2') {
+                var loginSpacer = modalEl.querySelector('.sg-n-text-row-2-bc');
+                if (loginSpacer) {
+                    loginSpacer.style.flex = '0 0 clamp(120px, 24vh, 190px)';
+                    loginSpacer.style.minHeight = '0';
+                }
+
+                var loginContainers = modalEl.querySelectorAll('.modal-body, .e-p-content-holder-bc, .e-p-content-bc, #loginFormScreen, .login-form, .entrance-form-content-bc.single-side.step-0');
+                loginContainers.forEach(function (el) {
+                    el.style.minHeight = '0';
+                    if (el.classList.contains('modal-body')) {
+                        el.style.display = 'flex';
+                        el.style.flexDirection = 'column';
+                        el.style.flex = '1 1 auto';
+                        el.style.overflowY = 'auto';
+                    }
+                });
+            }
+
+            if (modalId === 'registerModal') {
+                var registerBody = modalEl.querySelector('.register-modal-body');
+                if (registerBody) {
+                    registerBody.style.display = 'flex';
+                    registerBody.style.flexDirection = 'column';
+                    registerBody.style.flex = '1 1 auto';
+                    registerBody.style.minHeight = '0';
+                    registerBody.style.overflow = 'hidden';
+                }
+
+                var registerContainers = modalEl.querySelectorAll('.e-p-content-holder-bc, .e-p-content-bc, .reg-form-block-bc, .entrance-form-bc.registration.popup');
+                registerContainers.forEach(function (el) {
+                    el.style.display = 'flex';
+                    el.style.flexDirection = 'column';
+                    el.style.flex = '1 1 auto';
+                    el.style.minHeight = '0';
+                    el.style.height = '100%';
+                });
+
+                var stepScroll = modalEl.querySelector('.register-steps-scroll');
+                if (stepScroll) {
+                    stepScroll.style.display = 'block';
+                    stepScroll.style.flex = '1 1 auto';
+                    stepScroll.style.minHeight = '0';
+                    stepScroll.style.height = 'auto';
+                    stepScroll.style.overflowY = 'auto';
+                }
+
+                var form = modalEl.querySelector('#modalRegisterForm[data-active-step="1"] .reg-form-content');
+                if (form) {
+                    form.style.justifyContent = 'flex-start';
+                    form.style.minHeight = '0';
+                    form.style.height = 'auto';
+                    form.style.paddingBottom = '18px';
+                }
+            }
+
+            var scrollAreas = modalEl.querySelectorAll('.modal-body, .register-steps-scroll, .entrance-form-content-bc.single-side.step-0');
+            scrollAreas.forEach(function (area) {
+                area.scrollTop = 0;
+            });
+        };
+
+        requestAnimationFrame(function () {
+            run();
+            requestAnimationFrame(run);
+        });
+    }
+
     function showLoginModal() {
-        if ($jq) {
-            var el = document.getElementById('login2');
-            if (el) $jq(el).modal('show');
+        var el = document.getElementById('login2');
+        if (!el) return;
+        if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
+            $jq(el).modal('show');
         } else if (typeof window.showModalById === 'function') {
             window.showModalById('login2');
+        } else {
+            el.classList.add('show');
+            el.style.display = 'block';
+            el.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('modal-open');
+            document.body.style.overflow = 'hidden';
         }
+        document.body.classList.add('login-modal-open');
+        document.body.classList.remove('register-modal-open');
+        applyMobileAuthLayoutFix('login2');
     }
     window.__openLoginModal = showLoginModal;
     window.MaltabetAuth = window.MaltabetAuth || {};
     window.MaltabetAuth.showLoginModal = showLoginModal;
 
     function hideLoginModal() {
-        if ($jq) {
-            var el = document.getElementById('login2');
-            if (el) $jq(el).modal('hide');
+        var el = document.getElementById('login2');
+        if (!el) return;
+        if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
+            $jq(el).modal('hide');
         } else if (typeof window.hideModalById === 'function') {
             window.hideModalById('login2');
+        } else {
+            el.classList.remove('show');
+            el.style.display = 'none';
+            el.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
         }
+        document.body.classList.remove('login-modal-open');
     }
 
     function showRegisterModal() {
-        if ($jq) {
-            var el = document.getElementById('registerModal');
-            if (el) $jq(el).modal('show');
+        var el = document.getElementById('registerModal');
+        if (!el) return;
+        if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
+            $jq(el).modal('show');
         } else if (typeof window.showModalById === 'function') {
             window.showModalById('registerModal');
+        } else {
+            el.classList.add('show');
+            el.style.display = 'block';
+            el.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('modal-open');
+            document.body.style.overflow = 'hidden';
         }
+        document.body.classList.add('register-modal-open');
+        document.body.classList.remove('login-modal-open');
+        applyMobileAuthLayoutFix('registerModal');
     }
 
     function hideRegisterModal() {
-        if ($jq) {
-            var el = document.getElementById('registerModal');
-            if (el) $jq(el).modal('hide');
+        var el = document.getElementById('registerModal');
+        if (!el) return;
+        if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
+            $jq(el).modal('hide');
         } else if (typeof window.hideModalById === 'function') {
             window.hideModalById('registerModal');
+        } else {
+            el.classList.remove('show');
+            el.style.display = 'none';
+            el.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
         }
+        document.body.classList.remove('register-modal-open');
     }
 
-    function ensureMobileCloseButton(modalEl, label, onClose) {
-        if (!modalEl || modalEl.querySelector('.mobile-auth-close')) return;
-
-        var closeBtn = document.createElement('button');
-        closeBtn.type = 'button';
-        closeBtn.className = 'mobile-auth-close';
-        closeBtn.setAttribute('aria-label', label || 'Kapat');
-        closeBtn.innerHTML = '&times;';
-        closeBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (typeof onClose === 'function') {
-                onClose();
-            }
-        });
-        modalEl.appendChild(closeBtn);
+    function removeMobileCloseButton(modalEl) {
+        if (!modalEl) return;
+        var staleBtn = modalEl.querySelector('.mobile-auth-close');
+        if (staleBtn && staleBtn.parentNode) {
+            staleBtn.parentNode.removeChild(staleBtn);
+        }
     }
 
     function showLoginFormScreen() {
@@ -126,8 +242,8 @@
 
         if (!loginModalEl) return;
 
-        ensureMobileCloseButton(loginModalEl, 'Giriş penceresini kapat', hideLoginModal);
-        ensureMobileCloseButton(registerModalEl, 'Kayıt penceresini kapat', hideRegisterModal);
+        removeMobileCloseButton(loginModalEl);
+        removeMobileCloseButton(registerModalEl);
 
         var loginCloseBtn = loginModalEl.querySelector('.login-close');
         if (loginCloseBtn) {
@@ -172,6 +288,9 @@
         }
 
         if ($jq) {
+            $jq(loginModalEl).on('shown.bs.modal', function () {
+                applyMobileAuthLayoutFix('login2');
+            });
             $jq(loginModalEl).on('hidden.bs.modal', function () {
                 var form = document.getElementById('loginForm');
                 if (BetcoInputs && form) {
@@ -186,6 +305,11 @@
                     BetcoInputs.resetFormInputState(ff, 'login-error-text');
                 }
             });
+            if (registerModalEl) {
+                $jq(registerModalEl).on('shown.bs.modal', function () {
+                    applyMobileAuthLayoutFix('registerModal');
+                });
+            }
         }
     }
 

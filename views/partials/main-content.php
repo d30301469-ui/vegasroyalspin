@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 include __DIR__ . '/header-banners-data.php';
 $banners = $headerBanners;
 $bannerBase = $headerBannerBase;
@@ -33,6 +33,64 @@ if (!function_exists('homeSectionByKey')) {
     }
 }
 
+if (!function_exists('homeEnsureSections')) {
+    /**
+     * Fill missing/empty critical sections from default payload so homepage never renders blank.
+     *
+     * @param list<array<string, mixed>> $sections
+     * @return list<array<string, mixed>>
+     */
+    function homeEnsureSections(array $sections, string $surface = 'all'): array
+    {
+        if (!class_exists('ApiHomepageSections', false)) {
+            return $sections;
+        }
+
+        $defaults = ApiHomepageSections::defaultSections($surface);
+        $required = ['withdrawal-banner', 'casino', 'live-casino'];
+
+        $byKey = [];
+        foreach ($sections as $section) {
+            if (!is_array($section)) {
+                continue;
+            }
+            $key = (string) ($section['section_key'] ?? '');
+            if ($key === '') {
+                continue;
+            }
+            $byKey[$key] = $section;
+        }
+
+        foreach ($required as $key) {
+            $current = $byKey[$key] ?? null;
+            $fallback = homeSectionByKey($defaults, $key);
+            if (!is_array($fallback)) {
+                continue;
+            }
+
+            if (!is_array($current)) {
+                $byKey[$key] = $fallback;
+                continue;
+            }
+
+            $type = (string) ($current['type'] ?? 'games');
+            if ($type === 'games') {
+                $items = is_array($current['payload']['items'] ?? null) ? $current['payload']['items'] : [];
+                if ($items === []) {
+                    $byKey[$key] = $fallback;
+                }
+            } elseif ($type === 'banner') {
+                $img = trim((string) ($current['payload']['image_url'] ?? ''));
+                if ($img === '') {
+                    $byKey[$key] = $fallback;
+                }
+            }
+        }
+
+        return array_values($byKey);
+    }
+}
+
 if (!function_exists('homeRenderBannerSection')) {
     function homeRenderBannerSection(?array $section): void
     {
@@ -56,7 +114,7 @@ if (!function_exists('homeRenderBannerSection')) {
                         alt="<?= homeSectionH($alt) ?>"
                         loading="lazy"
                         width="1200"
-                        height="200"
+                        height="360"
                     />
                 <?php if ($href !== ''): ?>
                 </a>
@@ -89,6 +147,12 @@ if (!function_exists('homeRenderGameCard')) {
         $playOnclick = $gameId > 0
             ? 'handlePlay(' . $gameId . '); return false;'
             : ($link !== '' ? '' : 'event.stopPropagation(); return false;');
+        $demoHref = $gameId > 0
+            ? '/play?game_id=' . rawurlencode((string) $gameId) . '&mode=fun&demo=1'
+            : '#';
+        $demoOnclick = $gameId > 0
+            ? 'handleDemo(' . $gameId . '); return false;'
+            : 'event.stopPropagation(); return false;';
         ?>
         <div class="<?= homeSectionH($class) ?>"<?= $onclick !== '' ? ' onclick="' . homeSectionH($onclick) . '"' : '' ?>>
             <img loading="lazy" decoding="async" src="<?= homeSectionH($image) ?>" alt="<?= homeSectionH($alt) ?>" width="200" height="200" style="object-fit: <?= homeSectionH($imageFit) ?>; --home-image-scale: <?= homeSectionH((string) $imageScale) ?>;">
@@ -102,7 +166,7 @@ if (!function_exists('homeRenderGameCard')) {
                 </div>
                 <div class="game-actions">
                     <a href="<?= homeSectionH($playHref) ?>" class="play-btn"<?= $playOnclick !== '' ? ' onclick="' . homeSectionH($playOnclick) . '"' : '' ?>>OYNA</a>
-                    <a href="#" class="demo-btn" onclick="event.stopPropagation(); return false;">DEMO</a>
+                    <a href="<?= homeSectionH($demoHref) ?>" class="demo-btn" onclick="<?= homeSectionH($demoOnclick) ?>">DEMO</a>
                 </div>
             </div>
         </div>
@@ -147,6 +211,7 @@ if (!function_exists('homeRenderGameSection')) {
 try {
     require_once dirname(__DIR__, 2) . '/api/bootstrap.php';
     $homeSections = ApiHomepageSections::fetchForSurface($homeSurface);
+    $homeSections = homeEnsureSections(is_array($homeSections) ? $homeSections : [], $homeSurface);
 } catch (Throwable) {
     $homeSections = class_exists('ApiHomepageSections', false)
         ? ApiHomepageSections::defaultSections($homeSurface)
@@ -289,7 +354,7 @@ try {
 <?php
 homeRenderBannerSection(homeSectionByKey($homeSections, 'withdrawal-banner'));
 homeRenderGameSection(homeSectionByKey($homeSections, 'casino'), 'Casino', '/slot');
-homeRenderGameSection(homeSectionByKey($homeSections, 'live-casino'), 'Canlı Casino', '/livecasino', true);
+homeRenderGameSection(homeSectionByKey($homeSections, 'live-casino'), 'Canl─▒ Casino', '/livecasino', true);
 ?>
 
 <?php

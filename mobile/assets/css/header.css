@@ -218,7 +218,7 @@ body.mobile-site .mobileHeader .mainMenu {
   gap: 4px;
   padding: 8px 12px;
   min-height: 48px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -246,7 +246,7 @@ body.mobile-site .mobileHeader .mainMenu {
 
 .mobileHeader .mainMenu ul li a > span:not(.CMSIconSVGWrapper) {
   line-height: 1.1;
-  max-width: 72px;
+  max-width: 86px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -284,6 +284,16 @@ body.mobile-site .search-panel {
   height: auto;
   min-height: 0;
   max-height: none;
+}
+
+/* Smart menü: mobilde aşırı büyük ikon satırlarını kompaktlaştır */
+body.mobile-site .sp-button-bc {
+  width: 50px !important;
+  height: 46px !important;
+}
+
+body.mobile-site .sp-button-icon-bc {
+  font-size: 17px !important;
 }
 
 /* Taşındı: assets/css/header.css — dar viewport / tablet (yalnız m. şablonu) */

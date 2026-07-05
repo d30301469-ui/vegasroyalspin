@@ -42,14 +42,21 @@ body.mobile-site .hdr-smart-panel-fixed::before {
 body.mobile-site .hdr-smart-panel-fixed {
   width: 50px !important;
   z-index: 10060 !important;
-  max-height: calc(100vh - var(--header-sticky-top, 120px) - 16px);
+  left: auto !important;
+  right: 8px !important;
+  top: calc(var(--header-sticky-top, 120px) + 8px) !important;
+  bottom: auto !important;
+  height: auto !important;
+  max-height: 360px !important;
+  overflow: hidden !important;
+  transform: none !important;
 }
 
 body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc {
   position: relative;
   width: 50px !important;
   min-height: 0 !important;
-  max-height: inherit !important;
+  max-height: 320px !important;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -67,15 +74,15 @@ body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc {
   to { opacity: 1; transform: translateY(0); }
 }
 
-body.mobile-site .hdr-smart-panel-fixed.is-open .sp-button-bc {
+body.mobile-site .hdr-smart-panel-fixed.is-open .hdr-smart-panel-holder-bc .sp-button-bc {
   animation: sp-btn-in-mobile 0.2s ease forwards;
 }
 
-body.mobile-site .sp-button-bc {
+body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc .sp-button-bc {
   position: relative;
   border: none;
   width: 50px !important;
-  height: 56px !important;
+  height: 44px !important;
   border-radius: 0;
   display: flex;
   align-items: center;
@@ -89,18 +96,18 @@ body.mobile-site .sp-button-bc {
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-body.mobile-site .sp-button-bc + .sp-button-bc {
+body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc .sp-button-bc + .sp-button-bc {
   border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-body.mobile-site .sp-button-bc:hover,
-body.mobile-site .sp-button-bc.active {
+body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc .sp-button-bc:hover,
+body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc .sp-button-bc.active {
   color: #fff !important;
   background: rgba(255, 255, 255, 0.18) !important;
   text-decoration: none;
 }
 
-body.mobile-site .sp-button-bc:active {
+body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc .sp-button-bc:active {
   opacity: 0.8;
 }
 
@@ -108,8 +115,8 @@ body.mobile-site .sp-tooltip {
   display: none;
 }
 
-body.mobile-site .sp-button-icon-bc {
-  font-size: 18px !important;
+body.mobile-site .hdr-smart-panel-fixed .hdr-smart-panel-holder-bc .sp-button-icon-bc {
+  font-size: 15px !important;
   line-height: 1;
 }
 

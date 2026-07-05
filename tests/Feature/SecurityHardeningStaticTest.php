@@ -16,7 +16,7 @@ final class SecurityHardeningStaticTest extends TestCase
             $this->assertStringContainsString($path, $contents);
         }
 
-        $this->assertStringContainsString('RewriteRule ^(?:app|bin|config|database|docs|drakon|logs|repositories|scripts|services|storage|tests|tools|vendor)(?:/|$) - [F,L]', $contents);
+        $this->assertStringContainsString('RewriteRule ^(?:app|bin|config|database|docs|logs|repositories|scripts|services|storage|tests|tools|vendor)(?:/|$) - [F,L]', $contents);
         $this->assertStringContainsString('RewriteRule (^|/)\\.(?!well-known(?:/|$)) - [F,L,NC]', $contents);
     }
 
@@ -26,7 +26,7 @@ final class SecurityHardeningStaticTest extends TestCase
         $router = $this->readProjectFile('router.php');
 
         $this->assertStringContainsString('RewriteRule ^admin/api/v2(?:/|$) - [F,L]', $rootHtaccess);
-        $this->assertStringContainsString("str_starts_with(\$trimmedForDrakon, '/admin/api/v2') && !\$isBackendHost", $router);
+        $this->assertStringContainsString("str_starts_with(\$trimmedUri, '/admin/api/v2') && !\$isBackendHost", $router);
     }
 
     public function testProviderCallbackTransportGuardsArePresent(): void
@@ -46,7 +46,6 @@ final class SecurityHardeningStaticTest extends TestCase
         $config = $this->readProjectFile('config/app.php');
         $envExample = $this->readProjectFile('ENV.example');
 
-        $this->assertStringContainsString("frontend_assert_active_provider_secret('Drakon'", $config);
         $this->assertStringContainsString("frontend_assert_active_provider_secret('BGaming'", $config);
         $this->assertStringContainsString("frontend_assert_active_provider_secret('MegaPayz'", $config);
         $this->assertStringContainsString('MEGAPAYZ_CALLBACK_TOKEN=', $envExample);

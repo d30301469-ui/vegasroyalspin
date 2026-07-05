@@ -16,6 +16,9 @@
 <?php include VIEW_PATH . '/partials/scroll-to-top.php'; ?>
 <?php
 $backToTopJsPath = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3)) . '/assets/js/back-to-top.js';
-$backToTopJsVer = (string) (is_file($backToTopJsPath) ? filemtime($backToTopJsPath) : '1');
+$backToTopJsVer = (string) ((is_file($backToTopJsPath) ? filemtime($backToTopJsPath) : '1') . '-' . (is_file($backToTopJsPath) ? filesize($backToTopJsPath) : '0'));
 ?>
-<script src="<?= htmlspecialchars(asset_url('assets/js/back-to-top.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= $backToTopJsVer ?>"></script>
+<script src="/assets/js/back-to-top.js?v=<?= rawurlencode($backToTopJsVer) ?>"></script>
+
+</body>
+</html>

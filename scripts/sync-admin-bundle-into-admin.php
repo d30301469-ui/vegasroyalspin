@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Proje kökündeki backend dosyalarını admin/ altına kopyalar (self-contained admin deploy).
+ * Proje kÃ¶kÃ¼ndeki backend dosyalarÄ±nÄ± admin/ altÄ±na kopyalar (self-contained admin deploy).
  *
  * Usage: php scripts/sync-admin-bundle-into-admin.php
  */
@@ -12,12 +12,12 @@ $projectRoot = dirname(__DIR__);
 $adminRoot = $projectRoot . '/admin';
 
 $copyDirs = [
-    'services' => 'Provider + API servisleri (MegaPayz, Drakon, BGaming, …)',
-    'config' => 'Uygulama yapılandırması',
-    'database' => 'Migration ve şema',
-    'controllers' => 'API controller köprüleri',
-    'repositories' => 'Repository katmanı',
-    'core' => 'Bootstrap yardımcıları',
+    'services' => 'Provider + API servisleri (MegaPayz, BGaming, â€¦)',
+    'config' => 'Uygulama yapÄ±landÄ±rmasÄ±',
+    'database' => 'Migration ve ÅŸema',
+    'controllers' => 'API controller kÃ¶prÃ¼leri',
+    'repositories' => 'Repository katmanÄ±',
+    'core' => 'Bootstrap yardÄ±mcÄ±larÄ±',
     'storage' => 'Log / cache',
 ];
 
@@ -33,11 +33,11 @@ foreach ($copyDirs as $dir => $label) {
     }
     if ($dir === 'database') {
         syncDatabaseMigrationsOnly($source, $target);
-        echo "Synced {$dir}/migrations → admin/{$dir}/migrations ({$label}, seed korunur)\n";
+        echo "Synced {$dir}/migrations â†’ admin/{$dir}/migrations ({$label}, seed korunur)\n";
         continue;
     }
     copyTree($source, $target);
-    echo "Synced {$dir}/ → admin/{$dir}/ ({$label})\n";
+    echo "Synced {$dir}/ â†’ admin/{$dir}/ ({$label})\n";
 }
 
 $adminSeed = $adminRoot . '/database/seed/' . 'metropolcasino.sql';
@@ -48,7 +48,7 @@ if (is_file($adminSeed)) {
         mkdir($projectSeedDir, 0755, true);
     }
     copy($adminSeed, $projectSeed);
-    echo "Synced admin/database/seed/metropolcasino.sql → database/seed/ (kaynak: admin)\n";
+    echo "Synced admin/database/seed/metropolcasino.sql â†’ database/seed/ (kaynak: admin)\n";
 }
 
 // Admin host: database.php her zaman aktif (frontend guard yok)
@@ -58,7 +58,7 @@ $adminDatabasePhp = <<<'PHP'
 declare(strict_types=1);
 
 /**
- * Admin/backend host database config — always active (standalone admin deploy).
+ * Admin/backend host database config â€” always active (standalone admin deploy).
  */
 return static function (): array {
     $env = static function (array $keys, string $default = ''): string {
@@ -109,15 +109,15 @@ PHP;
 file_put_contents($adminRoot . '/config/database.php', $adminDatabasePhp);
 echo "Wrote admin/config/database.php (standalone admin DB)\n";
 
-// Proje api/ → admin/api/ (admin/api/v2 korunur)
+// Proje api/ â†’ admin/api/ (admin/api/v2 korunur)
 $apiSource = $projectRoot . '/api';
 $apiTarget = $adminRoot . '/api';
 if (is_dir($apiSource)) {
     copyTreeMerge($apiSource, $apiTarget);
-    echo "Merged api/ → admin/api/ (bootstrap, SiteSettings, …)\n";
+    echo "Merged api/ â†’ admin/api/ (bootstrap, SiteSettings, â€¦)\n";
 }
 
-// Framework app/ dosyaları (panel app/ üzerine yazmadan)
+// Framework app/ dosyalarÄ± (panel app/ Ã¼zerine yazmadan)
 $frameworkFiles = [
     'app/bootstrap.php' => 'app/framework_bootstrap.php',
     'app/Core/Database.php' => 'app/Core/Database.php',
@@ -143,7 +143,7 @@ foreach ($frameworkFiles as $relSource => $relTarget) {
         mkdir($targetDir, 0755, true);
     }
     copy($source, $target);
-    echo "Copied {$relSource} → admin/{$relTarget}\n";
+    echo "Copied {$relSource} â†’ admin/{$relTarget}\n";
 }
 
 // Composer (standalone admin root)
@@ -164,29 +164,28 @@ if (is_readable($composerSource)) {
 
 if (is_readable($projectRoot . '/composer.lock')) {
     copy($projectRoot . '/composer.lock', $adminRoot . '/composer.lock');
-    echo "Copied composer.lock → admin/\n";
+    echo "Copied composer.lock â†’ admin/\n";
 }
 
-// .htaccess — standalone admin host (never copy frontend root .htaccess)
+// .htaccess â€” standalone admin host (never copy frontend root .htaccess)
 $htaccessSource = $projectRoot . '/deploy/apache/bo-nexthub.site.htaccess';
 if (!is_readable($htaccessSource)) {
     $htaccessSource = $adminRoot . '/.htaccess';
 }
 if (is_readable($htaccessSource)) {
     copy($htaccessSource, $adminRoot . '/.htaccess');
-    echo "Copied standalone .htaccess → admin/\n";
+    echo "Copied standalone .htaccess â†’ admin/\n";
 }
 
-// ENV template (admin içinde)
+// ENV template (admin iÃ§inde)
 $envExample = $adminRoot . '/.env.example';
 if (!is_readable($envExample) && is_readable($projectRoot . '/deploy/env/backend.env.example')) {
     copy($projectRoot . '/deploy/env/backend.env.example', $envExample);
-    echo "Copied deploy/env/backend.env.example → admin/.env.example\n";
+    echo "Copied deploy/env/backend.env.example â†’ admin/.env.example\n";
 }
 
 $required = [
     'admin/services/MegaPayzService.php',
-    'admin/services/DrakonService.php',
     'admin/services/BgamingService.php',
     'admin/services/MemberJwtService.php',
     'admin/config/app.php',
@@ -218,11 +217,11 @@ $structure = [
     '.htaccess',
     '.env.example',
     'composer.json',
-    'app/              — admin panel + framework (Database, Config)',
-    'api/              — bootstrap + v2 member API + callbacks',
-    'services/         — MegaPayz, Drakon, BGaming, MemberJwt, …',
-    'config/           — app.php, database.php, env.php',
-    'database/         — migrations',
+    'app/              â€” admin panel + framework (Database, Config)',
+    'api/              â€” bootstrap + v2 member API + callbacks',
+    'services/         â€” MegaPayz, BGaming, MemberJwt, â€¦',
+    'config/           â€” app.php, database.php, env.php',
+    'database/         â€” migrations',
     'controllers/',
     'repositories/',
     'core/',
@@ -230,21 +229,21 @@ $structure = [
 ];
 
 file_put_contents($adminRoot . '/DEPLOY-ADMIN-FOLDER.txt', implode("\n", [
-    'ADMIN KLASÖRÜ — bağımsız backend (bo-nexthub.site)',
+    'ADMIN KLASÃ–RÃœ â€” baÄŸÄ±msÄ±z backend (bo-nexthub.site)',
     '',
-    'Bu admin/ klasörünün TAMAMINI sunucu köküne yükleyin:',
+    'Bu admin/ klasÃ¶rÃ¼nÃ¼n TAMAMINI sunucu kÃ¶kÃ¼ne yÃ¼kleyin:',
     '  Hedef: /www/wwwroot/bo-nexthub.site/',
     '',
-    'Dizin yapısı:',
+    'Dizin yapÄ±sÄ±:',
     ...array_map(static fn (string $line): string => '  ' . $line, $structure),
     '',
     'Kurulum:',
     '  cd /www/wwwroot/bo-nexthub.site',
     '  composer install --no-dev',
     '  cp .env.example .env',
-    '  # .env içinde DB_* ve MEMBER_JWT_SECRET doldurun',
+    '  # .env iÃ§inde DB_* ve MEMBER_JWT_SECRET doldurun',
     '',
-    'Doğrulama:',
+    'DoÄŸrulama:',
     '  ls services/MegaPayzService.php',
     '  ls api/bootstrap.php',
     '  ls config/database.php',
@@ -286,7 +285,7 @@ function copyTree(string $source, string $destination): void
 }
 
 /**
- * Project database/ → admin/database/ but never overwrite install seed SQL.
+ * Project database/ â†’ admin/database/ but never overwrite install seed SQL.
  */
 function syncDatabaseMigrationsOnly(string $source, string $destination): void
 {

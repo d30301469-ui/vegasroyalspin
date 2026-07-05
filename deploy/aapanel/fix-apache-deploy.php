@@ -8,7 +8,7 @@ declare(strict_types=1);
  *
  * Usage:
  *   cd /www/wwwroot/vegasroyalspin.com && php deploy/aapanel/fix-apache-deploy.php
- *   cd /www/wwwroot/bo-nexthub.site && php deploy/aapanel/fix-apache-deploy.php
+ *   cd /www/wwwroot/admin.vegasroyalspin.com && php deploy/aapanel/fix-apache-deploy.php
  */
 
 $root = dirname(__DIR__, 2);
@@ -21,7 +21,7 @@ foreach (array_slice($argv, 1) as $arg) {
 $isBackend = is_readable($root . '/services/MegaPayzService.php')
     || is_readable($root . '/services/PaymentCallbackService.php');
 $role = $isBackend ? 'backend' : 'frontend';
-$host = $isBackend ? 'bo-nexthub.site' : 'vegasroyalspin.com';
+$host = $isBackend ? 'admin.vegasroyalspin.com' : 'vegasroyalspin.com';
 
 echo "=== fix-apache-deploy ({$role}: {$host}) ===\n";
 echo "Root: {$root}\n\n";
@@ -50,7 +50,7 @@ if ($role === 'frontend' && !is_file($root . '/index.php')) {
 // ── 2. .htaccess düzelt ─────────────────────────────────────────────────────
 $htSource = $role === 'frontend'
     ? $root . '/deploy/apache/vegasroyalspin.com.htaccess'
-    : $root . '/deploy/apache/bo-nexthub.site.htaccess';
+    : $root . '/deploy/apache/admin.vegasroyalspin.com.htaccess';
 $htTarget = $root . '/.htaccess';
 
 if (is_readable($htSource)) {
@@ -120,7 +120,7 @@ if (function_exists('curl_init')) {
     // API test (frontend → backend veya backend doğrudan)
     if ($role === 'backend') {
         $apiUrl = 'http://127.0.0.1/api/v2/site_settings.php';
-        $apiHost = 'api.bo-nexthub.site';
+        $apiHost = 'api.vegasroyalspin.com';
     } else {
         $apiUrl = 'http://127.0.0.1/api/v2/content/sliders?category=home';
         $apiHost = $host;
@@ -142,17 +142,17 @@ if (function_exists('curl_init')) {
     if ($apiHttp === 200 && is_string($apiBody) && str_contains($apiBody, '"success"')) {
         echo "[OK] API loopback {$apiUrl} Host:{$apiHost} → HTTP 200 JSON\n";
     } else {
-        $errors[] = "API loopback başarısız (HTTP {$apiHttp}). Backend .env ve api.bo-nexthub.site DNS/SSL kontrol edin.";
+        $errors[] = "API loopback başarısız (HTTP {$apiHttp}). Backend .env ve api.vegasroyalspin.com DNS/SSL kontrol edin.";
         echo "[FAIL] API loopback HTTP {$apiHttp}\n";
     }
 }
 
 // ── 4. SSL / api subdomain notu ─────────────────────────────────────────────
 if ($role === 'backend') {
-    echo "\n--- api.bo-nexthub.site SSL (AH01909) ---\n";
+    echo "\n--- api.vegasroyalspin.com SSL (AH01909) ---\n";
     echo "Uyarı normaldir aaPanel'de yanlış origin sertifikası varsa.\n";
     echo "Çözüm: Cloudflare'de api A kaydını proxied (turuncu bulut) yapın.\n";
-    echo "       aaPanel'de api için ayrı 443 site AÇMAYIN — bo-nexthub.site ile aynı docroot.\n";
+    echo "       aaPanel'de api için ayrı 443 site AÇMAYIN — admin.vegasroyalspin.com ile aynı docroot.\n";
     echo "       Cloudflare SSL = Flexible, aaPanel Force HTTPS = KAPAT.\n";
     echo "Sonra: php deploy/aapanel/fix-backend-env.php\n";
 } else {

@@ -1,4 +1,4 @@
-﻿<IfModule mod_rewrite.c>
+<IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
@@ -13,48 +13,27 @@
     # CMS uploads: /uploads/* → storage/uploads/*
     RewriteRule ^uploads/(.*)$ storage/uploads/$1 [L]
 
-    # Drakon callback lives only under admin/backend API.
-    # Separate admin vhost: https://admin.example.com/api/v2/drakon_callback
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^api/v2/drakon_callback/?$ admin/api/v2/drakon_callback.php [END,QSA]
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^api/v2/drakon_callback/drakon_api/?$ admin/api/v2/drakon_callback.php [END,QSA]
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^api/v2/drakon_callback\.php/?$ admin/api/v2/drakon_callback.php [END,QSA]
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^api/v2/drakon_callback\.php/drakon_api/?$ admin/api/v2/drakon_callback.php [END,QSA]
+    # Backward compatibility for stale asset links containing /public prefix.
+    # Prevents JS/CSS/image 404 + MIME=text/html errors when old URLs are cached
+    # or stored in CMS settings.
+    RewriteRule ^public/assets/(.*)$ assets/$1 [L,NC]
+    RewriteRule ^public/uploads/(.*)$ uploads/$1 [L,NC]
 
-    # Backend-only fallback: callback routes must stay on admin host.
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^admin/api/v2/drakon_callback/?$ admin/api/v2/drakon_callback.php [END,QSA]
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^admin/api/v2/drakon_callback/drakon_api/?$ admin/api/v2/drakon_callback.php [END,QSA]
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^admin/api/v2/drakon_callback\.php/?$ admin/api/v2/drakon_callback.php [END,QSA]
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^admin/api/v2/drakon_callback\.php/drakon_api/?$ admin/api/v2/drakon_callback.php [END,QSA]
-
-    # Legacy provider-panel paths are compatibility bridges only; implementation stays in admin/backend.
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^(?:drakon_callback|drakon_callback\.php|drakon_callback/drakon_api|drakon-callback|drakon_api|drakon_api/drakon_api|drakon_api/drakon_api\.php)/?$ admin/api/v2/drakon_callback.php [END,QSA]
-
-    # ─── BGaming wallet callbacks — admin host only ──────────────────
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
+    # ─── Provider webhooks — host-independent ────────────────────────
+    # Game/payment providers call the canonical backend_url (the BARE backend
+    # domain, e.g. bo-nexthub.site) which does NOT carry the api./admin. prefix,
+    # so these MUST NOT be gated by IS_BACKEND_HOST. Each endpoint is protected
+    # by signature/IP verification inside PHP.
     RewriteRule ^api/v2/bgaming-wallet/?(.*)$ admin/api/v2/bgaming_callback.php?endpoint=$1 [END,QSA]
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
     RewriteRule ^api/v2/bgaming/?(.*)$ admin/api/v2/bgaming_callback.php?endpoint=$1 [END,QSA]
-
-    # ─── MegaPayz callback — admin host only ────────────────────────
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
     RewriteRule ^api/v2/megapayz-callback/?$ admin/index.php [END,QSA]
+    RewriteRule ^drakon_api/?$ admin/index.php [END,QSA]
+    RewriteRule ^api/v2/drakon_callback/?$ admin/index.php [END,QSA]
+    RewriteRule ^sportsbook_api/?$ admin/index.php [END,QSA]
+    RewriteRule ^api/v2/sportsbook-wallet/?$ admin/api/v2/sportsbook_callback.php [END,QSA]
 
-    # ─── Admin panel Drakon pages (must route via front controller) ─
-    # Avoid collision with private-path deny rule for /drakon/* URLs.
-    RewriteCond %{ENV:IS_BACKEND_HOST} 1
-    RewriteRule ^drakon(?:/.*)?$ admin/index.php [END,QSA]
-
-    # ─── Private paths: never serve directly from webroot ─────────────
-    RewriteRule ^(?:app|bin|config|database|docs|drakon|logs|repositories|scripts|services|storage|tests|tools|vendor)(?:/|$) - [F,L]
+    # ─── Private paths: never serve directly from webroot ─────────────────────
+    RewriteRule ^(?:app|bin|config|database|docs|logs|repositories|scripts|services|storage|tests|tools|vendor)(?:/|$) - [F,L]
 
     # Block project metadata, generated output, and credential/token artifacts from root docroot deployments.
     RewriteRule ^(?:\.env(?:\..*)?|env|ENV\.example|composer\.(?:json|lock)|phpunit\.xml|jwt\.txt|test-output\.txt|phpunit_[^/]+\.txt|README\.md|CICD_SETUP_GUIDE\.md|GLOBAL_ARCHITECTURE_GUIDE\.md|GUNCEL_SISTEM_ANALIZ_RAPORU\.md)$ - [F,L,NC]
@@ -155,8 +134,6 @@
     RewriteRule ^partials/.*\.php$    - [F,L]
     RewriteRule ^pages/.*\.php$       - [F,L]
 
-    # ─── Drakon API → game launch fallback only ─────────────────────
-    RewriteRule ^drakon_api/game\.php$ index.php [L,QSA]
     RewriteRule ^gold_api/?$ gold_api/api.php [L]
     RewriteRule ^tbs2/?$ tbs2/api.php [L]
     RewriteRule ^r/([a-zA-Z0-9_-]+)$ signup_tracker.php?ref=$1 [L,QSA]
@@ -166,9 +143,10 @@
     #     kurulumlarında Apache gerçek api/ klasörüne düşüp 403 üretebilir.
     RewriteRule ^api/ public/index.php [L,QSA]
 
-    # ─── Gerçek dosya veya klasör varsa dokunma ─────────────────────
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
+    # ─── Gerçek dosyalar dokunma; dizinleri front controller'a bırak ──
+    # (footer/ gibi gerçek dizinler -d ile doğrudan servis edilip -Indexes/
+    #  DirectorySlash Off yüzünden 403/500 üretmesin diye SADECE -f kontrol edilir.)
+    RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
 
     # ─── Her şeyi Front Controller'a yönlendir ──────────────────────

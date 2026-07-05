@@ -19,25 +19,125 @@
         }
     }
 
+    function applyMobileRegisterLayoutFix(modalEl) {
+        if (!modalEl || !document.body.classList.contains('mobile-site')) return;
+        var run = function () {
+            var authSliderBg = modalEl.querySelector('.auth-slider-bg');
+            if (authSliderBg) {
+                authSliderBg.style.position = 'absolute';
+                authSliderBg.style.inset = '0';
+                authSliderBg.style.zIndex = '0';
+                authSliderBg.style.pointerEvents = 'none';
+                authSliderBg.style.overflow = 'hidden';
+            }
+
+            var contentHolder = modalEl.querySelector('.has-auth-slider > .e-p-content-holder-bc');
+            if (contentHolder) {
+                contentHolder.style.position = 'relative';
+                contentHolder.style.zIndex = '1';
+                contentHolder.style.flex = '1 1 auto';
+            }
+
+            var registerBody = modalEl.querySelector('.register-modal-body');
+            if (registerBody) {
+                registerBody.style.display = 'flex';
+                registerBody.style.flexDirection = 'column';
+                registerBody.style.flex = '1 1 auto';
+                registerBody.style.minHeight = '0';
+                registerBody.style.overflow = 'hidden';
+            }
+
+            var containers = modalEl.querySelectorAll('.e-p-content-holder-bc, .e-p-content-bc, .reg-form-block-bc, .entrance-form-bc.registration.popup');
+            containers.forEach(function (el) {
+                el.style.display = 'flex';
+                el.style.flexDirection = 'column';
+                el.style.flex = '1 1 auto';
+                el.style.minHeight = '0';
+                el.style.height = '100%';
+            });
+
+            var stepScroll = modalEl.querySelector('.register-steps-scroll');
+            if (stepScroll) {
+                stepScroll.style.display = 'block';
+                stepScroll.style.flex = '1 1 auto';
+                stepScroll.style.minHeight = '0';
+                stepScroll.style.height = 'auto';
+                stepScroll.style.overflowY = 'auto';
+            }
+
+            var form = modalEl.querySelector('#modalRegisterForm[data-active-step="1"] .reg-form-content');
+            if (form) {
+                form.style.justifyContent = 'flex-start';
+                form.style.minHeight = '0';
+                form.style.height = 'auto';
+                form.style.paddingBottom = '18px';
+            }
+            var scrollAreas = modalEl.querySelectorAll('.register-steps-scroll, .modal-body, .entrance-form-content-bc.single-side.step-0');
+            scrollAreas.forEach(function (area) {
+                area.scrollTop = 0;
+            });
+        };
+        requestAnimationFrame(function () {
+            run();
+            requestAnimationFrame(run);
+        });
+    }
+
     function showModalByElement(modalEl) {
         var jq = getJq();
+        if (!modalEl) return;
         if (jq && jq.fn && typeof jq.fn.modal === 'function') {
             jq(modalEl).modal('show');
+            if (modalEl.id === 'registerModal') {
+                document.body.classList.add('register-modal-open');
+                document.body.classList.remove('login-modal-open');
+            }
             return;
         }
         if (typeof window.showModalById === 'function' && modalEl && modalEl.id) {
             window.showModalById(modalEl.id);
+            if (modalEl.id === 'registerModal') {
+                document.body.classList.add('register-modal-open');
+                document.body.classList.remove('login-modal-open');
+            }
+            return;
         }
+        modalEl.classList.add('show');
+        modalEl.style.display = 'block';
+        modalEl.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+        document.body.style.overflow = 'hidden';
+        if (modalEl.id === 'registerModal') {
+            document.body.classList.add('register-modal-open');
+            document.body.classList.remove('login-modal-open');
+        }
+        applyMobileRegisterLayoutFix(modalEl);
     }
 
     function hideModalByElement(modalEl) {
         var jq = getJq();
+        if (!modalEl) return;
         if (jq && jq.fn && typeof jq.fn.modal === 'function') {
             jq(modalEl).modal('hide');
+            if (modalEl.id === 'registerModal') {
+                document.body.classList.remove('register-modal-open');
+            }
             return;
         }
         if (typeof window.hideModalById === 'function' && modalEl && modalEl.id) {
             window.hideModalById(modalEl.id);
+            if (modalEl.id === 'registerModal') {
+                document.body.classList.remove('register-modal-open');
+            }
+            return;
+        }
+        modalEl.classList.remove('show');
+        modalEl.style.display = 'none';
+        modalEl.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        if (modalEl.id === 'registerModal') {
+            document.body.classList.remove('register-modal-open');
         }
     }
 
@@ -106,6 +206,9 @@
 
         var jq = getJq();
         if (jq && jq.fn && typeof jq.fn.on === 'function') {
+            jq(registerModal).on('shown.bs.modal', function () {
+                applyMobileRegisterLayoutFix(registerModal);
+            });
             jq(registerModal).on('hidden.bs.modal', resetRegisterForm);
         }
     }

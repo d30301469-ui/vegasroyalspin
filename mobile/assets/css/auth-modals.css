@@ -6,13 +6,53 @@ body.mobile-site.modal-open {
 }
 
 body.mobile-site.modal-open:has(#login2.show) .layout-header-holder-bc,
+body.mobile-site.modal-open.login-modal-open .layout-header-holder-bc,
 body.mobile-site.modal-open:has(#registerModal.show) .layout-header-holder-bc,
+body.mobile-site.modal-open.register-modal-open .layout-header-holder-bc,
 body.mobile-site.modal-open:has(#login2.show) .layout-navigation-holder-bc,
+body.mobile-site.modal-open.login-modal-open .layout-navigation-holder-bc,
 body.mobile-site.modal-open:has(#registerModal.show) .layout-navigation-holder-bc,
+body.mobile-site.modal-open.register-modal-open .layout-navigation-holder-bc,
 body.mobile-site.modal-open:has(#login2.show) .hdr-navigation-scrollable-bc-holder,
+body.mobile-site.modal-open.login-modal-open .hdr-navigation-scrollable-bc-holder,
 body.mobile-site.modal-open:has(#registerModal.show) .hdr-navigation-scrollable-bc-holder {
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+body.mobile-site.modal-open.register-modal-open .hdr-navigation-scrollable-bc-holder {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.mobile-site #login2 .auth-slider-bg,
+body.mobile-site #registerModal .auth-slider-bg {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+body.mobile-site #login2 .auth-slider-bg__slide,
+body.mobile-site #registerModal .auth-slider-bg__slide {
+  position: absolute !important;
+  inset: 0 !important;
+}
+
+body.mobile-site #login2 .auth-slider-bg__image,
+body.mobile-site #registerModal .auth-slider-bg__image {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center top !important;
+}
+
+body.mobile-site #login2 .entrance-popup-bc.has-auth-slider > .e-p-content-holder-bc,
+body.mobile-site #registerModal .register-modal-content.has-auth-slider > .e-p-content-holder-bc {
+  position: relative !important;
+  z-index: 1 !important;
+  flex: 1 1 auto !important;
 }
 
 body.mobile-site .modal-backdrop {
@@ -216,7 +256,7 @@ body.mobile-site #registerModal .register-modal-login-link {
 }
 
 body.mobile-site #registerModal .register-modal-close {
-  display: none !important;
+  display: inline-flex !important;
 }
 
 body.mobile-site #login2 .login-close,
@@ -263,44 +303,11 @@ body.mobile-site #login2 .login-modal-header.e-p-header-bc .login-header-actions
 
 body.mobile-site #login2 .mobile-auth-close,
 body.mobile-site #registerModal .mobile-auth-close {
-  position: fixed !important;
-  top: max(14px, calc(env(safe-area-inset-top, 0px) + 8px)) !important;
-  right: 10px !important;
-  width: 34px !important;
-  height: 34px !important;
-  min-width: 34px !important;
-  min-height: 34px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: 1px solid rgba(255, 255, 255, 0.36) !important;
-  border-radius: 50% !important;
-  background: rgba(0, 0, 0, 0.18) !important;
-  color: #fff !important;
-  font-size: 26px !important;
-  line-height: 30px !important;
-  font-family: Arial, Helvetica, sans-serif !important;
-  font-weight: 300 !important;
-  box-shadow: 0 0 0 1px rgba(133, 15, 131, 0.35), 0 3px 10px rgba(0, 0, 0, 0.25) !important;
-  opacity: 1 !important;
-  cursor: pointer !important;
-  pointer-events: auto !important;
-  z-index: 100300 !important;
-  -webkit-appearance: none !important;
-  appearance: none !important;
+  display: none !important;
 }
 
 body.mobile-site #registerModal .mobile-auth-close {
-  top: max(7px, calc(env(safe-area-inset-top, 0px) + 7px)) !important;
-  right: 10px !important;
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  min-height: 32px !important;
-  font-size: 25px !important;
-  line-height: 28px !important;
+  display: none !important;
 }
 
 body.mobile-site #login2:not(.show) .mobile-auth-close,
@@ -354,7 +361,7 @@ body.mobile-site #login2 .sg-n-text-row-1-bc {
 }
 
 body.mobile-site #login2 .sg-n-text-row-2-bc {
-  flex: 0 0 clamp(295px, 50vh, 365px);
+  flex: 0 0 clamp(140px, 26vh, 210px);
   min-height: 0;
 }
 
@@ -543,9 +550,9 @@ body.mobile-site #registerModal .reg-form-content {
 }
 
 body.mobile-site #registerModal #modalRegisterForm[data-active-step="1"] .reg-form-content {
-  justify-content: center;
+  justify-content: flex-start;
   padding-top: 0;
-  padding-bottom: 72px;
+  padding-bottom: 18px;
 }
 
 body.mobile-site #registerModal #modalRegisterForm[data-active-step="2"] .reg-form-content {
@@ -563,10 +570,10 @@ body.mobile-site #registerModal .sg-n-text-row-1-bc {
 }
 
 body.mobile-site #registerModal .sg-n-text-row-2-bc {
-  margin: 0 0 14px;
+  margin: 0 0 8px;
   color: #fff;
-  font-size: 18px;
-  line-height: 20px;
+  font-size: 16px;
+  line-height: 18px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -737,4 +744,54 @@ body.mobile-site #registerModal .register-footer-bar {
     padding-left: 10px;
     padding-right: 10px;
   }
+}
+
+/* Legacy BC mobile overrides can push auth fields out of viewport on some devices. */
+body.mobile-site #login2 .sign-in .sg-n-text-row-2-bc,
+body.mobile-site #login2 .sg-n-text-row-2-bc {
+  padding-bottom: 0 !important;
+  margin: 0 !important;
+  height: clamp(120px, 24vh, 190px) !important;
+  max-height: clamp(120px, 24vh, 190px) !important;
+  min-height: 0 !important;
+  flex: 0 0 clamp(120px, 24vh, 190px) !important;
+  overflow: hidden !important;
+}
+
+body.mobile-site #login2 .sign-in .e-p-header-bc,
+body.mobile-site #login2 .login-modal-header.e-p-header-bc {
+  display: flex !important;
+}
+
+body.mobile-site #registerModal .register-modal-body,
+body.mobile-site #registerModal .register-modal-body.e-p-body-bc {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+body.mobile-site #registerModal .register-steps-scroll,
+body.mobile-site #registerModal .register-steps-scroll.entrance-form-content-bc.single-side.step-0 {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  padding: 0 14px 18px !important;
+}
+
+body.mobile-site #registerModal .reg-form-content,
+body.mobile-site #registerModal #modalRegisterForm[data-active-step="1"] .reg-form-content {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  min-height: auto !important;
+  height: auto !important;
+  padding-top: 0 !important;
+  padding-bottom: 18px !important;
 }

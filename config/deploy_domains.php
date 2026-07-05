@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Production domain defaults — vegasroyalspin.com (frontend) + bo-nexthub.site (backend).
+ * Production domain defaults — vegasroyalspin.com (frontend) +
+ * admin.vegasroyalspin.com (backend panel/callback) +
+ * api.vegasroyalspin.com (member API).
  * Override via .env (SITE_URL, FRONTEND_URL, PUBLIC_URL_HOSTS, …).
  */
 if (!function_exists('deploy_domain_config')) {
@@ -33,14 +35,14 @@ if (!function_exists('deploy_domain_config')) {
             'frontend_url' => 'https://vegasroyalspin.com',
             'frontend_fallback_url' => 'https://vegasroyalspin.com',
             'mobile_url' => 'https://m.vegasroyalspin.com',
-            'backend_url' => 'https://bo-nexthub.site',
-            'backend_api_base_url' => 'https://api.bo-nexthub.site/api/v2',
+            'backend_url' => 'https://admin.vegasroyalspin.com',
+            'backend_api_base_url' => 'https://api.vegasroyalspin.com/api/v2',
             'public_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com',
-            'allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,bo-nexthub.site,api.bo-nexthub.site',
-            'default_allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,bo-nexthub.site,api.bo-nexthub.site',
+            'allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,admin.vegasroyalspin.com,api.vegasroyalspin.com',
+            'default_allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,admin.vegasroyalspin.com,api.vegasroyalspin.com',
             'session_cookie_domain' => '.vegasroyalspin.com',
-            'api_public_base_url' => 'https://api.bo-nexthub.site/api/v2',
-            'api_subdomain_host' => 'api.bo-nexthub.site',
+            'api_public_base_url' => 'https://api.vegasroyalspin.com/api/v2',
+            'api_subdomain_host' => 'api.vegasroyalspin.com',
         ];
     }
 
@@ -85,7 +87,7 @@ if (!function_exists('deploy_domain_config')) {
             deploy_backend_hosts()
         );
         if ($parts === []) {
-            return 'bo-nexthub\.site|api\.bo-nexthub\.site';
+            return 'admin\.vegasroyalspin\.com|api\.vegasroyalspin\.com';
         }
 
         return implode('|', $parts);
@@ -129,7 +131,7 @@ if (!function_exists('deploy_domain_config')) {
     function deploy_allowed_url_hosts(?string $frontendUrl = null, ?string $backendUrl = null): string
     {
         $frontendHosts = deploy_frontend_host_variants($frontendUrl);
-        $backendHost = strtolower((string) (parse_url((string) ($backendUrl ?? deploy_domain('backend_url')), PHP_URL_HOST) ?: 'bo-nexthub.site'));
+        $backendHost = strtolower((string) (parse_url((string) ($backendUrl ?? deploy_domain('backend_url')), PHP_URL_HOST) ?: 'admin.vegasroyalspin.com'));
         $apiHost = strtolower((string) (parse_url(deploy_domain('api_public_base_url'), PHP_URL_HOST) ?: deploy_domain('api_subdomain_host')));
         $parts = array_filter(array_merge(
             array_map('trim', explode(',', $frontendHosts)),
@@ -164,6 +166,14 @@ if (!function_exists('deploy_domain_config')) {
             'm.metropolcasino.test',
             'bo-metropolcasino.site',
             'maltabet.test',
+            'icons.casinomilyon606.com',
+            'casinomilyon606.com',
+            'www.casinomilyon606.com',
+            'icons.casinomilyon607.com',
+            'casinomilyon607.com',
+            'www.casinomilyon607.com',
+            'icons.casinomilyonlisans.com',
+            'casinomilyonlisans.com',
         ];
     }
 }

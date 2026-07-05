@@ -22,6 +22,41 @@ $footerLicenceRows = is_array($footerPayload['licence_rows'] ?? null)
     ? $footerPayload['licence_rows']
     : [];
 
+// Lisans bağlantılarını (iframe/external) tamamen kaldır.
+$footerLicenceRows = array_values(array_filter(array_map(
+    static function ($row): array {
+        if (!is_array($row)) {
+            return [];
+        }
+
+        $clean = [];
+        foreach ($row as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $type = strtolower(trim((string) ($item['type'] ?? '')));
+            $src = strtolower(trim((string) ($item['src'] ?? '')));
+            $href = strtolower(trim((string) ($item['href'] ?? '')));
+
+            $isLicenceLink = $src !== '' && (
+                str_contains($src, 'casinomilyonlisans.com')
+                || str_contains($src, 'licence-widget.html')
+            );
+            $isLicenceHref = $href !== '' && str_contains($href, 'casinomilyonlisans.com');
+
+            if ($type === 'iframe' || $isLicenceLink || $isLicenceHref) {
+                continue;
+            }
+
+            $clean[] = $item;
+        }
+
+        return $clean;
+    },
+    $footerLicenceRows
+), static fn (array $row): bool => $row !== []));
+
 foreach ($footerMenuColumns as $columnIndex => $column) {
     if (!is_array($column)) {
         continue;

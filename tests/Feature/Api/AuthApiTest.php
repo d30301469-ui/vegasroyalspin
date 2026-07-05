@@ -57,7 +57,7 @@ final class AuthApiTest extends ApiTestCase
     public function testUnknownRouteIsNotAllowlisted(): void
     {
         $this->assertFalse(PublicMemberApiDispatcher::isAllowed('internal/admin/users'));
-        $this->assertFalse(PublicMemberApiDispatcher::isAllowed('drakon/sync-games'));
+        $this->assertFalse(PublicMemberApiDispatcher::isAllowed('internal/admin/games'));
     }
 
     public function testPublicApiUsesTransparentProxyOnApiOnlyHost(): void

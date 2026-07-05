@@ -48,36 +48,45 @@ try {
     require_once __DIR__ . '/backend_api.php';
 } catch (Throwable $bootstrapApiConfigError) {
     error_log('[metropol] bootstrap_api config: ' . $bootstrapApiConfigError->getMessage());
-    if (!defined('API_BACKEND_MAIN_BASE_URL')) {
-        define('API_BACKEND_MAIN_BASE_URL', rtrim(deploy_domain('backend_api_base_url'), '/'));
-    }
-    if (!defined('API_BACKEND_SLIDER_BASE_URL')) {
-        define('API_BACKEND_SLIDER_BASE_URL', '');
-    }
-    if (!defined('API_BACKEND_AFFILIATE_BASE_URL')) {
-        define('API_BACKEND_AFFILIATE_BASE_URL', '');
-    }
-    if (!defined('API_BACKEND_CASINO_WALLET_BASE_URL')) {
-        define('API_BACKEND_CASINO_WALLET_BASE_URL', '');
-    }
-    if (!defined('API_BACKEND_PAYMENT_CALLBACK_BASE_URL')) {
-        define('API_BACKEND_PAYMENT_CALLBACK_BASE_URL', '');
-    }
-    if (!defined('API_BACKEND_GAMES_BASE_URL')) {
-        define('API_BACKEND_GAMES_BASE_URL', '');
-    }
-    if (!defined('API_BACKEND_AUTH_HEADER')) {
-        define('API_BACKEND_AUTH_HEADER', '');
-    }
-    if (!defined('API_BACKEND_CURL_CAINFO')) {
-        define('API_BACKEND_CURL_CAINFO', '');
-    }
-    if (!defined('API_BACKEND_INTERNAL_BASE_URL')) {
-        define('API_BACKEND_INTERNAL_BASE_URL', '');
-    }
-    if (!defined('API_BACKEND_INTERNAL_HOST')) {
-        define('API_BACKEND_INTERNAL_HOST', 'bo-nexthub.site');
-    }
+}
+
+// Safety net: backend_api.php may be empty/incomplete on some deployments (or the
+// require above may have thrown). BackendApiClient::baseUrl() references several of
+// these constants WITHOUT a defined() guard, so a missing constant is a fatal
+// "Undefined constant" error on the first server-side backend call (e.g. a logged-in
+// member opening /beni-ara). Define any missing ones with safe fallbacks.
+if (!defined('API_BACKEND_MAIN_BASE_URL')) {
+    define('API_BACKEND_MAIN_BASE_URL', rtrim(deploy_domain('backend_api_base_url'), '/'));
+}
+if (!defined('API_BACKEND_SLIDER_BASE_URL')) {
+    define('API_BACKEND_SLIDER_BASE_URL', '');
+}
+if (!defined('API_BACKEND_AFFILIATE_BASE_URL')) {
+    define('API_BACKEND_AFFILIATE_BASE_URL', '');
+}
+if (!defined('API_BACKEND_CASINO_WALLET_BASE_URL')) {
+    define('API_BACKEND_CASINO_WALLET_BASE_URL', '');
+}
+if (!defined('API_BACKEND_PAYMENT_CALLBACK_BASE_URL')) {
+    define('API_BACKEND_PAYMENT_CALLBACK_BASE_URL', '');
+}
+if (!defined('API_BACKEND_GAMES_BASE_URL')) {
+    define('API_BACKEND_GAMES_BASE_URL', '');
+}
+if (!defined('API_BACKEND_FALLBACK_BASE_URL')) {
+    define('API_BACKEND_FALLBACK_BASE_URL', '');
+}
+if (!defined('API_BACKEND_AUTH_HEADER')) {
+    define('API_BACKEND_AUTH_HEADER', '');
+}
+if (!defined('API_BACKEND_CURL_CAINFO')) {
+    define('API_BACKEND_CURL_CAINFO', '');
+}
+if (!defined('API_BACKEND_INTERNAL_BASE_URL')) {
+    define('API_BACKEND_INTERNAL_BASE_URL', '');
+}
+if (!defined('API_BACKEND_INTERNAL_HOST')) {
+    define('API_BACKEND_INTERNAL_HOST', 'bo-nexthub.site');
 }
 
 if (is_readable(__DIR__ . '/member_api_public.php')) {

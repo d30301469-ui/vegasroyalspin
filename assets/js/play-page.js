@@ -1,5 +1,5 @@
 /**
- * /play — POST /api/v2/game-launch, iframe oyun URL.
+ * /play â€” POST /api/v2/game-launch, iframe oyun URL.
  */
 (function () {
     'use strict';
@@ -22,6 +22,54 @@
     }
     function memberLoggedIn() {
         return window.__USER_LOGGED_IN__ || (Shared.getMemberJwt && !!Shared.getMemberJwt());
+    }
+
+    function fetchFreespinCount() {
+        if (!memberLoggedIn()) {
+            return Promise.resolve(0);
+        }
+
+        function fetchTabCount(tab) {
+            return fetch(apiUrl('/api/v2/freespins.php?tab=' + encodeURIComponent(tab)), {
+                method: 'GET',
+                credentials: memberCredentials(),
+                headers: memberAuthHeaders({ Accept: 'application/json' }),
+                cache: 'no-store'
+            })
+                .then(function (res) {
+                    return res.json().catch(function () {
+                        return null;
+                    });
+                })
+                .then(function (json) {
+                    var items = json && json.success && json.data && Array.isArray(json.data.items) ? json.data.items : [];
+                    return items.length;
+                })
+                .catch(function () {
+                    return 0;
+                });
+        }
+
+        return Promise.all([fetchTabCount('aktif'), fetchTabCount('yeni')]).then(function (counts) {
+            var total = Number(counts[0] || 0) + Number(counts[1] || 0);
+            return total > 0 ? total : 0;
+        });
+    }
+
+    function notifyFreespinsOnLaunch() {
+        if (window.__PLAY_FREESPIN_NOTICE_SHOWN__) {
+            return;
+        }
+        fetchFreespinCount().then(function (count) {
+            if (count <= 0) {
+                return;
+            }
+            window.__PLAY_FREESPIN_NOTICE_SHOWN__ = true;
+            showNotice('Hesabinizda ' + count + ' adet freespin bulunuyor.', 'info');
+            if (window.MaltabetToast) {
+                MaltabetToast.warning('Hesabinizda ' + count + ' adet freespin var.', 'Freespin');
+            }
+        });
     }
 
     function formatMoney(val) {
@@ -102,6 +150,116 @@
         }
     }
 
+    function showNotice(msg, kind) {
+        var text = String(msg || '').trim();
+        if (!text) {
+            return;
+        }
+        var box = document.getElementById('playRuntimeNotice');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'playRuntimeNotice';
+            box.setAttribute('role', 'status');
+            box.setAttribute('aria-live', 'polite');
+            box.style.position = 'fixed';
+            box.style.left = '50%';
+            box.style.bottom = '18px';
+            box.style.transform = 'translateX(-50%)';
+            box.style.zIndex = '9999';
+            box.style.maxWidth = 'min(92vw, 560px)';
+            box.style.padding = '12px 14px';
+            box.style.borderRadius = '12px';
+            box.style.boxShadow = '0 10px 28px rgba(0,0,0,.35)';
+            box.style.fontSize = '14px';
+            box.style.lineHeight = '1.45';
+            box.style.fontWeight = '600';
+            box.style.display = 'none';
+            document.body.appendChild(box);
+        }
+
+        var isError = kind === 'error';
+        box.style.background = isError ? 'rgba(132, 32, 41, .94)' : 'rgba(16, 24, 40, .94)';
+        box.style.border = isError ? '1px solid rgba(255, 99, 115, .55)' : '1px solid rgba(252, 172, 0, .35)';
+        box.style.color = '#fff';
+        box.textContent = text;
+        box.style.display = 'block';
+
+        if (box.__hideTimer) {
+            window.clearTimeout(box.__hideTimer);
+        }
+        box.__hideTimer = window.setTimeout(function () {
+            box.style.display = 'none';
+        }, isError ? 5200 : 3200);
+    }
+
+    function frameWindow() {
+        var frame = document.getElementById('playFrame');
+        return frame ? frame.contentWindow : null;
+    }
+
+    function parseProviderEvent(payload) {
+        if (!payload) {
+            return null;
+        }
+        var data = payload;
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                return null;
+            }
+        }
+        if (!data || typeof data !== 'object') {
+            return null;
+        }
+        if (typeof data.eventName !== 'string' || !data.eventName.trim()) {
+            return null;
+        }
+        return data;
+    }
+
+    function bindProviderEvents() {
+        window.addEventListener('message', function (event) {
+            if (event.source && frameWindow() && event.source !== frameWindow()) {
+                return;
+            }
+
+            var providerEvent = parseProviderEvent(event.data);
+            if (!providerEvent) {
+                return;
+            }
+
+            var eventName = String(providerEvent.eventName || '').toLowerCase();
+            var eventData = providerEvent.data;
+            var context = providerEvent.context && typeof providerEvent.context === 'object' ? providerEvent.context : {};
+
+            if (eventName === 'balance_update' || eventName === 'api_response') {
+                tickBalance();
+                return;
+            }
+
+            if (eventName === 'go_home') {
+                window.location.href = '/slot';
+                return;
+            }
+
+            if (eventName === 'go_deposit') {
+                window.location.href = '/deposit';
+                return;
+            }
+
+            if (eventName === 'game_error') {
+                var messageText = String(context.messageText || eventData || 'Oyun beklenmeyen bir hata bildirdi.').trim();
+                showNotice(messageText, 'error');
+                return;
+            }
+
+            if (eventName === 'button-click' && String(eventData || '').toLowerCase() === 'deposit') {
+                window.location.href = '/deposit';
+            }
+        });
+    }
+
     function isSafeLaunchUrl(url) {
         var text = String(url || '').trim();
         if (!/^https?:\/\//i.test(text)) {
@@ -110,25 +268,20 @@
         try {
             var parsed = new URL(text);
             var host = parsed.hostname.toLowerCase();
-            if (
-                host === 'gator.drakon.casino'
-                || host === 'drakon.casino'
-                || host === 'gator.drakonapi.tech'
-                || host === 'drakonapi.tech'
-                || host.endsWith('.drakon.casino')
-                || host.endsWith('.drakonapi.tech')
-            ) {
+            var path = parsed.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+            var currentHost = (window.location.hostname || '').toLowerCase();
+            // Reject self-referential launch URLs (our own site root / index.php),
+            // but allow external provider URLs that carry the game in the query
+            // string with an empty or root path (e.g. https://launch.provider/?...).
+            if (path === 'index.php') {
                 return false;
             }
-            var path = parsed.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
-            if (!path || path === 'index.php') {
+            if (!path && host === currentHost) {
                 return false;
             }
             var query = parsed.search.toLowerCase();
             if (
                 path.indexOf('games/game_launch') !== -1
-                || path.indexOf('drakon_callback') !== -1
-                || path.indexOf('drakon_api') !== -1
             ) {
                 return false;
             }
@@ -230,10 +383,10 @@
                 if (!x.j) {
                     var infraMsg =
                         x.status === 502
-                            ? 'Backend sunucuya ulaşılamadı (502). PHP-FPM ve frontend .env (API_BACKEND_INTERNAL_BASE_URL) ayarlarını kontrol edin.'
+                            ? 'Backend sunucuya ulaÅŸÄ±lamadÄ± (502). PHP-FPM ve frontend .env (API_BACKEND_INTERNAL_BASE_URL) ayarlarÄ±nÄ± kontrol edin.'
                             : x.status === 503
-                              ? 'Oyun servisi geçici olarak kullanılamıyor (503).'
-                              : 'Sunucu yanıtı okunamadı (HTTP ' + x.status + ').';
+                              ? 'Oyun servisi geÃ§ici olarak kullanÄ±lamÄ±yor (503).'
+                              : 'Sunucu yanÄ±tÄ± okunamadÄ± (HTTP ' + x.status + ').';
                     showFatal(infraMsg);
                     return;
                 }
@@ -246,25 +399,26 @@
                         if (!isSafeLaunchUrl(launchTarget.url)) {
                             showFatal(
                                 (x.j.message && String(x.j.message)) ||
-                                    'Drakon geçersiz oyun URL döndü. Agent ayarlarını ve webhook URL\'ini kontrol edin.'
+                                    'Gecersiz oyun URL dondu. Ayarlarinizi kontrol edin.'
                             );
                             return;
                         }
                         openLaunchUrl(launchTarget.url, launchTarget.openMode);
+                        notifyFreespinsOnLaunch();
                         return;
                     }
                 }
                 var msg =
                     (x.j && x.j.message) ||
                     (x.j && x.j.error) ||
-                    'Oyun başlatılamadı (' + x.status + ').';
+                    'Oyun baÅŸlatÄ±lamadÄ± (' + x.status + ').';
                 showFatal(msg);
             })
             .catch(function () {
                 if (loader) {
                     loader.hidden = true;
                 }
-                showFatal('Bağlantı hatası.');
+                showFatal('BaÄŸlantÄ± hatasÄ±.');
             });
     }
 
@@ -300,8 +454,8 @@
                     'fa-solid ' + (isFs ? 'fa-compress' : 'fa-expand') + ' fa-fw';
             }
             if (fsBtn) {
-                fsBtn.title = isFs ? 'Tam ekrandan çık' : 'Tam ekran (oyun alanı)';
-                fsBtn.setAttribute('aria-label', isFs ? 'Tam ekrandan çık' : 'Tam ekran');
+                fsBtn.title = isFs ? 'Tam ekrandan Ã§Ä±k' : 'Tam ekran (oyun alanÄ±)';
+                fsBtn.setAttribute('aria-label', isFs ? 'Tam ekrandan Ã§Ä±k' : 'Tam ekran');
             }
         }
 
@@ -357,6 +511,7 @@
             return;
         }
         bindChrome();
+        bindProviderEvents();
         if (!gateLoginIfNeeded(payload)) {
             return;
         }

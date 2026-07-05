@@ -24,7 +24,7 @@ final class AdminDashboardController extends AdminController
         $pendingDeposits = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'pending' AND {$txWhere}");
         $withdrawTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'confirmed' AND {$txWhere}");
         $pendingWithdrawals = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'pending' AND {$txWhere}");
-        $activeGames = $this->scalar('SELECT (SELECT COUNT(*) FROM drakon_games WHERE is_active = 1) + (SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1)');
+        $activeGames = $this->scalar('SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1');
         $todayVisits = $this->scalar("SELECT COUNT(*) FROM visitor_logs WHERE {$this->dateCondition('created_at', $dateRange)}");
         $todayUsers = $userCount;
         $verifiedUsers = $this->scalar("SELECT COUNT(*) FROM users WHERE is_verified = 1 AND {$userWhere}");
@@ -89,7 +89,7 @@ final class AdminDashboardController extends AdminController
             ['name' => 'Slider', 'value' => (int) $activeSliders, 'label' => 'aktif', 'ok' => $activeSliders > 0, 'url' => '/module?key=sliders'],
             ['name' => 'Auth Slider', 'value' => (int) $authSliders, 'label' => 'aktif', 'ok' => $authSliders > 0, 'url' => '/module?key=auth-sliders'],
             ['name' => 'Homepage Section', 'value' => (int) $homepageSections, 'label' => 'yayında', 'ok' => $homepageSections > 0, 'url' => '/homepage-sections'],
-            ['name' => 'Aktif oyun', 'value' => (int) $activeGames, 'label' => 'oyun', 'ok' => $activeGames > 0, 'url' => '/module?key=drakon-games'],
+            ['name' => 'Aktif oyun', 'value' => (int) $activeGames, 'label' => 'oyun', 'ok' => $activeGames > 0, 'url' => '/module?key=bgaming-games'],
             ['name' => 'DB Modülü', 'value' => $tableCount, 'label' => 'tablo', 'ok' => $tableCount > 0, 'url' => '/dashboard'],
         ];
 
@@ -174,51 +174,33 @@ final class AdminDashboardController extends AdminController
 
     private function casinoStats(array $dateRange): array
     {
-        $drakonWhere = $this->dateCondition('created_at', $dateRange);
         $bgamingWhere = $this->dateCondition('processed_at', $dateRange);
-        $drakonBet = $this->scalar("SELECT COALESCE(SUM(bet_amount), 0) FROM drakon_transactions WHERE txn_type IN ('bet','win','refund') AND {$drakonWhere}");
-        $drakonWin = $this->scalar("SELECT COALESCE(SUM(win_amount), 0) FROM drakon_transactions WHERE txn_type IN ('bet','win','refund') AND {$drakonWhere}");
         $bgamingBet = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM bgaming_transactions WHERE txn_type IN ('bet','promo_bet') AND {$bgamingWhere}");
         $bgamingWin = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM bgaming_transactions WHERE txn_type IN ('win','promo_win','freespins_win') AND {$bgamingWhere}");
-        $bet = $drakonBet + $bgamingBet;
-        $win = $drakonWin + $bgamingWin;
+        $bet = $bgamingBet;
+        $win = $bgamingWin;
         $net = $bet - $win;
 
-        // Bu sayımlar daha önce iki kez çalıştırılıyordu (hem birleşik toplam hem
-        // dataset'ler için). Bir kez hesaplayıp toplamı türetiyoruz.
-        $drakonBetCount = $this->scalar("SELECT COUNT(*) FROM drakon_transactions WHERE txn_type = 'bet' AND {$drakonWhere}");
-        $drakonPlayers = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM drakon_transactions WHERE {$drakonWhere}");
         $bgamingBetCount = $this->scalar("SELECT COUNT(*) FROM bgaming_transactions WHERE txn_type IN ('bet','promo_bet') AND {$bgamingWhere}");
         $bgamingPlayers = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM bgaming_transactions WHERE {$bgamingWhere}");
-        $betCount = $drakonBetCount + $bgamingBetCount;
-        $playerCount = $drakonPlayers + $bgamingPlayers;
+        $betCount = $bgamingBetCount;
+        $playerCount = $bgamingPlayers;
         $rtp = $bet > 0 ? ($win / $bet) * 100 : 0;
+        $bgamingRtp = $bgamingBet > 0 ? ($bgamingWin / $bgamingBet) * 100 : 0;
 
         $labels = ['Bahis', 'Ödeme', 'İptal', 'İade', 'Net', 'Bahis Adedi', 'Oyuncu Adedi', 'Kişi Başı', 'RTP'];
         $formats = ['money', 'money', 'money', 'money', 'money', 'number', 'number', 'money', 'percent'];
-        $drakonRtp = $drakonBet > 0 ? ($drakonWin / $drakonBet) * 100 : 0;
-        $bgamingRtp = $bgamingBet > 0 ? ($bgamingWin / $bgamingBet) * 100 : 0;
         $datasets = [
-            'Canlı Casino' => $this->statsDataset($labels, $formats, [$drakonBet, $drakonWin, 0, 0, $drakonBet - $drakonWin, $drakonBetCount, $drakonPlayers, $drakonPlayers > 0 ? $drakonBet / $drakonPlayers : 0, $drakonRtp], [
-                ['label' => 'Bahis', 'value' => $drakonBet, 'color' => '#f43f5e'],
-                ['label' => 'Ödeme', 'value' => $drakonWin, 'color' => '#22c55e'],
-                ['label' => 'Net', 'value' => $drakonBet - $drakonWin, 'color' => '#3b82f6'],
-            ]),
             'Slot' => $this->statsDataset($labels, $formats, [$bgamingBet, $bgamingWin, 0, 0, $bgamingBet - $bgamingWin, $bgamingBetCount, $bgamingPlayers, $bgamingPlayers > 0 ? $bgamingBet / $bgamingPlayers : 0, $bgamingRtp], [
                 ['label' => 'Bahis', 'value' => $bgamingBet, 'color' => '#6366f1'],
                 ['label' => 'Ödeme', 'value' => $bgamingWin, 'color' => '#22c55e'],
                 ['label' => 'Net', 'value' => $bgamingBet - $bgamingWin, 'color' => '#3b82f6'],
             ]),
-            'Oyun' => $this->statsDataset($labels, $formats, [$bet, $win, 0, 0, $net, $betCount, $playerCount, $playerCount > 0 ? $bet / $playerCount : 0, $rtp], [
-                ['label' => 'Drakon', 'value' => $drakonBet, 'color' => '#f43f5e'],
-                ['label' => 'BGaming', 'value' => $bgamingBet, 'color' => '#6366f1'],
-            ]),
             'Sanal Spor' => $this->statsDataset($labels, $formats, [0, 0, 0, 0, 0, 0, 0, 0, 0], [
                 ['label' => 'Sanal Spor', 'value' => 0, 'color' => '#22c55e'],
             ]),
             'Toplam' => $this->statsDataset($labels, $formats, [$bet, $win, 0, 0, $net, $betCount, $playerCount, $playerCount > 0 ? $bet / $playerCount : 0, $rtp], [
-                ['label' => 'Canlı Casino', 'value' => $drakonBet, 'color' => '#f43f5e'],
-                ['label' => 'Slot', 'value' => $bgamingBet, 'color' => '#6366f1'],
+                ['label' => 'BGaming', 'value' => $bgamingBet, 'color' => '#6366f1'],
                 ['label' => 'Net', 'value' => $net, 'color' => '#3b82f6'],
                 ['label' => 'Sanal Spor', 'value' => 0, 'color' => '#22c55e'],
             ]),
@@ -228,7 +210,7 @@ final class AdminDashboardController extends AdminController
             'tabs' => array_keys($datasets),
             'active_tab' => 'Toplam',
             'datasets' => $datasets,
-            'module_url' => '/module?key=drakon-transactions',
+            'module_url' => '/module?key=bgaming-transactions',
         ];
     }
 
@@ -242,7 +224,7 @@ final class AdminDashboardController extends AdminController
         $lossBonus = $this->scalar("SELECT COALESCE(SUM(requested_amount), 0) FROM bonus_claim_requests WHERE {$claimWhere} AND (LOWER(COALESCE(bonus_name, '')) LIKE '%loss%' OR LOWER(COALESCE(bonus_name, '')) LIKE '%kayıp%')");
         $cashBonus = $this->scalar("SELECT COALESCE(SUM(current_bonus_balance), 0) FROM user_active_bonuses WHERE {$activeBonusWhere} AND (LOWER(COALESCE(category, name, '')) LIKE '%cash%' OR LOWER(COALESCE(name, '')) LIKE '%nakit%')");
         $manualDiscount = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM admin_balance_adjustments WHERE wallet = 'bonus_balance' AND action = 'add' AND {$adjustWhere}");
-        $manualFreespin = $this->scalar("SELECT COALESCE(SUM(freespins_per_player), 0) FROM drakon_campaigns WHERE active = 1 AND {$campaignWhere}");
+        $manualFreespin = 0;
         $freespinBonus = $this->scalar("SELECT COALESCE(SUM(current_bonus_balance), 0) FROM user_active_bonuses WHERE {$activeBonusWhere} AND LOWER(COALESCE(category, name, '')) LIKE '%freespin%'");
 
         $labels = ['Bonus Tutarı', 'Oyuncu Adedi', 'Bonus Adedi', 'Spin Adedi', 'Aktarılan Tutar', 'Aktarılan Hesap Oyuncu', 'Aktif Bonus Adedi'];

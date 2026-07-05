@@ -13,7 +13,7 @@ $currentSort = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
-$result = SlotGamesQuery::gamesPage(1, $searchTerm, $selectedProviders, $limit, $page, $currentSort, ['source' => 'drakon']);
+$result = SlotGamesQuery::gamesPage(1, $searchTerm, $selectedProviders, $limit, $page, $currentSort, []);
 $games = $result['games'] ?? [];
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 $allUniqueProviders = SlotGamesQuery::providersForGameType(1, 'live_casino');
@@ -42,7 +42,7 @@ $slotPageTitle = 'CANLI CASINO';
 $slotGameType = 1;
 $slotEmptyTitle = 'Canlı casino oyunu bulunamadı';
 $slotEmptyText = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin.';
-$slotApiParams = ['source' => 'drakon'];
+$slotApiParams = [];
 $sliderApiCategory = 'live_casino';
 $slotShowActionButtons = true;
 $slotHideProviders = false;

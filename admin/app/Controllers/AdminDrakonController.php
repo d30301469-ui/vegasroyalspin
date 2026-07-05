@@ -8,23 +8,24 @@ final class AdminDrakonController extends AdminController
     {
         $this->requirePermission('drakon-settings');
         $pdo = AdminDatabase::pdo();
-        $providersCount = 0;
+        DrakonService::bootstrap($pdo);
+
         $gamesCount = 0;
+        $transactionsCount = 0;
         try {
-            $providersCount = (int) $pdo->query('SELECT COUNT(*) FROM drakon_providers')->fetchColumn();
-            $gamesCount = (int) $pdo->query('SELECT COUNT(*) FROM drakon_games')->fetchColumn();
-        } catch (Throwable) {
-        }
+            $gamesCount        = (int) $pdo->query('SELECT COUNT(*) FROM drakon_games')->fetchColumn();
+            $transactionsCount = (int) $pdo->query('SELECT COUNT(*) FROM drakon_transactions')->fetchColumn();
+        } catch (Throwable) {}
+
         $this->view('drakon/settings', [
-            'title' => 'Drakon Ayarları',
-            'active' => 'datatable',
-            'moduleKey' => 'drakon-settings',
-            'crumbs' => 'Games | Drakon Settings',
-            'configRow' => DrakonService::config($pdo),
-            'integrationDiagnostics' => DrakonService::integrationDiagnostics($pdo),
-            'providersCount' => $providersCount,
-            'gamesCount' => $gamesCount,
-            'flash' => $this->pullFlash(),
+            'title'             => 'Drakon Ayarları',
+            'active'            => 'datatable',
+            'moduleKey'         => 'drakon-settings',
+            'crumbs'            => 'Games | Drakon Settings',
+            'configRow'         => DrakonService::config($pdo),
+            'gamesCount'        => $gamesCount,
+            'transactionsCount' => $transactionsCount,
+            'flash'             => $this->pullFlash(),
         ]);
     }
 
@@ -41,11 +42,12 @@ final class AdminDrakonController extends AdminController
     {
         $this->requirePermission('drakon-settings');
         $this->ensurePost();
+        @set_time_limit(0);
         try {
             $result = DrakonService::syncProviders(AdminDatabase::pdo());
-            $this->flash('Provider sync tamamlandı: ' . (int) ($result['count'] ?? 0) . ' kayıt.');
+            $this->flash('Drakon sağlayıcı sync tamamlandı: ' . (int) ($result['count'] ?? 0) . ' kayıt.');
         } catch (Throwable $exception) {
-            $this->flash('Provider sync hatası: ' . $exception->getMessage());
+            $this->flash('Drakon sağlayıcı sync hatası: ' . $exception->getMessage());
         }
         $this->redirect(AdminAuth::url('/drakon/settings'));
     }
@@ -54,24 +56,12 @@ final class AdminDrakonController extends AdminController
     {
         $this->requirePermission('drakon-settings');
         $this->ensurePost();
+        @set_time_limit(0);
         try {
             $result = DrakonService::syncGames(AdminDatabase::pdo());
-            $this->flash('Oyun sync tamamlandı: ' . (int) ($result['count'] ?? 0) . ' kayıt.');
+            $this->flash('Drakon oyun sync tamamlandı: ' . (int) ($result['count'] ?? 0) . ' kayıt.');
         } catch (Throwable $exception) {
-            $this->flash('Oyun sync hatası: ' . $exception->getMessage());
-        }
-        $this->redirect(AdminAuth::url('/drakon/settings'));
-    }
-
-    public function testWebhook(): void
-    {
-        $this->requirePermission('drakon-settings');
-        $this->ensurePost();
-        $result = DrakonService::testWebhookIntegration(AdminDatabase::pdo(), 1);
-        if (!empty($result['ok'])) {
-            $this->flash('Webhook testi başarılı: ' . (string) ($result['probe_url'] ?? ''));
-        } else {
-            $this->flash('Webhook testi başarısız: ' . (string) ($result['message'] ?? 'Bilinmeyen hata'));
+            $this->flash('Drakon oyun sync hatası: ' . $exception->getMessage());
         }
         $this->redirect(AdminAuth::url('/drakon/settings'));
     }

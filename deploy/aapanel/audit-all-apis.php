@@ -187,7 +187,7 @@ if ($mode === 'frontend') {
         $apiBase = trim((string) deploy_domain('api_public_base_url'));
     }
     if ($apiBase === '') {
-        $apiBase = 'https://api.bo-nexthub.site/api/v2';
+        $apiBase = 'https://api.vegasroyalspin.com/api/v2';
     }
 
     echo "\nBackend HTTP probe ({$apiBase}):\n";

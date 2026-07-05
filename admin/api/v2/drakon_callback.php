@@ -2,25 +2,44 @@
 
 declare(strict_types=1);
 
-if (!defined('METROPOL_DRAKON_WEBHOOK')) {
-    define('METROPOL_DRAKON_WEBHOOK', true);
-}
+/**
+ * Drakon Casino webhook endpoint.
+ *
+ * URL : POST /drakon_api  OR  POST /api/v2/drakon_callback
+ * Forwarded via ngrok → vegasroyalspin.test → admin/index.php lightweight route.
+ */
 
 require_once __DIR__ . '/bootstrap.php';
+admin_require_project_file('services/DrakonService.php');
 
-$basePath = admin_project_root();
+header('Content-Type: application/json; charset=UTF-8');
 
-if (getenv('DRAKON_WEBHOOK_ACCESS_LOG') === '1') {
-    @file_put_contents(
-        $basePath . '/storage/logs/drakon_callback_hits.log',
-        '[' . date('Y-m-d H:i:s') . '] ' . ($_SERVER['REQUEST_METHOD'] ?? '') . ' ' . ($_SERVER['REQUEST_URI'] ?? '') . PHP_EOL,
-        FILE_APPEND
-    );
+// Only POST allowed
+if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? '')) !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['status' => false, 'error' => 'METHOD_NOT_ALLOWED']);
+    exit;
 }
 
-$controllerPath = dirname(__DIR__, 2) . '/controllers/Api/ApiDrakonController.php';
-if (!is_file($controllerPath) || !is_readable($controllerPath)) {
-    throw new RuntimeException(sprintf('Required admin webhook controller not found: %s', $controllerPath));
+// Read body
+$rawBody = (string) file_get_contents('php://input');
+$payload = json_decode($rawBody, true);
+
+if (!is_array($payload)) {
+    http_response_code(400);
+    echo json_encode(['status' => false, 'error' => 'INVALID_JSON']);
+    exit;
 }
-require_once $controllerPath;
-(new ApiDrakonController())->index();
+
+try {
+    $pdo    = AdminDatabase::pdo();
+    $result = DrakonService::handleWebhook($pdo, $payload);
+
+    http_response_code((int) ($result['status'] ?? 200));
+    echo json_encode($result['body'] ?? ['status' => false]);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['status' => false, 'error' => 'SERVER_ERROR']);
+}
+
+exit;

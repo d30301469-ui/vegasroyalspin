@@ -102,6 +102,9 @@ final class BackendMemberApiProxy
         ], true)) {
             $timeout = max($timeout, 25);
         }
+        if ($cacheableRoute !== null) {
+            $timeout = min($timeout, 12);
+        }
 
         $outboundHeaders = self::buildProxyOutboundHeaders($routeNorm, $authorization);
 
@@ -182,6 +185,7 @@ final class BackendMemberApiProxy
                     header('Content-Type: ' . ($result['content_type'] ?? 'application/json; charset=UTF-8'));
                     if ($cacheableRoute !== null) {
                         header('X-Metropol-Cache: bypass');
+                        header('Cache-Control: ' . self::publicCacheControlHeader());
                     }
                     if (self::isMemberAuthProxyRoute($routeNorm) && self::$lastJwtSyncHint !== '') {
                         header('X-Metropol-Jwt-Sync: ' . self::$lastJwtSyncHint);
@@ -358,6 +362,18 @@ final class BackendMemberApiProxy
             'winners.php',
             'announcements',
             'announcements.php',
+            'site-settings',
+            'site_settings.php',
+            'promotions',
+            'promotions.php',
+            'games-provider',
+            'games_provider.php',
+            'content/footer',
+            'content/footer.php',
+            'content/footer-pages',
+            'content/footer-pages.php',
+            'content/auth-sliders',
+            'content/auth-sliders.php',
             'content/sliders',
             'content/sliders.php',
             'content/mobile-menu',
@@ -761,6 +777,15 @@ final class BackendMemberApiProxy
         return ['ttl' => $ttl, 'stale' => $stale];
     }
 
+    private static function publicCacheControlHeader(): string
+    {
+        $ttls = self::publicCacheTtls();
+
+        return 'public, max-age=' . (int) $ttls['ttl']
+            . ', stale-while-revalidate=' . (int) $ttls['stale']
+            . ', stale-if-error=' . (int) $ttls['stale'];
+    }
+
     /**
      * @param array{status:int,content_type:string,body:string} $payload
      */
@@ -843,6 +868,7 @@ final class BackendMemberApiProxy
             http_response_code((int) ($cached['status'] ?? 200));
             header('Content-Type: ' . (string) ($cached['content_type'] ?? 'application/json; charset=UTF-8'));
             header('X-Metropol-Cache: ' . (string) ($cached['cache_state'] ?? 'hit'));
+            header('Cache-Control: ' . self::publicCacheControlHeader());
         }
 
         echo (string) ($cached['body'] ?? '');

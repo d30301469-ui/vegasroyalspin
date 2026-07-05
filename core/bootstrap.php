@@ -15,8 +15,6 @@ if (is_readable($cloudflareBootstrap)) {
 $requestPath = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
 $apiRouteParam = isset($_GET['api_route']) && is_string($_GET['api_route']) ? $_GET['api_route'] : '';
 $isApiRequest = str_starts_with($requestPath, '/api/')
-    || $requestPath === '/drakon_api'
-    || str_starts_with($requestPath, '/drakon_api/')
     || ($apiRouteParam !== '' && str_starts_with($apiRouteParam, '/api/'));
 
 if (!$isApiRequest) {

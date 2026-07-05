@@ -12,7 +12,6 @@ $root = dirname(__DIR__);
 $apiRoot = $root . '/admin/api/v2';
 
 $keepDeclare = [
-    'drakon_callback.php',
     'bgaming_callback.php',
 ];
 

@@ -55,6 +55,9 @@ $depositInfoHref = $on_withdraw_balance
     ? ('/profile/withdraw?' . $_profile_modal_q . 'bilgi=1#bilgi')
     : ('/profile/deposit-withdraw?' . $_profile_modal_q . 'bilgi=1#bilgi');
 $withdrawalStatusHref = '/profile/withdrawal-status' . (!empty($profile_modal) ? '?modal=1' : '');
+$messagesInboxHref = '/profile/messages' . (!empty($profile_modal) ? '?modal=1' : '');
+$messagesSentHref = '/profile/messages?box=sent' . (!empty($profile_modal) ? '&modal=1' : '');
+$messagesNewHref = '/profile/messages?box=new' . (!empty($profile_modal) ? '&modal=1' : '');
 ?>
 <aside id="profilePlayerSidebar" name="profilePlayerSidebar" class="sidebarMain playersidebarMain profile-sidebar-v2">
     <div class="profile-content">
@@ -159,15 +162,15 @@ $withdrawalStatusHref = '/profile/withdrawal-status' . (!empty($profile_modal) ?
                 </ul>
             </li>
             <li class="accordion-item <?php echo $messages_open ? 'open' : ''; ?>">
-                <a class="accordion-trigger accordion-trigger--badge <?php echo $messages_open ? 'open' : ''; ?>" href="/profile/messages" data-toggle-sub>
+                <a class="accordion-trigger accordion-trigger--badge <?php echo $messages_open ? 'open' : ''; ?>" href="<?= htmlspecialchars($messagesInboxHref, ENT_QUOTES, 'UTF-8') ?>" data-toggle-sub>
                     <span class="spCol"><i class="fa-solid fa-envelope"></i><span class="sportN">MESAJLAR</span></span>
                     <span class="accordion-badge js-profile-inbox-unread"><?php echo $unread_count > 0 ? $unread_count : ''; ?></span>
                     <i class="fa-solid fa-chevron-down accordion-chevron"></i>
                 </a>
                 <ul class="accordion-sub">
-                    <li><a class="<?php echo ($active_tab === 'messages' && ($messages_box ?? 'inbox') === 'inbox') ? 'active' : ''; ?>" href="/profile/messages">Gelen kutusu <span class="sub-badge js-profile-inbox-unread"><?php echo $unread_count > 0 ? $unread_count : ''; ?></span></a></li>
-                    <li><a class="<?php echo ($messages_box ?? '') === 'sent' ? 'active' : ''; ?>" href="/profile/messages?box=sent">Gönderildi</a></li>
-                    <li><a class="<?php echo ($messages_box ?? '') === 'new' ? 'active' : ''; ?>" href="/profile/messages?box=new">YENİ</a></li>
+                    <li><a class="<?php echo ($active_tab === 'messages' && ($messages_box ?? 'inbox') === 'inbox') ? 'active' : ''; ?>" href="<?= htmlspecialchars($messagesInboxHref, ENT_QUOTES, 'UTF-8') ?>">Gelen kutusu <span class="sub-badge js-profile-inbox-unread"><?php echo $unread_count > 0 ? $unread_count : ''; ?></span></a></li>
+                    <li><a class="<?php echo ($messages_box ?? '') === 'sent' ? 'active' : ''; ?>" href="<?= htmlspecialchars($messagesSentHref, ENT_QUOTES, 'UTF-8') ?>">Gönderildi</a></li>
+                    <li><a class="<?php echo ($messages_box ?? '') === 'new' ? 'active' : ''; ?>" href="<?= htmlspecialchars($messagesNewHref, ENT_QUOTES, 'UTF-8') ?>">YENİ</a></li>
                 </ul>
             </li>
         </ul>

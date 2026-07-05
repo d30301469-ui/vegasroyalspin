@@ -2,12 +2,25 @@
 
 declare(strict_types=1);
 
+final class BgamingWalletException extends RuntimeException
+{
+    public function __construct(private readonly array $error)
+    {
+        parent::__construct((string) ($error['message'] ?? $error['code'] ?? 'BGaming wallet error'));
+    }
+
+    public function error(): array
+    {
+        return $this->error;
+    }
+}
+
 final class BgamingService
 {
     private const DEFAULT_API_BASE = 'https://int.bgaming-system.com';
     private const GAME_ID_PREFIX = 'bgaming:';
     private const DEFAULT_CURRENCY = 'USD';
-    private const ALLOWED_CURRENCIES = ['USD', 'EUR', 'JPY', 'USDT', 'ETH', 'XRP', 'LTC', 'DOG', 'BTC', 'BCH'];
+    private const ALLOWED_CURRENCIES = ['TRY', 'USD', 'EUR', 'JPY', 'USDT', 'ETH', 'XRP', 'LTC', 'DOG', 'BTC', 'BCH'];
     private const ALLOWED_LOCALES = ['bg', 'de', 'el', 'en', 'es', 'fr', 'id', 'it', 'ko', 'pt-BR', 'ro', 'ru', 'sv', 'tr', 'uk', 'zh'];
 
     public static function bootstrap(PDO $pdo): void
@@ -34,6 +47,8 @@ final class BgamingService
                 casino_id VARCHAR(100) NOT NULL DEFAULT '',
                 api_base_url VARCHAR(255) NOT NULL DEFAULT '{$defaultApiBase}',
                 wallet_secret VARCHAR(255) NOT NULL DEFAULT '',
+                pending_wallet_secret VARCHAR(255) NOT NULL DEFAULT '',
+                pending_wallet_secret_activates_at DATETIME NULL,
                 currency VARCHAR(8) NOT NULL DEFAULT 'USD',
                 locale VARCHAR(10) NOT NULL DEFAULT 'tr',
                 country CHAR(2) NOT NULL DEFAULT 'TR',
@@ -162,12 +177,55 @@ final class BgamingService
                 KEY idx_bgaming_token_rotation_created (created_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
         );
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS bgaming_campaigns (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                campaign_code VARCHAR(190) NOT NULL,
+                title VARCHAR(190) NOT NULL,
+                campaign_type VARCHAR(40) NOT NULL DEFAULT 'freespin',
+                game_identifier VARCHAR(120) NULL,
+                vendor VARCHAR(100) NOT NULL DEFAULT 'bgaming',
+                currency_code VARCHAR(8) NULL,
+                freespins_per_player INT NOT NULL DEFAULT 0,
+                promo_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+                wagering_multiplier DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+                begins_at BIGINT NULL,
+                expires_at BIGINT NULL,
+                active TINYINT(1) NOT NULL DEFAULT 1,
+                status VARCHAR(40) NOT NULL DEFAULT 'active',
+                payload JSON NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uniq_bgaming_campaign_code (campaign_code),
+                KEY idx_bgaming_campaign_type (campaign_type),
+                KEY idx_bgaming_campaign_active (active)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS bgaming_campaign_players (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                campaign_code VARCHAR(190) NOT NULL,
+                user_id INT NOT NULL,
+                bonus_id INT NULL,
+                status VARCHAR(40) NOT NULL DEFAULT 'assigned',
+                payload JSON NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uniq_bgaming_campaign_player (campaign_code, user_id),
+                KEY idx_bgaming_campaign_player_user (user_id),
+                KEY idx_bgaming_campaign_player_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
         self::ensureColumns($pdo);
     }
 
     private static function ensureColumns(PDO $pdo): void
     {
         $columns = [
+            'bgaming_config.pending_wallet_secret' => "ALTER TABLE bgaming_config ADD COLUMN pending_wallet_secret VARCHAR(255) NOT NULL DEFAULT '' AFTER wallet_secret",
+            'bgaming_config.pending_wallet_secret_activates_at' => "ALTER TABLE bgaming_config ADD COLUMN pending_wallet_secret_activates_at DATETIME NULL AFTER pending_wallet_secret",
             'bgaming_config.freespins_enabled' => "ALTER TABLE bgaming_config ADD COLUMN freespins_enabled TINYINT(1) NOT NULL DEFAULT 1",
             'bgaming_config.promo_enabled' => "ALTER TABLE bgaming_config ADD COLUMN promo_enabled TINYINT(1) NOT NULL DEFAULT 1",
             'bgaming_config.token_rotation_enabled' => "ALTER TABLE bgaming_config ADD COLUMN token_rotation_enabled TINYINT(1) NOT NULL DEFAULT 1",
@@ -346,6 +404,311 @@ final class BgamingService
             'token_rotation_enabled' => !empty($input['token_rotation_enabled']) ? 1 : 0,
             'is_active' => !empty($input['is_active']) ? 1 : 0,
         ]);
+
+        if (trim((string) ($input['wallet_secret'] ?? '')) !== '') {
+            $pdo->prepare('UPDATE bgaming_config SET pending_wallet_secret = \'\', pending_wallet_secret_activates_at = NULL WHERE id = 1')->execute();
+        }
+    }
+
+    public static function campaigns(PDO $pdo): array
+    {
+        self::bootstrap($pdo);
+        self::ensureCampaignStorage($pdo);
+        $stmt = $pdo->query(
+            'SELECT * FROM bgaming_campaigns ORDER BY active DESC, created_at DESC, id DESC'
+        );
+        return $stmt !== false ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    }
+
+    public static function campaignAssignments(PDO $pdo, int $limit = 100): array
+    {
+        self::bootstrap($pdo);
+        self::ensureCampaignStorage($pdo);
+        $limit = min(200, max(1, $limit));
+        $stmt = $pdo->prepare(
+            'SELECT cp.*, c.title, c.campaign_type, c.freespins_per_player, c.promo_amount, u.username
+             FROM bgaming_campaign_players cp
+             INNER JOIN bgaming_campaigns c ON c.campaign_code = cp.campaign_code
+             LEFT JOIN users u ON u.id = cp.user_id
+             ORDER BY cp.created_at DESC, cp.id DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function campaignById(PDO $pdo, int $id): ?array
+    {
+        self::bootstrap($pdo);
+        self::ensureCampaignStorage($pdo);
+        if ($id <= 0) {
+            return null;
+        }
+        $stmt = $pdo->prepare('SELECT * FROM bgaming_campaigns WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return is_array($row) ? $row : null;
+    }
+
+    public static function saveCampaign(PDO $pdo, array $input): array
+    {
+        self::bootstrap($pdo);
+        self::ensureCampaignStorage($pdo);
+
+        $id = max(0, (int) ($input['id'] ?? 0));
+        $campaignType = self::normalizeCampaignType((string) ($input['campaign_type'] ?? 'freespin'));
+        $title = trim((string) ($input['title'] ?? ''));
+        if ($title === '') {
+            throw new RuntimeException('Kampanya başlığı zorunludur.');
+        }
+
+        $campaignCode = trim((string) ($input['campaign_code'] ?? ''));
+        if ($campaignCode === '') {
+            $campaignCode = self::generateCampaignCode($campaignType);
+        }
+
+        $gameIdentifier = self::normalizeGameIdentifier(trim((string) ($input['game_identifier'] ?? '')));
+        $currencyCode = self::normalizeCurrency((string) ($input['currency_code'] ?? self::config($pdo)['currency'] ?? self::DEFAULT_CURRENCY));
+        $freespinsPerPlayer = max(0, (int) ($input['freespins_per_player'] ?? 0));
+        $promoAmount = round((float) ($input['promo_amount'] ?? 0), 2);
+        $wageringMultiplier = max(0, (float) ($input['wagering_multiplier'] ?? 0));
+        $beginsAt = self::parseUnixTimestamp((string) ($input['begins_at'] ?? ''));
+        $expiresAt = self::parseUnixTimestamp((string) ($input['expires_at'] ?? ''));
+        $active = !empty($input['active']) ? 1 : 0;
+
+        if ($campaignType === 'freespin' && $freespinsPerPlayer <= 0) {
+            throw new RuntimeException('Freespin adedi 1 veya daha büyük olmalıdır.');
+        }
+        if ($campaignType === 'promo' && $promoAmount <= 0) {
+            throw new RuntimeException('Promo tutarı 0 dan büyük olmalıdır.');
+        }
+
+        $payload = [
+            'notes' => trim((string) ($input['notes'] ?? '')),
+            'created_from_admin' => true,
+        ];
+
+        if ($id > 0) {
+            $stmt = $pdo->prepare(
+                'UPDATE bgaming_campaigns
+                 SET campaign_code = :campaign_code,
+                     title = :title,
+                     campaign_type = :campaign_type,
+                     game_identifier = :game_identifier,
+                     currency_code = :currency_code,
+                     freespins_per_player = :freespins_per_player,
+                     promo_amount = :promo_amount,
+                     wagering_multiplier = :wagering_multiplier,
+                     begins_at = :begins_at,
+                     expires_at = :expires_at,
+                     active = :active,
+                     status = :status,
+                     payload = :payload
+                 WHERE id = :id'
+            );
+            $stmt->execute([
+                'id' => $id,
+                'campaign_code' => $campaignCode,
+                'title' => $title,
+                'campaign_type' => $campaignType,
+                'game_identifier' => $gameIdentifier !== '' ? $gameIdentifier : null,
+                'currency_code' => $currencyCode,
+                'freespins_per_player' => $freespinsPerPlayer,
+                'promo_amount' => number_format($promoAmount, 2, '.', ''),
+                'wagering_multiplier' => number_format($wageringMultiplier, 2, '.', ''),
+                'begins_at' => $beginsAt,
+                'expires_at' => $expiresAt,
+                'active' => $active,
+                'status' => $active === 1 ? 'active' : 'inactive',
+                'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+        } else {
+            $stmt = $pdo->prepare(
+                'INSERT INTO bgaming_campaigns
+                    (campaign_code, title, campaign_type, game_identifier, vendor, currency_code,
+                     freespins_per_player, promo_amount, wagering_multiplier, begins_at, expires_at,
+                     active, status, payload)
+                 VALUES
+                    (:campaign_code, :title, :campaign_type, :game_identifier, :vendor, :currency_code,
+                     :freespins_per_player, :promo_amount, :wagering_multiplier, :begins_at, :expires_at,
+                     :active, :status, :payload)'
+            );
+            $stmt->execute([
+                'campaign_code' => $campaignCode,
+                'title' => $title,
+                'campaign_type' => $campaignType,
+                'game_identifier' => $gameIdentifier !== '' ? $gameIdentifier : null,
+                'vendor' => 'bgaming',
+                'currency_code' => $currencyCode,
+                'freespins_per_player' => $freespinsPerPlayer,
+                'promo_amount' => number_format($promoAmount, 2, '.', ''),
+                'wagering_multiplier' => number_format($wageringMultiplier, 2, '.', ''),
+                'begins_at' => $beginsAt,
+                'expires_at' => $expiresAt,
+                'active' => $active,
+                'status' => $active === 1 ? 'active' : 'inactive',
+                'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+            $id = (int) $pdo->lastInsertId();
+        }
+
+        return [
+            'id' => $id,
+            'campaign_code' => $campaignCode,
+            'campaign_type' => $campaignType,
+            'title' => $title,
+        ];
+    }
+
+    public static function assignCampaign(PDO $pdo, array $input): array
+    {
+        self::bootstrap($pdo);
+        self::ensureCampaignStorage($pdo);
+
+        $campaignId = max(0, (int) ($input['campaign_id'] ?? 0));
+        $userId = max(0, (int) ($input['user_id'] ?? 0));
+        if ($campaignId <= 0 || $userId <= 0) {
+            throw new RuntimeException('campaign_id ve user_id zorunludur.');
+        }
+
+        $campaign = self::campaignById($pdo, $campaignId);
+        if ($campaign === null) {
+            throw new RuntimeException('BGaming kampanyası bulunamadı.');
+        }
+        if ((int) ($campaign['active'] ?? 0) !== 1) {
+            throw new RuntimeException('Pasif kampanya kullanıcıya atanamaz.');
+        }
+
+        $user = self::user($pdo, $userId);
+        if ($user === null) {
+            throw new RuntimeException('Kullanıcı bulunamadı.');
+        }
+
+        $campaignCode = (string) ($campaign['campaign_code'] ?? '');
+        $existing = $pdo->prepare('SELECT id FROM bgaming_campaign_players WHERE campaign_code = :campaign_code AND user_id = :user_id LIMIT 1');
+        $existing->execute(['campaign_code' => $campaignCode, 'user_id' => $userId]);
+        if ($existing->fetchColumn()) {
+            throw new RuntimeException('Kampanya bu kullanıcıya zaten atanmış.');
+        }
+
+        $bonusId = null;
+        $pdo->beginTransaction();
+        try {
+            if ((string) ($campaign['campaign_type'] ?? '') === 'promo') {
+                $promoAmount = round((float) ($campaign['promo_amount'] ?? 0), 2);
+                $wageringMultiplier = max(0, (float) ($campaign['wagering_multiplier'] ?? 0));
+                $wageringTarget = $promoAmount * max(1, $wageringMultiplier);
+                $deadlineTs = (int) ($campaign['expires_at'] ?? 0);
+                $deadline = $deadlineTs > 0 ? date('Y-m-d H:i:s', $deadlineTs) : date('Y-m-d H:i:s', strtotime('+30 days'));
+
+                $stmt = $pdo->prepare(
+                    "INSERT INTO user_active_bonuses
+                        (user_id, promotion_id, name, category, initial_amount, current_bonus_balance,
+                         wagering_requirement, wagering_target, total_bet_amount, status, granted_at, deadline)
+                     VALUES
+                        (:user_id, NULL, :name, 'bgaming_promo', :amount, :amount,
+                         :wagering_requirement, :wagering_target, 0, 'active', NOW(), :deadline)"
+                );
+                $stmt->execute([
+                    'user_id' => $userId,
+                    'name' => (string) ($campaign['title'] ?? 'BGaming Promo'),
+                    'amount' => number_format($promoAmount, 2, '.', ''),
+                    'wagering_requirement' => number_format($wageringMultiplier, 2, '.', ''),
+                    'wagering_target' => number_format($wageringTarget, 2, '.', ''),
+                    'deadline' => $deadline,
+                ]);
+                $bonusId = (int) $pdo->lastInsertId();
+            }
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO bgaming_campaign_players
+                    (campaign_code, user_id, bonus_id, status, payload)
+                 VALUES
+                    (:campaign_code, :user_id, :bonus_id, :status, :payload)'
+            );
+            $stmt->execute([
+                'campaign_code' => $campaignCode,
+                'user_id' => $userId,
+                'bonus_id' => $bonusId,
+                'status' => (string) ($campaign['campaign_type'] ?? '') === 'promo' ? 'bonus_assigned' : 'assigned',
+                'payload' => json_encode([
+                    'campaign_title' => (string) ($campaign['title'] ?? ''),
+                    'campaign_type' => (string) ($campaign['campaign_type'] ?? ''),
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+
+            $pdo->commit();
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $exception;
+        }
+
+        return [
+            'campaign_code' => $campaignCode,
+            'user_id' => $userId,
+            'bonus_id' => $bonusId,
+        ];
+    }
+
+    public static function memberFreespins(PDO $pdo, int $userId, string $tab = 'yeni'): array
+    {
+        self::bootstrap($pdo);
+        self::ensureCampaignStorage($pdo);
+        if ($userId <= 0) {
+            return [];
+        }
+
+        $stmt = $pdo->prepare(
+            'SELECT cp.status AS player_status, c.campaign_code, c.title, c.game_identifier, c.currency_code,
+                    c.freespins_per_player, c.begins_at, c.expires_at, c.active, c.status AS campaign_status
+             FROM bgaming_campaign_players cp
+             INNER JOIN bgaming_campaigns c ON c.campaign_code = cp.campaign_code
+             WHERE cp.user_id = :user_id AND c.campaign_type = :campaign_type
+             ORDER BY c.created_at DESC, c.id DESC'
+        );
+        $stmt->execute(['user_id' => $userId, 'campaign_type' => 'freespin']);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $items = [];
+        $now = time();
+        foreach ($rows as $row) {
+            $beginsAt = isset($row['begins_at']) ? (int) $row['begins_at'] : 0;
+            $expiresAt = isset($row['expires_at']) ? (int) $row['expires_at'] : 0;
+            $status = 'new';
+
+            if (in_array((string) ($row['player_status'] ?? ''), ['played', 'completed'], true)) {
+                $status = 'played';
+            } elseif ($expiresAt > 0 && $expiresAt < $now) {
+                $status = 'expired';
+            } elseif ((int) ($row['active'] ?? 0) === 1 && ($beginsAt === 0 || $beginsAt <= $now) && ($expiresAt === 0 || $expiresAt >= $now)) {
+                $status = 'active';
+            }
+
+            $isAktifTab = $tab === 'aktif';
+            if ($isAktifTab && $status !== 'active') {
+                continue;
+            }
+            if (!$isAktifTab && !in_array($status, ['new', 'active'], true)) {
+                continue;
+            }
+
+            $items[] = [
+                'campaign_code' => (string) ($row['campaign_code'] ?? ''),
+                'vendor' => 'bgaming',
+                'status' => $status,
+                'freespins_per_player' => (int) ($row['freespins_per_player'] ?? 0),
+                'begins_at' => $beginsAt,
+                'expires_at' => $expiresAt,
+                'currency_code' => (string) ($row['currency_code'] ?? ''),
+                'game_identifier' => (string) ($row['game_identifier'] ?? ''),
+                'title' => (string) ($row['title'] ?? ''),
+            ];
+        }
+
+        return $items;
     }
 
     public static function syncGames(PDO $pdo): array
@@ -622,6 +985,9 @@ final class BgamingService
                     $status = $response['code'] === 'NOT_FOUND' ? 404 : 412;
                 }
             }
+        } catch (BgamingWalletException $exception) {
+            $status = 412;
+            $response = $exception->error();
         } catch (Throwable $exception) {
             $status = 412;
             error_log('BGaming wallet processing error: ' . $exception->getMessage());
@@ -660,6 +1026,21 @@ final class BgamingService
         if (!self::featureEnabled($pdo, 'freespins_enabled')) {
             return ['code' => 'FREESPINS_DISABLED', 'message' => 'Freespins are disabled'];
         }
+        $userId = self::extractWalletUserId($payload);
+        if ($userId > 0) {
+            $payload['user_id'] = $userId;
+        }
+
+        $issueId = self::extractFreespinIssueId($payload);
+        if ($issueId !== '') {
+            $payload['issue_id'] = $issueId;
+        }
+
+        $resolvedUserId = self::resolveFreespinUserId($pdo, $payload, $issueId);
+        if ($resolvedUserId > 0) {
+            $payload['user_id'] = $resolvedUserId;
+        }
+
         $user = self::user($pdo, (int) ($payload['user_id'] ?? 0));
         if (!$user) {
             return ['code' => 'INVALID_USER', 'message' => 'User not found'];
@@ -671,13 +1052,392 @@ final class BgamingService
         $config = self::config($pdo);
         $currency = (string) ($payload['currency'] ?? $config['currency'] ?? self::DEFAULT_CURRENCY);
         $payload['currency'] = $currency;
-        self::applyActions($pdo, $payload, [[
-            'action_id' => $issueId . ':freespins_finish',
-            'action' => 'win',
-            'amount' => (int) ($payload['total_amount'] ?? 0),
-        ]], 'freespins_win');
+
+        $status = self::normalizeFreespinsStatus(self::extractFreespinsStatus($payload));
+        if (!in_array($status, ['active', 'played', 'canceled', 'expired'], true)) {
+            return ['code' => 'INVALID_REQUEST', 'message' => 'Unsupported freespins status'];
+        }
+
+        self::syncFreespinIssueFromWallet($pdo, $payload, $status);
+
+        if ($status === 'played') {
+            $payoutSubunits = self::extractFreespinsPayoutSubunits($payload, $currency);
+            self::applyActions($pdo, $payload, [[
+                'action_id' => $issueId . ':freespins_finish',
+                'action' => 'win',
+                'amount' => $payoutSubunits,
+            ]], 'freespins_win');
+        }
         $fresh = self::user($pdo, (int) ($payload['user_id'] ?? 0));
         return ['balance' => self::toSubunits((float) ($fresh['balance'] ?? 0), $currency)];
+    }
+
+    private static function normalizeFreespinsStatus(string $rawStatus): string
+    {
+        $status = strtolower(trim($rawStatus));
+        return match ($status) {
+            'played', 'complete', 'completed', 'finished', 'done', 'closed', 'success' => 'played',
+            'active', 'in_progress', 'processing', 'started', 'running' => 'active',
+            'cancel', 'canceled', 'cancelled' => 'canceled',
+            'expire', 'expired' => 'expired',
+            default => $status !== '' ? $status : 'played',
+        };
+    }
+
+    private static function extractWalletUserId(array $payload): int
+    {
+        $candidate = $payload['user_id']
+            ?? $payload['userId']
+            ?? $payload['uid']
+            ?? ($payload['freespins']['user_id'] ?? null)
+            ?? ($payload['freespins']['userId'] ?? null)
+            ?? ($payload['user']['id'] ?? null)
+            ?? ($payload['player']['id'] ?? null)
+            ?? null;
+
+        return max(0, (int) $candidate);
+    }
+
+    private static function extractFreespinIssueId(array $payload): string
+    {
+        $candidate = $payload['issue_id']
+            ?? $payload['issueId']
+            ?? $payload['freespin_id']
+            ?? $payload['freespins_id']
+            ?? $payload['bonus_id']
+            ?? ($payload['freespins']['issue_id'] ?? null)
+            ?? ($payload['freespins']['issueId'] ?? null)
+            ?? ($payload['issue']['issue_id'] ?? null)
+            ?? ($payload['issue']['id'] ?? null)
+            ?? null;
+
+        return trim((string) ($candidate ?? ''));
+    }
+
+    private static function extractFreespinsStatus(array $payload): string
+    {
+        $candidate = $payload['status']
+            ?? $payload['state']
+            ?? $payload['freespins_status']
+            ?? ($payload['issue']['status'] ?? null)
+            ?? null;
+
+        return trim((string) ($candidate ?? 'played'));
+    }
+
+    private static function extractFreespinsPayoutSubunits(array $payload, string $currency): int
+    {
+        $candidates = [
+            $payload['total_amount'] ?? null,
+            $payload['totalAmount'] ?? null,
+            $payload['win_amount'] ?? null,
+            $payload['winAmount'] ?? null,
+            $payload['amount'] ?? null,
+            $payload['payout'] ?? null,
+        ];
+
+        foreach ($candidates as $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if (is_int($value)) {
+                return max(0, $value);
+            }
+            if (is_float($value)) {
+                return max(0, self::toSubunits($value, $currency));
+            }
+
+            $raw = trim((string) $value);
+            if ($raw === '') {
+                continue;
+            }
+            if (preg_match('/[\.,]/', $raw) === 1) {
+                $normalized = str_replace(',', '.', $raw);
+                if (is_numeric($normalized)) {
+                    return max(0, self::toSubunits((float) $normalized, $currency));
+                }
+                continue;
+            }
+            if (is_numeric($raw)) {
+                return max(0, (int) $raw);
+            }
+        }
+
+        return 0;
+    }
+
+    private static function syncFreespinIssueFromWallet(PDO $pdo, array $payload, string $status): void
+    {
+        $issueId = self::extractFreespinIssueId($payload);
+        $userId = self::resolveFreespinUserId($pdo, $payload, $issueId);
+        if ($issueId === '' || $userId <= 0) {
+            return;
+        }
+
+        self::ensureCampaignStorage($pdo);
+
+        $rawGame = trim((string) ($payload['game'] ?? $payload['game_identifier'] ?? 'acceptance:test'));
+        $gameIdentifier = self::normalizeGameIdentifier($rawGame);
+        $currencyCode = self::normalizeCurrency((string) ($payload['currency'] ?? self::DEFAULT_CURRENCY));
+        $freespinsPerPlayer = max(1, (int) (
+            $payload['freespins_count']
+            ?? $payload['freespins_quantity']
+            ?? $payload['spins_count']
+            ?? $payload['quantity']
+            ?? 1
+        ));
+
+        $beginsAt = self::parseUnixTimestamp((string) ($payload['issued_at'] ?? $payload['created_at'] ?? ''));
+        $expiresAt = self::parseUnixTimestamp((string) ($payload['expires_at'] ?? $payload['expired_at'] ?? $payload['expire_at'] ?? ''));
+        $active = $status === 'active' ? 1 : 0;
+        $campaignStatus = match ($status) {
+            'played' => 'played',
+            'canceled' => 'canceled',
+            'expired' => 'expired',
+            default => 'active',
+        };
+
+        $payloadJson = json_encode([
+            'wallet_issue' => true,
+            'status' => $status,
+            'source' => 'wallet_freespins_finish',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $campaignStmt = $pdo->prepare(
+            'INSERT INTO bgaming_campaigns
+                (campaign_code, title, campaign_type, game_identifier, vendor, currency_code, freespins_per_player,
+                 begins_at, expires_at, active, status, payload)
+             VALUES
+                (:campaign_code, :title, :campaign_type, :game_identifier, :vendor, :currency_code, :freespins_per_player,
+                 :begins_at, :expires_at, :active, :status, :payload)
+             ON DUPLICATE KEY UPDATE
+                game_identifier = VALUES(game_identifier),
+                currency_code = VALUES(currency_code),
+                freespins_per_player = VALUES(freespins_per_player),
+                begins_at = COALESCE(VALUES(begins_at), begins_at),
+                expires_at = COALESCE(VALUES(expires_at), expires_at),
+                active = VALUES(active),
+                status = VALUES(status),
+                payload = VALUES(payload)'
+        );
+        $campaignStmt->execute([
+            'campaign_code' => $issueId,
+            'title' => 'BGaming Freespin ' . $issueId,
+            'campaign_type' => 'freespin',
+            'game_identifier' => $gameIdentifier,
+            'vendor' => 'bgaming',
+            'currency_code' => $currencyCode,
+            'freespins_per_player' => $freespinsPerPlayer,
+            'begins_at' => $beginsAt,
+            'expires_at' => $expiresAt,
+            'active' => $active,
+            'status' => $campaignStatus,
+            'payload' => is_string($payloadJson) ? $payloadJson : null,
+        ]);
+
+        $playerStatus = match ($status) {
+            'played' => 'played',
+            'canceled' => 'canceled',
+            'expired' => 'expired',
+            default => 'active',
+        };
+        $playerStmt = $pdo->prepare(
+            'INSERT INTO bgaming_campaign_players (campaign_code, user_id, bonus_id, status, payload)
+             VALUES (:campaign_code, :user_id, NULL, :status, :payload)
+             ON DUPLICATE KEY UPDATE status = VALUES(status), payload = VALUES(payload), updated_at = CURRENT_TIMESTAMP'
+        );
+        $playerStmt->execute([
+            'campaign_code' => $issueId,
+            'user_id' => $userId,
+            'status' => $playerStatus,
+            'payload' => is_string($payloadJson) ? $payloadJson : null,
+        ]);
+    }
+
+    private static function resolveFreespinUserId(PDO $pdo, array $payload, string $issueId = ''): int
+    {
+        $userId = self::extractWalletUserId($payload);
+        if ($userId > 0) {
+            return $userId;
+        }
+
+        $issueId = $issueId !== '' ? $issueId : self::extractFreespinIssueId($payload);
+        if ($issueId === '') {
+            return 0;
+        }
+
+        if (preg_match('/(?:^|_)(\d{1,10})(?:_|$)/', $issueId, $matches) === 1) {
+            $guessed = max(0, (int) ($matches[1] ?? 0));
+            if ($guessed > 0 && self::user($pdo, $guessed) !== null) {
+                return $guessed;
+            }
+        }
+
+        $stmt = $pdo->prepare('SELECT user_id FROM bgaming_campaign_players WHERE campaign_code = :campaign_code ORDER BY id DESC LIMIT 1');
+        $stmt->execute(['campaign_code' => $issueId]);
+        return max(0, (int) $stmt->fetchColumn());
+    }
+
+    public static function issueRemoteFreespins(PDO $pdo, array $input): array
+    {
+        self::bootstrap($pdo);
+        self::ensureCampaignStorage($pdo);
+
+        $userId = max(0, (int) ($input['user_id'] ?? 0));
+        if ($userId <= 0) {
+            throw new RuntimeException('Kullanıcı seçimi zorunludur.');
+        }
+        $user = self::user($pdo, $userId);
+        if ($user === null) {
+            throw new RuntimeException('Kullanıcı bulunamadı.');
+        }
+
+        $issueId = trim((string) ($input['issue_id'] ?? ''));
+        if ($issueId === '') {
+            $issueId = 'fs_' . $userId . '_' . bin2hex(random_bytes(6));
+        }
+
+        $gamesRaw = trim((string) ($input['games'] ?? $input['game_identifier'] ?? ''));
+        $games = array_values(array_unique(array_filter(array_map(
+            static fn (string $game): string => trim($game),
+            preg_split('/[\s,;]+/', $gamesRaw) ?: []
+        ), static fn (string $game): bool => $game !== '')));
+        if ($games === []) {
+            throw new RuntimeException('En az bir game identifier zorunludur.');
+        }
+
+        $config = self::activeConfig($pdo);
+        $currency = self::normalizeCurrency((string) ($input['currency'] ?? $config['currency'] ?? self::DEFAULT_CURRENCY));
+        $count = max(1, (int) ($input['freespins_quantity'] ?? $input['freespins_count'] ?? 1));
+        $betLevel = max(0, (int) ($input['bet_level'] ?? 0));
+
+        $validUntilRaw = trim((string) ($input['valid_until'] ?? ''));
+        $validUntilTs = strtotime($validUntilRaw !== '' ? $validUntilRaw : '+7 days');
+        if ($validUntilTs === false || $validUntilTs <= time()) {
+            throw new RuntimeException('valid_until gelecekte bir tarih olmalıdır.');
+        }
+
+        $payload = [
+            'casino_id' => trim((string) ($config['casino_id'] ?? $config['server_id'] ?? '')),
+            'issue_id' => $issueId,
+            'currency' => $currency,
+            'games' => $games,
+            'freespins_quantity' => $count,
+            'valid_until' => gmdate('Y-m-d\TH:i:s\Z', $validUntilTs),
+            'user' => [
+                'id' => (string) $userId,
+                'nickname' => (string) ($user['username'] ?? ('user_' . $userId)),
+                'firstname' => (string) ($user['name'] ?? ''),
+                'lastname' => (string) ($user['surname'] ?? ''),
+                'country' => strtoupper((string) ($config['country'] ?? 'TR')),
+            ],
+        ];
+        if ($betLevel > 0) {
+            $payload['bet_level'] = $betLevel;
+        }
+
+        $validSinceRaw = trim((string) ($input['valid_since'] ?? ''));
+        if ($validSinceRaw !== '') {
+            $validSinceTs = strtotime($validSinceRaw);
+            if ($validSinceTs !== false) {
+                $payload['valid_since'] = gmdate('Y-m-d\TH:i:s\Z', $validSinceTs);
+            }
+        }
+
+        $response = self::request($pdo, 'POST', '/promo/freespins', $payload);
+        self::syncFreespinIssueFromWallet($pdo, [
+            'issue_id' => $issueId,
+            'user_id' => $userId,
+            'currency' => $currency,
+            'game' => $games[0],
+            'freespins_quantity' => $count,
+            'issued_at' => gmdate('Y-m-d\TH:i:s\Z'),
+            'expires_at' => $payload['valid_until'],
+            'status' => 'active',
+        ], 'active');
+
+        return [
+            'issue_id' => $issueId,
+            'response' => $response,
+        ];
+    }
+
+    public static function syncRemoteFreespinStatus(PDO $pdo, string $issueId): array
+    {
+        self::bootstrap($pdo);
+        self::ensureCampaignStorage($pdo);
+
+        $issueId = trim($issueId);
+        if ($issueId === '') {
+            throw new RuntimeException('issue_id zorunludur.');
+        }
+
+        $response = self::request($pdo, 'GET', '/promo/freespins/' . rawurlencode($issueId));
+        $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+        if ($data === []) {
+            throw new RuntimeException('BGaming freespin status yanıtı boş döndü.');
+        }
+
+        $status = self::normalizeFreespinsStatus((string) ($data['status'] ?? 'active'));
+        self::syncFreespinIssueFromWallet($pdo, [
+            'issue_id' => (string) ($data['issue_id'] ?? $issueId),
+            'user_id' => (int) ($data['user_id'] ?? 0),
+            'status' => $status,
+            'freespins_count' => (int) ($data['freespins_count'] ?? $data['freespins_quantity'] ?? 1),
+            'spins_count' => (int) ($data['freespins_done'] ?? 0),
+            'win_amount' => (int) ($data['win_amount'] ?? 0),
+        ], $status);
+
+        return $data;
+    }
+
+    public static function cancelRemoteFreespins(PDO $pdo, string $issueId): array
+    {
+        self::bootstrap($pdo);
+        self::ensureCampaignStorage($pdo);
+
+        $issueId = trim($issueId);
+        if ($issueId === '') {
+            throw new RuntimeException('issue_id zorunludur.');
+        }
+
+        $response = self::request($pdo, 'DELETE', '/promo/freespins/' . rawurlencode($issueId));
+        $userIdStmt = $pdo->prepare('SELECT user_id FROM bgaming_campaign_players WHERE campaign_code = :code ORDER BY id DESC LIMIT 1');
+        $userIdStmt->execute(['code' => $issueId]);
+        $userId = max(0, (int) $userIdStmt->fetchColumn());
+
+        self::syncFreespinIssueFromWallet($pdo, [
+            'issue_id' => $issueId,
+            'user_id' => $userId,
+            'status' => 'canceled',
+        ], 'canceled');
+
+        return ['issue_id' => $issueId, 'response' => $response];
+    }
+
+    public static function listRemoteFreespins(PDO $pdo, array $query = []): array
+    {
+        self::bootstrap($pdo);
+        $params = [];
+
+        $userId = max(0, (int) ($query['user_id'] ?? 0));
+        if ($userId > 0) {
+            $params['user_id'] = (string) $userId;
+        }
+
+        $status = self::normalizeFreespinsStatus((string) ($query['status'] ?? ''));
+        if (in_array($status, ['active', 'played', 'canceled', 'expired'], true)) {
+            $params['status'] = $status;
+        }
+
+        $page = max(1, (int) ($query['page'] ?? 1));
+        $params['page'] = $page;
+
+        $response = self::request($pdo, 'GET', '/promo/freespins', $params);
+        return [
+            'data' => is_array($response['data'] ?? null) ? $response['data'] : [],
+            'meta' => is_array($response['meta'] ?? null) ? $response['meta'] : [],
+        ];
     }
 
     private static function walletPromo(PDO $pdo, array $payload, string $type): array
@@ -732,7 +1492,15 @@ final class BgamingService
         if ($newToken === '') {
             return ['code' => 'INVALID_REQUEST', 'message' => 'new_token is required'];
         }
-        $pdo->prepare('UPDATE bgaming_config SET wallet_secret = :token WHERE id = 1')->execute(['token' => $newToken]);
+
+        $rotationDatetime = trim((string) ($payload['rotation_datetime'] ?? ''));
+        $rotationAt = $rotationDatetime !== '' ? strtotime($rotationDatetime) : false;
+        if ($rotationAt !== false && $rotationAt <= time()) {
+            self::replaceCurrentWalletSecret($pdo, $newToken);
+        } else {
+            self::storePendingWalletSecret($pdo, $newToken, $rotationAt === false ? null : gmdate('Y-m-d H:i:s', $rotationAt));
+        }
+
         return ['status' => 'success'];
     }
 
@@ -810,7 +1578,10 @@ final class BgamingService
                     [$amountSubunits, $amount, $balance] = self::applyRollbackBalance($pdo, $originalActionId, $balance);
                 } elseif ($type === 'bet' || $type === 'promo_bet') {
                     if ($amount < 0 || $balance < $amount) {
-                        throw new RuntimeException('Insufficient funds');
+                        throw new BgamingWalletException([
+                            'code' => 'NOT_ENOUGH_FUNDS',
+                            'message' => 'Not enough funds.',
+                        ]);
                     }
                     $balance = round($balance - $amount, 2);
                 } elseif ($amount > 0) {
@@ -913,45 +1684,52 @@ final class BgamingService
         $lastRaw = '';
         $lastErr = '';
         $lastCode = 0;
+        $secrets = self::signingSecrets($config);
         foreach ($bodies as $body) {
             $signSource = in_array($method, ['GET', 'DELETE'], true) ? $basePath . $query : $body;
-            $headers = [
-                'Accept: application/json',
-                'X-REQUEST-SIGN: ' . self::sign($signSource, (string) $config['wallet_secret']),
-            ];
-            if (!in_array($method, ['GET', 'DELETE'], true)) {
-                $headers[] = 'Content-Type: application/json';
-            }
+            foreach ($secrets as $secret) {
+                $headers = [
+                    'Accept: application/json',
+                    'X-REQUEST-SIGN: ' . self::sign($signSource, $secret),
+                ];
+                if (!in_array($method, ['GET', 'DELETE'], true)) {
+                    $headers[] = 'Content-Type: application/json';
+                }
 
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => rtrim((string) $config['api_base_url'], '/') . $basePath . $query,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_CUSTOMREQUEST => $method,
-                CURLOPT_CONNECTTIMEOUT => 8,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_HTTPHEADER => $headers,
-            ]);
-            if (!in_array($method, ['GET', 'DELETE'], true)) {
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-            }
-            $raw = curl_exec($ch);
-            $err = curl_error($ch);
-            $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => rtrim((string) $config['api_base_url'], '/') . $basePath . $query,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_CUSTOMREQUEST => $method,
+                    CURLOPT_CONNECTTIMEOUT => 8,
+                    CURLOPT_TIMEOUT => 30,
+                    CURLOPT_HTTPHEADER => $headers,
+                ]);
+                if (!in_array($method, ['GET', 'DELETE'], true)) {
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+                }
+                $raw = curl_exec($ch);
+                $err = curl_error($ch);
+                $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
 
-            $data = is_string($raw) && $raw !== '' ? json_decode($raw, true) : null;
-            $lastData = $data;
-            $lastRaw = is_string($raw) ? $raw : '';
-            $lastErr = $err;
-            $lastCode = $code;
-            if ($code < 400 && is_array($data)) {
-                return $data;
-            }
-            $error = is_array($data['error'] ?? null) ? $data['error'] : (is_array($data) ? $data : []);
-            $message = (string) ($error['message'] ?? $error['code'] ?? '');
-            if ($code !== 403 || stripos($message, 'sign') === false) {
-                break;
+                $data = is_string($raw) && $raw !== '' ? json_decode($raw, true) : null;
+                $lastData = $data;
+                $lastRaw = is_string($raw) ? $raw : '';
+                $lastErr = $err;
+                $lastCode = $code;
+                if ($code < 400 && is_array($data)) {
+                    if ($secret !== (string) ($config['wallet_secret'] ?? '')) {
+                        self::promotePendingWalletSecret($pdo, $secret);
+                    }
+                    return $data;
+                }
+
+                $error = is_array($data['error'] ?? null) ? $data['error'] : (is_array($data) ? $data : []);
+                $message = (string) ($error['message'] ?? $error['code'] ?? '');
+                if ($code !== 403 || stripos($message, 'sign') === false) {
+                    break 2;
+                }
             }
         }
 
@@ -1048,11 +1826,20 @@ final class BgamingService
         } catch (Throwable) {
             return false;
         }
-        $secret = (string) ($config['wallet_secret'] ?? '');
-        if ($secret === '' || $signature === '') {
+        if ($signature === '') {
             return false;
         }
-        return hash_equals(self::sign($rawBody, $secret), $signature);
+
+        foreach (self::signingSecrets($config) as $secret) {
+            if ($secret !== '' && hash_equals(self::sign($rawBody, $secret), $signature)) {
+                if ($secret !== (string) ($config['wallet_secret'] ?? '')) {
+                    self::promotePendingWalletSecret($pdo, $secret);
+                }
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function sign(string $message, string $secret): string
@@ -1311,5 +2098,154 @@ final class BgamingService
         }
 
         return $payload;
+    }
+
+    private static function normalizeCampaignType(string $campaignType): string
+    {
+        $campaignType = strtolower(trim($campaignType));
+        return in_array($campaignType, ['freespin', 'promo'], true) ? $campaignType : 'freespin';
+    }
+
+    private static function generateCampaignCode(string $campaignType): string
+    {
+        return 'bg_' . $campaignType . '_' . bin2hex(random_bytes(6));
+    }
+
+    private static function parseUnixTimestamp(string $value): ?int
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $timestamp = strtotime($value);
+        return $timestamp === false ? null : $timestamp;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function signingSecrets(array $config): array
+    {
+        $secrets = [];
+        $current = trim((string) ($config['wallet_secret'] ?? ''));
+        $pending = trim((string) ($config['pending_wallet_secret'] ?? ''));
+        $env = trim((string) getenv('BGAMING_WALLET_SECRET'));
+
+        if ($current !== '') {
+            $secrets[] = $current;
+        }
+        if ($pending !== '' && !in_array($pending, $secrets, true)) {
+            $secrets[] = $pending;
+        }
+        if ($env !== '' && !in_array($env, $secrets, true)) {
+            $secrets[] = $env;
+        }
+
+        return $secrets;
+    }
+
+    private static function storePendingWalletSecret(PDO $pdo, string $token, ?string $activatesAt): void
+    {
+        if (!self::columnExists($pdo, 'bgaming_config', 'pending_wallet_secret')) {
+            return;
+        }
+        $pdo->prepare(
+            'UPDATE bgaming_config
+             SET pending_wallet_secret = :token,
+                 pending_wallet_secret_activates_at = :activates_at
+             WHERE id = 1'
+        )->execute([
+            'token' => $token,
+            'activates_at' => $activatesAt,
+        ]);
+    }
+
+    private static function replaceCurrentWalletSecret(PDO $pdo, string $token): void
+    {
+        if (self::columnExists($pdo, 'bgaming_config', 'pending_wallet_secret')) {
+            $pdo->prepare(
+                'UPDATE bgaming_config
+                 SET wallet_secret = :token,
+                     pending_wallet_secret = \'\',
+                     pending_wallet_secret_activates_at = NULL
+                 WHERE id = 1'
+            )->execute(['token' => $token]);
+            return;
+        }
+
+        $pdo->prepare('UPDATE bgaming_config SET wallet_secret = :token WHERE id = 1')->execute(['token' => $token]);
+    }
+
+    private static function promotePendingWalletSecret(PDO $pdo, string $token): void
+    {
+        if ($token === '') {
+            return;
+        }
+
+        if (!self::columnExists($pdo, 'bgaming_config', 'pending_wallet_secret')) {
+            return;
+        }
+
+        $pdo->prepare(
+            'UPDATE bgaming_config
+             SET wallet_secret = :token,
+                 pending_wallet_secret = \'\',
+                 pending_wallet_secret_activates_at = NULL
+             WHERE id = 1 AND pending_wallet_secret = :token'
+        )->execute(['token' => $token]);
+    }
+
+    private static function ensureCampaignStorage(PDO $pdo): void
+    {
+        static $ready = false;
+        if ($ready) {
+            return;
+        }
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS bgaming_campaigns (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                campaign_code VARCHAR(190) NOT NULL,
+                title VARCHAR(190) NOT NULL,
+                campaign_type VARCHAR(40) NOT NULL DEFAULT 'freespin',
+                game_identifier VARCHAR(120) NULL,
+                vendor VARCHAR(100) NOT NULL DEFAULT 'bgaming',
+                currency_code VARCHAR(8) NULL,
+                freespins_per_player INT NOT NULL DEFAULT 0,
+                promo_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+                wagering_multiplier DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+                begins_at BIGINT NULL,
+                expires_at BIGINT NULL,
+                active TINYINT(1) NOT NULL DEFAULT 1,
+                status VARCHAR(40) NOT NULL DEFAULT 'active',
+                payload JSON NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uniq_bgaming_campaign_code (campaign_code),
+                KEY idx_bgaming_campaign_type (campaign_type),
+                KEY idx_bgaming_campaign_active (active)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS bgaming_campaign_players (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                campaign_code VARCHAR(190) NOT NULL,
+                user_id INT NOT NULL,
+                bonus_id INT NULL,
+                status VARCHAR(40) NOT NULL DEFAULT 'assigned',
+                payload JSON NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uniq_bgaming_campaign_player (campaign_code, user_id),
+                KEY idx_bgaming_campaign_player_user (user_id),
+                KEY idx_bgaming_campaign_player_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+
+        $ready = true;
     }
 }

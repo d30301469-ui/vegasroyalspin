@@ -265,5 +265,9 @@ window.SLOT_CONFIG = {
 };
 </script>
 <script src="/assets/js/jackpot.js"></script>
-<script src="/assets/js/winners.js"></script>
-<script src="/assets/js/slot.js"></script>
+<script src="/assets/js/winners.js?v=<?= urlencode((string) (is_file(BASE_PATH . '/assets/js/winners.js') ? filemtime(BASE_PATH . '/assets/js/winners.js') : time())) ?>"></script>
+<?php
+$slotJsPath = BASE_PATH . '/assets/js/slot.js';
+$slotJsVer = (string) ((is_file($slotJsPath) ? filemtime($slotJsPath) : time()) . '-' . (is_file($slotJsPath) ? filesize($slotJsPath) : '0'));
+?>
+<script src="/assets/js/slot.js?v=<?= rawurlencode($slotJsVer) ?>"></script>

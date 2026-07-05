@@ -184,7 +184,7 @@ $new_msg_action = '/profile/messages?box=new' . ($profile_modal ? '&modal=1' : '
             </div>
 
             <div class="inbox-footer">
-                <a href="/profile/messages?box=new" class="inbox-btn-new <?= $box === 'sent' ? 'inbox-btn-new--sent' : '' ?>">YENİ MESAJ</a>
+                <a href="<?= htmlspecialchars('/profile/messages?box=new' . ($profile_modal ? '&modal=1' : ''), ENT_QUOTES, 'UTF-8') ?>" class="inbox-btn-new <?= $box === 'sent' ? 'inbox-btn-new--sent' : '' ?>">YENİ MESAJ</a>
             </div>
             <?php endif; ?>
         </div>
