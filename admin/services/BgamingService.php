@@ -663,9 +663,11 @@ final class BgamingService
 
         $stmt = $pdo->prepare(
             'SELECT cp.status AS player_status, c.campaign_code, c.title, c.game_identifier, c.currency_code,
-                    c.freespins_per_player, c.begins_at, c.expires_at, c.active, c.status AS campaign_status
+                c.freespins_per_player, c.begins_at, c.expires_at, c.active, c.status AS campaign_status,
+                COALESCE(g.thumbnail_url, \'\') AS image_url
              FROM bgaming_campaign_players cp
              INNER JOIN bgaming_campaigns c ON c.campaign_code = cp.campaign_code
+             LEFT JOIN bgaming_games g ON g.identifier = c.game_identifier
              WHERE cp.user_id = :user_id AND c.campaign_type = :campaign_type
              ORDER BY c.created_at DESC, c.id DESC'
         );
@@ -705,6 +707,7 @@ final class BgamingService
                 'currency_code' => (string) ($row['currency_code'] ?? ''),
                 'game_identifier' => (string) ($row['game_identifier'] ?? ''),
                 'title' => (string) ($row['title'] ?? ''),
+                'image_url' => (string) ($row['image_url'] ?? ''),
             ];
         }
 

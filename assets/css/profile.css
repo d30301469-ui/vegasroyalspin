@@ -834,11 +834,11 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     position: fixed;
     left: 50%;
     top: 50%;
-    width: 80vw;
+    width: min(1240px, 92vw);
     max-width: calc(100vw - 24px);
-    height: 80vh;
-    height: 80dvh;
-    max-height: calc(100dvh - 24px);
+    height: min(900px, 88vh);
+    height: min(900px, 88dvh);
+    max-height: calc(100dvh - 16px);
     min-height: 0;
     margin: 0;
     padding: 0;
@@ -909,7 +909,7 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
 .profile-modal__content {
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow: auto;
     background: #060d43;
     /* Fetch ile gelen parçada .centerWrap olmasa bile sidebar + main yan yana */
     display: flex;
@@ -929,7 +929,7 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     height: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow: auto;
 }
 .profile-modal__content .sidebarMain.playersidebarMain.profile-sidebar-v2 {
     position: relative;
@@ -945,6 +945,7 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    border-right: 1px solid rgba(154, 166, 233, 0.12);
 }
 /* Sağ kolon: üst şerit (başlık + X) sabit; kaydırma yalnızca .profile-section-body içinde */
 .profile-modal__content .profile-main-content {
@@ -988,6 +989,12 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 992px) and (max-height: 760px) {
+    .profile-modal {
+        height: min(900px, 92dvh);
+    }
 }
 
 /* ── Profil içerik alanı (kişisel detaylar + güvenlik alt sayfaları) ── */
@@ -3300,25 +3307,39 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
 }
 .freespin-list {
     display: grid;
-    gap: 12px;
+    gap: 14px;
     width: 100%;
-    margin-bottom: 14px;
 }
 .freespin-item {
-    align-items: center;
+    align-items: stretch;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
     color: #fff;
     display: grid;
     gap: 12px;
-    grid-template-columns: minmax(0, 1fr) auto minmax(180px, .7fr);
+    grid-template-columns: 176px minmax(0, 1fr) auto minmax(200px, 0.8fr);
     padding: 14px;
+}
+.freespin-item-game {
+    align-self: center;
+    aspect-ratio: 16 / 10;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(5, 10, 28, 0.75);
+}
+.freespin-item-game img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 .freespin-item-col {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 }
 .freespin-spins {
     align-items: center;
@@ -3385,63 +3406,6 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     border: 1px solid rgba(255, 114, 114, .35);
     color: #ffb0b0;
 }
-.freespin-games-panel {
-    width: 100%;
-    margin-top: 6px;
-    padding-top: 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-.freespin-games-title {
-    margin: 0 0 10px;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.86);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-.freespin-games-grid {
-    display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-.freespin-game-card {
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.03);
-    overflow: hidden;
-    min-width: 0;
-}
-.freespin-game-thumb-wrap {
-    aspect-ratio: 16 / 9;
-    background: rgba(0, 0, 0, 0.25);
-}
-.freespin-game-thumb {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-.freespin-game-meta {
-    padding: 8px 9px 10px;
-    min-width: 0;
-}
-.freespin-game-meta strong {
-    display: block;
-    font-size: 12px;
-    color: #fff;
-    line-height: 1.35;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.freespin-game-meta span {
-    display: block;
-    margin-top: 4px;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.66);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
 @media (max-width: 768px) {
     .freespin-content {
         padding: 1rem;
@@ -3449,11 +3413,11 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     .freespin-item {
         grid-template-columns: 1fr;
     }
+    .freespin-item-game {
+        max-width: 100%;
+    }
     .freespin-spins {
         align-items: flex-start;
-    }
-    .freespin-games-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
