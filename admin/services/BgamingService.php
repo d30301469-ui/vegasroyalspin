@@ -661,18 +661,34 @@ final class BgamingService
             return [];
         }
 
-        $stmt = $pdo->prepare(
-            'SELECT cp.status AS player_status, c.campaign_code, c.title, c.game_identifier, c.currency_code,
-                c.freespins_per_player, c.begins_at, c.expires_at, c.active, c.status AS campaign_status,
-                COALESCE(g.thumbnail_url, \'\') AS image_url
-             FROM bgaming_campaign_players cp
-             INNER JOIN bgaming_campaigns c ON c.campaign_code = cp.campaign_code
-             LEFT JOIN bgaming_games g ON g.identifier = c.game_identifier
-             WHERE cp.user_id = :user_id AND c.campaign_type = :campaign_type
-             ORDER BY c.created_at DESC, c.id DESC'
-        );
-        $stmt->execute(['user_id' => $userId, 'campaign_type' => 'freespin']);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = [];
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT cp.status AS player_status, c.campaign_code, c.title, c.game_identifier, c.currency_code,
+                        c.freespins_per_player, c.begins_at, c.expires_at, c.active, c.status AS campaign_status,
+                        COALESCE(g.thumbnail_url, \'\') AS image_url
+                 FROM bgaming_campaign_players cp
+                 INNER JOIN bgaming_campaigns c ON c.campaign_code = cp.campaign_code
+                 LEFT JOIN bgaming_games g ON g.identifier = c.game_identifier
+                 WHERE cp.user_id = :user_id AND c.campaign_type = :campaign_type
+                 ORDER BY c.created_at DESC, c.id DESC'
+            );
+            $stmt->execute(['user_id' => $userId, 'campaign_type' => 'freespin']);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable) {
+            // Legacy kurulumlarda bgaming_games tablosu yoksa freespin listesi yine çalışsın.
+            $stmt = $pdo->prepare(
+                'SELECT cp.status AS player_status, c.campaign_code, c.title, c.game_identifier, c.currency_code,
+                        c.freespins_per_player, c.begins_at, c.expires_at, c.active, c.status AS campaign_status,
+                        \'\' AS image_url
+                 FROM bgaming_campaign_players cp
+                 INNER JOIN bgaming_campaigns c ON c.campaign_code = cp.campaign_code
+                 WHERE cp.user_id = :user_id AND c.campaign_type = :campaign_type
+                 ORDER BY c.created_at DESC, c.id DESC'
+            );
+            $stmt->execute(['user_id' => $userId, 'campaign_type' => 'freespin']);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
 
         $items = [];
         $now = time();
