@@ -22,7 +22,6 @@ $initial = strtoupper(substr($username, 0, 2));
 $profileActiveTab = 'bonus-history';
 $unread_count = 0;
 $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
-$closeUrl = $profile_modal ? '#' : '/';
 ?>
 
 <?php if (!$profile_modal): ?>
@@ -34,9 +33,10 @@ $closeUrl = $profile_modal ? '#' : '/';
 
     <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content bonus-history-main">
         <div class="bonus-history-card" id="bonusClaimsRoot">
-            <div class="bonus-history-header">
+    require_once __DIR__ . '/../../config/frontend_session.php';
+    metropol_frontend_session_start();
                 <h1 class="bonus-history-title">BONUS GEÇMİŞİ</h1>
-                <a href="<?= htmlspecialchars($closeUrl, ENT_QUOTES, 'UTF-8') ?>" class="bonus-history-close" aria-label="Kapat"<?= $profile_modal ? ' data-profile-modal-close="1"' : '' ?>><i class="fa-solid fa-times"></i></a>
+                <a href="/" class="bonus-history-close" aria-label="Kapat"><i class="fa-solid fa-times"></i></a>
             </div>
             <p class="bonus-claims-lead">Panel üzerinden ilettiğiniz bonus taleplerinin durumunu buradan takip edebilirsiniz.</p>
 
