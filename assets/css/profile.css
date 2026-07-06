@@ -3295,9 +3295,15 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
 .freespin-content {
     min-height: 260px;
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: stretch;
     justify-content: flex-start;
+    gap: 12px;
     padding: 2rem;
+}
+.freespin-content .alert {
+    width: 100%;
+    margin-bottom: 0 !important;
 }
 .freespin-empty {
     margin: 0;
@@ -3318,7 +3324,7 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     color: #fff;
     display: grid;
     gap: 12px;
-    grid-template-columns: 176px minmax(0, 1fr) auto minmax(200px, 0.8fr);
+    grid-template-columns: 160px minmax(0, 1fr) minmax(84px, auto) minmax(220px, 0.9fr);
     padding: 14px;
 }
 .freespin-item-game {
@@ -3405,6 +3411,23 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     background: rgba(255, 114, 114, .15);
     border: 1px solid rgba(255, 114, 114, .35);
     color: #ffb0b0;
+}
+@media (max-width: 1200px) {
+    .freespin-item {
+        grid-template-columns: 140px minmax(0, 1fr) minmax(76px, auto) minmax(180px, 0.9fr);
+    }
+}
+@media (max-width: 992px) {
+    .freespin-item {
+        grid-template-columns: 140px minmax(0, 1fr);
+    }
+    .freespin-spins,
+    .freespin-status-col {
+        grid-column: 1 / -1;
+    }
+    .freespin-spins {
+        align-items: flex-start;
+    }
 }
 @media (max-width: 768px) {
     .freespin-content {
