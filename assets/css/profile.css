@@ -822,7 +822,7 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
+    transition: opacity 0.14s ease, visibility 0.14s ease;
 }
 .profile-modal-overlay.is-open {
     opacity: 1;
@@ -842,7 +842,7 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     min-height: 0;
     margin: 0;
     padding: 0;
-    transform: translate(-50%, -50%) scale(0.96);
+    transform: translate(-50%, -50%) scale(0.985);
     background: #060d43;
     border: 1px solid rgba(154, 166, 233, 0.22);
     border-radius: 10px;
@@ -852,7 +852,7 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     flex-direction: column;
     opacity: 0;
     visibility: hidden;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease, visibility 0.22s ease;
+    transition: transform 0.16s ease, opacity 0.14s ease, visibility 0.14s ease;
     overflow: hidden;
     box-sizing: border-box;
 }
