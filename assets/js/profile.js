@@ -295,6 +295,19 @@
     }
 
     var profileShellHtmlCache = {};
+    var profileShellFetchPending = {};
+    var profileShellPrefetchPending = {};
+    var profileShellPrefetchQueued = false;
+    var profileShellPrefetchDone = false;
+
+    function fastStringHash(input) {
+        var str = String(input || '');
+        var hash = 5381;
+        for (var i = 0; i < str.length; i++) {
+            hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+        }
+        return (hash >>> 0).toString(36);
+    }
 
     /** SPA: yalnızca tam profil kabuğu (#profilePlayerMain) yanıtlarını önbelleğe al (hata/redirect gövdeleri hariç). */
     function profileShellHtmlLooksComplete(html) {
@@ -539,6 +552,7 @@
     function runParsedScriptsOutsideMain(doc) {
         if (!doc || !doc.body) return;
         var injectedSrc = window.__profileShellInjectedScripts || (window.__profileShellInjectedScripts = {});
+        var injectedInline = window.__profileShellInjectedInlineScripts || (window.__profileShellInjectedInlineScripts = {});
         doc.querySelectorAll('script').forEach(function(oldScript) {
             if (oldScript.closest && oldScript.closest('#profilePlayerMain')) return;
             var s = document.createElement('script');
@@ -553,7 +567,12 @@
                 s.src = oldScript.src;
                 s.async = false;
             } else {
-                s.textContent = oldScript.textContent;
+                var inlineCode = oldScript.textContent || '';
+                if (inlineCode.trim() === '') return;
+                var inlineKey = fastStringHash(inlineCode);
+                if (injectedInline[inlineKey]) return;
+                injectedInline[inlineKey] = true;
+                s.textContent = inlineCode;
             }
             document.head.appendChild(s);
         });
@@ -690,11 +709,14 @@
     function prefetchProfileShellUrl(modalUrl) {
         var key = normalizeCacheKey(modalUrl);
         if (profileShellHtmlCache[key]) return;
-        fetchProfilePage(modalUrl).then(function(html) {
+        if (profileShellPrefetchPending[key]) return;
+        profileShellPrefetchPending[key] = fetchProfilePage(modalUrl).then(function(html) {
             if (profileShellHtmlLooksComplete(html)) {
                 profileShellHtmlCache[key] = html;
             }
-        }).catch(function() {});
+        }).catch(function() {}).finally(function() {
+            delete profileShellPrefetchPending[key];
+        });
     }
 
     /** Sidebar’daki tüm SPA profil linklerini arka planda önbelleğe al (hover beklemeden tıklanınca hazır olsun). */
@@ -724,11 +746,21 @@
     }
 
     function schedulePrefetchAllProfileSidebarLinks() {
-        setTimeout(function() {
+        if (profileShellPrefetchDone || profileShellPrefetchQueued) return;
+        profileShellPrefetchQueued = true;
+        var runner = function() {
+            profileShellPrefetchQueued = false;
+            if (profileShellPrefetchDone) return;
             try {
                 prefetchVisibleProfileSidebarLinks();
             } catch (ePrefetch) {}
-        }, 0);
+            profileShellPrefetchDone = true;
+        };
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(runner, { timeout: 300 });
+            return;
+        }
+        setTimeout(runner, 80);
     }
 
     function runProfileShellInits(profileUrl) {
@@ -801,12 +833,21 @@
             loadPromise = Promise.resolve(cachedHtml);
         } else {
             scheduleOverlay();
-            loadPromise = fetchProfilePage(profileUrl).then(function(html) {
-                if (profileShellHtmlLooksComplete(html)) {
-                    profileShellHtmlCache[cacheKey] = html;
-                }
-                return html;
-            });
+            if (profileShellFetchPending[cacheKey]) {
+                loadPromise = profileShellFetchPending[cacheKey];
+            } else {
+                profileShellFetchPending[cacheKey] = fetchProfilePage(profileUrl)
+                    .then(function(html) {
+                        if (profileShellHtmlLooksComplete(html)) {
+                            profileShellHtmlCache[cacheKey] = html;
+                        }
+                        return html;
+                    })
+                    .finally(function() {
+                        delete profileShellFetchPending[cacheKey];
+                    });
+                loadPromise = profileShellFetchPending[cacheKey];
+            }
         }
 
         loadPromise
