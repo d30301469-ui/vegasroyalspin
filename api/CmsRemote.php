@@ -370,15 +370,32 @@ final class ApiCmsRemote
     public static function writePayloadCache(string $cacheKey, array $data, array $query = []): void
     {
         $path = self::cacheFilePath($cacheKey);
-        $dir = dirname($path);
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
+        if (!self::canWriteCacheFile($path)) {
+            return;
         }
-        @file_put_contents($path, json_encode([
+        $payload = json_encode([
             'saved_at' => time(),
             'query' => $query,
             'data' => $data,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (is_string($payload)) {
+            @file_put_contents($path, $payload, LOCK_EX);
+        }
+    }
+
+    private static function canWriteCacheFile(string $path): bool
+    {
+        $dir = dirname($path);
+        if (is_dir($dir)) {
+            return is_writable($dir) && (!file_exists($path) || is_writable($path));
+        }
+        $parentDir = dirname($dir);
+        if (!is_dir($parentDir) || !is_writable($parentDir)) {
+            return false;
+        }
+        $created = @mkdir($dir, 0755, true);
+
+        return $created && is_writable($dir);
     }
 
     private static function cacheFilePath(string $cacheKey): string
