@@ -695,6 +695,10 @@
 
             e.preventDefault();
             var modalUrl = toModalUrl(targetUrl.pathname + targetUrl.search + targetUrl.hash);
+            var currentUrl = String(window.__profileModalContentUrl || '');
+            if (currentUrl && normalizeCacheKey(currentUrl) === normalizeCacheKey(modalUrl)) {
+                return;
+            }
             var sidebarEl = shellRoot.querySelector('#profilePlayerSidebar');
             syncProfileModalSidebarFromUrl(sidebarEl, modalUrl);
             loadProfileShellContent(modalUrl, {
@@ -745,7 +749,7 @@
         });
     }
 
-    function schedulePrefetchAllProfileSidebarLinks() {
+    function schedulePrefetchAllProfileSidebarLinks(forceNow) {
         if (profileShellPrefetchDone || profileShellPrefetchQueued) return;
         profileShellPrefetchQueued = true;
         var runner = function() {
@@ -756,6 +760,10 @@
             } catch (ePrefetch) {}
             profileShellPrefetchDone = true;
         };
+        if (forceNow === true) {
+            runner();
+            return;
+        }
         if (typeof window.requestIdleCallback === 'function') {
             window.requestIdleCallback(runner, { timeout: 300 });
             return;
@@ -873,6 +881,9 @@
                     history.pushState({ profileShell: 1 }, '', modalUrlToDisplayUrl(profileUrl));
                 }
                 runProfileShellInits(profileUrl);
+                if (!isFullPage) {
+                    schedulePrefetchAllProfileSidebarLinks(true);
+                }
                 if (isFullPage && mainEl) {
                     try { mainEl.scrollTop = 0; } catch (eS) {}
                 }
