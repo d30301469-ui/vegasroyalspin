@@ -96,7 +96,7 @@ if ($sliders === []) {
     <div class="carousel carouselCountEnable carouselArrowsEnabled carouselWrapper">
         <div class="home-hero-slider-inner slides-holder">
             <div class="slides">
-                <?php foreach ($sliders as $slider): ?>
+                <?php foreach ($sliders as $sliderIndex => $slider): ?>
                 <?php
                 $dPath = (string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? $slider['image_url'] ?? '');
                 $mPath = (string) ($slider['mobileImageUrl'] ?? $slider['mobile_image_url'] ?? $slider['mobile_path'] ?? '');
@@ -138,7 +138,7 @@ if ($sliders === []) {
                     $media = "<$tag class=\"sdr-image-bc\" src=\"$src\" data-desktop=\"$dEsc\" data-mobile=\"$mEsc\"$imgAttrs $attr>" . ($dVid ? '</video>' : '');
                 }
                 ?>
-                <div class="sdr-item-holder-bc slide-item">
+                <div class="sdr-item-holder-bc slide-item<?= ((int) $sliderIndex === 0) ? ' active' : '' ?>">
                     <?php if ($link): ?>
                         <a href="<?= $link ?>" class="sdr-item-bc" target="_blank" rel="noopener noreferrer" aria-label="<?= $title ?>"><?= $media ?></a>
                     <?php else: ?>
