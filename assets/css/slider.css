@@ -368,6 +368,17 @@
     margin-bottom: 16px;
 }
 
+.slot-page-root .hero-slider-stage.slider-boxed .carousel.carouselCountEnable {
+    aspect-ratio: 3 / 1;
+    max-height: 560px;
+}
+
+.slot-page-root .home-hero-slider .sdr-image-bc,
+.slot-page-root .home-hero-slider img.sdr-image-bc,
+.slot-page-root .home-hero-slider video.sdr-image-bc {
+    object-position: center top;
+}
+
 /* ── Masaüstü ── */
 @media (min-width: 768px) {
     .hero-slider-stage.slider-full-sized {
@@ -378,6 +389,11 @@
     .hero-slider-stage.slider-boxed .carousel.carouselCountEnable {
         aspect-ratio: 3.2 / 1;
         max-height: 520px;
+    }
+
+    .slot-page-root .hero-slider-stage.slider-boxed .carousel.carouselCountEnable {
+        aspect-ratio: 3 / 1;
+        max-height: 560px;
     }
 
     .slider-bc .carousel-count-arrow-container.with-count {
@@ -409,6 +425,11 @@
     .hero-slider-stage.slider-boxed {
         aspect-ratio: 16 / 9;
         max-height: 260px;
+    }
+
+    .slot-page-root .hero-slider-stage.slider-boxed {
+        aspect-ratio: 16 / 9;
+        max-height: 280px;
     }
 
     .hero-slider-stage.slider-boxed > .home-hero-slider {

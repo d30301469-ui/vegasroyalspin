@@ -47,6 +47,15 @@ function slider_is_webm(string $url): bool
     return (bool) preg_match('~\.webm(\?.*)?$~i', parse_url($url, PHP_URL_PATH) ?? $url);
 }
 
+function slider_is_supported_media_url(string $url): bool
+{
+    $path = (string) (parse_url($url, PHP_URL_PATH) ?? '');
+    if ($path === '') {
+        return false;
+    }
+    return (bool) preg_match('~\.(?:webp|png|jpe?g|gif|avif|svg|webm|mp4)(?:\?.*)?$~i', $path);
+}
+
 function slider_make_media(string $url, bool $isVideo, string $title, string $cls = ''): string
 {
     $src = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
@@ -68,7 +77,13 @@ function slider_item_has_media(array $slider): bool
         $mPath = $dPath;
     }
 
-    return $dPath !== '' || $mPath !== '';
+    $dUrl = slider_build_url($dPath);
+    $mUrl = slider_build_url($mPath);
+    if (slider_is_supported_media_url($dUrl) || slider_is_supported_media_url($mUrl)) {
+        return true;
+    }
+
+    return false;
 }
 
 $sliderApiCategory = $sliderApiCategory ?? 'home';
@@ -106,6 +121,21 @@ if ($sliders === []) {
 
                 $dUrl = slider_build_url($dPath);
                 $mUrl = slider_build_url($mPath);
+
+                $dMediaOk = slider_is_supported_media_url($dUrl);
+                $mMediaOk = slider_is_supported_media_url($mUrl);
+                if (!$dMediaOk && $mMediaOk) {
+                    $dUrl = $mUrl;
+                    $dMediaOk = true;
+                }
+                if (!$mMediaOk && $dMediaOk) {
+                    $mUrl = $dUrl;
+                    $mMediaOk = true;
+                }
+                if (!$dMediaOk && !$mMediaOk) {
+                    continue;
+                }
+
                 $dVid = slider_is_webm($dUrl);
                 $mVid = slider_is_webm($mUrl);
 
