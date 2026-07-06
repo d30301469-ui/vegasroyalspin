@@ -175,14 +175,26 @@ final class BackendApiClient
         }
 
         $dir = dirname($path);
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
+        $canWriteCache = false;
+        if (is_dir($dir)) {
+            $canWriteCache = is_writable($dir) && (!file_exists($path) || is_writable($path));
+        } else {
+            $parentDir = dirname($dir);
+            if (is_dir($parentDir) && is_writable($parentDir)) {
+                $created = @mkdir($dir, 0755, true);
+                $canWriteCache = $created && is_writable($dir);
+            }
         }
-        @file_put_contents($path, json_encode([
-            'saved_at' => time(),
-            'internal_base' => $url,
-            'internal_host' => (string) ($detected['internal_host'] ?? $backendHost),
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+        if ($canWriteCache) {
+            $payload = json_encode([
+                'saved_at' => time(),
+                'internal_base' => $url,
+                'internal_host' => (string) ($detected['internal_host'] ?? $backendHost),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if (is_string($payload)) {
+                @file_put_contents($path, $payload, LOCK_EX);
+            }
+        }
 
         $memory = $url;
 

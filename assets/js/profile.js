@@ -427,22 +427,40 @@
     }
 
     function fetchProfilePage(targetUrl) {
-        return fetch(apiUrl(targetUrl), { credentials: 'same-origin' })
-            .then(function(r) {
-                if (r.redirected) {
-                    try {
-                        var finalUrl = new URL(r.url, window.location.origin);
-                        if (finalUrl.origin === window.location.origin && (finalUrl.pathname === '/' || finalUrl.pathname === '/login')) {
-                            var authErr = new Error('Profil oturumu doğrulanamadı');
-                            authErr.authRequired = true;
-                            throw authErr;
-                        }
-                    } catch (eUrl) {
-                        if (eUrl && eUrl.authRequired) throw eUrl;
+        function parseProfileResponse(r) {
+            if (r.redirected) {
+                try {
+                    var finalUrl = new URL(r.url, window.location.origin);
+                    if (finalUrl.origin === window.location.origin && (finalUrl.pathname === '/' || finalUrl.pathname === '/login')) {
+                        var authErr = new Error('Profil oturumu doğrulanamadı');
+                        authErr.authRequired = true;
+                        throw authErr;
                     }
+                } catch (eUrl) {
+                    if (eUrl && eUrl.authRequired) throw eUrl;
                 }
-                if (!r.ok) throw new Error('Profil içeriği alınamadı');
-                return r.text();
+            }
+            if (!r.ok) throw new Error('Profil içeriği alınamadı');
+            return r.text();
+        }
+
+        var resolved = apiUrl(targetUrl);
+        var direct = String(targetUrl || '');
+        if (direct && direct.charAt(0) !== '/') {
+            direct = '/' + direct;
+        }
+
+        return fetch(resolved, { credentials: 'same-origin' })
+            .then(parseProfileResponse)
+            .catch(function(primaryErr) {
+                if (primaryErr && primaryErr.authRequired) {
+                    throw primaryErr;
+                }
+                if (!direct || direct === resolved) {
+                    throw primaryErr;
+                }
+                return fetch(direct, { credentials: 'same-origin' })
+                    .then(parseProfileResponse);
             });
     }
 
@@ -836,7 +854,10 @@
                     return;
                 }
                 if (shellRoot.id === 'profileModalContent') {
-                    shellRoot.innerHTML = '<div style="padding:16px;color:#fff;">Profil yüklenirken hata oluştu.</div>';
+                    shellRoot.innerHTML = '<div style="padding:16px;color:#fff;">Profil yüklenirken hata oluştu. Tam sayfaya yönlendiriliyor...</div>';
+                    setTimeout(function() {
+                        window.location.href = modalUrlToDisplayUrl(profileUrl);
+                    }, 350);
                 }
             })
             .finally(function() {
