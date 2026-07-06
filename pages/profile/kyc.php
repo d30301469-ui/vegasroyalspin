@@ -39,6 +39,8 @@ $kycRow = ProfileApiHelper::profileSection('/profile/kyc-status', ['user_id' => 
 $kyc    = $kycRow['kyc'] ?? $kycRow['request'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$kyc) {
+    $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
+    $ext = '';
     $csrf = (string) ($_POST['csrf_token'] ?? '');
     if ($csrf === '' || !hash_equals((string) $_SESSION['csrf_token'], $csrf)) {
         $msg = 'Güvenlik doğrulaması başarısız. Lütfen sayfayı yenileyip tekrar deneyin.';
@@ -46,7 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$kyc) {
         $msg = 'Kimlik/Pasaport dosyası zorunludur!';
     } else {
         $file    = $_FILES['identity_file'];
-        $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
         $ext     = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
         if (!in_array($ext, $allowed) || $file['size'] > 5 * 1024 * 1024) {
@@ -103,8 +104,7 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 
     <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content kyc-main">
     <div class="container mt-4 kyc-profile-page">
-    require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+        <ul class="breadcrumb mb-3">
             <li class="breadcrumb-item"><a href="/">Ana Sayfa</a></li>
             <li class="breadcrumb-item active">Hesap Doğrulama</li>
         </ul>
