@@ -318,6 +318,9 @@ body.mobile-site .slot-page-root .slot-top-section .home-hero-slider {
   margin-top: 0;
   margin-bottom: 0;
   padding: 0;
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
   max-width: none;
 }
 
