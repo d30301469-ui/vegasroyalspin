@@ -376,7 +376,13 @@
 .slot-page-root .home-hero-slider .sdr-image-bc,
 .slot-page-root .home-hero-slider img.sdr-image-bc,
 .slot-page-root .home-hero-slider video.sdr-image-bc {
-    object-position: center top;
+    object-fit: contain;
+    object-position: center center;
+    background: #080a2b;
+}
+
+.slot-page-root .home-hero-slider .sdr-item-bc {
+    background: #080a2b;
 }
 
 /* ── Masaüstü ── */
