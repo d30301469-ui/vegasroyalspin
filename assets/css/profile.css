@@ -506,6 +506,12 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     background: rgba(120, 118, 177, 0.38);
     color: #fff !important;
 }
+/* Modal içindeki sol menüde geçiş hissini hızlandır */
+.profile-modal__content .profile-sidebar-v2 .profile-accordion .accordion-trigger,
+.profile-modal__content .profile-sidebar-v2 .profile-accordion .accordion-chevron,
+.profile-modal__content .profile-sidebar-v2 .profile-accordion .accordion-sub a {
+    transition: none;
+}
 .profile-sidebar-v2 .accordion-trigger--badge {
     position: relative;
 }
@@ -3315,6 +3321,7 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     display: grid;
     gap: 14px;
     width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
 }
 .freespin-item {
     align-items: stretch;
@@ -3324,12 +3331,12 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     color: #fff;
     display: grid;
     gap: 12px;
-    grid-template-columns: 160px minmax(0, 1fr) minmax(84px, auto) minmax(220px, 0.9fr);
+    grid-template-columns: 88px minmax(0, 1fr) minmax(74px, auto);
     padding: 14px;
 }
 .freespin-item-game {
-    align-self: center;
-    aspect-ratio: 16 / 10;
+    align-self: flex-start;
+    aspect-ratio: 1 / 1;
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -3350,10 +3357,14 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
 .freespin-spins {
     align-items: center;
     justify-content: center;
-    min-width: 84px;
+    min-width: 74px;
 }
 .freespin-status-col {
     align-items: flex-start;
+    border-top: 1px dashed rgba(255, 255, 255, 0.14);
+    grid-column: 1 / -1;
+    margin-top: 2px;
+    padding-top: 10px;
 }
 .freespin-launch-btn {
     background: linear-gradient(135deg, #3e6bff, #2656e8);
@@ -3413,20 +3424,25 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     color: #ffb0b0;
 }
 @media (max-width: 1200px) {
+    .freespin-list {
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    }
     .freespin-item {
-        grid-template-columns: 140px minmax(0, 1fr) minmax(76px, auto) minmax(180px, 0.9fr);
+        grid-template-columns: 84px minmax(0, 1fr) minmax(70px, auto);
     }
 }
 @media (max-width: 992px) {
-    .freespin-item {
-        grid-template-columns: 140px minmax(0, 1fr);
+    .freespin-list {
+        grid-template-columns: 1fr;
     }
-    .freespin-spins,
+    .freespin-item {
+        grid-template-columns: 84px minmax(0, 1fr);
+    }
     .freespin-status-col {
         grid-column: 1 / -1;
     }
     .freespin-spins {
-        align-items: flex-start;
+        align-items: center;
     }
 }
 @media (max-width: 768px) {
