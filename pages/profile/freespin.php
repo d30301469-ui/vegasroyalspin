@@ -47,6 +47,53 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 $tabYeniUrl = '/profile/freespin' . ($profile_modal ? '?modal=1' : '');
 $tabAktifUrl = '/profile/freespin?tab=aktif' . ($profile_modal ? '&modal=1' : '');
 $closeUrl = $profile_modal ? '#' : '/';
+$freespinFallbackImages = [
+    '/assets/games-img/sweet-bonanza-1000.svg',
+    '/assets/games-img/game-img3.jpg',
+    '/assets/games-img/game-img4.svg',
+    '/assets/games-img/game-img5.svg',
+    '/assets/games-img/game-img6.jpeg',
+    '/assets/games-img/game-img7.jpeg',
+    '/assets/games-img/game2-img8.jpg',
+    '/assets/games-img/game2-img9.jpg',
+];
+$freespinRelatedGames = [];
+$freespinSeenGames = [];
+foreach ($freespinRows as $index => $row) {
+    $identifier = trim((string) ($row['game_identifier'] ?? ''));
+    $title = trim((string) ($row['game_name'] ?? $row['title'] ?? $identifier));
+    if ($title === '') {
+        $title = 'Casino Oyunu ' . ((int) $index + 1);
+    }
+    $dedupeKey = strtolower($identifier !== '' ? $identifier : $title);
+    if (isset($freespinSeenGames[$dedupeKey])) {
+        continue;
+    }
+
+    $imageUrl = trim((string) (
+        $row['thumbnail_url']
+        ?? $row['image_url']
+        ?? $row['game_image_url']
+        ?? $row['game_image']
+        ?? $row['banner']
+        ?? ''
+    ));
+    if ($imageUrl === '') {
+        $imageUrl = $freespinFallbackImages[$index % count($freespinFallbackImages)];
+    } elseif (!preg_match('#^https?://#i', $imageUrl) && !str_starts_with($imageUrl, '/')) {
+        $imageUrl = '/' . ltrim($imageUrl, '/');
+    }
+
+    $freespinSeenGames[$dedupeKey] = true;
+    $freespinRelatedGames[] = [
+        'title' => $title,
+        'identifier' => $identifier,
+        'image_url' => $imageUrl,
+    ];
+    if (count($freespinRelatedGames) >= 8) {
+        break;
+    }
+}
 ?>
 
 <?php if (!$profile_modal): ?>
@@ -124,6 +171,34 @@ $closeUrl = $profile_modal ? '#' : '/';
                             </article>
                         <?php endforeach; ?>
                     </div>
+                    <?php if ($freespinRelatedGames !== []): ?>
+                        <section class="freespin-games-panel" aria-label="İlgili oyun görselleri">
+                            <h2 class="freespin-games-title">İLGİLİ OYUNLAR</h2>
+                            <div class="freespin-games-grid">
+                                <?php foreach ($freespinRelatedGames as $gameCard): ?>
+                                    <article class="freespin-game-card">
+                                        <div class="freespin-game-thumb-wrap">
+                                            <img
+                                                class="freespin-game-thumb"
+                                                src="<?= htmlspecialchars((string) $gameCard['image_url'], ENT_QUOTES, 'UTF-8') ?>"
+                                                alt="<?= htmlspecialchars((string) $gameCard['title'], ENT_QUOTES, 'UTF-8') ?>"
+                                                loading="lazy"
+                                                decoding="async"
+                                            >
+                                        </div>
+                                        <div class="freespin-game-meta">
+                                            <strong><?= htmlspecialchars((string) $gameCard['title'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                            <?php if ((string) $gameCard['identifier'] !== ''): ?>
+                                                <span><?= htmlspecialchars((string) $gameCard['identifier'], ENT_QUOTES, 'UTF-8') ?></span>
+                                            <?php else: ?>
+                                                <span>Casino oyunu</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>

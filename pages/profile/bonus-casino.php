@@ -23,6 +23,7 @@ $profileActiveTab = 'bonus-casino';
 $bonusSubTab = 'casino';
 $unread_count = 0;
 $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
+$closeUrl = $profile_modal ? '#' : '/';
 ?>
 
 <?php if (!$profile_modal): ?>
@@ -36,7 +37,7 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
         <div class="bonus-casino-card">
             <div class="bonus-casino-header">
                 <h1 class="bonus-casino-title">CASİNO BONUSU</h1>
-                <a href="/" class="bonus-casino-close" aria-label="Kapat"><i class="fa-solid fa-times"></i></a>
+                <a href="<?= htmlspecialchars($closeUrl, ENT_QUOTES, 'UTF-8') ?>" class="bonus-casino-close" aria-label="Kapat"<?= $profile_modal ? ' data-profile-modal-close="1"' : '' ?>><i class="fa-solid fa-times"></i></a>
             </div>
             <div class="bonus-casino-content js-profile-active-bonus" data-bonus-kind="casino">
                 <p class="profile-active-bonus-loading">Yükleniyor…</p>
