@@ -63,7 +63,7 @@ function slider_make_media(string $url, bool $isVideo, string $title, string $cl
     $clsAttr = ' class="' . htmlspecialchars($classes, ENT_QUOTES, 'UTF-8') . '"';
     return $isVideo
         ? "<video$clsAttr src=\"$src\" autoplay muted loop playsinline aria-label=\"$title\"></video>"
-        : "<img$clsAttr src=\"$src\" alt=\"$title\" width=\"1200\" height=\"400\">";
+        : "<img$clsAttr src=\"$src\" alt=\"$title\">";
 }
 
 /**
