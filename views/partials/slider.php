@@ -167,7 +167,7 @@ if ($sliders === []) {
                     $src  = htmlspecialchars($def, ENT_QUOTES, 'UTF-8');
                     $tag  = $dVid ? 'video' : 'img';
                     $attr = $dVid ? 'autoplay muted loop playsinline aria-label="' . $title . '"' : 'alt="' . $title . '"';
-                    $imgAttrs = $dVid ? '' : ' width="1200" height="400"';
+                    $imgAttrs = $dVid ? '' : ' ';
                     $media = "<$tag class=\"sdr-image-bc\" src=\"$src\" data-desktop=\"$dEsc\" data-mobile=\"$mEsc\"$imgAttrs $attr>" . ($dVid ? '</video>' : '');
                 }
                 ?>
