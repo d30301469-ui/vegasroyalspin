@@ -67,7 +67,10 @@ function slider_make_media(string $url, bool $isVideo, string $title, string $cl
 }
 
 /**
- * @param array<string, mixed> $slider
+ * Slider öğesinin medyası olup olmadığını kontrol eder.
+ *
+ * @param array<string, mixed> $slider Slider verisi
+ * @return bool
  */
 function slider_item_has_media(array $slider): bool
 {
