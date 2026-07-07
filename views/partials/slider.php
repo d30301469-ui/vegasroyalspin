@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Slider partial — veri kaynağı: api/Sliders.php (ApiSliders)
  * $sliderApiCategory = 'home'|'slots'|'live_casino'
