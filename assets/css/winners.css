@@ -303,7 +303,7 @@
   background: transparent;
 }
 
-@media (min-width: 1025px) {
+@media (min-width: 768px) {
   .winners-list {
     scrollbar-width: none;
     -ms-overflow-style: none;
