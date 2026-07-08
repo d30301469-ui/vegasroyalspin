@@ -324,9 +324,10 @@
     position: relative;
     width: 100%;
     max-width: none;
-    aspect-ratio: 3.2 / 1;
-    min-height: 180px;
+    height: 30vw;
     max-height: 520px;
+    min-height: 180px;
+    aspect-ratio: 3.2 / 1;
     margin: 0;
     padding: 0;
     z-index: 0;
@@ -387,6 +388,7 @@
 @media (min-width: 768px) {
     .hero-slider-stage.slider-full-sized {
         aspect-ratio: 3.2 / 1;
+        height: 30vw;
         max-height: 520px;
         min-height: 180px;
         overflow: hidden;
@@ -416,6 +418,7 @@
 
     .hero-slider-stage.slider-full-sized {
         aspect-ratio: 16 / 9;
+        height: 56vw;
         max-height: 260px;
         min-height: 120px;
         overflow: hidden;
