@@ -29,8 +29,8 @@
       return false;
     }
     return typeof window.matchMedia === 'function'
-      ? window.matchMedia('(min-width: 1025px)').matches
-      : (window.innerWidth || 0) >= 1025;
+      ? window.matchMedia('(min-width: 768px)').matches
+      : (window.innerWidth || 0) >= 768;
   }
 
   var cache = Object.create(null);
@@ -85,7 +85,7 @@
     }
 
     var maxScroll = Math.max(0, listEl.scrollHeight - listEl.clientHeight);
-    if (maxScroll <= 1) {
+    if (maxScroll <= 2) {
       stopAutoMotion();
       return;
     }
@@ -108,6 +108,10 @@
       return;
     }
     if (listEl.classList.contains('is-loading')) {
+      return;
+    }
+    var maxScroll = Math.max(0, listEl.scrollHeight - listEl.clientHeight);
+    if (maxScroll <= 2) {
       return;
     }
     listEl.classList.add('winners-list--auto');
