@@ -21,7 +21,7 @@
     width: 100%;
     max-width: var(--max-width, 1670px);
     margin: 0 auto;
-    margin-top: 77px;
+    margin-top: 16px;
     padding: 0 10px 20px;
     box-sizing: border-box;
 }

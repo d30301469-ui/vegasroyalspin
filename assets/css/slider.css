@@ -189,12 +189,6 @@
         object-position: center center;
         background: transparent;
     }
-
-    .hero-slider-stage.slider-full-sized .home-hero-slider .sdr-image-bc,
-    .hero-slider-stage.slider-full-sized .home-hero-slider img.sdr-image-bc,
-    .hero-slider-stage.slider-full-sized .home-hero-slider video.sdr-image-bc {
-        object-position: left center;
-    }
 }
 
 .slider-mobile-media  { display: none !important; }
@@ -343,22 +337,29 @@
     position: relative;
     width: 100%;
     max-width: none;
-    height: 30vw;
-    max-height: 520px;
-    min-height: 180px;
-    aspect-ratio: 3.2 / 1;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    aspect-ratio: 161 / 41;
     margin: 0;
     padding: 0;
     z-index: 0;
     background: transparent;
     overflow: hidden;
-    border-radius: 4px;
+    border-radius: 0;
 }
 
 .hero-slider-stage.slider-full-sized .home-hero-slider.slider-bc,
 .hero-slider-stage.slider-full-sized .carousel.carouselCountEnable,
 .hero-slider-stage.slider-full-sized .home-hero-slider-inner.slides-holder {
-    border-radius: 4px;
+    border-radius: 0;
+}
+
+.hero-slider-stage.slider-full-sized .home-hero-slider .sdr-item-bc,
+.hero-slider-stage.slider-full-sized .home-hero-slider .sdr-image-bc,
+.hero-slider-stage.slider-full-sized .home-hero-slider img.sdr-image-bc,
+.hero-slider-stage.slider-full-sized .home-hero-slider video.sdr-image-bc {
+    border-radius: 0;
 }
 
 /* Eski absolute + margin-top:% hack — yedek (login/register vb.) */
@@ -406,10 +407,10 @@
 /* ── Masaüstü ── */
 @media (min-width: 768px) {
     .hero-slider-stage.slider-full-sized {
-        aspect-ratio: 3.2 / 1;
-        height: 30vw;
-        max-height: 520px;
-        min-height: 180px;
+        aspect-ratio: 161 / 41;
+        height: auto;
+        max-height: none;
+        min-height: 0;
         overflow: hidden;
     }
 
