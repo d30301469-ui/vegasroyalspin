@@ -13,7 +13,8 @@
     RewriteRule ^install(?:/.*)?$ index.php [L,QSA]
 
     # Admin CMS uploads: /uploads/* → storage/uploads/*
-    RewriteRule ^uploads/(.*)$ storage/uploads/$1 [L]
+    # IMPORTANT: use END so rewritten /storage/uploads/* does not hit private-path deny rules.
+    RewriteRule ^uploads/(.*)$ storage/uploads/$1 [END]
 
     # Eksik kurulum koruması
     RewriteCond %{REQUEST_URI} !^/(?:index\.php|install-status\.php|ping\.php|health\.php)(?:/|$) [NC]

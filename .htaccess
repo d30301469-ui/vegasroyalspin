@@ -11,7 +11,8 @@
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
     # CMS uploads: /uploads/* → storage/uploads/*
-    RewriteRule ^uploads/(.*)$ storage/uploads/$1 [L]
+    # IMPORTANT: use END so rewritten /storage/uploads/* does not hit private-path deny rules.
+    RewriteRule ^uploads/(.*)$ storage/uploads/$1 [END]
 
     # Backward compatibility for stale asset links containing /public prefix.
     # Prevents JS/CSS/image 404 + MIME=text/html errors when old URLs are cached
