@@ -110,14 +110,22 @@ final class AdminPromotionController extends AdminController
             $this->redirect(AdminAuth::url('/promotions'));
         }
 
-        $this->view('promotions/form', [
+        $data = [
             'title' => 'Promosyon Düzenle',
             'active' => 'promotions',
             'crumbs' => 'Marketing | Promotions | Düzenle',
             'promotion' => $promotion,
             'mode' => 'edit',
             'flash' => $this->pullFlash(),
-        ]);
+        ];
+
+        if ($this->isModalRequest()) {
+            $data['isModal'] = true;
+            $this->partial('promotions/_form', $data);
+            return;
+        }
+
+        $this->view('promotions/form', $data);
     }
 
     public function update(): void
@@ -420,6 +428,12 @@ final class AdminPromotionController extends AdminController
     private function flash(string $message): void
     {
         $_SESSION['admin_flash'] = $message;
+    }
+
+    private function isModalRequest(): bool
+    {
+        return (string) ($_GET['modal'] ?? '') === '1'
+            || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
     }
 
     private function pullFlash(): string
