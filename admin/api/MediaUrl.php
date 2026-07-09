@@ -133,10 +133,39 @@ final class ApiMediaUrl
     public static function resolvePromotionRow(array $promotion): array
     {
         if (isset($promotion['image_url']) && is_string($promotion['image_url'])) {
-            $promotion['image_url'] = self::resolve($promotion['image_url']);
+            $promotion['image_url'] = self::resolvePromotionImage($promotion['image_url']);
         }
 
         return $promotion;
+    }
+
+    public static function resolvePromotionImage(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $path)) {
+            $absolutePath = (string) (parse_url($path, PHP_URL_PATH) ?? '');
+            if ($absolutePath !== '') {
+                $normalized = self::normalizeLegacyMediaPath($absolutePath);
+                if (self::isBackendHostedPath($normalized)) {
+                    return self::frontendMediaPath($normalized);
+                }
+            }
+        }
+
+        $normalized = self::normalizeLegacyMediaPath(str_replace('\\', '/', $path));
+        if ($normalized !== '' && $normalized[0] !== '/') {
+            $normalized = '/' . $normalized;
+        }
+
+        if (self::isBackendHostedPath($normalized)) {
+            return self::frontendMediaPath($normalized);
+        }
+
+        return self::resolve($path);
     }
 
     /**
@@ -325,6 +354,13 @@ final class ApiMediaUrl
         $normalized = '/' . ltrim(str_replace('\\', '/', $path), '/');
         $lower = strtolower($normalized);
 
+        if (str_starts_with($lower, '/storage/uploads/')) {
+            return '/uploads/' . ltrim(substr($normalized, strlen('/storage/uploads/')), '/');
+        }
+        if (str_starts_with($lower, '/admin/uploads/')) {
+            return '/uploads/' . ltrim(substr($normalized, strlen('/admin/uploads/')), '/');
+        }
+
         if (str_starts_with($lower, '/storage/medias/')) {
             return '/uploads/medias/' . ltrim(substr($normalized, strlen('/storage/medias/')), '/');
         }
@@ -333,5 +369,16 @@ final class ApiMediaUrl
         }
 
         return $normalized;
+    }
+
+    private static function frontendMediaPath(string $path): string
+    {
+        $sitePath = '';
+        if (defined('SITE_URL')) {
+            $sitePath = (string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?: '');
+            $sitePath = $sitePath === '/' ? '' : rtrim($sitePath, '/');
+        }
+
+        return $sitePath . $path;
     }
 }

@@ -76,6 +76,7 @@ final class AdminPromotionController extends AdminController
         }
 
         try {
+            $imageUrl = self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
             AdminDatabase::pdo()->prepare(
                 'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, bonus_amount, wagering_multiplier, created_at, updated_at)
                  VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :bonus_amount, :wagering_multiplier, NOW(), NOW())'
@@ -86,7 +87,7 @@ final class AdminPromotionController extends AdminController
                 'category' => trim((string) ($_POST['category'] ?? '')),
                 'status' => trim((string) ($_POST['status'] ?? 'active')),
                 'sort_order' => (int) ($_POST['sort_order'] ?? 0),
-                'image_url' => trim((string) ($_POST['image_url'] ?? '')),
+                'image_url' => $imageUrl,
                 'bonus_amount' => (float) ($_POST['bonus_amount'] ?? 0),
                 'wagering_multiplier' => (float) ($_POST['wagering_multiplier'] ?? 0),
             ]);
@@ -137,6 +138,7 @@ final class AdminPromotionController extends AdminController
         }
 
         try {
+            $imageUrl = self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
             AdminDatabase::pdo()->prepare(
                 'UPDATE promotions SET title = :title, description = :description, type = :type, category = :category,
                  status = :status, sort_order = :sort_order, image_url = :image_url,
@@ -149,7 +151,7 @@ final class AdminPromotionController extends AdminController
                 'category' => trim((string) ($_POST['category'] ?? '')),
                 'status' => trim((string) ($_POST['status'] ?? 'active')),
                 'sort_order' => (int) ($_POST['sort_order'] ?? 0),
-                'image_url' => trim((string) ($_POST['image_url'] ?? '')),
+                'image_url' => $imageUrl,
                 'bonus_amount' => (float) ($_POST['bonus_amount'] ?? 0),
                 'wagering_multiplier' => (float) ($_POST['wagering_multiplier'] ?? 0),
                 'id' => $id,
@@ -161,6 +163,33 @@ final class AdminPromotionController extends AdminController
         }
 
         $this->redirect(AdminAuth::url('/promotions'));
+    }
+
+    private static function normalizePromotionImageUrl(string $imageUrl): string
+    {
+        $imageUrl = trim($imageUrl);
+        if ($imageUrl === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $imageUrl) === 1) {
+            $path = (string) (parse_url($imageUrl, PHP_URL_PATH) ?? '');
+            if ($path !== '') {
+                $imageUrl = $path;
+            }
+        }
+
+        $imageUrl = '/' . ltrim(str_replace('\\', '/', $imageUrl), '/');
+        $lower = strtolower($imageUrl);
+
+        if (str_starts_with($lower, '/storage/uploads/')) {
+            return '/uploads/' . ltrim(substr($imageUrl, strlen('/storage/uploads/')), '/');
+        }
+        if (str_starts_with($lower, '/admin/uploads/')) {
+            return '/uploads/' . ltrim(substr($imageUrl, strlen('/admin/uploads/')), '/');
+        }
+
+        return $imageUrl;
     }
 
     public function delete(): void
