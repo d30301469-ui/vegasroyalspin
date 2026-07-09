@@ -43,6 +43,45 @@ if (!function_exists('promotions_page_sections_from_api')) {
         return $out;
     }
 }
+
+if (!function_exists('promotions_page_normalize_image_url')) {
+    function promotions_page_normalize_image_url(string $imageUrl): string
+    {
+        $imageUrl = trim($imageUrl);
+        if ($imageUrl === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $imageUrl) === 1) {
+            $host = strtolower((string) (parse_url($imageUrl, PHP_URL_HOST) ?? ''));
+            if (preg_match('/^(?:icons|cms)\.casinomilyon\d+\.com$/i', $host) === 1) {
+                return $imageUrl;
+            }
+        }
+
+        if (class_exists('ApiMediaUrl', false) && method_exists('ApiMediaUrl', 'resolvePromotionImage')) {
+            return (string) ApiMediaUrl::resolvePromotionImage($imageUrl);
+        }
+
+        if (preg_match('#^https?://#i', $imageUrl) === 1) {
+            $path = (string) (parse_url($imageUrl, PHP_URL_PATH) ?? '');
+            if ($path !== '') {
+                $imageUrl = $path;
+            }
+        }
+
+        $imageUrl = '/' . ltrim(str_replace('\\', '/', $imageUrl), '/');
+        $lower = strtolower($imageUrl);
+        if (str_starts_with($lower, '/storage/uploads/')) {
+            return '/uploads/' . ltrim(substr($imageUrl, strlen('/storage/uploads/')), '/');
+        }
+        if (str_starts_with($lower, '/admin/uploads/')) {
+            return '/uploads/' . ltrim(substr($imageUrl, strlen('/admin/uploads/')), '/');
+        }
+
+        return $imageUrl;
+    }
+}
 ?>
 <?php require VIEW_PATH . '/layouts/head.php'; ?>
 <?php include VIEW_PATH . '/partials/header.php'; ?>
@@ -72,7 +111,7 @@ foreach ($promoApi['promotions'] as $p) {
         'id'          => isset($p['id']) ? (int) $p['id'] : 0,
         'title'       => isset($p['title']) ? (string) $p['title'] : '',
         'description' => isset($p['description']) ? (string) $p['description'] : '',
-        'image_url'   => isset($p['image_url']) ? (string) $p['image_url'] : '',
+        'image_url'   => promotions_page_normalize_image_url((string) ($p['image_url'] ?? '')),
         'category_id' => $slug,
         'sections'    => promotions_page_sections_from_api($p),
     ];
@@ -175,7 +214,7 @@ if (!empty($rows)) {
         echo '<div class="bonus-card-inner">';
         
         // Görsel URL kontrolü (modal için tam URL)
-        $image_url = !empty($bonus['image_url']) ? $bonus['image_url'] : 'https://via.placeholder.com/400x300/856A00/ffffff?text=Bonus+Görseli';
+        $image_url = !empty($bonus['image_url']) ? promotions_page_normalize_image_url((string) $bonus['image_url']) : 'https://via.placeholder.com/400x300/856A00/ffffff?text=Bonus+Görseli';
         if ($image_url && strpos($image_url, 'http') !== 0) {
             $image_url = '/' . ltrim($image_url, '/');
         }
@@ -203,7 +242,7 @@ if (!empty($rows)) {
 $promoListForModal = [];
 $promotionsFromApi = !empty($apiRows);
 foreach ($rows as $i => $b) {
-    $img = isset($b['image_url']) ? $b['image_url'] : '';
+    $img = isset($b['image_url']) ? promotions_page_normalize_image_url((string) $b['image_url']) : '';
     if ($img && strpos($img, 'http') !== 0) {
         $img = '/' . ltrim($img, '/');
     }

@@ -154,6 +154,11 @@ final class ApiMediaUrl
         }
 
         if (preg_match('#^https?://#i', $path)) {
+            $host = strtolower((string) (parse_url($path, PHP_URL_HOST) ?? ''));
+            if (self::isTrustedPromotionCdnHost($host)) {
+                return $path;
+            }
+
             $absolutePath = (string) (parse_url($path, PHP_URL_PATH) ?? '');
             if ($absolutePath !== '') {
                 $normalized = self::normalizeLegacyMediaPath($absolutePath);
@@ -315,6 +320,15 @@ final class ApiMediaUrl
         }
 
         return false;
+    }
+
+    private static function isTrustedPromotionCdnHost(string $host): bool
+    {
+        if ($host === '') {
+            return false;
+        }
+
+        return preg_match('/^(?:icons|cms)\.casinomilyon\d+\.com$/i', $host) === 1;
     }
 
     private static function normalizePublicPrefix(string $path): string

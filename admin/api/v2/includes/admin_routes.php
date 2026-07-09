@@ -851,6 +851,35 @@ $routes = [
         if ($title === '') {
             $error(422, 'title zorunludur.');
         }
+        $normalizePromotionImageUrl = static function (string $imageUrl): string {
+            $imageUrl = trim($imageUrl);
+            if ($imageUrl === '') {
+                return '';
+            }
+
+            if (preg_match('#^https?://#i', $imageUrl) === 1) {
+                $host = strtolower((string) (parse_url($imageUrl, PHP_URL_HOST) ?? ''));
+                if (preg_match('/^(?:icons|cms)\.casinomilyon\d+\.com$/i', $host) === 1) {
+                    return $imageUrl;
+                }
+
+                $path = (string) (parse_url($imageUrl, PHP_URL_PATH) ?? '');
+                if ($path !== '') {
+                    $imageUrl = $path;
+                }
+            }
+
+            $imageUrl = '/' . ltrim(str_replace('\\', '/', $imageUrl), '/');
+            $lower = strtolower($imageUrl);
+            if (str_starts_with($lower, '/storage/uploads/')) {
+                return '/uploads/' . ltrim(substr($imageUrl, strlen('/storage/uploads/')), '/');
+            }
+            if (str_starts_with($lower, '/admin/uploads/')) {
+                return '/uploads/' . ltrim(substr($imageUrl, strlen('/admin/uploads/')), '/');
+            }
+
+            return $imageUrl;
+        };
         $pdo = AdminDatabase::pdo();
         $stmt = $pdo->prepare(
             'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, bonus_amount, wagering_multiplier)
@@ -863,7 +892,7 @@ $routes = [
             'category' => trim((string) ($body['category'] ?? '')),
             'status' => trim((string) ($body['status'] ?? 'active')),
             'sort_order' => (int) ($body['sort_order'] ?? 0),
-            'image_url' => trim((string) ($body['image_url'] ?? '')),
+            'image_url' => $normalizePromotionImageUrl((string) ($body['image_url'] ?? '')),
             'bonus_amount' => (float) ($body['bonus_amount'] ?? 0),
             'wagering_multiplier' => (float) ($body['wagering_multiplier'] ?? 0),
         ]);
@@ -877,6 +906,35 @@ $routes = [
             $error(422, 'Geçersiz promosyon.');
         }
         $body = is_array($payload['body'] ?? null) ? $payload['body'] : [];
+        $normalizePromotionImageUrl = static function (string $imageUrl): string {
+            $imageUrl = trim($imageUrl);
+            if ($imageUrl === '') {
+                return '';
+            }
+
+            if (preg_match('#^https?://#i', $imageUrl) === 1) {
+                $host = strtolower((string) (parse_url($imageUrl, PHP_URL_HOST) ?? ''));
+                if (preg_match('/^(?:icons|cms)\.casinomilyon\d+\.com$/i', $host) === 1) {
+                    return $imageUrl;
+                }
+
+                $path = (string) (parse_url($imageUrl, PHP_URL_PATH) ?? '');
+                if ($path !== '') {
+                    $imageUrl = $path;
+                }
+            }
+
+            $imageUrl = '/' . ltrim(str_replace('\\', '/', $imageUrl), '/');
+            $lower = strtolower($imageUrl);
+            if (str_starts_with($lower, '/storage/uploads/')) {
+                return '/uploads/' . ltrim(substr($imageUrl, strlen('/storage/uploads/')), '/');
+            }
+            if (str_starts_with($lower, '/admin/uploads/')) {
+                return '/uploads/' . ltrim(substr($imageUrl, strlen('/admin/uploads/')), '/');
+            }
+
+            return $imageUrl;
+        };
         $fields = ['title', 'description', 'type', 'category', 'status', 'image_url'];
         $sets = [];
         $bind = ['id' => $id];
@@ -885,7 +943,9 @@ $routes = [
                 continue;
             }
             $sets[] = $field . ' = :' . $field;
-            $bind[$field] = trim((string) $body[$field]);
+            $bind[$field] = $field === 'image_url'
+                ? $normalizePromotionImageUrl((string) $body[$field])
+                : trim((string) $body[$field]);
         }
         foreach (['sort_order' => PDO::PARAM_INT, 'bonus_amount' => null, 'wagering_multiplier' => null] as $field => $type) {
             if (!array_key_exists($field, $body)) {
