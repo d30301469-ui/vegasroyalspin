@@ -189,6 +189,12 @@
         object-position: center center;
         background: transparent;
     }
+
+    .hero-slider-stage.slider-full-sized .home-hero-slider .sdr-image-bc,
+    .hero-slider-stage.slider-full-sized .home-hero-slider img.sdr-image-bc,
+    .hero-slider-stage.slider-full-sized .home-hero-slider video.sdr-image-bc {
+        object-position: left center;
+    }
 }
 
 .slider-mobile-media  { display: none !important; }
