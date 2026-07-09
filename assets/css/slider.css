@@ -427,6 +427,14 @@
         min-height: 140px;
     }
 
+    .slot-page-root .hero-slider-stage.slider-boxed .home-hero-slider .sdr-image-bc,
+    .slot-page-root .hero-slider-stage.slider-boxed .home-hero-slider img.sdr-image-bc,
+    .slot-page-root .hero-slider-stage.slider-boxed .home-hero-slider video.sdr-image-bc {
+        object-fit: contain;
+        object-position: center center;
+        background: transparent;
+    }
+
     .slider-bc .carousel-count-arrow-container.with-count {
         top: 16px;
         right: 16px;
