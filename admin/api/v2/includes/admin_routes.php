@@ -880,10 +880,31 @@ $routes = [
 
             return $imageUrl;
         };
+        $normalizePromotionLinkUrl = static function (string $linkUrl): string {
+            $linkUrl = trim($linkUrl);
+            if ($linkUrl === '') {
+                return '';
+            }
+            if (preg_match('#^(?:javascript|data):#i', $linkUrl) === 1) {
+                return '';
+            }
+            if (preg_match('#^https?://#i', $linkUrl) === 1) {
+                return $linkUrl;
+            }
+            if (str_starts_with($linkUrl, '//')) {
+                return 'https:' . $linkUrl;
+            }
+            $linkUrl = str_replace('\\', '/', $linkUrl);
+            if ($linkUrl[0] === '/' || $linkUrl[0] === '?') {
+                return $linkUrl;
+            }
+
+            return '/' . ltrim($linkUrl, '/');
+        };
         $pdo = AdminDatabase::pdo();
         $stmt = $pdo->prepare(
-            'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, bonus_amount, wagering_multiplier)
-             VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :bonus_amount, :wagering_multiplier)'
+            'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, link_url, bonus_amount, wagering_multiplier)
+             VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :link_url, :bonus_amount, :wagering_multiplier)'
         );
         $stmt->execute([
             'title' => $title,
@@ -893,6 +914,7 @@ $routes = [
             'status' => trim((string) ($body['status'] ?? 'active')),
             'sort_order' => (int) ($body['sort_order'] ?? 0),
             'image_url' => $normalizePromotionImageUrl((string) ($body['image_url'] ?? '')),
+            'link_url' => $normalizePromotionLinkUrl((string) ($body['link_url'] ?? '')),
             'bonus_amount' => (float) ($body['bonus_amount'] ?? 0),
             'wagering_multiplier' => (float) ($body['wagering_multiplier'] ?? 0),
         ]);
@@ -935,7 +957,28 @@ $routes = [
 
             return $imageUrl;
         };
-        $fields = ['title', 'description', 'type', 'category', 'status', 'image_url'];
+        $normalizePromotionLinkUrl = static function (string $linkUrl): string {
+            $linkUrl = trim($linkUrl);
+            if ($linkUrl === '') {
+                return '';
+            }
+            if (preg_match('#^(?:javascript|data):#i', $linkUrl) === 1) {
+                return '';
+            }
+            if (preg_match('#^https?://#i', $linkUrl) === 1) {
+                return $linkUrl;
+            }
+            if (str_starts_with($linkUrl, '//')) {
+                return 'https:' . $linkUrl;
+            }
+            $linkUrl = str_replace('\\', '/', $linkUrl);
+            if ($linkUrl[0] === '/' || $linkUrl[0] === '?') {
+                return $linkUrl;
+            }
+
+            return '/' . ltrim($linkUrl, '/');
+        };
+        $fields = ['title', 'description', 'type', 'category', 'status', 'image_url', 'link_url'];
         $sets = [];
         $bind = ['id' => $id];
         foreach ($fields as $field) {
@@ -943,9 +986,15 @@ $routes = [
                 continue;
             }
             $sets[] = $field . ' = :' . $field;
-            $bind[$field] = $field === 'image_url'
-                ? $normalizePromotionImageUrl((string) $body[$field])
-                : trim((string) $body[$field]);
+            if ($field === 'image_url') {
+                $bind[$field] = $normalizePromotionImageUrl((string) $body[$field]);
+                continue;
+            }
+            if ($field === 'link_url') {
+                $bind[$field] = $normalizePromotionLinkUrl((string) $body[$field]);
+                continue;
+            }
+            $bind[$field] = trim((string) $body[$field]);
         }
         foreach (['sort_order' => PDO::PARAM_INT, 'bonus_amount' => null, 'wagering_multiplier' => null] as $field => $type) {
             if (!array_key_exists($field, $body)) {

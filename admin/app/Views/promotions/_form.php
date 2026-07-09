@@ -68,6 +68,12 @@ $val = static fn (string $field, mixed $default = ''): string => htmlspecialchar
             <input id="promoImage" class="input" type="text" name="image_url" value="<?= $val('image_url') ?>" maxlength="700" placeholder="https://icons... veya /uploads/...">
             <small style="display:block;margin-top:6px;color:#667085">Kaydet ile birlikte image URL veritabaninda otomatik normalize edilir.</small>
         </div>
+
+        <div class="field" style="grid-column:1/-1">
+            <label class="field-label" for="promoLink">Promosyon URL</label>
+            <input id="promoLink" class="input" type="text" name="link_url" value="<?= $val('link_url') ?>" maxlength="700" placeholder="/yatirim, /sports veya https://...">
+            <small style="display:block;margin-top:6px;color:#667085">Kart icindeki hedef link. Relative path veya tam URL kabul edilir.</small>
+        </div>
     </div>
 
     <div class="form-actions" style="margin-top:4px">

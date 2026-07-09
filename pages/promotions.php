@@ -112,6 +112,7 @@ foreach ($promoApi['promotions'] as $p) {
         'title'       => isset($p['title']) ? (string) $p['title'] : '',
         'description' => isset($p['description']) ? (string) $p['description'] : '',
         'image_url'   => promotions_page_normalize_image_url((string) ($p['image_url'] ?? '')),
+        'link_url'    => isset($p['link_url']) ? (string) $p['link_url'] : '',
         'category_id' => $slug,
         'sections'    => promotions_page_sections_from_api($p),
     ];
@@ -250,6 +251,7 @@ foreach ($rows as $i => $b) {
     $promoListForModal[] = [
         'title'       => isset($b['title']) ? $b['title'] : '',
         'image_url'   => $img,
+        'link_url'    => isset($b['link_url']) ? (string) $b['link_url'] : '',
         'sections'    => isset($b['sections']) ? $b['sections'] : $defaultSections,
         'promotionId' => $pid,
         'canClaim'    => $promotionsFromApi && $pid > 0,

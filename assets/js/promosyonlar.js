@@ -108,6 +108,7 @@
         window.BonusDetailModal.open({
             title: promo.title || '',
             imageUrl: imageUrl,
+            linkUrl: promo.link_url || '',
             sections: promo.sections || [],
             promotionId: typeof promo.promotionId === 'number' ? promo.promotionId : parseInt(promo.promotionId, 10) || 0,
             canClaim: !!promo.canClaim
