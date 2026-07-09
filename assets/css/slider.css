@@ -401,8 +401,9 @@
 .slot-page-root .home-hero-slider .sdr-image-bc,
 .slot-page-root .home-hero-slider img.sdr-image-bc,
 .slot-page-root .home-hero-slider video.sdr-image-bc {
-    object-fit: cover;
+    object-fit: contain;
     object-position: center center;
+    background: transparent;
 }
 
 /* ── Masaüstü ── */
