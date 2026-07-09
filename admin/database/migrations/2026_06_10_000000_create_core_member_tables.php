@@ -137,6 +137,7 @@ return static function (PDO $pdo): void {
             terms MEDIUMTEXT NULL,
             general_rules MEDIUMTEXT NULL,
             image_url VARCHAR(700) NULL,
+            link_url VARCHAR(700) NULL,
             bonus_type VARCHAR(60) NULL,
             bonus_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
             wagering_multiplier DECIMAL(8,2) NOT NULL DEFAULT 0.00,

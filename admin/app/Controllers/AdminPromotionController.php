@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 final class AdminPromotionController extends AdminController
 {
+    private static bool $promotionSchemaEnsured = false;
+
     public function index(): void
     {
         $this->requirePermission('promotions');
+        self::ensurePromotionSchema();
         $pdo = AdminDatabase::pdo();
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = min(100, max(10, (int) ($_GET['per_page'] ?? 25)));
@@ -54,6 +57,7 @@ final class AdminPromotionController extends AdminController
     public function create(): void
     {
         $this->requirePermission('promotions');
+        self::ensurePromotionSchema();
         $this->view('promotions/form', [
             'title' => 'Promosyon Ekle',
             'active' => 'promotions',
@@ -68,6 +72,7 @@ final class AdminPromotionController extends AdminController
     {
         $this->requirePermission('promotions');
         $this->ensurePost();
+        self::ensurePromotionSchema();
 
         $title = trim((string) ($_POST['title'] ?? ''));
         if ($title === '') {
@@ -77,9 +82,10 @@ final class AdminPromotionController extends AdminController
 
         try {
             $imageUrl = self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
+            $linkUrl = self::normalizePromotionLinkUrl((string) ($_POST['link_url'] ?? ''));
             AdminDatabase::pdo()->prepare(
-                'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, bonus_amount, wagering_multiplier, created_at, updated_at)
-                 VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :bonus_amount, :wagering_multiplier, NOW(), NOW())'
+                'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, link_url, bonus_amount, wagering_multiplier, created_at, updated_at)
+                 VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :link_url, :bonus_amount, :wagering_multiplier, NOW(), NOW())'
             )->execute([
                 'title' => $title,
                 'description' => trim((string) ($_POST['description'] ?? '')),
@@ -88,6 +94,7 @@ final class AdminPromotionController extends AdminController
                 'status' => trim((string) ($_POST['status'] ?? 'active')),
                 'sort_order' => (int) ($_POST['sort_order'] ?? 0),
                 'image_url' => $imageUrl,
+                'link_url' => $linkUrl,
                 'bonus_amount' => (float) ($_POST['bonus_amount'] ?? 0),
                 'wagering_multiplier' => (float) ($_POST['wagering_multiplier'] ?? 0),
             ]);
@@ -103,6 +110,7 @@ final class AdminPromotionController extends AdminController
     public function edit(): void
     {
         $this->requirePermission('promotions');
+        self::ensurePromotionSchema();
         $id = max(0, (int) ($_GET['id'] ?? 0));
         $promotion = $this->findPromotion($id);
         if ($promotion === null) {
@@ -132,6 +140,7 @@ final class AdminPromotionController extends AdminController
     {
         $this->requirePermission('promotions');
         $this->ensurePost();
+        self::ensurePromotionSchema();
 
         $id = max(0, (int) ($_POST['id'] ?? 0));
         if ($id <= 0) {
@@ -147,9 +156,10 @@ final class AdminPromotionController extends AdminController
 
         try {
             $imageUrl = self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
+            $linkUrl = self::normalizePromotionLinkUrl((string) ($_POST['link_url'] ?? ''));
             AdminDatabase::pdo()->prepare(
                 'UPDATE promotions SET title = :title, description = :description, type = :type, category = :category,
-                 status = :status, sort_order = :sort_order, image_url = :image_url,
+                 status = :status, sort_order = :sort_order, image_url = :image_url, link_url = :link_url,
                  bonus_amount = :bonus_amount, wagering_multiplier = :wagering_multiplier, updated_at = NOW()
                  WHERE id = :id'
             )->execute([
@@ -160,6 +170,7 @@ final class AdminPromotionController extends AdminController
                 'status' => trim((string) ($_POST['status'] ?? 'active')),
                 'sort_order' => (int) ($_POST['sort_order'] ?? 0),
                 'image_url' => $imageUrl,
+                'link_url' => $linkUrl,
                 'bonus_amount' => (float) ($_POST['bonus_amount'] ?? 0),
                 'wagering_multiplier' => (float) ($_POST['wagering_multiplier'] ?? 0),
                 'id' => $id,
@@ -205,10 +216,39 @@ final class AdminPromotionController extends AdminController
         return $imageUrl;
     }
 
+    private static function normalizePromotionLinkUrl(string $linkUrl): string
+    {
+        $linkUrl = trim($linkUrl);
+        if ($linkUrl === '') {
+            return '';
+        }
+
+        if (preg_match('#^(?:javascript|data):#i', $linkUrl) === 1) {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $linkUrl) === 1) {
+            return $linkUrl;
+        }
+
+        if (str_starts_with($linkUrl, '//')) {
+            return 'https:' . $linkUrl;
+        }
+
+        $linkUrl = str_replace('\\', '/', $linkUrl);
+
+        if ($linkUrl[0] === '/' || $linkUrl[0] === '?') {
+            return $linkUrl;
+        }
+
+        return '/' . ltrim($linkUrl, '/');
+    }
+
     public function delete(): void
     {
         $this->requirePermission('promotions');
         $this->ensurePost();
+        self::ensurePromotionSchema();
 
         $id = max(0, (int) ($_POST['id'] ?? 0));
         if ($id <= 0) {
@@ -230,6 +270,7 @@ final class AdminPromotionController extends AdminController
     public function claims(): void
     {
         $this->requirePermission('promotions');
+        self::ensurePromotionSchema();
         $promoId = max(0, (int) ($_GET['id'] ?? 0));
         $promotion = $this->findPromotion($promoId);
         if ($promotion === null) {
@@ -298,6 +339,7 @@ final class AdminPromotionController extends AdminController
     {
         $this->requirePermission('promotions');
         $this->ensurePost();
+        self::ensurePromotionSchema();
 
         $userId = max(0, (int) ($_POST['user_id'] ?? 0));
         $promoId = max(0, (int) ($_POST['promotion_id'] ?? 0));
@@ -369,6 +411,7 @@ final class AdminPromotionController extends AdminController
     {
         $this->requirePermission('promotions');
         $this->ensurePost();
+        self::ensurePromotionSchema();
 
         $bonusId = max(0, (int) ($_POST['bonus_id'] ?? 0));
         $userId = max(0, (int) ($_POST['user_id'] ?? 0));
@@ -405,6 +448,7 @@ final class AdminPromotionController extends AdminController
 
     private function findPromotion(int $id): ?array
     {
+        self::ensurePromotionSchema();
         if ($id <= 0) {
             return null;
         }
@@ -442,5 +486,29 @@ final class AdminPromotionController extends AdminController
         unset($_SESSION['admin_flash']);
 
         return $message;
+    }
+
+    private static function ensurePromotionSchema(): void
+    {
+        if (self::$promotionSchemaEnsured) {
+            return;
+        }
+
+        self::$promotionSchemaEnsured = true;
+
+        try {
+            $pdo = AdminDatabase::pdo();
+            $stmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions' AND COLUMN_NAME = 'link_url'"
+            );
+            $stmt->execute();
+            $exists = (int) $stmt->fetchColumn() > 0;
+            if (!$exists) {
+                $pdo->exec("ALTER TABLE promotions ADD COLUMN link_url VARCHAR(700) NULL AFTER image_url");
+            }
+        } catch (Throwable) {
+            // Partially migrated environments should continue to render instead of hard-failing here.
+        }
     }
 }

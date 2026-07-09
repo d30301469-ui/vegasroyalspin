@@ -63,6 +63,17 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
     $pdo = AdminDatabase::pdo();
     $viewerUserId = $memberJwtOptionalUserId($pdo);
     if ($method === 'GET') {
+        $hasPromotionLinkUrl = false;
+        try {
+            $columnStmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions' AND COLUMN_NAME = 'link_url'"
+            );
+            $columnStmt->execute();
+            $hasPromotionLinkUrl = (int) $columnStmt->fetchColumn() > 0;
+        } catch (Throwable) {
+            $hasPromotionLinkUrl = false;
+        }
         $category = trim((string) ($_GET['category'] ?? ''));
         $now = date('Y-m-d H:i:s');
         $where = ["status = 'active'", '(start_date IS NULL OR start_date <= :now_start)', '(end_date IS NULL OR end_date >= :now_end)'];
@@ -71,7 +82,8 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
             $where[] = 'type = :category';
             $params['category'] = $category;
         }
-        $sql = 'SELECT id, title, description, long_description, type, terms, image_url, general_rules
+        $sql = 'SELECT id, title, description, long_description, type, terms, image_url, '
+                . ($hasPromotionLinkUrl ? 'link_url' : 'NULL AS link_url') . ', general_rules
                 FROM promotions WHERE ' . implode(' AND ', $where) . ' ORDER BY sort_order ASC, id DESC';
         try {
             $stmt = $pdo->prepare($sql);
@@ -92,6 +104,7 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
                 'image_url' => class_exists('ApiMediaUrl', false)
                     ? ApiMediaUrl::resolve((string) ($row['image_url'] ?? ''))
                     : (string) ($row['image_url'] ?? ''),
+                'link_url' => (string) ($row['link_url'] ?? ''),
                 'general_rules' => (string) ($row['general_rules'] ?? ''),
             ];
         }

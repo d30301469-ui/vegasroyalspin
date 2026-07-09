@@ -14,6 +14,7 @@
     var titleEl = null;
     var imgEl = null;
     var claimWrap = null;
+    var linkCta = null;
     var claimSubmit = null;
     var claimStatus = null;
     var claimLogin = null;
@@ -47,12 +48,13 @@
             titleEl = modal.querySelector('#bonus-modal-title');
             imgEl = modal.querySelector('#bonus-modal-image');
             claimWrap = document.getElementById('bonus-modal-claim');
+            linkCta = document.getElementById('bonus-modal-link');
             claimSubmit = document.getElementById('bonus-modal-claim-submit');
             claimStatus = document.getElementById('bonus-modal-claim-status');
             claimLogin = document.getElementById('bonus-modal-claim-login');
         } else {
             closeBtn = backBtn = accordionList = titleEl = imgEl = null;
-            claimWrap = claimSubmit = claimStatus = claimLogin = null;
+            claimWrap = linkCta = claimSubmit = claimStatus = claimLogin = null;
         }
     }
 
@@ -80,6 +82,9 @@
             '    <div class="bonus-modal-right">',
             '      <div class="bonus-accordion-list" role="list"></div>',
             '      <div class="bonus-modal-claim" id="bonus-modal-claim" hidden>',
+            '        <div class="bonus-modal-claim-actions">',
+            '          <a class="bonus-modal-claim-login bonus-modal-link" id="bonus-modal-link" href="#" hidden>Promosyona git</a>',
+            '        </div>',
             '        <div class="bonus-modal-claim-actions">',
             '          <a class="bonus-modal-claim-login" id="bonus-modal-claim-login" href="/login">Giriş yap</a>',
             '          <button type="button" class="bonus-modal-claim-submit" id="bonus-modal-claim-submit">Bonus talep et</button>',
@@ -189,8 +194,35 @@
         getElements();
         if (!claimWrap) return;
         currentPromotionId = 0;
+        var hasLink = false;
+        if (linkCta) {
+            var href = data && typeof data.linkUrl === 'string' ? data.linkUrl.trim() : '';
+            var isExternal = /^https?:\/\//i.test(href);
+            hasLink = href !== '';
+            linkCta.hidden = href === '';
+            if (href !== '') {
+                linkCta.setAttribute('href', href);
+                linkCta.setAttribute('target', isExternal ? '_blank' : '_self');
+                linkCta.setAttribute('rel', isExternal ? 'noopener noreferrer' : 'noopener');
+            } else {
+                linkCta.removeAttribute('href');
+                linkCta.removeAttribute('target');
+                linkCta.removeAttribute('rel');
+            }
+        }
         if (!data || !data.canClaim || !data.promotionId) {
-            claimWrap.hidden = true;
+            claimWrap.hidden = !hasLink;
+            if (claimSubmit) {
+                claimSubmit.hidden = true;
+                claimSubmit.disabled = true;
+            }
+            if (claimLogin) {
+                claimLogin.hidden = true;
+            }
+            if (claimStatus) {
+                claimStatus.textContent = '';
+                claimStatus.classList.remove('is-error', 'is-success');
+            }
             return;
         }
         currentPromotionId = data.promotionId;
@@ -288,6 +320,7 @@
             payload = {
                 title: data.title,
                 imageUrl: data.imageUrl,
+                linkUrl: data.linkUrl,
                 sections: data.sections,
                 promotionId: typeof data.promotionId === 'number' ? data.promotionId : parseInt(data.promotionId, 10) || 0,
                 canClaim: !!data.canClaim
