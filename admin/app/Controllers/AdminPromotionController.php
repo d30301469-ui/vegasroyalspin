@@ -173,6 +173,11 @@ final class AdminPromotionController extends AdminController
         }
 
         if (preg_match('#^https?://#i', $imageUrl) === 1) {
+            $host = strtolower((string) (parse_url($imageUrl, PHP_URL_HOST) ?? ''));
+            if (preg_match('/^(?:icons|cms)\.casinomilyon\d+\.com$/i', $host) === 1) {
+                return $imageUrl;
+            }
+
             $path = (string) (parse_url($imageUrl, PHP_URL_PATH) ?? '');
             if ($path !== '') {
                 $imageUrl = $path;
