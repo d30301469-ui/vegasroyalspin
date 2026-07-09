@@ -154,6 +154,9 @@ final class ApiPromotions
             $list = [];
         }
         $list = array_values(array_filter($list, 'is_array'));
+        if (!class_exists('ApiMediaUrl', false) && is_readable(API_PATH . '/MediaUrl.php')) {
+            require_once API_PATH . '/MediaUrl.php';
+        }
         if (class_exists('ApiMediaUrl', false)) {
             $list = array_map(
                 static fn (array $row): array => ApiMediaUrl::resolvePromotionRow($row),
