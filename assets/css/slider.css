@@ -393,8 +393,9 @@
 }
 
 .slot-page-root .hero-slider-stage.slider-boxed .carousel.carouselCountEnable {
-    aspect-ratio: 3.2 / 1;
-    max-height: 520px;
+    aspect-ratio: 161 / 41;
+    max-height: 430px;
+    min-height: 140px;
 }
 
 .slot-page-root .home-hero-slider .sdr-image-bc,
@@ -420,8 +421,9 @@
     }
 
     .slot-page-root .hero-slider-stage.slider-boxed .carousel.carouselCountEnable {
-        aspect-ratio: 3.2 / 1;
-        max-height: 520px;
+        aspect-ratio: 161 / 41;
+        max-height: 430px;
+        min-height: 140px;
     }
 
     .slider-bc .carousel-count-arrow-container.with-count {
