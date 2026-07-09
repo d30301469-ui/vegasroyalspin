@@ -173,9 +173,27 @@
     max-width: 100%;
     max-height: 100%;
     object-fit: cover;
-    object-position: center top;
+    object-position: center center;
     background: transparent;
     border-radius: 4px;
+}
+
+/* Masaustunde kampanya gorselinin icerisindeki metinler kesilmesin. */
+@media (min-width: 768px) {
+    .hero-slider-stage.slider-full-sized .home-hero-slider .sdr-item-bc,
+    .hero-slider-stage.slider-boxed .home-hero-slider .sdr-item-bc {
+        background: #070707;
+    }
+
+    .hero-slider-stage.slider-full-sized .home-hero-slider .sdr-image-bc,
+    .hero-slider-stage.slider-full-sized .home-hero-slider img.sdr-image-bc,
+    .hero-slider-stage.slider-full-sized .home-hero-slider video.sdr-image-bc,
+    .hero-slider-stage.slider-boxed .home-hero-slider .sdr-image-bc,
+    .hero-slider-stage.slider-boxed .home-hero-slider img.sdr-image-bc,
+    .hero-slider-stage.slider-boxed .home-hero-slider video.sdr-image-bc {
+        object-fit: contain;
+        object-position: center center;
+    }
 }
 
 .slider-mobile-media  { display: none !important; }
