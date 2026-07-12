@@ -67,9 +67,8 @@
     }
 
     tick();
-    if (items.some(function (item) { return item.inc > 0; })) {
-      setInterval(tick, 1000);
-    }
+    // increment > 0 olmasa bile interval başlat (sayaç her zaman çalışır)
+    setInterval(tick, 1000);
   } catch (err) {
     if (console && console.warn) console.warn('Jackpot counter error', err);
   }
