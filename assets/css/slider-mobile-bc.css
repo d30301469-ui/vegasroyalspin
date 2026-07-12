@@ -96,6 +96,7 @@ body.mobile-site [data-mobile-bc-slider-row] .slider-bc.collapsed .sdr-image-bc 
 /* Sayaç — [class*=is-mobile] .slider-bc .carouselCountEnable (sağ üst, 4 / 11) */
 html.is-mobile body.mobile-site [data-mobile-bc-slider-row] .slider-bc .carouselCountEnable .swiper-pagination,
 body.mobile-site [data-mobile-bc-slider-row] .slider-bc .carouselCountEnable .swiper-pagination {
+  display: block !important;
   position: absolute !important;
   top: 6px !important;
   bottom: auto !important;
