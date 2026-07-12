@@ -760,7 +760,8 @@
   }
 
   .live-casino-banner {
-    aspect-ratio: 5 / 1;
+    aspect-ratio: 6 / 1;
+    min-height: 55px;
   }
 
   .live-casino-banner img {
@@ -768,7 +769,7 @@
     height: 100%;
     min-height: 0;
     object-fit: cover;
-    object-position: center;
+    object-position: 55% center;
   }
 
   .ligler-container {
