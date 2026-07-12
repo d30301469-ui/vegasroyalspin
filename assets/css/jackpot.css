@@ -215,12 +215,16 @@
   }
 
   .jp-tabs {
+    flex-wrap: nowrap;
     gap: 6px;
     margin-bottom: 26px;
   }
 
   .jp-tab {
-    padding: 8px 14px;
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding: 8px 10px;
     font-size: 11px;
     letter-spacing: 0.5px;
     border-radius: 0;
@@ -296,9 +300,14 @@
 }
 
 @media (max-width: 480px) {
+  .jp-tabs {
+    gap: 3px;
+  }
+
   .jp-tab {
-    padding: 7px 10px;
+    padding: 7px 6px;
     font-size: 10px;
+    letter-spacing: 0;
   }
 
   .jp-bg {
