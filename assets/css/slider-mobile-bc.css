@@ -3,15 +3,16 @@
  */
 
 /* home.css 3 sütun grid’ini geçersiz kıl — tam satır genişliği */
-body.mobile-site .mainContentWrap > [data-mobile-bc-slider-row].hm-row-bc.has-slider {
+body.mobile-site .mainContentWrap > [data-mobile-bc-slider-row].hm-row-bc.has-slider,
+body.mobile-site [data-mobile-bc-slider-row].hm-row-bc.has-slider {
   display: block !important;
   grid-template-columns: 12fr !important;
-  width: calc(100% + 2 * var(--padding-page-aside, 10px)) !important;
-  max-width: none !important;
-  margin-left: calc(-1 * var(--padding-page-aside, 10px)) !important;
-  margin-right: calc(-1 * var(--padding-page-aside, 10px)) !important;
-  margin-top: 5px !important;
-  margin-bottom: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
   padding: 0 !important;
   gap: 0 !important;
   box-sizing: border-box !important;
@@ -26,13 +27,17 @@ body.mobile-site [data-mobile-bc-slider-row] .slider-bc {
   display: block !important;
   position: relative !important;
   width: 100% !important;
+  height: 100% !important;
   min-width: 0 !important;
-  overflow: visible !important;
+  overflow: hidden !important;
 }
 
 body.mobile-site [data-mobile-bc-slider-row] .carouselWrapper.carouselCountEnable {
+  display: block !important;
   position: relative !important;
   width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
 }
 
 body.mobile-site [data-mobile-bc-slider-row] .mobile-bc-hero-swiper {
