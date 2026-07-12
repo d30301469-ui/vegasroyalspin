@@ -64,7 +64,7 @@
                 slidesPerView: 1,
                 spaceBetween: 0,
                 speed: 400,
-                watchOverflow: true,
+                watchOverflow: false,
                 resistanceRatio: 0.65,
                 observer: true,
                 observeParents: true,
