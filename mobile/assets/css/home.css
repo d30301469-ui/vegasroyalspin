@@ -62,16 +62,21 @@
   padding-right: 8px !important;
 }
 
-/* Öne çıkan oyun kartı — mobilde makul boyut */
-.mobile-site .game-cta {
-  grid-row: span 1 !important;
-  aspect-ratio: auto !important;
-  height: 180px !important;
+/* Oyna / Demo butonları — mobilde her zaman görünür (hover yok) */
+.mobile-site .game-item .game-overlay,
+.mobile-site .game-cta .game-overlay {
+  pointer-events: auto !important;
 }
 
-.mobile-site .game-cta img {
-  object-fit: cover !important;
-  object-position: center center !important;
+.mobile-site .game-item .game-overlay::before,
+.mobile-site .game-cta .game-overlay::before {
+  opacity: 0.6 !important;
+}
+
+.mobile-site .game-item .game-overlay .game-actions,
+.mobile-site .game-cta .game-overlay .game-actions {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
 }
 
 .mobile-site .home-jackpot-winners-section {
