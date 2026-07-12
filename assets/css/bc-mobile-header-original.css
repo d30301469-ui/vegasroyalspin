@@ -653,6 +653,67 @@ body.mobile-site .hdr-navigation-scrollable-bc-holder {
   flex-shrink: 0;
 }
 
+/* —— Guest auth butonları: kompakt boyut + animasyon —— */
+@keyframes header-btn-glow-login {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(133, 15, 131, 0.55), 0 0 0 0 rgba(133, 15, 131, 0); }
+  50%       { box-shadow: 0 0 8px 3px rgba(133, 15, 131, 0.9),  0 0 14px 5px rgba(133, 15, 131, 0.35); }
+}
+@keyframes header-btn-glow-register {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(155, 55, 200, 0.55), 0 0 0 0 rgba(155, 55, 200, 0); }
+  50%       { box-shadow: 0 0 8px 3px rgba(155, 55, 200, 0.9),  0 0 14px 5px rgba(155, 55, 200, 0.35); }
+}
+
+body.mobile-site .hdr-main-content-bc > .hdr-user-bc {
+  gap: 5px !important;
+}
+
+body.mobile-site .hdr-main-content-bc .hdr-user-bc .btn.sign-in {
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 28px !important;
+  padding: 0 9px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  border-radius: 6px !important;
+  border: 1px solid #850f83 !important;
+  background: rgba(133, 15, 131, 0.15) !important;
+  color: #fff !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  animation: header-btn-glow-login 2.2s ease-in-out infinite !important;
+  transition: background 0.2s, transform 0.15s !important;
+}
+
+body.mobile-site .hdr-main-content-bc .hdr-user-bc .btn.register {
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 28px !important;
+  padding: 0 9px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  border-radius: 6px !important;
+  border: 1px solid #9b37c8 !important;
+  background: linear-gradient(135deg, #661760 0%, #9b37c8 100%) !important;
+  color: #fff !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  animation: header-btn-glow-register 2.2s ease-in-out 1.1s infinite !important;
+  transition: background 0.2s, transform 0.15s !important;
+  cursor: pointer !important;
+}
+
+body.mobile-site .hdr-main-content-bc .hdr-user-bc .btn.sign-in:active,
+body.mobile-site .hdr-main-content-bc .hdr-user-bc .btn.register:active {
+  transform: scale(0.96) !important;
+}
+
 body.mobile-site .hdr-navigation-scrollable-bc-holder.header-hidden {
   max-height: 0 !important;
   min-height: 0 !important;
