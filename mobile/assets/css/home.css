@@ -36,26 +36,24 @@
   border-radius: 8px;
 }
 
-/* Jackpot altındaki kampanya görseli — tam içerik görünümü */
+/* Kampanya bannerı — tam görsel, kesilme yok */
 .mobile-site .live-casino-banner-wrap {
-  margin: 8px auto 10px;
-  padding: 0 8px;
+  margin: 8px 0 10px;
+  padding: 0;  /* full-width, no side gaps */
 }
 
 .mobile-site .live-casino-banner {
-  border-radius: 10px;
+  border-radius: 0;
   overflow: hidden;
-  aspect-ratio: 6 / 1;  /* ~62px at 374px — shows 75% of image (vs 62% at 5:1) */
-  min-height: 55px;     /* fallback for browsers without aspect-ratio */
+  width: 100%;
 }
 
 .mobile-site .live-casino-banner img {
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
   min-height: 0 !important;
   display: block !important;
-  object-fit: cover !important;
-  object-position: 55% center !important; /* shift right: shows LİMİTLERE→YOK! fully */
+  object-fit: fill !important;
 }
 
 .mobile-site .home-jackpot-winners-section {
