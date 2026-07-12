@@ -49,10 +49,10 @@
 
 .mobile-site .live-casino-banner img {
   width: 100%;
-  min-height: 110px;
+  height: auto;
+  min-height: unset;
   display: block;
-  object-fit: cover;
-  object-position: center;
+  object-fit: fill;
 }
 
 .mobile-site .home-jackpot-winners-section {
