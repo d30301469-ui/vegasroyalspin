@@ -94,42 +94,32 @@
   gap: 10px;
 }
 
-/* JACKPOT / KAZANANLAR sekme buton glow animasyonu */
-@keyframes jackpotBtnGlow {
+/* JACKPOT / KAZANANLAR sekme buton glow animasyonu — KALDIRILDI */
+
+/* Provider sekme butonları çerçeve animasyonu (AMUSNET, APOLLO GAMES, FUGAS, EGT) */
+@keyframes jpTabFrameGlow {
   0%, 100% {
-    box-shadow: 0 0 8px 2px rgba(168, 70, 225, 0.5),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 0 0 transparent;
   }
   50% {
-    box-shadow: 0 0 22px 8px rgba(168, 70, 225, 0.8),
-                0 0 40px 12px rgba(210, 90, 255, 0.3),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    border-color: rgba(168, 70, 225, 0.9);
+    box-shadow: 0 0 10px 3px rgba(168, 70, 225, 0.5),
+                0 0 20px 4px rgba(210, 90, 255, 0.2);
   }
 }
 
-@keyframes jackpotBtnShimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+@keyframes jpTabActiveFrame {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%       { box-shadow: 0 0 12px 4px rgba(255, 255, 255, 0.35); }
 }
 
-.mobile-site .home-jackpot-winners-section .slot-hero-tab--active {
-  animation: jackpotBtnGlow 2.4s ease-in-out infinite;
-  position: relative;
-  overflow: hidden;
+.mobile-site .jp-tab:not(.jp-tab--active) {
+  animation: jpTabFrameGlow 2.2s ease-in-out infinite;
 }
 
-.mobile-site .home-jackpot-winners-section .slot-hero-tab--active::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(105deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.18) 50%,
-    transparent 65%
-  );
-  background-size: 200% 100%;
-  animation: jackpotBtnShimmer 2.4s linear infinite;
-  pointer-events: none;
+.mobile-site .jp-tab--active {
+  animation: jpTabActiveFrame 2.2s ease-in-out infinite;
 }
 
 /* Provider başlığını gizle (AMUSNET / APOLLO GAMES metni) */
@@ -144,7 +134,7 @@
 }
 
 .mobile-site .home-jackpot-winners-section .slot-jackpot-wrap .jp-bg {
-  min-height: 370px;
+  min-height: 0;
   border-radius: 10px;
   padding: 16px 12px 14px;
 }
