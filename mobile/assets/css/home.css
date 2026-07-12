@@ -45,14 +45,16 @@
 .mobile-site .live-casino-banner {
   border-radius: 10px;
   overflow: hidden;
+  aspect-ratio: 4 / 1;  /* ~90px at 375px, scales with viewport */
 }
 
 .mobile-site .live-casino-banner img {
   width: 100% !important;
-  height: auto !important;
+  height: 100% !important;
   min-height: 0 !important;
   display: block !important;
-  object-fit: fill !important;
+  object-fit: cover !important;
+  object-position: center center !important;
 }
 
 .mobile-site .home-jackpot-winners-section {
