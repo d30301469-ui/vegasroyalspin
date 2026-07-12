@@ -781,8 +781,8 @@
   }
 
   .title-container {
-    padding-left: 0;
-    padding-right: 0;
+    padding-left: 8px;
+    padding-right: 8px;
     max-width: none;
   }
 
@@ -798,6 +798,17 @@
   .game-grid {
     padding: 0;
     max-width: none;
+  }
+
+  .game-cta {
+    grid-row: span 1;
+    aspect-ratio: auto;
+    height: 180px;
+  }
+
+  .game-cta img {
+    object-fit: cover;
+    object-position: center center;
   }
 
   .game-cta,

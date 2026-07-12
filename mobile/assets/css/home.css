@@ -56,6 +56,24 @@
   object-fit: fill !important;
 }
 
+/* Oyun başlığı — sol hizalama düzeltme */
+.mobile-site .title-container {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+/* Öne çıkan oyun kartı — mobilde makul boyut */
+.mobile-site .game-cta {
+  grid-row: span 1 !important;
+  aspect-ratio: auto !important;
+  height: 180px !important;
+}
+
+.mobile-site .game-cta img {
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
 .mobile-site .home-jackpot-winners-section {
   padding: 8px 8px 10px;
 }
