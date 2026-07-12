@@ -23,6 +23,7 @@ body.mobile-site [data-mobile-bc-slider-row] .hm-row-bc-inner {
 }
 
 body.mobile-site [data-mobile-bc-slider-row] .slider-bc {
+  display: block !important;
   position: relative !important;
   width: 100% !important;
   min-width: 0 !important;
