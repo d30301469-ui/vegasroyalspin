@@ -68,6 +68,7 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
   <link rel="stylesheet" href="/assets/css/slots.css?v=<?= $ver($assetCssDir . '/slots.css') ?>">
   <link rel="stylesheet" href="/assets/css/jackpot.css?v=<?= $ver($assetCssDir . '/jackpot.css') ?>">
   <link rel="stylesheet" href="/assets/css/winners.css?v=<?= $ver($assetCssDir . '/winners.css') ?>">
+  <link rel="stylesheet" href="/assets/css/swiper-bundle.min.css?v=<?= $ver($assetCssDir . '/swiper-bundle.min.css') ?>">
   <link rel="stylesheet" href="/assets/css/slider.css?v=<?= $ver($assetCssDir . '/slider.css') ?>">
   <link rel="stylesheet" href="/assets/css/slider-mobile-bc.css?v=<?= $ver($assetCssDir . '/slider-mobile-bc.css') ?>">
   <link rel="stylesheet" href="/assets/css/footer-bc.css?v=<?= $ver($assetCssDir . '/footer-bc.css') ?>">
@@ -91,6 +92,7 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
   <link rel="stylesheet" href="/mobile/assets/css/bottom-bar.css?v=<?= $ver($mobileCssDir . '/bottom-bar.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/footer.css?v=<?= $ver($mobileCssDir . '/footer.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/auth-modals.css?v=<?= $ver($mobileCssDir . '/auth-modals.css') ?>">
+  <script defer src="/assets/js/swiper-bundle.min.js?v=<?= $ver(BASE_PATH . '/assets/js/swiper-bundle.min.js') ?>"></script>
 </head>
 <body class="<?= htmlspecialchars($mobileBodyClass, ENT_QUOTES, 'UTF-8') ?>">
 <?php include MOBILE_PATH . '/views/layouts/bc-root-open.php'; ?>
