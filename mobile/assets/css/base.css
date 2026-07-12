@@ -76,8 +76,8 @@ body.mobile-site {
 
 body.mobile-site .mainContentWrap {
   padding-top: 0 !important;
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
   overflow-x: visible;
   max-width: 100%;
 }
