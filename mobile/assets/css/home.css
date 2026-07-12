@@ -45,7 +45,7 @@
 .mobile-site .live-casino-banner {
   border-radius: 10px;
   overflow: hidden;
-  aspect-ratio: 4 / 1;  /* ~90px at 375px, scales with viewport */
+  aspect-ratio: 5 / 1;  /* ~75px at 375px; shows 62% of image → full text visible */
 }
 
 .mobile-site .live-casino-banner img {
