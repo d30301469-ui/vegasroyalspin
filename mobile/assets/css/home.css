@@ -62,19 +62,26 @@
   padding-right: 8px !important;
 }
 
-/* Oyna / Demo butonları — mobilde her zaman görünür (hover yok) */
+/* Oyna / Demo butonları — tapa basınca görünür (.overlay-active sınıfı JS ile eklenir) */
 .mobile-site .game-item .game-overlay,
 .mobile-site .game-cta .game-overlay {
-  pointer-events: auto !important;
+  pointer-events: none;
 }
 
-.mobile-site .game-item .game-overlay::before,
-.mobile-site .game-cta .game-overlay::before {
-  opacity: 0.6 !important;
+.mobile-site .game-item.overlay-active .game-overlay,
+.mobile-site .game-cta.overlay-active .game-overlay {
+  pointer-events: auto;
 }
 
-.mobile-site .game-item .game-overlay .game-actions,
-.mobile-site .game-cta .game-overlay .game-actions {
+.mobile-site .game-item.overlay-active .game-overlay::before,
+.mobile-site .game-cta.overlay-active .game-overlay::before {
+  opacity: 0.65 !important;
+}
+
+.mobile-site .game-item.overlay-active .game-overlay .game-overlay-top,
+.mobile-site .game-item.overlay-active .game-overlay .game-actions,
+.mobile-site .game-cta.overlay-active .game-overlay .game-overlay-top,
+.mobile-site .game-cta.overlay-active .game-overlay .game-actions {
   opacity: 1 !important;
   transform: translateY(0) !important;
 }

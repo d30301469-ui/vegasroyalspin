@@ -20,5 +20,45 @@ $backToTopJsVer = (string) ((is_file($backToTopJsPath) ? filemtime($backToTopJsP
 ?>
 <script src="/assets/js/back-to-top.js?v=<?= rawurlencode($backToTopJsVer) ?>"></script>
 
-</body>
+<script>
+(function () {
+  function initGameOverlayTap() {
+    var cards = document.querySelectorAll('.game-item, .game-cta');
+    if (!cards.length) return;
+
+    cards.forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        // Butona (Oyna/Demo) tıklandıysa normal çalışsın
+        if (e.target.closest('.play-btn, .demo-btn, a')) return;
+
+        var isActive = card.classList.contains('overlay-active');
+
+        // Tüm açık overlay'leri kapat
+        document.querySelectorAll('.game-item.overlay-active, .game-cta.overlay-active')
+          .forEach(function (c) { c.classList.remove('overlay-active'); });
+
+        // Bu kart kapalıysa aç
+        if (!isActive) card.classList.add('overlay-active');
+
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    // Dışarı tıklayınca kapat
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.game-item, .game-cta')) {
+        document.querySelectorAll('.game-item.overlay-active, .game-cta.overlay-active')
+          .forEach(function (c) { c.classList.remove('overlay-active'); });
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGameOverlayTap);
+  } else {
+    initGameOverlayTap();
+  }
+})();
+</script>
 </html>
