@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
   'use strict';
 
   var TAB_SEL = '.jp-tab';
@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var AMOUNT_SEL = '.jp-amount';
   var SECTION_SEL = '.jp-section[data-jackpot-epoch]';
 
-  /* ---- Tab switching (event delegation) ---- */
+  function init() {
   var container = document.querySelector('.jp-section');
   if (container) {
     container.addEventListener('click', function (e) {
@@ -73,4 +73,12 @@ document.addEventListener('DOMContentLoaded', function () {
   } catch (err) {
     if (console && console.warn) console.warn('Jackpot counter error', err);
   }
-});
+  }
+
+  // DOMContentLoaded zaten geçtiyse hemen çalıştır
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
