@@ -91,7 +91,12 @@ function slider_item_has_media(array $slider): bool
 
 $sliderApiCategory = $sliderApiCategory ?? 'home';
 $sliderFullSized     = $sliderFullSized ?? ($sliderApiCategory === 'home');
-$sliderMobileBc    = !empty($sliderMobileBc);
+// Mobile SURFACE'ta her zaman BC Swiper slider'ı kullan
+if (!isset($sliderMobileBc) || $sliderMobileBc === false) {
+    $sliderMobileBc = defined('SURFACE') && SURFACE === 'mobile';
+} else {
+    $sliderMobileBc = !empty($sliderMobileBc);
+}
 $sliders             = ApiSliders::fetchForCategory($sliderApiCategory);
 $sliders             = array_values(array_filter($sliders, 'slider_item_has_media'));
 if ($sliders === []) {
