@@ -90,6 +90,12 @@
   padding: 8px 8px 10px;
 }
 
+/* jp-section içindeki fazla yatay padding kaldır — tab bar ile hizala */
+.mobile-site .home-jackpot-winners-section .jp-section {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 .mobile-site .home-jackpot-winners-row {
   gap: 10px;
 }

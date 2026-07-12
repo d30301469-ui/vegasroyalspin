@@ -31,13 +31,42 @@ final class ApiJackpot
     public static function normalize(array $config, array $defaults): array
     {
         $epoch = trim((string) ($config['epoch'] ?? $defaults['epoch'] ?? ''));
-        $providers = is_array($config['providers'] ?? null) ? $config['providers'] : [];
-        if ($providers === []) {
-            $providers = $defaults['providers'] ?? [];
+        $apiProviders = is_array($config['providers'] ?? null) ? $config['providers'] : [];
+        $defaultProviders = is_array($defaults['providers'] ?? null) ? $defaults['providers'] : [];
+
+        if ($apiProviders === []) {
+            $providers = $defaultProviders;
+        } else {
+            // Default increment haritası: provider_id → tier_name → increment
+            $defIncMap = [];
+            foreach ($defaultProviders as $dp) {
+                $dpId = strtolower((string) ($dp['id'] ?? ''));
+                foreach ($dp['tiers'] ?? [] as $dt) {
+                    $tn = strtolower((string) ($dt['name'] ?? ''));
+                    if ($dpId !== '' && $tn !== '') {
+                        $defIncMap[$dpId][$tn] = (float) ($dt['increment'] ?? 0);
+                    }
+                }
+            }
+            // API miktarlarını koru, increment yoksa veya 0 ise varsayılanı kullan
+            $providers = [];
+            foreach ($apiProviders as $p) {
+                $pid = strtolower((string) ($p['id'] ?? ''));
+                $tiers = [];
+                foreach ($p['tiers'] ?? [] as $tier) {
+                    $tn  = strtolower((string) ($tier['name'] ?? ''));
+                    $inc = (float) ($tier['increment'] ?? 0);
+                    if ($inc <= 0 && isset($defIncMap[$pid][$tn])) {
+                        $inc = $defIncMap[$pid][$tn];
+                    }
+                    $tiers[] = array_merge($tier, ['increment' => $inc]);
+                }
+                $providers[] = array_merge($p, ['tiers' => $tiers]);
+            }
         }
 
         return [
-            'epoch' => $epoch !== '' ? $epoch : (string) ($defaults['epoch'] ?? date('Y-m-d H:i:s')),
+            'epoch'     => $epoch !== '' ? $epoch : (string) ($defaults['epoch'] ?? date('Y-m-d H:i:s')),
             'providers' => $providers,
         ];
     }
