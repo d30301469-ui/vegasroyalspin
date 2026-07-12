@@ -1,18 +1,17 @@
-/* Ana sayfa jackpot|kazananlar sekmeleri — slot mobil üst bölüm ile aynı kenarlık / aralık */
+/* Ana sayfa jackpot|kazananlar sekmeleri */
 .mobile-site .home-jackpot-winners-section .slot-hero-tabs {
   width: 100%;
-  gap: 0;
-}
-
-.mobile-site .home-jackpot-winners-section .slot-hero-tablist {
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
+  gap: 10px;  /* butonlar ile jackpot paneli arasında boşluk */
 }
 
 .mobile-site .home-jackpot-winners-section .slot-hero-tab {
-  padding: 12px 10px;
+  padding: 11px 10px;
   font-size: 11px;
+}
+
+/* Orta ayırıcı — iki buton arası */
+.mobile-site .home-jackpot-winners-section .slot-hero-tab + .slot-hero-tab {
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .mobile-site .home-jackpot-winners-section .slot-hero-tabpanel[data-slot-hero-panel="winners"] {
