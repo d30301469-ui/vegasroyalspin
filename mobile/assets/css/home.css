@@ -48,11 +48,11 @@
 }
 
 .mobile-site .live-casino-banner img {
-  width: 100%;
-  height: auto;
-  min-height: unset;
-  display: block;
-  object-fit: fill;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  display: block !important;
+  object-fit: fill !important;
 }
 
 .mobile-site .home-jackpot-winners-section {
