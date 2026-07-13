@@ -648,7 +648,6 @@
                         headerEl.after(list);
                     } else {
                         drawer.appendChild(list);
-                        drawer.appendChild(list);
                     }
                 }
             });

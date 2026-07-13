@@ -9,6 +9,10 @@ body:not(.mobile-site) .mobile-right-sheet-overlay {
   display: none !important;
 }
 
+body.mobile-site .mobile-right-sheet-overlay {
+  display: flex !important;
+}
+
 .mobile-right-sheet-overlay {
   position: fixed;
   inset: auto;
@@ -233,6 +237,19 @@ body:not(.mobile-site) .mobile-right-sheet-overlay {
   padding-left: 0;
   padding-right: 0;
   padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-right-sheet__body .mobile-notification-sheet-content .notification-drawer__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* Toolbar in subbar: override subbar styling for toolbar display */

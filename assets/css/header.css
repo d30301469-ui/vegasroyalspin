@@ -1025,7 +1025,16 @@
 /* Mobil: bildirimler / favoriler / ayarlar right-sidebar overlay yerine mobile-right-sheet (footer.js) */
 body.mobile-site #notificationDrawer.right-sidebar,
 body.mobile-site #favoritesDrawer.right-sidebar,
-body.mobile-site #settingsDrawer.right-sidebar {
+body.mobile-site #settingsDrawer.right-sidebar,
+body.mobile-site #searchDrawer.right-sidebar {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+body.mobile-site .right-sidebar-overlay {
   display: none !important;
 }
 
