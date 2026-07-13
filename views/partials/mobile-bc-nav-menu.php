@@ -4,7 +4,7 @@ $mobileNavItems = [
     ['href' => '/sportbook', 'label' => 'SPOR', 'badge' => 'Özel', 'badgeClass' => 'badge-exclusive'],
     ['href' => '/slot', 'label' => 'CASİNO'],
     ['href' => '/livecasino', 'label' => 'CANLI CASİNO'],
-    ['href' => '/slot', 'label' => 'OYUNLAR'],
+    ['href' => '/bgaming', 'label' => 'BGaming', 'badge' => 'YENİ', 'badgeClass' => 'badge-new'],
     ['href' => '/promotions', 'label' => 'PROMOSYONLAR'],
 ];
 ?>
