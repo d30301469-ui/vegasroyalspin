@@ -99,6 +99,27 @@
   gap: 10px;
 }
 
+/* Ürün banner satırı — mobilde slider altında göster (base CSS'te display:none override) */
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 8px 8px 12px;
+  padding: 0;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header .product-banner-bc {
+  display: block;
+  width: 100%;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header .product-banner-img-bc {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+}
+
 /* JACKPOT / KAZANANLAR sekme buton glow animasyonu — KALDIRILDI */
 
 /* Provider sekme butonları çerçeve animasyonu (AMUSNET, APOLLO GAMES, FUGAS, EGT) */
