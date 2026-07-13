@@ -110,8 +110,11 @@ if (class_exists('ApiMediaUrl', false)) {
                                         </div>
 
                                         <div class="form-group entrance-f-item-bc">
-                                            <label class="form-control-label-bc inputs">
+                                            <label class="form-control-label-bc inputs login-password-field">
                                                 <input type="password" class="form-control-input-bc password-input" name="password" id="loginPassword" value="" required>
+                                                <button type="button" class="login-password-toggle" aria-label="Şifreyi göster" aria-pressed="false" data-target-password="#loginPassword">
+                                                    <span class="login-password-toggle-text">GÖSTER</span>
+                                                </button>
                                                 <i class="form-control-input-stroke-bc"></i>
                                                 <span class="form-control-title-bc ellipsis">Şifre *</span>
                                             </label>
