@@ -2,7 +2,8 @@
 include __DIR__ . '/header-banners-data.php';
 $banners = $headerBanners;
 $bannerBase = $headerBannerBase;
-$homeIsMobile = function_exists('isMobile') && isMobile();
+$homeHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+$homeIsMobile = (function_exists('isMobile') && isMobile()) || strpos($homeHost, 'm.') === 0;
 // Ürün banner'ları mobilde de slider altında gösterilir (3x2 grid)
 $hideHomeBannersOnMobile = false;
 $homeSurface = $homeIsMobile ? 'mobile' : 'desktop';
