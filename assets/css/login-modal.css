@@ -443,6 +443,8 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+    position: relative;
+    z-index: 2;
 }
 
 .reset-password-title {
@@ -459,6 +461,8 @@
 
 .reset-password-home-link {
     text-decoration: none;
+    min-width: 92px;
+    text-align: center;
 }
 
 .reset-password-back-row {
@@ -475,8 +479,79 @@ body.reset-password-modal-open {
 }
 
 @media (max-width: 480px) {
+    #resetPasswordModal .login-modal-header.e-p-header-bc {
+        position: relative !important;
+        top: auto !important;
+        right: auto !important;
+        left: auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        height: auto !important;
+        min-height: 52px !important;
+        padding: max(env(safe-area-inset-top, 0px), 0px) 14px 0 !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 10px !important;
+        z-index: 4 !important;
+    }
+
+    #resetPasswordModal .login-logo {
+        min-width: 0;
+        max-width: 146px;
+        flex: 0 1 auto;
+    }
+
+    #resetPasswordModal .login-logo-img {
+        height: 28px;
+        max-width: 132px;
+    }
+
+    #resetPasswordModal .login-header-actions {
+        flex: 0 0 auto;
+        gap: 8px;
+    }
+
+    #resetPasswordModal .reset-password-home-link {
+        min-width: 84px;
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    #resetPasswordModal .reset-password-close {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+        min-height: 24px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        background: rgba(0, 0, 0, 0.26) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+    }
+
     #resetPasswordModal .modal-body {
-        padding: 16px 16px 20px;
+        padding: 0 0 20px;
+    }
+
+    #resetPasswordModal .reset-password-modal-content {
+        padding: 14px 14px 0;
+        gap: 12px;
+    }
+
+    #resetPasswordModal .reset-password-title {
+        font-size: 15px;
+        line-height: 1.2;
+    }
+
+    #resetPasswordModal .reset-password-lead {
+        margin-top: 6px;
+        max-width: 100%;
+    }
+
+    #resetPasswordModal .reset-password-actions,
+    #resetPasswordModal .reset-password-back-row {
+        margin-top: 8px;
     }
 
     #resetPasswordModal .login-btn,
@@ -485,5 +560,9 @@ body.reset-password-modal-open {
         margin-left: 7px !important;
         margin-right: 7px !important;
         box-sizing: border-box !important;
+    }
+
+    #resetPasswordModal .login-support.reg-form-footer-bc {
+        margin-top: auto;
     }
 }

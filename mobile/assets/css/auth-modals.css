@@ -219,6 +219,19 @@ body.mobile-site #resetPasswordModal .login-modal-header.e-p-header-bc {
   z-index: 100205 !important;
 }
 
+body.mobile-site #resetPasswordModal .login-modal-header.e-p-header-bc {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 52px !important;
+  padding: max(env(safe-area-inset-top, 0px), 0px) 14px 0 !important;
+  justify-content: space-between !important;
+}
+
 body.mobile-site #registerModal .register-modal-top-bar {
   width: 100%;
   min-height: var(--mobile-header-main-section-height, 46px);
