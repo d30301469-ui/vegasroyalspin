@@ -2,8 +2,10 @@
 include __DIR__ . '/header-banners-data.php';
 $banners = $headerBanners;
 $bannerBase = $headerBannerBase;
-$hideHomeBannersOnMobile = function_exists('isMobile') && isMobile();
-$homeSurface = $hideHomeBannersOnMobile ? 'mobile' : 'desktop';
+$homeIsMobile = function_exists('isMobile') && isMobile();
+// Ürün banner'ları mobilde de slider altında gösterilir (3x2 grid)
+$hideHomeBannersOnMobile = false;
+$homeSurface = $homeIsMobile ? 'mobile' : 'desktop';
 
 if (!function_exists('homeSectionH')) {
     function homeSectionH(mixed $value): string
