@@ -10,7 +10,7 @@ if (class_exists('ApiMediaUrl', false)) {
     $resetLogoUrl = ApiMediaUrl::resolve($resetLogoUrl);
 }
 ?>
-<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+<div class="modal fade show" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="false" style="display: block;">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content entrance-popup-bc sign-in<?= htmlspecialchars($resetAuthSliderClass, ENT_QUOTES, 'UTF-8') ?>">
             <?php
@@ -96,3 +96,16 @@ if (class_exists('ApiMediaUrl', false)) {
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.body.classList.add('modal-open', 'reset-password-modal-open');
+    document.body.style.overflow = 'hidden';
+    var closeBtn = document.querySelector('.reset-password-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            window.location.href = '/';
+        });
+    }
+});
+</script>
