@@ -601,14 +601,28 @@
     }
 
     #login2 .login-close {
+        position: fixed !important;
+        top: max(8px, env(safe-area-inset-top, 0px)) !important;
+        right: 8px !important;
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
         color: #fff !important;
         font-size: 28px !important;
         line-height: 1 !important;
-        padding: 8px 12px !important;
         opacity: 0.9 !important;
-        background: none !important;
-        border: none !important;
+        background: rgba(0, 0, 0, 0.32) !important;
+        border: 1px solid rgba(255, 255, 255, 0.16) !important;
+        border-radius: 50% !important;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
         cursor: pointer !important;
+        pointer-events: auto !important;
+        z-index: 100206 !important;
     }
 
     /* --- Form area --- */

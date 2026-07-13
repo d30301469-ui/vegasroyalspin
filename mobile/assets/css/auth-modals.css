@@ -190,7 +190,7 @@ body.mobile-site #login2 .login-modal-header.e-p-header-bc {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  pointer-events: none;
+  pointer-events: auto !important;
   z-index: 100205 !important;
 }
 
@@ -219,19 +219,16 @@ body.mobile-site #registerModal .register-logo-img {
 body.mobile-site #registerModal .register-top-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   margin-left: auto;
   min-height: 100%;
 }
 
 body.mobile-site #registerModal .register-modal-login-link,
-body.mobile-site #login2 .login-close,
 body.mobile-site #registerModal .register-modal-close {
   -webkit-appearance: none;
   appearance: none;
-  background: transparent !important;
-  border: 0 !important;
-  color: rgba(255, 255, 255, 0.86) !important;
   text-decoration: none !important;
   box-shadow: none !important;
 }
@@ -243,89 +240,64 @@ body.mobile-site #registerModal .register-modal-login-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0 4px 0 4px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.03) !important;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   color: #fff !important;
   font-size: 12px;
-  line-height: 14px;
+  line-height: 1;
   font-weight: 700;
   text-transform: uppercase;
-body.mobile-site #registerModal .register-logo {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-}
-
-  text-decoration: none !important;
-  max-width: 122px;
 }
 
 body.mobile-site #registerModal .register-modal-close {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 !important;
   display: inline-flex !important;
-}
-
-body.mobile-site #login2 .login-close,
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 8px;
-  margin-left: auto;
-body.mobile-site #registerModal .register-modal-close {
-
-body.mobile-site #registerModal .register-modal-login-link {
-  min-width: 58px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 10px;
-  line-height: 1;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-}
-
-body.mobile-site #registerModal .register-modal-close {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
-  flex: 0 0 34px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06)) !important;
+  color: #fff !important;
+  font-size: 28px;
+  line-height: 1;
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 100206 !important;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 body.mobile-site #registerModal .register-modal-close span {
-  font-size: 26px;
+  font-size: 30px;
   line-height: 1;
   transform: translateY(-1px);
-}
-  position: relative;
-  width: 38px;
-  height: 38px;
-  margin: 0;
-  padding: 0 !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  line-height: 1;
-  opacity: 0.9;
-  pointer-events: auto;
-  z-index: 100206 !important;
 }
 
 body.mobile-site #login2 .login-close {
   position: fixed !important;
   top: max(8px, env(safe-area-inset-top, 0px)) !important;
   right: 8px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
   color: #fff !important;
   background: rgba(0, 0, 0, 0.32) !important;
   border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  pointer-events: auto !important;
+  z-index: 100206 !important;
 }
 
 body.mobile-site #login2 .login-close span {
@@ -337,11 +309,14 @@ body.mobile-site #login2 .login-close::before {
   display: block;
   color: #fff;
   font-size: 30px;
-  line-height: 34px;
+  line-height: 1;
 }
 
 body.mobile-site #login2 .login-modal-header.e-p-header-bc .login-header-actions {
-  display: contents;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  pointer-events: auto !important;
 }
 
 body.mobile-site #login2 .mobile-auth-close,
