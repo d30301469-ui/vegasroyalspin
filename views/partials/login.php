@@ -106,13 +106,13 @@ if (class_exists('ApiMediaUrl', false)) {
 
                 body.mobile-site #login2 .login-password-field .login-password-toggle-icon,
                 body.mobile-site #login2 .login-password-field .login-password-toggle-icon svg {
-                    width: 15px;
-                    height: 15px;
+                    width: 14px;
+                    height: 14px;
                 }
 
                 body.mobile-site #login2 .login-password-field .login-password-toggle-icon svg {
-                    width: 15px !important;
-                    height: 15px !important;
+                    width: 14px !important;
+                    height: 14px !important;
                     fill: none;
                     stroke: currentColor;
                     stroke-width: 1.8;
