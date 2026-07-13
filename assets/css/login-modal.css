@@ -388,11 +388,13 @@
 
     #login2 .login-password-field .login-password-toggle-icon,
     #login2 .login-password-field .login-password-toggle-icon svg {
-        width: 16px;
-        height: 16px;
+        width: 14px !important;
+        height: 14px !important;
     }
 
     #login2 .login-password-field .login-password-toggle-icon svg {
+        width: 14px !important;
+        height: 14px !important;
         fill: none;
         stroke: currentColor;
         stroke-width: 1.8;
