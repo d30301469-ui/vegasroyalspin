@@ -141,16 +141,19 @@ if (class_exists('ApiMediaUrl', false)) {
 
                 #login2 #forgotPasswordScreen {
                     margin-top: 0 !important;
-                    min-height: auto !important;
+                }
+
+                #login2 #forgotPasswordScreen.d-none {
+                    display: none !important;
+                }
+
+                #login2 #forgotPasswordScreen:not(.d-none) {
                     display: flex !important;
                     flex-direction: column !important;
                     justify-content: center !important;
-                    position: fixed !important;
-                    top: 52% !important;
-                    left: 50% !important;
-                    transform: translate(-50%, -50%) !important;
-                    width: min(92vw, 540px) !important;
-                    z-index: 100207 !important;
+                    width: 100% !important;
+                    max-width: 520px !important;
+                    margin: 0 auto !important;
                 }
 
                 #login2 #forgotPasswordScreen .login-forgot-heading {
@@ -192,9 +195,9 @@ if (class_exists('ApiMediaUrl', false)) {
                 #login2 #forgotPasswordScreen .login-forgot-heading,
                 #login2 #forgotPasswordScreen .login-form {
                     width: 100% !important;
-                    max-width: 520px !important;
-                    margin-left: auto !important;
-                    margin-right: auto !important;
+                    max-width: 100% !important;
+                    margin-left: 0 !important;
+                    margin-right: 0 !important;
                 }
 
                 #login2 #forgotPasswordScreen .form-group {
@@ -249,8 +252,8 @@ if (class_exists('ApiMediaUrl', false)) {
                 body.mobile-site #login2 #forgotPasswordScreen {
                     min-height: auto !important;
                     justify-content: center !important;
-                    top: 54% !important;
-                    width: calc(100% - 22px) !important;
+                    width: calc(100% - 14px) !important;
+                    margin: 0 7px !important;
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen .login-forgot-title {
@@ -261,31 +264,8 @@ if (class_exists('ApiMediaUrl', false)) {
                     font-size: 12px !important;
                 }
 
-                #login2.forgot-screen-active .modal-body {
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                }
-
-                #login2.forgot-screen-active .login-modal-container {
-                    width: 100% !important;
-                    max-width: 540px !important;
-                    margin: 0 auto !important;
-                }
-
-                #login2.forgot-screen-active #forgotPasswordScreen {
-                    min-height: auto !important;
-                    width: 100% !important;
-                    margin: 0 !important;
-                }
-
-                #login2.forgot-screen-active .login-support {
+                #login2 #forgotPasswordScreen:not(.d-none) + .login-support {
                     display: none !important;
-                }
-
-                body.mobile-site #login2.forgot-screen-active .modal-body {
-                    padding-top: max(56px, env(safe-area-inset-top, 0px)) !important;
-                    padding-bottom: 18px !important;
                 }
             </style>
             <?php

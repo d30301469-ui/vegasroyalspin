@@ -227,25 +227,10 @@
         return root.querySelector('#' + id) || document.getElementById(id);
     }
 
-    function setForgotScreenMode(scope, enabled) {
-        var root = scope || getLoginModalScope();
-        var modal = root && root.id === 'login2' ? root : (root && root.closest ? root.closest('#login2') : null);
-        if (!modal) {
-            modal = document.getElementById('login2');
-        }
-        if (!modal || !modal.classList) return;
-        if (enabled) {
-            modal.classList.add('forgot-screen-active');
-        } else {
-            modal.classList.remove('forgot-screen-active');
-        }
-    }
-
     function showLoginFormScreen(scope) {
         var hdr = inLoginScope(scope, 'loginScreenHeader');
         var main = inLoginScope(scope, 'loginFormScreen');
         var forg = inLoginScope(scope, 'forgotPasswordScreen');
-        setForgotScreenMode(scope, false);
         if (hdr) {
             hdr.classList.remove('d-none');
         }
@@ -261,7 +246,6 @@
         var hdr = inLoginScope(scope, 'loginScreenHeader');
         var main = inLoginScope(scope, 'loginFormScreen');
         var forg = inLoginScope(scope, 'forgotPasswordScreen');
-        setForgotScreenMode(scope, true);
         if (hdr) {
             hdr.classList.add('d-none');
         }
