@@ -8,7 +8,7 @@
 /*
  * Sticky tek blokta olursa (eski .mobileHeader sticky) tarayıcı tüm çocukları tek stacking context’e hapseder;
  * içerikteki z-index:50–100 katmanlar mor menüyü (z-index:1) ve bazen tüm şeridi örter.
- * Sticky’yi inner + .mainMenu’ye böldük; z-index’ler sheet (1048) / inner (1050) hiyerarşisiyle uyumlu kalır.
+ * Sticky’yi inner + .mainMenu’ye böldük; z-index’ler sheet (1060/1061) header-bc (1051) / inner (1050) hiyerarşisiyle uyumlu kalır.
  */
 .mobileHeader {
   position: static;
@@ -286,9 +286,12 @@ body.mobile-site .search-panel {
   max-height: none;
 }
 
-/* Mobil sheet (bildirimler/favoriler/ayarlar) — sağdan tam yükseklik */
+/* Mobil sheet (bildirimler/favoriler/ayarlar) — sağdan tam yükseklik.
+ * z-index: header-bc (1051) + layout-header-holder-bc (1050) ustunde olmali ki
+ * sheet basligi (baslik/geri/kapat) + alt serit (tarih/temizle) hizli-erisim
+ * kisayollari ve urun menusunun ustunde gorunsun. Logo seridi (top:65px) ustte kalir. */
 body.mobile-site .mobile-right-sheet-overlay {
-  z-index: 1048;
+  z-index: 1060;
   top: var(--mobile-promo-sheet-top, var(--mobile-top-bar-height, 64px));
   bottom: calc(var(--mobile-footer-height, 64px) + env(safe-area-inset-bottom, 0px));
   height: auto;
@@ -296,7 +299,7 @@ body.mobile-site .mobile-right-sheet-overlay {
 }
 
 body.mobile-site .mobile-right-sheet {
-  z-index: 1049;
+  z-index: 1061;
   height: 100%;
   max-height: 100%;
 }
