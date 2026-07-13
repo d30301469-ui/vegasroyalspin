@@ -3,8 +3,8 @@ $resetToken = isset($resetToken) ? (string) $resetToken : '';
 $hasToken = $resetToken !== '';
 ?>
 <style>
-    .reset-password-modal-page,
-    .reset-password-modal-page * {
+    .reset-password-shell,
+    .reset-password-shell * {
         background-image: none !important;
     }
 
@@ -17,58 +17,54 @@ $hasToken = $resetToken !== '';
         display: none !important;
     }
 
-    .reset-password-modal-page {
+    .reset-password-shell {
         position: relative;
         min-height: 100vh;
         min-height: 100dvh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 16px;
-        background-color: #070919 !important;
+        padding: 20px 12px;
+        background: rgba(7, 9, 25, 0.98) !important;
     }
 
-    .reset-password-modal-backdrop {
-        position: absolute;
+    .reset-password-shell::before {
+        content: "";
+        position: fixed;
         inset: 0;
-        background-color: rgba(4, 6, 18, 0.72) !important;
+        background: rgba(4, 6, 18, 0.72);
         backdrop-filter: blur(3px);
+        z-index: 0;
+    }
+
+    .reset-password-shell .modal {
+        display: block;
+        position: relative;
+        z-index: 1;
+        background: transparent;
+        overflow: visible;
+    }
+
+    .reset-password-shell .modal-dialog {
+        max-width: 559px;
+        margin: 42px auto;
+    }
+
+    .reset-password-shell .modal-content {
+        background: var(--body-bg);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--white-color);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--primary);
+        overflow: hidden;
+    }
+
+    .reset-password-shell .modal-body {
+        padding: 21px 31px 26px;
     }
 
     .reset-password-modal {
         position: relative;
-        z-index: 1;
-        width: min(100%, 520px);
-        border-radius: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        background-color: rgba(8, 10, 24, 0.95) !important;
-        box-shadow:
-            0 20px 48px rgba(0, 0, 0, 0.56),
-            0 0 0 1px rgba(133, 15, 131, 0.28),
-            inset 0 1px 0 rgba(255, 255, 255, 0.06);
-        padding: 22px;
-        gap: 14px;
-        overflow: hidden;
-    }
-
-    .reset-password-modal::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background-color: rgba(133, 15, 131, 0.04);
-        opacity: 1;
-    }
-
-    .reset-password-modal::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 0;
-        height: 3px;
-        background-color: rgba(133, 15, 131, 0.85);
-        opacity: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
     }
 
     .reset-password-close {
@@ -92,7 +88,7 @@ $hasToken = $resetToken !== '';
     }
 
     .reset-password-close:hover {
-        background-color: rgba(133, 15, 131, 0.28);
+        background-color: rgba(133, 15, 131, 0.22);
         border-color: rgba(255, 255, 255, 0.34);
     }
 
@@ -102,17 +98,27 @@ $hasToken = $resetToken !== '';
         line-height: 1;
     }
 
-    .reset-password-modal > * {
-        position: relative;
-        z-index: 1;
+    .reset-password-brand {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.78);
+        text-transform: uppercase;
+        font-weight: 700;
     }
 
     .reset-password-title {
         margin: 0;
         text-transform: uppercase;
         letter-spacing: 0.03em;
-        font-size: 21px;
+        font-size: 20px;
         line-height: 1.2;
+    }
+
+    .reset-password-subtitle {
+        margin: 0;
+        font-size: 12px;
+        color: #cccccc;
+        line-height: 1.4;
     }
 
     .reset-password-lead {
@@ -120,7 +126,7 @@ $hasToken = $resetToken !== '';
         font-size: 13px;
         line-height: 1.55;
         color: rgba(243, 240, 255, 0.86);
-        max-width: 46ch;
+        max-width: 44ch;
     }
 
     .reset-password-modal .login-form {
@@ -139,25 +145,21 @@ $hasToken = $resetToken !== '';
     }
 
     .reset-password-modal .form-control-input-bc {
-        height: 48px;
-        min-height: 48px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        background-color: rgba(15, 17, 36, 0.94) !important;
-        transition: border-color 120ms ease, box-shadow 120ms ease;
+        height: 46px;
+        min-height: 46px;
     }
 
     .reset-password-modal .form-control-input-bc:focus {
         border-color: var(--secondary);
-        box-shadow: 0 0 0 3px rgba(16, 145, 33, 0.16);
+        box-shadow: 0 0 0 2px rgba(16, 145, 33, 0.16);
     }
 
     .reset-password-modal .login-btn {
-        min-height: 48px;
+        min-height: 46px;
         border-radius: 8px;
         border: 1px solid var(--primary) !important;
         background-color: var(--primary) !important;
-        box-shadow: 0 10px 20px rgba(133, 15, 131, 0.32);
+        box-shadow: 0 8px 18px rgba(133, 15, 131, 0.28);
         color: #fff !important;
         font-weight: 700;
         letter-spacing: 0.02em;
@@ -168,7 +170,7 @@ $hasToken = $resetToken !== '';
         color: #fff !important;
         border-color: rgba(133, 15, 131, 0.95) !important;
         background-color: rgba(112, 13, 111, 0.98) !important;
-        box-shadow: 0 12px 24px rgba(133, 15, 131, 0.32);
+        box-shadow: 0 10px 22px rgba(133, 15, 131, 0.3);
         transform: translateY(-1px);
     }
 
@@ -191,7 +193,7 @@ $hasToken = $resetToken !== '';
     }
 
     .reset-password-actions {
-        margin-top: 6px;
+        margin-top: 2px;
         text-align: center;
     }
 
@@ -209,16 +211,13 @@ $hasToken = $resetToken !== '';
     }
 
     @media (max-width: 480px) {
-        .reset-password-modal-page {
+        .reset-password-shell {
             min-height: 100dvh;
-            padding: 10px;
+            padding: 8px;
         }
 
-        .reset-password-modal {
-            width: 100%;
-            border-radius: 12px;
-            padding: 15px;
-            gap: 10px;
+        .reset-password-shell .modal-dialog {
+            margin: 10px auto;
         }
 
         .reset-password-close {
@@ -241,66 +240,89 @@ $hasToken = $resetToken !== '';
         }
     }
 </style>
-<section class="mainWrap reset-password-modal-page">
-    <div class="reset-password-modal-backdrop" aria-hidden="true"></div>
-    <div class="reset-password-modal login-modal-container" role="dialog" aria-modal="true" aria-label="Şifre sıfırlama penceresi">
-        <button type="button" class="reset-password-close" id="resetPasswordClose" aria-label="Kapat"></button>
-        <h1 class="login-main-title reset-password-title"><?= $hasToken ? 'Yeni şifre belirleyin' : 'Şifre sıfırlama' ?></h1>
-        <p class="login-forgot-hint reset-password-lead"><?= $hasToken
-            ? 'E-postadaki bağlantı ile yeni şifrenizi belirleyin.'
-            : 'Hesabınıza ait e-posta adresini girin. Kayıtlıysa doğrulama kodu veya sıfırlama bağlantısı gönderilir.' ?></p>
+<section class="mainWrap reset-password-shell">
+    <div class="modal show d-block" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordTitle" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content entrance-popup-bc sign-in">
+                <div class="e-p-content-holder-bc">
+                    <div class="e-p-content-bc">
+                        <div class="modal-body e-p-body-bc">
+                            <div class="reset-password-modal login-modal-container">
+                                <div class="login-modal-header e-p-header-bc">
+                                    <div class="login-logo">
+                                        <span class="reset-password-brand">VEGASROYALSPIN</span>
+                                    </div>
+                                    <div class="login-header-actions e-p-sections-bc">
+                                        <a href="/" class="login-register-btn e-p-section-title-bc">ANASAYFA</a>
+                                        <button type="button" class="reset-password-close login-close e-p-close-icon-bc" id="resetPasswordClose" aria-label="Kapat"></button>
+                                    </div>
+                                </div>
 
-        <form method="post" action="#" class="login-form<?= $hasToken ? ' d-none' : '' ?>" id="resetPasswordRequestForm" novalidate>
-            <div class="form-group">
-                <label class="form-control-label-bc inputs">
-                    <input type="email" class="form-control-input-bc" name="email" id="resetPasswordEmail" required autocomplete="email">
-                    <i class="form-control-input-stroke-bc"></i>
-                    <span class="form-control-title-bc ellipsis">E-posta *</span>
-                </label>
-                <div class="login-error-text" data-error-for="email">Bu alan gerekli</div>
+                                <div class="login-text-block">
+                                    <p class="reset-password-subtitle">Şifre sıfırlama</p>
+                                    <h1 class="login-main-title reset-password-title" id="resetPasswordTitle"><?= $hasToken ? 'Yeni şifre belirleyin' : 'Doğrulama kodu alın' ?></h1>
+                                    <p class="login-forgot-hint reset-password-lead"><?= $hasToken
+                                        ? 'E-postadaki bağlantı ile yeni şifrenizi belirleyin.'
+                                        : 'E-posta adresinizi girin. Hesap kayıtlıysa kod veya sıfırlama bağlantısı gönderilir.' ?></p>
+                                </div>
+
+                                <form method="post" action="#" class="login-form entrance-form-bc sign-in popup<?= $hasToken ? ' d-none' : '' ?>" id="resetPasswordRequestForm" novalidate>
+                                    <div class="form-group entrance-f-item-bc">
+                                        <label class="form-control-label-bc inputs">
+                                            <input type="email" class="form-control-input-bc" name="email" id="resetPasswordEmail" required autocomplete="email">
+                                            <i class="form-control-input-stroke-bc"></i>
+                                            <span class="form-control-title-bc ellipsis">E-posta *</span>
+                                        </label>
+                                        <div class="login-error-text" data-error-for="email">Bu alan gerekli</div>
+                                    </div>
+
+                                    <div class="login-error-box login-ajax-alert d-none" id="resetPasswordRequestAlert" role="alert"></div>
+                                    <div class="login-success-box d-none" id="resetPasswordRequestSuccess" role="status"></div>
+
+                                    <button type="submit" class="login-btn" id="resetPasswordRequestSubmit">
+                                        <span class="btn-text">KOD GÖNDER</span>
+                                        <span class="loading" style="display: none;"></span>
+                                    </button>
+                                </form>
+
+                                <form method="post" action="#" class="login-form entrance-form-bc sign-in popup<?= $hasToken ? '' : ' d-none' ?>" id="resetPasswordForm" novalidate>
+                                    <input type="hidden" id="resetPasswordToken" value="<?= htmlspecialchars($resetToken, ENT_QUOTES, 'UTF-8') ?>">
+
+                                    <div class="form-group entrance-f-item-bc">
+                                        <label class="form-control-label-bc inputs">
+                                            <input type="password" class="form-control-input-bc password-input" name="password" id="resetPasswordNew" required autocomplete="new-password" minlength="1">
+                                            <i class="form-control-input-stroke-bc"></i>
+                                            <span class="form-control-title-bc ellipsis">Yeni şifre *</span>
+                                        </label>
+                                        <div class="login-error-text" data-error-for="password">Bu alan gerekli</div>
+                                    </div>
+
+                                    <div class="form-group entrance-f-item-bc">
+                                        <label class="form-control-label-bc inputs">
+                                            <input type="password" class="form-control-input-bc password-input" name="password_confirmation" id="resetPasswordConfirm" required autocomplete="new-password" minlength="1">
+                                            <i class="form-control-input-stroke-bc"></i>
+                                            <span class="form-control-title-bc ellipsis">Yeni şifre tekrarı *</span>
+                                        </label>
+                                        <div class="login-error-text" data-error-for="password_confirmation">Bu alan gerekli</div>
+                                    </div>
+
+                                    <div class="login-error-box login-ajax-alert d-none" id="resetPasswordAjaxAlert" role="alert"></div>
+                                    <div class="login-success-box d-none" id="resetPasswordSuccess" role="status"></div>
+
+                                    <button type="submit" class="login-btn" id="resetPasswordSubmit">
+                                        <span class="btn-text">ŞİFREYİ GÜNCELLE</span>
+                                        <span class="loading" style="display: none;"></span>
+                                    </button>
+                                </form>
+
+                                <div class="reset-password-actions">
+                                    <a href="/">Ana sayfaya dön</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <div class="login-error-box login-ajax-alert d-none" id="resetPasswordRequestAlert" role="alert"></div>
-            <div class="login-success-box d-none" id="resetPasswordRequestSuccess" role="status"></div>
-
-            <button type="submit" class="login-btn" id="resetPasswordRequestSubmit">
-                <span class="btn-text">KOD GÖNDER</span>
-                <span class="loading" style="display: none;"></span>
-            </button>
-        </form>
-
-        <form method="post" action="#" class="login-form<?= $hasToken ? '' : ' d-none' ?>" id="resetPasswordForm" novalidate>
-            <input type="hidden" id="resetPasswordToken" value="<?= htmlspecialchars($resetToken, ENT_QUOTES, 'UTF-8') ?>">
-
-            <div class="form-group">
-                <label class="form-control-label-bc inputs">
-                    <input type="password" class="form-control-input-bc password-input" name="password" id="resetPasswordNew" required autocomplete="new-password" minlength="1">
-                    <i class="form-control-input-stroke-bc"></i>
-                    <span class="form-control-title-bc ellipsis">Yeni şifre *</span>
-                </label>
-                <div class="login-error-text" data-error-for="password">Bu alan gerekli</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-control-label-bc inputs">
-                    <input type="password" class="form-control-input-bc password-input" name="password_confirmation" id="resetPasswordConfirm" required autocomplete="new-password" minlength="1">
-                    <i class="form-control-input-stroke-bc"></i>
-                    <span class="form-control-title-bc ellipsis">Yeni şifre tekrarı *</span>
-                </label>
-                <div class="login-error-text" data-error-for="password_confirmation">Bu alan gerekli</div>
-            </div>
-
-            <div class="login-error-box login-ajax-alert d-none" id="resetPasswordAjaxAlert" role="alert"></div>
-            <div class="login-success-box d-none" id="resetPasswordSuccess" role="status"></div>
-
-            <button type="submit" class="login-btn" id="resetPasswordSubmit">
-                <span class="btn-text">ŞİFREYİ GÜNCELLE</span>
-                <span class="loading" style="display: none;"></span>
-            </button>
-        </form>
-
-        <div class="reset-password-actions">
-            <a href="/">Ana sayfaya dön</a>
         </div>
     </div>
 </section>
@@ -319,13 +341,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var closeBtn = document.getElementById('resetPasswordClose');
     if (closeBtn) {
         closeBtn.addEventListener('click', function () {
-            closeResetModal();
-        });
-    }
-
-    var backdrop = document.querySelector('.reset-password-modal-backdrop');
-    if (backdrop) {
-        backdrop.addEventListener('click', function () {
             closeResetModal();
         });
     }
