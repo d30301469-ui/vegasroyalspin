@@ -18,10 +18,6 @@
             <i class="sp-button-icon-bc bc-i-favorite"></i>
             <span class="sp-tooltip">Favoriler</span>
         </button>
-        <a class="sp-button-bc" href="/profile/messages" data-nav-mode="modal" title="Mesajlar" aria-label="Mesajlar">
-            <i class="sp-button-icon-bc bc-i-message"></i>
-            <span class="sp-tooltip">Mesajlar</span>
-        </a>
         <a class="sp-button-bc" href="/promotions" data-nav-mode="page" title="Bonuslar" aria-label="Bonuslar">
             <i class="sp-button-icon-bc bc-i-promotions-3"></i>
             <span class="sp-tooltip">Bonuslar</span>
