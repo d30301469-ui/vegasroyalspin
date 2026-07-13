@@ -13,9 +13,19 @@ body.mobile-site .layout-navigation-holder-bc .tab-navigation-w-bc {
   display: flex !important;
 }
 
-/* CANLI CASİNO ikonu — glyph masaüstü header.css'te, mobilde de tanımla (BetConstruct-Icons) */
+/* Orijinal BetConstruct ikonları — tab bar glyph'lerini orijinal koda sabitle.
+   (slots.css bc-i-slots'u FontAwesome'a çeviriyor; bc-i-livecasino mobilde tanımsız.
+   bc-i-prematch ve bc-i-burger zaten bc-mobile-index.css'ten render ediyor.) */
+body.mobile-site .tab-navigation-w-bc .tab-nav-icon-bc.bc-i-slots::before {
+  content: "\e955";
+  font-family: "BetConstruct-Icons" !important;
+  font-weight: normal !important;
+}
+
 body.mobile-site .tab-navigation-w-bc .tab-nav-icon-bc.bc-i-livecasino::before {
   content: "\e945";
+  font-family: "BetConstruct-Icons" !important;
+  font-weight: normal !important;
 }
 
 body.mobile-site .tab-navigation-w-bc .tab-nav-item-bc {
