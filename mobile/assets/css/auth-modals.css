@@ -170,7 +170,7 @@ body.mobile-site #registerModal .register-modal-header-text.e-p-header-bc {
   flex-shrink: 0;
   min-height: var(--mobile-header-main-section-height, 46px);
   height: var(--mobile-header-main-section-height, 46px);
-  padding: max(env(safe-area-inset-top, 0px), 0px) 10px 0;
+  padding: max(env(safe-area-inset-top, 0px), 0px) 8px 0;
   border: 0;
   background: transparent !important;
   z-index: 3;
@@ -243,7 +243,8 @@ body.mobile-site #registerModal .register-modal-login-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.62) !important;
+  gap: 8px;
+  padding: 0 4px 0 4px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.03) !important;
   color: #fff !important;
@@ -251,8 +252,15 @@ body.mobile-site #registerModal .register-modal-login-link {
   line-height: 14px;
   font-weight: 700;
   text-transform: uppercase;
+body.mobile-site #registerModal .register-logo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
   text-decoration: none !important;
-  transform: translateY(0);
+  max-width: 122px;
 }
 
 body.mobile-site #registerModal .register-modal-close {
@@ -260,7 +268,42 @@ body.mobile-site #registerModal .register-modal-close {
 }
 
 body.mobile-site #login2 .login-close,
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin-left: auto;
 body.mobile-site #registerModal .register-modal-close {
+
+body.mobile-site #registerModal .register-modal-login-link {
+  min-width: 58px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  line-height: 1;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+body.mobile-site #registerModal .register-modal-close {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
+body.mobile-site #registerModal .register-modal-close span {
+  font-size: 26px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
   position: relative;
   width: 38px;
   height: 38px;
