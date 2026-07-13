@@ -1,0 +1,62 @@
+/**
+ * Mobil right sheet — bildirimler, favoriler, ayarlar için styling
+ * Bu dosya assets/css/mobile-right-sheet.css'i tamamlayıcı mobil-specific kurallar içerir
+ */
+
+/* Ensure sheet header elements are visible */
+body.mobile-site .mobile-right-sheet__header {
+  display: flex !important;
+  align-items: center !important;
+  visibility: visible !important;
+  height: auto !important;
+  min-height: 44px;
+}
+
+body.mobile-site .mobile-right-sheet__title {
+  display: block !important;
+  visibility: visible !important;
+  color: #fff !important;
+  flex: 1;
+}
+
+body.mobile-site .mobile-right-sheet__back,
+body.mobile-site .mobile-right-sheet__close {
+  display: inline-flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure subbar displays properly */
+body.mobile-site .mobile-right-sheet__subbar {
+  display: flex !important;
+  visibility: visible !important;
+  height: auto !important;
+  min-height: 36px;
+}
+
+body.mobile-site .mobile-right-sheet__subbar[hidden] {
+  display: none !important;
+}
+
+body.mobile-site .mobile-right-sheet__subbar button,
+body.mobile-site .notification-drawer__date,
+body.mobile-site .notification-drawer__clear {
+  visibility: visible !important;
+  color: #a09ed0 !important;
+  display: inline-block !important;
+}
+
+/* Ensure body content displays */
+body.mobile-site .mobile-right-sheet__body {
+  display: flex !important;
+  visibility: visible !important;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Notification items in mobile context */
+body.mobile-site .notification-drawer__item {
+  display: flex !important;
+  visibility: visible !important;
+}
