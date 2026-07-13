@@ -8,6 +8,7 @@
     var overlay = null;
     var panel = null;
     var backBtn = null;
+    var closeBtn = null;
     var titleEl = null;
     var subbarEl = null;
     var bodyEl = null;
@@ -21,6 +22,7 @@
         if (!overlay) return;
         panel = document.getElementById('mobile-right-sheet');
         backBtn = overlay.querySelector('.mobile-right-sheet__back');
+        closeBtn = overlay.querySelector('.mobile-right-sheet__close');
         titleEl = document.getElementById('mobile-right-sheet-title');
         subbarEl = overlay.querySelector('.mobile-right-sheet__subbar');
         bodyEl = overlay.querySelector('.mobile-right-sheet__body');
@@ -39,6 +41,9 @@
             '      <svg class="mobile-right-sheet__back-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>',
             '    </button>',
             '    <h2 id="mobile-right-sheet-title" class="mobile-right-sheet__title"></h2>',
+            '    <button type="button" class="mobile-right-sheet__close" aria-label="Kapat">',
+            '      <svg class="mobile-right-sheet__close-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="currentColor"/></svg>',
+            '    </button>',
             '  </div>',
             '  <div class="mobile-right-sheet__subbar" hidden></div>',
             '  <div class="mobile-right-sheet__body"></div>',
@@ -63,6 +68,9 @@
         }
         if (backBtn) {
             backBtn.addEventListener('click', close);
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', close);
         }
     }
 
