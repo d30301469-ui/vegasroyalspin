@@ -22,6 +22,8 @@ $headerCssVer = (string) (
 $modalCssVer    = (string) (file_exists($assetCssDir . '/modal.css') ? filemtime($assetCssDir . '/modal.css') : $assetVer);
 $registerCssVer = (string) (file_exists($assetCssDir . '/register.css') ? filemtime($assetCssDir . '/register.css') : $assetVer);
 $loginCssVer    = (string) (file_exists($assetCssDir . '/login.css') ? filemtime($assetCssDir . '/login.css') : $assetVer);
+$registerModalCssVer = (string) (file_exists($assetCssDir . '/register-modal.css') ? filemtime($assetCssDir . '/register-modal.css') : $assetVer);
+$loginModalCssVer = (string) (file_exists($assetCssDir . '/login-modal.css') ? filemtime($assetCssDir . '/login-modal.css') : $assetVer);
 $authSlidersCssVer = (string) (file_exists($assetCssDir . '/auth-sliders.css') ? filemtime($assetCssDir . '/auth-sliders.css') : $assetVer);
 $footerBcCssVer = (string) (file_exists($assetCssDir . '/footer-bc.css') ? filemtime($assetCssDir . '/footer-bc.css') : $assetVer);
 $slotsCssVer = (string) (file_exists($assetCssDir . '/slots.css') ? filemtime($assetCssDir . '/slots.css') : $assetVer);
@@ -94,6 +96,8 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/mobile_bottom.css?v=<?= $assetVer ?>" rel="stylesheet">
   <link href="/assets/css/register.css?v=<?= $registerCssVer ?>" rel="stylesheet">
   <link href="/assets/css/login.css?v=<?= $loginCssVer ?>" rel="stylesheet">
+  <link href="/assets/css/register-modal.css?v=<?= $registerModalCssVer ?>" rel="stylesheet">
+  <link href="/assets/css/login-modal.css?v=<?= $loginModalCssVer ?>" rel="stylesheet">
   <link href="/assets/css/auth-sliders.css?v=<?= $authSlidersCssVer ?>" rel="stylesheet">
   <link href="/assets/css/daterangepicker.css?v=<?= $assetVer ?>" rel="stylesheet">
     <style>

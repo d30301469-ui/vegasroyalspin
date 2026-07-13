@@ -14,6 +14,8 @@ $headerCssVer = (string) (file_exists($assetCssDir . '/header.css') ? filemtime(
 $modalCssVer = (string) (file_exists($assetCssDir . '/modal.css') ? filemtime($assetCssDir . '/modal.css') : $assetVer);
 $registerCssVer = (string) (file_exists($assetCssDir . '/register.css') ? filemtime($assetCssDir . '/register.css') : $assetVer);
 $loginCssVer = (string) (file_exists($assetCssDir . '/login.css') ? filemtime($assetCssDir . '/login.css') : $assetVer);
+$registerModalCssVer = (string) (file_exists($assetCssDir . '/register-modal.css') ? filemtime($assetCssDir . '/register-modal.css') : $assetVer);
+$loginModalCssVer = (string) (file_exists($assetCssDir . '/login-modal.css') ? filemtime($assetCssDir . '/login-modal.css') : $assetVer);
 $footerBcCssVer = (string) (file_exists($assetCssDir . '/footer-bc.css') ? filemtime($assetCssDir . '/footer-bc.css') : $assetVer);
 $slotsCssVer = (string) (file_exists($assetCssDir . '/slots.css') ? filemtime($assetCssDir . '/slots.css') : $assetVer);
 $homeCssVer = (string) (file_exists($assetCssDir . '/home.css') ? filemtime($assetCssDir . '/home.css') : $assetVer);
@@ -26,8 +28,8 @@ if ($isPromosyonlar || $isPromotions) {
     $promoVer = (string) (file_exists($assetCssDir . '/promosyonlar.css') ? filemtime($assetCssDir . '/promosyonlar.css') : $assetVer);
     $bonusModalVer = (string) (file_exists($assetCssDir . '/bonus-detail-modal.css') ? filemtime($assetCssDir . '/bonus-detail-modal.css') : $assetVer);
 }
-$headBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-$headMeta = is_array($siteMeta ?? null) ? $siteMeta : [];
+$headBranding = (isset($siteBranding) && is_array($siteBranding)) ? $siteBranding : [];
+$headMeta = (isset($siteMeta) && is_array($siteMeta)) ? $siteMeta : [];
 $headSiteName = (string) ($headBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
 $headDescription = (string) ($headMeta['description'] ?? $headBranding['description'] ?? $ayar['site_aciklama'] ?? '');
 $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headDescription));
@@ -77,6 +79,8 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/mobile_bottom.css?v=<?= $assetVer ?>" rel="stylesheet">
   <link href="/assets/css/register.css?v=<?= $registerCssVer ?>" rel="stylesheet">
   <link href="/assets/css/login.css?v=<?= $loginCssVer ?>" rel="stylesheet">
+    <link href="/assets/css/register-modal.css?v=<?= $registerModalCssVer ?>" rel="stylesheet">
+    <link href="/assets/css/login-modal.css?v=<?= $loginModalCssVer ?>" rel="stylesheet">
   <link href="/assets/css/daterangepicker.css?v=<?= $assetVer ?>" rel="stylesheet">
   <?php if ($requestPath === '/' || $scriptName === 'index.php'): ?>
   <link href="/assets/css/home.css?v=<?= $homeCssVer ?>" rel="stylesheet">
