@@ -71,9 +71,6 @@ if (class_exists('ApiMediaUrl', false)) {
                                         </button>
                                     </div>
 
-                                    <div class="login-forgot login-back-row reset-password-back-row">
-                                        <a href="/" class="reset-password-back-link">Ana sayfaya dön</a>
-                                    </div>
                                 </form>
                             </div>
 
@@ -106,10 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (header) header.style.display = 'none';
     if (nav) nav.style.display = 'none';
     if (navScrollable) navScrollable.style.display = 'none';
-    var backRow = document.querySelector('.reset-password-back-row');
-    if (backRow && window.innerWidth <= 480) {
-        backRow.style.display = 'none';
-    }
     var closeBtn = document.querySelector('.reset-password-close');
     if (closeBtn) {
         closeBtn.addEventListener('click', function (e) {
