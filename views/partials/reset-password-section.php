@@ -38,16 +38,16 @@ $hasToken = $resetToken !== '';
     .reset-password-modal {
         position: relative;
         z-index: 1;
-        width: min(100%, 540px);
-        border-radius: 12px;
-        border: 1px solid rgba(133, 15, 131, 0.62);
+        width: min(100%, 520px);
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
         background-color: rgba(8, 10, 24, 0.95) !important;
         box-shadow:
-            0 18px 38px rgba(0, 0, 0, 0.52),
-            0 0 0 1px rgba(133, 15, 131, 0.42),
+            0 20px 48px rgba(0, 0, 0, 0.56),
+            0 0 0 1px rgba(133, 15, 131, 0.28),
             inset 0 1px 0 rgba(255, 255, 255, 0.06);
-        padding: 20px;
-        gap: 12px;
+        padding: 22px;
+        gap: 14px;
         overflow: hidden;
     }
 
@@ -56,8 +56,19 @@ $hasToken = $resetToken !== '';
         position: absolute;
         inset: 0;
         pointer-events: none;
-        background-color: rgba(133, 15, 131, 0.06);
+        background-color: rgba(133, 15, 131, 0.04);
         opacity: 1;
+    }
+
+    .reset-password-modal::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 3px;
+        background-color: var(--secondary);
+        opacity: 0.85;
     }
 
     .reset-password-modal > * {
@@ -66,17 +77,30 @@ $hasToken = $resetToken !== '';
     }
 
     .reset-password-title {
-        margin-bottom: 6px;
+        margin: 0;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
-        font-size: 20px;
+        letter-spacing: 0.03em;
+        font-size: 21px;
+        line-height: 1.2;
     }
 
     .reset-password-lead {
-        margin-bottom: 12px;
+        margin: 0;
         font-size: 13px;
-        line-height: 1.5;
+        line-height: 1.55;
         color: rgba(243, 240, 255, 0.86);
+        max-width: 46ch;
+    }
+
+    .reset-password-modal .login-form {
+        margin-top: 2px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .reset-password-modal .form-group {
+        margin-bottom: 0;
     }
 
     .reset-password-modal .form-control-label-bc {
@@ -84,32 +108,41 @@ $hasToken = $resetToken !== '';
     }
 
     .reset-password-modal .form-control-input-bc {
-        height: 46px;
-        min-height: 46px;
+        height: 48px;
+        min-height: 48px;
         border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(15, 17, 36, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background-color: rgba(15, 17, 36, 0.94) !important;
+        transition: border-color 120ms ease, box-shadow 120ms ease;
     }
 
     .reset-password-modal .form-control-input-bc:focus {
         border-color: var(--secondary);
-        box-shadow: 0 0 0 2px rgba(16, 145, 33, 0.18);
+        box-shadow: 0 0 0 3px rgba(16, 145, 33, 0.16);
     }
 
     .reset-password-modal .login-btn {
-        min-height: 46px;
+        min-height: 48px;
         border-radius: 8px;
         border: 1px solid var(--primary) !important;
         background-color: var(--primary) !important;
-        box-shadow: 0 8px 18px rgba(133, 15, 131, 0.33);
+        box-shadow: 0 10px 20px rgba(133, 15, 131, 0.32);
         color: #fff !important;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 120ms ease;
     }
 
     .reset-password-modal .login-btn:hover {
         color: #fff !important;
         border-color: var(--secondary) !important;
         background-color: var(--secondary) !important;
-        box-shadow: 0 10px 22px rgba(16, 145, 33, 0.32);
+        box-shadow: 0 12px 24px rgba(16, 145, 33, 0.32);
+        transform: translateY(-1px);
+    }
+
+    .reset-password-modal .login-btn:active {
+        transform: translateY(0);
     }
 
     #resetPasswordRequestSubmit,
@@ -127,7 +160,7 @@ $hasToken = $resetToken !== '';
     }
 
     .reset-password-actions {
-        margin-top: 4px;
+        margin-top: 6px;
         text-align: center;
     }
 
@@ -136,6 +169,7 @@ $hasToken = $resetToken !== '';
         text-decoration: none;
         border-bottom: 1px solid rgba(16, 145, 33, 0.45) !important;
         padding-bottom: 2px;
+        font-size: 13px;
     }
 
     .reset-password-actions a:hover {
@@ -151,13 +185,13 @@ $hasToken = $resetToken !== '';
 
         .reset-password-modal {
             width: 100%;
-            border-radius: 10px;
-            padding: 14px;
+            border-radius: 12px;
+            padding: 15px;
             gap: 10px;
         }
 
         .reset-password-title {
-            font-size: 18px;
+            font-size: 19px;
         }
 
         .reset-password-modal .form-control-input-bc,
