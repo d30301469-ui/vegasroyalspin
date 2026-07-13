@@ -87,7 +87,7 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
   <link rel="stylesheet" href="/mobile/assets/css/menu.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/menu.css')) ?>">
   <link rel="stylesheet" href="/assets/css/mobile-smart-panel.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-smart-panel.css')) ?>">
   <link rel="stylesheet" href="/assets/css/mobile-right-sheet.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-right-sheet.css')) ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/mobile-right-sheet.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/mobile-right-sheet.css')) ?>">>
+  <link rel="stylesheet" href="/mobile/assets/css/mobile-right-sheet.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/mobile-right-sheet.css')) ?>">
   <link rel="stylesheet" href="/mobile/assets/css/home.css?v=<?= $ver($mobileCssDir . '/home.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/home-widgets.css?v=<?= $ver($mobileCssDir . '/home-widgets.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/slots.css?v=<?= $ver($mobileCssDir . '/slots.css') ?>">
@@ -95,6 +95,8 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
   <link rel="stylesheet" href="/mobile/assets/css/footer.css?v=<?= $ver($mobileCssDir . '/footer.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/auth-modals.css?v=<?= $ver($mobileCssDir . '/auth-modals.css') ?>">
   <script defer src="/assets/js/swiper-bundle.min.js?v=<?= $ver(BASE_PATH . '/assets/js/swiper-bundle.min.js') ?>"></script>
+  <script defer src="/assets/js/mobile-right-sheet.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/mobile-right-sheet.js')) ?>"></script>
+  <script defer src="/assets/js/footer.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/footer.js')) ?>"></script>
 </head>
 <body class="<?= htmlspecialchars($mobileBodyClass, ENT_QUOTES, 'UTF-8') ?>">
 <?php include MOBILE_PATH . '/views/layouts/bc-root-open.php'; ?>
