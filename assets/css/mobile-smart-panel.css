@@ -7,6 +7,21 @@ body.mobile-site .hdr-smart-panel-holder-arrow-bc {
   display: none !important;
 }
 
+/*
+ * Smart toggle butonu: bc-mobile-index.css `.count-odd-animation{position:absolute}`
+ * butonu akıştan çıkarıp .smartPanel-bc'yi çökertiyor ve butonu tıklanamaz/yanlış
+ * konumda bırakıyor. Masaüstü header.css bunu düzeltiyor ama mobilde yüklenmiyor.
+ * Sarmalayıcıyı relative yap, butonu akışa geri al (badge ::after buton üstünde kalsın).
+ */
+body.mobile-site .hdr-main-content-bc .smartPanel-bc {
+  position: relative !important;
+}
+
+body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc.count-odd-animation,
+body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc.bc-i-vertical-toggle {
+  position: relative !important;
+}
+
 /* Üç nokta ikonu (BetConstruct) */
 body.mobile-site .hdr-toggle-button-bc.bc-i-vertical-toggle::before {
   content: "\ea1d" !important;
