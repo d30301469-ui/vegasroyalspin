@@ -249,9 +249,9 @@ if (class_exists('ApiMediaUrl', false)) {
 
                             <div id="forgotPasswordScreen" class="d-none">
                                 <div class="login-text-block login-forgot-heading">
-                                    <p class="login-top-text">Şifre sıfırlama</p>
-                                    <h2 class="login-main-title login-forgot-title">E-posta ile kod gönderimi</h2>
-                                    <p class="login-forgot-hint">E-posta adresinizi girin. Kayıtlıysa tarafımızdan doğrulama kodu gönderilir. Güvenlik nedeniyle adresin sistemde olup olmadığı paylaşılmaz.</p>
+                                    <p class="login-top-text">Şifrenizi mi unuttunuz?</p>
+                                    <h2 class="login-main-title login-forgot-title">E-posta doğrulama</h2>
+                                    <p class="login-forgot-hint">E-posta adresinizi girin. Hesabınız varsa doğrulama kodunu hemen gönderelim.</p>
                                 </div>
                                 <form method="POST" action="#" novalidate class="login-form" id="forgotPasswordForm">
                                     <div class="form-group">
