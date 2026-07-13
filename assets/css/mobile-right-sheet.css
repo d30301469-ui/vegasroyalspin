@@ -198,8 +198,16 @@ body:not(.mobile-site) .mobile-right-sheet-overlay {
   -webkit-tap-highlight-color: transparent;
 }
 
+.mobile-right-sheet__subbar button:hover {
+  color: #c4c0e8;
+}
+
 .mobile-right-sheet__subbar button:active {
   opacity: 0.85;
+}
+
+.mobile-right-sheet__clear-btn {
+  margin-left: auto;
 }
 
 .mobile-right-sheet__body {
