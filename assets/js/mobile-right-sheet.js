@@ -103,11 +103,18 @@
     }
 
     function open(opts) {
-        if (!document.body.classList.contains('mobile-site')) return;
+        console.log("[MobileRightSheet.open] Called with opts:", opts);
+        if (!document.body.classList.contains('mobile-site')) {
+            console.log("[MobileRightSheet.open] Not mobile-site, returning");
+            return;
+        }
 
         createIfMissing();
         getElements();
-        if (!overlay || !panel || !bodyEl) return;
+        if (!overlay || !panel || !bodyEl) {
+            console.log("[MobileRightSheet.open] Missing elements - overlay:", !!overlay, "panel:", !!panel, "bodyEl:", !!bodyEl);
+            return;
+        }
 
         var options = opts && typeof opts === 'object' ? opts : {};
         onCloseCallback = typeof options.onClose === 'function' ? options.onClose : null;

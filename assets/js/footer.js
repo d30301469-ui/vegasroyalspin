@@ -748,7 +748,9 @@
         }
 
         function openRightSidebar(type) {
+            console.log("[openRightSidebar] type:", type, "mobile-site:", document.body.classList.contains("mobile-site"), "MobileRightSheet:", !!window.MobileRightSheet);
             if (type === "notification" && document.body.classList.contains("mobile-site") && window.MobileRightSheet) {
+                console.log("[openRightSidebar] Opening notification sheet (mobile)");
                 openNotificationMobileSheet();
                 return;
             }
