@@ -1756,6 +1756,17 @@ button.betslip-panel__settings {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Mobil favori kartları: oyun görselini tam göster (kırpma yok) */
+body.mobile-site .favorites-game-row__thumb {
+  height: auto;
+  aspect-ratio: 1 / 1;
+  background: rgba(0, 0, 0, 0.35);
+}
+body.mobile-site .favorites-game-row__thumb img {
+  object-fit: contain;
+}
+
 .favorites-sidebar__empty--tab {
   margin-top: 8px;
 }
