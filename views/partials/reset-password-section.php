@@ -9,6 +9,13 @@ if (class_exists('ApiMediaUrl', false)) {
 }
 ?>
 <div class="modal fade show" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="false" style="display: block;">
+    <style>
+        @media (max-width: 480px) {
+            #resetPasswordModal .reset-password-back-row {
+                display: none !important;
+            }
+        }
+    </style>
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content entrance-popup-bc sign-in">
             <div class="e-p-content-holder-bc">
