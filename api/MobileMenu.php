@@ -99,7 +99,7 @@ final class ApiMobileMenu
                         ['label' => 'Spor', 'href' => '/sportbook', 'icon' => 'bc-i-prematch', 'badge' => '', 'target' => '_self', 'enabled' => true],
                         ['label' => 'Slot', 'href' => '/slot', 'icon' => 'bc-i-slots', 'badge' => '', 'target' => '_self', 'enabled' => true],
                         ['label' => 'Canlı Casino', 'href' => '/livecasino', 'icon' => 'bc-i-livecasino', 'badge' => '', 'target' => '_self', 'enabled' => true],
-                        ['label' => 'BGaming', 'href' => '/bgaming', 'icon' => 'bc-i-tv-games', 'badge' => '', 'target' => '_self', 'enabled' => true],
+                        ['label' => 'BGaming', 'href' => '/bgaming', 'icon' => 'bc-i-tv-games', 'badge' => 'YENİ', 'target' => '_self', 'enabled' => true],
                         ['label' => 'Turnuvalar', 'href' => '/turnuvalar', 'icon' => 'bc-i-tournament', 'badge' => '', 'target' => '_self', 'enabled' => true],
                         ['label' => 'Promosyonlar', 'href' => '/promotions', 'icon' => 'bc-i-promotions-3', 'badge' => '', 'target' => '_self', 'enabled' => true],
                     ],
