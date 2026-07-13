@@ -14,7 +14,7 @@ $login_account_frozen_notice = !empty($_GET['account_frozen']) && (string) $_GET
 $login_password_updated_notice = !empty($_GET['password_updated']) && (string) $_GET['password_updated'] === '1';
 $loginAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('login') : [];
 $loginAuthSliderClass = $loginAuthSliderItems !== [] ? ' has-auth-slider' : '';
-$loginBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
+$loginBranding = (isset($siteBranding) && is_array($siteBranding)) ? $siteBranding : [];
 $loginSiteName = (string) ($loginBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
 $loginLogoUrl = (string) ($loginBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
 if (class_exists('ApiMediaUrl', false)) {
@@ -25,6 +25,52 @@ if (class_exists('ApiMediaUrl', false)) {
 <div class="modal fade" id="login2" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content entrance-popup-bc sign-in<?= htmlspecialchars($loginAuthSliderClass, ENT_QUOTES, 'UTF-8') ?>">
+            <style>
+                body.mobile-site #login2 .login-modal-header.e-p-header-bc {
+                    pointer-events: auto !important;
+                }
+
+                body.mobile-site #login2 .login-header-actions {
+                    display: flex !important;
+                    align-items: center !important;
+                    gap: 8px !important;
+                    pointer-events: auto !important;
+                }
+
+                body.mobile-site #login2 .login-close {
+                    position: fixed !important;
+                    top: max(8px, env(safe-area-inset-top, 0px)) !important;
+                    right: 8px !important;
+                    width: 36px !important;
+                    height: 36px !important;
+                    min-width: 36px !important;
+                    min-height: 36px !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0 !important;
+                    background: rgba(0, 0, 0, 0.32) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+                    border-radius: 50% !important;
+                    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+                    color: #fff !important;
+                    cursor: pointer !important;
+                    pointer-events: auto !important;
+                    z-index: 100206 !important;
+                }
+
+                body.mobile-site #login2 .login-close span {
+                    display: none !important;
+                }
+
+                body.mobile-site #login2 .login-close::before {
+                    content: "\00d7";
+                    display: block;
+                    color: #fff;
+                    font-size: 30px;
+                    line-height: 1;
+                }
+            </style>
             <?php
             $authSliderScreen = 'login';
             $authSliderItems = $loginAuthSliderItems;
