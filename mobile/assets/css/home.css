@@ -1,4 +1,9 @@
 /* Ana sayfa jackpot|kazananlar sekmeleri */
+.mobile-site .hm-row-bc .banner-bc,
+.mobile-site .hm-row-bc .banner-image-bc {
+  display: none !important;
+}
+
 .mobile-site .home-jackpot-winners-section .slot-hero-tabs {
   width: 100%;
   gap: 10px;  /* butonlar ile jackpot paneli arasında boşluk */
