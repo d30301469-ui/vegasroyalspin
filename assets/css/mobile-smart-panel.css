@@ -30,6 +30,9 @@ body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc.bc-i-
  */
 body.mobile-site .hdr-smart-panel-fixed {
   transition: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 body.mobile-site .hdr-smart-panel-fixed.is-open {
