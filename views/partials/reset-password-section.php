@@ -10,8 +10,8 @@ $hasToken = $resetToken !== '';
 
     .reset-password-modal-page {
         position: relative;
-        min-height: calc(100vh - 96px);
-        min-height: calc(100dvh - 96px);
+        min-height: 100vh;
+        min-height: 100dvh;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -61,7 +61,7 @@ $hasToken = $resetToken !== '';
 
     @media (max-width: 480px) {
         .reset-password-modal-page {
-            min-height: calc(100dvh - 78px);
+            min-height: 100dvh;
             padding: 10px;
         }
 
