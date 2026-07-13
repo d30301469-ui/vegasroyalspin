@@ -98,6 +98,12 @@ if (class_exists('ApiMediaUrl', false)) {
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('resetPasswordModal');
+    if (modalEl) {
+        modalEl.classList.add('show');
+        modalEl.style.display = 'block';
+        modalEl.setAttribute('aria-hidden', 'false');
+    }
     document.body.classList.add('modal-open', 'reset-password-modal-open');
     document.body.style.overflow = 'hidden';
     var closeBtn = document.querySelector('.reset-password-close');
