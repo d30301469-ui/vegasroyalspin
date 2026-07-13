@@ -105,8 +105,10 @@ if (!function_exists('homeRenderBannerSection')) {
         $href = trim((string) ($payload['href'] ?? ''));
         $onclick = trim((string) ($payload['onclick'] ?? ''));
 
-        // Mobilde bu alanda her zaman local yeni banner kullan.
-        if (function_exists('isMobile') && isMobile()) {
+        // Mobil yüzeyde (UA veya m. host) bu alanda her zaman local yeni banner kullan.
+        $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        $isMobileSurface = (function_exists('isMobile') && isMobile()) || strpos($host, 'm.') === 0;
+        if ($isMobileSurface) {
             $image = 'assets/images/slider-banner-main-new.webp';
             if (trim($alt) === '') {
                 $alt = 'Mobil banner';
