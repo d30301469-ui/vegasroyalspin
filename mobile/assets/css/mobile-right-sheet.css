@@ -42,8 +42,22 @@ body.mobile-site .mobile-right-sheet__subbar button,
 body.mobile-site .notification-drawer__date,
 body.mobile-site .notification-drawer__clear {
   visibility: visible !important;
-  color: #a09ed0 !important;
   display: inline-block !important;
+}
+/* Orjinal: tarih beyaz (sol), Temizle acik mor/pembe (sag) */
+body.mobile-site .notification-drawer__date {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+body.mobile-site .notification-drawer__clear {
+  color: #c9a0d8 !important;
+}
+/* Toolbar alt seridi tam genislik: tarih sol, Temizle en saga yaslanir */
+body.mobile-site .mobile-right-sheet__subbar .notification-drawer__toolbar {
+  width: 100% !important;
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
 }
 
 /* Ensure body content displays */
@@ -55,8 +69,12 @@ body.mobile-site .mobile-right-sheet__body {
   overflow-y: auto;
 }
 
-/* Notification items in mobile context */
+/* Notification items in mobile context — orjinal mor gradient arka plan */
 body.mobile-site .notification-drawer__item {
   display: flex !important;
   visibility: visible !important;
+  padding: 11px 14px !important;
+  background: linear-gradient(90deg, rgba(133, 15, 131, 0.32) 0%, rgba(74, 49, 135, 0.38) 55%, rgba(36, 20, 80, 0.40) 100%) !important;
+  border: 1px solid rgba(170, 110, 200, 0.30) !important;
+  border-radius: 8px !important;
 }
