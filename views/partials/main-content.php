@@ -104,6 +104,15 @@ if (!function_exists('homeRenderBannerSection')) {
         $alt = (string) ($payload['alt'] ?? '');
         $href = trim((string) ($payload['href'] ?? ''));
         $onclick = trim((string) ($payload['onclick'] ?? ''));
+
+        // Mobilde bu alanda her zaman local yeni banner kullan.
+        if (function_exists('isMobile') && isMobile()) {
+            $image = 'assets/images/slider-banner-main-new.webp';
+            if (trim($alt) === '') {
+                $alt = 'Mobil banner';
+            }
+        }
+
         $src = preg_match('#^https?://#i', $image) ? $image : (function_exists('asset_url') ? asset_url($image) : '/' . ltrim($image, '/'));
         ?>
         <div class="live-casino-banner-wrap">
