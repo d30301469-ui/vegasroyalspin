@@ -43,7 +43,78 @@
         el.classList.remove('d-none');
     }
 
+    function applyReferenceSkin() {
+        var modal = document.querySelector('.reset-password-modal');
+        if (!modal) return;
+
+        document.body.classList.add('reset-password-reference-skin');
+
+        var title = document.getElementById('resetPasswordTitle');
+        if (title) {
+            var t = (title.textContent || '').toLowerCase();
+            title.textContent = t.indexOf('yeni') >= 0 ? 'YENI SIFRE' : 'SIFRE SIFIRLA';
+        }
+
+        var lead = modal.querySelector('.reset-password-lead');
+        if (lead) {
+            lead.textContent = 'Sifrenizi sifirlamak icin kayitli e-posta adresinizi giriniz.';
+        }
+
+        var requestBtnText = document.querySelector('#resetPasswordRequestSubmit .btn-text');
+        if (requestBtnText) requestBtnText.textContent = 'SIFIRLA';
+
+        var confirmBtnText = document.querySelector('#resetPasswordSubmit .btn-text');
+        if (confirmBtnText) confirmBtnText.textContent = 'SIFIRLA';
+
+        var infoLink = modal.querySelector('.reset-password-actions a');
+        if (infoLink) {
+            infoLink.textContent = 'Sifrenizi sifirlamak icin kayitli e-posta adresinizi giriniz.';
+            infoLink.setAttribute('href', '#');
+            infoLink.addEventListener('click', function (e) { e.preventDefault(); });
+        }
+
+        var hero = modal.querySelector('.reset-ref-hero');
+        if (!hero) {
+            hero = document.createElement('div');
+            hero.className = 'reset-ref-hero';
+            var brand = document.createElement('div');
+            brand.className = 'reset-ref-brand';
+            brand.textContent = 'Casinomilyon';
+            hero.appendChild(brand);
+            modal.insertBefore(hero, modal.firstChild);
+        }
+
+        var closeBtn = document.getElementById('resetPasswordClose') || modal.querySelector('.reset-password-close');
+        if (closeBtn && closeBtn.parentNode !== hero) {
+            hero.appendChild(closeBtn);
+        }
+
+        if (!document.getElementById('resetReferenceSkinStyles')) {
+            var style = document.createElement('style');
+            style.id = 'resetReferenceSkinStyles';
+            style.textContent = [
+                'body.reset-password-reference-skin .reset-password-modal{background:linear-gradient(145deg,#1b0c49 0%,#0a0f3c 60%,#09123f 100%) !important;min-height:88vh !important;padding:0 !important;gap:0 !important;}',
+                'body.reset-password-reference-skin .reset-ref-hero{position:relative;height:300px;border-top:8px solid #7d1c7a;border-bottom:5px solid #ff00ff;background:#15063f;overflow:hidden;}',
+                'body.reset-password-reference-skin .reset-ref-hero::before{content:"";position:absolute;inset:0;background-image:url(/assets/images/login-bg.png);background-size:cover;background-position:center top;opacity:.97;}',
+                'body.reset-password-reference-skin .reset-ref-brand{position:absolute;top:22px;left:50%;transform:translateX(-50%);z-index:2;color:#fff;font-size:38px;font-weight:700;line-height:1;}',
+                'body.reset-password-reference-skin .reset-password-close{position:absolute !important;top:8px !important;right:8px !important;background:transparent !important;border:0 !important;color:#fff !important;z-index:3 !important;}',
+                'body.reset-password-reference-skin .login-text-block{display:none !important;}',
+                'body.reset-password-reference-skin .reset-password-content, body.reset-password-reference-skin .login-form{padding:14px 10px 0 !important;}',
+                'body.reset-password-reference-skin #resetPasswordModal .form-control-input-bc{height:50px !important;min-height:50px !important;border-radius:4px !important;border:1px solid rgba(236,70,170,.9) !important;background:rgba(83,67,122,.42) !important;color:#f7f4ff !important;padding-left:12px !important;}',
+                'body.reset-password-reference-skin #resetPasswordModal .login-error-text{margin-top:-2px !important;border-radius:3px !important;background:rgba(107,26,74,.8) !important;color:#fff !important;font-size:13px !important;padding:3px 9px !important;}',
+                'body.reset-password-reference-skin #resetPasswordModal .login-btn{height:52px !important;min-height:52px !important;border-radius:4px !important;background:rgba(111,122,176,.24) !important;border:1px solid rgba(146,156,201,.16) !important;color:rgba(210,214,235,.8) !important;box-shadow:none !important;font-size:28px !important;font-weight:700 !important;text-transform:uppercase !important;}',
+                'body.reset-password-reference-skin .reset-password-actions{margin:10px 10px 14px !important;display:flex !important;align-items:center !important;gap:6px !important;color:rgba(216,216,232,.72) !important;font-size:13px !important;}',
+                'body.reset-password-reference-skin .reset-password-actions::before{content:"i";display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid rgba(216,216,232,.72);font-size:11px;font-weight:700;}',
+                'body.reset-password-reference-skin .reset-password-actions a{color:rgba(216,216,232,.72) !important;border:0 !important;text-decoration:none !important;}',
+                '@media (max-width:480px){body.reset-password-reference-skin .reset-ref-hero{height:300px;} body.reset-password-reference-skin #resetPasswordModal .login-btn{font-size:27px !important;}}'
+            ].join('');
+            document.head.appendChild(style);
+        }
+    }
+
     onReady(function () {
+        applyReferenceSkin();
+
         var requestForm = document.getElementById('resetPasswordRequestForm');
         var requestAlertEl = document.getElementById('resetPasswordRequestAlert');
         var requestSuccessEl = document.getElementById('resetPasswordRequestSuccess');
