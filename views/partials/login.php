@@ -117,6 +117,15 @@ if (class_exists('ApiMediaUrl', false)) {
                     stroke-linecap: round;
                     stroke-linejoin: round;
                 }
+
+                body.mobile-site #login2 .login-btn,
+                body.mobile-site #login2 .login-walletconnect-btn,
+                body.mobile-site #login2 .login-or-separator {
+                    width: calc(100% - 14px) !important;
+                    margin-left: 7px !important;
+                    margin-right: 7px !important;
+                    box-sizing: border-box !important;
+                }
             </style>
             <?php
             $authSliderScreen = 'login';
