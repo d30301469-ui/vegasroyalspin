@@ -43,7 +43,38 @@
         el.classList.remove('d-none');
     }
 
+    function showResetPasswordModal() {
+        var el = document.getElementById('resetPasswordModal');
+        if (!el) return;
+        var $jq = window.jQuery || window.$;
+        if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
+            $jq(el).modal('show');
+        } else {
+            el.classList.add('show');
+            el.style.display = 'block';
+            el.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('modal-open', 'reset-password-modal-open');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function hideResetPasswordModal() {
+        var el = document.getElementById('resetPasswordModal');
+        if (!el) return;
+        var $jq = window.jQuery || window.$;
+        if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
+            $jq(el).modal('hide');
+        } else {
+            el.classList.remove('show');
+            el.style.display = 'none';
+            el.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open', 'reset-password-modal-open');
+            document.body.style.overflow = '';
+        }
+    }
+
     onReady(function () {
+        var modalEl = document.getElementById('resetPasswordModal');
         var form = document.getElementById('resetPasswordForm');
         var tokenInput = document.getElementById('resetPasswordToken');
         var missingBox = document.getElementById('resetPasswordMissingToken');
@@ -52,6 +83,18 @@
         var submitBtn = document.getElementById('resetPasswordSubmit');
         var btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
         var btnLoading = submitBtn ? submitBtn.querySelector('.loading') : null;
+        var closeBtn = document.querySelector('.reset-password-close');
+
+        if (modalEl) {
+            showResetPasswordModal();
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    hideResetPasswordModal();
+                    window.location.href = '/';
+                });
+            }
+        }
 
         if (!form || !tokenInput) return;
 
@@ -147,7 +190,7 @@
                         }
                         tokenInput.value = t;
                         window.setTimeout(function () {
-                            window.location.href = '/';
+                            window.location.href = '/?login=1&password_updated=1';
                         }, 2000);
                         return;
                     }
