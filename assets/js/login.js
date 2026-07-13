@@ -563,6 +563,14 @@
         var btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
         var btnLoading = submitBtn ? submitBtn.querySelector('.loading') : null;
 
+        function normalizeForgotSuccessMessage(msg) {
+            return String(msg || '')
+                .replace(/sifre\s*sifirlama\s*baglantisi/gi, 'dogrulama kodu')
+                .replace(/şifre\s*sıfırlama\s*bağlantısı/gi, 'doğrulama kodu')
+                .replace(/bağlantısı\s*gönderilecektir/gi, 'doğrulama kodu gönderilecektir')
+                .replace(/baglantisi\s*gonderilecektir/gi, 'dogrulama kodu gonderilecektir');
+        }
+
         function showForgotError(msg) {
             if (window.MaltabetToast) {
                 MaltabetToast.error(msg || 'Bir hata oluştu.', 'Şifre Sıfırlama');
@@ -584,11 +592,12 @@
         }
 
         function showForgotSuccess(msg) {
+            var finalMsg = normalizeForgotSuccessMessage(msg || defaultOkMsg);
             if (window.MaltabetToast) {
-                MaltabetToast.success(msg || defaultOkMsg, 'Şifre Sıfırlama');
+                MaltabetToast.success(finalMsg, 'Şifre Sıfırlama');
             }
             if (!successEl) return;
-            successEl.textContent = msg || '';
+            successEl.textContent = finalMsg;
             successEl.classList.remove('d-none');
             hideForgotError();
         }
@@ -648,11 +657,6 @@
                                 typeof data.data.message === 'string' &&
                                 data.data.message.trim()) ||
                             defaultOkMsg;
-                        m = String(m)
-                            .replace(/sifre\s*sifirlama\s*baglantisi/gi, 'dogrulama kodu')
-                            .replace(/şifre\s*sıfırlama\s*bağlantısı/gi, 'doğrulama kodu')
-                            .replace(/bağlantısı\s*gönderilecektir/gi, 'doğrulama kodu gönderilecektir')
-                            .replace(/baglantisi\s*gonderilecektir/gi, 'dogrulama kodu gonderilecektir');
                         showForgotSuccess(m);
                         return;
                     }
