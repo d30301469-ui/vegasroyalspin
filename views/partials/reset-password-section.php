@@ -43,41 +43,43 @@ $hasToken = $resetToken !== '';
     }
 
     .reset-password-shell .modal-dialog {
-        max-width: 559px;
-        margin: 42px auto;
+        max-width: 420px;
+        margin: 16px auto;
     }
 
     .reset-password-shell .modal-content {
-        background: var(--body-bg);
-        border-radius: 10px;
+        background: #0a0f3c;
+        border-radius: 0;
         border: 1px solid rgba(255, 255, 255, 0.08);
         color: var(--white-color);
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--primary);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
         overflow: hidden;
     }
 
     .reset-password-shell .modal-body {
-        padding: 21px 31px 26px;
+        padding: 0;
     }
 
     .reset-password-modal {
         position: relative;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 0;
+        background: linear-gradient(145deg, #1b0c49 0%, #0a0f3c 60%, #09123f 100%);
+        min-height: 88vh;
     }
 
     .reset-password-close {
         position: absolute;
-        top: 12px;
-        right: 12px;
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-        min-height: 30px;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background-color: rgba(255, 255, 255, 0.08);
+        top: 8px;
+        right: 8px;
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
+        border-radius: 0;
+        border: 0;
+        background-color: transparent;
         color: rgba(255, 255, 255, 0.92);
         display: inline-flex;
         align-items: center;
@@ -88,8 +90,7 @@ $hasToken = $resetToken !== '';
     }
 
     .reset-password-close:hover {
-        background-color: rgba(133, 15, 131, 0.22);
-        border-color: rgba(255, 255, 255, 0.34);
+        background-color: rgba(255, 255, 255, 0.08);
     }
 
     .reset-password-close::before {
@@ -98,42 +99,68 @@ $hasToken = $resetToken !== '';
         line-height: 1;
     }
 
+    .reset-password-hero {
+        position: relative;
+        height: 286px;
+        background: #15063f;
+        border-bottom: 5px solid #ff00ff;
+        overflow: hidden;
+    }
+
+    .reset-password-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: url('/assets/images/login-bg.png');
+        background-size: cover;
+        background-position: center top;
+        filter: saturate(1.05) contrast(1.06);
+        opacity: 0.96;
+    }
+
     .reset-password-brand {
-        font-size: 12px;
-        letter-spacing: 0.08em;
-        color: rgba(255, 255, 255, 0.78);
-        text-transform: uppercase;
+        position: absolute;
+        top: 22px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+        font-size: 34px;
+        line-height: 1;
+        color: #fff;
+        opacity: 0.95;
         font-weight: 700;
     }
 
+    .reset-password-content {
+        padding: 16px 14px 18px;
+    }
+
     .reset-password-title {
-        margin: 0;
+        margin: 0 0 6px;
         text-transform: uppercase;
         letter-spacing: 0.03em;
-        font-size: 20px;
+        font-size: 15px;
         line-height: 1.2;
+        color: rgba(255, 255, 255, 0.92);
     }
 
     .reset-password-subtitle {
-        margin: 0;
-        font-size: 12px;
-        color: #cccccc;
-        line-height: 1.4;
+        display: none;
     }
 
     .reset-password-lead {
-        margin: 0;
-        font-size: 13px;
-        line-height: 1.55;
-        color: rgba(243, 240, 255, 0.86);
-        max-width: 44ch;
+        margin: 8px 0 0;
+        font-size: 14px;
+        line-height: 1.45;
+        color: rgba(234, 231, 255, 0.78);
+        max-width: none;
     }
 
     .reset-password-modal .login-form {
-        margin-top: 2px;
+        margin-top: 12px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
     }
 
     .reset-password-modal .form-group {
@@ -145,14 +172,17 @@ $hasToken = $resetToken !== '';
     }
 
     #resetPasswordModal .form-control-input-bc {
-        height: 48px !important;
-        min-height: 48px !important;
-        border-radius: 6px !important;
-        border: 1px solid rgba(172, 102, 255, 0.3) !important;
+        height: 50px !important;
+        min-height: 50px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(236, 70, 170, 0.9) !important;
+        background: rgba(83, 67, 122, 0.42) !important;
+        color: #f7f4ff !important;
+        padding-left: 12px !important;
     }
 
     #resetPasswordModal .form-control-input-bc:focus {
-        border-color: rgba(172, 102, 255, 0.45) !important;
+        border-color: rgba(236, 70, 170, 1) !important;
         box-shadow: none !important;
     }
 
@@ -161,48 +191,79 @@ $hasToken = $resetToken !== '';
     #resetPasswordSubmit {
         height: 48px !important;
         min-height: 48px !important;
-        border-radius: 6px !important;
-        background-color: transparent !important;
-        border: 1px solid rgba(255, 255, 255, 0.95) !important;
-        color: #fff !important;
+        border-radius: 4px !important;
+        background: rgba(111, 122, 176, 0.24) !important;
+        border: 1px solid rgba(146, 156, 201, 0.16) !important;
+        color: rgba(210, 214, 235, 0.8) !important;
         box-shadow: none !important;
+        font-size: 28px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.02em !important;
+        text-transform: uppercase !important;
     }
 
     #resetPasswordModal .login-btn:hover,
     #resetPasswordRequestSubmit:hover,
     #resetPasswordSubmit:hover {
-        background-color: rgba(255, 255, 255, 0.08) !important;
-        border-color: rgba(255, 255, 255, 0.95) !important;
-        color: #fff !important;
+        background: rgba(111, 122, 176, 0.3) !important;
+        border-color: rgba(146, 156, 201, 0.24) !important;
+        color: rgba(228, 232, 247, 0.88) !important;
         transform: none !important;
     }
 
+    #resetPasswordModal .login-error-text {
+        margin-top: -2px;
+        border-radius: 3px;
+        background: rgba(107, 26, 74, 0.8);
+        color: #fff;
+        font-size: 13px;
+        padding: 3px 9px;
+    }
+
     .reset-password-actions {
-        margin-top: 2px;
-        text-align: center;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: rgba(216, 216, 232, 0.72);
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .reset-password-actions::before {
+        content: "i";
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        border: 1px solid rgba(216, 216, 232, 0.72);
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
     }
 
     .reset-password-actions a {
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(216, 216, 232, 0.72);
         text-decoration: none;
-        border-bottom: 1px solid rgba(133, 15, 131, 0.5) !important;
-        padding-bottom: 2px;
+        border: 0 !important;
+        padding-bottom: 0;
         font-size: 13px;
     }
 
     .reset-password-actions a:hover {
-        color: #fff;
-        border-bottom-color: rgba(133, 15, 131, 0.82);
+        color: rgba(232, 232, 242, 0.9);
     }
 
     @media (max-width: 480px) {
         .reset-password-shell {
             min-height: 100dvh;
-            padding: 8px;
+            padding: 6px;
         }
 
         .reset-password-shell .modal-dialog {
-            margin: 10px auto;
+            margin: 0 auto;
         }
 
         .reset-password-close {
@@ -215,15 +276,29 @@ $hasToken = $resetToken !== '';
         }
 
         .reset-password-title {
-            font-size: 19px;
+            font-size: 14px;
+        }
+
+        .reset-password-hero {
+            height: 300px;
+        }
+
+        .reset-password-content {
+            padding: 12px 10px 16px;
         }
 
         #resetPasswordModal .form-control-input-bc,
         #resetPasswordModal .login-btn,
         #resetPasswordRequestSubmit,
         #resetPasswordSubmit {
-            height: 44px !important;
-            min-height: 44px !important;
+            height: 52px !important;
+            min-height: 52px !important;
+        }
+
+        #resetPasswordModal .login-btn,
+        #resetPasswordRequestSubmit,
+        #resetPasswordSubmit {
+            font-size: 27px !important;
         }
     }
 </style>
@@ -235,22 +310,15 @@ $hasToken = $resetToken !== '';
                     <div class="e-p-content-bc">
                         <div class="modal-body e-p-body-bc">
                             <div class="reset-password-modal login-modal-container">
-                                <div class="login-modal-header e-p-header-bc">
-                                    <div class="login-logo">
-                                        <span class="reset-password-brand">VEGASROYALSPIN</span>
-                                    </div>
-                                    <div class="login-header-actions e-p-sections-bc">
-                                        <a href="/" class="login-register-btn e-p-section-title-bc">ANASAYFA</a>
-                                        <button type="button" class="reset-password-close login-close e-p-close-icon-bc" id="resetPasswordClose" aria-label="Kapat"></button>
-                                    </div>
+                                <div class="reset-password-hero" aria-hidden="true">
+                                    <span class="reset-password-brand">Vegasroyalspin</span>
+                                    <button type="button" class="reset-password-close login-close e-p-close-icon-bc" id="resetPasswordClose" aria-label="Kapat"></button>
                                 </div>
 
-                                <div class="login-text-block">
+                                <div class="reset-password-content">
+                                    <div class="login-text-block">
                                     <p class="reset-password-subtitle">Şifre sıfırlama</p>
-                                    <h1 class="login-main-title reset-password-title" id="resetPasswordTitle"><?= $hasToken ? 'Yeni şifre oluşturun' : 'Şifrenizi sıfırlayın' ?></h1>
-                                    <p class="login-forgot-hint reset-password-lead"><?= $hasToken
-                                        ? 'Yeni şifrenizi girin ve onaylayın.'
-                                        : 'E-posta adresinizi girin. Hesap kayıtlıysa kod gönderilir.' ?></p>
+                                    <h1 class="login-main-title reset-password-title" id="resetPasswordTitle"><?= $hasToken ? 'Yeni şifre oluşturun' : 'ŞİFRE SIFIRLA' ?></h1>
                                 </div>
 
                                 <form method="post" action="#" class="login-form entrance-form-bc sign-in popup<?= $hasToken ? ' d-none' : '' ?>" id="resetPasswordRequestForm" novalidate>
@@ -267,7 +335,7 @@ $hasToken = $resetToken !== '';
                                     <div class="login-success-box d-none" id="resetPasswordRequestSuccess" role="status"></div>
 
                                     <button type="submit" class="login-btn" id="resetPasswordRequestSubmit">
-                                        <span class="btn-text">KOD GÖNDER</span>
+                                        <span class="btn-text">SIFIRLA</span>
                                         <span class="loading" style="display: none;"></span>
                                     </button>
                                 </form>
@@ -297,13 +365,14 @@ $hasToken = $resetToken !== '';
                                     <div class="login-success-box d-none" id="resetPasswordSuccess" role="status"></div>
 
                                     <button type="submit" class="login-btn" id="resetPasswordSubmit">
-                                        <span class="btn-text">ŞİFREYİ GÜNCELLE</span>
+                                        <span class="btn-text">SIFIRLA</span>
                                         <span class="loading" style="display: none;"></span>
                                     </button>
                                 </form>
 
                                 <div class="reset-password-actions">
-                                    <a href="/">Ana sayfaya dön</a>
+                                    <a href="/">Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.</a>
+                                </div>
                                 </div>
                             </div>
                         </div>
