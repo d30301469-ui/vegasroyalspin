@@ -625,6 +625,11 @@
                 window.MobileRightSheet.close();
             }
 
+            /* Header konumunu sheet açılmadan önce sync et */
+            if (typeof window.__syncHeaderStickyTop === "function") {
+                window.__syncHeaderStickyTop();
+            }
+
             var wrap = document.createElement("div");
             wrap.className = "mobile-notification-sheet-content";
             wrap.appendChild(toolbar);
@@ -655,6 +660,11 @@
 
             closeRightSidebar();
             closeNewSmartPanel();
+
+            /* Header konumunu sheet açılmadan önce sync et */
+            if (typeof window.__syncHeaderStickyTop === "function") {
+                window.__syncHeaderStickyTop();
+            }
 
             if (window.MobileRightSheet.isOpen()) {
                 window.MobileRightSheet.close();
@@ -692,6 +702,11 @@
 
             closeRightSidebar();
             closeNewSmartPanel();
+
+            /* Header konumunu sheet açılmadan önce sync et */
+            if (typeof window.__syncHeaderStickyTop === "function") {
+                window.__syncHeaderStickyTop();
+            }
 
             if (window.MobileRightSheet.isOpen()) {
                 window.MobileRightSheet.close();
