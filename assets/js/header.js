@@ -406,7 +406,6 @@
         function applyMobilePanelSizing() {
             if (!isMobile || !panel) return;
             panel.style.setProperty('left', 'auto', 'important');
-            panel.style.setProperty('right', '8px', 'important');
             panel.style.setProperty('bottom', 'auto', 'important');
             panel.style.setProperty('height', 'auto', 'important');
             panel.style.setProperty('max-height', '320px', 'important');
@@ -447,8 +446,8 @@
 
         function openPanel() {
             closeAllHeaderFlyouts('smart');
-            syncPanelPosition();
             applyMobilePanelSizing();
+            syncPanelPosition();
             if (panel)  { panel.classList.add('is-open');  panel.setAttribute('aria-hidden', 'false'); }
             toggle.classList.add('is-open');
             toggle.setAttribute('aria-expanded', 'true');
