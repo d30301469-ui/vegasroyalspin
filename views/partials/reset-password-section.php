@@ -67,8 +67,39 @@ $hasToken = $resetToken !== '';
         right: 0;
         top: 0;
         height: 3px;
-        background-color: var(--secondary);
-        opacity: 0.85;
+        background-color: rgba(133, 15, 131, 0.85);
+        opacity: 1;
+    }
+
+    .reset-password-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        min-height: 30px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background-color: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.92);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 3;
+        transition: background-color 120ms ease, border-color 120ms ease;
+    }
+
+    .reset-password-close:hover {
+        background-color: rgba(133, 15, 131, 0.28);
+        border-color: rgba(255, 255, 255, 0.34);
+    }
+
+    .reset-password-close::before {
+        content: "\00d7";
+        font-size: 18px;
+        line-height: 1;
     }
 
     .reset-password-modal > * {
@@ -135,9 +166,9 @@ $hasToken = $resetToken !== '';
 
     .reset-password-modal .login-btn:hover {
         color: #fff !important;
-        border-color: var(--secondary) !important;
-        background-color: var(--secondary) !important;
-        box-shadow: 0 12px 24px rgba(16, 145, 33, 0.32);
+        border-color: rgba(133, 15, 131, 0.95) !important;
+        background-color: rgba(112, 13, 111, 0.98) !important;
+        box-shadow: 0 12px 24px rgba(133, 15, 131, 0.32);
         transform: translateY(-1px);
     }
 
@@ -154,8 +185,8 @@ $hasToken = $resetToken !== '';
 
     #resetPasswordRequestSubmit:hover,
     #resetPasswordSubmit:hover {
-        background-color: var(--secondary) !important;
-        border-color: var(--secondary) !important;
+        background-color: rgba(112, 13, 111, 0.98) !important;
+        border-color: rgba(112, 13, 111, 0.98) !important;
         color: #fff !important;
     }
 
@@ -167,14 +198,14 @@ $hasToken = $resetToken !== '';
     .reset-password-actions a {
         color: rgba(255, 255, 255, 0.9);
         text-decoration: none;
-        border-bottom: 1px solid rgba(16, 145, 33, 0.45) !important;
+        border-bottom: 1px solid rgba(133, 15, 131, 0.5) !important;
         padding-bottom: 2px;
         font-size: 13px;
     }
 
     .reset-password-actions a:hover {
         color: #fff;
-        border-bottom-color: rgba(16, 145, 33, 0.8);
+        border-bottom-color: rgba(133, 15, 131, 0.82);
     }
 
     @media (max-width: 480px) {
@@ -188,6 +219,15 @@ $hasToken = $resetToken !== '';
             border-radius: 12px;
             padding: 15px;
             gap: 10px;
+        }
+
+        .reset-password-close {
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            min-height: 28px;
         }
 
         .reset-password-title {
@@ -204,6 +244,7 @@ $hasToken = $resetToken !== '';
 <section class="mainWrap reset-password-modal-page">
     <div class="reset-password-modal-backdrop" aria-hidden="true"></div>
     <div class="reset-password-modal login-modal-container" role="dialog" aria-modal="true" aria-label="Şifre sıfırlama penceresi">
+        <button type="button" class="reset-password-close" id="resetPasswordClose" aria-label="Kapat"></button>
         <h1 class="login-main-title reset-password-title"><?= $hasToken ? 'Yeni şifre belirleyin' : 'Şifre sıfırlama' ?></h1>
         <p class="login-forgot-hint reset-password-lead"><?= $hasToken
             ? 'E-postadaki bağlantı ile yeni şifrenizi belirleyin.'
@@ -266,5 +307,33 @@ $hasToken = $resetToken !== '';
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.body.classList.add('reset-password-standalone');
+
+    function closeResetModal() {
+        if (window.history.length > 1) {
+            window.history.back();
+            return;
+        }
+        window.location.href = '/';
+    }
+
+    var closeBtn = document.getElementById('resetPasswordClose');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+            closeResetModal();
+        });
+    }
+
+    var backdrop = document.querySelector('.reset-password-modal-backdrop');
+    if (backdrop) {
+        backdrop.addEventListener('click', function () {
+            closeResetModal();
+        });
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeResetModal();
+        }
+    });
 });
 </script>
