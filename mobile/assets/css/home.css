@@ -98,6 +98,26 @@ body.mobile-site {
   transform: translateY(0) !important;
 }
 
+/* Favori yıldızı — mobilde Font Awesome yüklenmediği için unicode yıldız ile göster */
+.mobile-site .game-fav i {
+  font-family: inherit !important;
+  font-style: normal;
+  line-height: 1;
+}
+
+.mobile-site .game-fav i::before {
+  content: "\2606"; /* ☆ boş yıldız */
+  font-size: 18px;
+  color: #fff;
+}
+
+.mobile-site .game-fav i.fas::before,
+.mobile-site .game-fav i.is-favorite::before,
+.mobile-site .game-fav.is-favorite i::before {
+  content: "\2605"; /* ★ dolu yıldız */
+  color: #f0a500;
+}
+
 .mobile-site .home-jackpot-winners-section {
   padding: 8px 8px 10px;
 }
