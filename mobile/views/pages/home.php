@@ -9,6 +9,33 @@ if (is_file($mobileHead) && filesize($mobileHead) > 0) {
 <?php include MOBILE_PATH . '/views/partials/header.php'; ?>
 
 <?php
+// Mobil custom banner slider — localized image
+$bannerImage = '/assets/images/slider-banner-main.webp';
+?>
+<div class="hm-row-bc has-slider" style="grid-template-columns: 12fr;">
+  <div class="hm-row-bc-inner">
+    <div class="slider-bc">
+      <div class="carouselWrapper carouselCountEnable carouselArrowsDisabled" data-mobile-bc-slider>
+        <div class="swiper mobile-bc-hero-swiper swiper-initialized swiper-horizontal swiper-ios swiper-backface-hidden" dir="ltr">
+          <div class="swiper-wrapper">
+            <div class="swiper-slide swiper-slide-active swiper-slide-next" data-swiper-slide-index="0" style="width: 390px;">
+              <div class="sdr-item-holder-bc" style="aspect-ratio: 1291 / 50;">
+                <a class="sdr-item-bc" aria-label="Başlık">
+                  <img alt="Başlık" loading="eager" decoding="async" src="<?= htmlspecialchars($bannerImage, ENT_QUOTES, 'UTF-8') ?>" fetchpriority="high" class="sdr-image-bc" title="Başlık">
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="swiper-pagination swiper-pagination-fraction swiper-pagination-horizontal swiper-pagination-lock">
+            <span class="swiper-pagination-current">1</span> / <span class="swiper-pagination-total">1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<?php
 $sliderMobileBc = true;
 $sliderApiCategory = 'home';
 include VIEW_PATH . '/partials/slider.php';
