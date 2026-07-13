@@ -154,6 +154,31 @@
     pointer-events: none !important;
 }
 
+.login-password-field .login-password-toggle::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+    transform: rotate(-38deg) scaleX(0);
+    opacity: 0;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.login-password-field .login-password-toggle.is-password-visible .login-password-toggle-icon-show {
+    display: inline-flex !important;
+}
+
+.login-password-field .login-password-toggle.is-password-visible .login-password-toggle-icon-hide {
+    display: none !important;
+}
+
+.login-password-field .login-password-toggle.is-password-visible::after {
+    opacity: 1;
+    transform: rotate(-38deg) scaleX(1);
+}
+
 .login-text-block {
     margin-top: 4px;
 }
@@ -390,5 +415,19 @@
         stroke-width: 1.8;
         stroke-linecap: round;
         stroke-linejoin: round;
+    }
+
+    #login2 .entrance-form-actions-holder-bc.reg-ext-1,
+    #login2 .login-or-separator,
+    #login2 .login-walletconnect-btn {
+        width: auto !important;
+        margin-left: 7px !important;
+        margin-right: 7px !important;
+    }
+
+    #login2 .entrance-form-actions-holder-bc.reg-ext-1 .login-btn,
+    #login2 .login-walletconnect-btn {
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 }
