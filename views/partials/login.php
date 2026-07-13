@@ -250,8 +250,8 @@ if (class_exists('ApiMediaUrl', false)) {
                             <div id="forgotPasswordScreen" class="d-none">
                                 <div class="login-text-block login-forgot-heading">
                                     <p class="login-top-text">Şifre sıfırlama</p>
-                                    <h2 class="login-main-title login-forgot-title">E-postanızı girin</h2>
-                                    <p class="login-forgot-hint">Kayıtlı adresinize yönergeler gönderilir. Güvenlik nedeniyle e-postanın sistemde olup olmadığı bildirilmez.</p>
+                                    <h2 class="login-main-title login-forgot-title">E-posta ile kod gönderimi</h2>
+                                    <p class="login-forgot-hint">E-posta adresinizi girin. Kayıtlıysa tarafımızdan doğrulama kodu gönderilir. Güvenlik nedeniyle adresin sistemde olup olmadığı paylaşılmaz.</p>
                                 </div>
                                 <form method="POST" action="#" novalidate class="login-form" id="forgotPasswordForm">
                                     <div class="form-group">
@@ -265,7 +265,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                     <div class="login-error-box login-ajax-alert d-none" id="forgotPasswordAjaxAlert" role="alert"></div>
                                     <div class="login-success-box d-none" id="forgotPasswordSuccess" role="status"></div>
                                     <button type="submit" class="login-btn" id="forgotPasswordSubmit">
-                                        <span class="btn-text">GÖNDER</span>
+                                        <span class="btn-text">KOD GÖNDER</span>
                                         <span class="loading" style="display: none;"></span>
                                     </button>
                                     <div class="login-forgot login-back-row">
