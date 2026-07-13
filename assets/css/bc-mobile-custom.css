@@ -200,7 +200,7 @@ body.mobile-site .layout-header-holder-bc .hdr-dynamic-content {
     background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
 }
 body.mobile-site {
-  background: url(https://uploads.onecompiler.io/43kt7pygm/43mxhc3ht/1.jpg) no-repeat 50% 50% / cover !important;
+  background: url(/assets/images/mobile-home-bg.jpg) no-repeat 50% 50% / cover !important;
   background-attachment: scroll !important;
 }
 .footerWrapper .footerContainerWrapper .sliderGroup > .horizontalList > .horizontalSliderWrapper:first-child > .horizontalSliderRow:first-child {
