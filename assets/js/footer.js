@@ -635,8 +635,11 @@
             wrap.appendChild(toolbar);
             wrap.appendChild(list);
 
+            var subbarHtml = '<button type="button" class="mobile-right-sheet__clear-btn" data-clear-notifications>Temizle</button>';
+
             window.MobileRightSheet.open({
                 title: dynamicTitle,
+                subbarHtml: subbarHtml,
                 bodyElement: wrap,
                 onClose: function () {
                     var headerEl = drawer.querySelector(".right-sidebar__header");
@@ -648,6 +651,19 @@
                     }
                 }
             });
+
+            /* "Temizle" butonu tıklanınca tüm notification'ları temizle */
+            setTimeout(function () {
+                var clearBtn = document.querySelector('[data-clear-notifications]');
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', function () {
+                        var notificationList = document.getElementById("notificationDrawerList");
+                        if (notificationList) {
+                            notificationList.innerHTML = '';
+                        }
+                    });
+                }
+            }, 0);
         }
 
         /** Mobil smart menü: favoriler eski right-sidebar yerine MobileRightSheet. */
