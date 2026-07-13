@@ -74,6 +74,7 @@ body.mobile-site .hdr-smart-panel-fixed::before {
 }
 
 body.mobile-site .hdr-smart-panel-fixed {
+  position: fixed !important;
   width: 50px !important;
   z-index: 10060 !important;
   left: auto !important;
