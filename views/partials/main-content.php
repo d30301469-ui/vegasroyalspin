@@ -110,7 +110,7 @@ if (!function_exists('homeRenderBannerSection')) {
         $isMobileSurface = (function_exists('isMobile') && isMobile()) || strpos($host, 'm.') === 0;
         $forceMobileBanner = false;
         if ($isMobileSurface) {
-            $image = 'assets/images/artıkcekimlerdelimitleretakilmayok.webp';
+            $image = 'assets/images/banner-yok-limit.webp';
             $forceMobileBanner = true;
             if (trim($alt) === '') {
                 $alt = 'Artık çekimlerinizde limitlerde takılmak yok';

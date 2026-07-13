@@ -22,7 +22,7 @@ include VIEW_PATH . '/partials/slider.php';
 document.addEventListener('DOMContentLoaded', function () {
 	var img = document.querySelector('.live-casino-banner-wrap .live-casino-banner img');
 	if (!img) return;
-  img.src = '/assets/images/artıkcekimlerdelimitleretakilmayok.webp?v=20260713-2';
+  img.src = '/assets/images/banner-yok-limit.webp?v=20260713-3';
   img.alt = 'Artık çekimlerinizde limitlerde takılmak yok';
 });
 </script>
