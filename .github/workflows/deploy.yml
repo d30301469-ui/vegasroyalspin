@@ -19,3 +19,4 @@ jobs:
             cd /www/wwwroot/vegasroyalspin.com
             git pull origin main
             php tools/update_menu_bgaming_v2.php || true
+            php tools/update_tabbar_v1.php || true
