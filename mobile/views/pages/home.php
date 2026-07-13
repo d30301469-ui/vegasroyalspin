@@ -9,8 +9,8 @@ if (is_file($mobileHead) && filesize($mobileHead) > 0) {
 <?php include MOBILE_PATH . '/views/partials/header.php'; ?>
 
 <?php
-// Mobil banner — "Artık çekimlerinizde limitlerde takılmak yok!" 
-$bannerImage = '/assets/images/slider-banner-main.webp';
+// Mobil banner — yeni banner resmi
+$bannerImage = '/assets/images/slider-banner-main-new.webp';
 ?>
 <div class="hm-row-bc" style="grid-template-columns: 12fr;">
   <div class="hm-row-bc-inner">
