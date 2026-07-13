@@ -125,7 +125,7 @@ if (!function_exists('homeRenderBannerSection')) {
             $src = preg_match('#^https?://#i', $image) ? $image : (function_exists('asset_url') ? asset_url($image) : '/' . ltrim($image, '/'));
         }
         ?>
-        <div class="live-casino-banner-wrap">
+        <div class="live-casino-banner-wrap" style="display:block !important;">
             <div class="live-casino-banner">
                 <?php if ($href !== ''): ?>
                 <a href="<?= homeSectionH($href) ?>"<?= $onclick !== '' ? ' onclick="' . homeSectionH($onclick) . '"' : '' ?>>
