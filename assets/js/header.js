@@ -437,19 +437,18 @@
             if (!panel) return;
             var rect = toggle.getBoundingClientRect();
             if (rect.width === 0 && rect.height === 0) return;
-            if (isMobile) {
-                applyMobilePanelSizing();
-                panel.style.right = Math.max(8, Math.round(window.innerWidth - rect.right)) + 'px';
-            } else {
-                panel.style.right = '';
-                panel.style.left = (rect.left + rect.width / 2) + 'px';
-                panel.style.top = (rect.bottom + 12) + 'px';
-            }
+            
+            panel.style.setProperty('position', 'fixed', 'important');
+            panel.style.setProperty('bottom', 'auto', 'important');
+            panel.style.setProperty('left', 'auto', 'important');
+            panel.style.setProperty('top', Math.ceil(rect.bottom + 8) + 'px', 'important');
+            panel.style.setProperty('right', Math.max(8, Math.round(window.innerWidth - rect.right)) + 'px', 'important');
         }
 
         function openPanel() {
             closeAllHeaderFlyouts('smart');
             syncPanelPosition();
+            applyMobilePanelSizing();
             if (panel)  { panel.classList.add('is-open');  panel.setAttribute('aria-hidden', 'false'); }
             toggle.classList.add('is-open');
             toggle.setAttribute('aria-expanded', 'true');
