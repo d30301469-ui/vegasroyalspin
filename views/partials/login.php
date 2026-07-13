@@ -141,10 +141,16 @@ if (class_exists('ApiMediaUrl', false)) {
 
                 #login2 #forgotPasswordScreen {
                     margin-top: 0 !important;
-                    min-height: clamp(340px, 56vh, 520px) !important;
+                    min-height: auto !important;
                     display: flex !important;
                     flex-direction: column !important;
                     justify-content: center !important;
+                    position: fixed !important;
+                    top: 52% !important;
+                    left: 50% !important;
+                    transform: translate(-50%, -50%) !important;
+                    width: min(92vw, 540px) !important;
+                    z-index: 100207 !important;
                 }
 
                 #login2 #forgotPasswordScreen .login-forgot-heading {
@@ -241,8 +247,10 @@ if (class_exists('ApiMediaUrl', false)) {
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen {
-                    min-height: calc(100dvh - 210px) !important;
+                    min-height: auto !important;
                     justify-content: center !important;
+                    top: 54% !important;
+                    width: calc(100% - 22px) !important;
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen .login-forgot-title {
