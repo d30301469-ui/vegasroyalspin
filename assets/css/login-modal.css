@@ -447,27 +447,14 @@
     z-index: 2;
 }
 
-#resetPasswordModal .login-modal-header.e-p-header-bc {
+#resetPasswordModal .reset-password-topbar {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
     gap: 10px !important;
     min-height: 52px;
-}
-
-#resetPasswordModal .login-logo {
-    display: flex !important;
-    align-items: center !important;
-    min-width: 0;
-    flex: 0 1 auto;
-}
-
-#resetPasswordModal .login-header-actions {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-end !important;
-    gap: 8px !important;
-    flex: 0 0 auto;
+    position: relative;
+    z-index: 4;
 }
 
 .reset-password-title {
@@ -507,33 +494,25 @@
     justify-content: center !important;
 }
 
+.reset-password-back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+}
+
 body.reset-password-modal-open {
     overflow: hidden;
 }
 
 @media (max-width: 480px) {
-    #resetPasswordModal .login-modal-header.e-p-header-bc {
-        position: relative !important;
-        top: auto !important;
-        right: auto !important;
-        left: auto !important;
+    #resetPasswordModal .reset-password-topbar {
         width: 100% !important;
-        min-width: 0 !important;
-        height: auto !important;
         min-height: 52px !important;
         padding: max(env(safe-area-inset-top, 0px), 0px) 14px 0 !important;
         display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        gap: 10px !important;
-        z-index: 4 !important;
-    }
-
-    #resetPasswordModal .login-logo {
-        display: none !important;
-    }
-
-    #resetPasswordModal .login-header-actions {
         width: 100%;
         justify-content: space-between !important;
         gap: 8px;
