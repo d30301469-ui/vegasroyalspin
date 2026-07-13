@@ -655,37 +655,31 @@ body.mobile-site .hdr-navigation-scrollable-bc-holder {
 
 /* —— Guest auth butonları: kompakt boyut + çerçeve etrafında dönen animasyon —— */
 @keyframes header-btn-glow-login {
-  0% {
-    box-shadow: 2.5px 0 0 0 rgba(133, 15, 131, 0.9), 2.5px 2.5px 0 0 rgba(133, 15, 131, 0.6), 0 2.5px 0 0 rgba(133, 15, 131, 0.3);
+  0%, 100% {
+    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 1), -3px 3px 0 0 rgba(133, 15, 131, 0.2), -3px -3px 0 0 rgba(133, 15, 131, 0.1), 3px -3px 0 0 rgba(133, 15, 131, 0.2);
   }
   25% {
-    box-shadow: 0 2.5px 0 0 rgba(133, 15, 131, 0.9), -2.5px 2.5px 0 0 rgba(133, 15, 131, 0.6), -2.5px 0 0 0 rgba(133, 15, 131, 0.3);
+    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 0.2), -3px 3px 0 0 rgba(133, 15, 131, 1), -3px -3px 0 0 rgba(133, 15, 131, 0.2), 3px -3px 0 0 rgba(133, 15, 131, 0.1);
   }
   50% {
-    box-shadow: -2.5px 0 0 0 rgba(133, 15, 131, 0.9), -2.5px -2.5px 0 0 rgba(133, 15, 131, 0.6), 0 -2.5px 0 0 rgba(133, 15, 131, 0.3);
+    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 0.1), -3px 3px 0 0 rgba(133, 15, 131, 0.2), -3px -3px 0 0 rgba(133, 15, 131, 1), 3px -3px 0 0 rgba(133, 15, 131, 0.2);
   }
   75% {
-    box-shadow: 0 -2.5px 0 0 rgba(133, 15, 131, 0.9), 2.5px -2.5px 0 0 rgba(133, 15, 131, 0.6), 2.5px 0 0 0 rgba(133, 15, 131, 0.3);
-  }
-  100% {
-    box-shadow: 2.5px 0 0 0 rgba(133, 15, 131, 0.9), 2.5px 2.5px 0 0 rgba(133, 15, 131, 0.6), 0 2.5px 0 0 rgba(133, 15, 131, 0.3);
+    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 0.2), -3px 3px 0 0 rgba(133, 15, 131, 0.1), -3px -3px 0 0 rgba(133, 15, 131, 0.2), 3px -3px 0 0 rgba(133, 15, 131, 1);
   }
 }
 @keyframes header-btn-glow-register {
-  0% {
-    box-shadow: 2.5px 0 0 0 rgba(155, 55, 200, 0.9), 2.5px 2.5px 0 0 rgba(155, 55, 200, 0.6), 0 2.5px 0 0 rgba(155, 55, 200, 0.3);
+  0%, 100% {
+    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 1), -3px 3px 0 0 rgba(155, 55, 200, 0.2), -3px -3px 0 0 rgba(155, 55, 200, 0.1), 3px -3px 0 0 rgba(155, 55, 200, 0.2);
   }
   25% {
-    box-shadow: 0 2.5px 0 0 rgba(155, 55, 200, 0.9), -2.5px 2.5px 0 0 rgba(155, 55, 200, 0.6), -2.5px 0 0 0 rgba(155, 55, 200, 0.3);
+    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 0.2), -3px 3px 0 0 rgba(155, 55, 200, 1), -3px -3px 0 0 rgba(155, 55, 200, 0.2), 3px -3px 0 0 rgba(155, 55, 200, 0.1);
   }
   50% {
-    box-shadow: -2.5px 0 0 0 rgba(155, 55, 200, 0.9), -2.5px -2.5px 0 0 rgba(155, 55, 200, 0.6), 0 -2.5px 0 0 rgba(155, 55, 200, 0.3);
+    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 0.1), -3px 3px 0 0 rgba(155, 55, 200, 0.2), -3px -3px 0 0 rgba(155, 55, 200, 1), 3px -3px 0 0 rgba(155, 55, 200, 0.2);
   }
   75% {
-    box-shadow: 0 -2.5px 0 0 rgba(155, 55, 200, 0.9), 2.5px -2.5px 0 0 rgba(155, 55, 200, 0.6), 2.5px 0 0 0 rgba(155, 55, 200, 0.3);
-  }
-  100% {
-    box-shadow: 2.5px 0 0 0 rgba(155, 55, 200, 0.9), 2.5px 2.5px 0 0 rgba(155, 55, 200, 0.6), 0 2.5px 0 0 rgba(155, 55, 200, 0.3);
+    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 0.2), -3px 3px 0 0 rgba(155, 55, 200, 0.1), -3px -3px 0 0 rgba(155, 55, 200, 0.2), 3px -3px 0 0 rgba(155, 55, 200, 1);
   }
 }
 
