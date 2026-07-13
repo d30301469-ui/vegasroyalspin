@@ -1,7 +1,7 @@
 /**
  * Mobil sağdan sola tam yükseklik sheet şablonu — geri + başlık + isteğe bağlı alt şerit + içerik.
  * Konum: üstten --mobile-promo-sheet-top (logo şeridi, footer.js); alttan viewport sonu.
- * z-index 1048: mor .mainMenu (1) üstünde; .mobileHeader-inner (1050) altında. Alt tab menü / smart panel daha yüksek.
+ * z-index 1060: header-bc (1051) + hızlı erişim kısayolları + ürün menüsü üstünde; logo şeridi (top:65px) altta kalır.
  * JS: window.MobileRightSheet.open({ title, subbarHtml?, bodyHtml?, ... })
  */
 
@@ -20,7 +20,7 @@ body.mobile-site .mobile-right-sheet-overlay {
   right: 0;
   bottom: 0;
   left: 0;
-  z-index: 1048;
+  z-index: 1060;
   box-sizing: border-box;
   display: flex;
   align-items: stretch;
