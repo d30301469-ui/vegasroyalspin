@@ -147,84 +147,12 @@
             return;
         }
 
-        var lastScrollY = window.scrollY || window.pageYOffset || 0;
-        var ticking = false;
-        var state = { isHidden: false };
-        var revealY = 80;
-        var deltaThreshold = 6;
-        var hideAfterScrollDown = 22;
-        var showAfterScrollUp = 18;
-        var dirAcc = 0;
+        // Scroll ile gizleme kapalı — header her zaman görünür kalsın.
+        mainMenu.classList.remove('header-hidden');
 
-        function setMenuHidden(hidden) {
-            if (menuOpen) {
-                return;
-            }
-            if (hidden === state.isHidden) {
-                return;
-            }
-            state.isHidden = hidden;
-            dirAcc = 0;
-            if (hidden) {
-                mainMenu.classList.add('header-hidden');
-            } else {
-                mainMenu.classList.remove('header-hidden');
-            }
-            if (typeof window.__syncHeaderStickyTop === 'function') {
-                window.__syncHeaderStickyTop();
-            }
-            window.requestAnimationFrame(function () {
-                window.requestAnimationFrame(function () {
-                    lastScrollY = window.scrollY || window.pageYOffset || 0;
-                });
-            });
+        if (typeof window.__syncHeaderStickyTop === 'function') {
+            window.__syncHeaderStickyTop();
         }
-
-        function onScroll() {
-            if (ticking) {
-                return;
-            }
-            ticking = true;
-            window.requestAnimationFrame(function () {
-                var currentScrollY = window.scrollY || window.pageYOffset || 0;
-                var delta = currentScrollY - lastScrollY;
-                lastScrollY = currentScrollY;
-
-                if (currentScrollY <= revealY) {
-                    dirAcc = 0;
-                    setMenuHidden(false);
-                    ticking = false;
-                    return;
-                }
-
-                if (Math.abs(delta) < deltaThreshold) {
-                    ticking = false;
-                    return;
-                }
-
-                if (delta > 0) {
-                    if (dirAcc < 0) {
-                        dirAcc = 0;
-                    }
-                    dirAcc += delta;
-                    if (dirAcc >= hideAfterScrollDown) {
-                        setMenuHidden(true);
-                    }
-                } else {
-                    if (dirAcc > 0) {
-                        dirAcc = 0;
-                    }
-                    dirAcc += delta;
-                    if (dirAcc <= -showAfterScrollUp) {
-                        setMenuHidden(false);
-                    }
-                }
-
-                ticking = false;
-            });
-        }
-
-        window.addEventListener('scroll', onScroll, { passive: true });
 
         window.addEventListener(
             'resize',
