@@ -43,57 +43,97 @@
         el.classList.remove('d-none');
     }
 
-    function showResetPasswordModal() {
-        var el = document.getElementById('resetPasswordModal');
-        if (!el) return;
-        var $jq = window.jQuery || window.$;
-        if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
-            $jq(el).modal('show');
-        } else {
-            el.classList.add('show');
-            el.style.display = 'block';
-            el.setAttribute('aria-hidden', 'false');
-            document.body.classList.add('modal-open', 'reset-password-modal-open');
-            document.body.style.overflow = 'hidden';
-        }
-    }
-
-    function hideResetPasswordModal() {
-        var el = document.getElementById('resetPasswordModal');
-        if (!el) return;
-        var $jq = window.jQuery || window.$;
-        if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
-            $jq(el).modal('hide');
-        } else {
-            el.classList.remove('show');
-            el.style.display = 'none';
-            el.setAttribute('aria-hidden', 'true');
-            document.body.classList.remove('modal-open', 'reset-password-modal-open');
-            document.body.style.overflow = '';
-        }
-    }
-
     onReady(function () {
-        var modalEl = document.getElementById('resetPasswordModal');
+        var requestForm = document.getElementById('resetPasswordRequestForm');
+        var requestAlertEl = document.getElementById('resetPasswordRequestAlert');
+        var requestSuccessEl = document.getElementById('resetPasswordRequestSuccess');
+        var requestSubmitBtn = document.getElementById('resetPasswordRequestSubmit');
+        var requestBtnText = requestSubmitBtn ? requestSubmitBtn.querySelector('.btn-text') : null;
+        var requestBtnLoading = requestSubmitBtn ? requestSubmitBtn.querySelector('.loading') : null;
+
         var form = document.getElementById('resetPasswordForm');
         var tokenInput = document.getElementById('resetPasswordToken');
-        var missingBox = document.getElementById('resetPasswordMissingToken');
         var alertEl = document.getElementById('resetPasswordAjaxAlert');
         var successEl = document.getElementById('resetPasswordSuccess');
         var submitBtn = document.getElementById('resetPasswordSubmit');
         var btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
         var btnLoading = submitBtn ? submitBtn.querySelector('.loading') : null;
-        var closeBtn = document.querySelector('.reset-password-close');
 
-        if (modalEl) {
-            showResetPasswordModal();
-            if (closeBtn) {
-                closeBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    hideResetPasswordModal();
-                    window.location.href = '/';
-                });
+        if (requestForm) {
+            try {
+                if (BetcoInputs) {
+                    BetcoInputs.initFloatingLabels(requestForm);
+                    BetcoInputs.initRequiredValidation(requestForm, {
+                        fieldNames: ['email'],
+                        errorTextClass: 'login-error-text'
+                    });
+                }
+            } catch (err) {
+                if (typeof console !== 'undefined') console.warn('Reset request form init:', err);
             }
+
+            function setRequestLoading(loading) {
+                if (!requestSubmitBtn) return;
+                requestSubmitBtn.disabled = loading;
+                if (requestBtnText) requestBtnText.style.display = loading ? 'none' : '';
+                if (requestBtnLoading) requestBtnLoading.style.display = loading ? 'inline-block' : 'none';
+            }
+
+            requestForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var email = ((requestForm.querySelector('[name="email"]') || {}).value || '').trim();
+
+                hideError(requestAlertEl);
+                if (requestSuccessEl) {
+                    requestSuccessEl.classList.add('d-none');
+                    requestSuccessEl.textContent = '';
+                }
+
+                if (!email) {
+                    showError(requestAlertEl, 'E-posta adresi gerekli.');
+                    return;
+                }
+
+                setRequestLoading(true);
+                fetch(apiUrl('/api/v2/auth/password-reset'), {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'request',
+                        email: email
+                    })
+                })
+                    .then(function (res) {
+                        return res.json().catch(function () {
+                            return {};
+                        });
+                    })
+                    .then(function (data) {
+                        setRequestLoading(false);
+                        if (data && data.success) {
+                            var okMsg =
+                                (typeof data.message === 'string' && data.message.trim()) ||
+                                'Eğer e-posta sistemde kayıtlıysa doğrulama kodu veya sıfırlama bağlantısı gönderilecektir.';
+                            showSuccess(requestSuccessEl, okMsg);
+                            requestForm.reset();
+                            if (BetcoInputs) {
+                                BetcoInputs.resetFormInputState(requestForm, 'login-error-text');
+                            }
+                            return;
+                        }
+                        var requestErr =
+                            (data && typeof data.message === 'string' && data.message.trim()) ||
+                            'İşlem tamamlanamadı. Lütfen tekrar deneyin.';
+                        showError(requestAlertEl, requestErr);
+                    })
+                    .catch(function () {
+                        setRequestLoading(false);
+                        showError(requestAlertEl, 'Bağlantı hatası. Lütfen tekrar deneyin.');
+                    });
+            });
         }
 
         if (!form || !tokenInput) return;
@@ -105,10 +145,8 @@
 
         var token = String(tokenInput.value || '').trim();
         if (token) {
-            if (missingBox) missingBox.classList.add('d-none');
             form.classList.remove('d-none');
         } else {
-            if (missingBox) missingBox.classList.remove('d-none');
             form.classList.add('d-none');
             return;
         }
@@ -190,7 +228,7 @@
                         }
                         tokenInput.value = t;
                         window.setTimeout(function () {
-                            window.location.href = '/?login=1&password_updated=1';
+                            window.location.href = '/';
                         }, 2000);
                         return;
                     }

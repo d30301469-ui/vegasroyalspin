@@ -372,7 +372,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                 </form>
 
                                 <div class="login-forgot">
-                                    <a href="#" id="openForgotPassword">ŞİFRENİZİ Mİ UNUTTUNUZ?</a>
+                                    <a href="/reset-password">ŞİFRENİZİ Mİ UNUTTUNUZ?</a>
                                 </div>
                             </div>
 
