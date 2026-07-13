@@ -2,7 +2,7 @@
 $registerMobileSingleStep = !empty($registerSingleStepMobile);
 $registerAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('register') : [];
 $registerAuthSliderClass = $registerAuthSliderItems !== [] ? ' has-auth-slider' : '';
-$registerBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
+$registerBranding = (isset($siteBranding) && is_array($siteBranding)) ? $siteBranding : [];
 $registerSiteName = (string) ($registerBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
 $registerLogoUrl = (string) ($registerBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
 if (class_exists('ApiMediaUrl', false)) {
