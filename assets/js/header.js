@@ -405,11 +405,8 @@
 
         function applyMobilePanelSizing() {
             if (!isMobile || !panel) return;
-            var rootTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mobile-promo-sheet-top'));
-            var safeTop = Number.isFinite(rootTop) && rootTop > 0 ? Math.ceil(rootTop + 8) : 67;
             panel.style.setProperty('left', 'auto', 'important');
             panel.style.setProperty('right', '8px', 'important');
-            panel.style.setProperty('top', safeTop + 'px', 'important');
             panel.style.setProperty('bottom', 'auto', 'important');
             panel.style.setProperty('height', 'auto', 'important');
             panel.style.setProperty('max-height', '320px', 'important');
