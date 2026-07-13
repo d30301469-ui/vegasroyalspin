@@ -283,10 +283,10 @@ body.mobile-site #login2 .login-close {
   position: fixed !important;
   top: max(8px, env(safe-area-inset-top, 0px)) !important;
   right: 8px !important;
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -308,7 +308,7 @@ body.mobile-site #login2 .login-close::before {
   content: "\00d7";
   display: block;
   color: #fff;
-  font-size: 30px;
+  font-size: 20px;
   line-height: 1;
 }
 

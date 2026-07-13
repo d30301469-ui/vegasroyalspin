@@ -73,6 +73,39 @@
     line-height: 1;
 }
 
+.login-password-field {
+    position: relative;
+}
+
+.login-password-field .login-password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    min-height: 26px;
+    border: 0;
+    background: transparent;
+    color: rgba(230, 214, 255, 0.88);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.login-password-field .login-password-toggle:focus {
+    outline: none;
+}
+
+.login-password-field .form-control-input-bc {
+    padding-right: 86px;
+}
+
 .login-text-block {
     margin-top: 4px;
 }
@@ -221,10 +254,10 @@
     }
 
     .login-close {
-        width: 36px;
-        height: 36px;
-        min-width: 36px;
-        min-height: 36px;
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -232,5 +265,11 @@
         border: 1px solid rgba(255, 255, 255, 0.18);
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
         box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .login-password-field .login-password-toggle {
+        right: 10px;
+        min-height: 24px;
+        font-size: 10px;
     }
 }

@@ -191,6 +191,27 @@
         }
     }
 
+    function initPasswordToggle() {
+        document.addEventListener('click', function (e) {
+            var toggle = e.target && e.target.closest ? e.target.closest('.login-password-toggle') : null;
+            if (!toggle) return;
+
+            var targetSelector = toggle.getAttribute('data-target-password');
+            var input = targetSelector ? document.querySelector(targetSelector) : null;
+            if (!input) return;
+
+            var showPassword = input.type === 'password';
+            input.type = showPassword ? 'text' : 'password';
+            toggle.setAttribute('aria-pressed', showPassword ? 'true' : 'false');
+            toggle.setAttribute('aria-label', showPassword ? 'Şifreyi gizle' : 'Şifreyi göster');
+
+            var text = toggle.querySelector('.login-password-toggle-text');
+            if (text) {
+                text.textContent = showPassword ? 'GİZLE' : 'GÖSTER';
+            }
+        });
+    }
+
     function showLoginFormScreen() {
         var hdr = document.getElementById('loginScreenHeader');
         var main = document.getElementById('loginFormScreen');
@@ -605,6 +626,7 @@
 
     onReady(function () {
         initLoginModal();
+        initPasswordToggle();
         initLoginForm();
         initLoginAjaxSubmit();
         initForgotPasswordForm();
