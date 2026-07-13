@@ -110,7 +110,7 @@ if (!function_exists('homeRenderBannerSection')) {
         $isMobileSurface = (function_exists('isMobile') && isMobile()) || strpos($host, 'm.') === 0;
         $forceMobileBanner = false;
         if ($isMobileSurface) {
-            $image = 'assets/images/slider-banner-main.webp';
+            $image = 'assets/images/mobile-withdraw-banner.webp';
             $forceMobileBanner = true;
             if (trim($alt) === '') {
                 $alt = 'Mobil banner';
