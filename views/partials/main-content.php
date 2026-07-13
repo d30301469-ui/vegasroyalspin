@@ -316,35 +316,6 @@ try {
     </div>
 </section>
 
-<?php if ($homeIsMobile): ?>
-<div class="hm-row-bc hm-row-mobile-sports-shortcuts" style="grid-template-columns: 12fr;">
-    <div class="hm-row-bc-inner">
-        <div class="product-banner-container-bc col-4 product-banner-without-titles" data-scroll-lock-scrollable>
-            <div>
-                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="4" href="/tr/sports/pre-match">
-                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-pre-match.webp" class="product-banner-img-bc" />
-                </a>
-            </div>
-            <div>
-                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="3" href="/tr/sports/live">
-                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-live.webp" class="product-banner-img-bc" />
-                </a>
-            </div>
-            <div>
-                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="2" href="/tr/sports/pre-match/event-view?specialSection=boosted-bets">
-                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-boosted.webp" class="product-banner-img-bc" />
-                </a>
-            </div>
-            <div>
-                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="1" href="/tr/sports/pre-match/event-view?specialSection=popular-matches">
-                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-popular.webp" class="product-banner-img-bc" />
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
 <?php if (!empty($showJackpotWinnersRow)): ?>
 <section class="home-jackpot-winners-section" aria-label="Jackpot ve son kazananlar">
 <?php if (function_exists('isMobile') && isMobile()): ?>
@@ -404,6 +375,36 @@ try {
 
 <?php
 homeRenderBannerSection(homeSectionByKey($homeSections, 'withdrawal-banner'));
+if ($homeIsMobile):
+?>
+<div class="hm-row-bc hm-row-mobile-sports-shortcuts" style="grid-template-columns: 12fr;">
+    <div class="hm-row-bc-inner">
+        <div class="product-banner-container-bc col-4 product-banner-without-titles" data-scroll-lock-scrollable>
+            <div>
+                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="4" href="/tr/sports/pre-match">
+                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-pre-match.webp" class="product-banner-img-bc" />
+                </a>
+            </div>
+            <div>
+                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="3" href="/tr/sports/live">
+                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-live.webp" class="product-banner-img-bc" />
+                </a>
+            </div>
+            <div>
+                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="2" href="/tr/sports/pre-match/event-view?specialSection=boosted-bets">
+                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-boosted.webp" class="product-banner-img-bc" />
+                </a>
+            </div>
+            <div>
+                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="1" href="/tr/sports/pre-match/event-view?specialSection=popular-matches">
+                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-popular.webp" class="product-banner-img-bc" />
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<?php
+endif;
 homeRenderGameSection(homeSectionByKey($homeSections, 'casino'), 'Casino', '/slot');
 homeRenderGameSection(homeSectionByKey($homeSections, 'live-casino'), 'Canl─▒ Casino', '/livecasino', true);
 ?>
