@@ -22,8 +22,8 @@ include VIEW_PATH . '/partials/slider.php';
 document.addEventListener('DOMContentLoaded', function () {
 	var img = document.querySelector('.live-casino-banner-wrap .live-casino-banner img');
 	if (!img) return;
-	img.src = '/assets/images/mobile-withdraw-banner.webp?v=20260713-1';
-	img.alt = 'Cekimlerinizde limitlere takilmak yok';
+  img.src = '/assets/images/artıkcekimlerdelimitleretakilmayok.webp?v=20260713-2';
+  img.alt = 'Artık çekimlerinizde limitlerde takılmak yok';
 });
 </script>
 <script src="/assets/js/jackpot.js?v=<?= htmlspecialchars($jackpotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>

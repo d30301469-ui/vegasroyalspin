@@ -105,15 +105,15 @@ if (!function_exists('homeRenderBannerSection')) {
         $href = trim((string) ($payload['href'] ?? ''));
         $onclick = trim((string) ($payload['onclick'] ?? ''));
 
-        // Mobil yüzeyde (UA veya m. host) bu alanda her zaman local banner kullan.
+        // Mobil yüzeyde (UA veya m. host) bu alanda her zaman YÖK banner'ını kullan.
         $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
         $isMobileSurface = (function_exists('isMobile') && isMobile()) || strpos($host, 'm.') === 0;
         $forceMobileBanner = false;
         if ($isMobileSurface) {
-            $image = 'assets/images/mobile-withdraw-banner.webp';
+            $image = 'assets/images/artıkcekimlerdelimitleretakilmayok.webp';
             $forceMobileBanner = true;
             if (trim($alt) === '') {
-                $alt = 'Mobil banner';
+                $alt = 'Artık çekimlerinizde limitlerde takılmak yok';
             }
         }
 
