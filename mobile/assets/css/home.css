@@ -3,7 +3,8 @@ body.mobile-site {
   background-image: url('/assets/images/mobile-home-bg.jpg') !important;
   background-repeat: no-repeat !important;
   background-size: cover !important;
-  background-position: center top !important;
+  background-position: 50% 50% !important;
+  background-attachment: fixed !important;
 }
 
 .mobile-site .hm-row-bc .banner-bc,
