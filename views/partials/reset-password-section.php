@@ -144,6 +144,39 @@ $hasToken = $resetToken !== '';
         border-radius: 8px;
     }
 
+    #resetPasswordModal .form-control-input-bc {
+        height: 48px !important;
+        min-height: 48px !important;
+        border-radius: 6px !important;
+        border: 1px solid rgba(172, 102, 255, 0.3) !important;
+    }
+
+    #resetPasswordModal .form-control-input-bc:focus {
+        border-color: rgba(172, 102, 255, 0.45) !important;
+        box-shadow: none !important;
+    }
+
+    #resetPasswordModal .login-btn,
+    #resetPasswordRequestSubmit,
+    #resetPasswordSubmit {
+        height: 48px !important;
+        min-height: 48px !important;
+        border-radius: 6px !important;
+        background-color: transparent !important;
+        border: 1px solid rgba(255, 255, 255, 0.95) !important;
+        color: #fff !important;
+        box-shadow: none !important;
+    }
+
+    #resetPasswordModal .login-btn:hover,
+    #resetPasswordRequestSubmit:hover,
+    #resetPasswordSubmit:hover {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.95) !important;
+        color: #fff !important;
+        transform: none !important;
+    }
+
     .reset-password-actions {
         margin-top: 2px;
         text-align: center;
@@ -183,6 +216,14 @@ $hasToken = $resetToken !== '';
 
         .reset-password-title {
             font-size: 19px;
+        }
+
+        #resetPasswordModal .form-control-input-bc,
+        #resetPasswordModal .login-btn,
+        #resetPasswordRequestSubmit,
+        #resetPasswordSubmit {
+            height: 44px !important;
+            min-height: 44px !important;
         }
     }
 </style>
