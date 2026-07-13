@@ -25,16 +25,13 @@ $hasToken = $resetToken !== '';
         align-items: center;
         justify-content: center;
         padding: 16px;
-        background:
-            radial-gradient(circle at 18% 14%, rgba(133, 15, 131, 0.22), transparent 52%),
-            radial-gradient(circle at 82% 88%, rgba(16, 145, 33, 0.14), transparent 56%),
-            linear-gradient(180deg, rgba(7, 9, 25, 0.96), rgba(6, 7, 20, 0.98));
+        background-color: #070919 !important;
     }
 
     .reset-password-modal-backdrop {
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, rgba(4, 6, 18, 0.58), rgba(4, 6, 18, 0.8));
+        background-color: rgba(4, 6, 18, 0.72) !important;
         backdrop-filter: blur(3px);
     }
 
@@ -43,10 +40,8 @@ $hasToken = $resetToken !== '';
         z-index: 1;
         width: min(100%, 540px);
         border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background:
-            linear-gradient(160deg, rgba(133, 15, 131, 0.1), rgba(16, 145, 33, 0.05) 42%, rgba(8, 10, 24, 0.97) 100%),
-            rgba(8, 10, 24, 0.94);
+        border: 1px solid rgba(133, 15, 131, 0.62);
+        background-color: rgba(8, 10, 24, 0.95) !important;
         box-shadow:
             0 18px 38px rgba(0, 0, 0, 0.52),
             0 0 0 1px rgba(133, 15, 131, 0.42),
@@ -61,8 +56,8 @@ $hasToken = $resetToken !== '';
         position: absolute;
         inset: 0;
         pointer-events: none;
-        background: linear-gradient(90deg, rgba(133, 15, 131, 0.14), rgba(16, 145, 33, 0.08), rgba(133, 15, 131, 0.14));
-        opacity: 0.35;
+        background-color: rgba(133, 15, 131, 0.06);
+        opacity: 1;
     }
 
     .reset-password-modal > * {
@@ -104,15 +99,16 @@ $hasToken = $resetToken !== '';
     .reset-password-modal .login-btn {
         min-height: 46px;
         border-radius: 8px;
-        border: 1px solid var(--primary);
-        background: linear-gradient(180deg, rgba(133, 15, 131, 0.96), rgba(116, 11, 113, 0.96));
+        border: 1px solid var(--primary) !important;
+        background-color: var(--primary) !important;
         box-shadow: 0 8px 18px rgba(133, 15, 131, 0.33);
+        color: #fff !important;
     }
 
     .reset-password-modal .login-btn:hover {
         color: #fff !important;
-        border-color: var(--secondary);
-        background: linear-gradient(180deg, rgba(16, 145, 33, 0.92), rgba(12, 118, 27, 0.95));
+        border-color: var(--secondary) !important;
+        background-color: var(--secondary) !important;
         box-shadow: 0 10px 22px rgba(16, 145, 33, 0.32);
     }
 
@@ -124,7 +120,7 @@ $hasToken = $resetToken !== '';
     .reset-password-actions a {
         color: rgba(255, 255, 255, 0.9);
         text-decoration: none;
-        border-bottom: 1px solid rgba(16, 145, 33, 0.45);
+        border-bottom: 1px solid rgba(16, 145, 33, 0.45) !important;
         padding-bottom: 2px;
     }
 
