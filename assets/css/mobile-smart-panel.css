@@ -22,6 +22,22 @@ body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc.bc-i-
   position: relative !important;
 }
 
+/*
+ * KRİTİK: Panel açıkken bile görünmüyordu. `:not(.is-open){opacity:0!important;
+ * visibility:hidden!important}` + `transition: ... visibility 0.16s` kombinasyonu,
+ * .is-open eklenince transition'ı düzgün tetiklemeyip paneli opacity:0 / hidden'da
+ * bırakıyordu. Transition'ı kaldır ve açık durumu !important ile zorla.
+ */
+body.mobile-site .hdr-smart-panel-fixed {
+  transition: none !important;
+}
+
+body.mobile-site .hdr-smart-panel-fixed.is-open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
 /* Üç nokta ikonu (BetConstruct) */
 body.mobile-site .hdr-toggle-button-bc.bc-i-vertical-toggle::before {
   content: "\ea1d" !important;
