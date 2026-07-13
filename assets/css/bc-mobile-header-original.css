@@ -656,30 +656,30 @@ body.mobile-site .hdr-navigation-scrollable-bc-holder {
 /* —— Guest auth butonları: kompakt boyut + çerçeve etrafında dönen animasyon —— */
 @keyframes header-btn-glow-login {
   0%, 100% {
-    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 1), -3px 3px 0 0 rgba(133, 15, 131, 0.2), -3px -3px 0 0 rgba(133, 15, 131, 0.1), 3px -3px 0 0 rgba(133, 15, 131, 0.2);
+    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 1), -3px 3px 0 0 rgba(133, 15, 131, 0.3), -3px -3px 0 0 rgba(133, 15, 131, 0.15), 3px -3px 0 0 rgba(133, 15, 131, 0.3);
   }
   25% {
-    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 0.2), -3px 3px 0 0 rgba(133, 15, 131, 1), -3px -3px 0 0 rgba(133, 15, 131, 0.2), 3px -3px 0 0 rgba(133, 15, 131, 0.1);
+    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 0.3), -3px 3px 0 0 rgba(133, 15, 131, 1), -3px -3px 0 0 rgba(133, 15, 131, 0.3), 3px -3px 0 0 rgba(133, 15, 131, 0.15);
   }
   50% {
-    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 0.1), -3px 3px 0 0 rgba(133, 15, 131, 0.2), -3px -3px 0 0 rgba(133, 15, 131, 1), 3px -3px 0 0 rgba(133, 15, 131, 0.2);
+    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 0.15), -3px 3px 0 0 rgba(133, 15, 131, 0.3), -3px -3px 0 0 rgba(133, 15, 131, 1), 3px -3px 0 0 rgba(133, 15, 131, 0.3);
   }
   75% {
-    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 0.2), -3px 3px 0 0 rgba(133, 15, 131, 0.1), -3px -3px 0 0 rgba(133, 15, 131, 0.2), 3px -3px 0 0 rgba(133, 15, 131, 1);
+    box-shadow: 3px 3px 0 0 rgba(133, 15, 131, 0.3), -3px 3px 0 0 rgba(133, 15, 131, 0.15), -3px -3px 0 0 rgba(133, 15, 131, 0.3), 3px -3px 0 0 rgba(133, 15, 131, 1);
   }
 }
 @keyframes header-btn-glow-register {
   0%, 100% {
-    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 1), -3px 3px 0 0 rgba(155, 55, 200, 0.2), -3px -3px 0 0 rgba(155, 55, 200, 0.1), 3px -3px 0 0 rgba(155, 55, 200, 0.2);
+    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 1), -3px 3px 0 0 rgba(155, 55, 200, 0.3), -3px -3px 0 0 rgba(155, 55, 200, 0.15), 3px -3px 0 0 rgba(155, 55, 200, 0.3);
   }
   25% {
-    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 0.2), -3px 3px 0 0 rgba(155, 55, 200, 1), -3px -3px 0 0 rgba(155, 55, 200, 0.2), 3px -3px 0 0 rgba(155, 55, 200, 0.1);
+    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 0.3), -3px 3px 0 0 rgba(155, 55, 200, 1), -3px -3px 0 0 rgba(155, 55, 200, 0.3), 3px -3px 0 0 rgba(155, 55, 200, 0.15);
   }
   50% {
-    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 0.1), -3px 3px 0 0 rgba(155, 55, 200, 0.2), -3px -3px 0 0 rgba(155, 55, 200, 1), 3px -3px 0 0 rgba(155, 55, 200, 0.2);
+    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 0.15), -3px 3px 0 0 rgba(155, 55, 200, 0.3), -3px -3px 0 0 rgba(155, 55, 200, 1), 3px -3px 0 0 rgba(155, 55, 200, 0.3);
   }
   75% {
-    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 0.2), -3px 3px 0 0 rgba(155, 55, 200, 0.1), -3px -3px 0 0 rgba(155, 55, 200, 0.2), 3px -3px 0 0 rgba(155, 55, 200, 1);
+    box-shadow: 3px 3px 0 0 rgba(155, 55, 200, 0.3), -3px 3px 0 0 rgba(155, 55, 200, 0.15), -3px -3px 0 0 rgba(155, 55, 200, 0.3), 3px -3px 0 0 rgba(155, 55, 200, 1);
   }
 }
 
@@ -704,7 +704,7 @@ body.mobile-site .hdr-main-content-bc .hdr-user-bc .btn.sign-in {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  animation: header-btn-glow-login 2.2s ease-in-out infinite !important;
+  animation: header-btn-glow-login 2.2s linear infinite !important;
   transition: background 0.2s, transform 0.15s !important;
 }
 
@@ -724,7 +724,7 @@ body.mobile-site .hdr-main-content-bc .hdr-user-bc .btn.register {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  animation: header-btn-glow-register 2.2s ease-in-out 1.1s infinite !important;
+  animation: header-btn-glow-register 2.2s linear 1.1s infinite !important;
   transition: background 0.2s, transform 0.15s !important;
   cursor: pointer !important;
 }
