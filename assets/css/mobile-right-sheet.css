@@ -227,18 +227,24 @@ body:not(.mobile-site) .mobile-right-sheet-overlay {
   flex: 1;
 }
 
-.mobile-right-sheet__body .mobile-notification-sheet-content .notification-drawer__toolbar {
-  padding-left: 0;
-  padding-right: 0;
-  margin-top: -4px;
-}
-
 .mobile-right-sheet__body .mobile-notification-sheet-content .notification-drawer__list {
   flex: 1;
   min-height: 0;
   padding-left: 0;
   padding-right: 0;
   padding-bottom: 8px;
+}
+
+/* Toolbar in subbar: override subbar styling for toolbar display */
+.mobile-right-sheet__subbar .notification-drawer__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border-bottom: none;
 }
 
 /* Smart menü favoriler: sekmeler + gövde */

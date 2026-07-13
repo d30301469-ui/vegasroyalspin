@@ -632,10 +632,11 @@
 
             var wrap = document.createElement("div");
             wrap.className = "mobile-notification-sheet-content";
-            wrap.appendChild(toolbar);
             wrap.appendChild(list);
 
-            var subbarHtml = '<button type="button" class="mobile-right-sheet__clear-btn" data-clear-notifications>Temizle</button>';
+            /* Toolbar'ı clone et (outerHTML) - subbar'da göstermek için */
+            var toolbarClone = toolbar.cloneNode(true);
+            var subbarHtml = toolbarClone.outerHTML;
 
             window.MobileRightSheet.open({
                 title: dynamicTitle,
@@ -644,9 +645,9 @@
                 onClose: function () {
                     var headerEl = drawer.querySelector(".right-sidebar__header");
                     if (headerEl && headerEl.parentNode === drawer) {
-                        headerEl.after(toolbar, list);
+                        headerEl.after(list);
                     } else {
-                        drawer.appendChild(toolbar);
+                        drawer.appendChild(list);
                         drawer.appendChild(list);
                     }
                 }
@@ -654,9 +655,10 @@
 
             /* "Temizle" butonu tıklanınca tüm notification'ları temizle */
             setTimeout(function () {
-                var clearBtn = document.querySelector('[data-clear-notifications]');
+                var clearBtn = document.querySelector('.mobile-right-sheet__subbar .notification-drawer__clear');
                 if (clearBtn) {
-                    clearBtn.addEventListener('click', function () {
+                    clearBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
                         var notificationList = document.getElementById("notificationDrawerList");
                         if (notificationList) {
                             notificationList.innerHTML = '';
