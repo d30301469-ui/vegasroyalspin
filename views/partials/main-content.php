@@ -105,12 +105,12 @@ if (!function_exists('homeRenderBannerSection')) {
         $href = trim((string) ($payload['href'] ?? ''));
         $onclick = trim((string) ($payload['onclick'] ?? ''));
 
-        // Mobil yüzeyde (UA veya m. host) bu alanda her zaman YÖK banner'ını kullan.
+        // Mobil yüzeyde (UA veya m. host) bu alanda kullanıcıdan gelen URL ile birebir banner kullan.
         $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
         $isMobileSurface = (function_exists('isMobile') && isMobile()) || strpos($host, 'm.') === 0;
         $forceMobileBanner = false;
         if ($isMobileSurface) {
-            $image = 'assets/images/banner-yok-limit.webp';
+            $image = 'assets/images/slider-banner-main.webp';
             $forceMobileBanner = true;
             if (trim($alt) === '') {
                 $alt = 'Artık çekimlerinizde limitlerde takılmak yok';

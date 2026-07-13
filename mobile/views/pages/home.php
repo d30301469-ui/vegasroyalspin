@@ -9,22 +9,6 @@ if (is_file($mobileHead) && filesize($mobileHead) > 0) {
 <?php include MOBILE_PATH . '/views/partials/header.php'; ?>
 
 <?php
-$mobileTopBanner = '/assets/images/banner-yok-limit.webp';
-$mobileTopBannerAbs = BASE_PATH . '/' . ltrim($mobileTopBanner, '/');
-$mobileTopBannerVer = (string) (is_file($mobileTopBannerAbs) ? filemtime($mobileTopBannerAbs) : time());
-?>
-<div class="mobile-top-banner-wrap">
-	<img
-		src="<?= htmlspecialchars($mobileTopBanner, ENT_QUOTES, 'UTF-8') ?>?v=<?= htmlspecialchars($mobileTopBannerVer, ENT_QUOTES, 'UTF-8') ?>"
-		alt="Artik cekimlerinizde limitlere takilmak yok"
-		class="mobile-top-banner-image"
-		loading="eager"
-		decoding="async"
-		fetchpriority="high"
-	/>
-</div>
-
-<?php
 $sliderMobileBc = true;
 $sliderApiCategory = 'home';
 include VIEW_PATH . '/partials/slider.php';
