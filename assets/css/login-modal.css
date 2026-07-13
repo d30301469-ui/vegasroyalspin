@@ -447,6 +447,29 @@
     z-index: 2;
 }
 
+#resetPasswordModal .login-modal-header.e-p-header-bc {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    min-height: 52px;
+}
+
+#resetPasswordModal .login-logo {
+    display: flex !important;
+    align-items: center !important;
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+#resetPasswordModal .login-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    flex: 0 0 auto;
+}
+
 .reset-password-title {
     margin: 0;
 }
@@ -463,6 +486,9 @@
     text-decoration: none;
     min-width: 92px;
     text-align: center;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .reset-password-back-row {
@@ -472,6 +498,13 @@
 
 .reset-password-back-link {
     color: rgba(220, 214, 245, 0.88);
+}
+
+.reset-password-close {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 body.reset-password-modal-open {
@@ -497,18 +530,12 @@ body.reset-password-modal-open {
     }
 
     #resetPasswordModal .login-logo {
-        min-width: 0;
-        max-width: 146px;
-        flex: 0 1 auto;
-    }
-
-    #resetPasswordModal .login-logo-img {
-        height: 28px;
-        max-width: 132px;
+        display: none !important;
     }
 
     #resetPasswordModal .login-header-actions {
-        flex: 0 0 auto;
+        width: 100%;
+        justify-content: space-between !important;
         gap: 8px;
     }
 
