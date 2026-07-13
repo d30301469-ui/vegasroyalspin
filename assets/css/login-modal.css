@@ -79,22 +79,18 @@
 
 .login-password-field .login-password-toggle {
     position: absolute;
-    right: 12px;
+    right: 10px;
     top: 50%;
     transform: translateY(-50%);
     z-index: 4;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 10px;
-    min-height: 26px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
     border: 0;
     background: transparent;
-    color: rgba(230, 214, 255, 0.88);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
     cursor: pointer;
 }
 
@@ -103,7 +99,34 @@
 }
 
 .login-password-field .form-control-input-bc {
-    padding-right: 86px;
+    padding-right: 48px;
+}
+
+.login-password-field .login-password-toggle-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    color: rgba(230, 214, 255, 0.9);
+}
+
+.login-password-field .login-password-toggle-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.login-password-field .login-password-toggle-icon-hide {
+    display: none;
+}
+
+.login-password-field .login-password-toggle.is-password-visible .login-password-toggle-icon-show {
+    display: none;
+}
+
+.login-password-field .login-password-toggle.is-password-visible .login-password-toggle-icon-hide {
+    display: inline-flex;
 }
 
 .login-text-block {
@@ -254,10 +277,10 @@
     }
 
     .login-close {
-        width: 28px;
-        height: 28px;
-        min-width: 28px;
-        min-height: 28px;
+        width: 26px;
+        height: 26px;
+        min-width: 26px;
+        min-height: 26px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -268,8 +291,14 @@
     }
 
     .login-password-field .login-password-toggle {
-        right: 10px;
-        min-height: 24px;
-        font-size: 10px;
+        right: 8px;
+        width: 28px;
+        height: 28px;
+    }
+
+    .login-password-field .login-password-toggle-icon,
+    .login-password-field .login-password-toggle-icon svg {
+        width: 16px;
+        height: 16px;
     }
 }

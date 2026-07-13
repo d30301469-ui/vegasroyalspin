@@ -113,7 +113,16 @@ if (class_exists('ApiMediaUrl', false)) {
                                             <label class="form-control-label-bc inputs login-password-field">
                                                 <input type="password" class="form-control-input-bc password-input" name="password" id="loginPassword" value="" required>
                                                 <button type="button" class="login-password-toggle" aria-label="Şifreyi göster" aria-pressed="false" data-target-password="#loginPassword">
-                                                    <span class="login-password-toggle-text">GÖSTER</span>
+                                                    <span class="login-password-toggle-icon login-password-toggle-icon-show" aria-hidden="true">
+                                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
+                                                            <path d="M12 5c5.2 0 9.7 3.1 11.5 7-1.8 3.9-6.3 7-11.5 7S2.3 15.9.5 12C2.3 8.1 6.8 5 12 5Zm0 11.5A4.5 4.5 0 1 0 12 8a4.5 4.5 0 0 0 0 8.5Zm0-2.1a2.4 2.4 0 1 1 0-4.8 2.4 2.4 0 0 1 0 4.8Z"></path>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="login-password-toggle-icon login-password-toggle-icon-hide" aria-hidden="true">
+                                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
+                                                            <path d="M3.3 2.6 21.4 20.7l-1.2 1.2-3.1-3.1A12.8 12.8 0 0 1 12 20C6.8 20 2.3 16.9.5 13c.8-1.7 2.2-3.4 4-4.8L2.1 4 3.3 2.6Zm4.4 4.4 1.7 1.7A4.5 4.5 0 0 0 12 16.5c.8 0 1.6-.2 2.3-.6l1.6 1.6A11.6 11.6 0 0 1 12 18C6.8 18 2.8 15.3 1.5 13c.7-1.3 2-2.7 3.7-3.9l2.5-2.1ZM8.2 7.1A4.4 4.4 0 0 0 6.7 8.8l1.5 1.5A2.4 2.4 0 0 1 12 14c.5 0 1-.1 1.4-.3l1.6 1.6A4.5 4.5 0 0 1 12 16.5a4.5 4.5 0 0 1-4.5-4.5c0-.6.1-1.2.4-1.8l-1.4-1.4 1.7-1.7Z"></path>
+                                                        </svg>
+                                                    </span>
                                                 </button>
                                                 <i class="form-control-input-stroke-bc"></i>
                                                 <span class="form-control-title-bc ellipsis">Şifre *</span>

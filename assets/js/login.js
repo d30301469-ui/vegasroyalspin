@@ -204,10 +204,8 @@
             input.type = showPassword ? 'text' : 'password';
             toggle.setAttribute('aria-pressed', showPassword ? 'true' : 'false');
             toggle.setAttribute('aria-label', showPassword ? 'Şifreyi gizle' : 'Şifreyi göster');
-
-            var text = toggle.querySelector('.login-password-toggle-text');
-            if (text) {
-                text.textContent = showPassword ? 'GİZLE' : 'GÖSTER';
+            if (toggle.classList) {
+                toggle.classList.toggle('is-password-visible', showPassword);
             }
         });
     }
