@@ -459,3 +459,93 @@
         font-size: 13px;
     }
 }
+
+/* Forgot-password screen cleanup: simpler hierarchy and cleaner spacing */
+#login2 #forgotPasswordScreen {
+    margin-top: 6px;
+}
+
+#login2 #forgotPasswordScreen .login-forgot-heading {
+    margin: 0 0 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+}
+
+#login2 #forgotPasswordScreen .login-top-text {
+    margin: 0 0 4px;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+#login2 #forgotPasswordScreen .login-forgot-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.2;
+}
+
+#login2 #forgotPasswordScreen .login-forgot-hint {
+    margin: 8px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.84);
+}
+
+#login2 #forgotPasswordScreen .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#login2 #forgotPasswordScreen .form-group {
+    margin-bottom: 0;
+}
+
+#login2 #forgotPasswordScreen .login-error-text {
+    margin-top: 6px;
+}
+
+#login2 #forgotPasswordScreen .login-back-row {
+    width: 100%;
+    height: auto;
+    margin: 4px 0 0;
+    text-align: center;
+}
+
+#login2 #forgotPasswordScreen .login-back-row a {
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 13px;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+    padding-bottom: 2px;
+}
+
+#login2 #forgotPasswordScreen .login-back-row a:hover {
+    color: #ffffff;
+    border-bottom-color: rgba(255, 255, 255, 0.52);
+}
+
+@media (max-width: 480px) {
+    #login2 #forgotPasswordScreen {
+        margin-top: 0;
+    }
+
+    #login2 #forgotPasswordScreen .login-forgot-heading {
+        padding: 10px 11px;
+        margin-bottom: 10px;
+        border-radius: 9px;
+    }
+
+    #login2 #forgotPasswordScreen .login-forgot-title {
+        font-size: 18px;
+    }
+
+    #login2 #forgotPasswordScreen .login-forgot-hint {
+        font-size: 12px;
+    }
+}
