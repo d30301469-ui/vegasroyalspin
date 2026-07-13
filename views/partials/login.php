@@ -106,8 +106,8 @@ if (class_exists('ApiMediaUrl', false)) {
 
                 body.mobile-site #login2 .login-password-field .login-password-toggle-icon,
                 body.mobile-site #login2 .login-password-field .login-password-toggle-icon svg {
-                    width: 16px;
-                    height: 16px;
+                    width: 15px;
+                    height: 15px;
                 }
 
                 body.mobile-site #login2 .login-password-field .login-password-toggle-icon svg {
@@ -124,6 +124,12 @@ if (class_exists('ApiMediaUrl', false)) {
                     width: calc(100% - 14px) !important;
                     margin-left: 7px !important;
                     margin-right: 7px !important;
+                    box-sizing: border-box !important;
+                }
+
+                body.mobile-site #login2 .login-remember-row {
+                    margin: 0 7px 10px !important;
+                    width: calc(100% - 14px) !important;
                     box-sizing: border-box !important;
                 }
             </style>
