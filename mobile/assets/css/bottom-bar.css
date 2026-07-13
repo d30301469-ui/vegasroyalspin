@@ -13,6 +13,11 @@ body.mobile-site .layout-navigation-holder-bc .tab-navigation-w-bc {
   display: flex !important;
 }
 
+/* CANLI CASİNO ikonu — glyph masaüstü header.css'te, mobilde de tanımla (BetConstruct-Icons) */
+body.mobile-site .tab-navigation-w-bc .tab-nav-icon-bc.bc-i-livecasino::before {
+  content: "\e945";
+}
+
 body.mobile-site .tab-navigation-w-bc .tab-nav-item-bc {
   flex: 1;
   min-width: 0;

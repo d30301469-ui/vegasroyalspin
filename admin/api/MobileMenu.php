@@ -60,8 +60,8 @@ final class ApiMobileMenu
     {
         return [
             ['type' => 'link', 'label' => 'SPOR', 'href' => '/sportbook', 'icon' => 'bc-i-prematch', 'badge' => '', 'enabled' => true, 'aria_label' => 'SPOR'],
-            ['type' => 'button', 'label' => 'KUPON', 'href' => '', 'icon' => 'bc-i-betslip', 'badge' => '', 'enabled' => true, 'id' => 'mob-bet-kupon', 'aria_label' => 'KUPON'],
             ['type' => 'link', 'label' => 'CASİNO', 'href' => '/slot', 'icon' => 'bc-i-slots', 'badge' => '', 'enabled' => true, 'aria_label' => 'CASİNO'],
+            ['type' => 'link', 'label' => 'CANLI CASİNO', 'href' => '/livecasino', 'icon' => 'bc-i-livecasino', 'badge' => '', 'enabled' => true, 'aria_label' => 'CANLI CASİNO'],
             ['type' => 'menu', 'label' => 'MENÜ', 'href' => '', 'icon' => 'bc-i-burger', 'badge' => '', 'enabled' => true, 'id' => 'menu-toggle', 'aria_label' => 'MENÜ'],
         ];
     }
