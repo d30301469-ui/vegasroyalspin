@@ -181,6 +181,26 @@ if (class_exists('ApiMediaUrl', false)) {
 
                 #login2 #forgotPasswordScreen .form-group {
                     margin-bottom: 0 !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-sizing: border-box !important;
+                    overflow: hidden !important;
+                }
+
+                #login2 #forgotPasswordScreen .form-control-label-bc,
+                #login2 #forgotPasswordScreen .form-control-input-bc {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-sizing: border-box !important;
+                }
+
+                #login2 #forgotPasswordScreen .login-btn,
+                #login2 #forgotPasswordScreen #forgotPasswordSubmit {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    margin-left: 0 !important;
+                    margin-right: 0 !important;
+                    box-sizing: border-box !important;
                 }
 
                 #login2 #forgotPasswordScreen .login-back-row {
