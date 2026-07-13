@@ -111,6 +111,8 @@ if (class_exists('ApiMediaUrl', false)) {
                 }
 
                 body.mobile-site #login2 .login-password-field .login-password-toggle-icon svg {
+                    width: 15px !important;
+                    height: 15px !important;
                     fill: none;
                     stroke: currentColor;
                     stroke-width: 1.8;
@@ -131,6 +133,10 @@ if (class_exists('ApiMediaUrl', false)) {
                     margin: 0 7px 10px !important;
                     width: calc(100% - 14px) !important;
                     box-sizing: border-box !important;
+                }
+
+                body.mobile-site #login2 .login-remember-label {
+                    margin-left: 7px !important;
                 }
             </style>
             <?php
