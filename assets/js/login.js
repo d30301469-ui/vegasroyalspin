@@ -210,10 +210,27 @@
         });
     }
 
-    function showLoginFormScreen() {
-        var hdr = document.getElementById('loginScreenHeader');
-        var main = document.getElementById('loginFormScreen');
-        var forg = document.getElementById('forgotPasswordScreen');
+    function getLoginModalScope(fromEl) {
+        if (fromEl && fromEl.closest) {
+            var scoped = fromEl.closest('#login2');
+            if (scoped) return scoped;
+        }
+        var active = document.querySelector('#login2.show');
+        if (active) return active;
+        return document.getElementById('login2') || document;
+    }
+
+    function inLoginScope(scope, id) {
+        if (!id) return null;
+        var root = scope || getLoginModalScope();
+        if (!root || !root.querySelector) return document.getElementById(id);
+        return root.querySelector('#' + id) || document.getElementById(id);
+    }
+
+    function showLoginFormScreen(scope) {
+        var hdr = inLoginScope(scope, 'loginScreenHeader');
+        var main = inLoginScope(scope, 'loginFormScreen');
+        var forg = inLoginScope(scope, 'forgotPasswordScreen');
         if (hdr) {
             hdr.classList.remove('d-none');
         }
@@ -225,10 +242,10 @@
         }
     }
 
-    function showForgotPasswordScreen() {
-        var hdr = document.getElementById('loginScreenHeader');
-        var main = document.getElementById('loginFormScreen');
-        var forg = document.getElementById('forgotPasswordScreen');
+    function showForgotPasswordScreen(scope) {
+        var hdr = inLoginScope(scope, 'loginScreenHeader');
+        var main = inLoginScope(scope, 'loginFormScreen');
+        var forg = inLoginScope(scope, 'forgotPasswordScreen');
         if (hdr) {
             hdr.classList.add('d-none');
         }
@@ -240,9 +257,9 @@
         }
     }
 
-    function resetForgotPasswordAlerts() {
-        var err = document.getElementById('forgotPasswordAjaxAlert');
-        var ok = document.getElementById('forgotPasswordSuccess');
+    function resetForgotPasswordAlerts(scope) {
+        var err = inLoginScope(scope, 'forgotPasswordAjaxAlert');
+        var ok = inLoginScope(scope, 'forgotPasswordSuccess');
         if (err) {
             err.textContent = '';
             err.classList.add('d-none');
@@ -258,8 +275,6 @@
         var loginModalEl = document.getElementById('login2');
         var registerModalEl = document.getElementById('registerModal');
         var openRegisterFromLogin = document.getElementById('openRegisterFromLogin');
-        var openForgotPassword = document.getElementById('openForgotPassword');
-        var backToLoginFromForgot = document.getElementById('backToLoginFromForgot');
 
         if (!loginModalEl) return;
 
@@ -299,25 +314,28 @@
             });
         }
 
-        if (openForgotPassword) {
-            openForgotPassword.addEventListener('click', function (e) {
+        document.addEventListener('click', function (e) {
+            var forgotLink = e.target && e.target.closest ? e.target.closest('#openForgotPassword') : null;
+            if (forgotLink) {
                 e.preventDefault();
-                showForgotPasswordScreen();
-                var ff = document.getElementById('forgotPasswordForm');
+                var scope = getLoginModalScope(forgotLink);
+                showForgotPasswordScreen(scope);
+                var ff = inLoginScope(scope, 'forgotPasswordForm');
                 if (ff && BetcoInputs) {
                     BetcoInputs.resetFormInputState(ff, 'login-error-text');
                 }
-                resetForgotPasswordAlerts();
-            });
-        }
+                resetForgotPasswordAlerts(scope);
+                return;
+            }
 
-        if (backToLoginFromForgot) {
-            backToLoginFromForgot.addEventListener('click', function (e) {
+            var backLink = e.target && e.target.closest ? e.target.closest('#backToLoginFromForgot') : null;
+            if (backLink) {
                 e.preventDefault();
-                showLoginFormScreen();
-                resetForgotPasswordAlerts();
-            });
-        }
+                var scopeBack = getLoginModalScope(backLink);
+                showLoginFormScreen(scopeBack);
+                resetForgotPasswordAlerts(scopeBack);
+            }
+        });
 
         var registerLoginLink = document.querySelector('.register-modal-login-link');
         if (registerLoginLink && registerModalEl) {
@@ -524,7 +542,8 @@
     }
 
     function initForgotPasswordForm() {
-        var form = document.getElementById('forgotPasswordForm');
+        var scope = getLoginModalScope();
+        var form = inLoginScope(scope, 'forgotPasswordForm');
         if (!form) return;
         try {
             if (BetcoInputs) {
@@ -538,9 +557,9 @@
             if (typeof console !== 'undefined') console.warn('Forgot password form init:', err);
         }
 
-        var alertEl = document.getElementById('forgotPasswordAjaxAlert');
-        var successEl = document.getElementById('forgotPasswordSuccess');
-        var submitBtn = document.getElementById('forgotPasswordSubmit');
+        var alertEl = inLoginScope(scope, 'forgotPasswordAjaxAlert');
+        var successEl = inLoginScope(scope, 'forgotPasswordSuccess');
+        var submitBtn = inLoginScope(scope, 'forgotPasswordSubmit');
         var btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
         var btnLoading = submitBtn ? submitBtn.querySelector('.loading') : null;
 
@@ -629,6 +648,11 @@
                                 typeof data.data.message === 'string' &&
                                 data.data.message.trim()) ||
                             defaultOkMsg;
+                        m = String(m)
+                            .replace(/sifre\s*sifirlama\s*baglantisi/gi, 'dogrulama kodu')
+                            .replace(/şifre\s*sıfırlama\s*bağlantısı/gi, 'doğrulama kodu')
+                            .replace(/bağlantısı\s*gönderilecektir/gi, 'doğrulama kodu gönderilecektir')
+                            .replace(/baglantisi\s*gonderilecektir/gi, 'dogrulama kodu gonderilecektir');
                         showForgotSuccess(m);
                         return;
                     }
