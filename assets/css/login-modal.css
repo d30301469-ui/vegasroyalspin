@@ -79,18 +79,21 @@
 
 .login-password-field .login-password-toggle {
     position: absolute;
-    right: 10px;
+    right: 9px;
     top: 50%;
     transform: translateY(-50%);
     z-index: 4;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     padding: 0;
-    border: 0;
-    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    color: rgba(236, 231, 255, 0.92);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     cursor: pointer;
 }
 
@@ -98,8 +101,13 @@
     outline: none;
 }
 
+.login-password-field .login-password-toggle:hover {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
 .login-password-field .form-control-input-bc {
-    padding-right: 48px;
+    padding-right: 52px;
 }
 
 .login-password-field .login-password-toggle-icon {
@@ -107,21 +115,16 @@
     align-items: center;
     justify-content: center;
     width: 18px;
-    right: 9px;
-    width: 32px;
-    height: 32px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-    color: rgba(236, 231, 255, 0.92);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    width: 18px;
     height: 18px;
-    fill: currentColor;
+    color: rgba(236, 231, 255, 0.92);
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
 }
 
 .login-password-field .login-password-toggle-icon-hide {
-    padding-right: 52px;
+    display: none;
 }
 
 .login-password-field .login-password-toggle.is-password-visible .login-password-toggle-icon-show {
@@ -130,26 +133,41 @@
 
 .login-password-field .login-password-toggle.is-password-visible .login-password-toggle-icon-hide {
     display: inline-flex;
-    color: rgba(236, 231, 255, 0.92);
-
-.login-text-block {
-    margin-top: 4px;
 }
 
+.login-password-field .login-password-toggle-icon svg {
+    width: 18px;
+    height: 18px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
+}
+
+.login-password-field .password-input::-ms-reveal,
+.login-password-field .password-input::-ms-clear,
+.login-password-field .password-input::-webkit-credentials-auto-fill-button,
+.login-password-field .password-input::-webkit-contacts-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+.login-text-block {
+    margin-top: 4px;
+}
+
+.login-top-text {
     font-size: 13px;
     color: #cccccc;
     margin-bottom: 4px;
 }
 
 .login-main-title {
-        right: 8px;
-        width: 30px;
-        height: 30px;
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
 .login-remember-row {
