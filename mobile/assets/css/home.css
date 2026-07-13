@@ -208,20 +208,3 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header .product
   }
 }
 
-/* Banner — Artık çekimlerinizde limitlerde takılmak yok */
-body.mobile-site .hm-row-bc .banner-bc {
-  width: 100%;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  background: transparent;
-}
-
-body.mobile-site .hm-row-bc .banner-image-bc {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-  object-position: center;
-}
-

@@ -9,24 +9,6 @@ if (is_file($mobileHead) && filesize($mobileHead) > 0) {
 <?php include MOBILE_PATH . '/views/partials/header.php'; ?>
 
 <?php
-// Mobil banner — yeni banner resmi
-$bannerImage = '/assets/images/slider-banner-main-new.webp';
-?>
-<div class="hm-row-bc" style="grid-template-columns: 12fr;">
-  <div class="hm-row-bc-inner">
-    <div class="banner-bc">
-      <img src="<?= htmlspecialchars($bannerImage, ENT_QUOTES, 'UTF-8') ?>" 
-           alt="Artık çekimlerinizde limitlerde takılmak yok!" 
-           class="banner-image-bc" 
-           loading="eager" 
-           decoding="async" 
-           fetchpriority="high"
-           style="width: 100%; height: auto; display: block;">
-    </div>
-  </div>
-</div>
-
-<?php
 $sliderMobileBc = true;
 $sliderApiCategory = 'home';
 include VIEW_PATH . '/partials/slider.php';
