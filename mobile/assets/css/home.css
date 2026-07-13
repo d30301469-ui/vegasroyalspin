@@ -132,6 +132,42 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header .product
   border-radius: 10px;
 }
 
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .hm-row-bc-inner {
+  width: 100%;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div {
+  min-width: 0;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-bc {
+  display: block;
+  width: 100%;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-img-bc {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+}
+
 /* JACKPOT / KAZANANLAR sekme buton glow animasyonu — KALDIRILDI */
 
 /* Provider sekme butonları çerçeve animasyonu (AMUSNET, APOLLO GAMES, FUGAS, EGT) */
