@@ -409,6 +409,19 @@ final class ApiSiteSettings
         $siteName = $siteName !== '' ? $siteName : 'MaltaBet';
         $description = $description !== '' ? $description : 'Güvenilir casino ve bahis';
 
+        $resetHeroImageUrl = self::publicAssetUrl((string) ($settings['reset_password_hero_image_url'] ?? ''), '/assets/images/login-bg.png');
+        $resetBrandText = trim((string) ($settings['reset_password_brand_text'] ?? ''));
+        $resetTitleRequest = trim((string) ($settings['reset_password_title_request'] ?? ''));
+        $resetTitleConfirm = trim((string) ($settings['reset_password_title_confirm'] ?? ''));
+        $resetButtonText = trim((string) ($settings['reset_password_button_text'] ?? ''));
+        $resetLeadText = trim((string) ($settings['reset_password_lead_text'] ?? ''));
+        $resetInfoText = trim((string) ($settings['reset_password_info_text'] ?? ''));
+        $resetModalBg = trim((string) ($settings['reset_password_modal_bg'] ?? ''));
+        $resetHeroTopBorder = trim((string) ($settings['reset_password_hero_top_border_color'] ?? ''));
+        $resetHeroBottomBorder = trim((string) ($settings['reset_password_hero_bottom_border_color'] ?? ''));
+        $resetInputBorder = trim((string) ($settings['reset_password_input_border_color'] ?? ''));
+        $resetButtonTextColor = trim((string) ($settings['reset_password_button_text_color'] ?? ''));
+
         $normalizedSettings = array_merge($settings, [
             'site_adi' => $siteName,
             'site_aciklama' => $description,
@@ -416,6 +429,18 @@ final class ApiSiteSettings
             'favicon_url' => $faviconUrl,
             'manifest_url' => $manifestUrl,
             'og_image_url' => $ogImageUrl,
+            'reset_password_hero_image_url' => $resetHeroImageUrl,
+            'reset_password_brand_text' => $resetBrandText,
+            'reset_password_title_request' => $resetTitleRequest,
+            'reset_password_title_confirm' => $resetTitleConfirm,
+            'reset_password_button_text' => $resetButtonText,
+            'reset_password_lead_text' => $resetLeadText,
+            'reset_password_info_text' => $resetInfoText,
+            'reset_password_modal_bg' => $resetModalBg,
+            'reset_password_hero_top_border_color' => $resetHeroTopBorder,
+            'reset_password_hero_bottom_border_color' => $resetHeroBottomBorder,
+            'reset_password_input_border_color' => $resetInputBorder,
+            'reset_password_button_text_color' => $resetButtonTextColor,
         ]);
 
         $payload = array_merge($normalizedSettings, [
@@ -439,6 +464,20 @@ final class ApiSiteSettings
                 'theme_color' => trim((string) ($settings['theme_color'] ?? '')) !== '' ? trim((string) $settings['theme_color']) : '#120023',
             ],
             'contact' => self::normalizeContactLinks($settings),
+            'reset_password' => [
+                'hero_image_url' => $resetHeroImageUrl,
+                'brand_text' => $resetBrandText,
+                'title_request' => $resetTitleRequest,
+                'title_confirm' => $resetTitleConfirm,
+                'button_text' => $resetButtonText,
+                'lead_text' => $resetLeadText,
+                'info_text' => $resetInfoText,
+                'modal_bg' => $resetModalBg,
+                'hero_top_border_color' => $resetHeroTopBorder,
+                'hero_bottom_border_color' => $resetHeroBottomBorder,
+                'input_border_color' => $resetInputBorder,
+                'button_text_color' => $resetButtonTextColor,
+            ],
             'live_chat' => self::liveChatConfig($settings),
             'flags' => [
                 'maintenance_mode' => !empty($settings['bakim_modu']),
@@ -487,6 +526,18 @@ final class ApiSiteSettings
             'backend_url' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT '" . self::sqlDefault(self::frontendUrlEnv('BACKEND_FALLBACK_URL', self::deployDefault('backend_url'))) . "'",
             'backend_api_base_url' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT '" . self::sqlDefault(self::frontendUrlEnv('API_BACKEND_FALLBACK_BASE_URL', self::deployDefault('backend_api_base_url'))) . "'",
             'allowed_url_hosts' => "varchar(700) COLLATE utf8mb4_unicode_ci DEFAULT '" . self::sqlDefault(self::frontendUrlEnv('DEFAULT_ALLOWED_URL_HOSTS', self::deployDefault('default_allowed_url_hosts'))) . "'",
+            'reset_password_hero_image_url' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT '/assets/images/login-bg.png'",
+            'reset_password_brand_text' => "varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT 'Vegasroyalspin'",
+            'reset_password_title_request' => "varchar(160) COLLATE utf8mb4_unicode_ci DEFAULT 'ŞİFRE SIFIRLA'",
+            'reset_password_title_confirm' => "varchar(160) COLLATE utf8mb4_unicode_ci DEFAULT 'YENİ ŞİFRE'",
+            'reset_password_button_text' => "varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT 'SIFIRLA'",
+            'reset_password_lead_text' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT 'Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.'",
+            'reset_password_info_text' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT 'Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.'",
+            'reset_password_modal_bg' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT 'linear-gradient(145deg, #1b0c49 0%, #0a0f3c 60%, #09123f 100%)'",
+            'reset_password_hero_top_border_color' => "varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT '#7d1c7a'",
+            'reset_password_hero_bottom_border_color' => "varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT '#ff00ff'",
+            'reset_password_input_border_color' => "varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT '#ec46aa'",
+            'reset_password_button_text_color' => "varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT '#d2d6eb'",
         ];
     }
 

@@ -1,6 +1,57 @@
 <?php
 $resetToken = isset($resetToken) ? (string) $resetToken : '';
 $hasToken = $resetToken !== '';
+
+global $siteSettingsPayload, $siteBranding;
+$settings = is_array($siteSettingsPayload ?? null) ? $siteSettingsPayload : [];
+$branding = is_array($siteBranding ?? null) ? $siteBranding : [];
+
+$h = static fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+$safeText = static fn ($value, $default): string => trim((string) $value) !== '' ? trim((string) $value) : (string) $default;
+$safeColor = static function ($value, $default): string {
+    $raw = trim((string) $value);
+    if ($raw === '') {
+        return (string) $default;
+    }
+    if (preg_match('/^(#[0-9a-fA-F]{3,8}|rgba?\([^\n]+\)|hsla?\([^\n]+\)|transparent|currentColor)$/', $raw) === 1) {
+        return $raw;
+    }
+
+    return (string) $default;
+};
+$safeCssBackground = static function ($value, $default): string {
+    $raw = trim((string) $value);
+    if ($raw === '') {
+        return (string) $default;
+    }
+    if (strlen($raw) <= 280 && preg_match('/^[#(),.%a-zA-Z0-9\s-]+$/', $raw) === 1) {
+        return $raw;
+    }
+
+    return (string) $default;
+};
+$assetUrl = static function ($value, $default): string {
+    $raw = trim((string) $value);
+    $fallback = trim((string) $default);
+    if (class_exists('ApiMediaUrl', false)) {
+        return ApiMediaUrl::resolve($raw !== '' ? $raw : $fallback);
+    }
+
+    return '/' . ltrim($raw !== '' ? $raw : $fallback, '/');
+};
+
+$resetHeroImageUrl = $assetUrl($settings['reset_password_hero_image_url'] ?? '', '/assets/images/login-bg.png');
+$resetBrandText = $safeText($settings['reset_password_brand_text'] ?? '', $branding['site_name'] ?? 'Vegasroyalspin');
+$resetTitleRequest = $safeText($settings['reset_password_title_request'] ?? '', 'ŞİFRE SIFIRLA');
+$resetTitleConfirm = $safeText($settings['reset_password_title_confirm'] ?? '', 'YENİ ŞİFRE');
+$resetButtonText = $safeText($settings['reset_password_button_text'] ?? '', 'SIFIRLA');
+$resetLeadText = $safeText($settings['reset_password_lead_text'] ?? '', 'Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.');
+$resetInfoText = $safeText($settings['reset_password_info_text'] ?? '', 'Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.');
+$resetModalBg = $safeCssBackground($settings['reset_password_modal_bg'] ?? '', 'linear-gradient(145deg, #1b0c49 0%, #0a0f3c 60%, #09123f 100%)');
+$resetHeroTopBorderColor = $safeColor($settings['reset_password_hero_top_border_color'] ?? '', '#7d1c7a');
+$resetHeroBottomBorderColor = $safeColor($settings['reset_password_hero_bottom_border_color'] ?? '', '#ff00ff');
+$resetInputBorderColor = $safeColor($settings['reset_password_input_border_color'] ?? '', '#ec46aa');
+$resetButtonTextColor = $safeColor($settings['reset_password_button_text_color'] ?? '', '#d2d6eb');
 ?>
 <style>
     .reset-password-shell,
@@ -65,7 +116,7 @@ $hasToken = $resetToken !== '';
         display: flex;
         flex-direction: column;
         gap: 0;
-        background: linear-gradient(145deg, #1b0c49 0%, #0a0f3c 60%, #09123f 100%);
+        background: <?= $h($resetModalBg) ?>;
         min-height: 88vh;
     }
 
@@ -103,7 +154,8 @@ $hasToken = $resetToken !== '';
         position: relative;
         height: 286px;
         background: #15063f;
-        border-bottom: 5px solid #ff00ff;
+        border-top: 8px solid <?= $h($resetHeroTopBorderColor) ?>;
+        border-bottom: 5px solid <?= $h($resetHeroBottomBorderColor) ?>;
         overflow: hidden;
     }
 
@@ -111,7 +163,7 @@ $hasToken = $resetToken !== '';
         content: "";
         position: absolute;
         inset: 0;
-        background-image: url('/assets/images/login-bg.png');
+        background-image: url('<?= $h($resetHeroImageUrl) ?>');
         background-size: cover;
         background-position: center top;
         filter: saturate(1.05) contrast(1.06);
@@ -175,14 +227,14 @@ $hasToken = $resetToken !== '';
         height: 50px !important;
         min-height: 50px !important;
         border-radius: 4px !important;
-        border: 1px solid rgba(236, 70, 170, 0.9) !important;
+        border: 1px solid <?= $h($resetInputBorderColor) ?> !important;
         background: rgba(83, 67, 122, 0.42) !important;
         color: #f7f4ff !important;
         padding-left: 12px !important;
     }
 
     #resetPasswordModal .form-control-input-bc:focus {
-        border-color: rgba(236, 70, 170, 1) !important;
+        border-color: <?= $h($resetInputBorderColor) ?> !important;
         box-shadow: none !important;
     }
 
@@ -194,7 +246,7 @@ $hasToken = $resetToken !== '';
         border-radius: 4px !important;
         background: rgba(111, 122, 176, 0.24) !important;
         border: 1px solid rgba(146, 156, 201, 0.16) !important;
-        color: rgba(210, 214, 235, 0.8) !important;
+        color: <?= $h($resetButtonTextColor) ?> !important;
         box-shadow: none !important;
         font-size: 28px !important;
         font-weight: 700 !important;
@@ -311,14 +363,15 @@ $hasToken = $resetToken !== '';
                         <div class="modal-body e-p-body-bc">
                             <div class="reset-password-modal login-modal-container">
                                 <div class="reset-password-hero" aria-hidden="true">
-                                    <span class="reset-password-brand">Vegasroyalspin</span>
+                                    <span class="reset-password-brand"><?= $h($resetBrandText) ?></span>
                                     <button type="button" class="reset-password-close login-close e-p-close-icon-bc" id="resetPasswordClose" aria-label="Kapat"></button>
                                 </div>
 
                                 <div class="reset-password-content">
                                     <div class="login-text-block">
                                     <p class="reset-password-subtitle">Şifre sıfırlama</p>
-                                    <h1 class="login-main-title reset-password-title" id="resetPasswordTitle"><?= $hasToken ? 'Yeni şifre oluşturun' : 'ŞİFRE SIFIRLA' ?></h1>
+                                    <h1 class="login-main-title reset-password-title" id="resetPasswordTitle"><?= $h($hasToken ? $resetTitleConfirm : $resetTitleRequest) ?></h1>
+                                    <p class="reset-password-lead"><?= $h($resetLeadText) ?></p>
                                 </div>
 
                                 <form method="post" action="#" class="login-form entrance-form-bc sign-in popup<?= $hasToken ? ' d-none' : '' ?>" id="resetPasswordRequestForm" novalidate>
@@ -335,7 +388,7 @@ $hasToken = $resetToken !== '';
                                     <div class="login-success-box d-none" id="resetPasswordRequestSuccess" role="status"></div>
 
                                     <button type="submit" class="login-btn" id="resetPasswordRequestSubmit">
-                                        <span class="btn-text">SIFIRLA</span>
+                                        <span class="btn-text"><?= $h($resetButtonText) ?></span>
                                         <span class="loading" style="display: none;"></span>
                                     </button>
                                 </form>
@@ -365,13 +418,13 @@ $hasToken = $resetToken !== '';
                                     <div class="login-success-box d-none" id="resetPasswordSuccess" role="status"></div>
 
                                     <button type="submit" class="login-btn" id="resetPasswordSubmit">
-                                        <span class="btn-text">SIFIRLA</span>
+                                        <span class="btn-text"><?= $h($resetButtonText) ?></span>
                                         <span class="loading" style="display: none;"></span>
                                     </button>
                                 </form>
 
                                 <div class="reset-password-actions">
-                                    <a href="/">Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.</a>
+                                    <a href="/"><?= $h($resetInfoText) ?></a>
                                 </div>
                                 </div>
                             </div>
@@ -382,6 +435,22 @@ $hasToken = $resetToken !== '';
         </div>
     </div>
 </section>
+<script>
+window.__RESET_PASSWORD_THEME__ = {
+    heroImageUrl: <?= json_encode($resetHeroImageUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    brandText: <?= json_encode($resetBrandText, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    titleRequest: <?= json_encode($resetTitleRequest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    titleConfirm: <?= json_encode($resetTitleConfirm, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    buttonText: <?= json_encode($resetButtonText, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    leadText: <?= json_encode($resetLeadText, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    infoText: <?= json_encode($resetInfoText, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    modalBg: <?= json_encode($resetModalBg, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    heroTopBorderColor: <?= json_encode($resetHeroTopBorderColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    heroBottomBorderColor: <?= json_encode($resetHeroBottomBorderColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    inputBorderColor: <?= json_encode($resetInputBorderColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    buttonTextColor: <?= json_encode($resetButtonTextColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
+};
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.body.classList.add('reset-password-standalone');

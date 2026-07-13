@@ -47,28 +47,48 @@
         var modal = document.querySelector('.reset-password-modal');
         if (!modal) return;
 
+        var theme = window.__RESET_PASSWORD_THEME__ || {};
+        function asText(value, fallback) {
+            var t = String(value == null ? '' : value).trim();
+            return t !== '' ? t : fallback;
+        }
+
+        var titleRequest = asText(theme.titleRequest, 'SIFRE SIFIRLA');
+        var titleConfirm = asText(theme.titleConfirm, 'YENI SIFRE');
+        var leadText = asText(theme.leadText, 'Sifrenizi sifirlamak icin kayitli e-posta adresinizi giriniz.');
+        var buttonText = asText(theme.buttonText, 'SIFIRLA');
+        var infoText = asText(theme.infoText, leadText);
+        var brandText = asText(theme.brandText, 'Vegasroyalspin');
+        var heroImageUrl = asText(theme.heroImageUrl, '/assets/images/login-bg.png');
+        var cssHeroImageUrl = '"' + heroImageUrl.replace(/["\\]/g, '\\$&') + '"';
+        var modalBg = asText(theme.modalBg, 'linear-gradient(145deg,#1b0c49 0%,#0a0f3c 60%,#09123f 100%)');
+        var heroTopBorderColor = asText(theme.heroTopBorderColor, '#7d1c7a');
+        var heroBottomBorderColor = asText(theme.heroBottomBorderColor, '#ff00ff');
+        var inputBorderColor = asText(theme.inputBorderColor, '#ec46aa');
+        var buttonTextColor = asText(theme.buttonTextColor, '#d2d6eb');
+
         document.body.classList.add('reset-password-reference-skin');
 
         var title = document.getElementById('resetPasswordTitle');
         if (title) {
             var t = (title.textContent || '').toLowerCase();
-            title.textContent = t.indexOf('yeni') >= 0 ? 'YENI SIFRE' : 'SIFRE SIFIRLA';
+            title.textContent = t.indexOf('yeni') >= 0 ? titleConfirm : titleRequest;
         }
 
         var lead = modal.querySelector('.reset-password-lead');
         if (lead) {
-            lead.textContent = 'Sifrenizi sifirlamak icin kayitli e-posta adresinizi giriniz.';
+            lead.textContent = leadText;
         }
 
         var requestBtnText = document.querySelector('#resetPasswordRequestSubmit .btn-text');
-        if (requestBtnText) requestBtnText.textContent = 'SIFIRLA';
+        if (requestBtnText) requestBtnText.textContent = buttonText;
 
         var confirmBtnText = document.querySelector('#resetPasswordSubmit .btn-text');
-        if (confirmBtnText) confirmBtnText.textContent = 'SIFIRLA';
+        if (confirmBtnText) confirmBtnText.textContent = buttonText;
 
         var infoLink = modal.querySelector('.reset-password-actions a');
         if (infoLink) {
-            infoLink.textContent = 'Sifrenizi sifirlamak icin kayitli e-posta adresinizi giriniz.';
+            infoLink.textContent = infoText;
             infoLink.setAttribute('href', '#');
             infoLink.addEventListener('click', function (e) { e.preventDefault(); });
         }
@@ -79,9 +99,12 @@
             hero.className = 'reset-ref-hero';
             var brand = document.createElement('div');
             brand.className = 'reset-ref-brand';
-            brand.textContent = 'Casinomilyon';
+            brand.textContent = brandText;
             hero.appendChild(brand);
             modal.insertBefore(hero, modal.firstChild);
+        } else {
+            var currentBrand = hero.querySelector('.reset-ref-brand, .reset-password-brand');
+            if (currentBrand) currentBrand.textContent = brandText;
         }
 
         var closeBtn = document.getElementById('resetPasswordClose') || modal.querySelector('.reset-password-close');
@@ -94,20 +117,21 @@
             style.id = 'resetReferenceSkinStyles';
             style.textContent = [
                 'body.reset-password-reference-skin .reset-password-modal{background:linear-gradient(145deg,#1b0c49 0%,#0a0f3c 60%,#09123f 100%) !important;min-height:88vh !important;padding:0 !important;gap:0 !important;}',
-                'body.reset-password-reference-skin .reset-ref-hero{position:relative;height:300px;border-top:8px solid #7d1c7a;border-bottom:5px solid #ff00ff;background:#15063f;overflow:hidden;}',
-                'body.reset-password-reference-skin .reset-ref-hero::before{content:"";position:absolute;inset:0;background-image:url(/assets/images/login-bg.png);background-size:cover;background-position:center top;opacity:.97;}',
+                'body.reset-password-reference-skin .reset-ref-hero, body.reset-password-reference-skin .reset-password-hero{position:relative;height:300px;border-top:8px solid ' + heroTopBorderColor + ';border-bottom:5px solid ' + heroBottomBorderColor + ';background:#15063f;overflow:hidden;}',
+                'body.reset-password-reference-skin .reset-ref-hero::before, body.reset-password-reference-skin .reset-password-hero::before{content:"";position:absolute;inset:0;background-image:url(' + cssHeroImageUrl + ');background-size:cover;background-position:center top;opacity:.97;}',
                 'body.reset-password-reference-skin .reset-ref-brand{position:absolute;top:22px;left:50%;transform:translateX(-50%);z-index:2;color:#fff;font-size:38px;font-weight:700;line-height:1;}',
                 'body.reset-password-reference-skin .reset-password-close{position:absolute !important;top:8px !important;right:8px !important;background:transparent !important;border:0 !important;color:#fff !important;z-index:3 !important;}',
                 'body.reset-password-reference-skin .login-text-block{display:none !important;}',
                 'body.reset-password-reference-skin .reset-password-content, body.reset-password-reference-skin .login-form{padding:14px 10px 0 !important;}',
-                'body.reset-password-reference-skin #resetPasswordModal .form-control-input-bc{height:50px !important;min-height:50px !important;border-radius:4px !important;border:1px solid rgba(236,70,170,.9) !important;background:rgba(83,67,122,.42) !important;color:#f7f4ff !important;padding-left:12px !important;}',
+                'body.reset-password-reference-skin #resetPasswordModal .form-control-input-bc{height:50px !important;min-height:50px !important;border-radius:4px !important;border:1px solid ' + inputBorderColor + ' !important;background:rgba(83,67,122,.42) !important;color:#f7f4ff !important;padding-left:12px !important;}',
                 'body.reset-password-reference-skin #resetPasswordModal .login-error-text{margin-top:-2px !important;border-radius:3px !important;background:rgba(107,26,74,.8) !important;color:#fff !important;font-size:13px !important;padding:3px 9px !important;}',
-                'body.reset-password-reference-skin #resetPasswordModal .login-btn{height:52px !important;min-height:52px !important;border-radius:4px !important;background:rgba(111,122,176,.24) !important;border:1px solid rgba(146,156,201,.16) !important;color:rgba(210,214,235,.8) !important;box-shadow:none !important;font-size:28px !important;font-weight:700 !important;text-transform:uppercase !important;}',
+                'body.reset-password-reference-skin #resetPasswordModal .login-btn{height:52px !important;min-height:52px !important;border-radius:4px !important;background:rgba(111,122,176,.24) !important;border:1px solid rgba(146,156,201,.16) !important;color:' + buttonTextColor + ' !important;box-shadow:none !important;font-size:28px !important;font-weight:700 !important;text-transform:uppercase !important;}',
                 'body.reset-password-reference-skin .reset-password-actions{margin:10px 10px 14px !important;display:flex !important;align-items:center !important;gap:6px !important;color:rgba(216,216,232,.72) !important;font-size:13px !important;}',
                 'body.reset-password-reference-skin .reset-password-actions::before{content:"i";display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid rgba(216,216,232,.72);font-size:11px;font-weight:700;}',
                 'body.reset-password-reference-skin .reset-password-actions a{color:rgba(216,216,232,.72) !important;border:0 !important;text-decoration:none !important;}',
                 '@media (max-width:480px){body.reset-password-reference-skin .reset-ref-hero{height:300px;} body.reset-password-reference-skin #resetPasswordModal .login-btn{font-size:27px !important;}}'
             ].join('');
+            style.textContent = style.textContent.replace('linear-gradient(145deg,#1b0c49 0%,#0a0f3c 60%,#09123f 100%)', modalBg);
             document.head.appendChild(style);
         }
     }
