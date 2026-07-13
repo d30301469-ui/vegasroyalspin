@@ -122,32 +122,34 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
 
     .reset-password-close {
         position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 28px;
-        height: 28px;
-        min-width: 28px;
-        min-height: 28px;
+        top: 2px;
+        right: 6px;
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        min-height: 34px;
         border-radius: 0;
         border: 0;
         background-color: transparent;
-        color: rgba(255, 255, 255, 0.92);
+        color: rgba(170, 164, 198, 0.95);
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         z-index: 3;
-        transition: background-color 120ms ease, border-color 120ms ease;
+        transition: opacity 120ms ease;
     }
 
     .reset-password-close:hover {
-        background-color: rgba(255, 255, 255, 0.08);
+        opacity: 0.86;
     }
 
     .reset-password-close::before {
-        content: "\00d7";
-        font-size: 18px;
+        content: "\2715";
+        font-size: 28px;
+        font-weight: 300;
         line-height: 1;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
     }
 
     .reset-password-hero {
@@ -185,6 +187,10 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
 
     .reset-password-content {
         padding: 16px 14px 18px;
+    }
+
+    .reset-password-modal .login-text-block {
+        display: none;
     }
 
     .reset-password-title {
@@ -319,12 +325,12 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         }
 
         .reset-password-close {
-            top: 10px;
-            right: 10px;
-            width: 28px;
-            height: 28px;
-            min-width: 28px;
-            min-height: 28px;
+            top: 2px;
+            right: 6px;
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            min-height: 34px;
         }
 
         .reset-password-title {
