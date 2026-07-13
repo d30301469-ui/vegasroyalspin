@@ -78,3 +78,34 @@ body.mobile-site .notification-drawer__item {
   border: 1px solid rgba(170, 110, 200, 0.30) !important;
   border-radius: 8px !important;
 }
+
+/* Ayarlar sheet: orjinal ile birebir — mor gradient kartlar + chevron + bayrak */
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__select {
+  background: linear-gradient(90deg, rgba(133, 15, 131, 0.32) 0%, rgba(74, 49, 135, 0.38) 55%, rgba(36, 20, 80, 0.40) 100%) !important;
+  border: 1px solid rgba(170, 110, 200, 0.30) !important;
+}
+/* Font Awesome mobilde yuklenmiyor: chevron'u saf CSS ucgeni ile ciz */
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__chevron {
+  width: 0 !important;
+  height: 0 !important;
+  border-left: 5px solid transparent !important;
+  border-right: 5px solid transparent !important;
+  border-top: 6px solid rgba(255, 255, 255, 0.7) !important;
+  margin-left: 8px !important;
+  flex-shrink: 0 !important;
+  transition: transform 0.2s ease !important;
+}
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__field.is-open .settings-sidebar__chevron,
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__select[aria-expanded="true"] .settings-sidebar__chevron {
+  transform: rotate(180deg) !important;
+}
+/* Dil bayragi: settings sheet icinde boyut yoktu (sadece .langSelect'te tanimli) */
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__value--with-icon .flag-icon {
+  width: 22px !important;
+  height: 16px !important;
+  border-radius: 3px !important;
+  background-size: cover !important;
+  background-position: center !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+}
