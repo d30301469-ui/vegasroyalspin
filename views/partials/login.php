@@ -168,7 +168,9 @@ if (class_exists('ApiMediaUrl', false)) {
                                                     </span>
                                                     <span class="login-password-toggle-icon login-password-toggle-icon-hide" aria-hidden="true">
                                                         <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
-                                                            <path d="M2 12c1.8-4 6.1-7 10-7 1.9 0 3.8.5 5.4 1.4l4 4-1.2 1.2-1.9-1.9c.7.8 1.2 1.6 1.6 2.3-1.8 4-6.1 7-10 7-1.6 0-3.1-.4-4.6-1l-3.2 3.1-1.1-1.1 2-2A14.4 14.4 0 0 1 2 12Zm7.8-4.6a4.5 4.5 0 0 1 6.8 5.5l-1.4-1.4a3 3 0 0 0-4-4l-1.4-1.4Zm1.8 1.8a1.8 1.8 0 0 1 2.1 2.1l-2.1-2.1Zm5.1 8.8-2-2a4.5 4.5 0 0 1-6-6l-1.7-1.7a12.3 12.3 0 0 0-3.8 3.7c1.5 3 5 5.4 8.8 5.4 1.5 0 3.1-.4 4.7-1.4Z"></path>
+                                                            <path d="M2 12c1.8-4 6.1-7 10-7s8.2 3 10 7c-1.8 4-6.1 7-10 7S3.8 16 2 12Z"></path>
+                                                            <circle cx="12" cy="12" r="3.2"></circle>
+                                                            <path d="M5 19 19 5"></path>
                                                         </svg>
                                                     </span>
                                                 </button>
