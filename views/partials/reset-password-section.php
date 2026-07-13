@@ -112,6 +112,20 @@ $hasToken = $resetToken !== '';
         box-shadow: 0 10px 22px rgba(16, 145, 33, 0.32);
     }
 
+    #resetPasswordRequestSubmit,
+    #resetPasswordSubmit {
+        background-color: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: #fff !important;
+    }
+
+    #resetPasswordRequestSubmit:hover,
+    #resetPasswordSubmit:hover {
+        background-color: var(--secondary) !important;
+        border-color: var(--secondary) !important;
+        color: #fff !important;
+    }
+
     .reset-password-actions {
         margin-top: 4px;
         text-align: center;
