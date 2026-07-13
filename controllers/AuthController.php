@@ -48,6 +48,11 @@ class AuthController extends Controller
     /** E-postadaki bağlantı: /reset-password?token=... veya ?reset_token=... */
     public function resetPasswordPage(): void
     {
+        if (!headers_sent()) {
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+        }
         $resetToken = trim((string) ($_GET['token'] ?? $_GET['reset_token'] ?? ''));
         $this->view('pages/reset-password', compact('resetToken'));
     }
