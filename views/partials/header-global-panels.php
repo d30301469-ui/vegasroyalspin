@@ -36,10 +36,6 @@
             <i class="sp-button-icon-bc bc-i-live-chat"></i>
             <span class="sp-tooltip">Canlı Destek</span>
         </button>
-        <button class="sp-button-bc" type="button" title="Kupon" id="smart-panel-betslip-btn" data-sp-action="betslip">
-            <i class="sp-button-icon-bc bc-i-betslip"></i>
-            <span class="sp-tooltip">Kupon</span>
-        </button>
     </div>
 </aside>
 
