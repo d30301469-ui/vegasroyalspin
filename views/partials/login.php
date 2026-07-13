@@ -41,18 +41,18 @@ if (class_exists('ApiMediaUrl', false)) {
                     position: fixed !important;
                     top: max(8px, env(safe-area-inset-top, 0px)) !important;
                     right: 8px !important;
-                    width: 36px !important;
-                    height: 36px !important;
-                    min-width: 36px !important;
-                    min-height: 36px !important;
+                    width: 24px !important;
+                    height: 24px !important;
+                    min-width: 24px !important;
+                    min-height: 24px !important;
                     display: inline-flex !important;
                     align-items: center !important;
                     justify-content: center !important;
                     padding: 0 !important;
-                    background: rgba(0, 0, 0, 0.32) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+                    background: rgba(0, 0, 0, 0.26) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.14) !important;
                     border-radius: 50% !important;
-                    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
                     color: #fff !important;
                     cursor: pointer !important;
                     pointer-events: auto !important;
@@ -67,8 +67,55 @@ if (class_exists('ApiMediaUrl', false)) {
                     content: "\00d7";
                     display: block;
                     color: #fff;
-                    font-size: 30px;
+                    font-size: 18px;
                     line-height: 1;
+                }
+
+                body.mobile-site #login2 .login-password-field {
+                    position: relative;
+                }
+
+                body.mobile-site #login2 .login-password-field .login-password-toggle {
+                    position: absolute;
+                    right: 8px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    z-index: 4;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 30px;
+                    height: 30px;
+                    padding: 0;
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    border-radius: 999px;
+                    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+                    color: rgba(236, 231, 255, 0.92);
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+                    cursor: pointer;
+                }
+
+                body.mobile-site #login2 .login-password-field .login-password-toggle:hover {
+                    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+                    border-color: rgba(255, 255, 255, 0.18);
+                }
+
+                body.mobile-site #login2 .login-password-field .form-control-input-bc {
+                    padding-right: 52px;
+                }
+
+                body.mobile-site #login2 .login-password-field .login-password-toggle-icon,
+                body.mobile-site #login2 .login-password-field .login-password-toggle-icon svg {
+                    width: 16px;
+                    height: 16px;
+                }
+
+                body.mobile-site #login2 .login-password-field .login-password-toggle-icon svg {
+                    fill: none;
+                    stroke: currentColor;
+                    stroke-width: 1.8;
+                    stroke-linecap: round;
+                    stroke-linejoin: round;
                 }
             </style>
             <?php
@@ -115,12 +162,13 @@ if (class_exists('ApiMediaUrl', false)) {
                                                 <button type="button" class="login-password-toggle" aria-label="Şifreyi göster" aria-pressed="false" data-target-password="#loginPassword">
                                                     <span class="login-password-toggle-icon login-password-toggle-icon-show" aria-hidden="true">
                                                         <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
-                                                            <path d="M12 5c5.2 0 9.7 3.1 11.5 7-1.8 3.9-6.3 7-11.5 7S2.3 15.9.5 12C2.3 8.1 6.8 5 12 5Zm0 11.5A4.5 4.5 0 1 0 12 8a4.5 4.5 0 0 0 0 8.5Zm0-2.1a2.4 2.4 0 1 1 0-4.8 2.4 2.4 0 0 1 0 4.8Z"></path>
+                                                            <path d="M2 12c1.8-4 6.1-7 10-7s8.2 3 10 7c-1.8 4-6.1 7-10 7S3.8 16 2 12Z"></path>
+                                                            <circle cx="12" cy="12" r="3.2"></circle>
                                                         </svg>
                                                     </span>
                                                     <span class="login-password-toggle-icon login-password-toggle-icon-hide" aria-hidden="true">
                                                         <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
-                                                            <path d="M3.3 2.6 21.4 20.7l-1.2 1.2-3.1-3.1A12.8 12.8 0 0 1 12 20C6.8 20 2.3 16.9.5 13c.8-1.7 2.2-3.4 4-4.8L2.1 4 3.3 2.6Zm4.4 4.4 1.7 1.7A4.5 4.5 0 0 0 12 16.5c.8 0 1.6-.2 2.3-.6l1.6 1.6A11.6 11.6 0 0 1 12 18C6.8 18 2.8 15.3 1.5 13c.7-1.3 2-2.7 3.7-3.9l2.5-2.1ZM8.2 7.1A4.4 4.4 0 0 0 6.7 8.8l1.5 1.5A2.4 2.4 0 0 1 12 14c.5 0 1-.1 1.4-.3l1.6 1.6A4.5 4.5 0 0 1 12 16.5a4.5 4.5 0 0 1-4.5-4.5c0-.6.1-1.2.4-1.8l-1.4-1.4 1.7-1.7Z"></path>
+                                                            <path d="M2 12c1.8-4 6.1-7 10-7 1.9 0 3.8.5 5.4 1.4l4 4-1.2 1.2-1.9-1.9c.7.8 1.2 1.6 1.6 2.3-1.8 4-6.1 7-10 7-1.6 0-3.1-.4-4.6-1l-3.2 3.1-1.1-1.1 2-2A14.4 14.4 0 0 1 2 12Zm7.8-4.6a4.5 4.5 0 0 1 6.8 5.5l-1.4-1.4a3 3 0 0 0-4-4l-1.4-1.4Zm1.8 1.8a1.8 1.8 0 0 1 2.1 2.1l-2.1-2.1Zm5.1 8.8-2-2a4.5 4.5 0 0 1-6-6l-1.7-1.7a12.3 12.3 0 0 0-3.8 3.7c1.5 3 5 5.4 8.8 5.4 1.5 0 3.1-.4 4.7-1.4Z"></path>
                                                         </svg>
                                                     </span>
                                                 </button>
