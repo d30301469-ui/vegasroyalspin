@@ -144,54 +144,6 @@ $hasToken = $resetToken !== '';
         border-radius: 8px;
     }
 
-    .reset-password-modal .form-control-input-bc {
-        height: 46px;
-        min-height: 46px;
-    }
-
-    .reset-password-modal .form-control-input-bc:focus {
-        border-color: var(--secondary);
-        box-shadow: 0 0 0 2px rgba(16, 145, 33, 0.16);
-    }
-
-    .reset-password-modal .login-btn {
-        min-height: 46px;
-        border-radius: 8px;
-        border: 1px solid var(--primary) !important;
-        background-color: var(--primary) !important;
-        box-shadow: 0 8px 18px rgba(133, 15, 131, 0.28);
-        color: #fff !important;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 120ms ease;
-    }
-
-    .reset-password-modal .login-btn:hover {
-        color: #fff !important;
-        border-color: rgba(133, 15, 131, 0.95) !important;
-        background-color: rgba(112, 13, 111, 0.98) !important;
-        box-shadow: 0 10px 22px rgba(133, 15, 131, 0.3);
-        transform: translateY(-1px);
-    }
-
-    .reset-password-modal .login-btn:active {
-        transform: translateY(0);
-    }
-
-    #resetPasswordRequestSubmit,
-    #resetPasswordSubmit {
-        background-color: var(--primary) !important;
-        border-color: var(--primary) !important;
-        color: #fff !important;
-    }
-
-    #resetPasswordRequestSubmit:hover,
-    #resetPasswordSubmit:hover {
-        background-color: rgba(112, 13, 111, 0.98) !important;
-        border-color: rgba(112, 13, 111, 0.98) !important;
-        color: #fff !important;
-    }
-
     .reset-password-actions {
         margin-top: 2px;
         text-align: center;
@@ -232,12 +184,6 @@ $hasToken = $resetToken !== '';
         .reset-password-title {
             font-size: 19px;
         }
-
-        .reset-password-modal .form-control-input-bc,
-        .reset-password-modal .login-btn {
-            min-height: 44px;
-            height: 44px;
-        }
     }
 </style>
 <section class="mainWrap reset-password-shell">
@@ -260,10 +206,10 @@ $hasToken = $resetToken !== '';
 
                                 <div class="login-text-block">
                                     <p class="reset-password-subtitle">Şifre sıfırlama</p>
-                                    <h1 class="login-main-title reset-password-title" id="resetPasswordTitle"><?= $hasToken ? 'Yeni şifre belirleyin' : 'Doğrulama kodu alın' ?></h1>
+                                    <h1 class="login-main-title reset-password-title" id="resetPasswordTitle"><?= $hasToken ? 'Yeni şifre oluşturun' : 'Şifrenizi sıfırlayın' ?></h1>
                                     <p class="login-forgot-hint reset-password-lead"><?= $hasToken
-                                        ? 'E-postadaki bağlantı ile yeni şifrenizi belirleyin.'
-                                        : 'E-posta adresinizi girin. Hesap kayıtlıysa kod veya sıfırlama bağlantısı gönderilir.' ?></p>
+                                        ? 'Yeni şifrenizi girin ve onaylayın.'
+                                        : 'E-posta adresinizi girin. Hesap kayıtlıysa kod gönderilir.' ?></p>
                                 </div>
 
                                 <form method="post" action="#" class="login-form entrance-form-bc sign-in popup<?= $hasToken ? ' d-none' : '' ?>" id="resetPasswordRequestForm" novalidate>
