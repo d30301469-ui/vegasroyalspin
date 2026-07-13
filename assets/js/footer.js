@@ -616,6 +616,7 @@
             var dynamicTitle = titleEl && titleEl.textContent ? titleEl.textContent.trim() : "YENILIKLER";
 
             closeRightSidebar();
+            closeNewSmartPanel();
 
             updateNotificationDrawerDate();
             loadAnnouncementsForDrawer();
@@ -653,6 +654,7 @@
             if (!drawer || !tabs || !body) return;
 
             closeRightSidebar();
+            closeNewSmartPanel();
 
             if (window.MobileRightSheet.isOpen()) {
                 window.MobileRightSheet.close();
@@ -689,6 +691,7 @@
             if (!drawer || !bodyBlock) return;
 
             closeRightSidebar();
+            closeNewSmartPanel();
 
             if (window.MobileRightSheet.isOpen()) {
                 window.MobileRightSheet.close();
