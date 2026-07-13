@@ -28,8 +28,8 @@ $backToTopJsVer = (string) ((is_file($backToTopJsPath) ? filemtime($backToTopJsP
 
     cards.forEach(function (card) {
       card.addEventListener('click', function (e) {
-        // Butona (Oyna/Demo) tıklandıysa normal çalışsın
-        if (e.target.closest('.play-btn, .demo-btn, a')) return;
+        // Butona (Oyna/Demo), bilgi veya favori yıldızına tıklandıysa normal çalışsın
+        if (e.target.closest('.play-btn, .demo-btn, a, .game-fav')) return;
 
         var isActive = card.classList.contains('overlay-active');
 
