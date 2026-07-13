@@ -23,16 +23,11 @@ if (class_exists('ApiMediaUrl', false)) {
                 <div class="e-p-content-bc">
                     <div class="modal-body e-p-body-bc reset-password-modal-body">
                         <div class="login-modal-container reset-password-modal-container">
-                            <div class="login-modal-header e-p-header-bc">
-                                <div class="login-logo">
-                                    <img src="<?= htmlspecialchars($resetLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($resetSiteName, ENT_QUOTES, 'UTF-8') ?>" class="login-logo-img">
-                                </div>
-                                <div class="login-header-actions e-p-sections-bc">
-                                    <a href="/" class="login-register-btn reset-password-home-link">ANASAYFA</a>
-                                    <button type="button" class="login-close reset-password-close e-p-close-icon-bc" aria-label="Kapat">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
+                            <div class="reset-password-topbar">
+                                <a href="/" class="login-register-btn reset-password-home-link">ANASAYFA</a>
+                                <button type="button" class="login-close reset-password-close e-p-close-icon-bc" aria-label="Kapat">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
                             </div>
 
                             <div class="reset-password-modal-content">
