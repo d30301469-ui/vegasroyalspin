@@ -138,6 +138,83 @@ if (class_exists('ApiMediaUrl', false)) {
                 body.mobile-site #login2 .login-remember-label {
                     margin-left: 7px !important;
                 }
+
+                #login2 #forgotPasswordScreen {
+                    margin-top: 4px !important;
+                }
+
+                #login2 #forgotPasswordScreen .login-forgot-heading {
+                    margin: 0 0 12px !important;
+                    padding: 12px 14px !important;
+                    border-radius: 10px !important;
+                    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+                    background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015)) !important;
+                }
+
+                #login2 #forgotPasswordScreen .login-top-text {
+                    margin: 0 0 4px !important;
+                    font-size: 12px !important;
+                    color: rgba(255, 255, 255, 0.76) !important;
+                    text-transform: none !important;
+                }
+
+                #login2 #forgotPasswordScreen .login-forgot-title {
+                    margin: 0 !important;
+                    font-size: 20px !important;
+                    line-height: 1.2 !important;
+                    letter-spacing: 0 !important;
+                    text-transform: none !important;
+                }
+
+                #login2 #forgotPasswordScreen .login-forgot-hint {
+                    margin: 7px 0 0 !important;
+                    font-size: 13px !important;
+                    line-height: 1.42 !important;
+                    color: rgba(255, 255, 255, 0.85) !important;
+                }
+
+                #login2 #forgotPasswordScreen .login-form {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    gap: 10px !important;
+                }
+
+                #login2 #forgotPasswordScreen .form-group {
+                    margin-bottom: 0 !important;
+                }
+
+                #login2 #forgotPasswordScreen .login-back-row {
+                    width: 100% !important;
+                    height: auto !important;
+                    margin-top: 2px !important;
+                    text-align: center !important;
+                }
+
+                #login2 #forgotPasswordScreen .login-back-row a {
+                    font-size: 13px !important;
+                    color: rgba(255, 255, 255, 0.88) !important;
+                    text-decoration: none !important;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
+                    padding-bottom: 2px !important;
+                }
+
+                #login2 #forgotPasswordScreen .login-back-row a:hover {
+                    color: #fff !important;
+                    border-bottom-color: rgba(255, 255, 255, 0.55) !important;
+                }
+
+                body.mobile-site #login2 #forgotPasswordScreen .login-forgot-heading {
+                    padding: 10px 11px !important;
+                    border-radius: 9px !important;
+                }
+
+                body.mobile-site #login2 #forgotPasswordScreen .login-forgot-title {
+                    font-size: 18px !important;
+                }
+
+                body.mobile-site #login2 #forgotPasswordScreen .login-forgot-hint {
+                    font-size: 12px !important;
+                }
             </style>
             <?php
             $authSliderScreen = 'login';
