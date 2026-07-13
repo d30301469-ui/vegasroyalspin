@@ -18,6 +18,15 @@
         }
     }
 
+    function shouldAutoOpenLoginModal() {
+        try {
+            var query = new URLSearchParams(window.location.search || '');
+            return query.get('login') === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
     function applyMobileAuthLayoutFix(modalId) {
         if (!document.body.classList.contains('mobile-site')) return;
         var modalEl = document.getElementById(modalId);
@@ -628,5 +637,8 @@
         initLoginForm();
         initLoginAjaxSubmit();
         initForgotPasswordForm();
+        if (shouldAutoOpenLoginModal()) {
+            showLoginModal();
+        }
     });
 })();

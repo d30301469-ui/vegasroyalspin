@@ -1,54 +1,98 @@
 <?php
 $resetToken = isset($resetToken) ? (string) $resetToken : '';
 $hasToken = $resetToken !== '';
+$resetAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('login') : [];
+$resetAuthSliderClass = $resetAuthSliderItems !== [] ? ' has-auth-slider' : '';
+$resetBranding = (isset($siteBranding) && is_array($siteBranding)) ? $siteBranding : [];
+$resetSiteName = (string) ($resetBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
+$resetLogoUrl = (string) ($resetBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+if (class_exists('ApiMediaUrl', false)) {
+    $resetLogoUrl = ApiMediaUrl::resolve($resetLogoUrl);
+}
 ?>
-<section class="mainWrap reset-password-page py-5">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-8 col-lg-6">
-                <div class="reset-password-card login-modal-container">
-                    <h1 class="login-main-title reset-password-title">Yeni şifre belirleyin</h1>
-                    <p class="login-forgot-hint reset-password-lead">E-postadaki bağlantıdaki anahtar ile şifrenizi sıfırlayın. Anahtar adres çubuğunda (?token=) gelmiş olmalıdır.</p>
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content entrance-popup-bc sign-in<?= htmlspecialchars($resetAuthSliderClass, ENT_QUOTES, 'UTF-8') ?>">
+            <?php
+            $authSliderScreen = 'login';
+            $authSliderItems = $resetAuthSliderItems;
+            include VIEW_PATH . '/partials/auth-slider-bg.php';
+            unset($authSliderScreen, $authSliderItems);
+            ?>
+            <div class="e-p-content-holder-bc">
+                <div class="e-p-content-bc">
+                    <div class="modal-body e-p-body-bc reset-password-modal-body">
+                        <div class="login-modal-container reset-password-modal-container">
+                            <div class="login-modal-header e-p-header-bc">
+                                <div class="login-logo">
+                                    <img src="<?= htmlspecialchars($resetLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($resetSiteName, ENT_QUOTES, 'UTF-8') ?>" class="login-logo-img">
+                                </div>
+                                <div class="login-header-actions e-p-sections-bc">
+                                    <a href="/" class="login-register-btn reset-password-home-link">ANASAYFA</a>
+                                    <button type="button" class="login-close reset-password-close e-p-close-icon-bc" aria-label="Kapat">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            </div>
 
-                    <div class="login-error-box<?= $hasToken ? ' d-none' : '' ?>" id="resetPasswordMissingToken" role="alert">
-                        <?= $hasToken ? '' : 'Geçersiz veya eksik bağlantı. E-postanızdaki şifre sıfırlama linkini kullanın veya yeni istek gönderin.' ?>
+                            <div class="reset-password-modal-content">
+                                <div class="login-text-block login-forgot-heading">
+                                    <p class="login-top-text">Şifre sıfırlama</p>
+                                    <h1 class="login-main-title reset-password-title" id="resetPasswordModalLabel">Yeni şifre belirleyin</h1>
+                                    <p class="login-forgot-hint reset-password-lead">E-postadaki bağlantıdaki anahtar ile şifrenizi sıfırlayın. Anahtar adres çubuğunda (?token=) gelmiş olmalıdır.</p>
+                                </div>
+
+                                <div class="login-error-box<?= $hasToken ? ' d-none' : '' ?>" id="resetPasswordMissingToken" role="alert">
+                                    <?= $hasToken ? '' : 'Geçersiz veya eksik bağlantı. E-postanızdaki şifre sıfırlama linkini kullanın veya yeni istek gönderin.' ?>
+                                </div>
+
+                                <form method="post" action="#" class="login-form<?= $hasToken ? '' : ' d-none' ?>" id="resetPasswordForm" novalidate>
+                                    <input type="hidden" id="resetPasswordToken" value="<?= htmlspecialchars($resetToken, ENT_QUOTES, 'UTF-8') ?>">
+
+                                    <div class="form-group entrance-f-item-bc">
+                                        <label class="form-control-label-bc inputs">
+                                            <input type="password" class="form-control-input-bc password-input" name="password" id="resetPasswordNew" required autocomplete="new-password" minlength="1">
+                                            <i class="form-control-input-stroke-bc"></i>
+                                            <span class="form-control-title-bc ellipsis">Yeni şifre *</span>
+                                        </label>
+                                        <div class="login-error-text" data-error-for="password">Bu alan gerekli</div>
+                                    </div>
+
+                                    <div class="form-group entrance-f-item-bc">
+                                        <label class="form-control-label-bc inputs">
+                                            <input type="password" class="form-control-input-bc password-input" name="password_confirmation" id="resetPasswordConfirm" required autocomplete="new-password" minlength="1">
+                                            <i class="form-control-input-stroke-bc"></i>
+                                            <span class="form-control-title-bc ellipsis">Yeni şifre tekrarı *</span>
+                                        </label>
+                                        <div class="login-error-text" data-error-for="password_confirmation">Bu alan gerekli</div>
+                                    </div>
+
+                                    <div class="login-error-box login-ajax-alert d-none" id="resetPasswordAjaxAlert" role="alert"></div>
+                                    <div class="login-success-box d-none" id="resetPasswordSuccess" role="status"></div>
+
+                                    <div class="entrance-form-actions-holder-bc reg-ext-1 reset-password-actions">
+                                        <button type="submit" class="login-btn" id="resetPasswordSubmit">
+                                            <span class="btn-text">ŞİFREYİ GÜNCELLE</span>
+                                            <span class="loading" style="display: none;"></span>
+                                        </button>
+                                    </div>
+
+                                    <div class="login-forgot login-back-row reset-password-back-row">
+                                        <a href="/" class="reset-password-back-link">Ana sayfaya dön</a>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="login-support reg-form-footer-bc">
+                                <a href="<?= htmlspecialchars((string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : '')), ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="live-chat-adviser-bc">
+                                    <i class="bc-i-live-chat" aria-hidden="true"></i>
+                                    <span>CANLI DESTEK İLE İLETİŞİME GEÇİN</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-
-                    <form method="post" action="#" class="login-form<?= $hasToken ? '' : ' d-none' ?>" id="resetPasswordForm" novalidate>
-                        <input type="hidden" id="resetPasswordToken" value="<?= htmlspecialchars($resetToken, ENT_QUOTES, 'UTF-8') ?>">
-
-                        <div class="form-group">
-                            <label class="form-control-label-bc inputs">
-                                <input type="password" class="form-control-input-bc password-input" name="password" id="resetPasswordNew" required autocomplete="new-password" minlength="1">
-                                <i class="form-control-input-stroke-bc"></i>
-                                <span class="form-control-title-bc ellipsis">Yeni şifre *</span>
-                            </label>
-                            <div class="login-error-text" data-error-for="password">Bu alan gerekli</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-control-label-bc inputs">
-                                <input type="password" class="form-control-input-bc password-input" name="password_confirmation" id="resetPasswordConfirm" required autocomplete="new-password" minlength="1">
-                                <i class="form-control-input-stroke-bc"></i>
-                                <span class="form-control-title-bc ellipsis">Yeni şifre tekrarı *</span>
-                            </label>
-                            <div class="login-error-text" data-error-for="password_confirmation">Bu alan gerekli</div>
-                        </div>
-
-                        <div class="login-error-box login-ajax-alert d-none" id="resetPasswordAjaxAlert" role="alert"></div>
-                        <div class="login-success-box d-none" id="resetPasswordSuccess" role="status"></div>
-
-                        <button type="submit" class="login-btn" id="resetPasswordSubmit">
-                            <span class="btn-text">ŞİFREYİ GÜNCELLE</span>
-                            <span class="loading" style="display: none;"></span>
-                        </button>
-
-                        <div class="login-forgot login-back-row">
-                            <a href="/">Ana sayfaya dön</a>
-                        </div>
-                    </form>
                 </div>
             </div>
         </div>
     </div>
-</section>
+</div>
