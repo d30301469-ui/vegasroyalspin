@@ -105,17 +105,25 @@ if (!function_exists('homeRenderBannerSection')) {
         $href = trim((string) ($payload['href'] ?? ''));
         $onclick = trim((string) ($payload['onclick'] ?? ''));
 
-        // Mobil yüzeyde (UA veya m. host) bu alanda her zaman local yeni banner kullan.
+        // Mobil yüzeyde (UA veya m. host) bu alanda her zaman local banner kullan.
         $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
         $isMobileSurface = (function_exists('isMobile') && isMobile()) || strpos($host, 'm.') === 0;
+        $forceMobileBanner = false;
         if ($isMobileSurface) {
-            $image = 'assets/images/slider-banner-main-new.webp';
+            $image = 'assets/images/slider-banner-main.webp';
+            $forceMobileBanner = true;
             if (trim($alt) === '') {
                 $alt = 'Mobil banner';
             }
         }
 
-        $src = preg_match('#^https?://#i', $image) ? $image : (function_exists('asset_url') ? asset_url($image) : '/' . ltrim($image, '/'));
+        if ($forceMobileBanner) {
+            $absFile = defined('BASE_PATH') ? BASE_PATH . '/' . ltrim($image, '/') : '';
+            $ver = (is_string($absFile) && $absFile !== '' && is_file($absFile)) ? (string) filemtime($absFile) : (string) time();
+            $src = '/' . ltrim($image, '/') . '?v=' . rawurlencode($ver);
+        } else {
+            $src = preg_match('#^https?://#i', $image) ? $image : (function_exists('asset_url') ? asset_url($image) : '/' . ltrim($image, '/'));
+        }
         ?>
         <div class="live-casino-banner-wrap">
             <div class="live-casino-banner">
