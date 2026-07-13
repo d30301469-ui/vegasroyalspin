@@ -1,6 +1,16 @@
 /* Ana sayfa jackpot|kazananlar sekmeleri */
-.mobile-site .hm-row-bc .banner-bc,
-.mobile-site .hm-row-bc .banner-image-bc {
+.mobile-site .mobile-top-banner-wrap {
+  margin: 8px 0 10px;
+  padding: 0;
+}
+
+.mobile-site .mobile-top-banner-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.mobile-site .mainContentWrap .live-casino-banner-wrap {
   display: none !important;
 }
 

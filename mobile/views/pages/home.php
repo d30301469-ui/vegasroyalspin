@@ -9,6 +9,22 @@ if (is_file($mobileHead) && filesize($mobileHead) > 0) {
 <?php include MOBILE_PATH . '/views/partials/header.php'; ?>
 
 <?php
+$mobileTopBanner = '/assets/images/banner-yok-limit.webp';
+$mobileTopBannerAbs = BASE_PATH . '/' . ltrim($mobileTopBanner, '/');
+$mobileTopBannerVer = (string) (is_file($mobileTopBannerAbs) ? filemtime($mobileTopBannerAbs) : time());
+?>
+<div class="mobile-top-banner-wrap">
+	<img
+		src="<?= htmlspecialchars($mobileTopBanner, ENT_QUOTES, 'UTF-8') ?>?v=<?= htmlspecialchars($mobileTopBannerVer, ENT_QUOTES, 'UTF-8') ?>"
+		alt="Artik cekimlerinizde limitlere takilmak yok"
+		class="mobile-top-banner-image"
+		loading="eager"
+		decoding="async"
+		fetchpriority="high"
+	/>
+</div>
+
+<?php
 $sliderMobileBc = true;
 $sliderApiCategory = 'home';
 include VIEW_PATH . '/partials/slider.php';
@@ -18,14 +34,6 @@ include VIEW_PATH . '/partials/slider.php';
 <?php $homeJsVer = (string) (is_file(BASE_PATH . '/assets/js/home.js') ? filemtime(BASE_PATH . '/assets/js/home.js') : time()); ?>
 <?php $winnersJsVer = (string) (is_file(BASE_PATH . '/assets/js/winners.js') ? filemtime(BASE_PATH . '/assets/js/winners.js') : $homeJsVer); ?>
 <?php $jackpotJsVer = (string) (is_file(BASE_PATH . '/assets/js/jackpot.js') ? filemtime(BASE_PATH . '/assets/js/jackpot.js') : $homeJsVer); ?>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-	var img = document.querySelector('.live-casino-banner-wrap .live-casino-banner img');
-	if (!img) return;
-  img.src = '/assets/images/banner-yok-limit.webp?v=20260713-3';
-  img.alt = 'Artık çekimlerinizde limitlerde takılmak yok';
-});
-</script>
 <script src="/assets/js/jackpot.js?v=<?= htmlspecialchars($jackpotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="/assets/js/winners.js?v=<?= htmlspecialchars($winnersJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="/assets/js/home.js?v=<?= htmlspecialchars($homeJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
