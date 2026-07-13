@@ -201,7 +201,7 @@ body.mobile-site .layout-header-holder-bc .hdr-dynamic-content {
 }
 body.mobile-site {
   background: url(/assets/images/mobile-home-bg.jpg) no-repeat 50% 50% / cover !important;
-  background-attachment: scroll !important;
+  background-attachment: fixed !important;
 }
 .footerWrapper .footerContainerWrapper .sliderGroup > .horizontalList > .horizontalSliderWrapper:first-child > .horizontalSliderRow:first-child {
     display: grid;
