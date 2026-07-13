@@ -18,15 +18,6 @@
         }
     }
 
-    function shouldAutoOpenLoginModal() {
-        try {
-            var query = new URLSearchParams(window.location.search || '');
-            return query.get('login') === '1';
-        } catch (e) {
-            return false;
-        }
-    }
-
     function applyMobileAuthLayoutFix(modalId) {
         if (!document.body.classList.contains('mobile-site')) return;
         var modalEl = document.getElementById(modalId);
@@ -267,6 +258,8 @@
         var loginModalEl = document.getElementById('login2');
         var registerModalEl = document.getElementById('registerModal');
         var openRegisterFromLogin = document.getElementById('openRegisterFromLogin');
+        var openForgotPassword = document.getElementById('openForgotPassword');
+        var backToLoginFromForgot = document.getElementById('backToLoginFromForgot');
 
         if (!loginModalEl) return;
 
@@ -303,6 +296,26 @@
                 e.preventDefault();
                 hideLoginModal();
                 showRegisterModal();
+            });
+        }
+
+        if (openForgotPassword) {
+            openForgotPassword.addEventListener('click', function (e) {
+                e.preventDefault();
+                showForgotPasswordScreen();
+                var ff = document.getElementById('forgotPasswordForm');
+                if (ff && BetcoInputs) {
+                    BetcoInputs.resetFormInputState(ff, 'login-error-text');
+                }
+                resetForgotPasswordAlerts();
+            });
+        }
+
+        if (backToLoginFromForgot) {
+            backToLoginFromForgot.addEventListener('click', function (e) {
+                e.preventDefault();
+                showLoginFormScreen();
+                resetForgotPasswordAlerts();
             });
         }
 
@@ -573,7 +586,7 @@
         }
 
         var defaultOkMsg =
-            'E-posta adresiniz kayıtlıysa şifre sıfırlama bağlantısı gönderildi. Gelen kutunuzu ve spam klasörünüzü kontrol edin.';
+            'E-posta adresiniz kayıtlıysa tarafımızdan doğrulama kodu gönderildi. Gelen kutunuzu ve spam klasörünüzü kontrol edin.';
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -637,8 +650,5 @@
         initLoginForm();
         initLoginAjaxSubmit();
         initForgotPasswordForm();
-        if (shouldAutoOpenLoginModal()) {
-            showLoginModal();
-        }
     });
 })();
