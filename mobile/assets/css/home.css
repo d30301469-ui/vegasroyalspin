@@ -1,4 +1,11 @@
 /* Ana sayfa jackpot|kazananlar sekmeleri */
+body.mobile-site {
+  background-image: url('/assets/images/mobile-home-bg.jpg') !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-position: center top !important;
+}
+
 .mobile-site .hm-row-bc .banner-bc,
 .mobile-site .hm-row-bc .banner-image-bc {
   display: none !important;
