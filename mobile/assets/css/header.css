@@ -286,6 +286,21 @@ body.mobile-site .search-panel {
   max-height: none;
 }
 
+/* Mobil sheet (bildirimler/favoriler/ayarlar) — sağdan tam yükseklik */
+body.mobile-site .mobile-right-sheet-overlay {
+  z-index: 1048;
+  top: var(--mobile-promo-sheet-top, var(--mobile-top-bar-height, 64px));
+  bottom: calc(var(--mobile-footer-height, 64px) + env(safe-area-inset-bottom, 0px));
+  height: auto;
+  min-height: 0;
+}
+
+body.mobile-site .mobile-right-sheet {
+  z-index: 1049;
+  height: 100%;
+  max-height: 100%;
+}
+
 /* Smart menü: mobilde aşırı büyük ikon satırlarını kompaktlaştır */
 body.mobile-site .sp-button-bc {
   width: 50px !important;
