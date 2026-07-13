@@ -1,8 +1,6 @@
 <?php
 $resetToken = isset($resetToken) ? (string) $resetToken : '';
 $hasToken = $resetToken !== '';
-$resetAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('login') : [];
-$resetAuthSliderClass = $resetAuthSliderItems !== [] ? ' has-auth-slider' : '';
 $resetBranding = (isset($siteBranding) && is_array($siteBranding)) ? $siteBranding : [];
 $resetSiteName = (string) ($resetBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
 $resetLogoUrl = (string) ($resetBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
@@ -12,13 +10,7 @@ if (class_exists('ApiMediaUrl', false)) {
 ?>
 <div class="modal fade show" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="false" style="display: block;">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content entrance-popup-bc sign-in<?= htmlspecialchars($resetAuthSliderClass, ENT_QUOTES, 'UTF-8') ?>">
-            <?php
-            $authSliderScreen = 'login';
-            $authSliderItems = $resetAuthSliderItems;
-            include VIEW_PATH . '/partials/auth-slider-bg.php';
-            unset($authSliderScreen, $authSliderItems);
-            ?>
+        <div class="modal-content entrance-popup-bc sign-in">
             <div class="e-p-content-holder-bc">
                 <div class="e-p-content-bc">
                     <div class="modal-body e-p-body-bc reset-password-modal-body">
@@ -101,6 +93,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     document.body.classList.add('modal-open', 'reset-password-modal-open');
     document.body.style.overflow = 'hidden';
+    var header = document.querySelector('.layout-header-holder-bc');
+    var nav = document.querySelector('.layout-navigation-holder-bc');
+    var navScrollable = document.querySelector('.hdr-navigation-scrollable-bc-holder');
+    if (header) header.style.display = 'none';
+    if (nav) nav.style.display = 'none';
+    if (navScrollable) navScrollable.style.display = 'none';
     var closeBtn = document.querySelector('.reset-password-close');
     if (closeBtn) {
         closeBtn.addEventListener('click', function (e) {
