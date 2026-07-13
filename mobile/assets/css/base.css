@@ -74,6 +74,18 @@ body.mobile-site {
   --mobile-page-gutter: 12px;
 }
 
+/*
+ * position:sticky header'ı bozan ata overflow-x:hidden düzeltmesi.
+ * bc-mobile-maltabet.css #root ve .layout-content-holder-bc'ye overflow-x:hidden veriyor;
+ * bu ata elemanları scroll container yapıp header'ın sayfayla kaybolmasına yol açıyor.
+ * clip yatay taşmayı yine engeller ama scroll container oluşturmaz → sticky çalışır.
+ */
+body.mobile-site #root,
+body.mobile-site #root.layout-bc,
+body.mobile-site #root .layout-content-holder-bc {
+  overflow-x: clip !important;
+}
+
 body.mobile-site .mainContentWrap {
   padding-top: 0 !important;
   padding-left: 0 !important;
