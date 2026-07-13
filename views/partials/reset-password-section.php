@@ -106,6 +106,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (header) header.style.display = 'none';
     if (nav) nav.style.display = 'none';
     if (navScrollable) navScrollable.style.display = 'none';
+    var backRow = document.querySelector('.reset-password-back-row');
+    if (backRow && window.innerWidth <= 480) {
+        backRow.style.display = 'none';
+    }
     var closeBtn = document.querySelector('.reset-password-close');
     if (closeBtn) {
         closeBtn.addEventListener('click', function (e) {
