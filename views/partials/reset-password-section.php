@@ -8,6 +8,15 @@ $hasToken = $resetToken !== '';
         background-image: none !important;
     }
 
+    body.reset-password-standalone header,
+    body.reset-password-standalone footer,
+    body.reset-password-standalone .layout-header-holder-bc,
+    body.reset-password-standalone .layout-navigation-holder-bc,
+    body.reset-password-standalone .hdr-navigation-scrollable-bc-holder,
+    body.reset-password-standalone .layout-footer-holder-bc {
+        display: none !important;
+    }
+
     .reset-password-modal-page {
         position: relative;
         min-height: 100vh;
@@ -134,3 +143,8 @@ $hasToken = $resetToken !== '';
         </div>
     </div>
 </section>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.body.classList.add('reset-password-standalone');
+});
+</script>
