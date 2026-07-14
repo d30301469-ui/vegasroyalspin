@@ -633,6 +633,11 @@
         padding: 0 22px !important;
     }
 
+    /* JS toggles d-none between login and forgot screens; do not override hide state. */
+    #login2 #loginFormScreen.d-none {
+        display: none !important;
+    }
+
     #login2 .login-form {
         flex: 1 !important;
         display: flex !important;
