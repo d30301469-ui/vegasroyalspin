@@ -48,6 +48,7 @@
         if (!screen) return;
 
         var slider = document.querySelector('#resetPasswordModal .auth-slider-bg');
+        var sliderImage = document.querySelector('#resetPasswordModal .auth-slider-bg__image');
         var holder = document.querySelector('#resetPasswordModal .e-p-content-holder-bc');
         var header = document.querySelector('#resetPasswordModal .login-modal-header');
         var headerActions = document.querySelector('#resetPasswordModal .login-header-actions');
@@ -61,6 +62,11 @@
             slider.style.bottom = 'auto';
             slider.style.height = '320px';
             slider.style.zIndex = '0';
+        }
+        if (sliderImage) {
+            sliderImage.style.objectFit = 'contain';
+            sliderImage.style.objectPosition = 'center top';
+            sliderImage.style.background = '#15063f';
         }
         if (holder) {
             holder.style.position = 'relative';
