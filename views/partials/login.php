@@ -248,10 +248,11 @@ if (class_exists('ApiMediaUrl', false)) {
                     display: none !important;
                 }
 
-                body.mobile-site #login2 #forgotPasswordScreen {
+                body.mobile-site #login2 #forgotPasswordScreen:not(.d-none) {
                     min-height: 100% !important;
                     justify-content: flex-end !important;
                     width: calc(100% - 14px) !important;
+                    max-width: none !important;
                     margin: 0 7px !important;
                     padding-bottom: 14px !important;
                 }
