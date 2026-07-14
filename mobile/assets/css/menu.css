@@ -84,7 +84,7 @@ body.mobile-site .hdr-nav-menu-holder-bc .m-nav-title-row-bc {
 
 body.mobile-site .hdr-nav-menu-holder-bc .m-nav-title-content-bc {
   padding: 0 10px;
-  font-size: 15px !important;
+  font-size: 13px !important;
   line-height: 44px;
   font-weight: 500;
   color: #fff;
@@ -92,22 +92,44 @@ body.mobile-site .hdr-nav-menu-holder-bc .m-nav-title-content-bc {
 }
 
 body.mobile-site .hdr-nav-menu-holder-bc .closed-n-p-bc {
-  border: 0;
-  background: transparent;
+  position: relative;
+  border: 0.8px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.26);
   color: #fff;
   cursor: pointer;
-  width: 42px;
-  height: 44px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  font-size: 18px;
+  margin-right: 8px;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: background 0.24s ease, border-color 0.24s ease;
 }
 
+body.mobile-site .hdr-nav-menu-holder-bc .closed-n-p-bc::before {
+  content: "\00d7";
+  display: block;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #fff;
+  font-size: 16px;
+  line-height: 16px;
+  text-align: center;
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .closed-n-p-bc:hover,
+body.mobile-site .hdr-nav-menu-holder-bc .closed-n-p-bc:focus-visible {
+  background: rgba(0, 0, 0, 0.38);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+body.mobile-site .hdr-nav-menu-holder-bc .closed-n-p-bc .bc-i-close-remove,
 body.mobile-site .hdr-nav-menu-holder-bc .closed-n-p-bc .bc-i-close-remove::before {
-  font-size: 18px !important;
-  line-height: 1;
+  display: none !important;
 }
 
 body.mobile-site .hdr-nav-menu-holder-bc .m-nav-info-w-container-bc {
