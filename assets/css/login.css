@@ -347,6 +347,21 @@
     color: rgba(255, 255, 255, 0.92);
 }
 
+#login2 #forgotPasswordScreen .login-forgot-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 10px;
+    color: rgba(236, 231, 255, 0.8);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+#login2 #forgotPasswordScreen .login-forgot-note .bc-i-player-info {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
 .login-support {
     margin-top: 24px;
     text-align: center;
@@ -427,6 +442,10 @@
     .login-top-text {
         font-size: 11px;
         margin-bottom: 2px;
+    }
+
+    #login2 #forgotPasswordScreen .login-forgot-note {
+        font-size: 12px;
     }
 
     .login-main-title {
