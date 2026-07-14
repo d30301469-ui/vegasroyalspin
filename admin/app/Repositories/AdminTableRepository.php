@@ -204,6 +204,9 @@ final class AdminTableRepository
         if (in_array($table, ['loyalty_levels', 'user_loyalty_accounts', 'loyalty_point_transactions'], true)) {
             $this->ensureLoyaltyTables();
         }
+        if (in_array($table, ['mail_outbound_log', 'mail_settings'], true)) {
+            $this->ensureMailTables();
+        }
 
         $stmt = AdminDatabase::pdo()->prepare(
             'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table'
@@ -309,6 +312,18 @@ final class AdminTableRepository
             if (class_exists('ApiLoyalty')) {
                 ApiLoyalty::ensureStorage(AdminDatabase::pdo());
             }
+        }
+    }
+
+    private function ensureMailTables(): void
+    {
+        try {
+            $migration = admin_project_path('database/migrations/2026_06_10_000001_create_mail_tables.php');
+            if (is_file($migration)) {
+                (require $migration)(AdminDatabase::pdo());
+            }
+        } catch (Throwable) {
+            // Mail table auto-create best-effort; assertTable will fail later if still unavailable.
         }
     }
 
