@@ -437,8 +437,21 @@ window.__openForgotPasswordInline = window.__openForgotPasswordInline || functio
         var root = (el && el.closest) ? el.closest('#login2') : document.getElementById('login2');
         var main = root ? root.querySelector('#loginFormScreen') : document.getElementById('loginFormScreen');
         var forgot = root ? root.querySelector('#forgotPasswordScreen') : document.getElementById('forgotPasswordScreen');
+        var forgotForm = forgot ? forgot.querySelector('#forgotPasswordForm') : null;
+        var isMobile = document.body && document.body.classList.contains('mobile-site');
         if (main) main.classList.add('d-none');
         if (forgot) forgot.classList.remove('d-none');
+        if (isMobile && forgot) {
+            forgot.style.justifyContent = 'flex-start';
+            forgot.style.paddingTop = 'clamp(330px, 46vh, 410px)';
+            forgot.style.paddingBottom = '12px';
+            forgot.style.width = 'calc(100% - 24px)';
+            forgot.style.margin = '0 12px';
+        }
+        if (isMobile && forgotForm) {
+            forgotForm.style.flex = '0 0 auto';
+            forgotForm.style.marginTop = '16px';
+        }
     } catch (e) {}
     return false;
 };
@@ -448,8 +461,20 @@ window.__backToLoginInline = window.__backToLoginInline || function (el) {
         var root = (el && el.closest) ? el.closest('#login2') : document.getElementById('login2');
         var main = root ? root.querySelector('#loginFormScreen') : document.getElementById('loginFormScreen');
         var forgot = root ? root.querySelector('#forgotPasswordScreen') : document.getElementById('forgotPasswordScreen');
+        var forgotForm = forgot ? forgot.querySelector('#forgotPasswordForm') : null;
         if (forgot) forgot.classList.add('d-none');
         if (main) main.classList.remove('d-none');
+        if (forgot) {
+            forgot.style.justifyContent = '';
+            forgot.style.paddingTop = '';
+            forgot.style.paddingBottom = '';
+            forgot.style.width = '';
+            forgot.style.margin = '';
+        }
+        if (forgotForm) {
+            forgotForm.style.flex = '';
+            forgotForm.style.marginTop = '';
+        }
     } catch (e) {}
     return false;
 };
