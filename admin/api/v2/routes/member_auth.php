@@ -85,136 +85,92 @@ if (!function_exists('memberLogOutboundMail')) {
 }
 
 if (!function_exists('memberSendResetMail')) {
-    function memberSmtpRead($socket): string
+    function memberLoadPhpMailerAutoload(): bool
     {
-        $response = '';
-        $line = '';
-        while (is_resource($socket) && ($line = fgets($socket, 1024)) !== false) {
-            $response .= $line;
-            if (strlen($line) >= 4 && $line[3] === ' ') {
-                break;
+        static $loaded = null;
+        if ($loaded !== null) {
+            return $loaded;
+        }
+
+        if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
+            $loaded = true;
+            return true;
+        }
+
+        $candidates = [];
+        if (defined('ADMIN_BASE_PATH')) {
+            $candidates[] = rtrim((string) ADMIN_BASE_PATH, '/\\') . '/vendor/autoload.php';
+        }
+        if (defined('METROPOL_ROOT')) {
+            $candidates[] = rtrim((string) METROPOL_ROOT, '/\\') . '/vendor/autoload.php';
+        }
+        $candidates[] = dirname(__DIR__, 4) . '/vendor/autoload.php';
+        $candidates[] = dirname(__DIR__, 5) . '/vendor/autoload.php';
+
+        foreach (array_values(array_unique($candidates)) as $autoload) {
+            if (is_file($autoload)) {
+                require_once $autoload;
+                if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
+                    $loaded = true;
+                    return true;
+                }
             }
         }
-        return $response;
+
+        $loaded = false;
+        return false;
     }
 
-    function memberSmtpExpect($socket, string $command, array $expectedCodes): bool
-    {
-        if ($command !== '') {
-            fwrite($socket, $command . "\r\n");
-        }
-        $response = memberSmtpRead($socket);
-        if ($response === '') {
-            return false;
-        }
-        $code = (int) substr($response, 0, 3);
-        return in_array($code, $expectedCodes, true);
-    }
-
-    function memberSmtpSendMail(array $settings, string $from, string $toEmail, string $subject, string $messageText): bool
+    function memberSendResetMailViaPhpMailer(array $settings, string $from, string $toEmail, string $subject, string $messageText, string &$errorMessage = ''): bool
     {
         $host = trim((string) ($settings['smtp_host'] ?? ''));
         $port = (int) ($settings['smtp_port'] ?? 0);
         $user = trim((string) ($settings['smtp_user'] ?? ''));
         $pass = (string) ($settings['smtp_password'] ?? '');
+
         if ($host === '') {
+            $errorMessage = 'smtp_host_missing';
+            return false;
+        }
+        if (!memberLoadPhpMailerAutoload()) {
+            $errorMessage = 'phpmailer_not_loaded';
             return false;
         }
         if ($port <= 0) {
             $port = 587;
         }
 
-        $transportHost = $host;
-        $needsTlsUpgrade = ($port === 587);
-        if ($port === 465) {
-            $transportHost = 'ssl://' . $host;
-            $needsTlsUpgrade = false;
-        }
+        try {
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->CharSet = 'UTF-8';
+            $mail->isSMTP();
+            $mail->Host = $host;
+            $mail->Port = $port;
+            $mail->Timeout = 15;
 
-        $socket = @stream_socket_client(
-            $transportHost . ':' . $port,
-            $errno,
-            $errstr,
-            10,
-            STREAM_CLIENT_CONNECT
-        );
-        if (!is_resource($socket)) {
-            return false;
-        }
-        stream_set_timeout($socket, 10);
-
-        if (!memberSmtpExpect($socket, '', [220])) {
-            fclose($socket);
-            return false;
-        }
-
-        $helloHost = parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: 'localhost';
-        if (!memberSmtpExpect($socket, 'EHLO ' . $helloHost, [250])) {
-            fclose($socket);
-            return false;
-        }
-
-        if ($needsTlsUpgrade) {
-            if (!memberSmtpExpect($socket, 'STARTTLS', [220])) {
-                fclose($socket);
-                return false;
+            $mail->SMTPAuth = $user !== '';
+            if ($mail->SMTPAuth) {
+                $mail->Username = $user;
+                $mail->Password = $pass;
             }
-            $cryptoOk = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-            if ($cryptoOk !== true) {
-                fclose($socket);
-                return false;
-            }
-            if (!memberSmtpExpect($socket, 'EHLO ' . $helloHost, [250])) {
-                fclose($socket);
-                return false;
-            }
-        }
 
-        if ($user !== '') {
-            if (!memberSmtpExpect($socket, 'AUTH LOGIN', [334])) {
-                fclose($socket);
-                return false;
+            if ($port === 465) {
+                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+            } else {
+                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
             }
-            if (!memberSmtpExpect($socket, base64_encode($user), [334])) {
-                fclose($socket);
-                return false;
-            }
-            if (!memberSmtpExpect($socket, base64_encode($pass), [235])) {
-                fclose($socket);
-                return false;
-            }
-        }
 
-        if (!memberSmtpExpect($socket, 'MAIL FROM:<' . $from . '>', [250])) {
-            fclose($socket);
+            $mail->setFrom($from, 'VegasRoyalSpin');
+            $mail->addAddress($toEmail);
+            $mail->Subject = $subject;
+            $mail->Body = $messageText;
+            $mail->AltBody = $messageText;
+
+            return $mail->send();
+        } catch (Throwable $exception) {
+            $errorMessage = trim($exception->getMessage()) !== '' ? trim($exception->getMessage()) : 'smtp_send_failed';
             return false;
         }
-        if (!memberSmtpExpect($socket, 'RCPT TO:<' . $toEmail . '>', [250, 251])) {
-            fclose($socket);
-            return false;
-        }
-        if (!memberSmtpExpect($socket, 'DATA', [354])) {
-            fclose($socket);
-            return false;
-        }
-
-        $headers = [
-            'From: ' . $from,
-            'To: ' . $toEmail,
-            'Subject: ' . $subject,
-            'MIME-Version: 1.0',
-            'Content-Type: text/plain; charset=UTF-8',
-            'Content-Transfer-Encoding: 8bit',
-        ];
-        $data = implode("\r\n", $headers) . "\r\n\r\n" . str_replace("\n.", "\n..", $messageText) . "\r\n.";
-        if (!memberSmtpExpect($socket, $data, [250])) {
-            fclose($socket);
-            return false;
-        }
-
-        memberSmtpExpect($socket, 'QUIT', [221, 250]);
-        fclose($socket);
-        return true;
     }
 
     function memberSendResetMail(PDO $pdo, string $toEmail, string $token): bool
@@ -242,14 +198,19 @@ if (!function_exists('memberSendResetMail')) {
             return false;
         }
 
-        $smtpSent = memberSmtpSendMail($settings, $from, $toEmail, $subject, $messageText);
+        $smtpError = '';
+        $smtpSent = memberSendResetMailViaPhpMailer($settings, $from, $toEmail, $subject, $messageText, $smtpError);
         if ($smtpSent) {
             memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, 'sent');
             return true;
         }
 
         $sent = @mail($toEmail, $subject, $messageText, implode("\r\n", $headers));
-        memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, $sent ? 'sent' : 'failed');
+        $preview = $messageText;
+        if (!$sent && $smtpError !== '') {
+            $preview = '[smtp_error] ' . $smtpError . "\n\n" . $preview;
+        }
+        memberLogOutboundMail($pdo, $toEmail, $subject, $preview, $sent ? 'sent' : 'failed');
         return $sent;
     }
 }
