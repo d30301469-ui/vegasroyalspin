@@ -432,7 +432,7 @@ if (class_exists('ApiMediaUrl', false)) {
     </div>
 </div>
 <script>
-window.__disableForgotToast = window.__disableForgotToast || function () {
+window.__disableForgotToast = function () {
     try {
         if (!window.MaltabetToast) return;
         if (!window.__forgotToastBackup) {
@@ -446,7 +446,7 @@ window.__disableForgotToast = window.__disableForgotToast || function () {
     } catch (e) {}
 };
 
-window.__restoreForgotToast = window.__restoreForgotToast || function () {
+window.__restoreForgotToast = function () {
     try {
         if (!window.MaltabetToast || !window.__forgotToastBackup) return;
         window.MaltabetToast.error = window.__forgotToastBackup.error;
@@ -454,7 +454,7 @@ window.__restoreForgotToast = window.__restoreForgotToast || function () {
     } catch (e) {}
 };
 
-window.__openForgotPasswordInline = window.__openForgotPasswordInline || function (el) {
+window.__openForgotPasswordInline = function (el) {
     try {
         var root = (el && el.closest) ? el.closest('#login2') : document.getElementById('login2');
         var main = root ? root.querySelector('#loginFormScreen') : document.getElementById('loginFormScreen');
@@ -479,7 +479,7 @@ window.__openForgotPasswordInline = window.__openForgotPasswordInline || functio
     return false;
 };
 
-window.__backToLoginInline = window.__backToLoginInline || function (el) {
+window.__backToLoginInline = function (el) {
     try {
         var root = (el && el.closest) ? el.closest('#login2') : document.getElementById('login2');
         var main = root ? root.querySelector('#loginFormScreen') : document.getElementById('loginFormScreen');
@@ -502,6 +502,22 @@ window.__backToLoginInline = window.__backToLoginInline || function (el) {
     } catch (e) {}
     return false;
 };
+
+document.addEventListener('DOMContentLoaded', function () {
+    var forgotForm = document.getElementById('forgotPasswordForm');
+    if (!forgotForm) return;
+    forgotForm.addEventListener('submit', function () {
+        try {
+            window.__disableForgotToast();
+            var toastNodes = document.querySelectorAll('.toastify');
+            toastNodes.forEach(function (node) {
+                if (node && node.parentNode) {
+                    node.parentNode.removeChild(node);
+                }
+            });
+        } catch (e) {}
+    }, true);
+});
 </script>
 <?php if ($login_error !== '' || $login_account_frozen_notice): ?>
 <script>document.addEventListener('DOMContentLoaded',function(){var m=document.getElementById('login2'),$=window.jQuery||window.$;if(m&&$)$(m).modal('show');});</script>
