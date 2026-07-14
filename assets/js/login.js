@@ -253,6 +253,8 @@
         var main = inLoginScope(scope, 'loginFormScreen');
         var forg = inLoginScope(scope, 'forgotPasswordScreen');
         var forgotForm = forg ? forg.querySelector('.login-form') : null;
+        var forgotSubmit = forg ? forg.querySelector('#forgotPasswordSubmit') : null;
+        var forgotNote = forg ? forg.querySelector('.login-forgot-note') : null;
         if (hdr) {
             hdr.classList.add('d-none');
         }
@@ -266,6 +268,16 @@
             forgotForm.style.flex = '0 0 auto';
             forgotForm.style.marginTop = 'auto';
             forgotForm.style.justifyContent = 'flex-end';
+        }
+        if (forgotForm && forgotSubmit && forgotNote) {
+            var submitNext = forgotSubmit.nextElementSibling;
+            if (submitNext !== forgotNote) {
+                if (submitNext) {
+                    forgotForm.insertBefore(forgotNote, submitNext);
+                } else {
+                    forgotForm.appendChild(forgotNote);
+                }
+            }
         }
     }
 
