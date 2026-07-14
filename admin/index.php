@@ -256,6 +256,8 @@ $router->get('/compliance/audit-log', [AdminComplianceController::class, 'auditL
 $router->get('/permissions', [AdminPermissionController::class, 'index']);
 $router->post('/permissions', [AdminPermissionController::class, 'update']);
 $router->get('/email', [AdminCommunicationController::class, 'email']);
+$router->get('/email/settings', [AdminCommunicationController::class, 'settings']);
+$router->post('/email/settings', [AdminCommunicationController::class, 'saveSettings']);
 $router->get('/compose', [AdminCommunicationController::class, 'compose']);
 $router->post('/compose', [AdminCommunicationController::class, 'send']);
 $router->get('/chat', [AdminCommunicationController::class, 'chat']);

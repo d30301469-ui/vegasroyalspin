@@ -58,6 +58,7 @@ final class AdminRoutePermission
         '/compliance/audit-log' => 'logs',
         '/permissions' => 'permissions',
         '/email' => 'email',
+        '/email/settings' => 'email',
         '/compose' => 'email',
         '/chat' => 'email',
         '/support/tickets' => 'support-tickets',
