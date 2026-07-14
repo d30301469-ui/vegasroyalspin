@@ -46,6 +46,7 @@
     function applyReferenceSkin() {
         var modal = document.querySelector('.reset-password-modal');
         if (!modal) return;
+        if (document.getElementById('resetPasswordScreen')) return;
 
         var heroNodes = modal.querySelectorAll('.reset-password-hero, .reset-ref-hero');
         var primaryHero = heroNodes.length ? heroNodes[0] : null;

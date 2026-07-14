@@ -2,64 +2,19 @@
 $resetToken = isset($resetToken) ? (string) $resetToken : '';
 $hasToken = $resetToken !== '';
 
-global $siteSettingsPayload, $siteBranding;
-$settings = is_array($siteSettingsPayload ?? null) ? $siteSettingsPayload : [];
-$branding = is_array($siteBranding ?? null) ? $siteBranding : [];
-
-$h = static fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
-$safeText = static fn ($value, $default): string => trim((string) $value) !== '' ? trim((string) $value) : (string) $default;
-$safeColor = static function ($value, $default): string {
-    $raw = trim((string) $value);
-    if ($raw === '') {
-        return (string) $default;
-    }
-    if (preg_match('/^(#[0-9a-fA-F]{3,8}|rgba?\([^\n]+\)|hsla?\([^\n]+\)|transparent|currentColor)$/', $raw) === 1) {
-        return $raw;
-    }
-
-    return (string) $default;
-};
-$safeCssBackground = static function ($value, $default): string {
-    $raw = trim((string) $value);
-    if ($raw === '') {
-        return (string) $default;
-    }
-    if (strlen($raw) <= 280 && preg_match('/^[#(),.%a-zA-Z0-9\s-]+$/', $raw) === 1) {
-        return $raw;
-    }
-
-    return (string) $default;
-};
-$assetUrl = static function ($value, $default): string {
-    $raw = trim((string) $value);
-    $fallback = trim((string) $default);
-    if (class_exists('ApiMediaUrl', false)) {
-        return ApiMediaUrl::resolve($raw !== '' ? $raw : $fallback);
-    }
-
-    return '/' . ltrim($raw !== '' ? $raw : $fallback, '/');
-};
-
-$resetHeroImageUrl = $assetUrl($settings['reset_password_hero_image_url'] ?? '', '/assets/images/login-bg.png');
-$resetBrandLogoUrl = $assetUrl($branding['logo_url'] ?? ($settings['logo_url'] ?? ''), '/assets/images/MaltaBetLogo.png');
-$resetBrandText = $safeText($settings['reset_password_brand_text'] ?? '', $branding['site_name'] ?? 'Vegasroyalspin');
-$resetTitleRequest = $safeText($settings['reset_password_title_request'] ?? '', 'ŞİFRE SIFIRLA');
-$resetTitleConfirm = $safeText($settings['reset_password_title_confirm'] ?? '', 'YENİ ŞİFRE');
-$resetButtonText = $safeText($settings['reset_password_button_text'] ?? '', 'SIFIRLA');
-$resetLeadText = $safeText($settings['reset_password_lead_text'] ?? '', 'Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.');
-$resetInfoText = $safeText($settings['reset_password_info_text'] ?? '', 'Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.');
-$resetModalBg = $safeCssBackground($settings['reset_password_modal_bg'] ?? '', 'linear-gradient(145deg, #1b0c49 0%, #0a0f3c 60%, #09123f 100%)');
-$resetHeroTopBorderColor = $safeColor($settings['reset_password_hero_top_border_color'] ?? '', '#7d1c7a');
-$resetHeroBottomBorderColor = $safeColor($settings['reset_password_hero_bottom_border_color'] ?? '', '#ff00ff');
-$resetInputBorderColor = $safeColor($settings['reset_password_input_border_color'] ?? '', '#ec46aa');
-$resetButtonTextColor = $safeColor($settings['reset_password_button_text_color'] ?? '', '#d2d6eb');
+global $siteBranding, $siteContactLinks, $ayar;
+$resetAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('login') : [];
+$resetAuthSliderClass = $resetAuthSliderItems !== [] ? ' has-auth-slider' : '';
+$resetBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
+$resetSiteName = (string) ($resetBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
+$resetLogoUrl = (string) ($resetBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+if (class_exists('ApiMediaUrl', false)) {
+    $resetLogoUrl = ApiMediaUrl::resolve($resetLogoUrl);
+}
+$resetSupportUrl = (string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : ''));
+$h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 ?>
 <style>
-    .reset-password-shell,
-    .reset-password-shell * {
-        background-image: none !important;
-    }
-
     body.reset-password-standalone header,
     body.reset-password-standalone footer,
     body.reset-password-standalone .layout-header-holder-bc,
@@ -73,7 +28,7 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         position: relative;
         min-height: 100vh;
         min-height: 100dvh;
-        padding: 20px 12px;
+        padding: 10px 0;
         background: rgba(7, 9, 25, 0.98) !important;
     }
 
@@ -95,423 +50,280 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     }
 
     .reset-password-shell .modal-dialog {
-        width: min(386px, calc(100vw - 40px));
-        max-width: 386px;
-        margin: 12px auto;
-    }
-
-    .reset-password-shell #resetPasswordModal.modal.show.d-block .modal-dialog {
-        display: block !important;
-        width: auto !important;
-        max-width: none !important;
-        margin: 12px auto !important;
+        max-width: 559px;
+        margin: 24px auto;
     }
 
     .reset-password-shell .modal-content {
-        background: #0a0f3c;
-        border-radius: 0;
+        background: var(--body-bg);
+        border-radius: 10px;
         border: 1px solid rgba(255, 255, 255, 0.08);
         color: var(--white-color);
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--primary);
         overflow: hidden;
-    }
-
-    .reset-password-shell #resetPasswordModal.modal.show.d-block .modal-content {
-        display: block !important;
-        width: 386px !important;
-        max-width: calc(100vw - 40px) !important;
-        margin: 0 auto !important;
     }
 
     .reset-password-shell .modal-body {
-        padding: 0;
+        padding: 21px 31px 26px;
     }
 
-    .reset-password-modal {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        background: <?= $h($resetModalBg) ?>;
-        min-height: 88vh;
+    body.mobile-site #resetPasswordModal .login-modal-header.e-p-header-bc {
+        pointer-events: auto !important;
     }
 
-    .reset-password-close {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 22px;
-        height: 22px;
-        min-width: 22px;
-        min-height: 22px;
-        border-radius: 0;
-        border: 0;
-        background-color: transparent;
-        color: rgba(198, 193, 214, 0.88);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 3;
-        transition: opacity 120ms ease;
+    body.mobile-site #resetPasswordModal .login-header-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        pointer-events: auto !important;
     }
 
-    .reset-password-close:hover {
-        opacity: 0.86;
+    body.mobile-site #resetPasswordModal .login-close {
+        position: fixed !important;
+        top: max(8px, env(safe-area-inset-top, 0px)) !important;
+        right: 8px !important;
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+        min-height: 24px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        background: rgba(0, 0, 0, 0.26) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        border-radius: 50% !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+        color: #fff !important;
+        cursor: pointer !important;
+        pointer-events: auto !important;
+        z-index: 100206 !important;
     }
 
-    .reset-password-close::before {
-        content: "\2715";
-        font-size: 18px;
-        font-weight: 400;
-        line-height: 1;
-        text-shadow: none;
+    body.mobile-site #resetPasswordModal .login-close span {
+        display: none !important;
     }
 
-    .reset-password-hero {
-        position: relative;
-        height: 320px;
-        background: #15063f;
-        border-top: 8px solid <?= $h($resetHeroTopBorderColor) ?>;
-        border-bottom: 5px solid <?= $h($resetHeroBottomBorderColor) ?>;
-        overflow: hidden;
-    }
-
-    .reset-password-hero::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image: url('<?= $h($resetHeroImageUrl) ?>');
-        background-size: cover;
-        background-position: center 24%;
-        filter: saturate(1.05) contrast(1.06);
-        opacity: 0.96;
-    }
-
-    .reset-password-brand {
-        position: absolute;
-        top: 26px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 2;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        opacity: 0.95;
-    }
-
-    .reset-password-brand-logo {
+    body.mobile-site #resetPasswordModal .login-close::before {
+        content: "\00d7";
         display: block;
-        width: auto;
-        height: 34px;
-        max-width: 164px;
-        object-fit: contain;
+        color: #fff;
+        font-size: 18px;
+        line-height: 1;
     }
 
-    .reset-password-content {
-        padding: 18px 7px 102px;
+    #resetPasswordModal #resetPasswordScreen {
+        margin-top: 0 !important;
+        width: 100% !important;
+        max-width: 520px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
 
-    .reset-password-modal .login-text-block {
-        display: none;
+    #resetPasswordModal #resetPasswordScreen .login-forgot-heading {
+        margin: 0 0 12px !important;
+        padding: 12px 14px !important;
+        border-radius: 10px !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015)) !important;
     }
 
-    .reset-password-title {
-        margin: 0 0 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        font-size: 15px;
-        line-height: 1.2;
-        color: rgba(255, 255, 255, 0.92);
+    #resetPasswordModal #resetPasswordScreen .login-top-text {
+        margin: 0 0 4px !important;
+        font-size: 12px !important;
+        color: rgba(255, 255, 255, 0.76) !important;
+        text-transform: none !important;
     }
 
-    .reset-password-subtitle {
-        display: none;
+    #resetPasswordModal #resetPasswordScreen .login-forgot-title {
+        margin: 0 !important;
+        font-size: 20px !important;
+        line-height: 1.2 !important;
+        letter-spacing: 0 !important;
+        text-transform: none !important;
     }
 
-    .reset-password-lead {
-        margin: 8px 0 0;
-        font-size: 14px;
-        line-height: 1.45;
-        color: rgba(234, 231, 255, 0.78);
-        max-width: none;
+    #resetPasswordModal #resetPasswordScreen .login-forgot-hint {
+        margin: 7px 0 0 !important;
+        font-size: 13px !important;
+        line-height: 1.42 !important;
+        color: rgba(255, 255, 255, 0.85) !important;
     }
 
-    .reset-password-modal .login-form {
-        margin-top: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
+    #resetPasswordModal #resetPasswordScreen .login-form {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
     }
 
-    .reset-password-modal .form-group {
-        margin-bottom: 0;
+    #resetPasswordModal #resetPasswordScreen .form-group {
+        margin-bottom: 0 !important;
     }
 
-    .reset-password-modal .form-control-label-bc {
-        border-radius: 8px;
+    #resetPasswordModal #resetPasswordScreen .form-control-label-bc,
+    #resetPasswordModal #resetPasswordScreen .form-control-input-bc,
+    #resetPasswordModal #resetPasswordScreen .login-btn,
+    #resetPasswordModal #resetPasswordScreen #resetPasswordRequestSubmit,
+    #resetPasswordModal #resetPasswordScreen #resetPasswordSubmit {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box !important;
     }
 
-    #resetPasswordModal .form-control-input-bc {
-        height: 52px !important;
-        min-height: 52px !important;
-        border-radius: 4px !important;
-        border: 1px solid <?= $h($resetInputBorderColor) ?> !important;
-        background: rgba(83, 67, 122, 0.42) !important;
-        color: #f7f4ff !important;
-        padding-left: 18px !important;
-        font-size: 14px !important;
-    }
-
-    #resetPasswordModal .form-control-input-bc:focus {
-        border-color: <?= $h($resetInputBorderColor) ?> !important;
-        box-shadow: none !important;
-    }
-
-    #resetPasswordModal .login-btn,
-    #resetPasswordRequestSubmit,
-    #resetPasswordSubmit {
+    #resetPasswordModal #resetPasswordScreen .login-btn,
+    #resetPasswordModal #resetPasswordScreen #resetPasswordRequestSubmit,
+    #resetPasswordModal #resetPasswordScreen #resetPasswordSubmit {
         height: 36px !important;
         min-height: 36px !important;
-        border-radius: 4px !important;
-        background: rgba(255, 255, 255, 0.1) !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
-        color: rgba(255, 255, 255, 0.3) !important;
-        box-shadow: none !important;
         font-size: 12px !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.02em !important;
-        text-transform: uppercase !important;
     }
 
-    #resetPasswordModal .login-btn:hover,
-    #resetPasswordRequestSubmit:hover,
-    #resetPasswordSubmit:hover {
-        background: rgba(111, 122, 176, 0.3) !important;
-        border-color: rgba(146, 156, 201, 0.24) !important;
-        color: rgba(228, 232, 247, 0.88) !important;
-        transform: none !important;
-    }
-
-    #resetPasswordModal .login-error-text {
+    #resetPasswordModal #resetPasswordScreen .login-error-text {
         margin-top: -2px;
-        border-radius: 3px;
-        background: rgba(107, 26, 74, 0.8);
-        color: #fff;
-        font-size: 13px;
-        padding: 3px 9px;
     }
 
-    .reset-password-actions {
-        margin-top: 12px;
+    #resetPasswordModal #resetPasswordScreen .reset-password-note {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 6px;
         color: rgba(216, 216, 232, 0.72);
         font-size: 12px;
         line-height: 1.4;
     }
 
-    .reset-password-badge {
-        position: absolute;
-        right: 12px;
-        bottom: 18px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 146px;
-        height: 52px;
-        border-radius: 30px;
-        border: 1px solid rgba(255, 123, 255, 0.58);
-        background: radial-gradient(circle at 72% 50%, rgba(184, 63, 255, 0.52), rgba(84, 14, 126, 0.1) 42%), linear-gradient(90deg, rgba(31, 15, 84, 0.98), rgba(80, 18, 117, 0.88));
-        box-shadow: 0 0 12px rgba(225, 44, 255, 0.42), inset 0 0 18px rgba(248, 120, 255, 0.18);
-        overflow: hidden;
+    #resetPasswordModal #resetPasswordScreen .reset-password-note i {
+        margin-top: 1px;
     }
 
-    .reset-password-badge::before {
-        content: "7/24\AONLINE";
-        white-space: pre;
-        position: absolute;
-        left: 22px;
-        top: 9px;
-        color: #ff31f7;
-        font-size: 14px;
-        font-weight: 800;
-        font-style: italic;
-        line-height: 1.04;
-        text-shadow: 0 0 12px rgba(255, 60, 247, 0.4);
-    }
-
-    .reset-password-badge::after {
-        content: "";
-        position: absolute;
-        right: -2px;
-        top: -4px;
-        width: 58px;
-        height: 58px;
-        border-radius: 50%;
-        background: radial-gradient(circle at 50% 50%, rgba(177, 40, 255, 0.95), rgba(83, 18, 120, 0.98));
-        box-shadow: 0 0 16px rgba(231, 80, 255, 0.45);
-    }
-
-    .reset-password-actions::before {
-        content: "i";
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        border: 1px solid rgba(216, 216, 232, 0.72);
-        font-size: 11px;
-        font-weight: 700;
-        flex-shrink: 0;
-    }
-
-    .reset-password-actions a {
+    #resetPasswordModal #resetPasswordScreen .reset-password-note a {
         color: rgba(216, 216, 232, 0.72);
         text-decoration: none;
-        border: 0 !important;
-        padding-bottom: 0;
-        font-size: 13px;
     }
 
-    .reset-password-actions a:hover {
-        color: rgba(232, 232, 242, 0.9);
+    #resetPasswordModal #resetPasswordScreen:not(.d-none) + .login-support {
+        display: none !important;
     }
 
     @media (max-width: 480px) {
         .reset-password-shell {
             min-height: 100dvh;
-            padding: 6px;
+            padding: 6px 0;
         }
 
-        .reset-password-shell .modal-dialog {
-            margin: 0 auto;
+        .reset-password-shell .modal-body {
+            padding: 16px 16px 20px;
         }
 
-        .reset-password-shell #resetPasswordModal.modal.show.d-block .modal-content {
-            width: calc(100vw - 24px) !important;
-            max-width: calc(100vw - 24px) !important;
+        body.mobile-site #resetPasswordModal .login-btn {
+            width: calc(100% - 14px) !important;
+            margin-left: 7px !important;
+            margin-right: 7px !important;
         }
 
-        .reset-password-close {
-            top: 7px;
-            right: 8px;
-            width: 22px;
-            height: 22px;
-            min-width: 22px;
-            min-height: 22px;
+        body.mobile-site #resetPasswordModal #resetPasswordScreen {
+            width: calc(100% - 14px) !important;
+            margin: 0 7px !important;
         }
 
-        .reset-password-title {
-            font-size: 14px;
-        }
-
-        .reset-password-hero {
-            height: 320px;
-        }
-
-        .reset-password-content {
-            padding: 18px 7px 102px;
-        }
-
-        #resetPasswordModal .form-control-input-bc,
-        #resetPasswordModal .login-btn,
-        #resetPasswordRequestSubmit,
-        #resetPasswordSubmit {
-            height: 52px !important;
-            min-height: 52px !important;
-        }
-
-        #resetPasswordModal .login-btn {
-            height: 36px !important;
-            min-height: 36px !important;
-            font-size: 12px !important;
-        }
-
-        .reset-password-shell #resetPasswordModal.modal.show.d-block .modal-content {
-            width: calc(100vw - 24px) !important;
-            max-width: calc(100vw - 24px) !important;
+        body.mobile-site #resetPasswordModal #resetPasswordScreen .login-forgot-heading {
+            padding: 10px 11px !important;
+            border-radius: 9px !important;
         }
     }
 </style>
 <section class="mainWrap reset-password-shell">
     <div class="modal show d-block" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordTitle" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content entrance-popup-bc sign-in">
+            <div class="modal-content entrance-popup-bc sign-in<?= $h($resetAuthSliderClass) ?>">
+                <?php
+                $authSliderScreen = 'login';
+                $authSliderItems = $resetAuthSliderItems;
+                include VIEW_PATH . '/partials/auth-slider-bg.php';
+                unset($authSliderScreen, $authSliderItems);
+                ?>
                 <div class="e-p-content-holder-bc">
                     <div class="e-p-content-bc">
                         <div class="modal-body e-p-body-bc">
-                            <div class="reset-password-modal login-modal-container">
-                                <div class="reset-password-hero" aria-hidden="true">
-                                    <span class="reset-password-brand">
-                                        <img src="<?= $h($resetBrandLogoUrl) ?>" alt="<?= $h($resetBrandText) ?>" class="reset-password-brand-logo">
-                                    </span>
-                                    <button type="button" class="reset-password-close" id="resetPasswordClose" aria-label="Kapat"></button>
+                            <div class="login-modal-container reset-password-modal">
+                                <div class="login-modal-header e-p-header-bc">
+                                    <div class="login-logo">
+                                        <img src="<?= $h($resetLogoUrl) ?>" alt="<?= $h($resetSiteName) ?>" class="login-logo-img">
+                                    </div>
+                                    <div class="login-header-actions e-p-sections-bc">
+                                        <button type="button" class="login-close e-p-close-icon-bc" id="resetPasswordClose" aria-label="Kapat">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div class="reset-password-content">
-                                    <div class="login-text-block">
-                                    <p class="reset-password-subtitle">Şifre sıfırlama</p>
-                                    <h1 class="login-main-title reset-password-title" id="resetPasswordTitle"><?= $h($hasToken ? $resetTitleConfirm : $resetTitleRequest) ?></h1>
-                                    <p class="reset-password-lead"><?= $h($resetLeadText) ?></p>
+                                <div id="resetPasswordScreen">
+                                    <?php if (!$hasToken): ?>
+                                        <div class="login-text-block login-forgot-heading">
+                                            <p class="login-top-text">Şifrenizi mi unuttunuz?</p>
+                                            <h1 class="login-main-title login-forgot-title" id="resetPasswordTitle"><?= $h('E-posta doğrulama') ?></h1>
+                                            <p class="login-forgot-hint"><?= $h('E-posta adresinizi girin. Hesabınız varsa doğrulama kodunu hemen gönderelim.') ?></p>
+                                        </div>
+                                        <form method="post" action="#" novalidate class="login-form" id="resetPasswordRequestForm">
+                                            <div class="form-group entrance-f-item-bc">
+                                                <label class="form-control-label-bc inputs">
+                                                    <input type="email" class="form-control-input-bc" name="email" id="resetPasswordEmail" value="" required autocomplete="email">
+                                                    <i class="form-control-input-stroke-bc"></i>
+                                                    <span class="form-control-title-bc ellipsis">E-posta *</span>
+                                                </label>
+                                                <div class="login-error-text" data-error-for="email">Bu alan gerekli</div>
+                                            </div>
+                                            <div class="login-error-box login-ajax-alert d-none" id="resetPasswordRequestAlert" role="alert"></div>
+                                            <div class="login-success-box d-none" id="resetPasswordRequestSuccess" role="status"></div>
+                                            <button type="submit" class="login-btn" id="resetPasswordRequestSubmit">
+                                                <span class="btn-text">SIFIRLA</span>
+                                                <span class="loading" style="display: none;"></span>
+                                            </button>
+                                            <div class="reset-password-note">
+                                                <i class="bc-i-player-info" aria-hidden="true"></i>
+                                                <a href="#"><?= $h('Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.') ?></a>
+                                            </div>
+                                        </form>
+                                    <?php else: ?>
+                                        <div class="login-text-block login-forgot-heading">
+                                            <p class="login-top-text">Yeni şifrenizi belirleyin</p>
+                                            <h1 class="login-main-title login-forgot-title" id="resetPasswordTitle"><?= $h('Yeni şifre oluştur') ?></h1>
+                                            <p class="login-forgot-hint"><?= $h('Yeni şifrenizi girin ve onaylayın.') ?></p>
+                                        </div>
+                                        <form method="post" action="#" novalidate class="login-form" id="resetPasswordForm">
+                                            <input type="hidden" id="resetPasswordToken" value="<?= $h($resetToken) ?>">
+                                            <div class="form-group entrance-f-item-bc">
+                                                <label class="form-control-label-bc inputs">
+                                                    <input type="password" class="form-control-input-bc password-input" name="password" id="resetPasswordNew" required autocomplete="new-password" minlength="1">
+                                                    <i class="form-control-input-stroke-bc"></i>
+                                                    <span class="form-control-title-bc ellipsis">Yeni şifre *</span>
+                                                </label>
+                                                <div class="login-error-text" data-error-for="password">Bu alan gerekli</div>
+                                            </div>
+                                            <div class="form-group entrance-f-item-bc">
+                                                <label class="form-control-label-bc inputs">
+                                                    <input type="password" class="form-control-input-bc password-input" name="password_confirmation" id="resetPasswordConfirm" required autocomplete="new-password" minlength="1">
+                                                    <i class="form-control-input-stroke-bc"></i>
+                                                    <span class="form-control-title-bc ellipsis">Yeni şifre tekrarı *</span>
+                                                </label>
+                                                <div class="login-error-text" data-error-for="password_confirmation">Bu alan gerekli</div>
+                                            </div>
+                                            <div class="login-error-box login-ajax-alert d-none" id="resetPasswordAjaxAlert" role="alert"></div>
+                                            <div class="login-success-box d-none" id="resetPasswordSuccess" role="status"></div>
+                                            <button type="submit" class="login-btn" id="resetPasswordSubmit">
+                                                <span class="btn-text">SIFIRLA</span>
+                                                <span class="loading" style="display: none;"></span>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
 
-                                <form method="post" action="#" class="login-form entrance-form-bc sign-in popup<?= $hasToken ? ' d-none' : '' ?>" id="resetPasswordRequestForm" novalidate>
-                                    <div class="form-group entrance-f-item-bc">
-                                        <label class="form-control-label-bc inputs">
-                                            <input type="email" class="form-control-input-bc" name="email" id="resetPasswordEmail" required autocomplete="email">
-                                            <i class="form-control-input-stroke-bc"></i>
-                                            <span class="form-control-title-bc ellipsis">E-posta *</span>
-                                        </label>
-                                        <div class="login-error-text" data-error-for="email">Bu alan gerekli</div>
-                                    </div>
-
-                                    <div class="login-error-box login-ajax-alert d-none" id="resetPasswordRequestAlert" role="alert"></div>
-                                    <div class="login-success-box d-none" id="resetPasswordRequestSuccess" role="status"></div>
-
-                                    <button type="submit" class="login-btn" id="resetPasswordRequestSubmit">
-                                        <span class="btn-text"><?= $h($resetButtonText) ?></span>
-                                        <span class="loading" style="display: none;"></span>
-                                    </button>
-                                </form>
-
-                                <form method="post" action="#" class="login-form entrance-form-bc sign-in popup<?= $hasToken ? '' : ' d-none' ?>" id="resetPasswordForm" novalidate>
-                                    <input type="hidden" id="resetPasswordToken" value="<?= htmlspecialchars($resetToken, ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="form-group entrance-f-item-bc">
-                                        <label class="form-control-label-bc inputs">
-                                            <input type="password" class="form-control-input-bc password-input" name="password" id="resetPasswordNew" required autocomplete="new-password" minlength="1">
-                                            <i class="form-control-input-stroke-bc"></i>
-                                            <span class="form-control-title-bc ellipsis">Yeni şifre *</span>
-                                        </label>
-                                        <div class="login-error-text" data-error-for="password">Bu alan gerekli</div>
-                                    </div>
-
-                                    <div class="form-group entrance-f-item-bc">
-                                        <label class="form-control-label-bc inputs">
-                                            <input type="password" class="form-control-input-bc password-input" name="password_confirmation" id="resetPasswordConfirm" required autocomplete="new-password" minlength="1">
-                                            <i class="form-control-input-stroke-bc"></i>
-                                            <span class="form-control-title-bc ellipsis">Yeni şifre tekrarı *</span>
-                                        </label>
-                                        <div class="login-error-text" data-error-for="password_confirmation">Bu alan gerekli</div>
-                                    </div>
-
-                                    <div class="login-error-box login-ajax-alert d-none" id="resetPasswordAjaxAlert" role="alert"></div>
-                                    <div class="login-success-box d-none" id="resetPasswordSuccess" role="status"></div>
-
-                                    <button type="submit" class="login-btn" id="resetPasswordSubmit">
-                                        <span class="btn-text"><?= $h($resetButtonText) ?></span>
-                                        <span class="loading" style="display: none;"></span>
-                                    </button>
-                                </form>
-
-                                <div class="reset-password-actions">
-                                    <a href="/"><?= $h($resetInfoText) ?></a>
-                                </div>
-                                <div class="reset-password-badge" aria-hidden="true"></div>
+                                <div class="login-support reg-form-footer-bc">
+                                    <a href="<?= $h($resetSupportUrl) ?>" target="_blank" class="live-chat-adviser-bc">
+                                        <i class="bc-i-live-chat" aria-hidden="true"></i>
+                                        <span>CANLI DESTEK İLE İLETİŞİME GEÇİN</span>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -522,61 +334,15 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     </div>
 </section>
 <script>
-window.__RESET_PASSWORD_THEME__ = {
-    heroImageUrl: <?= json_encode($resetHeroImageUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    brandLogoUrl: <?= json_encode($resetBrandLogoUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    brandText: <?= json_encode($resetBrandText, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    titleRequest: <?= json_encode($resetTitleRequest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    titleConfirm: <?= json_encode($resetTitleConfirm, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    buttonText: <?= json_encode($resetButtonText, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    leadText: <?= json_encode($resetLeadText, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    infoText: <?= json_encode($resetInfoText, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    modalBg: <?= json_encode($resetModalBg, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    heroTopBorderColor: <?= json_encode($resetHeroTopBorderColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    heroBottomBorderColor: <?= json_encode($resetHeroBottomBorderColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    inputBorderColor: <?= json_encode($resetInputBorderColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
-    buttonTextColor: <?= json_encode($resetButtonTextColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
-};
-
-(function () {
-    function applyExactResetReference() {
-        var theme = window.__RESET_PASSWORD_THEME__ || {};
-        var modal = document.querySelector('.reset-password-modal');
-        if (!modal) return;
-
-        var brand = modal.querySelector('.reset-password-brand');
-        if (brand && !brand.querySelector('img') && theme.brandLogoUrl) {
-            brand.innerHTML = '<img src="' + String(theme.brandLogoUrl).replace(/"/g, '&quot;') + '" alt="' + String(theme.brandText || '').replace(/"/g, '&quot;') + '" class="reset-password-brand-logo">';
-        }
-
-        if (!modal.querySelector('.reset-password-badge')) {
-            var badge = document.createElement('div');
-            badge.className = 'reset-password-badge';
-            badge.setAttribute('aria-hidden', 'true');
-            modal.appendChild(badge);
-        }
-
-        var button = document.getElementById('resetPasswordRequestSubmit');
-        if (button) {
-            button.style.height = '36px';
-            button.style.minHeight = '36px';
-            button.style.fontSize = '12px';
-            button.style.background = 'rgba(255,255,255,.1)';
-            button.style.color = 'rgba(255,255,255,.3)';
-            button.style.border = '1px solid rgba(255,255,255,.06)';
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', applyExactResetReference);
-    } else {
-        applyExactResetReference();
-    }
-})();
-</script>
-<script>
 document.addEventListener('DOMContentLoaded', function () {
     document.body.classList.add('reset-password-standalone');
+
+    var noteLink = document.querySelector('#resetPasswordScreen .reset-password-note a');
+    if (noteLink) {
+        noteLink.addEventListener('click', function (e) {
+            e.preventDefault();
+        });
+    }
 
     function closeResetModal() {
         if (window.history.length > 1) {
