@@ -601,8 +601,8 @@
     }
 
     #login2 .login-close {
-        position: fixed !important;
-        top: max(8px, env(safe-area-inset-top, 0px)) !important;
+        position: absolute !important;
+        top: 8px !important;
         right: 8px !important;
         width: 26px !important;
         height: 26px !important;
@@ -638,18 +638,21 @@
         display: none !important;
     }
 
-    /* Forgot-password screen: fill modal height and vertically center content over
-       the background image (login form uses a spacer; forgot screen must do the same
-       via flex centering so it does not collapse to the top and overlap the header). */
+    /* Forgot-password screen: keep hero image area on top and pin form block to bottom. */
     #login2 #forgotPasswordScreen:not(.d-none) {
         flex: 1 1 auto !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: center !important;
+        justify-content: flex-end !important;
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 0 22px !important;
+        min-height: 100% !important;
+        padding: 0 22px 22px !important;
+    }
+
+    #login2 #forgotPasswordScreen .login-forgot-heading {
+        display: none !important;
     }
 
     #login2 #forgotPasswordScreen .login-forgot-heading,
