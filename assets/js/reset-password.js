@@ -93,7 +93,7 @@
             infoLink.addEventListener('click', function (e) { e.preventDefault(); });
         }
 
-        var hero = modal.querySelector('.reset-ref-hero');
+        var hero = modal.querySelector('.reset-password-hero, .reset-ref-hero');
         if (!hero) {
             hero = document.createElement('div');
             hero.className = 'reset-ref-hero';
