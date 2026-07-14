@@ -84,8 +84,9 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     #resetPasswordModal .auth-slider-bg__image {
         width: 100% !important;
         height: 100% !important;
-        object-fit: cover !important;
+        object-fit: contain !important;
         object-position: center top !important;
+        background: #15063f !important;
     }
 
     #resetPasswordModal .e-p-content-holder-bc {
@@ -116,9 +117,7 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     }
 
     #resetPasswordModal .login-logo {
-        width: 100% !important;
-        justify-content: center !important;
-        display: flex !important;
+        display: none !important;
     }
 
     #resetPasswordModal .login-header-actions {
@@ -179,16 +178,15 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         max-width: 520px !important;
         margin-left: auto !important;
         margin-right: auto !important;
-        padding-top: 0 !important;
+        padding-top: 8px !important;
     }
 
     #resetPasswordModal #resetPasswordScreen .login-forgot-heading {
-        display: none !important;
-        margin: 0 0 12px !important;
-        padding: 12px 14px !important;
-        border-radius: 10px !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015)) !important;
+        margin: 0 0 10px !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
     }
 
     #resetPasswordModal #resetPasswordScreen .login-top-text {
@@ -241,6 +239,29 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         height: 36px !important;
         min-height: 36px !important;
         font-size: 12px !important;
+        border-radius: 4px !important;
+        background: rgba(111, 122, 176, 0.24) !important;
+        border: 1px solid rgba(146, 156, 201, 0.16) !important;
+        color: rgba(210, 214, 235, 0.8) !important;
+        box-shadow: none !important;
+        letter-spacing: 0.02em !important;
+        text-transform: uppercase !important;
+    }
+
+    #resetPasswordModal #resetPasswordScreen .form-control-input-bc {
+        height: 48px !important;
+        min-height: 48px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(236, 70, 170, 0.9) !important;
+        background: rgba(83, 67, 122, 0.42) !important;
+        color: #f7f4ff !important;
+        padding-left: 12px !important;
+        font-size: 14px !important;
+    }
+
+    #resetPasswordModal #resetPasswordScreen .form-control-input-bc:focus {
+        border-color: rgba(236, 70, 170, 1) !important;
+        box-shadow: none !important;
     }
 
     #resetPasswordModal #resetPasswordScreen .login-error-text {
@@ -254,6 +275,7 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         color: rgba(216, 216, 232, 0.72);
         font-size: 12px;
         line-height: 1.4;
+        margin-top: 2px;
     }
 
     #resetPasswordModal #resetPasswordScreen .reset-password-note i {
@@ -266,10 +288,6 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     }
 
     #resetPasswordModal #resetPasswordScreen:not(.d-none) + .login-support {
-        display: none !important;
-    }
-
-    #resetPasswordModal .login-support {
         display: none !important;
     }
 
@@ -303,8 +321,8 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         }
 
         body.mobile-site #resetPasswordModal #resetPasswordScreen .login-forgot-heading {
-            padding: 10px 11px !important;
-            border-radius: 9px !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
         }
     }
 </style>
