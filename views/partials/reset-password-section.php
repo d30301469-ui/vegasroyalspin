@@ -179,10 +179,11 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         max-width: 520px !important;
         margin-left: auto !important;
         margin-right: auto !important;
-        padding-top: 14px !important;
+        padding-top: 0 !important;
     }
 
     #resetPasswordModal #resetPasswordScreen .login-forgot-heading {
+        display: none !important;
         margin: 0 0 12px !important;
         padding: 12px 14px !important;
         border-radius: 10px !important;
@@ -265,6 +266,10 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     }
 
     #resetPasswordModal #resetPasswordScreen:not(.d-none) + .login-support {
+        display: none !important;
+    }
+
+    #resetPasswordModal .login-support {
         display: none !important;
     }
 
