@@ -13,6 +13,22 @@ $mobileFooterLinkHref = static function (array $link): string {
     }
     return $href;
 };
+$activeLang = strtolower((string) ($_GET['lang'] ?? 'tr'));
+if (!in_array($activeLang, ['tr', 'en', 'de'], true)) {
+  $activeLang = 'tr';
+}
+$footerLangCodeMap = [
+  'tr' => 'TUR',
+  'en' => 'ENG',
+  'de' => 'DEU',
+];
+$footerLangFlagMap = [
+  'tr' => '/assets/images/flag/tr.svg',
+  'en' => '/assets/images/flag/gb.svg',
+  'de' => '/assets/images/flag/de.svg',
+];
+$footerCurrentCode = $footerLangCodeMap[$activeLang] ?? 'TUR';
+$footerCurrentFlag = $footerLangFlagMap[$activeLang] ?? '/assets/images/flag/tr.svg';
 ?>
 <footer class="mobile-footer-bc" aria-label="Site footer">
   <div class="mobile-footer-bc__top">
@@ -41,11 +57,33 @@ $mobileFooterLinkHref = static function (array $link): string {
 
     <div class="mobile-footer-bc__meta">
       <div class="mobile-footer-bc__clock" id="footerClockWidget" aria-live="polite">00:00:00</div>
-      <button type="button" class="mobile-footer-bc__language" aria-label="Dil: Türkçe">
-        <img src="<?= htmlspecialchars($footerFlagImage, ENT_QUOTES, 'UTF-8') ?>" alt="" width="20" height="14">
-        <span>TUR</span>
-        <i class="bc-i-small-arrow-right" aria-hidden="true"></i>
-      </button>
+      <div class="mobile-footer-bc__language-dropdown footerLanguageDropdown">
+        <button type="button" class="mobile-footer-bc__language footerLanguageTrigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Dil seçimi">
+          <img src="<?= htmlspecialchars($footerCurrentFlag, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($footerCurrentCode, ENT_QUOTES, 'UTF-8') ?>" width="20" height="14" class="footerLanguageFlag">
+          <span class="footerLanguageCode"><?= htmlspecialchars($footerCurrentCode, ENT_QUOTES, 'UTF-8') ?></span>
+          <i class="bc-i-small-arrow-right footerLanguageChevron" aria-hidden="true"></i>
+        </button>
+        <ul class="footerLanguageMenu" role="listbox" hidden>
+          <li>
+            <a class="footerLanguageOption<?= $activeLang === 'tr' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'tr' ? 'true' : 'false' ?>" data-lang="tr" href="?lang=tr">
+              <span class="flag-icon flag-icon-tr" aria-hidden="true"></span>
+              <span class="code">TUR</span>
+            </a>
+          </li>
+          <li>
+            <a class="footerLanguageOption<?= $activeLang === 'en' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'en' ? 'true' : 'false' ?>" data-lang="en" href="?lang=en">
+              <span class="flag-icon flag-icon-us" aria-hidden="true"></span>
+              <span class="code">ENG</span>
+            </a>
+          </li>
+          <li>
+            <a class="footerLanguageOption<?= $activeLang === 'de' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'de' ? 'true' : 'false' ?>" data-lang="de" href="?lang=de">
+              <span class="flag-icon flag-icon-de" aria-hidden="true"></span>
+              <span class="code">DEU</span>
+            </a>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 
