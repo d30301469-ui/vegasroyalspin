@@ -63,10 +63,13 @@
             slider.style.height = '320px';
             slider.style.zIndex = '0';
         }
-        if (sliderImage) {
-            sliderImage.style.objectFit = 'contain';
-            sliderImage.style.objectPosition = 'center top';
-            sliderImage.style.background = '#15063f';
+        if (slider && sliderImage && sliderImage.getAttribute('src')) {
+            slider.style.backgroundImage = 'url("' + sliderImage.getAttribute('src').replace(/"/g, '\\"') + '")';
+            slider.style.backgroundRepeat = 'no-repeat';
+            slider.style.backgroundPosition = 'center top';
+            slider.style.backgroundSize = 'contain';
+            slider.style.backgroundColor = '#15063f';
+            sliderImage.style.opacity = '0';
         }
         if (holder) {
             holder.style.position = 'relative';
