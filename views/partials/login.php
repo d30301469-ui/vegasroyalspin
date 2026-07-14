@@ -432,6 +432,28 @@ if (class_exists('ApiMediaUrl', false)) {
     </div>
 </div>
 <script>
+window.__disableForgotToast = window.__disableForgotToast || function () {
+    try {
+        if (!window.MaltabetToast) return;
+        if (!window.__forgotToastBackup) {
+            window.__forgotToastBackup = {
+                error: window.MaltabetToast.error,
+                success: window.MaltabetToast.success
+            };
+        }
+        window.MaltabetToast.error = function () {};
+        window.MaltabetToast.success = function () {};
+    } catch (e) {}
+};
+
+window.__restoreForgotToast = window.__restoreForgotToast || function () {
+    try {
+        if (!window.MaltabetToast || !window.__forgotToastBackup) return;
+        window.MaltabetToast.error = window.__forgotToastBackup.error;
+        window.MaltabetToast.success = window.__forgotToastBackup.success;
+    } catch (e) {}
+};
+
 window.__openForgotPasswordInline = window.__openForgotPasswordInline || function (el) {
     try {
         var root = (el && el.closest) ? el.closest('#login2') : document.getElementById('login2');
@@ -441,6 +463,7 @@ window.__openForgotPasswordInline = window.__openForgotPasswordInline || functio
         var isMobile = document.body && document.body.classList.contains('mobile-site');
         if (main) main.classList.add('d-none');
         if (forgot) forgot.classList.remove('d-none');
+        window.__disableForgotToast();
         if (isMobile && forgot) {
             forgot.style.justifyContent = 'flex-start';
             forgot.style.paddingTop = 'clamp(330px, 46vh, 410px)';
@@ -464,6 +487,7 @@ window.__backToLoginInline = window.__backToLoginInline || function (el) {
         var forgotForm = forgot ? forgot.querySelector('#forgotPasswordForm') : null;
         if (forgot) forgot.classList.add('d-none');
         if (main) main.classList.remove('d-none');
+        window.__restoreForgotToast();
         if (forgot) {
             forgot.style.justifyContent = '';
             forgot.style.paddingTop = '';
