@@ -60,6 +60,8 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
 
     #resetPasswordModal .e-p-close-icon-bc {
         cursor: pointer;
+        left: auto;
+        right: 11px;
     }
 
     #resetPasswordModal .e-p-body-bc {
