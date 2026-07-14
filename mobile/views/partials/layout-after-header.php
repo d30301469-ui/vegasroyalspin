@@ -9,6 +9,12 @@
 <?php include VIEW_PATH . '/partials/register.php'; ?>
 <?php include VIEW_PATH . '/partials/login.php'; ?>
 <?php include VIEW_PATH . '/partials/member-api-layout-script.php'; ?>
+<?php
+$mobileLoginJsPath = BASE_PATH . '/assets/js/login.js';
+$mobileLoginJsVer = (string) ((is_file($mobileLoginJsPath) ? filemtime($mobileLoginJsPath) : '1') . '-' . (is_file($mobileLoginJsPath) ? filesize($mobileLoginJsPath) : '0'));
+$mobileRegisterJsPath = BASE_PATH . '/assets/js/register.js';
+$mobileRegisterJsVer = (string) ((is_file($mobileRegisterJsPath) ? filemtime($mobileRegisterJsPath) : '1') . '-' . (is_file($mobileRegisterJsPath) ? filesize($mobileRegisterJsPath) : '0'));
+?>
 <script src="<?= htmlspecialchars(asset_url('assets/js/global.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/modal-polyfill.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
@@ -24,8 +30,8 @@
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile-bonus.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile-kyc.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/login.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/register.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="/assets/js/login.js?v=<?= rawurlencode($mobileLoginJsVer) ?>"></script>
+<script src="/assets/js/register.js?v=<?= rawurlencode($mobileRegisterJsVer) ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/mobile-right-sheet.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/footer.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/footer-bc.js'), ENT_QUOTES, 'UTF-8') ?>"></script>

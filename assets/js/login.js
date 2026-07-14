@@ -255,6 +255,7 @@
         var forgotForm = forg ? forg.querySelector('.login-form') : null;
         var forgotSubmit = forg ? forg.querySelector('#forgotPasswordSubmit') : null;
         var forgotNote = forg ? forg.querySelector('.login-forgot-note') : null;
+        var isMobileSite = !!(document.body && document.body.classList.contains('mobile-site'));
         if (hdr) {
             hdr.classList.add('d-none');
         }
@@ -265,9 +266,15 @@
             forg.classList.remove('d-none');
         }
         if (forgotForm) {
-            forgotForm.style.flex = '0 0 auto';
-            forgotForm.style.marginTop = 'auto';
-            forgotForm.style.justifyContent = 'flex-end';
+            if (isMobileSite) {
+                forgotForm.style.flex = '';
+                forgotForm.style.marginTop = '';
+                forgotForm.style.justifyContent = '';
+            } else {
+                forgotForm.style.flex = '0 0 auto';
+                forgotForm.style.marginTop = 'auto';
+                forgotForm.style.justifyContent = 'flex-end';
+            }
         }
         if (forgotForm && forgotSubmit && forgotNote) {
             var submitNext = forgotSubmit.nextElementSibling;
