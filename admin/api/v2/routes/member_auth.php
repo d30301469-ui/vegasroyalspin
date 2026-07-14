@@ -173,63 +173,90 @@ if (!function_exists('memberSendResetMail')) {
             $port = 587;
         }
 
-        // Try the expected transport first, then a plain SMTP fallback.
-        $strategies = [];
-        if ($port === 465) {
-            $strategies[] = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-            $strategies[] = '';
-        } else {
-            $strategies[] = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-            $strategies[] = '';
+        $ports = [$port];
+        foreach ([465, 587, 2525] as $candidatePort) {
+            if (!in_array($candidatePort, $ports, true)) {
+                $ports[] = $candidatePort;
+            }
         }
 
         $lastError = 'smtp_send_failed';
-        foreach (array_values(array_unique($strategies)) as $secureMode) {
-            foreach ([false, true] as $allowSelfSigned) {
-            try {
-                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-                $mail->CharSet = 'UTF-8';
-                $mail->isSMTP();
-                $mail->Host = preg_replace('/^(ssl|tls):\/\//i', '', $host) ?: $host;
-                $mail->Port = $port;
-                $mail->Timeout = 15;
-                $mail->SMTPAutoTLS = true;
+        foreach ($ports as $tryPort) {
+            // Try the expected transport first, then a plain SMTP fallback.
+            $strategies = $tryPort === 465
+                ? [\PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS, '']
+                : [\PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS, ''];
 
-                $mail->SMTPAuth = $user !== '';
-                if ($mail->SMTPAuth) {
-                    $mail->Username = $user;
-                    $mail->Password = $pass;
+            foreach (array_values(array_unique($strategies)) as $secureMode) {
+                foreach ([false, true] as $allowSelfSigned) {
+                    try {
+                        $debugLines = [];
+                        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+                        $mail->CharSet = 'UTF-8';
+                        $mail->isSMTP();
+                        $mail->Host = preg_replace('/^(ssl|tls):\/\//i', '', $host) ?: $host;
+                        $mail->Port = $tryPort;
+                        $mail->Timeout = 20;
+                        $mail->SMTPAutoTLS = true;
+                        $mail->SMTPDebug = 2;
+                        $mail->Debugoutput = static function (string $line) use (&$debugLines): void {
+                            if (count($debugLines) < 25) {
+                                $debugLines[] = trim($line);
+                            }
+                        };
+
+                        $mail->SMTPAuth = $user !== '';
+                        if ($mail->SMTPAuth) {
+                            $mail->AuthType = 'LOGIN';
+                            $mail->Username = $user;
+                            $mail->Password = $pass;
+                        }
+
+                        $mail->SMTPSecure = $secureMode;
+                        if ($secureMode === '') {
+                            $mail->SMTPAutoTLS = false;
+                        }
+
+                        if ($allowSelfSigned) {
+                            $mail->SMTPOptions = [
+                                'ssl' => [
+                                    'verify_peer' => false,
+                                    'verify_peer_name' => false,
+                                    'allow_self_signed' => true,
+                                ],
+                            ];
+                        }
+
+                        $mail->setFrom($from, 'VegasRoyalSpin');
+                        $mail->addAddress($toEmail);
+                        $mail->Subject = $subject;
+                        $mail->Body = $messageText;
+                        $mail->AltBody = $messageText;
+
+                        if ($mail->send()) {
+                            return true;
+                        }
+
+                        $info = trim((string) $mail->ErrorInfo);
+                        $tail = trim(implode(' | ', array_filter($debugLines)));
+                        $lastError = sprintf(
+                            'smtp_send_failed(port=%d,secure=%s,self_signed=%s)%s%s',
+                            $tryPort,
+                            $secureMode !== '' ? $secureMode : 'none',
+                            $allowSelfSigned ? '1' : '0',
+                            $info !== '' ? ' ' . $info : '',
+                            $tail !== '' ? ' :: ' . $tail : ''
+                        );
+                    } catch (Throwable $exception) {
+                        $lastError = sprintf(
+                            'smtp_exception(port=%d,secure=%s,self_signed=%s) %s',
+                            $tryPort,
+                            $secureMode !== '' ? $secureMode : 'none',
+                            $allowSelfSigned ? '1' : '0',
+                            trim($exception->getMessage()) !== '' ? trim($exception->getMessage()) : 'smtp_send_failed'
+                        );
+                    }
                 }
-
-                $mail->SMTPSecure = $secureMode;
-                if ($secureMode === '') {
-                    $mail->SMTPAutoTLS = false;
-                }
-
-                if ($allowSelfSigned) {
-                    $mail->SMTPOptions = [
-                        'ssl' => [
-                            'verify_peer' => false,
-                            'verify_peer_name' => false,
-                            'allow_self_signed' => true,
-                        ],
-                    ];
-                }
-
-                $mail->setFrom($from, 'VegasRoyalSpin');
-                $mail->addAddress($toEmail);
-                $mail->Subject = $subject;
-                $mail->Body = $messageText;
-                $mail->AltBody = $messageText;
-
-                if ($mail->send()) {
-                    return true;
-                }
-
-                $lastError = trim((string) $mail->ErrorInfo) !== '' ? trim((string) $mail->ErrorInfo) : 'smtp_send_failed';
-            } catch (Throwable $exception) {
-                $lastError = trim($exception->getMessage()) !== '' ? trim($exception->getMessage()) : 'smtp_send_failed';
-            }
             }
         }
 
