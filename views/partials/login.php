@@ -400,6 +400,10 @@ if (class_exists('ApiMediaUrl', false)) {
                                     <div class="login-forgot login-back-row">
                                         <a href="#" id="backToLoginFromForgot" onclick="return window.__backToLoginInline ? window.__backToLoginInline(this) : false;">Girişe dön</a>
                                     </div>
+                                    <div class="login-forgot-note" role="note">
+                                        <i class="bc-i-player-info" aria-hidden="true"></i>
+                                        <span>Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.</span>
+                                    </div>
                                 </form>
                             </div>
 
