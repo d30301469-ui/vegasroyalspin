@@ -92,6 +92,13 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         overflow: visible;
     }
 
+    #resetPasswordModal .entrance-form-bc.popup {
+        position: static;
+        height: auto;
+        overflow: visible;
+        display: block;
+    }
+
     #resetPasswordModal .e-p-close-icon-bc {
         cursor: pointer;
         left: auto;
