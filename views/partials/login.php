@@ -254,13 +254,13 @@ if (class_exists('ApiMediaUrl', false)) {
                     width: calc(100% - 24px) !important;
                     max-width: none !important;
                     margin: 0 12px !important;
-                    padding-top: clamp(340px, 48vh, 430px) !important;
+                    padding-top: 390px !important;
                     padding-bottom: 12px !important;
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen .login-form {
                     flex: 0 0 auto !important;
-                    margin-top: 16px !important;
+                    margin-top: 18px !important;
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen .login-forgot-title {
