@@ -240,6 +240,11 @@
         }
         if (forg) {
             forg.classList.add('d-none');
+            forg.style.justifyContent = '';
+            forg.style.paddingTop = '';
+            forg.style.paddingBottom = '';
+            forg.style.width = '';
+            forg.style.margin = '';
         }
         if (forgotForm) {
             forgotForm.style.flex = '';
@@ -267,8 +272,15 @@
         }
         if (forgotForm) {
             if (isMobileSite) {
-                forgotForm.style.flex = '';
-                forgotForm.style.marginTop = '';
+                if (forg) {
+                    forg.style.justifyContent = 'flex-start';
+                    forg.style.paddingTop = 'clamp(250px, 37vh, 320px)';
+                    forg.style.paddingBottom = '12px';
+                    forg.style.width = 'calc(100% - 24px)';
+                    forg.style.margin = '0 12px';
+                }
+                forgotForm.style.flex = '0 0 auto';
+                forgotForm.style.marginTop = '8px';
                 forgotForm.style.justifyContent = '';
             } else {
                 forgotForm.style.flex = '0 0 auto';
