@@ -638,6 +638,28 @@
         display: none !important;
     }
 
+    /* Forgot-password screen: fill modal height and vertically center content over
+       the background image (login form uses a spacer; forgot screen must do the same
+       via flex centering so it does not collapse to the top and overlap the header). */
+    #login2 #forgotPasswordScreen:not(.d-none) {
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 22px !important;
+    }
+
+    #login2 #forgotPasswordScreen .login-forgot-heading,
+    #login2 #forgotPasswordScreen .login-form {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
     #login2 .login-form {
         flex: 1 !important;
         display: flex !important;
