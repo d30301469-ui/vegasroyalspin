@@ -79,14 +79,16 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     #resetPasswordModal .auth-slider-bg__slide {
         position: absolute !important;
         inset: 0 !important;
+        background-repeat: no-repeat !important;
+        background-position: center top !important;
+        background-size: contain !important;
+        background-color: #15063f !important;
     }
 
     #resetPasswordModal .auth-slider-bg__image {
         width: 100% !important;
         height: 100% !important;
-        object-fit: contain !important;
-        object-position: center top !important;
-        background: #15063f !important;
+        opacity: 0 !important;
     }
 
     #resetPasswordModal .e-p-content-holder-bc {
@@ -431,13 +433,15 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.classList.add('reset-password-standalone');
 
     function forceHeroContainFit() {
+        var sliderSlide = document.querySelector('#resetPasswordModal .auth-slider-bg__slide');
         var sliderImage = document.querySelector('#resetPasswordModal .auth-slider-bg__image');
         if (!sliderImage) {
             return;
         }
-        sliderImage.style.setProperty('object-fit', 'contain', 'important');
-        sliderImage.style.setProperty('object-position', 'center top', 'important');
-        sliderImage.style.setProperty('background', '#15063f', 'important');
+        if (sliderSlide && sliderImage.getAttribute('src')) {
+            sliderSlide.style.setProperty('background-image', 'url("' + sliderImage.getAttribute('src').replace(/"/g, '\\"') + '")', 'important');
+        }
+        sliderImage.style.setProperty('opacity', '0', 'important');
     }
     forceHeroContainFit();
     window.setTimeout(forceHeroContainFit, 300);
