@@ -231,7 +231,7 @@
                         if (data && data.success) {
                             var okMsg =
                                 (typeof data.message === 'string' && data.message.trim()) ||
-                                'Eğer e-posta sistemde kayıtlıysa doğrulama kodu veya sıfırlama bağlantısı gönderilecektir.';
+                                'Eğer e-posta sistemde kayıtlıysa şifre sıfırlama bağlantısı gönderilecektir.';
                             showSuccess(requestSuccessEl, okMsg);
                             requestForm.reset();
                             if (BetcoInputs) {

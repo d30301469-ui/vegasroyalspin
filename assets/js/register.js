@@ -173,6 +173,94 @@
         });
     }
 
+    function applyMobileRegisterHeaderFix(registerModal) {
+        if (!registerModal || !document.body || !document.body.classList.contains('mobile-site')) return;
+
+        var topBar = registerModal.querySelector('.register-modal-top-bar');
+        var logo = registerModal.querySelector('.register-logo');
+        var logoImg = registerModal.querySelector('.register-logo-img');
+        var topRight = registerModal.querySelector('.register-top-right');
+        var loginBtn = registerModal.querySelector('.register-modal-login-link');
+        var closeBtn = registerModal.querySelector('.register-modal-close');
+        var closeIcon = closeBtn ? closeBtn.querySelector('span') : null;
+
+        if (topBar) {
+            topBar.style.display = 'flex';
+            topBar.style.alignItems = 'center';
+            topBar.style.justifyContent = 'space-between';
+            topBar.style.gap = '8px';
+            topBar.style.width = '100%';
+        }
+
+        if (logo) {
+            logo.style.display = 'flex';
+            logo.style.alignItems = 'center';
+            logo.style.flex = '1 1 auto';
+            logo.style.minWidth = '0';
+        }
+
+        if (logoImg) {
+            logoImg.style.display = 'block';
+            logoImg.style.width = 'auto';
+            logoImg.style.height = '28px';
+            logoImg.style.maxWidth = '122px';
+            logoImg.style.objectFit = 'contain';
+        }
+
+        if (topRight) {
+            topRight.style.display = 'flex';
+            topRight.style.alignItems = 'center';
+            topRight.style.justifyContent = 'flex-end';
+            topRight.style.gap = '8px';
+            topRight.style.flex = '0 0 auto';
+        }
+
+        if (loginBtn) {
+            loginBtn.style.display = 'inline-flex';
+            loginBtn.style.alignItems = 'center';
+            loginBtn.style.justifyContent = 'center';
+            loginBtn.style.minWidth = '56px';
+            loginBtn.style.height = '32px';
+            loginBtn.style.padding = '0 12px';
+            loginBtn.style.borderRadius = '8px';
+            loginBtn.style.background = 'rgba(255, 255, 255, 0.04)';
+            loginBtn.style.border = '1px solid rgba(255, 255, 255, 0.16)';
+            loginBtn.style.color = '#fff';
+            loginBtn.style.fontSize = '12px';
+            loginBtn.style.lineHeight = '1';
+            loginBtn.style.fontWeight = '700';
+            loginBtn.style.textTransform = 'uppercase';
+            loginBtn.style.boxShadow = '0 0 0 1px rgba(255, 255, 255, 0.03) inset';
+        }
+
+        if (closeBtn) {
+            closeBtn.style.display = 'inline-flex';
+            closeBtn.style.alignItems = 'center';
+            closeBtn.style.justifyContent = 'center';
+            closeBtn.style.width = '36px';
+            closeBtn.style.height = '36px';
+            closeBtn.style.minWidth = '36px';
+            closeBtn.style.minHeight = '36px';
+            closeBtn.style.padding = '0';
+            closeBtn.style.borderRadius = '50%';
+            closeBtn.style.border = '1px solid rgba(255, 255, 255, 0.18)';
+            closeBtn.style.background = 'linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06))';
+            closeBtn.style.color = '#fff';
+            closeBtn.style.fontSize = '28px';
+            closeBtn.style.lineHeight = '1';
+            closeBtn.style.opacity = '1';
+            closeBtn.style.boxShadow = '0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08)';
+        }
+
+        if (closeIcon) {
+            closeIcon.style.fontSize = '30px';
+            closeIcon.style.lineHeight = '1';
+            closeIcon.style.transform = 'translateY(-1px)';
+        }
+
+        window.__registerHeaderFixApplied = true;
+    }
+
     // Kayıt modalı: açma, kapatma, form doğrulama (global.js BetcoInputs kullanır)
     function initRegisterModal() {
         var registerBtn = document.getElementById('openRegister');
@@ -208,8 +296,11 @@
         if (jq && jq.fn && typeof jq.fn.on === 'function') {
             jq(registerModal).on('shown.bs.modal', function () {
                 applyMobileRegisterLayoutFix(registerModal);
+                applyMobileRegisterHeaderFix(registerModal);
             });
             jq(registerModal).on('hidden.bs.modal', resetRegisterForm);
+        } else {
+            applyMobileRegisterHeaderFix(registerModal);
         }
     }
 
