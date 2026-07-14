@@ -430,12 +430,17 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
 document.addEventListener('DOMContentLoaded', function () {
     document.body.classList.add('reset-password-standalone');
 
-    var sliderImage = document.querySelector('#resetPasswordModal .auth-slider-bg__image');
-    if (sliderImage) {
-        sliderImage.style.objectFit = 'contain';
-        sliderImage.style.objectPosition = 'center top';
-        sliderImage.style.background = '#15063f';
+    function forceHeroContainFit() {
+        var sliderImage = document.querySelector('#resetPasswordModal .auth-slider-bg__image');
+        if (!sliderImage) {
+            return;
+        }
+        sliderImage.style.setProperty('object-fit', 'contain', 'important');
+        sliderImage.style.setProperty('object-position', 'center top', 'important');
+        sliderImage.style.setProperty('background', '#15063f', 'important');
     }
+    forceHeroContainFit();
+    window.setTimeout(forceHeroContainFit, 300);
 
     var noteLink = document.querySelector('#resetPasswordScreen .reset-password-note a');
     if (noteLink) {
