@@ -147,14 +147,6 @@
     }
 
     function initFooterLanguageDropdown() {
-        var wrap = document.querySelector(".footerLanguageDropdown");
-        if (!wrap) return;
-        var trigger = wrap.querySelector(".footerLanguageTrigger");
-        var menu = wrap.querySelector(".footerLanguageMenu");
-        var codeEl = wrap.querySelector(".footerLanguageCode");
-        var flagEl = wrap.querySelector(".footerLanguageFlag");
-        if (!trigger || !menu || !codeEl || !flagEl) return;
-
         var codeByLang = { tr: "TUR", en: "ENG", de: "DEU" };
         var flagByLang = {
             tr: "/assets/images/flag/tr.svg",
@@ -162,51 +154,59 @@
             de: "/assets/images/flag/de.svg"
         };
 
-        function setOpen(open) {
-            wrap.classList.toggle("is-open", open);
-            trigger.setAttribute("aria-expanded", open ? "true" : "false");
-            if (open) {
-                menu.removeAttribute("hidden");
-            } else {
-                menu.setAttribute("hidden", "");
-            }
-        }
+        document.querySelectorAll(".footerLanguageDropdown").forEach(function (wrap) {
+            var trigger = wrap.querySelector(".footerLanguageTrigger");
+            var menu = wrap.querySelector(".footerLanguageMenu");
+            var codeEl = wrap.querySelector(".footerLanguageCode");
+            var flagEl = wrap.querySelector(".footerLanguageFlag");
+            if (!trigger || !menu || !codeEl || !flagEl) return;
 
-        function setActiveLang(lang) {
-            var normalized = (lang || "tr").toLowerCase();
-            if (!codeByLang[normalized]) normalized = "tr";
-            codeEl.textContent = codeByLang[normalized];
-            flagEl.src = flagByLang[normalized];
-            flagEl.alt = codeByLang[normalized];
+            function setOpen(open) {
+                wrap.classList.toggle("is-open", open);
+                trigger.setAttribute("aria-expanded", open ? "true" : "false");
+                if (open) {
+                    menu.removeAttribute("hidden");
+                } else {
+                    menu.setAttribute("hidden", "");
+                }
+            }
+
+            function setActiveLang(lang) {
+                var normalized = (lang || "tr").toLowerCase();
+                if (!codeByLang[normalized]) normalized = "tr";
+                codeEl.textContent = codeByLang[normalized];
+                flagEl.src = flagByLang[normalized];
+                flagEl.alt = codeByLang[normalized];
+
+                menu.querySelectorAll(".footerLanguageOption").forEach(function (opt) {
+                    var isActive = (opt.getAttribute("data-lang") || "").toLowerCase() === normalized;
+                    opt.classList.toggle("is-active", isActive);
+                    opt.setAttribute("aria-selected", isActive ? "true" : "false");
+                });
+            }
+
+            trigger.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                setOpen(!wrap.classList.contains("is-open"));
+            });
+
+            document.addEventListener("click", function (e) {
+                if (!wrap.contains(e.target)) setOpen(false);
+            });
 
             menu.querySelectorAll(".footerLanguageOption").forEach(function (opt) {
-                var isActive = (opt.getAttribute("data-lang") || "").toLowerCase() === normalized;
-                opt.classList.toggle("is-active", isActive);
-                opt.setAttribute("aria-selected", isActive ? "true" : "false");
+                opt.addEventListener("click", function () {
+                    var lang = (this.getAttribute("data-lang") || "tr").toLowerCase();
+                    setActiveLang(lang);
+                    setOpen(false);
+                });
             });
-        }
 
-        trigger.addEventListener("click", function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen(!wrap.classList.contains("is-open"));
+            var currentLang = (new URLSearchParams(window.location.search)).get("lang") || "tr";
+            setActiveLang(currentLang);
+            setOpen(false);
         });
-
-        document.addEventListener("click", function (e) {
-            if (!wrap.contains(e.target)) setOpen(false);
-        });
-
-        menu.querySelectorAll(".footerLanguageOption").forEach(function (opt) {
-            opt.addEventListener("click", function () {
-                var lang = (this.getAttribute("data-lang") || "tr").toLowerCase();
-                setActiveLang(lang);
-                setOpen(false);
-            });
-        });
-
-        var currentLang = (new URLSearchParams(window.location.search)).get("lang") || "tr";
-        setActiveLang(currentLang);
-        setOpen(false);
     }
 
     function bonusKoduKullan() {
