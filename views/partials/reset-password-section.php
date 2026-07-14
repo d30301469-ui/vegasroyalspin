@@ -99,6 +99,13 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         margin: 12px auto;
     }
 
+    .reset-password-shell #resetPasswordModal.modal.show.d-block .modal-dialog {
+        display: block !important;
+        width: auto !important;
+        max-width: none !important;
+        margin: 12px auto !important;
+    }
+
     .reset-password-shell .modal-content {
         background: #0a0f3c;
         border-radius: 0;
@@ -106,6 +113,13 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         color: var(--white-color);
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
         overflow: hidden;
+    }
+
+    .reset-password-shell #resetPasswordModal.modal.show.d-block .modal-content {
+        display: block !important;
+        width: 378px !important;
+        max-width: calc(100vw - 40px) !important;
+        margin: 0 auto !important;
     }
 
     .reset-password-shell .modal-body {
@@ -324,6 +338,11 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
 
         .reset-password-shell .modal-dialog {
             margin: 0 auto;
+        }
+
+        .reset-password-shell #resetPasswordModal.modal.show.d-block .modal-content {
+            width: calc(100vw - 24px) !important;
+            max-width: calc(100vw - 24px) !important;
         }
 
         .reset-password-close {
