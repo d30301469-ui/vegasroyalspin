@@ -67,6 +67,67 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         padding: 21px 31px 26px;
     }
 
+    #resetPasswordModal .auth-slider-bg {
+        position: absolute !important;
+        inset: 0 0 auto 0 !important;
+        height: 320px !important;
+        z-index: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+
+    #resetPasswordModal .auth-slider-bg__slide {
+        position: absolute !important;
+        inset: 0 !important;
+    }
+
+    #resetPasswordModal .auth-slider-bg__image {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        object-position: center top !important;
+    }
+
+    #resetPasswordModal .e-p-content-holder-bc {
+        position: relative !important;
+        z-index: 1 !important;
+        display: block !important;
+        padding-top: 320px !important;
+        background: linear-gradient(180deg, rgba(5, 5, 20, 0) 0, rgba(5, 5, 20, 0) 320px, rgba(5, 5, 20, 0.96) 320px, rgba(5, 5, 20, 0.98) 100%) !important;
+    }
+
+    #resetPasswordModal .login-modal-header.e-p-header-bc {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 2 !important;
+        min-height: 320px !important;
+        padding: 24px 18px 0 !important;
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: space-between !important;
+        pointer-events: none !important;
+    }
+
+    #resetPasswordModal .login-logo,
+    #resetPasswordModal .login-header-actions {
+        pointer-events: auto !important;
+    }
+
+    #resetPasswordModal .login-logo {
+        width: 100% !important;
+        justify-content: center !important;
+        display: flex !important;
+    }
+
+    #resetPasswordModal .login-header-actions {
+        position: absolute !important;
+        top: 8px !important;
+        right: 8px !important;
+        gap: 0 !important;
+    }
+
     body.mobile-site #resetPasswordModal .login-modal-header.e-p-header-bc {
         pointer-events: auto !important;
     }
@@ -118,6 +179,7 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         max-width: 520px !important;
         margin-left: auto !important;
         margin-right: auto !important;
+        padding-top: 14px !important;
     }
 
     #resetPasswordModal #resetPasswordScreen .login-forgot-heading {
@@ -210,6 +272,14 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         .reset-password-shell {
             min-height: 100dvh;
             padding: 6px 0;
+        }
+
+        #resetPasswordModal .auth-slider-bg {
+            height: 320px !important;
+        }
+
+        #resetPasswordModal .e-p-content-holder-bc {
+            padding-top: 320px !important;
         }
 
         .reset-password-shell .modal-body {
