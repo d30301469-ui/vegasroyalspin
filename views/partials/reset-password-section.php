@@ -87,6 +87,9 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     #resetPasswordModal .e-p-body-bc {
         position: relative;
         z-index: 1;
+        flex: 0 0 auto;
+        height: auto;
+        overflow: visible;
     }
 
     #resetPasswordModal .e-p-close-icon-bc {
