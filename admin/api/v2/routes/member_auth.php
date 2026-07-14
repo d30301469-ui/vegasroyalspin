@@ -1,6 +1,121 @@
 <?php
 /** Üye API modülü — index.php tarafından include edilir. */
 
+if (!function_exists('memberResetBaseUrl')) {
+    function memberResetBaseUrl(): string
+    {
+        $candidates = [
+            getenv('FRONTEND_URL') ?: '',
+            getenv('SITE_URL') ?: '',
+            getenv('APP_URL') ?: '',
+        ];
+        foreach ($candidates as $candidate) {
+            $value = trim((string) $candidate);
+            if ($value !== '') {
+                return rtrim($value, '/');
+            }
+        }
+
+        $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        if ($host !== '') {
+            $https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
+            $scheme = ($https !== '' && $https !== 'off') ? 'https' : 'http';
+            return $scheme . '://' . $host;
+        }
+
+        return '';
+    }
+}
+
+if (!function_exists('memberResetLink')) {
+    function memberResetLink(string $token): string
+    {
+        $base = memberResetBaseUrl();
+        $path = '/reset-password?token=' . rawurlencode($token);
+        return $base !== '' ? ($base . $path) : $path;
+    }
+}
+
+if (!function_exists('memberMailSettings')) {
+    /** @return array<string,mixed> */
+    function memberMailSettings(PDO $pdo): array
+    {
+        try {
+            $stmt = $pdo->query('SELECT * FROM mail_settings ORDER BY id ASC LIMIT 1');
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+            return is_array($row) ? $row : [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+}
+
+if (!function_exists('memberLogOutboundMail')) {
+    function memberLogOutboundMail(PDO $pdo, string $toEmail, string $subject, string $bodyPreview, string $status): void
+    {
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS mail_outbound_log (
+                    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    admin_id INT UNSIGNED NULL,
+                    to_email VARCHAR(190) NOT NULL,
+                    subject VARCHAR(255) NOT NULL DEFAULT '',
+                    body_preview TEXT NULL,
+                    status VARCHAR(40) NOT NULL DEFAULT 'queued',
+                    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    KEY idx_mail_outbound_created (created_at),
+                    KEY idx_mail_outbound_status (status)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+            $stmt = $pdo->prepare(
+                'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
+                 VALUES (NULL, :to_email, :subject, :body_preview, :status, NOW())'
+            );
+            $stmt->execute([
+                'to_email' => $toEmail,
+                'subject' => $subject,
+                'body_preview' => substr($bodyPreview, 0, 500),
+                'status' => $status,
+            ]);
+        } catch (Throwable) {
+            // Mail log başarısız olsa da akış kesilmez.
+        }
+    }
+}
+
+if (!function_exists('memberSendResetMail')) {
+    function memberSendResetMail(PDO $pdo, string $toEmail, string $token): bool
+    {
+        $settings = memberMailSettings($pdo);
+        $enabled = (int) ($settings['enabled'] ?? $settings['mail_enabled'] ?? 0) === 1;
+        $from = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+        if ($from === '') {
+            $from = 'no-reply@' . (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+        }
+
+        $subject = 'Sifre Sifirlama Baglantiniz';
+        $link = memberResetLink($token);
+        $messageText = "Sifrenizi sifirlamak icin asagidaki baglantiyi kullanin:\n\n" . $link . "\n\nBaglanti 1 saat gecerlidir.";
+        $headers = [
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset=UTF-8',
+            'From: ' . $from,
+            'Reply-To: ' . $from,
+            'X-Mailer: PHP/' . phpversion(),
+        ];
+
+        if (!$enabled) {
+            memberLogOutboundMail($pdo, $toEmail, $subject, '[mail_disabled] ' . $messageText, 'not_configured');
+            return false;
+        }
+
+        $sent = @mail($toEmail, $subject, $messageText, implode("\r\n", $headers));
+        memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, $sent ? 'sent' : 'failed');
+        return $sent;
+    }
+}
+
 if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
     $input = $memberInput($payload);
     $login = trim((string) ($input['login'] ?? $input['username'] ?? $input['email'] ?? ''));
@@ -448,6 +563,7 @@ if ($method === 'POST' && ($route === 'forgot_password.php' || $route === 'auth/
         $pdo->prepare(
             'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
         )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
+        memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token);
     }
     $memberEnvelope(200, [
         'success' => true,
@@ -507,6 +623,7 @@ if ($method === 'POST' && ($route === 'password_reset.php' || $route === 'auth/p
             $pdo->prepare(
                 'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
             )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
+            memberSendResetMail($pdo, $email, $token);
         }
         $memberEnvelope(200, [
             'success' => true,
