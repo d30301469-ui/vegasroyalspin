@@ -245,15 +245,20 @@ if (class_exists('ApiMediaUrl', false)) {
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen .login-forgot-heading {
-                    padding: 10px 11px !important;
-                    border-radius: 9px !important;
+                    display: none !important;
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen {
-                    min-height: auto !important;
-                    justify-content: center !important;
+                    min-height: 100% !important;
+                    justify-content: flex-end !important;
                     width: calc(100% - 14px) !important;
                     margin: 0 7px !important;
+                    padding-bottom: 14px !important;
+                }
+
+                body.mobile-site #login2 #forgotPasswordScreen .login-form {
+                    flex: 0 0 auto !important;
+                    margin-top: auto !important;
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen .login-forgot-title {
@@ -262,6 +267,10 @@ if (class_exists('ApiMediaUrl', false)) {
 
                 body.mobile-site #login2 #forgotPasswordScreen .login-forgot-hint {
                     font-size: 12px !important;
+                }
+
+                body.mobile-site #login2 #forgotPasswordScreen .login-forgot-note {
+                    margin-top: 8px !important;
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen:not(.d-none) + .login-support {
