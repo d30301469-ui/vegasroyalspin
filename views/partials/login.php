@@ -250,16 +250,17 @@ if (class_exists('ApiMediaUrl', false)) {
 
                 body.mobile-site #login2 #forgotPasswordScreen:not(.d-none) {
                     min-height: 100% !important;
-                    justify-content: flex-end !important;
-                    width: calc(100% - 14px) !important;
+                    justify-content: flex-start !important;
+                    width: calc(100% - 24px) !important;
                     max-width: none !important;
-                    margin: 0 7px !important;
-                    padding-bottom: 14px !important;
+                    margin: 0 12px !important;
+                    padding-top: clamp(250px, 37vh, 320px) !important;
+                    padding-bottom: 12px !important;
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen .login-form {
                     flex: 0 0 auto !important;
-                    margin-top: auto !important;
+                    margin-top: 8px !important;
                 }
 
                 body.mobile-site #login2 #forgotPasswordScreen .login-forgot-title {
