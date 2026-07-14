@@ -31,6 +31,96 @@ final class AdminCommunicationController extends AdminController
         unset($_SESSION['admin_flash']);
     }
 
+    public function settings(): void
+    {
+        $this->requirePermission('email');
+        $this->ensureMailTables();
+        $this->view('communication/settings', [
+            'title' => 'Mail Ayarları',
+            'active' => 'email',
+            'crumbs' => 'İletişim | E-posta | Ayarlar',
+            'settings' => $this->first('mail_settings'),
+            'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
+        ]);
+        unset($_SESSION['admin_flash']);
+    }
+
+    public function saveSettings(): void
+    {
+        $this->requirePermission('email');
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+
+        $this->ensureMailTables();
+        $existing = $this->first('mail_settings');
+
+        $enabled = isset($_POST['enabled']) ? 1 : 0;
+        $fromEmail = trim((string) ($_POST['from_email'] ?? ''));
+        $smtpHost = trim((string) ($_POST['smtp_host'] ?? ''));
+        $smtpPort = (int) ($_POST['smtp_port'] ?? 0);
+        $smtpUser = trim((string) ($_POST['smtp_user'] ?? ''));
+        $smtpPasswordInput = trim((string) ($_POST['smtp_password'] ?? ''));
+        $smtpPassword = $smtpPasswordInput !== ''
+            ? $smtpPasswordInput
+            : (string) ($existing['smtp_password'] ?? '');
+
+        try {
+            $pdo = AdminDatabase::pdo();
+            if (is_array($existing) && isset($existing['id'])) {
+                $stmt = $pdo->prepare(
+                    'UPDATE mail_settings
+                     SET enabled = :enabled,
+                         mail_enabled = :mail_enabled,
+                         from_email = :from_email,
+                         mail_from_address = :mail_from_address,
+                         smtp_host = :smtp_host,
+                         smtp_port = :smtp_port,
+                         smtp_user = :smtp_user,
+                         smtp_password = :smtp_password,
+                         updated_at = NOW()
+                     WHERE id = :id'
+                );
+                $stmt->execute([
+                    'id' => (int) $existing['id'],
+                    'enabled' => $enabled,
+                    'mail_enabled' => $enabled,
+                    'from_email' => $fromEmail,
+                    'mail_from_address' => $fromEmail,
+                    'smtp_host' => $smtpHost,
+                    'smtp_port' => $smtpPort > 0 ? $smtpPort : null,
+                    'smtp_user' => $smtpUser,
+                    'smtp_password' => $smtpPassword,
+                ]);
+            } else {
+                $stmt = $pdo->prepare(
+                    'INSERT INTO mail_settings
+                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, updated_at)
+                     VALUES
+                     (:enabled, :mail_enabled, :from_email, :mail_from_address, :smtp_host, :smtp_port, :smtp_user, :smtp_password, NOW())'
+                );
+                $stmt->execute([
+                    'enabled' => $enabled,
+                    'mail_enabled' => $enabled,
+                    'from_email' => $fromEmail,
+                    'mail_from_address' => $fromEmail,
+                    'smtp_host' => $smtpHost,
+                    'smtp_port' => $smtpPort > 0 ? $smtpPort : null,
+                    'smtp_user' => $smtpUser,
+                    'smtp_password' => $smtpPassword,
+                ]);
+            }
+
+            $_SESSION['admin_flash'] = 'Mail ayarları güncellendi.';
+        } catch (Throwable $exception) {
+            $_SESSION['admin_flash'] = 'Mail ayarları kaydedilemedi: ' . $exception->getMessage();
+        }
+
+        $this->redirect(AdminAuth::url('/email/settings'));
+    }
+
     public function send(): void
     {
         $this->requirePermission('email');
