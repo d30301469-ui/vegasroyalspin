@@ -274,13 +274,13 @@
             if (isMobileSite) {
                 if (forg) {
                     forg.style.justifyContent = 'flex-start';
-                    forg.style.paddingTop = 'clamp(250px, 37vh, 320px)';
+                    forg.style.paddingTop = 'clamp(300px, 43vh, 380px)';
                     forg.style.paddingBottom = '12px';
                     forg.style.width = 'calc(100% - 24px)';
                     forg.style.margin = '0 12px';
                 }
                 forgotForm.style.flex = '0 0 auto';
-                forgotForm.style.marginTop = '8px';
+                forgotForm.style.marginTop = '12px';
                 forgotForm.style.justifyContent = '';
             } else {
                 forgotForm.style.flex = '0 0 auto';
