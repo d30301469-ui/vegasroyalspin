@@ -663,6 +663,12 @@
         margin-right: 0 !important;
     }
 
+    #login2 #forgotPasswordScreen .login-form {
+        flex: 0 0 auto !important;
+        margin-top: auto !important;
+        justify-content: flex-end !important;
+    }
+
     #login2 .login-form {
         flex: 1 !important;
         display: flex !important;
