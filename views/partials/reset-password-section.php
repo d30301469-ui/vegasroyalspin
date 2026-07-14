@@ -12,99 +12,11 @@ if (class_exists('ApiMediaUrl', false)) {
     $resetLogoUrl = ApiMediaUrl::resolve($resetLogoUrl);
 }
 $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+
+$resetCssPath = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/assets/css/reset-password.css';
+$resetCssVer = is_file($resetCssPath) ? (string) filemtime($resetCssPath) : (string) time();
 ?>
-<style>
-    body.reset-password-standalone header,
-    body.reset-password-standalone footer,
-    body.reset-password-standalone .layout-header-holder-bc,
-    body.reset-password-standalone .layout-navigation-holder-bc,
-    body.reset-password-standalone .hdr-navigation-scrollable-bc-holder,
-    body.reset-password-standalone .layout-footer-holder-bc {
-        display: none !important;
-    }
-
-    .reset-password-shell {
-        position: relative;
-        min-height: 100vh;
-        min-height: 100dvh;
-        padding: 10px 0;
-        background: rgba(7, 9, 25, 0.98) !important;
-    }
-
-    .reset-password-shell::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: rgba(4, 6, 18, 0.72);
-        backdrop-filter: blur(3px);
-        z-index: 0;
-    }
-
-    .reset-password-shell .modal {
-        display: block;
-        position: relative;
-        z-index: 1;
-        background: transparent;
-        overflow: visible;
-    }
-
-    .reset-password-shell .modal-dialog {
-        max-width: 559px;
-        margin: 24px auto;
-    }
-
-    .reset-password-shell .modal-content {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    #resetPasswordModal .e-p-content-holder-bc,
-    #resetPasswordModal .e-p-content-bc {
-        height: auto;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-    }
-
-    #resetPasswordModal .reset-password-hero {
-        position: relative;
-        height: 320px;
-        overflow: hidden;
-        border-bottom: 4px solid #ff2ff0;
-        box-shadow: 0 2px 14px rgba(255, 45, 239, 0.5);
-    }
-
-    #resetPasswordModal .reset-password-hero .e-p-header-bc {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 2;
-        background: transparent;
-        border-bottom: 0;
-    }
-
-    #resetPasswordModal .e-p-body-bc {
-        position: relative;
-        z-index: 1;
-        flex: 0 0 auto;
-        height: auto;
-        overflow: visible;
-    }
-
-    #resetPasswordModal .entrance-form-bc.popup {
-        position: static;
-        height: auto;
-        overflow: visible;
-        display: block;
-    }
-
-    #resetPasswordModal .e-p-close-icon-bc {
-        cursor: pointer;
-        left: auto;
-        right: 11px;
-    }
-</style>
+<link rel="stylesheet" href="/assets/css/reset-password.css?v=<?= $h($resetCssVer) ?>">
 <section class="mainWrap reset-password-shell">
     <div class="modal show d-block" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordTitle" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
@@ -190,6 +102,10 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
                                                 <span>Sıfırla</span>
                                             </button>
                                         </div>
+                                        <div class="reset-tooltip-info">
+                                            <i class="bc-i-player-info"></i>
+                                            <span class="reset-tooltip-content">Yeni şifrenizi girin ve onaylayın.</span>
+                                        </div>
                                     </div>
                                 </form>
                             <?php endif; ?>
@@ -214,9 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var closeBtn = document.getElementById('resetPasswordClose');
     if (closeBtn) {
-        closeBtn.addEventListener('click', function () {
-            closeResetModal();
-        });
+        closeBtn.addEventListener('click', closeResetModal);
         closeBtn.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
