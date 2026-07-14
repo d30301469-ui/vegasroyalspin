@@ -85,6 +85,138 @@ if (!function_exists('memberLogOutboundMail')) {
 }
 
 if (!function_exists('memberSendResetMail')) {
+    function memberSmtpRead($socket): string
+    {
+        $response = '';
+        $line = '';
+        while (is_resource($socket) && ($line = fgets($socket, 1024)) !== false) {
+            $response .= $line;
+            if (strlen($line) >= 4 && $line[3] === ' ') {
+                break;
+            }
+        }
+        return $response;
+    }
+
+    function memberSmtpExpect($socket, string $command, array $expectedCodes): bool
+    {
+        if ($command !== '') {
+            fwrite($socket, $command . "\r\n");
+        }
+        $response = memberSmtpRead($socket);
+        if ($response === '') {
+            return false;
+        }
+        $code = (int) substr($response, 0, 3);
+        return in_array($code, $expectedCodes, true);
+    }
+
+    function memberSmtpSendMail(array $settings, string $from, string $toEmail, string $subject, string $messageText): bool
+    {
+        $host = trim((string) ($settings['smtp_host'] ?? ''));
+        $port = (int) ($settings['smtp_port'] ?? 0);
+        $user = trim((string) ($settings['smtp_user'] ?? ''));
+        $pass = (string) ($settings['smtp_password'] ?? '');
+        if ($host === '') {
+            return false;
+        }
+        if ($port <= 0) {
+            $port = 587;
+        }
+
+        $transportHost = $host;
+        $needsTlsUpgrade = ($port === 587);
+        if ($port === 465) {
+            $transportHost = 'ssl://' . $host;
+            $needsTlsUpgrade = false;
+        }
+
+        $socket = @stream_socket_client(
+            $transportHost . ':' . $port,
+            $errno,
+            $errstr,
+            10,
+            STREAM_CLIENT_CONNECT
+        );
+        if (!is_resource($socket)) {
+            return false;
+        }
+        stream_set_timeout($socket, 10);
+
+        if (!memberSmtpExpect($socket, '', [220])) {
+            fclose($socket);
+            return false;
+        }
+
+        $helloHost = parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: 'localhost';
+        if (!memberSmtpExpect($socket, 'EHLO ' . $helloHost, [250])) {
+            fclose($socket);
+            return false;
+        }
+
+        if ($needsTlsUpgrade) {
+            if (!memberSmtpExpect($socket, 'STARTTLS', [220])) {
+                fclose($socket);
+                return false;
+            }
+            $cryptoOk = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            if ($cryptoOk !== true) {
+                fclose($socket);
+                return false;
+            }
+            if (!memberSmtpExpect($socket, 'EHLO ' . $helloHost, [250])) {
+                fclose($socket);
+                return false;
+            }
+        }
+
+        if ($user !== '') {
+            if (!memberSmtpExpect($socket, 'AUTH LOGIN', [334])) {
+                fclose($socket);
+                return false;
+            }
+            if (!memberSmtpExpect($socket, base64_encode($user), [334])) {
+                fclose($socket);
+                return false;
+            }
+            if (!memberSmtpExpect($socket, base64_encode($pass), [235])) {
+                fclose($socket);
+                return false;
+            }
+        }
+
+        if (!memberSmtpExpect($socket, 'MAIL FROM:<' . $from . '>', [250])) {
+            fclose($socket);
+            return false;
+        }
+        if (!memberSmtpExpect($socket, 'RCPT TO:<' . $toEmail . '>', [250, 251])) {
+            fclose($socket);
+            return false;
+        }
+        if (!memberSmtpExpect($socket, 'DATA', [354])) {
+            fclose($socket);
+            return false;
+        }
+
+        $headers = [
+            'From: ' . $from,
+            'To: ' . $toEmail,
+            'Subject: ' . $subject,
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding: 8bit',
+        ];
+        $data = implode("\r\n", $headers) . "\r\n\r\n" . str_replace("\n.", "\n..", $messageText) . "\r\n.";
+        if (!memberSmtpExpect($socket, $data, [250])) {
+            fclose($socket);
+            return false;
+        }
+
+        memberSmtpExpect($socket, 'QUIT', [221, 250]);
+        fclose($socket);
+        return true;
+    }
+
     function memberSendResetMail(PDO $pdo, string $toEmail, string $token): bool
     {
         $settings = memberMailSettings($pdo);
@@ -108,6 +240,12 @@ if (!function_exists('memberSendResetMail')) {
         if (!$enabled) {
             memberLogOutboundMail($pdo, $toEmail, $subject, '[mail_disabled] ' . $messageText, 'not_configured');
             return false;
+        }
+
+        $smtpSent = memberSmtpSendMail($settings, $from, $toEmail, $subject, $messageText);
+        if ($smtpSent) {
+            memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, 'sent');
+            return true;
         }
 
         $sent = @mail($toEmail, $subject, $messageText, implode("\r\n", $headers));
