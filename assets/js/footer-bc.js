@@ -1,15 +1,13 @@
 (function () {
-  function pad(n) {
-    return String(n).padStart(2, '0');
-  }
-
   function initFooterClock() {
     var el = document.getElementById('footerClockWidget');
     if (!el) return;
 
     function tick() {
-      var now = new Date();
-      el.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+      el.textContent = new Date().toLocaleTimeString('tr-TR', {
+        timeZone: 'Europe/Istanbul',
+        hour12: false
+      });
     }
 
     tick();
