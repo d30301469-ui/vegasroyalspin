@@ -430,6 +430,13 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
 document.addEventListener('DOMContentLoaded', function () {
     document.body.classList.add('reset-password-standalone');
 
+    var sliderImage = document.querySelector('#resetPasswordModal .auth-slider-bg__image');
+    if (sliderImage) {
+        sliderImage.style.objectFit = 'contain';
+        sliderImage.style.objectPosition = 'center top';
+        sliderImage.style.background = '#15063f';
+    }
+
     var noteLink = document.querySelector('#resetPasswordScreen .reset-password-note a');
     if (noteLink) {
         noteLink.addEventListener('click', function (e) {
