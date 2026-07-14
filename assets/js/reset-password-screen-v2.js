@@ -73,6 +73,7 @@
         var leadText = asText(theme.leadText, 'Sifrenizi sifirlamak icin kayitli e-posta adresinizi giriniz.');
         var buttonText = asText(theme.buttonText, 'SIFIRLA');
         var infoText = asText(theme.infoText, leadText);
+        var brandLogoUrl = asText(theme.brandLogoUrl, '/assets/images/MaltaBetLogo.png');
         var brandText = asText(theme.brandText, 'Vegasroyalspin');
         var heroImageUrl = asText(theme.heroImageUrl, '/assets/images/login-bg.png');
         var cssHeroImageUrl = '"' + heroImageUrl.replace(/["\\]/g, '\\$&') + '"';
@@ -114,12 +115,14 @@
             hero.className = 'reset-ref-hero';
             var brand = document.createElement('div');
             brand.className = 'reset-ref-brand';
-            brand.textContent = brandText;
+            brand.innerHTML = '<img src="' + brandLogoUrl.replace(/"/g, '&quot;') + '" alt="' + brandText.replace(/"/g, '&quot;') + '" class="reset-password-brand-logo">';
             hero.appendChild(brand);
             modal.insertBefore(hero, modal.firstChild);
         } else {
             var currentBrand = hero.querySelector('.reset-ref-brand, .reset-password-brand');
-            if (currentBrand) currentBrand.textContent = brandText;
+            if (currentBrand) {
+                currentBrand.innerHTML = '<img src="' + brandLogoUrl.replace(/"/g, '&quot;') + '" alt="' + brandText.replace(/"/g, '&quot;') + '" class="reset-password-brand-logo">';
+            }
         }
 
         var closeBtn = document.getElementById('resetPasswordClose') || modal.querySelector('.reset-password-close');
@@ -130,28 +133,40 @@
             hero.appendChild(closeBtn);
         }
 
+        var badge = modal.querySelector('.reset-password-badge');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'reset-password-badge';
+            badge.setAttribute('aria-hidden', 'true');
+            modal.appendChild(badge);
+        }
+
         if (!document.getElementById('resetReferenceSkinStyles')) {
             var style = document.createElement('style');
             style.id = 'resetReferenceSkinStyles';
             style.textContent = [
-                'body.reset-password-reference-skin .reset-password-shell .modal-dialog{width:auto !important;max-width:none !important;margin:12px auto !important;}',
-                'body.reset-password-reference-skin .reset-password-shell .modal-content{width:378px !important;max-width:calc(100vw - 40px) !important;margin:0 auto !important;}',
+                'body.reset-password-reference-skin .reset-password-shell .modal-dialog{width:auto !important;max-width:none !important;margin:12px auto !important;display:block !important;}',
+                'body.reset-password-reference-skin .reset-password-shell .modal-content{width:386px !important;max-width:calc(100vw - 40px) !important;margin:0 auto !important;display:block !important;}',
                 'body.reset-password-reference-skin .reset-password-modal{background:linear-gradient(145deg,#1b0c49 0%,#0a0f3c 60%,#09123f 100%) !important;min-height:88vh !important;padding:0 !important;gap:0 !important;}',
-                'body.reset-password-reference-skin .reset-ref-hero, body.reset-password-reference-skin .reset-password-hero{position:relative;height:318px;border-top:8px solid ' + heroTopBorderColor + ';border-bottom:5px solid ' + heroBottomBorderColor + ';background:#15063f;overflow:hidden;}',
-                'body.reset-password-reference-skin .reset-ref-hero::before, body.reset-password-reference-skin .reset-password-hero::before{content:"";position:absolute;inset:0;background-image:url(' + cssHeroImageUrl + ');background-size:cover;background-position:center 22%;opacity:.97;}',
-                'body.reset-password-reference-skin .reset-ref-brand, body.reset-password-reference-skin .reset-password-brand{position:absolute;top:24px;left:50%;transform:translateX(-50%);z-index:2;color:#fff;font-size:20px;font-weight:700;line-height:1;}',
-                'body.reset-password-reference-skin .reset-password-close{position:absolute !important;top:7px !important;right:8px !important;width:22px !important;height:22px !important;min-width:22px !important;min-height:22px !important;background:transparent !important;border:0 !important;color:rgba(198,193,214,.88) !important;z-index:3 !important;}',
+                'body.reset-password-reference-skin .reset-ref-hero, body.reset-password-reference-skin .reset-password-hero{position:relative;height:320px;border-top:8px solid ' + heroTopBorderColor + ';border-bottom:5px solid ' + heroBottomBorderColor + ';background:#15063f;overflow:hidden;}',
+                'body.reset-password-reference-skin .reset-ref-hero::before, body.reset-password-reference-skin .reset-password-hero::before{content:"";position:absolute;inset:0;background-image:url(' + cssHeroImageUrl + ');background-size:cover;background-position:center 24%;opacity:.97;}',
+                'body.reset-password-reference-skin .reset-ref-brand, body.reset-password-reference-skin .reset-password-brand{position:absolute;top:26px;left:50%;transform:translateX(-50%);z-index:2;display:inline-flex;align-items:center;justify-content:center;line-height:1;}',
+                'body.reset-password-reference-skin .reset-password-brand-logo{display:block;width:auto;height:34px;max-width:164px;object-fit:contain;}',
+                'body.reset-password-reference-skin .reset-password-close{position:absolute !important;top:8px !important;right:8px !important;width:22px !important;height:22px !important;min-width:22px !important;min-height:22px !important;background:transparent !important;border:0 !important;color:rgba(198,193,214,.88) !important;z-index:3 !important;}',
                 'body.reset-password-reference-skin .reset-password-close::before{content:"✕" !important;font-size:18px !important;font-weight:400 !important;line-height:1 !important;text-shadow:none !important;}',
                 'body.reset-password-reference-skin .login-text-block{display:none !important;}',
-                'body.reset-password-reference-skin .reset-password-content{padding:22px 8px 18px !important;}',
-                'body.reset-password-reference-skin .reset-password-content .login-form{margin-top:0 !important;gap:12px !important;padding:0 !important;}',
-                'body.reset-password-reference-skin #resetPasswordModal .form-control-input-bc{height:48px !important;min-height:48px !important;border-radius:4px !important;border:1px solid ' + inputBorderColor + ' !important;background:rgba(83,67,122,.42) !important;color:#f7f4ff !important;padding-left:14px !important;font-size:14px !important;}',
+                'body.reset-password-reference-skin .reset-password-content{padding:18px 7px 102px !important;}',
+                'body.reset-password-reference-skin .reset-password-content .login-form{margin-top:0 !important;gap:14px !important;padding:0 !important;}',
+                'body.reset-password-reference-skin #resetPasswordModal .form-control-input-bc{height:52px !important;min-height:52px !important;border-radius:4px !important;border:1px solid ' + inputBorderColor + ' !important;background:rgba(83,67,122,.42) !important;color:#f7f4ff !important;padding-left:18px !important;font-size:14px !important;}',
                 'body.reset-password-reference-skin #resetPasswordModal .login-error-text{margin-top:-2px !important;border-radius:3px !important;background:rgba(107,26,74,.8) !important;color:#fff !important;font-size:13px !important;padding:3px 9px !important;}',
-                'body.reset-password-reference-skin #resetPasswordModal .login-btn{height:34px !important;min-height:34px !important;border-radius:4px !important;background:rgba(111,122,176,.24) !important;border:1px solid rgba(146,156,201,.16) !important;color:' + buttonTextColor + ' !important;box-shadow:none !important;font-size:13px !important;font-weight:700 !important;text-transform:uppercase !important;}',
+                'body.reset-password-reference-skin #resetPasswordModal .login-btn{height:36px !important;min-height:36px !important;border-radius:4px !important;background:rgba(255,255,255,.1) !important;border:1px solid rgba(255,255,255,.06) !important;color:rgba(255,255,255,.3) !important;box-shadow:none !important;font-size:12px !important;font-weight:700 !important;text-transform:uppercase !important;}',
                 'body.reset-password-reference-skin .reset-password-actions{margin:12px 0 14px !important;display:flex !important;align-items:center !important;gap:6px !important;color:rgba(216,216,232,.72) !important;font-size:12px !important;}',
                 'body.reset-password-reference-skin .reset-password-actions::before{content:"i";display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid rgba(216,216,232,.72);font-size:11px;font-weight:700;}',
                 'body.reset-password-reference-skin .reset-password-actions a{color:rgba(216,216,232,.72) !important;border:0 !important;text-decoration:none !important;}',
-                '@media (max-width:480px){body.reset-password-reference-skin .reset-password-shell .modal-content{width:calc(100vw - 24px) !important;max-width:calc(100vw - 24px) !important;} body.reset-password-reference-skin .reset-ref-hero, body.reset-password-reference-skin .reset-password-hero{height:318px;} body.reset-password-reference-skin .reset-password-content{padding:22px 8px 16px !important;} body.reset-password-reference-skin #resetPasswordModal .form-control-input-bc{height:48px !important;min-height:48px !important;} body.reset-password-reference-skin #resetPasswordModal .login-btn{height:34px !important;min-height:34px !important;font-size:13px !important;}}'
+                'body.reset-password-reference-skin .reset-password-badge{position:absolute;right:12px;bottom:18px;display:inline-flex;align-items:center;justify-content:center;width:146px;height:52px;border-radius:30px;border:1px solid rgba(255,123,255,.58);background:radial-gradient(circle at 72% 50%, rgba(184,63,255,.52), rgba(84,14,126,.1) 42%), linear-gradient(90deg, rgba(31,15,84,.98), rgba(80,18,117,.88));box-shadow:0 0 12px rgba(225,44,255,.42), inset 0 0 18px rgba(248,120,255,.18);overflow:hidden;}',
+                'body.reset-password-reference-skin .reset-password-badge::before{content:"7/24\\AONLINE";white-space:pre;position:absolute;left:22px;top:9px;color:#ff31f7;font-size:14px;font-weight:800;font-style:italic;line-height:1.04;text-shadow:0 0 12px rgba(255,60,247,.4);}',
+                'body.reset-password-reference-skin .reset-password-badge::after{content:"";position:absolute;right:-2px;top:-4px;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 50% 50%, rgba(177,40,255,.95), rgba(83,18,120,.98));box-shadow:0 0 16px rgba(231,80,255,.45);}',
+                '@media (max-width:480px){body.reset-password-reference-skin .reset-password-shell .modal-content{width:calc(100vw - 24px) !important;max-width:calc(100vw - 24px) !important;} body.reset-password-reference-skin .reset-ref-hero, body.reset-password-reference-skin .reset-password-hero{height:320px;} body.reset-password-reference-skin .reset-password-content{padding:18px 7px 102px !important;} body.reset-password-reference-skin #resetPasswordModal .form-control-input-bc{height:52px !important;min-height:52px !important;} body.reset-password-reference-skin #resetPasswordModal .login-btn{height:36px !important;min-height:36px !important;font-size:12px !important;}}'
             ].join('');
             style.textContent = style.textContent.replace('linear-gradient(145deg,#1b0c49 0%,#0a0f3c 60%,#09123f 100%)', modalBg);
             document.head.appendChild(style);
