@@ -139,15 +139,15 @@ if (class_exists('ApiMediaUrl', false)) {
                     margin-left: 7px !important;
                 }
 
-                #login2 #forgotPasswordScreen {
+                body.mobile-site #login2 #forgotPasswordScreen {
                     margin-top: 0 !important;
                 }
 
-                #login2 #forgotPasswordScreen.d-none {
+                body.mobile-site #login2 #forgotPasswordScreen.d-none {
                     display: none !important;
                 }
 
-                #login2 #forgotPasswordScreen:not(.d-none) {
+                body.mobile-site #login2 #forgotPasswordScreen:not(.d-none) {
                     display: flex !important;
                     flex-direction: column !important;
                     justify-content: center !important;
@@ -156,7 +156,7 @@ if (class_exists('ApiMediaUrl', false)) {
                     margin: 0 auto !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-forgot-heading {
+                body.mobile-site #login2 #forgotPasswordScreen .login-forgot-heading {
                     margin: 0 0 12px !important;
                     padding: 12px 14px !important;
                     border-radius: 10px !important;
@@ -164,14 +164,14 @@ if (class_exists('ApiMediaUrl', false)) {
                     background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015)) !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-top-text {
+                body.mobile-site #login2 #forgotPasswordScreen .login-top-text {
                     margin: 0 0 4px !important;
                     font-size: 12px !important;
                     color: rgba(255, 255, 255, 0.76) !important;
                     text-transform: none !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-forgot-title {
+                body.mobile-site #login2 #forgotPasswordScreen .login-forgot-title {
                     margin: 0 !important;
                     font-size: 20px !important;
                     line-height: 1.2 !important;
@@ -179,28 +179,28 @@ if (class_exists('ApiMediaUrl', false)) {
                     text-transform: none !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-forgot-hint {
+                body.mobile-site #login2 #forgotPasswordScreen .login-forgot-hint {
                     margin: 7px 0 0 !important;
                     font-size: 13px !important;
                     line-height: 1.42 !important;
                     color: rgba(255, 255, 255, 0.85) !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-form {
+                body.mobile-site #login2 #forgotPasswordScreen .login-form {
                     display: flex !important;
                     flex-direction: column !important;
                     gap: 10px !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-forgot-heading,
-                #login2 #forgotPasswordScreen .login-form {
+                body.mobile-site #login2 #forgotPasswordScreen .login-forgot-heading,
+                body.mobile-site #login2 #forgotPasswordScreen .login-form {
                     width: 100% !important;
                     max-width: 100% !important;
                     margin-left: 0 !important;
                     margin-right: 0 !important;
                 }
 
-                #login2 #forgotPasswordScreen .form-group {
+                body.mobile-site #login2 #forgotPasswordScreen .form-group {
                     margin-bottom: 0 !important;
                     width: 100% !important;
                     max-width: 100% !important;
@@ -208,15 +208,15 @@ if (class_exists('ApiMediaUrl', false)) {
                     overflow: hidden !important;
                 }
 
-                #login2 #forgotPasswordScreen .form-control-label-bc,
-                #login2 #forgotPasswordScreen .form-control-input-bc {
+                body.mobile-site #login2 #forgotPasswordScreen .form-control-label-bc,
+                body.mobile-site #login2 #forgotPasswordScreen .form-control-input-bc {
                     width: 100% !important;
                     max-width: 100% !important;
                     box-sizing: border-box !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-btn,
-                #login2 #forgotPasswordScreen #forgotPasswordSubmit {
+                body.mobile-site #login2 #forgotPasswordScreen .login-btn,
+                body.mobile-site #login2 #forgotPasswordScreen #forgotPasswordSubmit {
                     width: 100% !important;
                     max-width: 100% !important;
                     margin-left: 0 !important;
@@ -224,14 +224,14 @@ if (class_exists('ApiMediaUrl', false)) {
                     box-sizing: border-box !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-back-row {
+                body.mobile-site #login2 #forgotPasswordScreen .login-back-row {
                     width: 100% !important;
                     height: auto !important;
                     margin-top: 2px !important;
                     text-align: center !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-back-row a {
+                body.mobile-site #login2 #forgotPasswordScreen .login-back-row a {
                     font-size: 13px !important;
                     color: rgba(255, 255, 255, 0.88) !important;
                     text-decoration: none !important;
@@ -239,7 +239,7 @@ if (class_exists('ApiMediaUrl', false)) {
                     padding-bottom: 2px !important;
                 }
 
-                #login2 #forgotPasswordScreen .login-back-row a:hover {
+                body.mobile-site #login2 #forgotPasswordScreen .login-back-row a:hover {
                     color: #fff !important;
                     border-bottom-color: rgba(255, 255, 255, 0.55) !important;
                 }
@@ -264,7 +264,7 @@ if (class_exists('ApiMediaUrl', false)) {
                     font-size: 12px !important;
                 }
 
-                #login2 #forgotPasswordScreen:not(.d-none) + .login-support {
+                body.mobile-site #login2 #forgotPasswordScreen:not(.d-none) + .login-support {
                     display: none !important;
                 }
             </style>
