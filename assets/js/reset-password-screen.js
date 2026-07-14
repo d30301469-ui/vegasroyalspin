@@ -134,6 +134,7 @@
             var style = document.createElement('style');
             style.id = 'resetReferenceSkinStyles';
             style.textContent = [
+                'body.reset-password-reference-skin .reset-password-shell .modal-dialog{width:min(378px,calc(100vw - 40px)) !important;max-width:378px !important;margin:12px auto !important;}',
                 'body.reset-password-reference-skin .reset-password-modal{background:linear-gradient(145deg,#1b0c49 0%,#0a0f3c 60%,#09123f 100%) !important;min-height:88vh !important;padding:0 !important;gap:0 !important;}',
                 'body.reset-password-reference-skin .reset-ref-hero, body.reset-password-reference-skin .reset-password-hero{position:relative;height:318px;border-top:8px solid ' + heroTopBorderColor + ';border-bottom:5px solid ' + heroBottomBorderColor + ';background:#15063f;overflow:hidden;}',
                 'body.reset-password-reference-skin .reset-ref-hero::before, body.reset-password-reference-skin .reset-password-hero::before{content:"";position:absolute;inset:0;background-image:url(' + cssHeroImageUrl + ');background-size:cover;background-position:center 22%;opacity:.97;}',
