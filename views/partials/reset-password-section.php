@@ -94,8 +94,9 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     }
 
     .reset-password-shell .modal-dialog {
-        max-width: 420px;
-        margin: 16px auto;
+        width: min(378px, calc(100vw - 40px));
+        max-width: 378px;
+        margin: 12px auto;
     }
 
     .reset-password-shell .modal-content {
@@ -122,16 +123,16 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
 
     .reset-password-close {
         position: absolute;
-        top: 2px;
-        right: 6px;
-        width: 34px;
-        height: 34px;
-        min-width: 34px;
-        min-height: 34px;
+        top: 7px;
+        right: 8px;
+        width: 22px;
+        height: 22px;
+        min-width: 22px;
+        min-height: 22px;
         border-radius: 0;
         border: 0;
         background-color: transparent;
-        color: rgba(170, 164, 198, 0.95);
+        color: rgba(198, 193, 214, 0.88);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -146,15 +147,15 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
 
     .reset-password-close::before {
         content: "\2715";
-        font-size: 28px;
-        font-weight: 300;
+        font-size: 18px;
+        font-weight: 400;
         line-height: 1;
-        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+        text-shadow: none;
     }
 
     .reset-password-hero {
         position: relative;
-        height: 286px;
+        height: 318px;
         background: #15063f;
         border-top: 8px solid <?= $h($resetHeroTopBorderColor) ?>;
         border-bottom: 5px solid <?= $h($resetHeroBottomBorderColor) ?>;
@@ -167,18 +168,18 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         inset: 0;
         background-image: url('<?= $h($resetHeroImageUrl) ?>');
         background-size: cover;
-        background-position: center top;
+        background-position: center 22%;
         filter: saturate(1.05) contrast(1.06);
         opacity: 0.96;
     }
 
     .reset-password-brand {
         position: absolute;
-        top: 22px;
+        top: 24px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 2;
-        font-size: 34px;
+        font-size: 20px;
         line-height: 1;
         color: #fff;
         opacity: 0.95;
@@ -186,7 +187,7 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     }
 
     .reset-password-content {
-        padding: 16px 14px 18px;
+        padding: 22px 8px 18px;
     }
 
     .reset-password-modal .login-text-block {
@@ -215,10 +216,10 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     }
 
     .reset-password-modal .login-form {
-        margin-top: 12px;
+        margin-top: 0;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 12px;
     }
 
     .reset-password-modal .form-group {
@@ -230,13 +231,14 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     }
 
     #resetPasswordModal .form-control-input-bc {
-        height: 50px !important;
-        min-height: 50px !important;
+        height: 48px !important;
+        min-height: 48px !important;
         border-radius: 4px !important;
         border: 1px solid <?= $h($resetInputBorderColor) ?> !important;
         background: rgba(83, 67, 122, 0.42) !important;
         color: #f7f4ff !important;
-        padding-left: 12px !important;
+        padding-left: 14px !important;
+        font-size: 14px !important;
     }
 
     #resetPasswordModal .form-control-input-bc:focus {
@@ -247,14 +249,14 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     #resetPasswordModal .login-btn,
     #resetPasswordRequestSubmit,
     #resetPasswordSubmit {
-        height: 48px !important;
-        min-height: 48px !important;
+        height: 34px !important;
+        min-height: 34px !important;
         border-radius: 4px !important;
         background: rgba(111, 122, 176, 0.24) !important;
         border: 1px solid rgba(146, 156, 201, 0.16) !important;
         color: <?= $h($resetButtonTextColor) ?> !important;
         box-shadow: none !important;
-        font-size: 28px !important;
+        font-size: 13px !important;
         font-weight: 700 !important;
         letter-spacing: 0.02em !important;
         text-transform: uppercase !important;
@@ -279,12 +281,12 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     }
 
     .reset-password-actions {
-        margin-top: 10px;
+        margin-top: 12px;
         display: flex;
         align-items: center;
         gap: 6px;
         color: rgba(216, 216, 232, 0.72);
-        font-size: 13px;
+        font-size: 12px;
         line-height: 1.4;
     }
 
@@ -325,12 +327,12 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         }
 
         .reset-password-close {
-            top: 2px;
-            right: 6px;
-            width: 34px;
-            height: 34px;
-            min-width: 34px;
-            min-height: 34px;
+            top: 7px;
+            right: 8px;
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            min-height: 22px;
         }
 
         .reset-password-title {
@@ -338,25 +340,25 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         }
 
         .reset-password-hero {
-            height: 300px;
+            height: 318px;
         }
 
         .reset-password-content {
-            padding: 12px 10px 16px;
+            padding: 22px 8px 16px;
         }
 
         #resetPasswordModal .form-control-input-bc,
         #resetPasswordModal .login-btn,
         #resetPasswordRequestSubmit,
         #resetPasswordSubmit {
-            height: 52px !important;
-            min-height: 52px !important;
+            height: 48px !important;
+            min-height: 48px !important;
         }
 
-        #resetPasswordModal .login-btn,
-        #resetPasswordRequestSubmit,
-        #resetPasswordSubmit {
-            font-size: 27px !important;
+        #resetPasswordModal .login-btn {
+            height: 34px !important;
+            min-height: 34px !important;
+            font-size: 13px !important;
         }
     }
 </style>
