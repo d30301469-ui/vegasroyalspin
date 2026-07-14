@@ -47,6 +47,21 @@
         var modal = document.querySelector('.reset-password-modal');
         if (!modal) return;
 
+        var heroNodes = modal.querySelectorAll('.reset-password-hero, .reset-ref-hero');
+        var primaryHero = heroNodes.length ? heroNodes[0] : null;
+        for (var heroIndex = 1; heroIndex < heroNodes.length; heroIndex += 1) {
+            if (heroNodes[heroIndex] && heroNodes[heroIndex].parentNode) {
+                heroNodes[heroIndex].parentNode.removeChild(heroNodes[heroIndex]);
+            }
+        }
+
+        var closeButtons = modal.querySelectorAll('#resetPasswordClose, .reset-password-close');
+        for (var closeIndex = 1; closeIndex < closeButtons.length; closeIndex += 1) {
+            if (closeButtons[closeIndex] && closeButtons[closeIndex].parentNode) {
+                closeButtons[closeIndex].parentNode.removeChild(closeButtons[closeIndex]);
+            }
+        }
+
         var theme = window.__RESET_PASSWORD_THEME__ || {};
         function asText(value, fallback) {
             var t = String(value == null ? '' : value).trim();
@@ -93,7 +108,7 @@
             infoLink.addEventListener('click', function (e) { e.preventDefault(); });
         }
 
-        var hero = modal.querySelector('.reset-password-hero, .reset-ref-hero');
+        var hero = primaryHero || modal.querySelector('.reset-password-hero, .reset-ref-hero');
         if (!hero) {
             hero = document.createElement('div');
             hero.className = 'reset-ref-hero';
@@ -108,6 +123,9 @@
         }
 
         var closeBtn = document.getElementById('resetPasswordClose') || modal.querySelector('.reset-password-close');
+        if (closeBtn) {
+            closeBtn.className = 'reset-password-close';
+        }
         if (closeBtn && closeBtn.parentNode !== hero) {
             hero.appendChild(closeBtn);
         }
