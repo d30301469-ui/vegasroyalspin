@@ -85,6 +85,33 @@ if (!function_exists('memberLogOutboundMail')) {
 }
 
 if (!function_exists('memberSendResetMail')) {
+    function memberPathAllowedByOpenBaseDir(string $path): bool
+    {
+        $openBaseDir = trim((string) ini_get('open_basedir'));
+        if ($openBaseDir === '') {
+            return true;
+        }
+
+        $normalizedPath = str_replace('\\', '/', $path);
+        $normalizedPath = rtrim($normalizedPath, '/');
+        if ($normalizedPath === '') {
+            return false;
+        }
+
+        $parts = preg_split('/[;:]/', $openBaseDir) ?: [];
+        foreach ($parts as $part) {
+            $base = rtrim(str_replace('\\', '/', trim((string) $part)), '/');
+            if ($base === '') {
+                continue;
+            }
+            if ($normalizedPath === $base || str_starts_with($normalizedPath . '/', $base . '/')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     function memberLoadPhpMailerAutoload(): bool
     {
         static $loaded = null;
@@ -105,10 +132,12 @@ if (!function_exists('memberSendResetMail')) {
             $candidates[] = rtrim((string) METROPOL_ROOT, '/\\') . '/vendor/autoload.php';
         }
         $candidates[] = dirname(__DIR__, 4) . '/vendor/autoload.php';
-        $candidates[] = dirname(__DIR__, 5) . '/vendor/autoload.php';
 
         foreach (array_values(array_unique($candidates)) as $autoload) {
-            if (is_file($autoload)) {
+            if (!memberPathAllowedByOpenBaseDir($autoload)) {
+                continue;
+            }
+            if (@is_file($autoload)) {
                 require_once $autoload;
                 if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
                     $loaded = true;
