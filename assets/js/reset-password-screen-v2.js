@@ -55,40 +55,44 @@
         var logo = document.querySelector('#resetPasswordModal .login-logo');
 
         if (slider) {
-            slider.style.position = 'absolute';
-            slider.style.top = '0';
-            slider.style.right = '0';
-            slider.style.left = '0';
-            slider.style.bottom = 'auto';
-            slider.style.height = '320px';
-            slider.style.zIndex = '0';
+            slider.style.setProperty('position', 'absolute', 'important');
+            slider.style.setProperty('top', '0', 'important');
+            slider.style.setProperty('right', '0', 'important');
+            slider.style.setProperty('left', '0', 'important');
+            slider.style.setProperty('bottom', 'auto', 'important');
+            slider.style.setProperty('height', '320px', 'important');
+            slider.style.setProperty('z-index', '0', 'important');
         }
         if (slider && sliderImage && sliderImage.getAttribute('src')) {
-            slider.style.backgroundImage = 'url("' + sliderImage.getAttribute('src').replace(/"/g, '\\"') + '")';
-            slider.style.backgroundRepeat = 'no-repeat';
-            slider.style.backgroundPosition = 'center top';
-            slider.style.backgroundSize = 'contain';
-            slider.style.backgroundColor = '#15063f';
-            sliderImage.style.opacity = '0';
+            slider.style.setProperty('background-image', 'url("' + sliderImage.getAttribute('src').replace(/"/g, '\\"') + '")', 'important');
+            slider.style.setProperty('background-repeat', 'no-repeat', 'important');
+            slider.style.setProperty('background-position', 'center top', 'important');
+            slider.style.setProperty('background-size', 'contain', 'important');
+            slider.style.setProperty('background-color', '#15063f', 'important');
+            sliderImage.style.setProperty('opacity', '0', 'important');
         }
         if (holder) {
-            holder.style.position = 'relative';
-            holder.style.zIndex = '1';
-            holder.style.display = 'block';
-            holder.style.paddingTop = '320px';
+            holder.style.setProperty('position', 'relative', 'important');
+            holder.style.setProperty('z-index', '1', 'important');
+            holder.style.setProperty('display', 'block', 'important');
+            holder.style.setProperty('padding-top', '320px', 'important');
         }
         if (header) {
-            header.style.position = 'absolute';
-            header.style.top = '0';
-            header.style.left = '0';
-            header.style.right = '0';
-            header.style.zIndex = '2';
-            header.style.minHeight = '320px';
-            header.style.padding = '24px 18px 0';
-            header.style.display = 'flex';
-            header.style.alignItems = 'flex-start';
-            header.style.justifyContent = 'space-between';
-            header.style.pointerEvents = 'none';
+            header.style.setProperty('position', 'absolute', 'important');
+            header.style.setProperty('top', '0', 'important');
+            header.style.setProperty('left', '0', 'important');
+            header.style.setProperty('right', '0', 'important');
+            header.style.setProperty('bottom', 'auto', 'important');
+            header.style.setProperty('width', 'auto', 'important');
+            header.style.setProperty('height', 'auto', 'important');
+            header.style.setProperty('z-index', '2', 'important');
+            header.style.setProperty('min-height', '320px', 'important');
+            header.style.setProperty('padding', '24px 18px 0', 'important');
+            header.style.setProperty('display', 'flex', 'important');
+            header.style.setProperty('align-items', 'flex-start', 'important');
+            header.style.setProperty('justify-content', 'space-between', 'important');
+            header.style.setProperty('pointer-events', 'none', 'important');
+            header.style.setProperty('background', 'transparent', 'important');
         }
         if (logo) {
             logo.style.setProperty('display', 'flex', 'important');
@@ -105,11 +109,16 @@
             }
         }
         if (headerActions) {
-            headerActions.style.position = 'absolute';
-            headerActions.style.top = '8px';
-            headerActions.style.right = '8px';
-            headerActions.style.gap = '0';
-            headerActions.style.pointerEvents = 'auto';
+            headerActions.style.setProperty('position', 'absolute', 'important');
+            headerActions.style.setProperty('top', '8px', 'important');
+            headerActions.style.setProperty('right', '8px', 'important');
+            headerActions.style.setProperty('left', 'auto', 'important');
+            headerActions.style.setProperty('bottom', 'auto', 'important');
+            headerActions.style.setProperty('width', 'auto', 'important');
+            headerActions.style.setProperty('height', 'auto', 'important');
+            headerActions.style.setProperty('gap', '0', 'important');
+            headerActions.style.setProperty('pointer-events', 'auto', 'important');
+            headerActions.style.setProperty('z-index', '5', 'important');
         }
 
         screen.style.position = 'relative';
