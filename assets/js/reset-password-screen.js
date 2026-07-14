@@ -43,6 +43,63 @@
         el.classList.remove('d-none');
     }
 
+    function normalizeLoginStructureLayout() {
+        var screen = document.getElementById('resetPasswordScreen');
+        if (!screen) return;
+
+        var slider = document.querySelector('#resetPasswordModal .auth-slider-bg');
+        var holder = document.querySelector('#resetPasswordModal .e-p-content-holder-bc');
+        var header = document.querySelector('#resetPasswordModal .login-modal-header');
+        var headerActions = document.querySelector('#resetPasswordModal .login-header-actions');
+        var logo = document.querySelector('#resetPasswordModal .login-logo');
+
+        if (slider) {
+            slider.style.position = 'absolute';
+            slider.style.top = '0';
+            slider.style.right = '0';
+            slider.style.left = '0';
+            slider.style.bottom = 'auto';
+            slider.style.height = '320px';
+            slider.style.zIndex = '0';
+        }
+        if (holder) {
+            holder.style.position = 'relative';
+            holder.style.zIndex = '1';
+            holder.style.display = 'block';
+            holder.style.paddingTop = '320px';
+        }
+        if (header) {
+            header.style.position = 'absolute';
+            header.style.top = '0';
+            header.style.left = '0';
+            header.style.right = '0';
+            header.style.zIndex = '2';
+            header.style.minHeight = '320px';
+            header.style.padding = '24px 18px 0';
+            header.style.display = 'flex';
+            header.style.alignItems = 'flex-start';
+            header.style.justifyContent = 'space-between';
+            header.style.pointerEvents = 'none';
+        }
+        if (logo) {
+            logo.style.display = 'flex';
+            logo.style.width = '100%';
+            logo.style.justifyContent = 'center';
+            logo.style.pointerEvents = 'auto';
+        }
+        if (headerActions) {
+            headerActions.style.position = 'absolute';
+            headerActions.style.top = '8px';
+            headerActions.style.right = '8px';
+            headerActions.style.gap = '0';
+            headerActions.style.pointerEvents = 'auto';
+        }
+
+        screen.style.position = 'relative';
+        screen.style.zIndex = '3';
+        screen.style.paddingTop = '14px';
+    }
+
     function applyReferenceSkin() {
         var modal = document.querySelector('.reset-password-modal');
         if (!modal) return;
@@ -175,6 +232,7 @@
     }
 
     onReady(function () {
+        normalizeLoginStructureLayout();
         applyReferenceSkin();
 
         var requestForm = document.getElementById('resetPasswordRequestForm');
