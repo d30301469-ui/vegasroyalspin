@@ -537,6 +537,42 @@ window.__RESET_PASSWORD_THEME__ = {
     inputBorderColor: <?= json_encode($resetInputBorderColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
     buttonTextColor: <?= json_encode($resetButtonTextColor, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
 };
+
+(function () {
+    function applyExactResetReference() {
+        var theme = window.__RESET_PASSWORD_THEME__ || {};
+        var modal = document.querySelector('.reset-password-modal');
+        if (!modal) return;
+
+        var brand = modal.querySelector('.reset-password-brand');
+        if (brand && !brand.querySelector('img') && theme.brandLogoUrl) {
+            brand.innerHTML = '<img src="' + String(theme.brandLogoUrl).replace(/"/g, '&quot;') + '" alt="' + String(theme.brandText || '').replace(/"/g, '&quot;') + '" class="reset-password-brand-logo">';
+        }
+
+        if (!modal.querySelector('.reset-password-badge')) {
+            var badge = document.createElement('div');
+            badge.className = 'reset-password-badge';
+            badge.setAttribute('aria-hidden', 'true');
+            modal.appendChild(badge);
+        }
+
+        var button = document.getElementById('resetPasswordRequestSubmit');
+        if (button) {
+            button.style.height = '36px';
+            button.style.minHeight = '36px';
+            button.style.fontSize = '12px';
+            button.style.background = 'rgba(255,255,255,.1)';
+            button.style.color = 'rgba(255,255,255,.3)';
+            button.style.border = '1px solid rgba(255,255,255,.06)';
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyExactResetReference);
+    } else {
+        applyExactResetReference();
+    }
+})();
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
