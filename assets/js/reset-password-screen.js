@@ -91,10 +91,18 @@
             header.style.pointerEvents = 'none';
         }
         if (logo) {
-            logo.style.display = 'flex';
-            logo.style.width = '100%';
-            logo.style.justifyContent = 'center';
+            logo.style.setProperty('display', 'flex', 'important');
+            logo.style.setProperty('width', '100%', 'important');
+            logo.style.setProperty('justify-content', 'center', 'important');
+            logo.style.setProperty('margin-top', '6px', 'important');
             logo.style.pointerEvents = 'auto';
+            var logoImg = logo.querySelector('img');
+            if (logoImg) {
+                logoImg.style.setProperty('height', '30px', 'important');
+                logoImg.style.setProperty('width', 'auto', 'important');
+                logoImg.style.setProperty('max-width', '170px', 'important');
+                logoImg.style.setProperty('object-fit', 'contain', 'important');
+            }
         }
         if (headerActions) {
             headerActions.style.position = 'absolute';
@@ -107,6 +115,43 @@
         screen.style.position = 'relative';
         screen.style.zIndex = '3';
         screen.style.paddingTop = '14px';
+
+        var modalContent = document.querySelector('#resetPasswordModal .modal-content');
+        if (modalContent && !modalContent.querySelector('.reset-password-hero-divider')) {
+            var divider = document.createElement('div');
+            divider.className = 'reset-password-hero-divider';
+            divider.setAttribute('aria-hidden', 'true');
+            divider.style.position = 'absolute';
+            divider.style.top = '318px';
+            divider.style.left = '0';
+            divider.style.right = '0';
+            divider.style.height = '4px';
+            divider.style.zIndex = '2';
+            divider.style.background = 'linear-gradient(90deg, rgba(219,39,199,0) 0%, #ff2ff0 50%, rgba(219,39,199,0) 100%)';
+            divider.style.boxShadow = '0 0 14px 2px rgba(255,45,239,.55)';
+            divider.style.pointerEvents = 'none';
+            modalContent.insertBefore(divider, modalContent.firstChild.nextSibling);
+        }
+
+        var resetModalCard = document.querySelector('.reset-password-modal');
+        if (resetModalCard) {
+            resetModalCard.style.position = 'relative';
+            if (!resetModalCard.querySelector('.reset-password-badge')) {
+                var badge = document.createElement('div');
+                badge.className = 'reset-password-badge';
+                badge.setAttribute('aria-hidden', 'true');
+                badge.style.position = 'absolute';
+                badge.style.right = '14px';
+                badge.style.bottom = '14px';
+                badge.style.zIndex = '4';
+                badge.style.display = 'inline-flex';
+                badge.style.alignItems = 'center';
+                badge.style.gap = '8px';
+                badge.style.pointerEvents = 'none';
+                badge.innerHTML = '<span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 14px;border-radius:20px;border:1px solid rgba(255,49,239,.7);background:linear-gradient(90deg, rgba(40,10,60,.94), rgba(70,15,90,.94));box-shadow:0 0 10px rgba(255,49,239,.4);color:#ff31f7;font-size:11px;font-weight:800;font-style:italic;line-height:1.15;text-transform:uppercase;">7/24<br>ONLINE</span><span style="width:40px;height:40px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 40% 35%, #c34ce0, #5b1470);box-shadow:0 0 12px rgba(200,60,255,.5);"><img src="/assets/images/favicons/favicon-96x96.png" alt="" style="width:60%;height:60%;object-fit:contain;"></span>';
+                resetModalCard.appendChild(badge);
+            }
+        }
     }
 
     function applyReferenceSkin() {

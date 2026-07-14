@@ -91,6 +91,18 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         opacity: 0 !important;
     }
 
+    #resetPasswordModal .reset-password-hero-divider {
+        position: absolute !important;
+        top: 318px !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 4px !important;
+        z-index: 2 !important;
+        background: linear-gradient(90deg, rgba(219, 39, 199, 0) 0%, #ff2ff0 50%, rgba(219, 39, 199, 0) 100%) !important;
+        box-shadow: 0 0 14px 2px rgba(255, 45, 239, 0.55) !important;
+        pointer-events: none !important;
+    }
+
     #resetPasswordModal .e-p-content-holder-bc {
         position: relative !important;
         z-index: 1 !important;
@@ -119,7 +131,17 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     }
 
     #resetPasswordModal .login-logo {
-        display: none !important;
+        display: flex !important;
+        width: 100% !important;
+        justify-content: center !important;
+        margin-top: 6px !important;
+    }
+
+    #resetPasswordModal .login-logo-img {
+        height: 30px !important;
+        width: auto !important;
+        max-width: 170px !important;
+        object-fit: contain !important;
     }
 
     #resetPasswordModal .login-header-actions {
@@ -293,6 +315,57 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         display: none !important;
     }
 
+    #resetPasswordModal .reset-password-modal {
+        position: relative !important;
+    }
+
+    #resetPasswordModal .reset-password-badge {
+        position: absolute !important;
+        right: 14px !important;
+        bottom: 14px !important;
+        z-index: 4 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        pointer-events: none !important;
+    }
+
+    #resetPasswordModal .reset-password-badge-pill {
+        display: inline-flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 4px 14px !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(255, 49, 239, 0.7) !important;
+        background: linear-gradient(90deg, rgba(40, 10, 60, 0.94), rgba(70, 15, 90, 0.94)) !important;
+        box-shadow: 0 0 10px rgba(255, 49, 239, 0.4) !important;
+        color: #ff31f7 !important;
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        font-style: italic !important;
+        line-height: 1.15 !important;
+        text-transform: uppercase !important;
+    }
+
+    #resetPasswordModal .reset-password-badge-avatar {
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 50% !important;
+        overflow: hidden !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: radial-gradient(circle at 40% 35%, #c34ce0, #5b1470) !important;
+        box-shadow: 0 0 12px rgba(200, 60, 255, 0.5) !important;
+    }
+
+    #resetPasswordModal .reset-password-badge-avatar img {
+        width: 60% !important;
+        height: 60% !important;
+        object-fit: contain !important;
+    }
+
     @media (max-width: 480px) {
         .reset-password-shell {
             min-height: 100dvh;
@@ -338,6 +411,7 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
                 include VIEW_PATH . '/partials/auth-slider-bg.php';
                 unset($authSliderScreen, $authSliderItems);
                 ?>
+                <div class="reset-password-hero-divider" aria-hidden="true"></div>
                 <div class="e-p-content-holder-bc">
                     <div class="e-p-content-bc">
                         <div class="modal-body e-p-body-bc">
@@ -419,6 +493,13 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
                                         <i class="bc-i-live-chat" aria-hidden="true"></i>
                                         <span>CANLI DESTEK İLE İLETİŞİME GEÇİN</span>
                                     </a>
+                                </div>
+
+                                <div class="reset-password-badge" aria-hidden="true">
+                                    <span class="reset-password-badge-pill">7/24<br>ONLINE</span>
+                                    <span class="reset-password-badge-avatar">
+                                        <img src="/assets/images/favicons/favicon-96x96.png" alt="">
+                                    </span>
                                 </div>
                             </div>
                         </div>
