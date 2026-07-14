@@ -169,37 +169,56 @@ if (!function_exists('memberSendResetMail')) {
             $port = 587;
         }
 
-        try {
-            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-            $mail->CharSet = 'UTF-8';
-            $mail->isSMTP();
-            $mail->Host = $host;
-            $mail->Port = $port;
-            $mail->Timeout = 15;
-
-            $mail->SMTPAuth = $user !== '';
-            if ($mail->SMTPAuth) {
-                $mail->Username = $user;
-                $mail->Password = $pass;
-            }
-
-            if ($port === 465) {
-                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-            } else {
-                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-            }
-
-            $mail->setFrom($from, 'VegasRoyalSpin');
-            $mail->addAddress($toEmail);
-            $mail->Subject = $subject;
-            $mail->Body = $messageText;
-            $mail->AltBody = $messageText;
-
-            return $mail->send();
-        } catch (Throwable $exception) {
-            $errorMessage = trim($exception->getMessage()) !== '' ? trim($exception->getMessage()) : 'smtp_send_failed';
-            return false;
+        // Try the expected transport first, then a plain SMTP fallback.
+        $strategies = [];
+        if ($port === 465) {
+            $strategies[] = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+            $strategies[] = '';
+        } else {
+            $strategies[] = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $strategies[] = '';
         }
+
+        $lastError = 'smtp_send_failed';
+        foreach (array_values(array_unique($strategies)) as $secureMode) {
+            try {
+                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+                $mail->CharSet = 'UTF-8';
+                $mail->isSMTP();
+                $mail->Host = preg_replace('/^(ssl|tls):\/\//i', '', $host) ?: $host;
+                $mail->Port = $port;
+                $mail->Timeout = 15;
+                $mail->SMTPAutoTLS = true;
+
+                $mail->SMTPAuth = $user !== '';
+                if ($mail->SMTPAuth) {
+                    $mail->Username = $user;
+                    $mail->Password = $pass;
+                }
+
+                $mail->SMTPSecure = $secureMode;
+                if ($secureMode === '') {
+                    $mail->SMTPAutoTLS = false;
+                }
+
+                $mail->setFrom($from, 'VegasRoyalSpin');
+                $mail->addAddress($toEmail);
+                $mail->Subject = $subject;
+                $mail->Body = $messageText;
+                $mail->AltBody = $messageText;
+
+                if ($mail->send()) {
+                    return true;
+                }
+
+                $lastError = trim((string) $mail->ErrorInfo) !== '' ? trim((string) $mail->ErrorInfo) : 'smtp_send_failed';
+            } catch (Throwable $exception) {
+                $lastError = trim($exception->getMessage()) !== '' ? trim($exception->getMessage()) : 'smtp_send_failed';
+            }
+        }
+
+        $errorMessage = $lastError;
+        return false;
     }
 
     function memberSendResetMail(PDO $pdo, string $toEmail, string $token): bool
@@ -232,6 +251,13 @@ if (!function_exists('memberSendResetMail')) {
         if ($smtpSent) {
             memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, 'sent');
             return true;
+        }
+
+        // If SMTP is configured, do not mask failures with mail() fallback.
+        if (trim((string) ($settings['smtp_host'] ?? '')) !== '') {
+            $preview = '[smtp_error] ' . ($smtpError !== '' ? $smtpError : 'smtp_send_failed') . "\n\n" . $messageText;
+            memberLogOutboundMail($pdo, $toEmail, $subject, $preview, 'failed');
+            return false;
         }
 
         $sent = @mail($toEmail, $subject, $messageText, implode("\r\n", $headers));
