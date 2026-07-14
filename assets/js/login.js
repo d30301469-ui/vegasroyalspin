@@ -595,10 +595,10 @@
 
         function normalizeForgotSuccessMessage(msg) {
             return String(msg || '')
-                .replace(/sifre\s*sifirlama\s*baglantisi/gi, 'dogrulama kodu')
-                .replace(/şifre\s*sıfırlama\s*bağlantısı/gi, 'doğrulama kodu')
-                .replace(/bağlantısı\s*gönderilecektir/gi, 'doğrulama kodu gönderilecektir')
-                .replace(/baglantisi\s*gonderilecektir/gi, 'dogrulama kodu gonderilecektir');
+                .replace(/doğrulama\s*kodu/gi, 'şifre sıfırlama bağlantısı')
+                .replace(/dogrulama\s*kodu/gi, 'sifre sifirlama baglantisi')
+                .replace(/kodu\s*gönderildi/gi, 'bağlantısı gönderilecektir')
+                .replace(/kodu\s*gonderildi/gi, 'baglantisi gonderilecektir');
         }
 
         function showForgotError(msg) {
@@ -644,7 +644,7 @@
         }
 
         var defaultOkMsg =
-            'E-posta adresiniz kayıtlıysa tarafımızdan doğrulama kodu gönderildi. Gelen kutunuzu ve spam klasörünüzü kontrol edin.';
+            'E-posta adresiniz kayıtlıysa tarafımızdan şifre sıfırlama bağlantısı gönderilecektir. Gelen kutunuzu ve spam klasörünüzü kontrol edin.';
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();

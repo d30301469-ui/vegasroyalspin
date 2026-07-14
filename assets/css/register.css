@@ -1290,65 +1290,88 @@ label {
         width: 100% !important;
     }
 
-    /* Top bar: actions pushed to far right */
+    /* Mobile header: logo left, actions right */
     #registerModal .register-modal-top-bar {
         display: flex !important;
         align-items: center !important;
-        justify-content: flex-end !important;
+        justify-content: space-between !important;
         width: 100% !important;
+        gap: 8px !important;
     }
 
     #registerModal .register-logo {
-        display: none !important;
+        display: flex !important;
+        align-items: center !important;
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
     }
 
     #registerModal .register-logo-img {
-        display: none !important;
+        display: block !important;
+        max-width: 122px !important;
+        height: 28px !important;
+        width: auto !important;
+        object-fit: contain !important;
     }
 
-    /* Right side: GİRİŞ + close */
+    /* Right side: GİRİŞ + styled close */
     #registerModal .register-top-right.e-p-sections-bc {
         display: flex !important;
         align-items: center !important;
-        gap: 4px !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+        flex: 0 0 auto !important;
     }
 
     #registerModal .register-modal-login-link {
-        background: transparent !important;
-        border: 1px solid rgba(172, 102, 255, 0.5) !important;
-        border-radius: 6px !important;
-        color: #e0d8ff !important;
-        font-size: 13px !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.16) !important;
+        border-radius: 8px !important;
+        color: #fff !important;
+        font-size: 12px !important;
         font-weight: 700 !important;
         letter-spacing: 0.04em !important;
-        padding: 5px 14px !important;
+        padding: 7px 14px !important;
         cursor: pointer !important;
         text-transform: uppercase !important;
-        transition: background 0.2s !important;
+        line-height: 1 !important;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset !important;
     }
 
     #registerModal .register-modal-login-link:hover {
-        background: rgba(172, 102, 255, 0.15) !important;
-        border-color: rgba(172, 102, 255, 0.8) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.28) !important;
     }
 
     #registerModal .register-modal-close {
-        background: transparent !important;
-        border: none !important;
-        color: rgba(255, 255, 255, 0.85) !important;
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06)) !important;
+        color: #fff !important;
         font-size: 28px !important;
         line-height: 1 !important;
-        padding: 6px 10px !important;
         cursor: pointer !important;
-        display: flex !important;
+        display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        opacity: 0.9 !important;
+        opacity: 1 !important;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
     }
 
     #registerModal .register-modal-close:hover {
         opacity: 1 !important;
-        color: #fff !important;
+        transform: translateY(-1px);
+    }
+
+    #registerModal .register-modal-close span {
+        font-size: 30px !important;
+        line-height: 1 !important;
+        transform: translateY(-1px);
     }
 
     /* Hide subtitle text in header, keep logo */
