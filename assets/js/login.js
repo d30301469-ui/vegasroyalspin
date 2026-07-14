@@ -645,9 +645,6 @@
         }
 
         function showForgotError(msg) {
-            if (window.MaltabetToast) {
-                MaltabetToast.error(msg || 'Bir hata oluştu.', 'Şifre Sıfırlama');
-            }
             if (!alertEl) return;
             alertEl.textContent = msg || 'Bir hata oluştu.';
             alertEl.classList.remove('d-none');
@@ -666,9 +663,6 @@
 
         function showForgotSuccess(msg) {
             var finalMsg = normalizeForgotSuccessMessage(msg || defaultOkMsg);
-            if (window.MaltabetToast) {
-                MaltabetToast.success(finalMsg, 'Şifre Sıfırlama');
-            }
             if (!successEl) return;
             successEl.textContent = finalMsg;
             successEl.classList.remove('d-none');
