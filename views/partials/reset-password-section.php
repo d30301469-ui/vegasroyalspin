@@ -4,14 +4,23 @@ $hasToken = $resetToken !== '';
 
 global $siteBranding, $ayar;
 $resetAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('login') : [];
-$resetAuthSliderClass = $resetAuthSliderItems !== [] ? ' has-auth-slider' : '';
 $resetBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
 $resetSiteName = (string) ($resetBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
-$resetLogoUrl = (string) ($resetBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
-if (class_exists('ApiMediaUrl', false)) {
-    $resetLogoUrl = ApiMediaUrl::resolve($resetLogoUrl);
-}
 $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+
+/**
+ * Orijinal tasarım tekniği: giriş ekranı görseli (logo + fotoğraf + pembe çizgi +
+ * koyu form alanı) tek görsel olarak popup arka planına yerleştirilir; sadece form
+ * (input + buton + tooltip) görselin pembe çizgisinin altına bindirilir.
+ * Görsel admin panelden auth slider (login) üzerinden yönetilir.
+ */
+$resetHeroImage = '';
+if (isset($resetAuthSliderItems[0]['mediaPath'])) {
+    $resetHeroImage = trim((string) $resetAuthSliderItems[0]['mediaPath']);
+}
+$resetHeroStyle = $resetHeroImage !== ''
+    ? "--reset-hero-image: url('" . str_replace(["'", '"'], ['%27', '%22'], $resetHeroImage) . "');"
+    : '';
 
 $resetCssPath = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/assets/css/reset-password.css';
 $resetCssVer = is_file($resetCssPath) ? (string) filemtime($resetCssPath) : (string) time();
@@ -20,28 +29,10 @@ $resetCssVer = is_file($resetCssPath) ? (string) filemtime($resetCssPath) : (str
 <section class="mainWrap reset-password-shell">
     <div class="modal show d-block" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordTitle" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content entrance-popup-bc sign-in<?= $h($resetAuthSliderClass) ?>">
+            <div class="modal-content entrance-popup-bc sign-in" style="<?= $h($resetHeroStyle) ?>">
                 <i class="e-p-close-icon-bc bc-i-close-remove" id="resetPasswordClose" role="button" tabindex="0" aria-label="Kapat"></i>
                 <div class="e-p-content-holder-bc">
                     <div class="e-p-content-bc">
-                        <div class="reset-password-hero">
-                            <?php
-                            $authSliderScreen = 'login';
-                            $authSliderItems = $resetAuthSliderItems;
-                            include VIEW_PATH . '/partials/auth-slider-bg.php';
-                            unset($authSliderScreen, $authSliderItems);
-                            ?>
-                            <div class="e-p-header-bc">
-                                <a class="popup-t-logo-w-bc" href="/">
-                                    <img class="hdr-logo-bc" src="<?= $h($resetLogoUrl) ?>" alt="<?= $h($resetSiteName) ?>">
-                                </a>
-                                <div class="e-p-sections-bc">
-                                    <div class="e-p-section-item-bc">
-                                        <span class="e-p-section-title-bc">GİRİŞ</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                         <div class="e-p-body-bc">
                             <?php if (!$hasToken): ?>
                                 <form method="post" action="#" novalidate class="entrance-form-bc login popup" id="resetPasswordRequestForm">
