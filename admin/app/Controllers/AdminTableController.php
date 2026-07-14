@@ -255,6 +255,11 @@ final class AdminTableController extends AdminController
             }
         }
 
+        // Communication tables are permission-gated by "email" but not listed as module tables.
+        if (in_array($table, ['member_inbox_messages', 'mail_outbound_log', 'mail_settings'], true)) {
+            return 'email';
+        }
+
         return '';
     }
 
