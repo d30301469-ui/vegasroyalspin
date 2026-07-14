@@ -372,7 +372,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                 </form>
 
                                 <div class="login-forgot">
-                                    <a href="#" id="openForgotPassword">ŞİFRENİZİ Mİ UNUTTUNUZ?</a>
+                                    <a href="#" id="openForgotPassword" onclick="return window.__openForgotPasswordInline ? window.__openForgotPasswordInline(this) : false;">ŞİFRENİZİ Mİ UNUTTUNUZ?</a>
                                 </div>
                             </div>
 
@@ -398,7 +398,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                         <span class="loading" style="display: none;"></span>
                                     </button>
                                     <div class="login-forgot login-back-row">
-                                        <a href="#" id="backToLoginFromForgot">Girişe dön</a>
+                                        <a href="#" id="backToLoginFromForgot" onclick="return window.__backToLoginInline ? window.__backToLoginInline(this) : false;">Girişe dön</a>
                                     </div>
                                 </form>
                             </div>
@@ -416,6 +416,29 @@ if (class_exists('ApiMediaUrl', false)) {
         </div>
     </div>
 </div>
+<script>
+window.__openForgotPasswordInline = window.__openForgotPasswordInline || function (el) {
+    try {
+        var root = (el && el.closest) ? el.closest('#login2') : document.getElementById('login2');
+        var main = root ? root.querySelector('#loginFormScreen') : document.getElementById('loginFormScreen');
+        var forgot = root ? root.querySelector('#forgotPasswordScreen') : document.getElementById('forgotPasswordScreen');
+        if (main) main.classList.add('d-none');
+        if (forgot) forgot.classList.remove('d-none');
+    } catch (e) {}
+    return false;
+};
+
+window.__backToLoginInline = window.__backToLoginInline || function (el) {
+    try {
+        var root = (el && el.closest) ? el.closest('#login2') : document.getElementById('login2');
+        var main = root ? root.querySelector('#loginFormScreen') : document.getElementById('loginFormScreen');
+        var forgot = root ? root.querySelector('#forgotPasswordScreen') : document.getElementById('forgotPasswordScreen');
+        if (forgot) forgot.classList.add('d-none');
+        if (main) main.classList.remove('d-none');
+    } catch (e) {}
+    return false;
+};
+</script>
 <?php if ($login_error !== '' || $login_account_frozen_notice): ?>
 <script>document.addEventListener('DOMContentLoaded',function(){var m=document.getElementById('login2'),$=window.jQuery||window.$;if(m&&$)$(m).modal('show');});</script>
 <?php endif; ?>
