@@ -51,22 +51,38 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     .reset-password-shell .modal-dialog {
         max-width: 559px;
         margin: 24px auto;
+        height: calc(100dvh - 48px);
     }
 
     .reset-password-shell .modal-content {
         border-radius: 10px;
         overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #resetPasswordModal .e-p-content-holder-bc,
+    #resetPasswordModal .e-p-content-bc {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #resetPasswordModal .e-p-body-bc {
+        position: relative;
+        z-index: 1;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     #resetPasswordModal .e-p-close-icon-bc {
         cursor: pointer;
         left: auto;
         right: 11px;
-    }
-
-    #resetPasswordModal .e-p-body-bc {
-        position: relative;
-        z-index: 1;
     }
 </style>
 <section class="mainWrap reset-password-shell">
