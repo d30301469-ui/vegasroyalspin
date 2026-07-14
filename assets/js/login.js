@@ -315,7 +315,13 @@
         }
 
         document.addEventListener('click', function (e) {
-            var forgotLink = e.target && e.target.closest ? e.target.closest('#openForgotPassword') : null;
+            var forgotLink = null;
+            if (e.target && e.target.closest) {
+                forgotLink = e.target.closest('#openForgotPassword');
+                if (!forgotLink) {
+                    forgotLink = e.target.closest('#login2 .login-forgot a');
+                }
+            }
             if (forgotLink) {
                 e.preventDefault();
                 var scope = getLoginModalScope(forgotLink);
