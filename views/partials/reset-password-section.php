@@ -58,6 +58,14 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         overflow: hidden;
     }
 
+    #resetPasswordModal .e-p-content-holder-bc,
+    #resetPasswordModal .e-p-content-bc {
+        height: auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
     #resetPasswordModal .reset-password-hero {
         position: relative;
         height: 320px;
