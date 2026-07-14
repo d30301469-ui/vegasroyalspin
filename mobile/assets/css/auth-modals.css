@@ -7,20 +7,14 @@ body.mobile-site.modal-open {
 
 body.mobile-site.modal-open:has(#login2.show) .layout-header-holder-bc,
 body.mobile-site.modal-open.login-modal-open .layout-header-holder-bc,
-body.mobile-site.modal-open:has(#resetPasswordModal.show) .layout-header-holder-bc,
-body.mobile-site.modal-open.reset-password-modal-open .layout-header-holder-bc,
 body.mobile-site.modal-open:has(#registerModal.show) .layout-header-holder-bc,
 body.mobile-site.modal-open.register-modal-open .layout-header-holder-bc,
 body.mobile-site.modal-open:has(#login2.show) .layout-navigation-holder-bc,
 body.mobile-site.modal-open.login-modal-open .layout-navigation-holder-bc,
-body.mobile-site.modal-open:has(#resetPasswordModal.show) .layout-navigation-holder-bc,
-body.mobile-site.modal-open.reset-password-modal-open .layout-navigation-holder-bc,
 body.mobile-site.modal-open:has(#registerModal.show) .layout-navigation-holder-bc,
 body.mobile-site.modal-open.register-modal-open .layout-navigation-holder-bc,
 body.mobile-site.modal-open:has(#login2.show) .hdr-navigation-scrollable-bc-holder,
 body.mobile-site.modal-open.login-modal-open .hdr-navigation-scrollable-bc-holder,
-body.mobile-site.modal-open:has(#resetPasswordModal.show) .hdr-navigation-scrollable-bc-holder,
-body.mobile-site.modal-open.reset-password-modal-open .hdr-navigation-scrollable-bc-holder,
 body.mobile-site.modal-open:has(#registerModal.show) .hdr-navigation-scrollable-bc-holder {
   visibility: hidden !important;
   pointer-events: none !important;
@@ -32,7 +26,6 @@ body.mobile-site.modal-open.register-modal-open .hdr-navigation-scrollable-bc-ho
 }
 
 body.mobile-site #login2 .auth-slider-bg,
-body.mobile-site #resetPasswordModal .auth-slider-bg,
 body.mobile-site #registerModal .auth-slider-bg {
   position: absolute !important;
   inset: 0 !important;
@@ -42,14 +35,12 @@ body.mobile-site #registerModal .auth-slider-bg {
 }
 
 body.mobile-site #login2 .auth-slider-bg__slide,
-body.mobile-site #resetPasswordModal .auth-slider-bg__slide,
 body.mobile-site #registerModal .auth-slider-bg__slide {
   position: absolute !important;
   inset: 0 !important;
 }
 
 body.mobile-site #login2 .auth-slider-bg__image,
-body.mobile-site #resetPasswordModal .auth-slider-bg__image,
 body.mobile-site #registerModal .auth-slider-bg__image {
   width: 100% !important;
   height: 100% !important;
@@ -58,7 +49,6 @@ body.mobile-site #registerModal .auth-slider-bg__image {
 }
 
 body.mobile-site #login2 .entrance-popup-bc.has-auth-slider > .e-p-content-holder-bc,
-body.mobile-site #resetPasswordModal .entrance-popup-bc.has-auth-slider > .e-p-content-holder-bc,
 body.mobile-site #registerModal .register-modal-content.has-auth-slider > .e-p-content-holder-bc {
   position: relative !important;
   z-index: 1 !important;
@@ -70,7 +60,6 @@ body.mobile-site .modal-backdrop {
 }
 
 body.mobile-site #login2.modal,
-body.mobile-site #resetPasswordModal.modal,
 body.mobile-site #registerModal.modal {
   position: fixed !important;
   inset: 0 !important;
@@ -93,13 +82,11 @@ body.mobile-site #registerModal.modal {
 }
 
 body.mobile-site #login2.modal.show,
-body.mobile-site #resetPasswordModal.modal.show,
 body.mobile-site #registerModal.modal.show {
   display: block !important;
 }
 
 body.mobile-site #login2 .modal-dialog,
-body.mobile-site #resetPasswordModal .modal-dialog,
 body.mobile-site #registerModal .modal-dialog {
   position: absolute !important;
   inset: 0 !important;
@@ -115,7 +102,6 @@ body.mobile-site #registerModal .modal-dialog {
 }
 
 body.mobile-site #login2 .modal-content,
-body.mobile-site #resetPasswordModal .modal-content,
 body.mobile-site #registerModal .register-modal-content {
   position: absolute !important;
   inset: 0 !important;
@@ -138,8 +124,6 @@ body.mobile-site #registerModal .register-modal-content {
 
 body.mobile-site #login2 .e-p-content-holder-bc,
 body.mobile-site #login2 .e-p-content-bc,
-body.mobile-site #resetPasswordModal .e-p-content-holder-bc,
-body.mobile-site #resetPasswordModal .e-p-content-bc,
 body.mobile-site #registerModal .e-p-content-holder-bc,
 body.mobile-site #registerModal .e-p-content-bc {
   height: 100%;
@@ -148,8 +132,7 @@ body.mobile-site #registerModal .e-p-content-bc {
   flex-direction: column;
 }
 
-body.mobile-site #login2 .modal-body,
-body.mobile-site #resetPasswordModal .modal-body {
+body.mobile-site #login2 .modal-body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -169,7 +152,6 @@ body.mobile-site #registerModal .register-modal-header-text {
 }
 
 body.mobile-site #login2 .login-modal-container,
-body.mobile-site #resetPasswordModal .reset-password-modal-container,
 body.mobile-site #registerModal .reg-form-block-bc,
 body.mobile-site #registerModal .entrance-form-bc.registration.popup {
   min-height: 0;
@@ -183,13 +165,7 @@ body.mobile-site #login2 .login-modal-container {
   gap: 0;
 }
 
-body.mobile-site #resetPasswordModal .reset-password-modal-container {
-  position: relative;
-  gap: 0;
-}
-
 body.mobile-site #login2 .login-modal-header.e-p-header-bc,
-body.mobile-site #resetPasswordModal .login-modal-header.e-p-header-bc,
 body.mobile-site #registerModal .register-modal-header-text.e-p-header-bc {
   flex-shrink: 0;
   min-height: var(--mobile-header-main-section-height, 46px);
@@ -200,8 +176,7 @@ body.mobile-site #registerModal .register-modal-header-text.e-p-header-bc {
   z-index: 3;
 }
 
-body.mobile-site #login2 .login-modal-header.e-p-header-bc,
-body.mobile-site #resetPasswordModal .login-modal-header.e-p-header-bc {
+body.mobile-site #login2 .login-modal-header.e-p-header-bc {
   position: fixed !important;
   top: env(safe-area-inset-top, 0px) !important;
   right: 4px !important;
@@ -217,19 +192,6 @@ body.mobile-site #resetPasswordModal .login-modal-header.e-p-header-bc {
   align-items: center;
   pointer-events: auto !important;
   z-index: 100205 !important;
-}
-
-body.mobile-site #resetPasswordModal .login-modal-header.e-p-header-bc {
-  position: relative !important;
-  top: auto !important;
-  right: auto !important;
-  left: auto !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  height: auto !important;
-  min-height: 52px !important;
-  padding: max(env(safe-area-inset-top, 0px), 0px) 14px 0 !important;
-  justify-content: space-between !important;
 }
 
 body.mobile-site #registerModal .register-modal-top-bar {
@@ -391,29 +353,6 @@ body.mobile-site #login2 .entrance-form-content-bc.single-side.step-0 {
   display: flex;
   flex-direction: column;
   padding: 0 14px 12px;
-}
-
-body.mobile-site #login2 .entrance-popup-bc.sign-in {
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(4, 5, 20, 0.1) 43%, rgba(5, 5, 20, 0.98) 67%),
-    url("https://uploads.onecompiler.io/43pen4n3k/44dm4drrr/CM-G%C4%B0R%C4%B0%C5%9E-EKRANI.png")
-    center top / 100% auto no-repeat,
-    linear-gradient(227deg, #661760 0%, rgb(0, 11, 36) 50%, #0e005a 100%) !important;
-}
-
-body.mobile-site #login2 .sg-n-text-row-1-bc,
-body.mobile-site #login2 .sg-n-text-row-2-bc {
-  color: transparent !important;
-  font-size: 0 !important;
-  line-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  pointer-events: none;
-  user-select: none;
-}
-
-body.mobile-site #login2 .sg-n-text-row-1-bc {
-  display: none !important;
 }
 
 body.mobile-site #login2 .sg-n-text-row-2-bc {
