@@ -1,6 +1,6 @@
 <?php
 $resetToken = $resetToken ?? '';
-$resetPasswordJs = BASE_PATH . '/assets/js/reset-password.js';
+$resetPasswordJs = BASE_PATH . '/assets/js/reset-password-screen.js';
 $resetPasswordJsVer = is_file($resetPasswordJs) ? (string) filemtime($resetPasswordJs) : (string) time();
 ?>
 <?php
@@ -12,4 +12,4 @@ if (is_file($mobileHead) && filesize($mobileHead) > 0) {
 }
 ?>
 <?php include VIEW_PATH . '/partials/reset-password-section.php'; ?>
-<script src="/assets/js/reset-password.js?v=<?= urlencode($resetPasswordJsVer) ?>" defer></script>
+<script src="/assets/js/reset-password-screen.js?v=<?= urlencode($resetPasswordJsVer) ?>" defer></script>
