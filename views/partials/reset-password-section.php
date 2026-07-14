@@ -370,7 +370,7 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
                             <div class="reset-password-modal login-modal-container">
                                 <div class="reset-password-hero" aria-hidden="true">
                                     <span class="reset-password-brand"><?= $h($resetBrandText) ?></span>
-                                    <button type="button" class="reset-password-close login-close e-p-close-icon-bc" id="resetPasswordClose" aria-label="Kapat"></button>
+                                    <button type="button" class="reset-password-close" id="resetPasswordClose" aria-label="Kapat"></button>
                                 </div>
 
                                 <div class="reset-password-content">
