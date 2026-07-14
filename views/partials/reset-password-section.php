@@ -51,32 +51,34 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     .reset-password-shell .modal-dialog {
         max-width: 559px;
         margin: 24px auto;
-        height: calc(100dvh - 48px);
     }
 
     .reset-password-shell .modal-content {
         border-radius: 10px;
         overflow: hidden;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
     }
 
-    #resetPasswordModal .e-p-content-holder-bc,
-    #resetPasswordModal .e-p-content-bc {
-        height: 100%;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
+    #resetPasswordModal .reset-password-hero {
+        position: relative;
+        height: 320px;
+        overflow: hidden;
+        border-bottom: 4px solid #ff2ff0;
+        box-shadow: 0 2px 14px rgba(255, 45, 239, 0.5);
+    }
+
+    #resetPasswordModal .reset-password-hero .e-p-header-bc {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        background: transparent;
+        border-bottom: 0;
     }
 
     #resetPasswordModal .e-p-body-bc {
         position: relative;
         z-index: 1;
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
     }
 
     #resetPasswordModal .e-p-close-icon-bc {
@@ -89,22 +91,24 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     <div class="modal show d-block" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordTitle" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content entrance-popup-bc sign-in<?= $h($resetAuthSliderClass) ?>">
-                <?php
-                $authSliderScreen = 'login';
-                $authSliderItems = $resetAuthSliderItems;
-                include VIEW_PATH . '/partials/auth-slider-bg.php';
-                unset($authSliderScreen, $authSliderItems);
-                ?>
                 <i class="e-p-close-icon-bc bc-i-close-remove" id="resetPasswordClose" role="button" tabindex="0" aria-label="Kapat"></i>
                 <div class="e-p-content-holder-bc">
                     <div class="e-p-content-bc">
-                        <div class="e-p-header-bc">
-                            <a class="popup-t-logo-w-bc" href="/">
-                                <img class="hdr-logo-bc" src="<?= $h($resetLogoUrl) ?>" alt="<?= $h($resetSiteName) ?>">
-                            </a>
-                            <div class="e-p-sections-bc">
-                                <div class="e-p-section-item-bc">
-                                    <span class="e-p-section-title-bc">GİRİŞ</span>
+                        <div class="reset-password-hero">
+                            <?php
+                            $authSliderScreen = 'login';
+                            $authSliderItems = $resetAuthSliderItems;
+                            include VIEW_PATH . '/partials/auth-slider-bg.php';
+                            unset($authSliderScreen, $authSliderItems);
+                            ?>
+                            <div class="e-p-header-bc">
+                                <a class="popup-t-logo-w-bc" href="/">
+                                    <img class="hdr-logo-bc" src="<?= $h($resetLogoUrl) ?>" alt="<?= $h($resetSiteName) ?>">
+                                </a>
+                                <div class="e-p-sections-bc">
+                                    <div class="e-p-section-item-bc">
+                                        <span class="e-p-section-title-bc">GİRİŞ</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
