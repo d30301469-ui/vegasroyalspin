@@ -14,7 +14,7 @@ final class AdminCommunicationController extends AdminController
             'crumbs' => 'İletişim | E-posta | Gelen Kutusu',
             'messages' => $this->rows('member_inbox_messages', 'created_at'),
             'mailLogs' => $this->rows('mail_outbound_log', 'created_at'),
-            'settings' => $this->first('mail_settings'),
+            'settings' => $this->mailSettingsRow(),
         ]);
     }
 
@@ -39,7 +39,7 @@ final class AdminCommunicationController extends AdminController
             'title' => 'Mail Ayarları',
             'active' => 'email',
             'crumbs' => 'İletişim | E-posta | Ayarlar',
-            'settings' => $this->first('mail_settings'),
+            'settings' => $this->mailSettingsRow(),
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
         ]);
         unset($_SESSION['admin_flash']);
@@ -55,7 +55,7 @@ final class AdminCommunicationController extends AdminController
         }
 
         $this->ensureMailTables();
-        $existing = $this->first('mail_settings');
+        $existing = $this->mailSettingsRow();
 
         $enabled = isset($_POST['enabled']) ? 1 : 0;
         $fromEmail = trim((string) ($_POST['from_email'] ?? ''));
@@ -197,6 +197,17 @@ final class AdminCommunicationController extends AdminController
             $stmt = AdminDatabase::pdo()->query('SELECT * FROM `' . str_replace('`', '``', $table) . '` LIMIT 1');
             $row = $stmt->fetch();
 
+            return is_array($row) ? $row : [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private function mailSettingsRow(): array
+    {
+        try {
+            $stmt = AdminDatabase::pdo()->query('SELECT * FROM mail_settings ORDER BY id ASC LIMIT 1');
+            $row = $stmt->fetch();
             return is_array($row) ? $row : [];
         } catch (Throwable) {
             return [];

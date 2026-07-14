@@ -157,6 +157,10 @@ if (!function_exists('memberSendResetMail')) {
         $user = trim((string) ($settings['smtp_user'] ?? ''));
         $pass = (string) ($settings['smtp_password'] ?? '');
 
+        if ($from === '' && $user !== '' && filter_var($user, FILTER_VALIDATE_EMAIL) !== false) {
+            $from = $user;
+        }
+
         if ($host === '') {
             $errorMessage = 'smtp_host_missing';
             return false;
@@ -181,6 +185,7 @@ if (!function_exists('memberSendResetMail')) {
 
         $lastError = 'smtp_send_failed';
         foreach (array_values(array_unique($strategies)) as $secureMode) {
+            foreach ([false, true] as $allowSelfSigned) {
             try {
                 $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
                 $mail->CharSet = 'UTF-8';
@@ -201,6 +206,16 @@ if (!function_exists('memberSendResetMail')) {
                     $mail->SMTPAutoTLS = false;
                 }
 
+                if ($allowSelfSigned) {
+                    $mail->SMTPOptions = [
+                        'ssl' => [
+                            'verify_peer' => false,
+                            'verify_peer_name' => false,
+                            'allow_self_signed' => true,
+                        ],
+                    ];
+                }
+
                 $mail->setFrom($from, 'VegasRoyalSpin');
                 $mail->addAddress($toEmail);
                 $mail->Subject = $subject;
@@ -214,6 +229,7 @@ if (!function_exists('memberSendResetMail')) {
                 $lastError = trim((string) $mail->ErrorInfo) !== '' ? trim((string) $mail->ErrorInfo) : 'smtp_send_failed';
             } catch (Throwable $exception) {
                 $lastError = trim($exception->getMessage()) !== '' ? trim($exception->getMessage()) : 'smtp_send_failed';
+            }
             }
         }
 
