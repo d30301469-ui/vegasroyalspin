@@ -341,7 +341,7 @@
                 showLoginFormScreen(scopeBack);
                 resetForgotPasswordAlerts(scopeBack);
             }
-        });
+        }, true);
 
         var registerLoginLink = document.querySelector('.register-modal-login-link');
         if (registerLoginLink && registerModalEl) {
