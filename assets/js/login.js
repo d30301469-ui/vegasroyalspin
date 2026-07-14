@@ -231,6 +231,7 @@
         var hdr = inLoginScope(scope, 'loginScreenHeader');
         var main = inLoginScope(scope, 'loginFormScreen');
         var forg = inLoginScope(scope, 'forgotPasswordScreen');
+        var forgotForm = forg ? forg.querySelector('.login-form') : null;
         if (hdr) {
             hdr.classList.remove('d-none');
         }
@@ -240,12 +241,18 @@
         if (forg) {
             forg.classList.add('d-none');
         }
+        if (forgotForm) {
+            forgotForm.style.flex = '';
+            forgotForm.style.marginTop = '';
+            forgotForm.style.justifyContent = '';
+        }
     }
 
     function showForgotPasswordScreen(scope) {
         var hdr = inLoginScope(scope, 'loginScreenHeader');
         var main = inLoginScope(scope, 'loginFormScreen');
         var forg = inLoginScope(scope, 'forgotPasswordScreen');
+        var forgotForm = forg ? forg.querySelector('.login-form') : null;
         if (hdr) {
             hdr.classList.add('d-none');
         }
@@ -254,6 +261,11 @@
         }
         if (forg) {
             forg.classList.remove('d-none');
+        }
+        if (forgotForm) {
+            forgotForm.style.flex = '0 0 auto';
+            forgotForm.style.marginTop = 'auto';
+            forgotForm.style.justifyContent = 'flex-end';
         }
     }
 
