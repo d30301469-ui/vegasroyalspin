@@ -41,6 +41,7 @@ $assetUrl = static function ($value, $default): string {
 };
 
 $resetHeroImageUrl = $assetUrl($settings['reset_password_hero_image_url'] ?? '', '/assets/images/login-bg.png');
+$resetBrandLogoUrl = $assetUrl($branding['logo_url'] ?? ($settings['logo_url'] ?? ''), '/assets/images/MaltaBetLogo.png');
 $resetBrandText = $safeText($settings['reset_password_brand_text'] ?? '', $branding['site_name'] ?? 'Vegasroyalspin');
 $resetTitleRequest = $safeText($settings['reset_password_title_request'] ?? '', 'ŞİFRE SIFIRLA');
 $resetTitleConfirm = $safeText($settings['reset_password_title_confirm'] ?? '', 'YENİ ŞİFRE');
@@ -94,8 +95,8 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     }
 
     .reset-password-shell .modal-dialog {
-        width: min(378px, calc(100vw - 40px));
-        max-width: 378px;
+        width: min(386px, calc(100vw - 40px));
+        max-width: 386px;
         margin: 12px auto;
     }
 
@@ -117,7 +118,7 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
 
     .reset-password-shell #resetPasswordModal.modal.show.d-block .modal-content {
         display: block !important;
-        width: 378px !important;
+        width: 386px !important;
         max-width: calc(100vw - 40px) !important;
         margin: 0 auto !important;
     }
@@ -137,7 +138,7 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
 
     .reset-password-close {
         position: absolute;
-        top: 7px;
+        top: 8px;
         right: 8px;
         width: 22px;
         height: 22px;
@@ -169,7 +170,7 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
 
     .reset-password-hero {
         position: relative;
-        height: 318px;
+        height: 320px;
         background: #15063f;
         border-top: 8px solid <?= $h($resetHeroTopBorderColor) ?>;
         border-bottom: 5px solid <?= $h($resetHeroBottomBorderColor) ?>;
@@ -182,26 +183,34 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         inset: 0;
         background-image: url('<?= $h($resetHeroImageUrl) ?>');
         background-size: cover;
-        background-position: center 22%;
+        background-position: center 24%;
         filter: saturate(1.05) contrast(1.06);
         opacity: 0.96;
     }
 
     .reset-password-brand {
         position: absolute;
-        top: 24px;
+        top: 26px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 2;
-        font-size: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         line-height: 1;
-        color: #fff;
         opacity: 0.95;
-        font-weight: 700;
+    }
+
+    .reset-password-brand-logo {
+        display: block;
+        width: auto;
+        height: 34px;
+        max-width: 164px;
+        object-fit: contain;
     }
 
     .reset-password-content {
-        padding: 22px 8px 18px;
+        padding: 18px 7px 102px;
     }
 
     .reset-password-modal .login-text-block {
@@ -233,7 +242,7 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         margin-top: 0;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 14px;
     }
 
     .reset-password-modal .form-group {
@@ -245,13 +254,13 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     }
 
     #resetPasswordModal .form-control-input-bc {
-        height: 48px !important;
-        min-height: 48px !important;
+        height: 52px !important;
+        min-height: 52px !important;
         border-radius: 4px !important;
         border: 1px solid <?= $h($resetInputBorderColor) ?> !important;
         background: rgba(83, 67, 122, 0.42) !important;
         color: #f7f4ff !important;
-        padding-left: 14px !important;
+        padding-left: 18px !important;
         font-size: 14px !important;
     }
 
@@ -263,14 +272,14 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
     #resetPasswordModal .login-btn,
     #resetPasswordRequestSubmit,
     #resetPasswordSubmit {
-        height: 34px !important;
-        min-height: 34px !important;
+        height: 36px !important;
+        min-height: 36px !important;
         border-radius: 4px !important;
-        background: rgba(111, 122, 176, 0.24) !important;
-        border: 1px solid rgba(146, 156, 201, 0.16) !important;
-        color: <?= $h($resetButtonTextColor) ?> !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        color: rgba(255, 255, 255, 0.3) !important;
         box-shadow: none !important;
-        font-size: 13px !important;
+        font-size: 12px !important;
         font-weight: 700 !important;
         letter-spacing: 0.02em !important;
         text-transform: uppercase !important;
@@ -302,6 +311,48 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         color: rgba(216, 216, 232, 0.72);
         font-size: 12px;
         line-height: 1.4;
+    }
+
+    .reset-password-badge {
+        position: absolute;
+        right: 12px;
+        bottom: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 146px;
+        height: 52px;
+        border-radius: 30px;
+        border: 1px solid rgba(255, 123, 255, 0.58);
+        background: radial-gradient(circle at 72% 50%, rgba(184, 63, 255, 0.52), rgba(84, 14, 126, 0.1) 42%), linear-gradient(90deg, rgba(31, 15, 84, 0.98), rgba(80, 18, 117, 0.88));
+        box-shadow: 0 0 12px rgba(225, 44, 255, 0.42), inset 0 0 18px rgba(248, 120, 255, 0.18);
+        overflow: hidden;
+    }
+
+    .reset-password-badge::before {
+        content: "7/24\AONLINE";
+        white-space: pre;
+        position: absolute;
+        left: 22px;
+        top: 9px;
+        color: #ff31f7;
+        font-size: 14px;
+        font-weight: 800;
+        font-style: italic;
+        line-height: 1.04;
+        text-shadow: 0 0 12px rgba(255, 60, 247, 0.4);
+    }
+
+    .reset-password-badge::after {
+        content: "";
+        position: absolute;
+        right: -2px;
+        top: -4px;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 50%, rgba(177, 40, 255, 0.95), rgba(83, 18, 120, 0.98));
+        box-shadow: 0 0 16px rgba(231, 80, 255, 0.45);
     }
 
     .reset-password-actions::before {
@@ -359,25 +410,30 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
         }
 
         .reset-password-hero {
-            height: 318px;
+            height: 320px;
         }
 
         .reset-password-content {
-            padding: 22px 8px 16px;
+            padding: 18px 7px 102px;
         }
 
         #resetPasswordModal .form-control-input-bc,
         #resetPasswordModal .login-btn,
         #resetPasswordRequestSubmit,
         #resetPasswordSubmit {
-            height: 48px !important;
-            min-height: 48px !important;
+            height: 52px !important;
+            min-height: 52px !important;
         }
 
         #resetPasswordModal .login-btn {
-            height: 34px !important;
-            min-height: 34px !important;
-            font-size: 13px !important;
+            height: 36px !important;
+            min-height: 36px !important;
+            font-size: 12px !important;
+        }
+
+        .reset-password-shell #resetPasswordModal.modal.show.d-block .modal-content {
+            width: calc(100vw - 24px) !important;
+            max-width: calc(100vw - 24px) !important;
         }
     }
 </style>
@@ -390,7 +446,9 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
                         <div class="modal-body e-p-body-bc">
                             <div class="reset-password-modal login-modal-container">
                                 <div class="reset-password-hero" aria-hidden="true">
-                                    <span class="reset-password-brand"><?= $h($resetBrandText) ?></span>
+                                    <span class="reset-password-brand">
+                                        <img src="<?= $h($resetBrandLogoUrl) ?>" alt="<?= $h($resetBrandText) ?>" class="reset-password-brand-logo">
+                                    </span>
                                     <button type="button" class="reset-password-close" id="resetPasswordClose" aria-label="Kapat"></button>
                                 </div>
 
@@ -453,6 +511,7 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
                                 <div class="reset-password-actions">
                                     <a href="/"><?= $h($resetInfoText) ?></a>
                                 </div>
+                                <div class="reset-password-badge" aria-hidden="true"></div>
                                 </div>
                             </div>
                         </div>
@@ -465,6 +524,7 @@ $resetButtonTextColor = $safeColor($settings['reset_password_button_text_color']
 <script>
 window.__RESET_PASSWORD_THEME__ = {
     heroImageUrl: <?= json_encode($resetHeroImageUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+    brandLogoUrl: <?= json_encode($resetBrandLogoUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
     brandText: <?= json_encode($resetBrandText, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
     titleRequest: <?= json_encode($resetTitleRequest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
     titleConfirm: <?= json_encode($resetTitleConfirm, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
