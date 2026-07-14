@@ -314,6 +314,30 @@
             });
         }
 
+        var directForgotLink = loginModalEl.querySelector('#openForgotPassword, .login-forgot a');
+        if (directForgotLink) {
+            directForgotLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                var scopeDirect = getLoginModalScope(directForgotLink);
+                showForgotPasswordScreen(scopeDirect);
+                var ffDirect = inLoginScope(scopeDirect, 'forgotPasswordForm');
+                if (ffDirect && BetcoInputs) {
+                    BetcoInputs.resetFormInputState(ffDirect, 'login-error-text');
+                }
+                resetForgotPasswordAlerts(scopeDirect);
+            });
+        }
+
+        var directBackLink = loginModalEl.querySelector('#backToLoginFromForgot');
+        if (directBackLink) {
+            directBackLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                var scopeDirectBack = getLoginModalScope(directBackLink);
+                showLoginFormScreen(scopeDirectBack);
+                resetForgotPasswordAlerts(scopeDirectBack);
+            });
+        }
+
         document.addEventListener('click', function (e) {
             var forgotLink = null;
             if (e.target && e.target.closest) {
