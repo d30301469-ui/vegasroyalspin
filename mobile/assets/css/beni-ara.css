@@ -83,7 +83,7 @@ body.mobile-site .beni-ara-form .form-control-label-bc.inputs {
 body.mobile-site .beni-ara-form .form-control-input-bc {
   background: rgba(82, 84, 124, 0.5);
   border: 0;
-  border-radius: 2px;
+  border-radius: 4px;
   color: #fff;
   min-height: 52px;
   padding: 0 14px;
@@ -99,7 +99,7 @@ body.mobile-site .beni-ara-textarea.form-control-input-bc {
 }
 
 body.mobile-site .beni-ara-field-full {
-  margin-bottom: 18px;
+  margin-bottom: 32px;
 }
 
 body.mobile-site .beni-ara-form .form-control-input-stroke-bc {
