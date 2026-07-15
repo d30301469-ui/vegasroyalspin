@@ -10,6 +10,8 @@ require_once BASE_PATH . '/core/bootstrap.php';
 
 $assetCssDir = BASE_PATH . '/assets/css';
 $assetVer = (string) (file_exists($assetCssDir . '/global.css') ? filemtime($assetCssDir . '/global.css') : 0) ?: '1';
+$pwaRegisterPath = BASE_PATH . '/assets/js/pwa-register.js';
+$pwaRegisterVer = (string) (is_file($pwaRegisterPath) ? filemtime($pwaRegisterPath) : $assetVer);
 $headerCssVer = (string) (file_exists($assetCssDir . '/header.css') ? filemtime($assetCssDir . '/header.css') : $assetVer);
 $modalCssVer = (string) (file_exists($assetCssDir . '/modal.css') ? filemtime($assetCssDir . '/modal.css') : $assetVer);
 $registerCssVer = (string) (file_exists($assetCssDir . '/register.css') ? filemtime($assetCssDir . '/register.css') : $assetVer);
@@ -153,6 +155,6 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <script src="https://cdn.jsdelivr.net/npm/izitoast/dist/js/iziToast.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>
   <script src="/assets/js/toastify-helper.js?v=<?= $assetVer ?>"></script>
-    <script src="/assets/js/pwa-register.js?v=<?= $assetVer ?>"></script>
+    <script src="/assets/js/pwa-register.js?v=<?= rawurlencode($pwaRegisterVer) ?>"></script>
   <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 </head>
