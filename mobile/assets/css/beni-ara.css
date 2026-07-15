@@ -27,6 +27,8 @@ body.mobile-site .beni-ara-page > .container > .row:not(.beni-ara-form-row) > [c
 }
 
 body.mobile-site .beni-ara-header {
+  background: transparent;
+  border-bottom: 0;
   padding-top: 1.625rem;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
@@ -51,16 +53,17 @@ body.mobile-site .beni-ara-card {
 }
 
 body.mobile-site .beni-ara-title {
-  font-size: 18px;
-  line-height: 1.25;
+  font-size: 20px;
+  line-height: 1.2;
   letter-spacing: 0;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
 body.mobile-site .beni-ara-lead {
   font-size: 12px;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.68);
+  color: rgba(255, 255, 255, 0.76);
 }
 
 body.mobile-site .beni-ara-form .form-control-label-bc.inputs {
@@ -69,16 +72,21 @@ body.mobile-site .beni-ara-form .form-control-label-bc.inputs {
 }
 
 body.mobile-site .beni-ara-form .form-control-input-bc {
-  background: rgba(82, 84, 124, 0.42);
+  background: rgba(82, 84, 124, 0.5);
   border: 0;
   border-radius: 4px;
   color: #fff;
   min-height: 52px;
-  padding: 22px 14px 8px;
+  padding: 0 14px;
 }
 
 body.mobile-site .beni-ara-form .form-control-input-bc::placeholder {
   color: rgba(214, 216, 238, 0.62);
+}
+
+body.mobile-site .beni-ara-textarea.form-control-input-bc {
+  min-height: 106px;
+  padding: 12px 14px;
 }
 
 body.mobile-site .beni-ara-form .form-control-input-stroke-bc {
@@ -92,8 +100,7 @@ body.mobile-site .beni-ara-form .form-control-label-bc.inputs.has-value .form-co
 }
 
 body.mobile-site .beni-ara-form .form-control-title-bc {
-  color: rgba(219, 220, 241, 0.68);
-  font-size: 12px;
+  display: none;
 }
 
 body.mobile-site .beni-ara-actions {
@@ -109,11 +116,19 @@ body.mobile-site .beni-ara-submit-btn {
   border-radius: 4px;
   background: #5d6168;
   color: #fff !important;
-  font-size: 15px;
+  font-size: 21px;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
+  text-transform: uppercase;
   align-items: center;
   justify-content: center;
+  box-shadow: none;
+}
+
+body.mobile-site .beni-ara-submit-btn:hover,
+body.mobile-site .beni-ara-submit-btn:active {
+  background: #5d6168;
+  transform: none;
   box-shadow: none;
 }
 
@@ -148,7 +163,5 @@ body.mobile-site .beni-ara-submit-btn:focus-visible {
     margin-right: 1.25rem;
   }
 
-  body.mobile-site .beni-ara-title {
-    font-size: 20px;
-  }
+  body.mobile-site .beni-ara-title { font-size: 18px; }
 }
