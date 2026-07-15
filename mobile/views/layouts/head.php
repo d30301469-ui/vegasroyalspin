@@ -96,6 +96,10 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
   <link rel="stylesheet" href="/mobile/assets/css/auth-modals.css?v=<?= $ver($mobileCssDir . '/auth-modals.css') ?>">
   <link rel="stylesheet" href="/assets/css/login-modal.css?v=<?= $ver($assetCssDir . '/login-modal.css') ?>">
   <link rel="stylesheet" href="/assets/css/register-modal.css?v=<?= $ver($assetCssDir . '/register-modal.css') ?>">
+  <?php if ($requestPath === '/beni-ara'): ?>
+  <link rel="stylesheet" href="/assets/css/beni-ara.css?v=<?= $ver($assetCssDir . '/beni-ara.css') ?>">
+  <link rel="stylesheet" href="/mobile/assets/css/beni-ara.css?v=<?= $ver($mobileCssDir . '/beni-ara.css') ?>">
+  <?php endif; ?>
   <script defer src="/assets/js/swiper-bundle.min.js?v=<?= $ver(BASE_PATH . '/assets/js/swiper-bundle.min.js') ?>"></script>
   <script defer src="/assets/js/mobile-right-sheet.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/mobile-right-sheet.js')) ?>"></script>
   <script defer src="/assets/js/footer.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/footer.js')) ?>"></script>
