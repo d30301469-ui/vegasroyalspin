@@ -15,8 +15,8 @@ $login_password_updated_notice = !empty($_GET['password_updated']) && (string) $
 $loginAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('login') : [];
 $loginAuthSliderClass = $loginAuthSliderItems !== [] ? ' has-auth-slider' : '';
 $loginBranding = (isset($siteBranding) && is_array($siteBranding)) ? $siteBranding : [];
-$loginSiteName = (string) ($loginBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
-$loginLogoUrl = (string) ($loginBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+$loginSiteName = (string) ($loginBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
+$loginLogoUrl = (string) ($loginBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
 if (class_exists('ApiMediaUrl', false)) {
     $loginLogoUrl = ApiMediaUrl::resolve($loginLogoUrl);
 }

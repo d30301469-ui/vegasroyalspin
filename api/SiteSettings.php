@@ -201,6 +201,20 @@ final class ApiSiteSettings
         self::writeCachedEnvelope($envelope);
     }
 
+    /**
+     * Ayar zarfı önbelleğini (ve tazeleme kilidini) siler. Admin logo/branding
+     * güncellemesi sonrası frontend'in bir sonraki istekte API'den taze veri
+     * çekmesini garanti eder; aksi halde stale zarf servis edilmeye devam eder.
+     */
+    public static function purgeCache(): void
+    {
+        foreach ([self::cacheFilePath(), self::cacheFilePath() . '.refresh.lock'] as $file) {
+            if (is_file($file)) {
+                @unlink($file);
+            }
+        }
+    }
+
     private static function cacheFilePath(): string
     {
         $base = defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__);
@@ -396,7 +410,7 @@ final class ApiSiteSettings
     {
         $siteName = trim((string) ($settings['site_adi'] ?? ''));
         $description = trim((string) ($settings['site_aciklama'] ?? ''));
-        $logoUrl = self::publicAssetUrl((string) ($settings['logo_url'] ?? ''), '/assets/images/MaltaBetLogo.png');
+        $logoUrl = self::publicAssetUrl((string) ($settings['logo_url'] ?? ''), '');
         $faviconUrl = self::publicAssetUrl((string) ($settings['favicon_url'] ?? ''), '/assets/images/favicons/favicon.svg');
         $manifestUrl = self::publicAssetUrl((string) ($settings['manifest_url'] ?? ''), '/assets/images/favicons/site.webmanifest');
         $ogRaw = trim((string) ($settings['og_image_url'] ?? ''));
@@ -406,7 +420,7 @@ final class ApiSiteSettings
             ? $logoUrl
             : self::publicAssetUrl($ogRaw, $logoUrl);
 
-        $siteName = $siteName !== '' ? $siteName : 'MaltaBet';
+        $siteName = $siteName !== '' ? $siteName : 'VegasRoyalSpin';
         $description = $description !== '' ? $description : 'Güvenilir casino ve bahis';
 
         $resetHeroImageUrl = self::publicAssetUrl((string) ($settings['reset_password_hero_image_url'] ?? ''), '/assets/images/login-bg.png');
@@ -606,7 +620,7 @@ final class ApiSiteSettings
         }
         $path = (string) (parse_url($url, PHP_URL_PATH) ?? '');
         if ($path === '') {
-            return '/assets/images/MaltaBetLogo.png';
+            return '';
         }
 
         return $path;

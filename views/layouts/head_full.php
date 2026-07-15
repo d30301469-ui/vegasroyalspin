@@ -44,7 +44,7 @@ if ($headManifestPath === '' || ($headManifestHost !== '' && $headManifestHost !
     $headManifestPath = $headManifestDefaultPath;
 }
 $headManifestUrl = $headManifestPath;
-$headOgImageUrl = (string) ($headBranding['og_image_url'] ?? $headBranding['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+$headOgImageUrl = (string) ($headBranding['og_image_url'] ?? $headBranding['logo_url'] ?? '');
 if (class_exists('ApiMediaUrl', false)) {
     $headFaviconPath = ApiMediaUrl::resolve($headFaviconPath);
     $headOgImageUrl = ApiMediaUrl::resolve($headOgImageUrl);

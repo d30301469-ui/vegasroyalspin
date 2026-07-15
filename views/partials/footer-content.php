@@ -56,8 +56,8 @@
 
                                 <?php
                                 $footerContentBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-                                $footerContentSiteName = (string) ($footerContentBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
-                                $footerContentLogoUrl = (string) ($footerContentBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+                                $footerContentSiteName = (string) ($footerContentBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
+                                $footerContentLogoUrl = (string) ($footerContentBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
                                 if (class_exists('ApiMediaUrl', false)) {
                                     $footerContentLogoUrl = ApiMediaUrl::resolve($footerContentLogoUrl);
                                 }

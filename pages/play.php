@@ -203,12 +203,18 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
 
 <?php
 // Get logo from API branding (updated via admin panel)
-$playLogoUrl = (string) ($siteBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+$playLogoUrl = (string) ($siteBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
 if (class_exists('ApiMediaUrl', false)) {
     $playLogoUrl = ApiMediaUrl::resolve($playLogoUrl);
 }
-// Add cache busting to prevent old logo from showing
-$playLogoUrl = $playLogoUrl . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim(parse_url($playLogoUrl, PHP_URL_PATH) ?? '', '/')) ?: time());
+// Cache busting — sadece yerel path için
+if ($playLogoUrl !== '') {
+    $playLogoPath = parse_url($playLogoUrl, PHP_URL_PATH) ?? '';
+    $playLogoFile = BASE_PATH . '/' . ltrim($playLogoPath, '/');
+    if ($playLogoPath !== '' && is_file($playLogoFile)) {
+        $playLogoUrl = $playLogoUrl . '?v=' . (int) filemtime($playLogoFile);
+    }
+}
 ?>
 <header class="play-topbar" aria-label="Oyun çubuğu">
   <a class="play-topbar-logo" href="/" title="Ana sayfa">

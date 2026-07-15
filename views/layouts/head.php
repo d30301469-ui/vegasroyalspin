@@ -62,7 +62,7 @@ if ($headManifestPath === '' || ($headManifestHost !== '' && $headManifestHost !
   $headManifestPath = $headManifestDefaultPath;
 }
 $headManifestUrl = cms_asset_url($headManifestPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headManifestPath, '/')) ?: time());
-$headOgImageUrl = cms_asset_url((string) ($headBranding['og_image_url'] ?? $headBranding['logo_url'] ?? '/assets/images/MaltaBetLogo.png'));
+$headOgImageUrl = cms_asset_url((string) ($headBranding['og_image_url'] ?? $headBranding['logo_url'] ?? ''));
 $headKeywords = (string) ($headMeta['keywords'] ?? '');
 $headRobots = (string) ($headMeta['robots'] ?? 'index, follow');
 $headLanguage = (string) ($headMeta['language'] ?? 'tr');

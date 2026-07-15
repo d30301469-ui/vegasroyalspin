@@ -126,7 +126,7 @@ if (empty($promosyonlar)) {
             <div class="promo-grid">
                 <?php 
                 // Get logo from API branding (updated via admin panel)
-                $promoLogoUrl = (string) ($siteBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+                $promoLogoUrl = (string) ($siteBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
                 if (class_exists('ApiMediaUrl', false)) {
                     $promoLogoUrl = ApiMediaUrl::resolve($promoLogoUrl);
                 }
