@@ -263,7 +263,7 @@ final class ApiSiteSettings
         $pdo->exec(
             "CREATE TABLE IF NOT EXISTS `site_ayarlar` (
                 `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `site_adi` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'MaltaBet',
+                `site_adi` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'VegasRoyalSpin',
                 `site_aciklama` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT 'Güvenilir casino ve bahis',
                 `bakim_modu` tinyint(1) NOT NULL DEFAULT 0,
                 `logo_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -281,7 +281,7 @@ final class ApiSiteSettings
 
         $count = (int) $pdo->query('SELECT COUNT(*) FROM `site_ayarlar`')->fetchColumn();
         if ($count === 0) {
-            $pdo->exec("INSERT INTO `site_ayarlar` (`site_adi`, `site_aciklama`) VALUES ('MaltaBet', 'Güvenilir casino ve bahis')");
+            $pdo->exec("INSERT INTO `site_ayarlar` (`site_adi`, `site_aciklama`) VALUES ('VegasRoyalSpin', 'Güvenilir casino ve bahis')");
         }
     }
 
