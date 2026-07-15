@@ -11,8 +11,8 @@ body.mobile-site .beni-ara-page {
 
 body.mobile-site .beni-ara-page .container {
   max-width: 100%;
-  padding-left: max(1rem, env(safe-area-inset-left, 0px) + 0.5rem);
-  padding-right: max(1rem, env(safe-area-inset-right, 0px) + 0.5rem);
+  padding-left: max(0.625rem, env(safe-area-inset-left, 0px) + 0.25rem);
+  padding-right: max(0.625rem, env(safe-area-inset-right, 0px) + 0.25rem);
 }
 
 /* Sadece dış grid; .beni-ara-form-row’a dokunma */
@@ -30,13 +30,13 @@ body.mobile-site .beni-ara-header {
   background: transparent;
   border-bottom: 0;
   padding-top: 1.625rem;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
 }
 
 body.mobile-site .beni-ara-form {
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
 }
 
 body.mobile-site .beni-ara-form-row {
@@ -50,8 +50,8 @@ body.mobile-site .beni-ara-form-row > [class*="col-"] {
 }
 
 body.mobile-site .beni-ara-alert {
-  margin-left: 1.25rem;
-  margin-right: 1.25rem;
+  margin-left: 0.625rem;
+  margin-right: 0.625rem;
 }
 
 /* Mobilde referans ekrandaki login form görünümü */
@@ -99,12 +99,8 @@ body.mobile-site .beni-ara-textarea.form-control-input-bc {
   padding: 12px 14px;
 }
 
-body.mobile-site .beni-ara-form-row:last-of-type {
-  margin-bottom: 14px;
-}
-
-body.mobile-site .beni-ara-field-full .form-group {
-  margin-bottom: 0;
+body.mobile-site .beni-ara-field-full {
+  margin-bottom: 18px;
 }
 
 body.mobile-site .beni-ara-form .form-control-input-stroke-bc {
@@ -122,7 +118,8 @@ body.mobile-site .beni-ara-form .form-control-title-bc {
 }
 
 body.mobile-site .beni-ara-actions {
-  margin-top: 14px;
+  clear: both;
+  margin-top: 0;
   padding-top: 0;
 }
 
@@ -160,15 +157,20 @@ body.mobile-site .beni-ara-submit-btn:focus-visible {
     padding-top: max(1.75rem, env(safe-area-inset-top, 0px) + 0.75rem);
   }
 
+  body.mobile-site .beni-ara-page .container {
+    padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+  }
+
   body.mobile-site .beni-ara-header {
     padding-top: 1.5rem;
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 
   body.mobile-site .beni-ara-form {
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 
   body.mobile-site .beni-ara-form-row > [class*="col-"] {
@@ -177,8 +179,8 @@ body.mobile-site .beni-ara-submit-btn:focus-visible {
   }
 
   body.mobile-site .beni-ara-alert {
-    margin-left: 1.25rem;
-    margin-right: 1.25rem;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
   }
 
   body.mobile-site .beni-ara-title { font-size: 18px; }
