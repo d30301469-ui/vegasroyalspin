@@ -3,15 +3,21 @@
  * Mobil header — m.casinomilyon591 DOM yapısı (layout-header-holder-bc > hdr-dynamic + header-bc)
  */
 require_once VIEW_PATH . '/partials/header-init.php';
+$loggedIn = isset($loggedIn) ? (bool) $loggedIn : false;
+$ayar = isset($ayar) && is_array($ayar) ? $ayar : [];
+$siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
+$siteContactLinks = isset($siteContactLinks) && is_array($siteContactLinks) ? $siteContactLinks : [];
 $hdrAuthClass = $loggedIn ? ' hdr-auth-user' : ' hdr-auth-guest';
 $depositHref = '/profile/deposit-withdraw?openDepositPanel=1';
 $balanceHref = $loggedIn ? $depositHref : '#';
 $smartPanelBadge = $loggedIn ? '23' : '2';
 $mobileHeaderBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-$mobileHeaderSiteName = (string) ($mobileHeaderBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
-$mobileHeaderLogoUrl = (string) ($mobileHeaderBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
+$mobileHeaderSiteName    = (string) ($mobileHeaderBranding['site_name']         ?? $ayar['site_adi']           ?? 'VegasRoyalSpin');
+$mobileHeaderLogoUrl     = (string) ($mobileHeaderBranding['logo_mobile_url']   ?? $mobileHeaderBranding['logo_url'] ?? $ayar['logo_mobile_url'] ?? $ayar['logo_url'] ?? '');
+$mobileHeaderLogoAnimUrl = (string) ($mobileHeaderBranding['logo_animated_url'] ?? $ayar['logo_animated_url']  ?? '');
 if (class_exists('ApiMediaUrl', false)) {
-    $mobileHeaderLogoUrl = ApiMediaUrl::resolve($mobileHeaderLogoUrl);
+    $mobileHeaderLogoUrl     = ApiMediaUrl::resolve($mobileHeaderLogoUrl);
+    $mobileHeaderLogoAnimUrl = ApiMediaUrl::resolve($mobileHeaderLogoAnimUrl);
 }
 $mobileHeaderSupportUrl = (string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : ''));
 $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
@@ -29,7 +35,19 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
     <div class="hdr-main-content-bc" data-mobile-header-main>
       <div class="logo-container">
         <a class="logo" href="/" title="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
-          <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="190" height="64">
+          <?php if ($mobileHeaderLogoAnimUrl !== ''): ?>
+            <?php $mAnimExt = strtolower(pathinfo((string) parse_url($mobileHeaderLogoAnimUrl, PHP_URL_PATH), PATHINFO_EXTENSION)); ?>
+            <?php if ($mAnimExt === 'webm' || $mAnimExt === 'mp4'): ?>
+              <video class="hdr-logo-bc" autoplay loop muted playsinline width="190" height="64" aria-label="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
+                <source src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" type="video/webm">
+                <?php if ($mobileHeaderLogoUrl !== ''): ?><img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
+              </video>
+            <?php else: ?>
+              <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="190" height="64">
+            <?php endif; ?>
+          <?php elseif ($mobileHeaderLogoUrl !== ''): ?>
+            <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="190" height="64">
+          <?php endif; ?>
         </a>
       </div>
 
