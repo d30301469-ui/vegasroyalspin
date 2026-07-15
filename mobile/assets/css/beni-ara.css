@@ -89,6 +89,14 @@ body.mobile-site .beni-ara-textarea.form-control-input-bc {
   padding: 12px 14px;
 }
 
+body.mobile-site .beni-ara-form-row:last-of-type {
+  margin-bottom: 20px;
+}
+
+body.mobile-site .beni-ara-field-full .form-group {
+  margin-bottom: 0;
+}
+
 body.mobile-site .beni-ara-form .form-control-input-stroke-bc {
   display: none;
 }
@@ -104,19 +112,19 @@ body.mobile-site .beni-ara-form .form-control-title-bc {
 }
 
 body.mobile-site .beni-ara-actions {
-  margin-top: 16px;
+  margin-top: 24px;
   padding-top: 0;
 }
 
 body.mobile-site .beni-ara-submit-btn {
   display: flex !important;
   width: 100%;
-  min-height: 50px;
+  min-height: 66px;
   border: 0;
   border-radius: 4px;
   background: #5d6168;
   color: #fff !important;
-  font-size: 21px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
