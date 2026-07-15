@@ -154,59 +154,72 @@
             de: "/assets/images/flag/de.svg"
         };
 
-        document.querySelectorAll(".footerLanguageDropdown").forEach(function (wrap) {
+        function setOpen(wrap, open) {
+            if (!wrap) return;
             var trigger = wrap.querySelector(".footerLanguageTrigger");
+            var menu = wrap.querySelector(".footerLanguageMenu");
+            if (!trigger || !menu) return;
+            wrap.classList.toggle("is-open", open);
+            trigger.setAttribute("aria-expanded", open ? "true" : "false");
+            if (open) menu.removeAttribute("hidden");
+            else menu.setAttribute("hidden", "");
+        }
+
+        function setActiveLang(wrap, lang) {
+            if (!wrap) return;
             var menu = wrap.querySelector(".footerLanguageMenu");
             var codeEl = wrap.querySelector(".footerLanguageCode");
             var flagEl = wrap.querySelector(".footerLanguageFlag");
-            if (!trigger || !menu || !codeEl || !flagEl) return;
-
-            function setOpen(open) {
-                wrap.classList.toggle("is-open", open);
-                trigger.setAttribute("aria-expanded", open ? "true" : "false");
-                if (open) {
-                    menu.removeAttribute("hidden");
-                } else {
-                    menu.setAttribute("hidden", "");
-                }
-            }
-
-            function setActiveLang(lang) {
-                var normalized = (lang || "tr").toLowerCase();
-                if (!codeByLang[normalized]) normalized = "tr";
-                codeEl.textContent = codeByLang[normalized];
-                flagEl.src = flagByLang[normalized];
-                flagEl.alt = codeByLang[normalized];
-
-                menu.querySelectorAll(".footerLanguageOption").forEach(function (opt) {
-                    var isActive = (opt.getAttribute("data-lang") || "").toLowerCase() === normalized;
-                    opt.classList.toggle("is-active", isActive);
-                    opt.setAttribute("aria-selected", isActive ? "true" : "false");
-                });
-            }
-
-            trigger.addEventListener("click", function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                setOpen(!wrap.classList.contains("is-open"));
-            });
-
-            document.addEventListener("click", function (e) {
-                if (!wrap.contains(e.target)) setOpen(false);
-            });
+            if (!menu || !codeEl || !flagEl) return;
+            var normalized = (lang || "tr").toLowerCase();
+            if (!codeByLang[normalized]) normalized = "tr";
+            codeEl.textContent = codeByLang[normalized];
+            flagEl.src = flagByLang[normalized];
+            flagEl.alt = codeByLang[normalized];
 
             menu.querySelectorAll(".footerLanguageOption").forEach(function (opt) {
-                opt.addEventListener("click", function () {
-                    var lang = (this.getAttribute("data-lang") || "tr").toLowerCase();
-                    setActiveLang(lang);
-                    setOpen(false);
+                var isActive = (opt.getAttribute("data-lang") || "").toLowerCase() === normalized;
+                opt.classList.toggle("is-active", isActive);
+                opt.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+        }
+
+        var currentLang = (new URLSearchParams(window.location.search)).get("lang") || "tr";
+        document.querySelectorAll(".footerLanguageDropdown").forEach(function (wrap) {
+            setActiveLang(wrap, currentLang);
+            setOpen(wrap, false);
+        });
+
+        if (!window.__footerLanguageDelegatedBound) {
+            document.addEventListener("click", function (e) {
+                var trigger = e.target.closest(".footerLanguageTrigger");
+                if (trigger) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var wrap = trigger.closest(".footerLanguageDropdown");
+                    var willOpen = !(wrap && wrap.classList.contains("is-open"));
+                    document.querySelectorAll(".footerLanguageDropdown.is-open").forEach(function (openWrap) {
+                        if (openWrap !== wrap) setOpen(openWrap, false);
+                    });
+                    setOpen(wrap, willOpen);
+                    return;
+                }
+
+                var option = e.target.closest(".footerLanguageOption");
+                if (option) {
+                    var wrap = option.closest(".footerLanguageDropdown");
+                    var lang = (option.getAttribute("data-lang") || "tr").toLowerCase();
+                    setActiveLang(wrap, lang);
+                    setOpen(wrap, false);
+                    return;
+                }
+
+                document.querySelectorAll(".footerLanguageDropdown.is-open").forEach(function (openWrap) {
+                    if (!openWrap.contains(e.target)) setOpen(openWrap, false);
                 });
             });
-
-            var currentLang = (new URLSearchParams(window.location.search)).get("lang") || "tr";
-            setActiveLang(currentLang);
-            setOpen(false);
-        });
+            window.__footerLanguageDelegatedBound = true;
+        }
     }
 
     function bonusKoduKullan() {
