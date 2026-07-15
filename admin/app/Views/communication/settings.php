@@ -49,13 +49,13 @@ $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
         </div>
 
         <?php if ($flash !== ''): ?>
-            <div class="alert <?= stripos($flash, 'kaydedilemedi') !== false ? 'alert--danger' : 'alert--success' ?>" style="margin-bottom:12px;">
+            <div class="alert <?= stripos($flash, 'kaydedilemedi') !== false ? 'alert--danger' : 'alert--success' ?>" style="display:block;margin-bottom:12px;white-space:pre-wrap;word-break:break-word;">
                 <?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?>
             </div>
         <?php endif; ?>
 
         <?php if ($testResult !== ''): ?>
-            <div class="alert <?= stripos($testResult, 'BASARILI') !== false ? 'alert--success' : 'alert--danger' ?>" style="margin-bottom:12px;white-space:pre-wrap;word-break:break-word;">
+            <div class="alert <?= stripos($testResult, 'BASARILI') !== false ? 'alert--success' : 'alert--danger' ?>" style="display:block;margin-bottom:12px;white-space:pre-wrap;word-break:break-word;">
                 <?= htmlspecialchars($testResult, ENT_QUOTES, 'UTF-8') ?>
             </div>
         <?php endif; ?>
