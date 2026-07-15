@@ -14,7 +14,7 @@ $htmlLang = 'tr';
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?= htmlspecialchars($pageTitle . ' · ' . $siteName, ENT_QUOTES, 'UTF-8') ?></title>
     <?php if ($faviconUrl !== ''): ?>
-        <link rel="icon" href="<?= htmlspecialchars($faviconUrl, ENT_QUOTES, 'UTF-8') ?>">
+        <link rel="icon" type="image/svg+xml" href="<?= htmlspecialchars($faviconUrl, ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
     <script>
         !function(){try{var t=localStorage.getItem("dash26-theme"),e=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-theme",t||(e?"dark":"light"))}catch(t){document.documentElement.setAttribute("data-theme","light")}}()

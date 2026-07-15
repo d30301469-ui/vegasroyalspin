@@ -53,7 +53,7 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, maximum-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="<?= htmlspecialchars($headThemeColor, ENT_QUOTES, 'UTF-8') ?>">
   <meta name="description" content="<?= htmlspecialchars($headDescription, ENT_QUOTES, 'UTF-8') ?>">
-  <link rel="icon" href="<?= htmlspecialchars($headFaviconUrl, ENT_QUOTES, 'UTF-8') ?>" id="appFavicon">
+  <link rel="icon" type="image/svg+xml" href="<?= htmlspecialchars($headFaviconUrl, ENT_QUOTES, 'UTF-8') ?>" id="appFavicon">
   <title><?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?></title>
 
   <link rel="stylesheet" href="/assets/css/bootstrap-utils.css?v=<?= $ver($assetCssDir . '/global.css') ?>">
