@@ -237,20 +237,45 @@ final class AdminCommunicationController extends AdminController
         $subject = trim((string) ($_POST['subject'] ?? ''));
         $body = trim((string) ($_POST['body'] ?? ''));
         $email = trim((string) ($_POST['to_email'] ?? ''));
+
+        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: geçerli bir alıcı e-postası girin.';
+            $this->redirect(AdminAuth::url('/compose'));
+        }
+
+        $settings = $this->mailSettingsRow();
+        $enabled = (int) ($settings['enabled'] ?? $settings['mail_enabled'] ?? 0) === 1;
+        $from = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+        if ($from === '') {
+            $from = trim((string) ($settings['smtp_user'] ?? ''));
+        }
+
+        $ok = false;
+        $error = '';
+        if (!$enabled) {
+            $error = 'mail_disabled';
+        } else {
+            require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
+            $ok = metropol_mail_send($settings, $from, $email, $subject, $body, $error);
+        }
+
         try {
             $stmt = AdminDatabase::pdo()->prepare(
                 'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
                  VALUES (:admin_id, :to_email, :subject, :body_preview, :status, NOW())'
             );
             $user = AdminAuth::user();
+            $preview = $ok ? $body : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $body);
             $stmt->execute([
                 'admin_id' => (int) ($user['id'] ?? 0),
                 'to_email' => $email,
                 'subject' => $subject,
-                'body_preview' => substr($body, 0, 500),
-                'status' => 'queued',
+                'body_preview' => substr($preview, 0, 500),
+                'status' => $ok ? 'sent' : ($enabled ? 'failed' : 'not_configured'),
             ]);
-            $_SESSION['admin_flash'] = 'Mesaj gönderim kuyruğuna alındı.';
+            $_SESSION['admin_flash'] = $ok
+                ? 'Mesaj gönderildi.'
+                : ('Mesaj gönderilemedi: ' . ($error !== '' ? $error : 'mail gönderimi pasif') . $this->mailErrorHint($error));
         } catch (Throwable $exception) {
             $_SESSION['admin_flash'] = 'Mesaj kaydedilemedi: ' . $exception->getMessage();
         }
