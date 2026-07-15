@@ -449,7 +449,7 @@ final class ApiSiteSettings
                 'site_name' => $siteName,
                 'description' => $description,
                 'logo_url' => $logoUrl,
-                'favicon_url' => $faviconUrl,
+                'favicon_url' => self::applyFaviconCacheBusting($faviconUrl),
                 'manifest_url' => $manifestUrl,
                 'og_image_url' => $ogImageUrl,
             ],
@@ -615,6 +615,38 @@ final class ApiSiteSettings
     private static function legacyPublicAssetUrl(string $value): string
     {
         return '/' . ltrim($value, '/');
+    }
+
+    private static function applyFaviconCacheBusting(string $url): string
+    {
+        // Parse the path from the URL
+        if (strpos($url, '://') !== false) {
+            // Full URL - extract path
+            $parsed = parse_url($url);
+            $path = $parsed['path'] ?? '';
+            $base = $parsed['scheme'] . '://' . $parsed['host'] . ($parsed['port'] ? ':' . $parsed['port'] : '');
+            
+            // Check if file exists locally for cache busting
+            if (file_exists(ADMIN_BASE_PATH . '/assets/images/favicons/favicon.svg')) {
+                $mtime = filemtime(ADMIN_BASE_PATH . '/assets/images/favicons/favicon.svg');
+                if ($mtime !== false) {
+                    return $base . $path . '?v=' . $mtime;
+                }
+            }
+            return $url;
+        } else {
+            // Relative path
+            $realPath = ltrim($url, '/');
+            $fullPath = ADMIN_BASE_PATH . '/' . $realPath;
+            
+            if (file_exists($fullPath)) {
+                $mtime = filemtime($fullPath);
+                if ($mtime !== false) {
+                    return $url . '?v=' . $mtime;
+                }
+            }
+            return $url;
+        }
     }
 
     private static function columnExists(PDO $pdo, string $column): bool
