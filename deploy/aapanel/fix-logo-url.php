@@ -6,21 +6,33 @@ declare(strict_types=1);
 /**
  * Üretim DB'sinde site_ayarlar tablosundaki eski MaltaBet logo URL'ini temizler.
  *
- * Kullanım (sunucuda):
- *   php deploy/aapanel/fix-logo-url.php [/path/to/vegasroyalspin]
+ * Kullanım:
+ *   php deploy/aapanel/fix-logo-url.php [/path/to/root] [--db-host=HOST] [--db-name=NAME] [--db-user=USER] [--db-pass=PASS]
+ *
+ * Örnek:
+ *   php deploy/aapanel/fix-logo-url.php /www/wwwroot/vegasroyalspin.com \
+ *       --db-name=sql_admin_vegasroyalspin_com \
+ *       --db-user=sql_admin_vegasroyalspin_com \
+ *       --db-pass=SIFRE_BURAYA
  *
  * Opsiyonel: yeni logo URL'i argüman olarak verin
- *   php deploy/aapanel/fix-logo-url.php /path/to/root https://cdn.example.com/logo.png
+ *   php deploy/aapanel/fix-logo-url.php ... https://cdn.example.com/logo.png
  */
 
-$root = dirname(__DIR__, 2);
+$root       = dirname(__DIR__, 2);
 $newLogoUrl = null;
+$cliDb      = [];
 
 foreach (array_slice($argv ?? [], 1) as $arg) {
     $arg = trim($arg);
-    if ($arg === '') {
-        continue;
-    }
+    if ($arg === '') continue;
+
+    if (preg_match('/^--db-host=(.+)$/', $arg, $m))  { $cliDb['host']     = $m[1]; continue; }
+    if (preg_match('/^--db-name=(.+)$/', $arg, $m))  { $cliDb['database'] = $m[1]; continue; }
+    if (preg_match('/^--db-user=(.+)$/', $arg, $m))  { $cliDb['username'] = $m[1]; continue; }
+    if (preg_match('/^--db-pass=(.+)$/', $arg, $m))  { $cliDb['password'] = $m[1]; continue; }
+    if (preg_match('/^--db-port=(.+)$/', $arg, $m))  { $cliDb['port']     = (int)$m[1]; continue; }
+
     if (str_starts_with($arg, 'http') || str_starts_with($arg, '/assets') || str_starts_with($arg, '/uploads')) {
         $newLogoUrl = $arg;
     } elseif (!str_starts_with($arg, '-')) {
@@ -28,29 +40,34 @@ foreach (array_slice($argv ?? [], 1) as $arg) {
     }
 }
 
-// Env yükle
-$envFile = $root . '/env';
-if (!is_readable($envFile)) {
-    $envFile = $root . '/.env';
-}
-if (is_readable($envFile)) {
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+// Env dosyalarını yükle (önce admin, sonra frontend)
+$envCandidates = [
+    $root . '/admin/.env',
+    $root . '/admin/env',
+    $root . '/.env',
+    $root . '/env',
+];
+foreach ($envCandidates as $envFile) {
+    if (!is_readable($envFile)) continue;
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
     foreach ($lines as $line) {
         $line = trim($line);
-        if ($line === '' || str_starts_with($line, '#')) {
-            continue;
-        }
-        if (str_contains($line, '=')) {
-            [$key, $val] = explode('=', $line, 2);
-            $key = trim($key);
-            $val = trim($val);
-            if ($key !== '' && getenv($key) === false) {
-                putenv("$key=$val");
-                $_ENV[$key] = $val;
-            }
+        if ($line === '' || str_starts_with($line, '#')) continue;
+        if (!str_contains($line, '=')) continue;
+        [$key, $val] = explode('=', $line, 2);
+        $key = trim($key); $val = trim($val);
+        if ($key !== '' && getenv($key) === false) {
+            putenv("$key=$val");
+            $_ENV[$key] = $val;
         }
     }
 }
+
+// CLI argümanları env'e override et
+if (isset($cliDb['host']))     { putenv("ADMIN_DB_HOST={$cliDb['host']}");         $_ENV['ADMIN_DB_HOST']     = $cliDb['host']; }
+if (isset($cliDb['database'])) { putenv("ADMIN_DB_DATABASE={$cliDb['database']}"); $_ENV['ADMIN_DB_DATABASE'] = $cliDb['database']; }
+if (isset($cliDb['username'])) { putenv("ADMIN_DB_USERNAME={$cliDb['username']}"); $_ENV['ADMIN_DB_USERNAME'] = $cliDb['username']; }
+if (isset($cliDb['password'])) { putenv("ADMIN_DB_PASSWORD={$cliDb['password']}"); $_ENV['ADMIN_DB_PASSWORD'] = $cliDb['password']; }
 
 // AdminDatabase yükle
 $adminDbFile = $root . '/admin/app/Core/AdminDatabase.php';
@@ -58,17 +75,30 @@ if (!is_file($adminDbFile)) {
     fwrite(STDERR, "AdminDatabase bulunamadı: $adminDbFile\n");
     exit(1);
 }
-
 if (!defined('ADMIN_APP_PATH')) {
     define('ADMIN_APP_PATH', $root . '/admin/app');
+}
+// Config dosyası AdminDatabase'de require ediliyor, onu da yükle
+$adminConfigFile = $root . '/admin/app/Config/admin.php';
+if (!is_file($adminConfigFile)) {
+    fwrite(STDERR, "Admin config bulunamadı: $adminConfigFile\n");
+    exit(1);
 }
 require_once $adminDbFile;
 
 // Bağlan
 try {
-    $pdo = AdminDatabase::pdo();
+    // Config dosyasını oku ve CLI override'ları uygula
+    $config = require $adminConfigFile;
+    $db = is_array($config['db'] ?? null) ? $config['db'] : [];
+    // CLI argümanları her şeyin üstünde
+    foreach ($cliDb as $k => $v) {
+        $db[$k] = $v;
+    }
+    $pdo = AdminDatabase::connectWithParams($db);
 } catch (Throwable $e) {
     fwrite(STDERR, "DB bağlantısı başarısız: " . $e->getMessage() . "\n");
+    fwrite(STDERR, "Kullanım: php {$argv[0]} /path/to/root --db-name=DBNAME --db-user=USER --db-pass=SIFRE\n");
     exit(1);
 }
 
