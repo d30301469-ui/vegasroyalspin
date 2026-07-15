@@ -140,7 +140,7 @@ if (empty($promosyonlar)) {
                     <div class="promo-card-inner">
                         <div class="promo-card-image" style="background-image: url('<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>');">
                             <div class="promo-card-logo">
-                                <img src="<?= htmlspecialchars($promoLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Logo" width="80" height="26">
+                                <img src="<?= htmlspecialchars($promoLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Logo" width="120" height="39">
                                 <i class="fa-solid fa-circle-check"></i>
                             </div>
                             <?php if ($badge): ?>

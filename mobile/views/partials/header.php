@@ -29,7 +29,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
     <div class="hdr-main-content-bc" data-mobile-header-main>
       <div class="logo-container">
         <a class="logo" href="/" title="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
-          <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="160" height="53">
+          <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="190" height="64">
         </a>
       </div>
 

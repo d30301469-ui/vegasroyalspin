@@ -175,7 +175,7 @@
   margin: 0 auto;
   padding: 0 15px;
 }
-.headLogo { display: flex; align-items: center; height: 44px; max-height: var(--header-row-h); margin-left: 4px; }
+.headLogo { display: flex; align-items: center; height: 70px; max-height: var(--header-row-h); margin-left: 4px; }
 .headLogo img { height: 100%; width: auto; object-fit: contain; transition: all 0.3s; }
 .headerItem { display: flex; justify-content: flex-end; align-items: center; margin-left: auto; flex: 0 0 auto; }
 .headerItem .loginCol {

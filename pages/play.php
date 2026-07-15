@@ -90,7 +90,7 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   gap: 10px;
 }
 .play-topbar-logo { display: flex; align-items: center; text-decoration: none; }
-.play-topbar-logo img { display: block; height: 28px; width: auto; }
+.play-topbar-logo img { display: block; height: 42px; width: auto; }
 .play-topbar-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .play-topbar-balance {
   display: none;
@@ -212,7 +212,7 @@ $playLogoUrl = $playLogoUrl . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim(pa
 ?>
 <header class="play-topbar" aria-label="Oyun çubuğu">
   <a class="play-topbar-logo" href="/" title="Ana sayfa">
-    <img src="<?= htmlspecialchars($playLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="120" height="40" loading="lazy">
+    <img src="<?= htmlspecialchars($playLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="180" height="60" loading="lazy">
   </a>
   <div class="play-topbar-actions">
     <div class="play-topbar-balance<?= $loggedIn ? ' is-visible' : '' ?>" id="playBalanceWrap" aria-live="polite">
