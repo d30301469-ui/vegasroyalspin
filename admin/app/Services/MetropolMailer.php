@@ -141,6 +141,9 @@ if (!function_exists('metropol_mail_send_phpmailer')) {
                         }
                         $mail->setFrom($from, 'VegasRoyalSpin');
                         $mail->addAddress($to);
+                        $mail->addReplyTo($from, 'VegasRoyalSpin');
+                        $fromDomainForId = strpos($from, '@') !== false ? substr($from, strpos($from, '@') + 1) : 'vegasroyalspin.com';
+                        $mail->MessageID = '<' . bin2hex(random_bytes(16)) . '@' . $fromDomainForId . '>';
                         $mail->Subject = $subject;
                         $mail->Body = $body;
                         $mail->AltBody = $body;
@@ -319,14 +322,17 @@ if (!function_exists('metropol_mail_send_raw_smtp')) {
                         fclose($fp);
                         continue;
                     }
+                    $fromDomainForId = strpos($from, '@') !== false ? substr($from, strpos($from, '@') + 1) : 'vegasroyalspin.com';
                     $headers = [
                         'From: VegasRoyalSpin <' . $from . '>',
                         'To: <' . $to . '>',
+                        'Reply-To: VegasRoyalSpin <' . $from . '>',
                         'Subject: ' . $subject,
                         'MIME-Version: 1.0',
                         'Content-Type: text/plain; charset=UTF-8',
                         'Content-Transfer-Encoding: 8bit',
                         'Date: ' . date('r'),
+                        'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $fromDomainForId . '>',
                     ];
                     $data = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $body));
                     fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $data . "\r\n.\r\n");
