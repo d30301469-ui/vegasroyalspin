@@ -3,6 +3,7 @@
 $settings = is_array($settings ?? null) ? $settings : [];
 $flash = trim((string) ($flash ?? ''));
 $testResult = trim((string) ($testResult ?? ''));
+$dbFingerprint = trim((string) ($dbFingerprint ?? ''));
 $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
 ?>
 <section class="hero">
@@ -26,6 +27,10 @@ $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
             </div>
             <span class="badge <?= $enabled ? 'dot success' : 'dot danger' ?>"><?= $enabled ? 'Aktif' : 'Pasif' ?></span>
         </div>
+
+        <?php if ($dbFingerprint !== ''): ?>
+            <div class="field-help" style="margin-bottom:12px;">Bu panelin bagli oldugu veritabani: <strong><?= htmlspecialchars($dbFingerprint, ENT_QUOTES, 'UTF-8') ?></strong> (phpMyAdmin'de gordugun DB adiyla ayni olmali)</div>
+        <?php endif; ?>
 
         <?php if ($flash !== ''): ?>
             <div class="alert <?= stripos($flash, 'kaydedilemedi') !== false ? 'alert--danger' : 'alert--success' ?>" style="margin-bottom:12px;">

@@ -13,7 +13,23 @@ if (!defined('BASE_PATH')) {
 require_once BASE_PATH . '/admin/app/Core/AdminPaths.php';
 admin_paths_bootstrap();
 
+// IMPORTANT: prefer the REAL AdminDatabase class (reads admin/app/Config/admin.php,
+// ADMIN_DB_* → DB_* → DATABASE_* priority) so that mail_settings/mail_outbound_log and
+// every other admin-owned table read/write the SAME database the admin panel manages —
+// even when this dispatch runs in-process on the frontend host. Without this, the fake
+// shim below would silently delegate to App\Core\Database (DATABASE_* → DB_* → ADMIN_DB_*
+// priority), which can resolve to a DIFFERENT database if env vars diverge, causing admin
+// panel settings (and outbound mail logs) to appear to "vanish" from the frontend's point
+// of view.
 if (!class_exists('AdminDatabase', false)) {
+    $realAdminDatabaseClass = BASE_PATH . '/admin/app/Core/AdminDatabase.php';
+    if (is_file($realAdminDatabaseClass)) {
+        require_once $realAdminDatabaseClass;
+    }
+}
+
+if (!class_exists('AdminDatabase', false)) {
+    // Ultra-fallback only if the real class file is truly unavailable.
     final class AdminDatabase
     {
         public static function pdo(): PDO

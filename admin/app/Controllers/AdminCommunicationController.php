@@ -42,6 +42,7 @@ final class AdminCommunicationController extends AdminController
             'settings' => $this->mailSettingsRow(),
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
             'testResult' => (string) ($_SESSION['admin_mail_test'] ?? ''),
+            'dbFingerprint' => $this->dbFingerprint(),
         ]);
         unset($_SESSION['admin_flash'], $_SESSION['admin_mail_test']);
     }
@@ -100,8 +101,8 @@ final class AdminCommunicationController extends AdminController
         }
 
         $_SESSION['admin_mail_test'] = $ok
-            ? ('BASARILI: Test maili ' . $to . ' adresine gonderildi. Gelen kutusu/spam kontrol edin.')
-            : ('HATA: Mail gonderilemedi. Sebep => ' . $error);
+            ? ('BASARILI: Test maili ' . $to . ' adresine gonderildi. Gelen kutusu/spam kontrol edin. DB: ' . $this->dbFingerprint())
+            : ('HATA: Mail gonderilemedi. Sebep => ' . $error . ' | DB: ' . $this->dbFingerprint());
         $this->redirect(AdminAuth::url('/email/settings'));
     }
 
@@ -271,6 +272,24 @@ final class AdminCommunicationController extends AdminController
             return is_array($row) ? $row : [];
         } catch (Throwable) {
             return [];
+        }
+    }
+
+    /** Non-secret DB fingerprint (host+database only) for admin/frontend DB-parity diagnostics. */
+    private function dbFingerprint(): string
+    {
+        try {
+            $pdo = AdminDatabase::pdo();
+            $row = $pdo->query('SELECT DATABASE() AS db_name')->fetch();
+            $dbName = is_array($row) ? (string) ($row['db_name'] ?? '') : '';
+            $dsn = '';
+            try {
+                $dsn = (string) $pdo->getAttribute(PDO::ATTR_CONNECTION_STATUS);
+            } catch (Throwable) {
+            }
+            return $dbName !== '' ? $dbName : 'bilinmiyor';
+        } catch (Throwable $e) {
+            return 'hata:' . $e->getMessage();
         }
     }
 }
