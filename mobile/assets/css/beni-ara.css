@@ -39,6 +39,16 @@ body.mobile-site .beni-ara-form {
   padding-right: 1.25rem;
 }
 
+body.mobile-site .beni-ara-form-row {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+body.mobile-site .beni-ara-form-row > [class*="col-"] {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 body.mobile-site .beni-ara-alert {
   margin-left: 1.25rem;
   margin-right: 1.25rem;
@@ -74,7 +84,7 @@ body.mobile-site .beni-ara-form .form-control-label-bc.inputs {
 body.mobile-site .beni-ara-form .form-control-input-bc {
   background: rgba(82, 84, 124, 0.5);
   border: 0;
-  border-radius: 4px;
+  border-radius: 2px;
   color: #fff;
   min-height: 52px;
   padding: 0 14px;
@@ -90,7 +100,7 @@ body.mobile-site .beni-ara-textarea.form-control-input-bc {
 }
 
 body.mobile-site .beni-ara-form-row:last-of-type {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 body.mobile-site .beni-ara-field-full .form-group {
@@ -112,7 +122,7 @@ body.mobile-site .beni-ara-form .form-control-title-bc {
 }
 
 body.mobile-site .beni-ara-actions {
-  margin-top: 24px;
+  margin-top: 14px;
   padding-top: 0;
 }
 
