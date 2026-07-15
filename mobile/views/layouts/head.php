@@ -35,6 +35,8 @@ $headDescription = (string) ($headMeta['description'] ?? $headBranding['descript
 $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headDescription));
 $headFaviconPath = (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
 $headFaviconUrl = (function_exists('cms_asset_url') ? cms_asset_url($headFaviconPath) : $headFaviconPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headFaviconPath, '/')) ?: time());
+$headManifestPath = (string) ($headBranding['manifest_url'] ?? '/assets/images/favicons/site.webmanifest');
+$headManifestUrl = (function_exists('cms_asset_url') ? cms_asset_url($headManifestPath) : $headManifestPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headManifestPath, '/')) ?: time());
 $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
 $requestPathRaw = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $requestPath = $requestPathRaw === '/' ? '/' : rtrim($requestPathRaw, '/');
@@ -53,6 +55,8 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
   <meta name="theme-color" content="<?= htmlspecialchars($headThemeColor, ENT_QUOTES, 'UTF-8') ?>">
   <meta name="description" content="<?= htmlspecialchars($headDescription, ENT_QUOTES, 'UTF-8') ?>">
   <link rel="icon" type="image/svg+xml" href="<?= htmlspecialchars($headFaviconUrl, ENT_QUOTES, 'UTF-8') ?>" id="appFavicon">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicons/apple-touch-icon.png?v=<?= time() ?>">
+  <link rel="manifest" href="<?= htmlspecialchars($headManifestUrl, ENT_QUOTES, 'UTF-8') ?>">
   <title><?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?></title>
 
   <link rel="stylesheet" href="/assets/css/bootstrap-utils.css?v=<?= $ver($assetCssDir . '/global.css') ?>">
@@ -100,6 +104,7 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
   <link rel="stylesheet" href="/mobile/assets/css/beni-ara.css?v=<?= $ver($mobileCssDir . '/beni-ara.css') ?>">
   <?php endif; ?>
   <script defer src="/assets/js/swiper-bundle.min.js?v=<?= $ver(BASE_PATH . '/assets/js/swiper-bundle.min.js') ?>"></script>
+  <script defer src="/assets/js/pwa-register.js?v=<?= $ver(BASE_PATH . '/assets/js/pwa-register.js') ?>"></script>
   <script defer src="/assets/js/mobile-right-sheet.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/mobile-right-sheet.js')) ?>"></script>
   <script defer src="/assets/js/footer.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/footer.js')) ?>"></script>
 </head>

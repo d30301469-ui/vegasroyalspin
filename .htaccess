@@ -161,6 +161,7 @@
 <IfModule mod_mime.c>
     AddType image/svg+xml .svg .svgz
     AddEncoding gzip .svgz
+    AddType application/manifest+json .webmanifest
 </IfModule>
 
 <IfModule mod_headers.c>
