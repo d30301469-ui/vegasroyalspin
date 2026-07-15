@@ -264,6 +264,189 @@ if (!function_exists('memberSendResetMail')) {
         return false;
     }
 
+    /**
+     * Dependency-free SMTP sender. Works without PHPMailer/vendor.
+     * Supports implicit SSL (port 465) and STARTTLS (587/others).
+     */
+    function memberRawSmtpSend(array $settings, string $from, string $toEmail, string $subject, string $messageText, string &$errorMessage = ''): bool
+    {
+        $host = trim((string) ($settings['smtp_host'] ?? ''));
+        $port = (int) ($settings['smtp_port'] ?? 0);
+        $user = trim((string) ($settings['smtp_user'] ?? ''));
+        $pass = (string) ($settings['smtp_password'] ?? '');
+        if ($host === '') {
+            $errorMessage = 'smtp_host_missing';
+            return false;
+        }
+        if ($port <= 0) {
+            $port = 465;
+        }
+        if ($from === '' && $user !== '' && filter_var($user, FILTER_VALIDATE_EMAIL) !== false) {
+            $from = $user;
+        }
+
+        $read = static function ($fp): string {
+            $data = '';
+            while (($line = fgets($fp, 515)) !== false) {
+                $data .= $line;
+                if (strlen($line) >= 4 && $line[3] === ' ') {
+                    break;
+                }
+            }
+            return $data;
+        };
+        $code = static fn (string $resp): int => (int) substr(trim($resp), 0, 3);
+
+        $attempts = [];
+        // [port, transport] pairs to try in order.
+        $primaryTransport = ($port === 465) ? 'ssl' : 'starttls';
+        $attempts[] = [$port, $primaryTransport];
+        if ($port !== 465) {
+            $attempts[] = [465, 'ssl'];
+        }
+        if ($port !== 587) {
+            $attempts[] = [587, 'starttls'];
+        }
+
+        $lastError = 'raw_smtp_failed';
+        foreach ($attempts as [$tryPort, $transport]) {
+            $fp = null;
+            try {
+                $context = stream_context_create([
+                    'ssl' => [
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true,
+                    ],
+                ]);
+                $remote = ($transport === 'ssl' ? 'ssl://' : '') . $host . ':' . $tryPort;
+                $errno = 0;
+                $errstr = '';
+                $fp = @stream_socket_client($remote, $errno, $errstr, 20, STREAM_CLIENT_CONNECT, $context);
+                if (!$fp) {
+                    $lastError = sprintf('connect_failed(port=%d,%s) %s', $tryPort, $transport, $errstr !== '' ? $errstr : (string) $errno);
+                    continue;
+                }
+                stream_set_timeout($fp, 20);
+
+                $resp = $read($fp);
+                if ($code($resp) !== 220) {
+                    $lastError = 'greeting_failed: ' . trim($resp);
+                    fclose($fp);
+                    continue;
+                }
+
+                $ehloHost = (string) (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: 'localhost');
+                $send = static function (string $cmd) use ($fp, $read): string {
+                    fwrite($fp, $cmd . "\r\n");
+                    return $read($fp);
+                };
+
+                $resp = $send('EHLO ' . $ehloHost);
+                if ($code($resp) !== 250) {
+                    $lastError = 'ehlo_failed: ' . trim($resp);
+                    fclose($fp);
+                    continue;
+                }
+
+                if ($transport === 'starttls') {
+                    $resp = $send('STARTTLS');
+                    if ($code($resp) !== 220) {
+                        $lastError = 'starttls_failed: ' . trim($resp);
+                        fclose($fp);
+                        continue;
+                    }
+                    $crypto = @stream_socket_enable_crypto(
+                        $fp,
+                        true,
+                        STREAM_CRYPTO_METHOD_TLS_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT
+                    );
+                    if ($crypto !== true) {
+                        $lastError = 'tls_handshake_failed';
+                        fclose($fp);
+                        continue;
+                    }
+                    $resp = $send('EHLO ' . $ehloHost);
+                    if ($code($resp) !== 250) {
+                        $lastError = 'ehlo2_failed: ' . trim($resp);
+                        fclose($fp);
+                        continue;
+                    }
+                }
+
+                if ($user !== '') {
+                    $resp = $send('AUTH LOGIN');
+                    if ($code($resp) !== 334) {
+                        $lastError = 'auth_not_supported: ' . trim($resp);
+                        fclose($fp);
+                        continue;
+                    }
+                    $resp = $send(base64_encode($user));
+                    if ($code($resp) !== 334) {
+                        $lastError = 'auth_user_rejected: ' . trim($resp);
+                        fclose($fp);
+                        continue;
+                    }
+                    $resp = $send(base64_encode($pass));
+                    if ($code($resp) !== 235) {
+                        $lastError = 'auth_failed: ' . trim($resp);
+                        fclose($fp);
+                        continue;
+                    }
+                }
+
+                $resp = $send('MAIL FROM:<' . $from . '>');
+                if ((int) substr(trim($resp), 0, 1) !== 2) {
+                    $lastError = 'mail_from_rejected: ' . trim($resp);
+                    fclose($fp);
+                    continue;
+                }
+                $resp = $send('RCPT TO:<' . $toEmail . '>');
+                if ((int) substr(trim($resp), 0, 1) !== 2) {
+                    $lastError = 'rcpt_rejected: ' . trim($resp);
+                    fclose($fp);
+                    continue;
+                }
+                $resp = $send('DATA');
+                if ($code($resp) !== 354) {
+                    $lastError = 'data_rejected: ' . trim($resp);
+                    fclose($fp);
+                    continue;
+                }
+
+                $headers = [
+                    'From: VegasRoyalSpin <' . $from . '>',
+                    'To: <' . $toEmail . '>',
+                    'Subject: ' . $subject,
+                    'MIME-Version: 1.0',
+                    'Content-Type: text/plain; charset=UTF-8',
+                    'Content-Transfer-Encoding: 8bit',
+                    'Date: ' . date('r'),
+                ];
+                $body = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $messageText));
+                fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $body . "\r\n.\r\n");
+                $resp = $read($fp);
+                if ((int) substr(trim($resp), 0, 1) !== 2) {
+                    $lastError = 'data_send_rejected: ' . trim($resp);
+                    fclose($fp);
+                    continue;
+                }
+
+                @fwrite($fp, "QUIT\r\n");
+                fclose($fp);
+                return true;
+            } catch (Throwable $exception) {
+                $lastError = 'raw_smtp_exception(port=' . $tryPort . ',' . $transport . '): ' . trim($exception->getMessage());
+                if (is_resource($fp)) {
+                    @fclose($fp);
+                }
+            }
+        }
+
+        $errorMessage = $lastError;
+        return false;
+    }
+
     function memberSendResetMail(PDO $pdo, string $toEmail, string $token): bool
     {
         $settings = memberMailSettings($pdo);
@@ -296,9 +479,17 @@ if (!function_exists('memberSendResetMail')) {
             return true;
         }
 
-        // If SMTP is configured, do not mask failures with mail() fallback.
+        // Dependency-free SMTP fallback (works when PHPMailer/vendor is unavailable).
         if (trim((string) ($settings['smtp_host'] ?? '')) !== '') {
-            $preview = '[smtp_error] ' . ($smtpError !== '' ? $smtpError : 'smtp_send_failed') . "\n\n" . $messageText;
+            $rawError = '';
+            if (memberRawSmtpSend($settings, $from, $toEmail, $subject, $messageText, $rawError)) {
+                memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, 'sent');
+                return true;
+            }
+
+            // SMTP configured but both senders failed: log the real reason, no mail() masking.
+            $preview = '[smtp_error] phpmailer=' . ($smtpError !== '' ? $smtpError : 'n/a')
+                . ' | raw=' . ($rawError !== '' ? $rawError : 'n/a') . "\n\n" . $messageText;
             memberLogOutboundMail($pdo, $toEmail, $subject, $preview, 'failed');
             return false;
         }
