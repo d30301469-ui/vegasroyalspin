@@ -209,122 +209,145 @@ if (!function_exists('metropol_mail_send_raw_smtp')) {
 
         $lastError = 'raw_smtp_failed';
         foreach ($attempts as [$tryPort, $transport]) {
-            $fp = null;
-            try {
-                $context = stream_context_create(['ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true,
-                ]]);
-                $remote = ($transport === 'ssl' ? 'ssl://' : '') . $host . ':' . $tryPort;
-                $errno = 0;
-                $errstr = '';
-                $fp = @stream_socket_client($remote, $errno, $errstr, 20, STREAM_CLIENT_CONNECT, $context);
-                if (!$fp) {
-                    $lastError = sprintf('connect_failed(port=%d,%s) %s', $tryPort, $transport, $errstr !== '' ? $errstr : (string) $errno);
-                    continue;
-                }
-                stream_set_timeout($fp, 20);
+            foreach (['LOGIN', 'PLAIN'] as $authMethod) {
+                $fp = null;
+                try {
+                    $context = stream_context_create(['ssl' => [
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true,
+                    ]]);
+                    $remote = ($transport === 'ssl' ? 'ssl://' : '') . $host . ':' . $tryPort;
+                    $errno = 0;
+                    $errstr = '';
+                    $fp = @stream_socket_client($remote, $errno, $errstr, 20, STREAM_CLIENT_CONNECT, $context);
+                    if (!$fp) {
+                        $lastError = sprintf('connect_failed(port=%d,%s) %s', $tryPort, $transport, $errstr !== '' ? $errstr : (string) $errno);
+                        continue;
+                    }
+                    stream_set_timeout($fp, 20);
 
-                $resp = $read($fp);
-                if ($code($resp) !== 220) {
-                    $lastError = 'greeting_failed: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-                $ehloHost = (string) (parse_url((string) (getenv('FRONTEND_URL') ?: getenv('SITE_URL') ?: ''), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
-                $send = static function (string $cmd) use ($fp, $read): string {
-                    fwrite($fp, $cmd . "\r\n");
-                    return $read($fp);
-                };
-                $resp = $send('EHLO ' . $ehloHost);
-                if ($code($resp) !== 250) {
-                    $lastError = 'ehlo_failed: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-                if ($transport === 'starttls') {
-                    $resp = $send('STARTTLS');
+                    $resp = $read($fp);
                     if ($code($resp) !== 220) {
-                        $lastError = 'starttls_failed: ' . trim($resp);
+                        $lastError = 'greeting_failed: ' . trim($resp);
                         fclose($fp);
                         continue;
                     }
-                    $crypto = @stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT);
-                    if ($crypto !== true) {
-                        $lastError = 'tls_handshake_failed';
-                        fclose($fp);
-                        continue;
-                    }
+                    $ehloHost = (string) (parse_url((string) (getenv('FRONTEND_URL') ?: getenv('SITE_URL') ?: ''), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+                    $send = static function (string $cmd) use ($fp, $read): string {
+                        fwrite($fp, $cmd . "\r\n");
+                        return $read($fp);
+                    };
                     $resp = $send('EHLO ' . $ehloHost);
                     if ($code($resp) !== 250) {
-                        $lastError = 'ehlo2_failed: ' . trim($resp);
+                        $lastError = 'ehlo_failed: ' . trim($resp);
                         fclose($fp);
                         continue;
                     }
-                }
-                if ($user !== '') {
-                    $resp = $send('AUTH LOGIN');
-                    if ($code($resp) !== 334) {
-                        $lastError = 'auth_not_supported: ' . trim($resp);
+                    $capabilities = $resp;
+                    if ($transport === 'starttls') {
+                        $resp = $send('STARTTLS');
+                        if ($code($resp) !== 220) {
+                            $lastError = 'starttls_failed: ' . trim($resp);
+                            fclose($fp);
+                            continue;
+                        }
+                        $crypto = @stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT);
+                        if ($crypto !== true) {
+                            $lastError = 'tls_handshake_failed';
+                            fclose($fp);
+                            continue;
+                        }
+                        $resp = $send('EHLO ' . $ehloHost);
+                        if ($code($resp) !== 250) {
+                            $lastError = 'ehlo2_failed: ' . trim($resp);
+                            fclose($fp);
+                            continue;
+                        }
+                        $capabilities = $resp;
+                    }
+                    $authLine = '';
+                    foreach (preg_split('/\r\n/', trim($capabilities)) ?: [] as $capLine) {
+                        if (stripos($capLine, 'AUTH') !== false) {
+                            $authLine = trim($capLine);
+                        }
+                    }
+                    if ($user !== '') {
+                        if ($authMethod === 'PLAIN') {
+                            $resp = $send('AUTH PLAIN ' . base64_encode("\0" . $user . "\0" . $pass));
+                            if ($code($resp) !== 235) {
+                                $lastError = 'auth_plain_failed: ' . trim($resp) . ($authLine !== '' ? ' [server: ' . $authLine . ']' : '');
+                                fclose($fp);
+                                continue;
+                            }
+                        } else {
+                            $resp = $send('AUTH LOGIN');
+                            if ($code($resp) !== 334) {
+                                $lastError = 'auth_not_supported: ' . trim($resp) . ($authLine !== '' ? ' [server: ' . $authLine . ']' : '');
+                                fclose($fp);
+                                continue;
+                            }
+                            $resp = $send(base64_encode($user));
+                            if ($code($resp) !== 334) {
+                                $lastError = 'auth_user_rejected: ' . trim($resp) . ($authLine !== '' ? ' [server: ' . $authLine . ']' : '');
+                                fclose($fp);
+                                continue;
+                            }
+                            $resp = $send(base64_encode($pass));
+                            if ($code($resp) !== 235) {
+                                $lastError = 'auth_failed: ' . trim($resp) . ($authLine !== '' ? ' [server: ' . $authLine . ']' : '');
+                                fclose($fp);
+                                continue;
+                            }
+                        }
+                    }
+                    $resp = $send('MAIL FROM:<' . $from . '>');
+                    if ((int) substr(trim($resp), 0, 1) !== 2) {
+                        $lastError = 'mail_from_rejected: ' . trim($resp);
                         fclose($fp);
                         continue;
                     }
-                    $resp = $send(base64_encode($user));
-                    if ($code($resp) !== 334) {
-                        $lastError = 'auth_user_rejected: ' . trim($resp);
+                    $resp = $send('RCPT TO:<' . $to . '>');
+                    if ((int) substr(trim($resp), 0, 1) !== 2) {
+                        $lastError = 'rcpt_rejected: ' . trim($resp);
                         fclose($fp);
                         continue;
                     }
-                    $resp = $send(base64_encode($pass));
-                    if ($code($resp) !== 235) {
-                        $lastError = 'auth_failed: ' . trim($resp);
+                    $resp = $send('DATA');
+                    if ($code($resp) !== 354) {
+                        $lastError = 'data_rejected: ' . trim($resp);
                         fclose($fp);
                         continue;
                     }
-                }
-                $resp = $send('MAIL FROM:<' . $from . '>');
-                if ((int) substr(trim($resp), 0, 1) !== 2) {
-                    $lastError = 'mail_from_rejected: ' . trim($resp);
+                    $headers = [
+                        'From: VegasRoyalSpin <' . $from . '>',
+                        'To: <' . $to . '>',
+                        'Subject: ' . $subject,
+                        'MIME-Version: 1.0',
+                        'Content-Type: text/plain; charset=UTF-8',
+                        'Content-Transfer-Encoding: 8bit',
+                        'Date: ' . date('r'),
+                    ];
+                    $data = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $body));
+                    fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $data . "\r\n.\r\n");
+                    $resp = $read($fp);
+                    if ((int) substr(trim($resp), 0, 1) !== 2) {
+                        $lastError = 'data_send_rejected: ' . trim($resp);
+                        fclose($fp);
+                        continue;
+                    }
+                    @fwrite($fp, "QUIT\r\n");
                     fclose($fp);
-                    continue;
+                    return true;
+                } catch (Throwable $e) {
+                    $lastError = 'raw_smtp_exception(port=' . $tryPort . ',' . $transport . ',' . $authMethod . '): ' . trim($e->getMessage());
+                    if (is_resource($fp)) {
+                        @fclose($fp);
+                    }
                 }
-                $resp = $send('RCPT TO:<' . $to . '>');
-                if ((int) substr(trim($resp), 0, 1) !== 2) {
-                    $lastError = 'rcpt_rejected: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-                $resp = $send('DATA');
-                if ($code($resp) !== 354) {
-                    $lastError = 'data_rejected: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-                $headers = [
-                    'From: VegasRoyalSpin <' . $from . '>',
-                    'To: <' . $to . '>',
-                    'Subject: ' . $subject,
-                    'MIME-Version: 1.0',
-                    'Content-Type: text/plain; charset=UTF-8',
-                    'Content-Transfer-Encoding: 8bit',
-                    'Date: ' . date('r'),
-                ];
-                $data = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $body));
-                fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $data . "\r\n.\r\n");
-                $resp = $read($fp);
-                if ((int) substr(trim($resp), 0, 1) !== 2) {
-                    $lastError = 'data_send_rejected: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-                @fwrite($fp, "QUIT\r\n");
-                fclose($fp);
-                return true;
-            } catch (Throwable $e) {
-                $lastError = 'raw_smtp_exception(port=' . $tryPort . ',' . $transport . '): ' . trim($e->getMessage());
-                if (is_resource($fp)) {
-                    @fclose($fp);
+                if ($user === '') {
+                    // No auth configured; no point trying a second auth method.
+                    break;
                 }
             }
         }
