@@ -2,6 +2,7 @@
 
 $settings = is_array($settings ?? null) ? $settings : [];
 $flash = trim((string) ($flash ?? ''));
+$testResult = trim((string) ($testResult ?? ''));
 $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
 ?>
 <section class="hero">
@@ -29,6 +30,12 @@ $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
         <?php if ($flash !== ''): ?>
             <div class="alert <?= stripos($flash, 'kaydedilemedi') !== false ? 'alert--danger' : 'alert--success' ?>" style="margin-bottom:12px;">
                 <?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($testResult !== ''): ?>
+            <div class="alert <?= stripos($testResult, 'BASARILI') !== false ? 'alert--success' : 'alert--danger' ?>" style="margin-bottom:12px;white-space:pre-wrap;word-break:break-word;">
+                <?= htmlspecialchars($testResult, ENT_QUOTES, 'UTF-8') ?>
             </div>
         <?php endif; ?>
 
@@ -75,6 +82,30 @@ $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
                 <span class="spacer"></span>
                 <a class="btn btn--ghost" href="<?= htmlspecialchars(AdminAuth::url('/email'), ENT_QUOTES, 'UTF-8') ?>">Iptal</a>
                 <button class="btn btn--primary" type="submit">Kaydet</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="col-12 card">
+        <div class="card-head">
+            <div class="card-title-wrap">
+                <span class="eyebrow">Test</span>
+                <h2 class="card-title">Test Mail Gonder</h2>
+            </div>
+        </div>
+        <p class="field-help" style="margin-bottom:10px;">Ayarlari kaydettikten sonra gercek SMTP baglantisini test eder ve hatayi aninda gosterir.</p>
+        <form method="post" action="<?= htmlspecialchars(AdminAuth::url('/email/settings/test'), ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label class="field-label" for="test_email">Test alici adresi</label>
+                    <input id="test_email" class="input" type="email" name="test_email" placeholder="kendi-mailin@example.com" value="<?= htmlspecialchars((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="field-help">Bos birakirsan gonderen adrese test edilir.</div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <span class="spacer"></span>
+                <button class="btn btn--primary" type="submit">Test Mail Gonder</button>
             </div>
         </form>
     </section>
