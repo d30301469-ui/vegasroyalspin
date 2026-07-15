@@ -28,7 +28,7 @@ $headerLogoUrl = cms_asset_url((string) ($headerBranding['logo_url'] ?? $ayar['l
         <div class="row align-items-center">
           <div class="col-4 col-sm-3 col-md-2 col-lg-2 position-relative pl-2 pl-lg-0 d-flex align-items-center">
             <a class="headLogo logo" href="/">
-                <img src="<?= htmlspecialchars($headerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="160" height="53" class="hdr-logo-bc">
+                <img src="<?= htmlspecialchars($headerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="80" class="hdr-logo-bc">
             </a>
           </div>
           <div class="col-8 col-sm-9 col-md-10 col-lg-10 d-md-flex justify-content-end align-items-center">

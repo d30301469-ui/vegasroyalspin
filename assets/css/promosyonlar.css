@@ -247,9 +247,9 @@
 }
 
 .promo-card-logo img {
-    height: 22px;
+    height: 32px;
     width: auto;
-    max-width: 70px;
+    max-width: 100px;
     object-fit: contain;
 }
 
