@@ -131,6 +131,23 @@ final class AdminCommunicationController extends AdminController
         return '';
     }
 
+    /**
+     * Kopyala-yapistir sirasinda gelebilecek gorunmez/ozel karakterleri temizler:
+     * zero-width space, BOM, non-breaking space, ve normal olmayan bosluk karakterleri.
+     */
+    private function sanitizeSmtpField(string $value): string
+    {
+        $value = trim($value);
+        // Zero-width space/joiner/non-joiner, BOM
+        $value = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $value) ?? $value;
+        // Non-breaking space -> normal space, then trim again
+        $value = str_replace("\xC2\xA0", ' ', $value);
+        // Strip any remaining control characters except normal printable ASCII/UTF-8
+        $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $value) ?? $value;
+
+        return trim($value);
+    }
+
     public function saveSettings(): void
     {
         $this->requirePermission('email');
@@ -145,10 +162,10 @@ final class AdminCommunicationController extends AdminController
 
         $enabled = isset($_POST['enabled']) ? 1 : 0;
         $fromEmail = trim((string) ($_POST['from_email'] ?? ''));
-        $smtpHost = trim((string) ($_POST['smtp_host'] ?? ''));
+        $smtpHost = $this->sanitizeSmtpField((string) ($_POST['smtp_host'] ?? ''));
         $smtpPort = (int) ($_POST['smtp_port'] ?? 0);
-        $smtpUser = trim((string) ($_POST['smtp_user'] ?? ''));
-        $smtpPasswordInput = trim((string) ($_POST['smtp_password'] ?? ''));
+        $smtpUser = $this->sanitizeSmtpField((string) ($_POST['smtp_user'] ?? ''));
+        $smtpPasswordInput = $this->sanitizeSmtpField((string) ($_POST['smtp_password'] ?? ''));
         $smtpPassword = $smtpPasswordInput !== ''
             ? $smtpPasswordInput
             : (string) ($existing['smtp_password'] ?? '');

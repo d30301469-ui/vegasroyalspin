@@ -92,373 +92,14 @@ if (!function_exists('memberLogOutboundMail')) {
 }
 
 if (!function_exists('memberSendResetMail')) {
-    function memberPathAllowedByOpenBaseDir(string $path): bool
-    {
-        $openBaseDir = trim((string) ini_get('open_basedir'));
-        if ($openBaseDir === '') {
-            return true;
-        }
-
-        $normalizedPath = str_replace('\\', '/', $path);
-        $normalizedPath = rtrim($normalizedPath, '/');
-        if ($normalizedPath === '') {
-            return false;
-        }
-
-        $parts = preg_split('/[;:]/', $openBaseDir) ?: [];
-        foreach ($parts as $part) {
-            $base = rtrim(str_replace('\\', '/', trim((string) $part)), '/');
-            if ($base === '') {
-                continue;
-            }
-            if ($normalizedPath === $base || str_starts_with($normalizedPath . '/', $base . '/')) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    function memberLoadPhpMailerAutoload(): bool
-    {
-        static $loaded = null;
-        if ($loaded !== null) {
-            return $loaded;
-        }
-
-        if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
-            $loaded = true;
-            return true;
-        }
-
-        $candidates = [];
-        if (defined('ADMIN_BASE_PATH')) {
-            $candidates[] = rtrim((string) ADMIN_BASE_PATH, '/\\') . '/vendor/autoload.php';
-        }
-        if (defined('METROPOL_ROOT')) {
-            $candidates[] = rtrim((string) METROPOL_ROOT, '/\\') . '/vendor/autoload.php';
-        }
-        $candidates[] = dirname(__DIR__, 4) . '/vendor/autoload.php';
-
-        foreach (array_values(array_unique($candidates)) as $autoload) {
-            if (!memberPathAllowedByOpenBaseDir($autoload)) {
-                continue;
-            }
-            if (@is_file($autoload)) {
-                require_once $autoload;
-                if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
-                    $loaded = true;
-                    return true;
-                }
-            }
-        }
-
-        $loaded = false;
-        return false;
-    }
-
-    function memberSendResetMailViaPhpMailer(array $settings, string $from, string $toEmail, string $subject, string $messageText, string &$errorMessage = ''): bool
-    {
-        $host = trim((string) ($settings['smtp_host'] ?? ''));
-        $port = (int) ($settings['smtp_port'] ?? 0);
-        $user = trim((string) ($settings['smtp_user'] ?? ''));
-        $pass = (string) ($settings['smtp_password'] ?? '');
-
-        if ($from === '' && $user !== '' && filter_var($user, FILTER_VALIDATE_EMAIL) !== false) {
-            $from = $user;
-        }
-
-        if ($host === '') {
-            $errorMessage = 'smtp_host_missing';
-            return false;
-        }
-        if (!memberLoadPhpMailerAutoload()) {
-            $errorMessage = 'phpmailer_not_loaded';
-            return false;
-        }
-        if ($port <= 0) {
-            $port = 587;
-        }
-
-        $ports = [$port];
-        foreach ([465, 587, 2525] as $candidatePort) {
-            if (!in_array($candidatePort, $ports, true)) {
-                $ports[] = $candidatePort;
-            }
-        }
-
-        $lastError = 'smtp_send_failed';
-        foreach ($ports as $tryPort) {
-            // Try the expected transport first, then a plain SMTP fallback.
-            $strategies = $tryPort === 465
-                ? [\PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS, '']
-                : [\PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS, ''];
-
-            foreach (array_values(array_unique($strategies)) as $secureMode) {
-                foreach ([false, true] as $allowSelfSigned) {
-                    try {
-                        $debugLines = [];
-                        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-                        $mail->CharSet = 'UTF-8';
-                        $mail->isSMTP();
-                        $mail->Host = preg_replace('/^(ssl|tls):\/\//i', '', $host) ?: $host;
-                        $mail->Port = $tryPort;
-                        $mail->Timeout = 20;
-                        $mail->SMTPAutoTLS = true;
-                        $mail->SMTPDebug = 2;
-                        $mail->Debugoutput = static function (string $line) use (&$debugLines): void {
-                            if (count($debugLines) < 25) {
-                                $debugLines[] = trim($line);
-                            }
-                        };
-
-                        $mail->SMTPAuth = $user !== '';
-                        if ($mail->SMTPAuth) {
-                            $mail->AuthType = 'LOGIN';
-                            $mail->Username = $user;
-                            $mail->Password = $pass;
-                        }
-
-                        $mail->SMTPSecure = $secureMode;
-                        if ($secureMode === '') {
-                            $mail->SMTPAutoTLS = false;
-                        }
-
-                        if ($allowSelfSigned) {
-                            $mail->SMTPOptions = [
-                                'ssl' => [
-                                    'verify_peer' => false,
-                                    'verify_peer_name' => false,
-                                    'allow_self_signed' => true,
-                                ],
-                            ];
-                        }
-
-                        $mail->setFrom($from, 'VegasRoyalSpin');
-                        $mail->addAddress($toEmail);
-                        $mail->Subject = $subject;
-                        $mail->Body = $messageText;
-                        $mail->AltBody = $messageText;
-
-                        if ($mail->send()) {
-                            return true;
-                        }
-
-                        $info = trim((string) $mail->ErrorInfo);
-                        $tail = trim(implode(' | ', array_filter($debugLines)));
-                        $lastError = sprintf(
-                            'smtp_send_failed(port=%d,secure=%s,self_signed=%s)%s%s',
-                            $tryPort,
-                            $secureMode !== '' ? $secureMode : 'none',
-                            $allowSelfSigned ? '1' : '0',
-                            $info !== '' ? ' ' . $info : '',
-                            $tail !== '' ? ' :: ' . $tail : ''
-                        );
-                    } catch (Throwable $exception) {
-                        $lastError = sprintf(
-                            'smtp_exception(port=%d,secure=%s,self_signed=%s) %s',
-                            $tryPort,
-                            $secureMode !== '' ? $secureMode : 'none',
-                            $allowSelfSigned ? '1' : '0',
-                            trim($exception->getMessage()) !== '' ? trim($exception->getMessage()) : 'smtp_send_failed'
-                        );
-                    }
-                }
-            }
-        }
-
-        $errorMessage = $lastError;
-        return false;
-    }
-
-    /**
-     * Dependency-free SMTP sender. Works without PHPMailer/vendor.
-     * Supports implicit SSL (port 465) and STARTTLS (587/others).
-     */
-    function memberRawSmtpSend(array $settings, string $from, string $toEmail, string $subject, string $messageText, string &$errorMessage = ''): bool
-    {
-        $host = trim((string) ($settings['smtp_host'] ?? ''));
-        $port = (int) ($settings['smtp_port'] ?? 0);
-        $user = trim((string) ($settings['smtp_user'] ?? ''));
-        $pass = (string) ($settings['smtp_password'] ?? '');
-        if ($host === '') {
-            $errorMessage = 'smtp_host_missing';
-            return false;
-        }
-        if ($port <= 0) {
-            $port = 465;
-        }
-        if ($from === '' && $user !== '' && filter_var($user, FILTER_VALIDATE_EMAIL) !== false) {
-            $from = $user;
-        }
-
-        $read = static function ($fp): string {
-            $data = '';
-            while (($line = fgets($fp, 515)) !== false) {
-                $data .= $line;
-                if (strlen($line) >= 4 && $line[3] === ' ') {
-                    break;
-                }
-            }
-            return $data;
-        };
-        $code = static fn (string $resp): int => (int) substr(trim($resp), 0, 3);
-
-        $attempts = [];
-        // [port, transport] pairs to try in order.
-        $primaryTransport = ($port === 465) ? 'ssl' : 'starttls';
-        $attempts[] = [$port, $primaryTransport];
-        if ($port !== 465) {
-            $attempts[] = [465, 'ssl'];
-        }
-        if ($port !== 587) {
-            $attempts[] = [587, 'starttls'];
-        }
-
-        $lastError = 'raw_smtp_failed';
-        foreach ($attempts as [$tryPort, $transport]) {
-            $fp = null;
-            try {
-                $context = stream_context_create([
-                    'ssl' => [
-                        'verify_peer' => false,
-                        'verify_peer_name' => false,
-                        'allow_self_signed' => true,
-                    ],
-                ]);
-                $remote = ($transport === 'ssl' ? 'ssl://' : '') . $host . ':' . $tryPort;
-                $errno = 0;
-                $errstr = '';
-                $fp = @stream_socket_client($remote, $errno, $errstr, 20, STREAM_CLIENT_CONNECT, $context);
-                if (!$fp) {
-                    $lastError = sprintf('connect_failed(port=%d,%s) %s', $tryPort, $transport, $errstr !== '' ? $errstr : (string) $errno);
-                    continue;
-                }
-                stream_set_timeout($fp, 20);
-
-                $resp = $read($fp);
-                if ($code($resp) !== 220) {
-                    $lastError = 'greeting_failed: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-
-                $ehloHost = (string) (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: 'localhost');
-                $send = static function (string $cmd) use ($fp, $read): string {
-                    fwrite($fp, $cmd . "\r\n");
-                    return $read($fp);
-                };
-
-                $resp = $send('EHLO ' . $ehloHost);
-                if ($code($resp) !== 250) {
-                    $lastError = 'ehlo_failed: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-
-                if ($transport === 'starttls') {
-                    $resp = $send('STARTTLS');
-                    if ($code($resp) !== 220) {
-                        $lastError = 'starttls_failed: ' . trim($resp);
-                        fclose($fp);
-                        continue;
-                    }
-                    $crypto = @stream_socket_enable_crypto(
-                        $fp,
-                        true,
-                        STREAM_CRYPTO_METHOD_TLS_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT
-                    );
-                    if ($crypto !== true) {
-                        $lastError = 'tls_handshake_failed';
-                        fclose($fp);
-                        continue;
-                    }
-                    $resp = $send('EHLO ' . $ehloHost);
-                    if ($code($resp) !== 250) {
-                        $lastError = 'ehlo2_failed: ' . trim($resp);
-                        fclose($fp);
-                        continue;
-                    }
-                }
-
-                if ($user !== '') {
-                    $resp = $send('AUTH LOGIN');
-                    if ($code($resp) !== 334) {
-                        $lastError = 'auth_not_supported: ' . trim($resp);
-                        fclose($fp);
-                        continue;
-                    }
-                    $resp = $send(base64_encode($user));
-                    if ($code($resp) !== 334) {
-                        $lastError = 'auth_user_rejected: ' . trim($resp);
-                        fclose($fp);
-                        continue;
-                    }
-                    $resp = $send(base64_encode($pass));
-                    if ($code($resp) !== 235) {
-                        $lastError = 'auth_failed: ' . trim($resp);
-                        fclose($fp);
-                        continue;
-                    }
-                }
-
-                $resp = $send('MAIL FROM:<' . $from . '>');
-                if ((int) substr(trim($resp), 0, 1) !== 2) {
-                    $lastError = 'mail_from_rejected: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-                $resp = $send('RCPT TO:<' . $toEmail . '>');
-                if ((int) substr(trim($resp), 0, 1) !== 2) {
-                    $lastError = 'rcpt_rejected: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-                $resp = $send('DATA');
-                if ($code($resp) !== 354) {
-                    $lastError = 'data_rejected: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-
-                $headers = [
-                    'From: VegasRoyalSpin <' . $from . '>',
-                    'To: <' . $toEmail . '>',
-                    'Subject: ' . $subject,
-                    'MIME-Version: 1.0',
-                    'Content-Type: text/plain; charset=UTF-8',
-                    'Content-Transfer-Encoding: 8bit',
-                    'Date: ' . date('r'),
-                ];
-                $body = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $messageText));
-                fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $body . "\r\n.\r\n");
-                $resp = $read($fp);
-                if ((int) substr(trim($resp), 0, 1) !== 2) {
-                    $lastError = 'data_send_rejected: ' . trim($resp);
-                    fclose($fp);
-                    continue;
-                }
-
-                @fwrite($fp, "QUIT\r\n");
-                fclose($fp);
-                return true;
-            } catch (Throwable $exception) {
-                $lastError = 'raw_smtp_exception(port=' . $tryPort . ',' . $transport . '): ' . trim($exception->getMessage());
-                if (is_resource($fp)) {
-                    @fclose($fp);
-                }
-            }
-        }
-
-        $errorMessage = $lastError;
-        return false;
-    }
-
     function memberSendResetMail(PDO $pdo, string $toEmail, string $token): bool
     {
         $settings = memberMailSettings($pdo);
         $enabled = (int) ($settings['enabled'] ?? $settings['mail_enabled'] ?? 0) === 1;
         $from = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+        if ($from === '') {
+            $from = trim((string) ($settings['smtp_user'] ?? ''));
+        }
         if ($from === '') {
             $from = 'no-reply@' . (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
         }
@@ -466,6 +107,40 @@ if (!function_exists('memberSendResetMail')) {
         $subject = 'Sifre Sifirlama Baglantiniz';
         $link = memberResetLink($token);
         $messageText = "Sifrenizi sifirlamak icin asagidaki baglantiyi kullanin:\n\n" . $link . "\n\nBaglanti 1 saat gecerlidir.";
+
+        if (!$enabled) {
+            memberLogOutboundMail($pdo, $toEmail, $subject, '[mail_disabled] ' . $messageText, 'not_configured');
+            return false;
+        }
+
+        // Tek kaynak: admin panel test aracıyla AYNI gönderim motoru (MetropolMailer.php).
+        $mailerFile = null;
+        if (defined('ADMIN_APP_PATH')) {
+            $candidate = rtrim((string) ADMIN_APP_PATH, '/\\') . '/Services/MetropolMailer.php';
+            if (is_file($candidate)) {
+                $mailerFile = $candidate;
+            }
+        }
+        if ($mailerFile === null) {
+            $candidate = dirname(__DIR__, 3) . '/app/Services/MetropolMailer.php';
+            if (is_file($candidate)) {
+                $mailerFile = $candidate;
+            }
+        }
+
+        if ($mailerFile !== null) {
+            require_once $mailerFile;
+        }
+
+        if (function_exists('metropol_mail_send')) {
+            $error = '';
+            $ok = metropol_mail_send($settings, $from, $toEmail, $subject, $messageText, $error);
+            $preview = $ok ? $messageText : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $messageText);
+            memberLogOutboundMail($pdo, $toEmail, $subject, $preview, $ok ? 'sent' : 'failed');
+            return $ok;
+        }
+
+        // Son çare: paylaşılan mailer hiç yüklenemediyse PHP mail() dene.
         $headers = [
             'MIME-Version: 1.0',
             'Content-Type: text/plain; charset=UTF-8',
@@ -473,40 +148,8 @@ if (!function_exists('memberSendResetMail')) {
             'Reply-To: ' . $from,
             'X-Mailer: PHP/' . phpversion(),
         ];
-
-        if (!$enabled) {
-            memberLogOutboundMail($pdo, $toEmail, $subject, '[mail_disabled] ' . $messageText, 'not_configured');
-            return false;
-        }
-
-        $smtpError = '';
-        $smtpSent = memberSendResetMailViaPhpMailer($settings, $from, $toEmail, $subject, $messageText, $smtpError);
-        if ($smtpSent) {
-            memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, 'sent');
-            return true;
-        }
-
-        // Dependency-free SMTP fallback (works when PHPMailer/vendor is unavailable).
-        if (trim((string) ($settings['smtp_host'] ?? '')) !== '') {
-            $rawError = '';
-            if (memberRawSmtpSend($settings, $from, $toEmail, $subject, $messageText, $rawError)) {
-                memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, 'sent');
-                return true;
-            }
-
-            // SMTP configured but both senders failed: log the real reason, no mail() masking.
-            $preview = '[smtp_error] phpmailer=' . ($smtpError !== '' ? $smtpError : 'n/a')
-                . ' | raw=' . ($rawError !== '' ? $rawError : 'n/a') . "\n\n" . $messageText;
-            memberLogOutboundMail($pdo, $toEmail, $subject, $preview, 'failed');
-            return false;
-        }
-
         $sent = @mail($toEmail, $subject, $messageText, implode("\r\n", $headers));
-        $preview = $messageText;
-        if (!$sent && $smtpError !== '') {
-            $preview = '[smtp_error] ' . $smtpError . "\n\n" . $preview;
-        }
-        memberLogOutboundMail($pdo, $toEmail, $subject, $preview, $sent ? 'sent' : 'failed');
+        memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, $sent ? 'sent' : 'failed');
         return $sent;
     }
 }
