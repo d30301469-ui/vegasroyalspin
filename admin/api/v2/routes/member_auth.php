@@ -136,16 +136,32 @@ if (!function_exists('memberSendResetMail')) {
             $error = '';
             $htmlBody = null;
             if (function_exists('metropol_mail_render_template')) {
-                $bodyHtml = '<p style="margin:0 0 16px 0;">Merhaba,</p>'
-                    . '<p style="margin:0 0 16px 0;">Hesabınız için şifre sıfırlama talebi aldık. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.</p>'
-                    . '<p style="margin:0;color:#a99bc4;font-size:13px;">Bağlantı 1 saat süreyle geçerlidir. Bu talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.</p>';
+                $companyName = trim((string) ($settings['company_name'] ?? ''));
+                if ($companyName === '') {
+                    $companyName = 'VegasRoyalSpin';
+                }
+                $supportEmail = trim((string) ($settings['support_email'] ?? ''));
+                if ($supportEmail === '' || filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false) {
+                    $domain = (string) (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: 'vegasroyalspin.com');
+                    $supportEmail = 'support@' . $domain;
+                }
+
+                $templateOptions = [
+                    'template_html' => (string) ($settings['reset_template_html'] ?? ''),
+                    'company_name' => $companyName,
+                    'support_email' => $supportEmail,
+                    'company_address' => (string) ($settings['company_address'] ?? ''),
+                ];
+
+                $bodyHtml = '<p style="margin:0 0 16px 0;">You recently requested to reset your password for your ' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . ' account. Click the button below to reset it. <strong>This password reset is only valid for the next 24 hours.</strong></p>';
                 $htmlBody = metropol_mail_render_template(
                     memberResetBaseUrl(),
-                    'Şifre sıfırlama bağlantınız hazır',
-                    'Şifre Sıfırlama Talebi',
+                    'Password reset link is ready',
+                    'Hi {$name},',
                     $bodyHtml,
-                    'Şifremi Sıfırla',
-                    $link
+                    'Reset your password',
+                    $link,
+                    $templateOptions
                 );
             }
             $ok = metropol_mail_send($settings, $from, $toEmail, $subject, $messageText, $error, $htmlBody);

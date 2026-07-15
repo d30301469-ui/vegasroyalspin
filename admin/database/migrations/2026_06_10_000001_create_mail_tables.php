@@ -29,6 +29,10 @@ return static function (PDO $pdo): void {
             smtp_port INT NULL,
             smtp_user VARCHAR(190) NULL,
             smtp_password VARCHAR(255) NULL,
+            company_name VARCHAR(190) NULL,
+            support_email VARCHAR(190) NULL,
+            company_address VARCHAR(255) NULL,
+            reset_template_html LONGTEXT NULL,
             updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
@@ -57,7 +61,11 @@ return static function (PDO $pdo): void {
             'smtp_port' => 'ALTER TABLE mail_settings ADD COLUMN smtp_port INT NULL AFTER smtp_host',
             'smtp_user' => 'ALTER TABLE mail_settings ADD COLUMN smtp_user VARCHAR(190) NULL AFTER smtp_port',
             'smtp_password' => 'ALTER TABLE mail_settings ADD COLUMN smtp_password VARCHAR(255) NULL AFTER smtp_user',
-            'updated_at' => 'ALTER TABLE mail_settings ADD COLUMN updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER smtp_password',
+            'company_name' => 'ALTER TABLE mail_settings ADD COLUMN company_name VARCHAR(190) NULL AFTER smtp_password',
+            'support_email' => 'ALTER TABLE mail_settings ADD COLUMN support_email VARCHAR(190) NULL AFTER company_name',
+            'company_address' => 'ALTER TABLE mail_settings ADD COLUMN company_address VARCHAR(255) NULL AFTER support_email',
+            'reset_template_html' => 'ALTER TABLE mail_settings ADD COLUMN reset_template_html LONGTEXT NULL AFTER company_address',
+            'updated_at' => 'ALTER TABLE mail_settings ADD COLUMN updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER reset_template_html',
         ];
 
         foreach ($required as $column => $sql) {
