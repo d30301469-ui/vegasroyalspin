@@ -102,8 +102,33 @@ final class AdminCommunicationController extends AdminController
 
         $_SESSION['admin_mail_test'] = $ok
             ? ('BASARILI: Test maili ' . $to . ' adresine gonderildi. Gelen kutusu/spam kontrol edin. DB: ' . $this->dbFingerprint())
-            : ('HATA: Mail gonderilemedi. Sebep => ' . $error . ' | DB: ' . $this->dbFingerprint());
+            : ('HATA: Mail gonderilemedi. Sebep => ' . $error . ' | DB: ' . $this->dbFingerprint() . $this->mailErrorHint($error));
         $this->redirect(AdminAuth::url('/email/settings'));
+    }
+
+    /** SMTP hata metnine gore Turkce, aksiyon alinabilir ipucu ekler. */
+    private function mailErrorHint(string $error): string
+    {
+        $lower = strtolower($error);
+        if (str_contains($lower, 'auth_user_rejected') || str_contains($lower, 'auth_failed') || str_contains($lower, '535')) {
+            return "\n\nIPUCU: SMTP kullanici adi/sifre Hostinger tarafindan reddedildi (535 5.7.8)."
+                . " hPanel > E-postalar bolumunden: 1) mailbox'in var ve aktif oldugunu, 2) sifreyi resetleyip"
+                . " aninda buraya yeniden girdiginizi, 3) SMTP Kullanici alaninin TAM e-posta adresi (orn. noreply@vegasroyalspin.com)"
+                . " oldugunu dogrulayin.";
+        }
+        if (str_contains($lower, 'connect_failed')) {
+            return "\n\nIPUCU: Sunucuya baglanti kurulamadi. Hosting saglayicisinin giden SMTP portlarini (465/587) engelleyip engellemedigini kontrol edin.";
+        }
+        if (str_contains($lower, 'tls_handshake_failed') || str_contains($lower, 'starttls_failed')) {
+            return "\n\nIPUCU: TLS baglantisi kurulamadi. Portu (465 SSL / 587 STARTTLS) dogru sectiginizden emin olun.";
+        }
+        if (str_contains($lower, 'rcpt_rejected')) {
+            return "\n\nIPUCU: Alici adresi sunucu tarafindan reddedildi. Alici e-postasini kontrol edin.";
+        }
+        if (str_contains($lower, 'smtp_host_missing')) {
+            return "\n\nIPUCU: SMTP Host alani bos. Ayarlari kaydedip tekrar deneyin.";
+        }
+        return '';
     }
 
     public function saveSettings(): void
