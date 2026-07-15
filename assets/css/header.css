@@ -1815,8 +1815,8 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
   .headBar > .container-fluid .row > [class*="col-"]:first-child { padding-left: 2px; }
   .headBar > .container-fluid .row > [class*="col-"]:last-child { padding-right: 2px; }
   .headLogo{
-    /* MasaÃƒÆ’Ã‚Â¼stÃƒÆ’Ã‚Â¼nde logo, butonlardan %10 daha bÃƒÆ’Ã‚Â¼yÃƒÆ’Ã‚Â¼k */
-    height: calc(var(--header-control-h) * 0.8 * 1.1);
+    /* Masaüstünde logo büyütüldü */
+    height: 64px;
     margin: 0;
     margin-left: 4px;
   }
@@ -1956,7 +1956,7 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
   /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Logo ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ (mobilde %10 bÃƒÆ’Ã‚Â¼yÃƒÆ’Ã‚Â¼k) */
   :root { --header-row-h: 38px; }
   .headLogo {
-    height: calc(var(--header-control-h) * 1.1);
+    height: calc(var(--header-control-h) * 1.1 * 1.3);
     margin-left: 0;
     padding-left: 0;
     display: flex;
@@ -1965,7 +1965,7 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
   .headLogo img {
     height: 100%;
     width: auto;
-    max-width: 110px;
+    max-width: 143px;
   }
 
   /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Logo sÃƒÆ’Ã‚Â¼tunu: Telegram ikonunun ÃƒÆ’Ã‚Â¼stÃƒÆ’Ã‚Â¼ne binmesini kalÃƒâ€žÃ‚Â±cÃƒâ€žÃ‚Â± ÃƒÆ’Ã‚Â¶nle ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
@@ -2948,16 +2948,16 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
 
 @media (min-width: 1024px) {
   .headBar {
-    height: 62px !important;
-    min-height: 62px !important;
-    max-height: 62px !important;
+    height: 78px !important;
+    min-height: 78px !important;
+    max-height: 78px !important;
   }
   .headBar > .container-fluid > .row {
-    height: 62px !important;
-    min-height: 62px !important;
+    height: 78px !important;
+    min-height: 78px !important;
   }
   .headLogo {
-    height: 44px !important;
+    height: 64px !important;
   }
 }
 
