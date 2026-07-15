@@ -61,4 +61,9 @@
     DirectoryIndex index.php index.html
 </IfModule>
 
+<IfModule mod_mime.c>
+    AddType image/svg+xml .svg .svgz
+    AddEncoding gzip .svgz
+</IfModule>
+
 Options -Indexes
