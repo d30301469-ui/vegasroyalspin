@@ -81,8 +81,16 @@ final class AdminCommunicationController extends AdminController
         require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
         $subject = 'VegasRoyalSpin SMTP Test';
         $body = "Bu bir SMTP test mailidir.\n\nGonderim zamani: " . date('Y-m-d H:i:s') . "\nHost: " . (string) ($settings['smtp_host'] ?? '');
+        $siteUrl = $this->frontendSiteUrl();
+        $htmlBody = metropol_mail_render_template(
+            $siteUrl,
+            'SMTP test mesaji basariyla iletildi',
+            'SMTP Test Mesaji',
+            '<p style="margin:0 0 12px 0;">Bu, mail ayarlarinizin dogru calistigini onaylamak icin gonderilen bir test mesajidir.</p>'
+                . '<p style="margin:0;color:#a99bc4;font-size:13px;">Gonderim zamani: ' . htmlspecialchars(date('Y-m-d H:i:s'), ENT_QUOTES, 'UTF-8') . '<br>Host: ' . htmlspecialchars((string) ($settings['smtp_host'] ?? ''), ENT_QUOTES, 'UTF-8') . '</p>'
+        );
         $error = '';
-        $ok = metropol_mail_send($settings, $from, $to, $subject, $body, $error);
+        $ok = metropol_mail_send($settings, $from, $to, $subject, $body, $error, $htmlBody);
 
         try {
             $stmt = AdminDatabase::pdo()->prepare(
@@ -146,6 +154,19 @@ final class AdminCommunicationController extends AdminController
         $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $value) ?? $value;
 
         return trim($value);
+    }
+
+    /** Mail sablonundaki logo/CTA linkleri icin frontend site adresini cozer. */
+    private function frontendSiteUrl(): string
+    {
+        if (function_exists('deploy_domain')) {
+            $url = trim((string) deploy_domain('frontend_url'));
+            if ($url !== '') {
+                return rtrim($url, '/');
+            }
+        }
+        $env = trim((string) (getenv('FRONTEND_URL') ?: getenv('SITE_URL') ?: ''));
+        return $env !== '' ? rtrim($env, '/') : 'https://vegasroyalspin.com';
     }
 
     public function saveSettings(): void
@@ -256,7 +277,15 @@ final class AdminCommunicationController extends AdminController
             $error = 'mail_disabled';
         } else {
             require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
-            $ok = metropol_mail_send($settings, $from, $email, $subject, $body, $error);
+            $siteUrl = $this->frontendSiteUrl();
+            $bodyHtmlEscaped = nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
+            $htmlBody = metropol_mail_render_template(
+                $siteUrl,
+                $subject !== '' ? $subject : 'VegasRoyalSpin bildirimi',
+                $subject !== '' ? $subject : 'Bildirim',
+                '<p style="margin:0;">' . $bodyHtmlEscaped . '</p>'
+            );
+            $ok = metropol_mail_send($settings, $from, $email, $subject, $body, $error, $htmlBody);
         }
 
         try {

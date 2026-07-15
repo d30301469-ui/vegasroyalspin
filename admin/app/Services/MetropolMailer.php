@@ -72,7 +72,7 @@ if (!function_exists('metropol_mail_load_phpmailer')) {
 }
 
 if (!function_exists('metropol_mail_send_phpmailer')) {
-    function metropol_mail_send_phpmailer(array $settings, string $from, string $to, string $subject, string $body, string &$error = ''): bool
+    function metropol_mail_send_phpmailer(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null): bool
     {
         $host = trim((string) ($settings['smtp_host'] ?? ''));
         $port = (int) ($settings['smtp_port'] ?? 0);
@@ -145,8 +145,14 @@ if (!function_exists('metropol_mail_send_phpmailer')) {
                         $fromDomainForId = strpos($from, '@') !== false ? substr($from, strpos($from, '@') + 1) : 'vegasroyalspin.com';
                         $mail->MessageID = '<' . bin2hex(random_bytes(16)) . '@' . $fromDomainForId . '>';
                         $mail->Subject = $subject;
-                        $mail->Body = $body;
-                        $mail->AltBody = $body;
+                        if ($htmlBody !== null) {
+                            $mail->isHTML(true);
+                            $mail->Body = $htmlBody;
+                            $mail->AltBody = $body;
+                        } else {
+                            $mail->Body = $body;
+                            $mail->AltBody = $body;
+                        }
                         if ($mail->send()) {
                             return true;
                         }
@@ -172,7 +178,7 @@ if (!function_exists('metropol_mail_send_phpmailer')) {
 }
 
 if (!function_exists('metropol_mail_send_raw_smtp')) {
-    function metropol_mail_send_raw_smtp(array $settings, string $from, string $to, string $subject, string $body, string &$error = ''): bool
+    function metropol_mail_send_raw_smtp(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null): bool
     {
         $host = trim((string) ($settings['smtp_host'] ?? ''));
         $port = (int) ($settings['smtp_port'] ?? 0);
@@ -323,19 +329,45 @@ if (!function_exists('metropol_mail_send_raw_smtp')) {
                         continue;
                     }
                     $fromDomainForId = strpos($from, '@') !== false ? substr($from, strpos($from, '@') + 1) : 'vegasroyalspin.com';
-                    $headers = [
-                        'From: VegasRoyalSpin <' . $from . '>',
-                        'To: <' . $to . '>',
-                        'Reply-To: VegasRoyalSpin <' . $from . '>',
-                        'Subject: ' . $subject,
-                        'MIME-Version: 1.0',
-                        'Content-Type: text/plain; charset=UTF-8',
-                        'Content-Transfer-Encoding: 8bit',
-                        'Date: ' . date('r'),
-                        'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $fromDomainForId . '>',
-                    ];
-                    $data = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $body));
-                    fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $data . "\r\n.\r\n");
+                    $messageIdHeader = 'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $fromDomainForId . '>';
+
+                    if ($htmlBody !== null) {
+                        $boundary = 'metropol-' . bin2hex(random_bytes(12));
+                        $headers = [
+                            'From: VegasRoyalSpin <' . $from . '>',
+                            'To: <' . $to . '>',
+                            'Reply-To: VegasRoyalSpin <' . $from . '>',
+                            'Subject: ' . $subject,
+                            'MIME-Version: 1.0',
+                            'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+                            'Date: ' . date('r'),
+                            $messageIdHeader,
+                        ];
+                        $plainPart = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $body));
+                        $htmlPart = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $htmlBody));
+                        $mime = "--{$boundary}\r\n"
+                            . "Content-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n"
+                            . $plainPart . "\r\n"
+                            . "--{$boundary}\r\n"
+                            . "Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n"
+                            . $htmlPart . "\r\n"
+                            . "--{$boundary}--";
+                        fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $mime . "\r\n.\r\n");
+                    } else {
+                        $headers = [
+                            'From: VegasRoyalSpin <' . $from . '>',
+                            'To: <' . $to . '>',
+                            'Reply-To: VegasRoyalSpin <' . $from . '>',
+                            'Subject: ' . $subject,
+                            'MIME-Version: 1.0',
+                            'Content-Type: text/plain; charset=UTF-8',
+                            'Content-Transfer-Encoding: 8bit',
+                            'Date: ' . date('r'),
+                            $messageIdHeader,
+                        ];
+                        $data = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $body));
+                        fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $data . "\r\n.\r\n");
+                    }
                     $resp = $read($fp);
                     if ((int) substr(trim($resp), 0, 1) !== 2) {
                         $lastError = 'data_send_rejected: ' . trim($resp);
@@ -368,18 +400,106 @@ if (!function_exists('metropol_mail_send')) {
      *
      * @param array<string,mixed> $settings mail_settings satırı
      */
-    function metropol_mail_send(array $settings, string $from, string $to, string $subject, string $body, string &$error = ''): bool
+    function metropol_mail_send(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null): bool
     {
         $phpmailerError = '';
-        if (metropol_mail_send_phpmailer($settings, $from, $to, $subject, $body, $phpmailerError)) {
+        if (metropol_mail_send_phpmailer($settings, $from, $to, $subject, $body, $phpmailerError, $htmlBody)) {
             return true;
         }
         $rawError = '';
-        if (metropol_mail_send_raw_smtp($settings, $from, $to, $subject, $body, $rawError)) {
+        if (metropol_mail_send_raw_smtp($settings, $from, $to, $subject, $body, $rawError, $htmlBody)) {
             return true;
         }
         $error = 'phpmailer=' . ($phpmailerError !== '' ? $phpmailerError : 'n/a')
             . ' | raw=' . ($rawError !== '' ? $rawError : 'n/a');
         return false;
+    }
+}
+
+if (!function_exists('metropol_mail_render_template')) {
+    /**
+     * VegasRoyalSpin marka temasina uygun, e-posta istemcileriyle uyumlu (tablo tabanli,
+     * inline stil) HTML sablon. $bodyHtml zaten guvenli/escape edilmis HTML olmalidir.
+     */
+    function metropol_mail_render_template(
+        string $siteUrl,
+        string $preheader,
+        string $heading,
+        string $bodyHtml,
+        ?string $ctaLabel = null,
+        ?string $ctaUrl = null
+    ): string {
+        $siteUrl = rtrim($siteUrl, '/');
+        $logoUrl = $siteUrl !== '' ? $siteUrl . '/assets/images/MaltaBetLogo.png' : '';
+        $year = date('Y');
+
+        $ctaHtml = '';
+        if ($ctaLabel !== null && $ctaUrl !== null && trim($ctaUrl) !== '') {
+            $ctaHtml = '
+            <tr>
+                <td align="center" style="padding:8px 32px 32px 32px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                            <td align="center" bgcolor="#850f83" style="border-radius:10px;">
+                                <a href="' . htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank"
+                                   style="display:inline-block;padding:14px 34px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;background-color:#850f83;">
+                                    ' . htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8') . '
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>';
+        }
+
+        $logoHtml = $logoUrl !== ''
+            ? '<img src="' . htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8') . '" alt="VegasRoyalSpin" width="160" style="display:block;max-width:160px;height:auto;border:0;outline:none;text-decoration:none;">'
+            : '<span style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;color:#ffffff;letter-spacing:0.5px;">VegasRoyalSpin</span>';
+
+        return '<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0719;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">' . htmlspecialchars($preheader, ENT_QUOTES, 'UTF-8') . '</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a0719;padding:32px 0;">
+<tr>
+<td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#14102b;border-radius:14px;overflow:hidden;border:1px solid rgba(133,15,131,0.35);">
+    <tr>
+        <td align="center" bgcolor="#661760" style="padding:26px 24px;background-color:#661760;">
+            ' . $logoHtml . '
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:32px 32px 8px 32px;font-family:Arial,Helvetica,sans-serif;">
+            <h1 style="margin:0 0 18px 0;font-size:20px;line-height:1.4;color:#ffffff;font-weight:bold;">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</h1>
+            <div style="font-size:14.5px;line-height:1.7;color:#d6cbe8;">' . $bodyHtml . '</div>
+        </td>
+    </tr>' . $ctaHtml . '
+    <tr>
+        <td style="padding:0 32px 28px 32px;font-family:Arial,Helvetica,sans-serif;">
+            <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:0 0 18px 0;">
+            <p style="margin:0;font-size:12px;line-height:1.6;color:#8f86a3;">
+                Bu e-postayi siz talep etmediyseniz güvenle görmezden gelebilirsiniz. Hesabinizla ilgili herhangi bir degisiklik yapilmayacaktir.
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <td align="center" style="padding:18px 24px;background-color:#0b0725;">
+            <p style="margin:0;font-size:11.5px;color:#6b6280;font-family:Arial,Helvetica,sans-serif;">
+                &copy; ' . $year . ' VegasRoyalSpin. Tum haklari saklidir.
+            </p>
+        </td>
+    </tr>
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>';
     }
 }
