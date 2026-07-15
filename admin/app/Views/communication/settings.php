@@ -32,6 +32,22 @@ $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
             <div class="field-help" style="margin-bottom:12px;">Bu panelin bagli oldugu veritabani: <strong><?= htmlspecialchars($dbFingerprint, ENT_QUOTES, 'UTF-8') ?></strong> (phpMyAdmin'de gordugun DB adiyla ayni olmali)</div>
         <?php endif; ?>
 
+        <?php
+        $storedHost = trim((string) ($settings['smtp_host'] ?? ''));
+        $storedUser = trim((string) ($settings['smtp_user'] ?? ''));
+        $storedPass = (string) ($settings['smtp_password'] ?? '');
+        $storedPassLen = strlen($storedPass);
+        $storedPassMask = $storedPassLen > 0
+            ? (substr($storedPass, 0, 1) . str_repeat('*', max(0, $storedPassLen - 2)) . ($storedPassLen > 1 ? substr($storedPass, -1) : ''))
+            : '(bos)';
+        ?>
+        <div class="field-help" style="margin-bottom:12px;background:rgba(0,0,0,.04);padding:10px;border-radius:8px;">
+            <strong>Kayitli SMTP bilgileri (dogrulama icin):</strong><br>
+            Host: <code><?= htmlspecialchars($storedHost !== '' ? $storedHost : '(bos)', ENT_QUOTES, 'UTF-8') ?></code><br>
+            Kullanici (tam e-posta olmali): <code><?= htmlspecialchars($storedUser !== '' ? $storedUser : '(bos)', ENT_QUOTES, 'UTF-8') ?></code><br>
+            Sifre: <code><?= htmlspecialchars($storedPassMask, ENT_QUOTES, 'UTF-8') ?></code> (<?= $storedPassLen ?> karakter)
+        </div>
+
         <?php if ($flash !== ''): ?>
             <div class="alert <?= stripos($flash, 'kaydedilemedi') !== false ? 'alert--danger' : 'alert--success' ?>" style="margin-bottom:12px;">
                 <?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?>
