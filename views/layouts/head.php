@@ -218,6 +218,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   </script>
 
   <script defer src="https://cdn.jsdelivr.net/npm/izitoast/dist/js/iziToast.min.js"></script>
+  <script defer src="/assets/js/pwa-register.js?v=<?= $assetVer ?>"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>
   <script defer src="/assets/js/toastify-helper.js?v=<?= $assetVer ?>"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
