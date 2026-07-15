@@ -602,6 +602,8 @@ if ($method === 'POST' && ($route === 'forgot_password.php' || $route === 'auth/
             'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
         )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
         memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token);
+    } else {
+        memberLogOutboundMail($pdo, $email, 'Sifre Sifirlama Baglantiniz', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
     }
     $memberEnvelope(200, [
         'success' => true,
@@ -662,6 +664,8 @@ if ($method === 'POST' && ($route === 'password_reset.php' || $route === 'auth/p
                 'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
             )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
             memberSendResetMail($pdo, $email, $token);
+        } else {
+            memberLogOutboundMail($pdo, $email, 'Sifre Sifirlama Baglantiniz', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
         }
         $memberEnvelope(200, [
             'success' => true,
