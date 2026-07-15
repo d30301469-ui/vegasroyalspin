@@ -165,8 +165,10 @@
 
 <IfModule mod_headers.c>
     <FilesMatch "favicon\.(svg|ico|png)$">
-        Header always set Cache-Control "public, max-age=3600"
-        Header always set Expires "now"
+        # Force browser to always revalidate favicon files
+        Header always set Cache-Control "public, max-age=0, must-revalidate"
+        Header always set Expires "0"
+        Header always set Pragma "no-cache"
     </FilesMatch>
 </IfModule>
 
