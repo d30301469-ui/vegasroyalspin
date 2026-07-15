@@ -41,8 +41,68 @@ final class AdminCommunicationController extends AdminController
             'crumbs' => 'İletişim | E-posta | Ayarlar',
             'settings' => $this->mailSettingsRow(),
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
+            'testResult' => (string) ($_SESSION['admin_mail_test'] ?? ''),
         ]);
-        unset($_SESSION['admin_flash']);
+        unset($_SESSION['admin_flash'], $_SESSION['admin_mail_test']);
+    }
+
+    public function testMail(): void
+    {
+        $this->requirePermission('email');
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+
+        $this->ensureMailTables();
+        $settings = $this->mailSettingsRow();
+        $to = trim((string) ($_POST['test_email'] ?? ''));
+        if ($to === '' || filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
+            $to = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+        }
+
+        $enabled = (int) ($settings['enabled'] ?? $settings['mail_enabled'] ?? 0) === 1;
+        $from = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+        if ($from === '') {
+            $from = trim((string) ($settings['smtp_user'] ?? ''));
+        }
+
+        if (!$enabled) {
+            $_SESSION['admin_mail_test'] = 'HATA: Mail gönderimi pasif. Önce "Mail gonderimi aktif" kutusunu işaretleyip kaydedin.';
+            $this->redirect(AdminAuth::url('/email/settings'));
+        }
+        if ($to === '' || filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
+            $_SESSION['admin_mail_test'] = 'HATA: Test için geçerli bir e-posta adresi girin.';
+            $this->redirect(AdminAuth::url('/email/settings'));
+        }
+
+        require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
+        $subject = 'VegasRoyalSpin SMTP Test';
+        $body = "Bu bir SMTP test mailidir.\n\nGonderim zamani: " . date('Y-m-d H:i:s') . "\nHost: " . (string) ($settings['smtp_host'] ?? '');
+        $error = '';
+        $ok = metropol_mail_send($settings, $from, $to, $subject, $body, $error);
+
+        try {
+            $stmt = AdminDatabase::pdo()->prepare(
+                'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
+                 VALUES (:admin_id, :to_email, :subject, :body_preview, :status, NOW())'
+            );
+            $user = AdminAuth::user();
+            $stmt->execute([
+                'admin_id' => (int) ($user['id'] ?? 0),
+                'to_email' => $to,
+                'subject' => $subject,
+                'body_preview' => $ok ? $body : ('[smtp_error] ' . $error . "\n\n" . $body),
+                'status' => $ok ? 'sent' : 'failed',
+            ]);
+        } catch (Throwable) {
+        }
+
+        $_SESSION['admin_mail_test'] = $ok
+            ? ('BASARILI: Test maili ' . $to . ' adresine gonderildi. Gelen kutusu/spam kontrol edin.')
+            : ('HATA: Mail gonderilemedi. Sebep => ' . $error);
+        $this->redirect(AdminAuth::url('/email/settings'));
     }
 
     public function saveSettings(): void
