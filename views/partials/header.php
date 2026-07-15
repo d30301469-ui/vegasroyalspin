@@ -7,6 +7,10 @@ if (function_exists('isMobile') && isMobile() && defined('MOBILE_PATH')) {
     if (file_exists($mobileHeader)) { include $mobileHeader; return; }
 }
 require_once __DIR__ . '/header-init.php';
+$loggedIn = isset($loggedIn) ? (bool) $loggedIn : false;
+$ayar = isset($ayar) && is_array($ayar) ? $ayar : [];
+$siteContactLinks = isset($siteContactLinks) && is_array($siteContactLinks) ? $siteContactLinks : [];
+$siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
 $headerContactLinks = is_array($siteContactLinks ?? null)
     ? $siteContactLinks
     : (class_exists('ApiSiteSettings') ? ApiSiteSettings::normalizeContactLinks(is_array($ayar ?? null) ? $ayar : []) : []);
@@ -19,8 +23,9 @@ $headerSupportUrlJs = json_encode($headerSupportUrl, JSON_UNESCAPED_SLASHES | JS
 $headerSupportUrlJs = is_string($headerSupportUrlJs) ? $headerSupportUrlJs : '""';
 $headerSupportOnclick = 'window.open(' . $headerSupportUrlJs . ', "_blank"); return false;';
 $headerBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-$headerSiteName = (string) ($headerBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
-$headerLogoUrl = cms_asset_url((string) ($headerBranding['logo_url'] ?? $ayar['logo_url'] ?? ''));
+$headerSiteName      = (string) ($headerBranding['site_name']         ?? $ayar['site_adi']           ?? 'VegasRoyalSpin');
+$headerLogoUrl       = cms_asset_url((string) ($headerBranding['logo_url']          ?? $ayar['logo_url']          ?? ''));
+$headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_url'] ?? $ayar['logo_animated_url'] ?? ''));
 ?>
 <header class="headBar header-bc generic-search-enabled<?= $loggedIn ? ' hdr-auth-user' : ' hdr-auth-guest' ?>">
     <div class="settingBar" aria-hidden="true"></div>
@@ -28,7 +33,19 @@ $headerLogoUrl = cms_asset_url((string) ($headerBranding['logo_url'] ?? $ayar['l
         <div class="row align-items-center">
           <div class="col-4 col-sm-3 col-md-2 col-lg-2 position-relative pl-2 pl-lg-0 d-flex align-items-center">
             <a class="headLogo logo" href="/">
-                <img src="<?= htmlspecialchars($headerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="80" class="hdr-logo-bc">
+                <?php if ($headerLogoAnimated !== ''): ?>
+                    <?php $animExt = strtolower(pathinfo((string) parse_url($headerLogoAnimated, PHP_URL_PATH), PATHINFO_EXTENSION)); ?>
+                    <?php if ($animExt === 'webm' || $animExt === 'mp4'): ?>
+                        <video class="hdr-logo-bc" autoplay loop muted playsinline width="240" height="80" aria-label="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>">
+                            <source src="<?= htmlspecialchars($headerLogoAnimated, ENT_QUOTES, 'UTF-8') ?>" type="video/webm">
+                            <img src="<?= htmlspecialchars($headerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>">
+                        </video>
+                    <?php else: ?>
+                        <img src="<?= htmlspecialchars($headerLogoAnimated, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="80" class="hdr-logo-bc">
+                    <?php endif; ?>
+                <?php elseif ($headerLogoUrl !== ''): ?>
+                    <img src="<?= htmlspecialchars($headerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="80" class="hdr-logo-bc">
+                <?php endif; ?>
             </a>
           </div>
           <div class="col-8 col-sm-9 col-md-10 col-lg-10 d-md-flex justify-content-end align-items-center">

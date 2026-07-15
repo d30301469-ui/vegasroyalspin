@@ -410,7 +410,11 @@ final class ApiSiteSettings
     {
         $siteName = trim((string) ($settings['site_adi'] ?? ''));
         $description = trim((string) ($settings['site_aciklama'] ?? ''));
-        $logoUrl = self::publicAssetUrl((string) ($settings['logo_url'] ?? ''), '');
+        $logoUrl         = self::publicAssetUrl((string) ($settings['logo_url'] ?? ''), '');
+        $logoAnimatedUrl = self::publicAssetUrl((string) ($settings['logo_animated_url'] ?? ''), '');
+        $logoMobileUrl   = self::publicAssetUrl((string) ($settings['logo_mobile_url'] ?? ''), '');
+        $logoDarkUrl     = self::publicAssetUrl((string) ($settings['logo_dark_url'] ?? ''), '');
+        $logoFooterUrl   = self::publicAssetUrl((string) ($settings['logo_footer_url'] ?? ''), '');
         $faviconUrl = self::publicAssetUrl((string) ($settings['favicon_url'] ?? ''), '/assets/images/favicons/favicon.svg');
         $manifestUrl = self::publicAssetUrl((string) ($settings['manifest_url'] ?? ''), '/assets/images/favicons/site.webmanifest');
         $ogRaw = trim((string) ($settings['og_image_url'] ?? ''));
@@ -460,12 +464,16 @@ final class ApiSiteSettings
         $payload = array_merge($normalizedSettings, [
             'site_settings' => $normalizedSettings,
             'branding' => [
-                'site_name' => $siteName,
-                'description' => $description,
-                'logo_url' => $logoUrl,
-                'favicon_url' => self::applyFaviconCacheBusting($faviconUrl),
-                'manifest_url' => $manifestUrl,
-                'og_image_url' => $ogImageUrl,
+                'site_name'         => $siteName,
+                'description'       => $description,
+                'logo_url'          => $logoUrl,
+                'logo_animated_url' => $logoAnimatedUrl,
+                'logo_mobile_url'   => $logoMobileUrl,
+                'logo_dark_url'     => $logoDarkUrl,
+                'logo_footer_url'   => $logoFooterUrl,
+                'favicon_url'       => self::applyFaviconCacheBusting($faviconUrl),
+                'manifest_url'      => $manifestUrl,
+                'og_image_url'      => $ogImageUrl,
             ],
             'meta' => [
                 'title' => trim((string) ($settings['meta_title'] ?? '')) !== ''
@@ -530,7 +538,11 @@ final class ApiSiteSettings
                 : "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
             'telegram_url' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT '" . self::sqlDefault(self::frontendUrlEnv('TELEGRAM_URL', 'https://t.me')) . "'",
             'manifest_url' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT '/assets/images/favicons/site.webmanifest'",
-            'og_image_url' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
+            'og_image_url'      => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
+            'logo_animated_url' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
+            'logo_mobile_url'   => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
+            'logo_dark_url'     => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
+            'logo_footer_url'   => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
             'meta_title' => "varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
             'site_keywords' => "varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
             'robots' => "varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT 'index, follow'",

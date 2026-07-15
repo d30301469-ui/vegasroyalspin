@@ -112,10 +112,14 @@ final class AdminSiteSettingsController extends AdminController
                 'label' => 'Marka',
                 'caption' => 'Logo ve görsel varlıklar',
                 'fields' => [
-                    ['name' => 'logo_url', 'label' => 'Logo URL', 'type' => 'text', 'placeholder' => '/assets/images/logo.png'],
-                    ['name' => 'favicon_url', 'label' => 'Favicon URL', 'type' => 'text', 'placeholder' => '/assets/images/favicons/favicon.svg'],
-                    ['name' => 'manifest_url', 'label' => 'Manifest URL', 'type' => 'text', 'placeholder' => '/assets/images/favicons/site.webmanifest'],
-                    ['name' => 'og_image_url', 'label' => 'OG görsel URL', 'type' => 'text', 'help' => 'Boş bırakılırsa logo kullanılır.'],
+                    ['name' => 'logo_url',          'label' => 'Ana Logo URL',               'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo.png',        'help' => 'PNG/SVG/WebP — desktop ve footer fallback'],
+                    ['name' => 'logo_animated_url', 'label' => 'Animasyonlu Logo URL',       'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo.webm',       'help' => 'WebM/GIF — header\'da oynayan logo. Boş bırakılırsa ana logo kullanılır.'],
+                    ['name' => 'logo_mobile_url',   'label' => 'Mobil Logo URL',             'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo-mobile.png', 'help' => 'PNG/WebP — mobil header için ayrı logo. Boş bırakılırsa ana logo kullanılır.'],
+                    ['name' => 'logo_dark_url',     'label' => 'Koyu Tema Logo URL',         'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo-dark.png',   'help' => 'Açık arka plan için koyu logo versiyonu. Opsiyonel.'],
+                    ['name' => 'logo_footer_url',   'label' => 'Footer Logo URL',            'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo-footer.png', 'help' => 'Footer\'da ayrı logo kullanmak istiyorsanız. Boş bırakılırsa ana logo kullanılır.'],
+                    ['name' => 'favicon_url',       'label' => 'Favicon URL',                'type' => 'text', 'placeholder' => '/assets/images/favicons/favicon.svg'],
+                    ['name' => 'manifest_url',      'label' => 'Manifest URL',               'type' => 'text', 'placeholder' => '/assets/images/favicons/site.webmanifest'],
+                    ['name' => 'og_image_url',      'label' => 'OG görsel URL',              'type' => 'text', 'help' => 'Boş bırakılırsa logo kullanılır.'],
                 ],
             ],
             'reset-password' => [

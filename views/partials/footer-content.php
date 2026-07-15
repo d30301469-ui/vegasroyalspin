@@ -1,5 +1,10 @@
 <?php include __DIR__ . '/footer-site-chrome.php'; ?>
 
+<?php
+$ayar = isset($ayar) && is_array($ayar) ? $ayar : [];
+$siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
+?>
+
   <app-footer _ngcontent-tqr-c15=""
 ><!----><!----><!----><!----><!----><!----><!----><!----><!----><app-g6-footer
 >
@@ -57,16 +62,19 @@
                                 <?php
                                 $footerContentBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
                                 $footerContentSiteName = (string) ($footerContentBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
-                                $footerContentLogoUrl = (string) ($footerContentBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
+                                // footer_url varsa onu kullan, yoksa ana logo
+                                $footerContentLogoUrl = (string) ($footerContentBranding['logo_footer_url'] ?? $footerContentBranding['logo_url'] ?? $ayar['logo_footer_url'] ?? $ayar['logo_url'] ?? '');
                                 if (class_exists('ApiMediaUrl', false)) {
                                     $footerContentLogoUrl = ApiMediaUrl::resolve($footerContentLogoUrl);
                                 }
                                 ?>
                                 <div class="col-12 mt-4 d-flex flex-column align-items-center">
                                     <div class="mb-3">
+                                        <?php if ($footerContentLogoUrl !== ''): ?>
                                         <img loading="lazy" src="<?= htmlspecialchars($footerContentLogoUrl, ENT_QUOTES, 'UTF-8') ?>"
                                              alt="<?= htmlspecialchars($footerContentSiteName, ENT_QUOTES, 'UTF-8') ?>" width="308" height="102"
                                              style="max-width: 308px; height: auto; display: block;">
+                                        <?php endif; ?>
                                     </div>
                                     <a href="/android.apk" class="footer-android-link" aria-label="Android Uygulama İndir">
                                         <img loading="lazy" src="/assets/images/androiduygulamaindir.svg" alt="Android Uygulama İndir" class="footer-android-img" width="200" height="60">
