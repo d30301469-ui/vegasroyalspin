@@ -41,22 +41,28 @@
     installButton.style.fontWeight = '700';
     installButton.style.boxShadow = '0 8px 20px rgba(0,0,0,.26)';
     installButton.style.cursor = 'pointer';
-    installButton.style.display = 'none';
+    installButton.style.display = 'inline-flex';
+    installButton.style.alignItems = 'center';
+    installButton.style.justifyContent = 'center';
 
-    installButton.addEventListener('click', async function () {
+    installButton.addEventListener('click', function () {
       if (!deferredInstallPrompt) {
-        alert('Chrome menu > Add to Home screen adimlarini kullanarak yukleyebilirsiniz.');
+        alert('Chrome menu > Add to Home screen adimlari ile yukleme yapabilirsiniz.');
         return;
       }
 
       deferredInstallPrompt.prompt();
-      try {
-        await deferredInstallPrompt.userChoice;
-      } catch (e) {
-        // no-op
-      }
-      deferredInstallPrompt = null;
-      installButton.style.display = 'none';
+      deferredInstallPrompt.userChoice
+        .catch(function () {
+          return null;
+        })
+        .then(function () {
+          deferredInstallPrompt = null;
+          if (installButton) {
+            installButton.textContent = 'Menu ile Yukle';
+          }
+          updateInstallButtonVisibility();
+        });
     });
 
     document.body.appendChild(installButton);
@@ -69,9 +75,8 @@
       return;
     }
 
-    btn.style.display = deferredInstallPrompt ? 'inline-flex' : 'none';
-    btn.style.alignItems = 'center';
-    btn.style.justifyContent = 'center';
+    btn.textContent = deferredInstallPrompt ? 'Uygulamayi Yukle' : 'Menu ile Yukle';
+    btn.style.display = 'inline-flex';
   }
 
   function registerServiceWorker() {
@@ -104,7 +109,12 @@
   });
 
   window.addEventListener('load', function () {
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+      return;
+    }
+
     registerServiceWorker();
-    ensureInstallButton();
+    updateInstallButtonVisibility();
   });
 })();

@@ -36,6 +36,12 @@ $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headD
 $headFaviconPath = (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
 $headFaviconUrl = (function_exists('cms_asset_url') ? cms_asset_url($headFaviconPath) : $headFaviconPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headFaviconPath, '/')) ?: time());
 $headManifestPath = (string) ($headBranding['manifest_url'] ?? '/assets/images/favicons/site.webmanifest');
+$headManifestDefaultPath = '/assets/images/favicons/site.webmanifest';
+$headCurrentHost = strtolower((string) preg_replace('/:\\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+$headManifestHost = strtolower((string) (parse_url($headManifestPath, PHP_URL_HOST) ?: ''));
+if ($headManifestPath === '' || ($headManifestHost !== '' && $headManifestHost !== $headCurrentHost)) {
+  $headManifestPath = $headManifestDefaultPath;
+}
 $headManifestUrl = (function_exists('cms_asset_url') ? cms_asset_url($headManifestPath) : $headManifestPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headManifestPath, '/')) ?: time());
 $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
 $requestPathRaw = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';

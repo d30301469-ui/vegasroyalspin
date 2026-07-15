@@ -36,7 +36,14 @@ $headSiteName = (string) ($headBranding['site_name'] ?? $ayar['site_adi'] ?? 'Ma
 $headDescription = (string) ($headMeta['description'] ?? $headBranding['description'] ?? $ayar['site_aciklama'] ?? '');
 $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headDescription));
 $headFaviconPath = (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
-$headManifestUrl = (string) ($headBranding['manifest_url'] ?? '/assets/images/favicons/site.webmanifest');
+$headManifestPath = (string) ($headBranding['manifest_url'] ?? '/assets/images/favicons/site.webmanifest');
+$headManifestDefaultPath = '/assets/images/favicons/site.webmanifest';
+$headCurrentHost = strtolower((string) preg_replace('/:\\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+$headManifestHost = strtolower((string) (parse_url($headManifestPath, PHP_URL_HOST) ?: ''));
+if ($headManifestPath === '' || ($headManifestHost !== '' && $headManifestHost !== $headCurrentHost)) {
+    $headManifestPath = $headManifestDefaultPath;
+}
+$headManifestUrl = $headManifestPath;
 $headOgImageUrl = (string) ($headBranding['og_image_url'] ?? $headBranding['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
 if (class_exists('ApiMediaUrl', false)) {
     $headFaviconPath = ApiMediaUrl::resolve($headFaviconPath);
