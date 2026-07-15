@@ -162,3 +162,66 @@
         global.BetcoInputs = BetcoInputs;
     }
 })(typeof window !== 'undefined' ? window : this);
+
+// Runtime fallback: guarantees same-origin manifest and PWA register loader.
+(function () {
+    'use strict';
+
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return;
+    }
+
+    function sameHost(urlValue) {
+        try {
+            var parsed = new URL(urlValue, window.location.origin);
+            return parsed.host === window.location.host;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function ensureManifest() {
+        var manifestHref = '/assets/images/favicons/site.webmanifest';
+        var manifestLink = document.querySelector('link[rel="manifest"]');
+
+        if (!manifestLink) {
+            manifestLink = document.createElement('link');
+            manifestLink.setAttribute('rel', 'manifest');
+            document.head.appendChild(manifestLink);
+        }
+
+        var currentHref = manifestLink.getAttribute('href') || '';
+        if (!currentHref || !sameHost(currentHref)) {
+            manifestLink.setAttribute('href', manifestHref + '?v=' + String(Date.now()));
+        }
+    }
+
+    function ensurePwaRegisterScript() {
+        if (window.__pwaRegisterBootstrapLoaded) {
+            return;
+        }
+        window.__pwaRegisterBootstrapLoaded = true;
+
+        var existing = document.querySelector('script[src*="/assets/js/pwa-register.js"]');
+        if (existing) {
+            return;
+        }
+
+        var script = document.createElement('script');
+        script.defer = true;
+        script.src = '/assets/js/pwa-register.js?v=' + String(Date.now());
+        script.setAttribute('data-pwa-register-fallback', '1');
+        document.head.appendChild(script);
+    }
+
+    function initPwaFallback() {
+        ensureManifest();
+        ensurePwaRegisterScript();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPwaFallback);
+    } else {
+        initPwaFallback();
+    }
+})();
