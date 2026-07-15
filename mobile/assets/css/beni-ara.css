@@ -42,25 +42,25 @@ body.mobile-site .beni-ara-alert {
   margin-right: 1.25rem;
 }
 
-/* Mobilde form okunabilirliği ve CTA görünürlüğü */
+/* Mobilde referans ekrandaki login form görünümü */
 body.mobile-site .beni-ara-card {
-  background: linear-gradient(180deg, rgba(23, 10, 45, 0.95) 0%, rgba(10, 5, 24, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.4);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 body.mobile-site .beni-ara-title {
-  font-size: 22px;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-  margin-bottom: 8px;
+  font-size: 18px;
+  line-height: 1.25;
+  letter-spacing: 0;
+  margin-bottom: 6px;
 }
 
 body.mobile-site .beni-ara-lead {
-  font-size: 13px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.86);
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.68);
 }
 
 body.mobile-site .beni-ara-form .form-control-label-bc.inputs {
@@ -69,31 +69,30 @@ body.mobile-site .beni-ara-form .form-control-label-bc.inputs {
 }
 
 body.mobile-site .beni-ara-form .form-control-input-bc {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
+  background: rgba(82, 84, 124, 0.42);
+  border: 0;
+  border-radius: 4px;
   color: #fff;
   min-height: 52px;
   padding: 22px 14px 8px;
 }
 
 body.mobile-site .beni-ara-form .form-control-input-bc::placeholder {
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(214, 216, 238, 0.62);
 }
 
 body.mobile-site .beni-ara-form .form-control-input-stroke-bc {
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: none;
 }
 
 body.mobile-site .beni-ara-form .form-control-label-bc.inputs.focused .form-control-input-stroke-bc,
 body.mobile-site .beni-ara-form .form-control-label-bc.inputs.has-value .form-control-input-stroke-bc {
-  border-color: rgba(124, 92, 255, 0.9);
-  box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.2);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 body.mobile-site .beni-ara-form .form-control-title-bc {
-  color: rgba(255, 255, 255, 0.74);
+  color: rgba(219, 220, 241, 0.68);
   font-size: 12px;
 }
 
@@ -106,20 +105,20 @@ body.mobile-site .beni-ara-submit-btn {
   display: flex !important;
   width: 100%;
   min-height: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
-  background: linear-gradient(135deg, #6f46ff 0%, #9b135f 100%);
+  border: 0;
+  border-radius: 4px;
+  background: #5d6168;
   color: #fff !important;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.02em;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 18px rgba(84, 37, 195, 0.35);
+  box-shadow: none;
 }
 
 body.mobile-site .beni-ara-submit-btn:focus-visible {
-  outline: 2px solid rgba(169, 145, 255, 0.9);
+  outline: 2px solid rgba(214, 216, 238, 0.78);
   outline-offset: 2px;
 }
 
