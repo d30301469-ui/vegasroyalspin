@@ -68,6 +68,13 @@ if (!function_exists('memberLogOutboundMail')) {
                     KEY idx_mail_outbound_status (status)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
             );
+            $dbName = '';
+            try {
+                $dbRow = $pdo->query('SELECT DATABASE() AS db_name')->fetch();
+                $dbName = is_array($dbRow) ? (string) ($dbRow['db_name'] ?? '') : '';
+            } catch (Throwable) {
+            }
+            $preview = ($dbName !== '' ? '[db=' . $dbName . '] ' : '') . $bodyPreview;
             $stmt = $pdo->prepare(
                 'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
                  VALUES (NULL, :to_email, :subject, :body_preview, :status, NOW())'
@@ -75,7 +82,7 @@ if (!function_exists('memberLogOutboundMail')) {
             $stmt->execute([
                 'to_email' => $toEmail,
                 'subject' => $subject,
-                'body_preview' => substr($bodyPreview, 0, 500),
+                'body_preview' => substr($preview, 0, 500),
                 'status' => $status,
             ]);
         } catch (Throwable) {
