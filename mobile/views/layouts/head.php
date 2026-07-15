@@ -33,9 +33,8 @@ $headMeta = (isset($siteMeta) && is_array($siteMeta)) ? $siteMeta : [];
 $headSiteName = (string) ($headBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
 $headDescription = (string) ($headMeta['description'] ?? $headBranding['description'] ?? $ayar['site_aciklama'] ?? '');
 $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headDescription));
-$headFaviconUrl = function_exists('cms_asset_url')
-	? cms_asset_url((string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg'))
-	: (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
+$headFaviconPath = (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
+$headFaviconUrl = (function_exists('cms_asset_url') ? cms_asset_url($headFaviconPath) : $headFaviconPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headFaviconPath, '/')) ?: time());
 $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
 $requestPathRaw = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $requestPath = $requestPathRaw === '/' ? '/' : rtrim($requestPathRaw, '/');

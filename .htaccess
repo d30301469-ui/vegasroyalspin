@@ -163,5 +163,12 @@
     AddEncoding gzip .svgz
 </IfModule>
 
+<IfModule mod_headers.c>
+    <FilesMatch "favicon\.(svg|ico|png)$">
+        Header always set Cache-Control "public, max-age=3600"
+        Header always set Expires "now"
+    </FilesMatch>
+</IfModule>
+
 DirectoryIndex index.php
 Options -Indexes

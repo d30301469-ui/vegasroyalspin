@@ -33,13 +33,14 @@ $headMeta = (isset($siteMeta) && is_array($siteMeta)) ? $siteMeta : [];
 $headSiteName = (string) ($headBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
 $headDescription = (string) ($headMeta['description'] ?? $headBranding['description'] ?? $ayar['site_aciklama'] ?? '');
 $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headDescription));
-$headFaviconUrl = (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
+$headFaviconPath = (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
 $headManifestUrl = (string) ($headBranding['manifest_url'] ?? '/assets/images/favicons/site.webmanifest');
 $headOgImageUrl = (string) ($headBranding['og_image_url'] ?? $headBranding['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
 if (class_exists('ApiMediaUrl', false)) {
-    $headFaviconUrl = ApiMediaUrl::resolve($headFaviconUrl);
+    $headFaviconPath = ApiMediaUrl::resolve($headFaviconPath);
     $headOgImageUrl = ApiMediaUrl::resolve($headOgImageUrl);
 }
+$headFaviconUrl = $headFaviconPath . '?v=' . (int)(filemtime(BASE_PATH . '/assets/images/favicons/favicon.svg') ?: time());
 $headKeywords = (string) ($headMeta['keywords'] ?? '');
 $headRobots = (string) ($headMeta['robots'] ?? 'index, follow');
 $headLanguage = (string) ($headMeta['language'] ?? 'tr');
