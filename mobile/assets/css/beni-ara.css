@@ -5,7 +5,7 @@
 
 body.mobile-site .beni-ara-page {
   /* Sticky header altında nefes payı */
-  padding-top: max(1rem, env(safe-area-inset-top, 0px) + 0.5rem);
+  padding-top: max(1.75rem, env(safe-area-inset-top, 0px) + 0.9rem);
   padding-bottom: max(5rem, env(safe-area-inset-bottom, 0px) + 3.5rem);
 }
 
@@ -36,7 +36,7 @@ body.mobile-site .beni-ara-header {
 }
 
 body.mobile-site .beni-ara-form {
-  padding-top: 0.625rem;
+  padding-top: 1.5rem;
   padding-left: 0.625rem;
   padding-right: 0.625rem;
 }
@@ -156,7 +156,7 @@ body.mobile-site .beni-ara-submit-btn:focus-visible {
 
 @media (max-width: 576px) {
   body.mobile-site .beni-ara-page {
-    padding-top: max(0.875rem, env(safe-area-inset-top, 0px) + 0.375rem);
+    padding-top: max(1.5rem, env(safe-area-inset-top, 0px) + 0.75rem);
   }
 
   body.mobile-site .beni-ara-page .container {
@@ -171,7 +171,7 @@ body.mobile-site .beni-ara-submit-btn:focus-visible {
   }
 
   body.mobile-site .beni-ara-form {
-    padding-top: 0.5rem;
+    padding-top: 1.25rem;
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
