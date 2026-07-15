@@ -8,8 +8,8 @@ $depositHref = '/profile/deposit-withdraw?openDepositPanel=1';
 $balanceHref = $loggedIn ? $depositHref : '#';
 $smartPanelBadge = $loggedIn ? '23' : '2';
 $mobileHeaderBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-$mobileHeaderSiteName = (string) ($mobileHeaderBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
-$mobileHeaderLogoUrl = (string) ($mobileHeaderBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+$mobileHeaderSiteName = (string) ($mobileHeaderBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
+$mobileHeaderLogoUrl = (string) ($mobileHeaderBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
 if (class_exists('ApiMediaUrl', false)) {
     $mobileHeaderLogoUrl = ApiMediaUrl::resolve($mobileHeaderLogoUrl);
 }

@@ -19,8 +19,8 @@ $headerSupportUrlJs = json_encode($headerSupportUrl, JSON_UNESCAPED_SLASHES | JS
 $headerSupportUrlJs = is_string($headerSupportUrlJs) ? $headerSupportUrlJs : '""';
 $headerSupportOnclick = 'window.open(' . $headerSupportUrlJs . ', "_blank"); return false;';
 $headerBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-$headerSiteName = (string) ($headerBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
-$headerLogoUrl = cms_asset_url((string) ($headerBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png'));
+$headerSiteName = (string) ($headerBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
+$headerLogoUrl = cms_asset_url((string) ($headerBranding['logo_url'] ?? $ayar['logo_url'] ?? ''));
 ?>
 <header class="headBar header-bc generic-search-enabled<?= $loggedIn ? ' hdr-auth-user' : ' hdr-auth-guest' ?>">
     <div class="settingBar" aria-hidden="true"></div>

@@ -9,8 +9,8 @@ $mobileTabBar = is_array($mobileMenuPayload['tab_bar'] ?? null) && $mobileMenuPa
     ? $mobileMenuPayload['tab_bar']
     : ApiMobileMenu::defaultTabBar();
 $mobileMenuBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-$mobileMenuSiteName = (string) ($mobileMenuBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
-$mobileMenuLogoUrl = (string) ($mobileMenuBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+$mobileMenuSiteName = (string) ($mobileMenuBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
+$mobileMenuLogoUrl = (string) ($mobileMenuBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
 if (class_exists('ApiMediaUrl', false)) {
     $mobileMenuLogoUrl = ApiMediaUrl::resolve($mobileMenuLogoUrl);
 }
