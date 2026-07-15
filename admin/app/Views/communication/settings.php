@@ -10,10 +10,11 @@ $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
     <div class="hero-text">
         <span class="eyebrow">Iletisim · SMTP</span>
         <h1 class="hero-title">Mail <span class="accent">ayarlari</span></h1>
-        <p class="hero-sub">Sifre sifirlama ve sistem mailleri icin tek noktadan SMTP konfigurasyonu.</p>
+        <p class="hero-sub">Sifre sifirlama mail temasi ve SMTP ayarlari bu ekrandan yonetilir.</p>
     </div>
     <div class="hero-actions">
         <a class="btn btn--ghost" href="<?= htmlspecialchars(AdminAuth::url('/email'), ENT_QUOTES, 'UTF-8') ?>">E-posta ekrani</a>
+        <a class="btn btn--ghost" href="#reset-theme">Reset mail temasi</a>
         <button class="btn btn--primary" type="submit" form="mailSettingsForm">Kaydet</button>
     </div>
 </section>
@@ -95,6 +96,32 @@ $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
                     <label class="field-label" for="smtp_password">SMTP Sifre</label>
                     <input id="smtp_password" class="input" type="password" name="smtp_password" placeholder="Degistirmek icin yeni sifre girin">
                     <div class="field-help">Bos birakirsan mevcut sifre korunur.</div>
+                </div>
+
+                <div id="reset-theme" class="field span-2" style="padding:12px 14px;border:1px dashed rgba(0,0,0,.18);border-radius:8px;background:rgba(0,0,0,.02);">
+                    <strong>Sifre Sifirlama Mail Temasi</strong>
+                    <div class="field-help" style="margin-top:4px;">Asagidaki alanlar, kullanicilara giden reset-password mail tasarimini ve metinlerini belirler.</div>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="company_name">Sablon Sirket Adi</label>
+                    <input id="company_name" class="input" type="text" name="company_name" placeholder="Company" value="<?= htmlspecialchars((string) ($settings['company_name'] ?? 'VegasRoyalSpin'), ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="support_email">Destek E-postasi</label>
+                    <input id="support_email" class="input" type="email" name="support_email" placeholder="support@vegasroyalspin.com" value="<?= htmlspecialchars((string) ($settings['support_email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+
+                <div class="field span-2">
+                    <label class="field-label" for="company_address">Adres (Footer)</label>
+                    <textarea id="company_address" class="input" name="company_address" rows="3" placeholder="1234 Street Rd.&#10;Suite 1234&#10;City, State, ZIP Code"><?= htmlspecialchars((string) ($settings['company_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                </div>
+
+                <div class="field span-2">
+                    <label class="field-label" for="reset_template_html">Reset Mail HTML Sablonu (Opsiyonel)</label>
+                    <textarea id="reset_template_html" class="input" name="reset_template_html" rows="16" placeholder="Bos birakirsan sistem varsayilan reset template'ini kullanir."><?= htmlspecialchars((string) ($settings['reset_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                    <div class="field-help">Desteklenen placeholder'lar: {{PREHEADER}}, {{HEADING}}, {{BODY_HTML}}, {{CTA_LABEL}}, {{CTA_URL}}, {{COMPANY_NAME}}, {{SUPPORT_EMAIL}}, {{SUPPORT_EMAIL_LINK}}, {{YEAR}}, {{COMPANY_ADDRESS_HTML}}, {{LOGO_HTML}}, {{FALLBACK_URL}}</div>
                 </div>
             </div>
 

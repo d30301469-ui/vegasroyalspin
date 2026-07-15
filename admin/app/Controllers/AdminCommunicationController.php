@@ -82,12 +82,16 @@ final class AdminCommunicationController extends AdminController
         $subject = 'VegasRoyalSpin SMTP Test';
         $body = "Bu bir SMTP test mailidir.\n\nGonderim zamani: " . date('Y-m-d H:i:s') . "\nHost: " . (string) ($settings['smtp_host'] ?? '');
         $siteUrl = $this->frontendSiteUrl();
+        $templateOptions = $this->mailTemplateOptions($settings);
         $htmlBody = metropol_mail_render_template(
             $siteUrl,
             'SMTP test mesaji basariyla iletildi',
             'SMTP Test Mesaji',
             '<p style="margin:0 0 12px 0;">Bu, mail ayarlarinizin dogru calistigini onaylamak icin gonderilen bir test mesajidir.</p>'
-                . '<p style="margin:0;color:#a99bc4;font-size:13px;">Gonderim zamani: ' . htmlspecialchars(date('Y-m-d H:i:s'), ENT_QUOTES, 'UTF-8') . '<br>Host: ' . htmlspecialchars((string) ($settings['smtp_host'] ?? ''), ENT_QUOTES, 'UTF-8') . '</p>'
+                . '<p style="margin:0;color:#4a5568;font-size:15px;">Gonderim zamani: ' . htmlspecialchars(date('Y-m-d H:i:s'), ENT_QUOTES, 'UTF-8') . '<br>Host: ' . htmlspecialchars((string) ($settings['smtp_host'] ?? ''), ENT_QUOTES, 'UTF-8') . '</p>',
+            'SMTP Test Linki',
+            $siteUrl !== '' ? ($siteUrl . '/login') : 'https://vegasroyalspin.com/login',
+            $templateOptions
         );
         $error = '';
         $ok = metropol_mail_send($settings, $from, $to, $subject, $body, $error, $htmlBody);
@@ -190,6 +194,10 @@ final class AdminCommunicationController extends AdminController
         $smtpPassword = $smtpPasswordInput !== ''
             ? $smtpPasswordInput
             : (string) ($existing['smtp_password'] ?? '');
+        $companyName = trim((string) ($_POST['company_name'] ?? ''));
+        $supportEmail = trim((string) ($_POST['support_email'] ?? ''));
+        $companyAddress = trim((string) ($_POST['company_address'] ?? ''));
+        $resetTemplateHtml = (string) ($_POST['reset_template_html'] ?? '');
 
         try {
             $pdo = AdminDatabase::pdo();
@@ -204,6 +212,10 @@ final class AdminCommunicationController extends AdminController
                          smtp_port = :smtp_port,
                          smtp_user = :smtp_user,
                          smtp_password = :smtp_password,
+                         company_name = :company_name,
+                         support_email = :support_email,
+                         company_address = :company_address,
+                         reset_template_html = :reset_template_html,
                          updated_at = NOW()
                      WHERE id = :id'
                 );
@@ -217,13 +229,17 @@ final class AdminCommunicationController extends AdminController
                     'smtp_port' => $smtpPort > 0 ? $smtpPort : null,
                     'smtp_user' => $smtpUser,
                     'smtp_password' => $smtpPassword,
+                    'company_name' => $companyName,
+                    'support_email' => $supportEmail,
+                    'company_address' => $companyAddress,
+                    'reset_template_html' => $resetTemplateHtml,
                 ]);
             } else {
                 $stmt = $pdo->prepare(
                     'INSERT INTO mail_settings
-                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, updated_at)
+                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, company_name, support_email, company_address, reset_template_html, updated_at)
                      VALUES
-                     (:enabled, :mail_enabled, :from_email, :mail_from_address, :smtp_host, :smtp_port, :smtp_user, :smtp_password, NOW())'
+                     (:enabled, :mail_enabled, :from_email, :mail_from_address, :smtp_host, :smtp_port, :smtp_user, :smtp_password, :company_name, :support_email, :company_address, :reset_template_html, NOW())'
                 );
                 $stmt->execute([
                     'enabled' => $enabled,
@@ -234,6 +250,10 @@ final class AdminCommunicationController extends AdminController
                     'smtp_port' => $smtpPort > 0 ? $smtpPort : null,
                     'smtp_user' => $smtpUser,
                     'smtp_password' => $smtpPassword,
+                    'company_name' => $companyName,
+                    'support_email' => $supportEmail,
+                    'company_address' => $companyAddress,
+                    'reset_template_html' => $resetTemplateHtml,
                 ]);
             }
 
@@ -278,12 +298,16 @@ final class AdminCommunicationController extends AdminController
         } else {
             require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
             $siteUrl = $this->frontendSiteUrl();
+            $templateOptions = $this->mailTemplateOptions($settings);
             $bodyHtmlEscaped = nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
             $htmlBody = metropol_mail_render_template(
                 $siteUrl,
                 $subject !== '' ? $subject : 'VegasRoyalSpin bildirimi',
                 $subject !== '' ? $subject : 'Bildirim',
-                '<p style="margin:0;">' . $bodyHtmlEscaped . '</p>'
+                '<p style="margin:0;">' . $bodyHtmlEscaped . '</p>',
+                'Mesaji Gor',
+                $siteUrl !== '' ? $siteUrl : 'https://vegasroyalspin.com',
+                $templateOptions
             );
             $ok = metropol_mail_send($settings, $from, $email, $subject, $body, $error, $htmlBody);
         }
@@ -369,6 +393,17 @@ final class AdminCommunicationController extends AdminController
         } catch (Throwable) {
             return [];
         }
+    }
+
+    /** @param array<string,mixed> $settings */
+    private function mailTemplateOptions(array $settings): array
+    {
+        return [
+            'template_html' => (string) ($settings['reset_template_html'] ?? ''),
+            'company_name' => (string) ($settings['company_name'] ?? 'VegasRoyalSpin'),
+            'support_email' => (string) ($settings['support_email'] ?? ''),
+            'company_address' => (string) ($settings['company_address'] ?? ''),
+        ];
     }
 
     /** Non-secret DB fingerprint (host+database only) for admin/frontend DB-parity diagnostics. */

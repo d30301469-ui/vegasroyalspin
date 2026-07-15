@@ -432,13 +432,17 @@ return [
         ],
         [
             'label' => 'İçerik & Pazarlama',
-            'caption' => 'Kampanya, slider ve ana sayfa yönetimi',
+            'caption' => 'Kampanya, slider, mail ve ana sayfa yönetimi',
             'items' => [
                 ['key' => 'promotions', 'text' => 'Promosyonlar', 'url' => '/promotions', 'active' => 'promotions', 'module' => 'promotions', 'icon' => '<path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/>'],
                 ['key' => 'promocodes', 'text' => 'Promocode', 'url' => '/module?key=promocodes', 'active' => 'datatable', 'module' => 'promocodes', 'icon' => '<path d="M21 10V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2a2 2 0 1 1 0 4v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 1 1 0-4z"/><path d="M8 9h.01M16 15h.01M9 16l6-8"/>'],
                 ['key' => 'promocode-requests', 'text' => 'Promocode Talepleri', 'url' => '/module?key=promocode-requests', 'active' => 'datatable', 'module' => 'promocode-requests', 'icon' => '<path d="M21 10V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2a2 2 0 1 1 0 4v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 1 1 0-4z"/><path d="M8 9h.01M16 15h.01M9 16l6-8"/>'],
                 ['key' => 'sliders', 'text' => 'Sliderlar', 'url' => '/module?key=sliders', 'active' => 'datatable', 'module' => 'sliders', 'icon' => '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/><circle cx="8" cy="10" r="1"/><path d="m21 15-5-5L5 18"/>'],
                 ['key' => 'auth-sliders', 'text' => 'Auth Sliderları', 'url' => '/module?key=auth-sliders', 'active' => 'datatable', 'module' => 'auth-sliders', 'icon' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 12h8"/><path d="M10 9h4"/><path d="M7 17l3-3 2 2 4-5 1 6"/>'],
+                ['key' => 'reset-mail-theme', 'text' => 'Sifre Sifirlama Mail Temasi', 'url' => '/email/settings#reset-theme', 'active' => 'email', 'permission' => 'email', 'icon' => '<path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 3"/><path d="M4 4h6v6"/>'],
+                ['key' => 'email', 'text' => 'E-posta', 'url' => '/email', 'active' => 'email', 'permission' => 'email', 'icon' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'],
+                ['key' => 'compose', 'text' => 'Mesaj Yaz', 'url' => '/compose', 'active' => 'compose', 'permission' => 'email', 'icon' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/>'],
+                ['key' => 'chat', 'text' => 'Canlı Talepler', 'url' => '/chat', 'active' => 'chat', 'permission' => 'email', 'icon' => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
                 ['key' => 'homepage-sections', 'text' => 'Homepage Section', 'url' => '/homepage-sections', 'active' => 'datatable', 'module' => 'homepage-sections', 'icon' => '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4M14 12h3M7 16h10"/>'],
                 ['key' => 'announcements', 'text' => 'Duyurular', 'url' => '/module?key=announcements', 'active' => 'datatable', 'module' => 'announcements', 'icon' => '<path d="M3 11v3a2 2 0 0 0 2 2h3l7 4V5L8 9H5a2 2 0 0 0-2 2z"/><path d="M19 9a3 3 0 0 1 0 6"/>'],
             ],
@@ -455,12 +459,9 @@ return [
         ],
         [
             'label' => 'İletişim',
-            'caption' => 'Aranma talepleri ve e-posta',
+            'caption' => 'Aranma ve destek talepleri',
             'items' => [
                 ['key' => 'call-requests', 'text' => 'Aranma Talepleri', 'url' => '/module?key=call-requests', 'active' => 'datatable', 'module' => 'call-requests', 'icon' => '<path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.1 19a19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-2.92-8.75A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.32 1.77.6 2.61a2 2 0 0 1-.45 2.11L8 9.71a16 16 0 0 0 6.29 6.29l1.27-1.27a2 2 0 0 1 2.11-.45c.84.28 1.71.48 2.61.6A2 2 0 0 1 22 16.92z"/>'],
-                ['key' => 'chat', 'text' => 'Canlı Talepler', 'url' => '/chat', 'active' => 'chat', 'permission' => 'email', 'icon' => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
-                ['key' => 'email', 'text' => 'E-posta', 'url' => '/email', 'active' => 'email', 'icon' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'],
-                ['key' => 'compose', 'text' => 'Mesaj Yaz', 'url' => '/compose', 'active' => 'compose', 'permission' => 'email', 'icon' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/>'],
                 ['key' => 'support-tickets', 'text' => 'Destek Talepleri', 'url' => '/support/tickets', 'active' => 'datatable', 'module' => 'support-tickets', 'icon' => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
                 ['key' => 'member-notifications', 'text' => 'Üye Bildirimleri', 'url' => '/notifications', 'active' => 'datatable', 'module' => 'member-notifications', 'icon' => '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>'],
             ],

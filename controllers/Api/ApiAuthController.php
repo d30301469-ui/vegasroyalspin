@@ -136,6 +136,55 @@ class ApiAuthController
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Backend farklı DB'de olsa bile admin panelde reset mail denemelerini izlemek için
+     * yerel mail_outbound_log tablosuna best-effort kayıt düşer.
+     */
+    private static function logPasswordResetMailAttempt(string $email, string $source, ?array $res): void
+    {
+        $to = trim($email);
+        if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        try {
+            $pdo = AdminDatabase::pdo();
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS mail_outbound_log (
+                    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    admin_id INT UNSIGNED NULL,
+                    to_email VARCHAR(190) NOT NULL,
+                    subject VARCHAR(255) NOT NULL DEFAULT '',
+                    body_preview TEXT NULL,
+                    status VARCHAR(40) NOT NULL DEFAULT 'queued',
+                    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    KEY idx_mail_outbound_created (created_at),
+                    KEY idx_mail_outbound_status (status)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+
+            $isSuccess = is_array($res) && !empty($res['success']) && (int) ($res['code'] ?? 0) === 200;
+            $status = $isSuccess ? 'sent' : 'failed';
+            $message = is_array($res) ? trim((string) ($res['message'] ?? '')) : 'backend_response_null';
+            $code = is_array($res) ? (int) ($res['code'] ?? 0) : 0;
+            $preview = '[source=' . $source . '] [code=' . $code . '] ' . ($message !== '' ? $message : 'no_message');
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
+                 VALUES (NULL, :to_email, :subject, :body_preview, :status, NOW())'
+            );
+            $stmt->execute([
+                'to_email' => $to,
+                'subject' => 'Sifre Sifirlama Baglantiniz',
+                'body_preview' => substr($preview, 0, 500),
+                'status' => $status,
+            ]);
+        } catch (Throwable) {
+            // Log yazımı başarısız olsa da API akışı kesilmez.
+        }
+    }
+
     private static function requestPath(): string
     {
         $apiRoute = isset($_GET['api_route']) && is_string($_GET['api_route']) ? $_GET['api_route'] : '';
@@ -464,8 +513,10 @@ class ApiAuthController
             return;
         }
 
+        $res = MemberLoginService::forgotPassword($email);
+        self::logPasswordResetMailAttempt($email, 'auth/forgot-password', $res);
         self::finishBackendEnvelope(
-            MemberLoginService::forgotPassword($email),
+            $res,
             502,
             'Şifre sıfırlama isteği şu anda işlenemiyor. Lütfen tekrar deneyin.'
         );
@@ -610,8 +661,12 @@ class ApiAuthController
             return;
         }
 
+        $res = MemberLoginService::passwordReset($payload);
+        if (in_array($action, $requestModes, true) && isset($payload['email']) && is_string($payload['email'])) {
+            self::logPasswordResetMailAttempt($payload['email'], 'auth/password-reset', $res);
+        }
         self::finishBackendEnvelope(
-            MemberLoginService::passwordReset($payload),
+            $res,
             502,
             'Şifre sıfırlama isteği şu anda işlenemiyor. Lütfen tekrar deneyin.'
         );

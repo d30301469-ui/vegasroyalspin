@@ -418,8 +418,15 @@ if (!function_exists('metropol_mail_send')) {
 
 if (!function_exists('metropol_mail_render_template')) {
     /**
-     * VegasRoyalSpin marka temasina uygun, e-posta istemcileriyle uyumlu (tablo tabanli,
-     * inline stil) HTML sablon. $bodyHtml zaten guvenli/escape edilmis HTML olmalidir.
+     * Reset maili icin referans tasarima yakin, e-posta istemcileriyle uyumlu
+     * (tablo tabanli, inline stil) HTML sablon.
+     *
+     * $options ile admin panelinden duzenlenebilir alanlar desteklenir:
+     * - template_html (placeholder destekli ozel HTML)
+     * - company_name
+     * - support_email
+     * - company_address
+     * - logo_url
      */
     function metropol_mail_render_template(
         string $siteUrl,
@@ -427,34 +434,73 @@ if (!function_exists('metropol_mail_render_template')) {
         string $heading,
         string $bodyHtml,
         ?string $ctaLabel = null,
-        ?string $ctaUrl = null
+        ?string $ctaUrl = null,
+        ?array $options = null
     ): string {
+        $options = is_array($options) ? $options : [];
         $siteUrl = rtrim($siteUrl, '/');
-        $logoUrl = $siteUrl !== '' ? $siteUrl . '/assets/images/MaltaBetLogo.png' : '';
-        $year = date('Y');
-
-        $ctaHtml = '';
-        if ($ctaLabel !== null && $ctaUrl !== null && trim($ctaUrl) !== '') {
-            $ctaHtml = '
-            <tr>
-                <td align="center" style="padding:8px 32px 32px 32px;">
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                        <tr>
-                            <td align="center" bgcolor="#850f83" style="border-radius:10px;">
-                                <a href="' . htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank"
-                                   style="display:inline-block;padding:14px 34px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;background-color:#850f83;">
-                                    ' . htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8') . '
-                                </a>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>';
+        $companyName = trim((string) ($options['company_name'] ?? ''));
+        if ($companyName === '') {
+            $companyName = 'Company';
         }
 
-        $logoHtml = $logoUrl !== ''
-            ? '<img src="' . htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8') . '" alt="VegasRoyalSpin" width="160" style="display:block;max-width:160px;height:auto;border:0;outline:none;text-decoration:none;">'
-            : '<span style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;color:#ffffff;letter-spacing:0.5px;">VegasRoyalSpin</span>';
+        $supportEmail = trim((string) ($options['support_email'] ?? ''));
+        if ($supportEmail === '' || filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false) {
+            $host = (string) (parse_url($siteUrl, PHP_URL_HOST) ?: 'vegasroyalspin.com');
+            $supportEmail = 'support@' . $host;
+        }
+
+        $companyAddress = trim((string) ($options['company_address'] ?? ''));
+        if ($companyAddress === '') {
+            $companyAddress = "1234 Street Rd.\nSuite 1234\nCity, State, ZIP Code";
+        }
+
+        $logoUrl = trim((string) ($options['logo_url'] ?? ''));
+
+        $ctaLabel = $ctaLabel !== null && trim($ctaLabel) !== '' ? $ctaLabel : 'Reset your password';
+        $ctaUrl = $ctaUrl !== null && trim($ctaUrl) !== '' ? trim($ctaUrl) : '#';
+
+        $greetingLine = '<h1 style="margin:0 0 24px 0;font-size:52px;line-height:1.1;color:#10131a;font-weight:800;">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</h1>';
+        if (stripos($heading, 'hi ') === 0 || stripos($heading, 'merhaba') === 0) {
+            $greetingLine = '<h1 style="margin:0 0 24px 0;font-size:52px;line-height:1.1;color:#10131a;font-weight:800;">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</h1>';
+        }
+
+        $logoHtml = '';
+        if ($logoUrl !== '') {
+            $logoHtml = '<img src="' . htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . '" width="180" style="display:block;max-width:180px;height:auto;border:0;outline:none;text-decoration:none;">';
+        } else {
+            $logoHtml = '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>'
+                . '<td style="padding-right:10px;vertical-align:middle;">'
+                . '<span style="display:inline-block;width:10px;height:10px;background:#1553d6;border-radius:1px;transform:rotate(45deg);"></span>'
+                . '<span style="display:inline-block;width:10px;height:10px;background:#1553d6;border-radius:1px;transform:rotate(45deg);margin-left:4px;"></span><br>'
+                . '<span style="display:inline-block;width:10px;height:10px;background:#1553d6;border-radius:1px;transform:rotate(45deg);margin-top:4px;"></span>'
+                . '<span style="display:inline-block;width:10px;height:10px;background:#1553d6;border-radius:1px;transform:rotate(45deg);margin-left:4px;margin-top:4px;"></span>'
+                . '</td>'
+                . '<td style="vertical-align:middle;font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:1;color:#10131a;font-weight:700;">' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . '</td>'
+                . '</tr></table>';
+        }
+
+        $addressHtml = nl2br(htmlspecialchars($companyAddress, ENT_QUOTES, 'UTF-8'));
+        $year = date('Y');
+
+        $customTemplate = trim((string) ($options['template_html'] ?? ''));
+        if ($customTemplate !== '') {
+            $tokens = [
+                '{{PREHEADER}}' => htmlspecialchars($preheader, ENT_QUOTES, 'UTF-8'),
+                '{{HEADING}}' => htmlspecialchars($heading, ENT_QUOTES, 'UTF-8'),
+                '{{BODY_HTML}}' => $bodyHtml,
+                '{{CTA_LABEL}}' => htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8'),
+                '{{CTA_URL}}' => htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8'),
+                '{{COMPANY_NAME}}' => htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8'),
+                '{{SUPPORT_EMAIL}}' => htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8'),
+                '{{SUPPORT_EMAIL_LINK}}' => 'mailto:' . htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8'),
+                '{{YEAR}}' => $year,
+                '{{COMPANY_ADDRESS_HTML}}' => $addressHtml,
+                '{{LOGO_HTML}}' => $logoHtml,
+                '{{FALLBACK_URL}}' => htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8'),
+            ];
+            return strtr($customTemplate, $tokens);
+        }
 
         return '<!DOCTYPE html>
 <html lang="tr">
@@ -463,36 +509,46 @@ if (!function_exists('metropol_mail_render_template')) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</title>
 </head>
-<body style="margin:0;padding:0;background-color:#0a0719;">
+<body style="margin:0;padding:0;background-color:#dce0e6;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">' . htmlspecialchars($preheader, ENT_QUOTES, 'UTF-8') . '</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a0719;padding:32px 0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#dce0e6;padding:46px 18px;">
 <tr>
 <td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#14102b;border-radius:14px;overflow:hidden;border:1px solid rgba(133,15,131,0.35);">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:760px;background-color:#f7f8fa;border-radius:12px;overflow:hidden;border:1px solid #d6dbe3;">
     <tr>
-        <td align="center" bgcolor="#661760" style="padding:26px 24px;background-color:#661760;">
+        <td align="center" bgcolor="#f7f8fa" style="padding:50px 32px 34px 32px;background-color:#f7f8fa;border-radius:4px 4px 0 0;">
             ' . $logoHtml . '
         </td>
     </tr>
     <tr>
-        <td style="padding:32px 32px 8px 32px;font-family:Arial,Helvetica,sans-serif;">
-            <h1 style="margin:0 0 18px 0;font-size:20px;line-height:1.4;color:#ffffff;font-weight:bold;">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</h1>
-            <div style="font-size:14.5px;line-height:1.7;color:#d6cbe8;">' . $bodyHtml . '</div>
+        <td style="padding:0 58px 0 58px;font-family:Arial,Helvetica,sans-serif;">
+            ' . $greetingLine . '
+            <div style="font-size:16px;line-height:1.7;color:#4a5568;font-weight:400;">' . $bodyHtml . '</div>
         </td>
-    </tr>' . $ctaHtml . '
     <tr>
-        <td style="padding:0 32px 28px 32px;font-family:Arial,Helvetica,sans-serif;">
-            <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:0 0 18px 0;">
-            <p style="margin:0;font-size:12px;line-height:1.6;color:#8f86a3;">
-                Bu e-postayi siz talep etmediyseniz güvenle görmezden gelebilirsiniz. Hesabinizla ilgili herhangi bir degisiklik yapilmayacaktir.
-            </p>
+        <td align="center" style="padding:36px 58px 44px 58px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td align="center" bgcolor="#1553d6" style="border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,.12);">
+                        <a href="' . htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" style="display:inline-block;padding:18px 42px;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:1;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;background-color:#1553d6;">' . htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8') . '</a>
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
     <tr>
-        <td align="center" style="padding:18px 24px;background-color:#0b0725;">
-            <p style="margin:0;font-size:11.5px;color:#6b6280;font-family:Arial,Helvetica,sans-serif;">
-                &copy; ' . $year . ' VegasRoyalSpin. Tum haklari saklidir.
-            </p>
+        <td style="padding:0 58px 42px 58px;font-family:Arial,Helvetica,sans-serif;">
+            <p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;color:#4a5568;">If you have any questions about this invoice, simply reply to this email or reach out to our <a href="mailto:' . htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') . '" style="color:#1553d6;text-decoration:underline;">support team</a> for help.</p>
+            <p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;color:#4a5568;">Cheers,<br>The ' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . ' Team</p>
+            <hr style="border:none;border-top:1px solid #d7dde6;margin:42px 0 34px 0;">
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#4a5568;">If you are having trouble with the button above, copy and paste the URL below into your web browser.</p>
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#4a5568;word-break:break-all;">' . htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8') . '</p>
+        </td>
+    </tr>
+    <tr>
+        <td align="center" style="padding:36px 24px 44px 24px;background-color:#dce0e6;">
+            <p style="margin:0 0 12px 0;font-size:13px;line-height:1.6;color:#8a97aa;font-family:Arial,Helvetica,sans-serif;">&copy; ' . $year . ' ' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . '. All rights reserved.</p>
+            <p style="margin:0;font-size:13px;line-height:1.65;color:#8a97aa;font-family:Arial,Helvetica,sans-serif;">' . $addressHtml . '</p>
         </td>
     </tr>
 </table>
