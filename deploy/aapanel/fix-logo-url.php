@@ -146,10 +146,17 @@ if ($newLogoUrl !== null) {
 
 // Cache dosyasını sil (bir sonraki istekte taze veri çekilsin)
 $cacheTargets = [
+    // Site settings envelope + refresh lock
     $root . '/storage/cache/site_settings_envelope.json',
     $root . '/storage/cache/site_settings_envelope.json.refresh.lock',
     $root . '/admin/storage/cache/site_settings_envelope.json',
     $root . '/admin/storage/cache/site_settings_envelope.json.refresh.lock',
+    // Circuit breaker — açık kalırsa backend atlanır, stale/boş data gelir
+    $root . '/storage/cache/cms_api_circuit.json',
+    $root . '/admin/storage/cache/cms_api_circuit.json',
+    // Backend reachability cache
+    $root . '/storage/cache/backend_reachability.json',
+    $root . '/admin/storage/cache/backend_reachability.json',
 ];
 foreach ($cacheTargets as $cacheFile) {
     if (is_file($cacheFile)) {

@@ -142,7 +142,7 @@ if (!$isApiRequest && $ayar === [] && function_exists('frontend_database_allowed
     }
 }
 $defaultsAyar = [
-    'site_adi'      => 'MaltaBet',
+    'site_adi'      => 'VegasRoyalSpin',
     'site_aciklama' => 'Güvenilir casino ve bahis',
 ];
 $ayar = array_merge($defaultsAyar, is_array($ayar) ? $ayar : []);
