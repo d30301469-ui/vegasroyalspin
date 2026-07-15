@@ -124,7 +124,14 @@ if (empty($promosyonlar)) {
         <!-- Promosyon kartları grid -->
         <div class="promo-grid-container">
             <div class="promo-grid">
-                <?php foreach ($promosyonlar as $index => $promo):
+                <?php 
+                // Get logo from API branding (updated via admin panel)
+                $promoLogoUrl = (string) ($siteBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+                if (class_exists('ApiMediaUrl', false)) {
+                    $promoLogoUrl = ApiMediaUrl::resolve($promoLogoUrl);
+                }
+                
+                foreach ($promosyonlar as $index => $promo):
                     $img = $promo['image_url'] ?? '/assets/images/promosyonlar/demo-1.svg';
                     $title = $promo['title'] ?? 'Promosyon';
                     $badge = $promo['badge'] ?? null;
@@ -133,7 +140,7 @@ if (empty($promosyonlar)) {
                     <div class="promo-card-inner">
                         <div class="promo-card-image" style="background-image: url('<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>');">
                             <div class="promo-card-logo">
-                                <img src="/assets/images/MaltaBetLogo.png" alt="Logo" width="80" height="26">
+                                <img src="<?= htmlspecialchars($promoLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Logo" width="80" height="26">
                                 <i class="fa-solid fa-circle-check"></i>
                             </div>
                             <?php if ($badge): ?>
