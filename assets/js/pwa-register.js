@@ -10,8 +10,81 @@
     return /android/i.test(navigator.userAgent || '');
   }
 
+  function isIos() {
+    var ua = navigator.userAgent || '';
+    var iOSDevice = /iphone|ipad|ipod/i.test(ua);
+    var iPadOS = navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
+    return iOSDevice || iPadOS;
+  }
+
+  function isIosSafari() {
+    if (!isIos()) {
+      return false;
+    }
+    var ua = navigator.userAgent || '';
+    // Add to Home Screen is only available in Safari (exclude Chrome/Firefox/other iOS browsers).
+    return !/crios|fxios|edgios|opios|mercury/i.test(ua);
+  }
+
   function canUseInstallUx() {
-    return isAndroid() && !isStandaloneMode();
+    if (isStandaloneMode()) {
+      return false;
+    }
+    return isAndroid() || isIosSafari();
+  }
+
+  function showIosInstallGuide() {
+    if (document.getElementById('pwaIosGuide')) {
+      return;
+    }
+
+    var overlay = document.createElement('div');
+    overlay.id = 'pwaIosGuide';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Ana ekrana ekleme rehberi');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483001;background:rgba(4,0,12,.6);display:flex;align-items:flex-end;justify-content:center;';
+
+    var sheet = document.createElement('div');
+    sheet.style.cssText = 'width:100%;max-width:420px;background:#1b0733;color:#fff;border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.5);font-family:inherit;';
+
+    sheet.innerHTML =
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
+        '<img src="/assets/images/favicons/apple-touch-icon.png" alt="" width="44" height="44" style="border-radius:12px;">' +
+        '<div><div style="font-weight:800;font-size:16px;">VegasRoyal uygulamasini yukle</div>' +
+        '<div style="font-size:12px;opacity:.7;">Safari ile birkac saniyede ana ekrana ekle</div></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;">' +
+        '<span style="flex:0 0 30px;height:30px;border-radius:50%;background:#8a2be2;display:inline-flex;align-items:center;justify-content:center;font-weight:800;">1</span>' +
+        '<div style="font-size:14px;">Alttaki <strong>Paylas</strong> simgesine dokun ' +
+          '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" style="vertical-align:middle;"><path d="M12 3v12M12 3l-4 4M12 3l4 4" stroke="#c9a3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" stroke="#c9a3ff" stroke-width="2" stroke-linecap="round"/></svg>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;">' +
+        '<span style="flex:0 0 30px;height:30px;border-radius:50%;background:#8a2be2;display:inline-flex;align-items:center;justify-content:center;font-weight:800;">2</span>' +
+        '<div style="font-size:14px;"><strong>Ana Ekrana Ekle</strong> secenegine dokun</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px;padding:10px 0 4px;">' +
+        '<span style="flex:0 0 30px;height:30px;border-radius:50%;background:#8a2be2;display:inline-flex;align-items:center;justify-content:center;font-weight:800;">3</span>' +
+        '<div style="font-size:14px;">Sag ustten <strong>Ekle</strong> butonuna dokun</div>' +
+      '</div>' +
+      '<button type="button" id="pwaIosGuideClose" style="margin-top:16px;width:100%;padding:13px;border:0;border-radius:12px;background:linear-gradient(135deg,#8a2be2 0%,#5b1aa8 100%);color:#fff;font-weight:800;font-size:15px;cursor:pointer;">Anladim</button>';
+
+    overlay.appendChild(sheet);
+
+    function close() {
+      overlay.remove();
+    }
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) {
+        close();
+      }
+    });
+    document.body.appendChild(overlay);
+    var closeBtn = document.getElementById('pwaIosGuideClose');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', close);
+    }
   }
 
   function ensureInstallButton() {
@@ -49,6 +122,11 @@
       '</svg>';
 
     installButton.addEventListener('click', function () {
+      if (isIosSafari()) {
+        showIosInstallGuide();
+        return;
+      }
+
       if (!deferredInstallPrompt) {
         alert('Chrome menu > Add to Home screen adimlari ile yukleme yapabilirsiniz.');
         return;
