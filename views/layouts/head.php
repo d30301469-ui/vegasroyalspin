@@ -55,6 +55,12 @@ $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headD
 $headFaviconPath = (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
 $headFaviconUrl = cms_asset_url($headFaviconPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headFaviconPath, '/')) ?: time());
 $headManifestPath = (string) ($headBranding['manifest_url'] ?? '/assets/images/favicons/site.webmanifest');
+$headManifestDefaultPath = '/assets/images/favicons/site.webmanifest';
+$headCurrentHost = strtolower((string) preg_replace('/:\\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+$headManifestHost = strtolower((string) (parse_url($headManifestPath, PHP_URL_HOST) ?: ''));
+if ($headManifestPath === '' || ($headManifestHost !== '' && $headManifestHost !== $headCurrentHost)) {
+  $headManifestPath = $headManifestDefaultPath;
+}
 $headManifestUrl = cms_asset_url($headManifestPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headManifestPath, '/')) ?: time());
 $headOgImageUrl = cms_asset_url((string) ($headBranding['og_image_url'] ?? $headBranding['logo_url'] ?? '/assets/images/MaltaBetLogo.png'));
 $headKeywords = (string) ($headMeta['keywords'] ?? '');
