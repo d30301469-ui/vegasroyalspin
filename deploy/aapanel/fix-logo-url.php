@@ -115,15 +115,24 @@ if ($newLogoUrl !== null) {
 }
 
 // Cache dosyasını sil (bir sonraki istekte taze veri çekilsin)
-$cacheFile = $root . '/storage/cache/site_settings_envelope.json';
-if (is_file($cacheFile)) {
-    unlink($cacheFile);
-    echo "  Cache temizlendi: $cacheFile\n";
+$cacheTargets = [
+    $root . '/storage/cache/site_settings_envelope.json',
+    $root . '/storage/cache/site_settings_envelope.json.refresh.lock',
+    $root . '/admin/storage/cache/site_settings_envelope.json',
+    $root . '/admin/storage/cache/site_settings_envelope.json.refresh.lock',
+];
+foreach ($cacheTargets as $cacheFile) {
+    if (is_file($cacheFile)) {
+        unlink($cacheFile);
+        echo "  Cache temizlendi: $cacheFile\n";
+    }
 }
-$cacheFile2 = $root . '/admin/storage/cache/site_settings_envelope.json';
-if (is_file($cacheFile2)) {
-    unlink($cacheFile2);
-    echo "  Cache temizlendi: $cacheFile2\n";
+
+// Webroot'taki eski body.html varsa sil (hardcoded logo referansı içerir)
+$bodyHtml = $root . '/body.html';
+if (is_file($bodyHtml)) {
+    unlink($bodyHtml);
+    echo "  Silindi: $bodyHtml\n";
 }
 
 // Güncel değeri tekrar göster

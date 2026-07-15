@@ -77,9 +77,15 @@ final class AdminSiteSettingsController extends AdminController
             AdminDatabase::pdo()->prepare($sql)->execute($params);
             AdminAuth::writeLog(AdminAuth::userName(), 'site_settings_update', 'site_ayarlar', 'success', $section);
             $_SESSION['admin_site_settings_flash'] = ($sections[$section]['label'] ?? 'Ayar') . ' kaydedildi.';
+
+            // 1) HTTP purge — split frontend kurulumunda frontend cache'i temizler.
             if (function_exists('metropol_notify_frontend_cms_purge')) {
                 metropol_notify_frontend_cms_purge('site_settings');
             }
+
+            // 2) Doğrudan cache dosyası silme — HTTP purge fail olsa bile çalışır.
+            //    Monorepo veya aynı filesystem kurulumlarında kesin temizlik sağlar.
+            self::purgeLocalSiteSettingsCache();
         } catch (Throwable $exception) {
             $_SESSION['admin_site_settings_error'] = 'Kayıt başarısız: ' . $exception->getMessage();
         }
@@ -184,6 +190,33 @@ final class AdminSiteSettingsController extends AdminController
             return is_array($row) ? $row : [];
         } catch (Throwable) {
             return [];
+        }
+    }
+
+    /**
+     * Hem admin hem frontend site-settings envelope cache dosyalarını doğrudan siler.
+     * HTTP purge call'ı başarısız olsa bile (secret eksik vb.) çalışır.
+     */
+    private static function purgeLocalSiteSettingsCache(): void
+    {
+        // Admin cache root
+        $adminRoot = defined('ADMIN_APP_PATH') ? dirname((string) ADMIN_APP_PATH) : dirname(__DIR__, 2);
+        // Frontend root: admin klasörünün bir üstü (monorepo / aapanel kurulumu)
+        $frontendRoot = dirname($adminRoot);
+
+        $candidates = [
+            // Admin tarafı cache
+            $adminRoot . '/storage/cache/site_settings_envelope.json',
+            $adminRoot . '/storage/cache/site_settings_envelope.json.refresh.lock',
+            // Frontend tarafı cache (monorepo)
+            $frontendRoot . '/storage/cache/site_settings_envelope.json',
+            $frontendRoot . '/storage/cache/site_settings_envelope.json.refresh.lock',
+        ];
+
+        foreach ($candidates as $file) {
+            if (is_file($file)) {
+                @unlink($file);
+            }
         }
     }
 
