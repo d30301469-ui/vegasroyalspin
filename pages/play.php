@@ -201,9 +201,18 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
 </head>
 <body class="play-shell-body">
 
+<?php
+// Get logo from API branding (updated via admin panel)
+$playLogoUrl = (string) ($siteBranding['logo_url'] ?? $ayar['logo_url'] ?? '/assets/images/MaltaBetLogo.png');
+if (class_exists('ApiMediaUrl', false)) {
+    $playLogoUrl = ApiMediaUrl::resolve($playLogoUrl);
+}
+// Add cache busting to prevent old logo from showing
+$playLogoUrl = $playLogoUrl . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim(parse_url($playLogoUrl, PHP_URL_PATH) ?? '', '/')) ?: time());
+?>
 <header class="play-topbar" aria-label="Oyun çubuğu">
   <a class="play-topbar-logo" href="/" title="Ana sayfa">
-    <img src="/assets/images/MaltaBetLogo.png" alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="120" height="40" loading="lazy">
+    <img src="<?= htmlspecialchars($playLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="120" height="40" loading="lazy">
   </a>
   <div class="play-topbar-actions">
     <div class="play-topbar-balance<?= $loggedIn ? ' is-visible' : '' ?>" id="playBalanceWrap" aria-live="polite">
