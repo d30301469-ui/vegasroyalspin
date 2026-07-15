@@ -134,7 +134,21 @@ if (!function_exists('memberSendResetMail')) {
 
         if (function_exists('metropol_mail_send')) {
             $error = '';
-            $ok = metropol_mail_send($settings, $from, $toEmail, $subject, $messageText, $error);
+            $htmlBody = null;
+            if (function_exists('metropol_mail_render_template')) {
+                $bodyHtml = '<p style="margin:0 0 16px 0;">Merhaba,</p>'
+                    . '<p style="margin:0 0 16px 0;">Hesabınız için şifre sıfırlama talebi aldık. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.</p>'
+                    . '<p style="margin:0;color:#a99bc4;font-size:13px;">Bağlantı 1 saat süreyle geçerlidir. Bu talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.</p>';
+                $htmlBody = metropol_mail_render_template(
+                    memberResetBaseUrl(),
+                    'Şifre sıfırlama bağlantınız hazır',
+                    'Şifre Sıfırlama Talebi',
+                    $bodyHtml,
+                    'Şifremi Sıfırla',
+                    $link
+                );
+            }
+            $ok = metropol_mail_send($settings, $from, $toEmail, $subject, $messageText, $error, $htmlBody);
             $preview = $ok ? $messageText : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $messageText);
             memberLogOutboundMail($pdo, $toEmail, $subject, $preview, $ok ? 'sent' : 'failed');
             return $ok;
