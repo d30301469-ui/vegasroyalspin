@@ -624,7 +624,11 @@ final class ApiSiteSettings
             // Full URL - extract path
             $parsed = parse_url($url);
             $path = $parsed['path'] ?? '';
-            $base = $parsed['scheme'] . '://' . $parsed['host'] . ($parsed['port'] ? ':' . $parsed['port'] : '');
+            $host = $parsed['host'] ?? '';
+            $scheme = $parsed['scheme'] ?? 'https';
+            $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+            
+            $base = $scheme . '://' . $host . $port;
             
             // Check if file exists locally for cache busting
             if (file_exists(ADMIN_BASE_PATH . '/assets/images/favicons/favicon.svg')) {
