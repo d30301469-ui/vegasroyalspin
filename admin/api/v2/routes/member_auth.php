@@ -592,18 +592,29 @@ if ($method === 'POST' && ($route === 'forgot_password.php' || $route === 'auth/
             'message' => 'Geçerli bir e-posta adresi girin.',
         ]);
     }
-    $pdo = AdminDatabase::pdo();
-    $userStmt = $pdo->prepare('SELECT id, email FROM users WHERE email = :email LIMIT 1');
-    $userStmt->execute(['email' => $email]);
-    $user = $userStmt->fetch(PDO::FETCH_ASSOC);
-    if (is_array($user)) {
-        $token = bin2hex(random_bytes(32));
-        $pdo->prepare(
-            'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
-        )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
-        memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token);
-    } else {
-        memberLogOutboundMail($pdo, $email, 'Sifre Sifirlama Baglantiniz', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
+    try {
+        $pdo = AdminDatabase::pdo();
+        $userStmt = $pdo->prepare('SELECT id, email FROM users WHERE email = :email LIMIT 1');
+        $userStmt->execute(['email' => $email]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($user)) {
+            $token = bin2hex(random_bytes(32));
+            $pdo->prepare(
+                'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
+            )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
+            memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token);
+        } else {
+            memberLogOutboundMail($pdo, $email, 'Sifre Sifirlama Baglantiniz', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
+        }
+    } catch (Throwable $forgotPasswordError) {
+        error_log('[member_auth/forgot_password] ' . $forgotPasswordError->getMessage());
+        $debug = (string) (getenv('APP_DEBUG') ?: '') === '1' || (defined('APP_DEBUG') && APP_DEBUG);
+        $memberEnvelope(503, [
+            'success' => false,
+            'code' => 503,
+            'message' => 'Şifre sıfırlama servisi geçici olarak kullanılamıyor.',
+            'meta' => $debug ? ['reason' => $forgotPasswordError->getMessage()] : [],
+        ]);
     }
     $memberEnvelope(200, [
         'success' => true,
@@ -654,18 +665,29 @@ if ($method === 'POST' && ($route === 'password_reset.php' || $route === 'auth/p
         if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Geçerli bir e-posta adresi girin.']);
         }
-        $pdo = AdminDatabase::pdo();
-        $userStmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
-        $userStmt->execute(['email' => $email]);
-        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
-        if (is_array($user)) {
-            $token = bin2hex(random_bytes(32));
-            $pdo->prepare(
-                'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
-            )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
-            memberSendResetMail($pdo, $email, $token);
-        } else {
-            memberLogOutboundMail($pdo, $email, 'Sifre Sifirlama Baglantiniz', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
+        try {
+            $pdo = AdminDatabase::pdo();
+            $userStmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
+            $userStmt->execute(['email' => $email]);
+            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($user)) {
+                $token = bin2hex(random_bytes(32));
+                $pdo->prepare(
+                    'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
+                )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
+                memberSendResetMail($pdo, $email, $token);
+            } else {
+                memberLogOutboundMail($pdo, $email, 'Sifre Sifirlama Baglantiniz', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
+            }
+        } catch (Throwable $passwordResetRequestError) {
+            error_log('[member_auth/password_reset.request] ' . $passwordResetRequestError->getMessage());
+            $debug = (string) (getenv('APP_DEBUG') ?: '') === '1' || (defined('APP_DEBUG') && APP_DEBUG);
+            $memberEnvelope(503, [
+                'success' => false,
+                'code' => 503,
+                'message' => 'Şifre sıfırlama servisi geçici olarak kullanılamıyor.',
+                'meta' => $debug ? ['reason' => $passwordResetRequestError->getMessage()] : [],
+            ]);
         }
         $memberEnvelope(200, [
             'success' => true,
