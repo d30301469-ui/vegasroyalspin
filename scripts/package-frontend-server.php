@@ -85,6 +85,7 @@ $copyFiles = [
     'ping.php',
     'diagnose.php',
     'router.php',
+    'service-worker.js',
 ];
 
 $forbiddenPaths = [
