@@ -50,7 +50,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
 <head>
   <meta charset="utf-8">
   <base href="/">
-  <link rel="icon" href="<?= htmlspecialchars($headFaviconUrl, ENT_QUOTES, 'UTF-8') ?>" id="appFavicon">
+  <link rel="icon" type="image/svg+xml" href="<?= htmlspecialchars($headFaviconUrl, ENT_QUOTES, 'UTF-8') ?>" id="appFavicon">
   <link rel="manifest" href="<?= htmlspecialchars($headManifestUrl, ENT_QUOTES, 'UTF-8') ?>">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="keywords" content="<?= htmlspecialchars($headKeywords, ENT_QUOTES, 'UTF-8') ?>">
