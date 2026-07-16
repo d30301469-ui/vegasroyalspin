@@ -861,6 +861,36 @@
         var successModal = document.getElementById('registerSuccessModal');
         var submitBtn = form ? form.querySelector('#modalRegisterSubmit') : null;
         if (!form || !registerModal) return;
+        var alertContainer = form.querySelector('.register-submit-alert');
+
+        function isMobileSite() {
+            return !!(document.body && document.body.classList.contains('mobile-site'));
+        }
+
+        function ensureAlertContainer() {
+            if (alertContainer) return alertContainer;
+            var targetParent = form.querySelector('.register-steps-scroll') || form;
+            var el = document.createElement('div');
+            el.className = 'login-error-box register-submit-alert d-none';
+            el.setAttribute('role', 'alert');
+            targetParent.insertBefore(el, targetParent.firstChild || null);
+            alertContainer = el;
+            return alertContainer;
+        }
+
+        function showRegisterError(msg) {
+            var box = ensureAlertContainer();
+            if (!box) return;
+            box.textContent = msg || 'Bir hata olustu.';
+            box.classList.remove('d-none');
+        }
+
+        function hideRegisterError() {
+            var box = ensureAlertContainer();
+            if (!box) return;
+            box.textContent = '';
+            box.classList.add('d-none');
+        }
 
         function toast(type, msg, title) {
             if (window.MaltabetToast) {
@@ -868,8 +898,16 @@
             }
         }
 
+        function notify(type, msg, title) {
+            if (isMobileSite()) {
+                return;
+            }
+            toast(type, msg, title);
+        }
+
         form.addEventListener('submit', function (e) {
             e.preventDefault();
+            hideRegisterError();
             var fd = new FormData(form);
             fd.append('register_submit', '1');
             if (Shared.setSubmitButtonLoading) {
@@ -919,7 +957,8 @@
                             window.__USER_LOGGED_IN__ = true;
                             window.__HAS_MEMBER_JWT__ = true;
                         }
-                        toast('success', data.message || 'Kayıt başarılı.', 'Kayıt');
+                        hideRegisterError();
+                        notify('success', data.message || 'Kayıt başarılı.', 'Kayıt');
                         hideModalByElement(registerModal);
                         if (successModal) {
                             showModalByElement(successModal);
@@ -938,8 +977,8 @@
                             msg = parts.join(' ');
                         }
                     }
-                    if (window.MaltabetToast) toast('error', msg, 'Kayıt');
-                    else alert(msg);
+                    showRegisterError(msg);
+                    notify('error', msg, 'Kayıt');
                 })
                 .catch(function (err) {
                     if (Shared.setSubmitButtonLoading) {
@@ -948,8 +987,8 @@
                         submitBtn.disabled = false;
                     }
                     var conn = Shared.MSG_CONN || 'Bağlantı hatası. Lütfen tekrar deneyin.';
-                    if (window.MaltabetToast) toast('error', conn, 'Kayıt');
-                    else alert(conn);
+                    showRegisterError(conn);
+                    notify('error', conn, 'Kayıt');
                 });
         });
 
