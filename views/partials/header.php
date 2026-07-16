@@ -32,7 +32,7 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
     <div class="container-fluid">
         <div class="row align-items-center">
           <div class="col-4 col-sm-3 col-md-2 col-lg-2 position-relative pl-2 pl-lg-0 d-flex align-items-center">
-            <a class="headLogo logo" href="/">
+            <a class="headLogo logo" href="/" data-site-logo-link>
                 <?php if ($headerLogoAnimated !== ''): ?>
                     <?php $animExt = strtolower(pathinfo((string) parse_url($headerLogoAnimated, PHP_URL_PATH), PATHINFO_EXTENSION)); ?>
                     <?php if ($animExt === 'webm' || $animExt === 'mp4'): ?>

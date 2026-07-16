@@ -46,6 +46,11 @@ $registerJsVer = (string) ((is_file($registerJsPath) ? filemtime($registerJsPath
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/global.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/member-api-console.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php
+$siteSettingsHydratePath = BASE_PATH . '/assets/js/site-settings-hydrate.js';
+$siteSettingsHydrateVer = (string) (is_file($siteSettingsHydratePath) ? filemtime($siteSettingsHydratePath) : '1');
+?>
+<script defer src="/assets/js/site-settings-hydrate.js?v=<?= rawurlencode($siteSettingsHydrateVer) ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/toastify-helper.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php
 $headerJsPath = BASE_PATH . '/assets/js/header.js';
