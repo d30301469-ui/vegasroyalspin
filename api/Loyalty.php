@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 final class ApiLoyalty
 {
+    private const BRONZE_ICON_URL = '/assets/images/loyalty/badges/bronze.png';
+
     public static function fetchForUser(int $userId): array
     {
         if ($userId <= 0) {
@@ -59,7 +61,7 @@ final class ApiLoyalty
             return [
                 'name' => (string) ($level['name'] ?? 'Bronze'),
                 'code' => (string) ($level['code'] ?? 'bronze'),
-                'icon_url' => (string) ($level['icon_url'] ?? '/content/images/loyalty_points/bronze.png'),
+                'icon_url' => self::normalizedIconUrl((string) ($level['code'] ?? 'bronze'), (string) ($level['icon_url'] ?? self::BRONZE_ICON_URL)),
                 'initial' => strtoupper(substr((string) ($level['name'] ?? 'Bronze'), 0, 1)),
                 'points' => (int) ($loyalty['account']['points'] ?? 0),
                 'redeemable_points' => (int) ($loyalty['account']['redeemable_points'] ?? 0),
@@ -97,7 +99,7 @@ final class ApiLoyalty
             return [
                 'name' => (string) ($level['name'] ?? 'Bronze'),
                 'code' => (string) ($level['code'] ?? 'bronze'),
-                'icon_url' => (string) ($level['icon_url'] ?? '/content/images/loyalty_points/bronze.png'),
+                'icon_url' => self::normalizedIconUrl((string) ($level['code'] ?? 'bronze'), (string) ($level['icon_url'] ?? self::BRONZE_ICON_URL)),
                 'initial' => strtoupper(substr((string) ($level['name'] ?? 'Bronze'), 0, 1)),
                 'points' => (int) ($data['account']['points'] ?? 0),
                 'redeemable_points' => (int) ($data['account']['redeemable_points'] ?? 0),
@@ -306,13 +308,14 @@ final class ApiLoyalty
 
     private static function publicLevel(array $level): array
     {
+        $code = (string) ($level['code'] ?? 'bronze');
         return [
-            'code' => (string) ($level['code'] ?? 'bronze'),
+            'code' => $code,
             'name' => (string) ($level['name'] ?? 'Bronze'),
             'min_points' => (int) ($level['min_points'] ?? 0),
             'cashback_rate' => (float) ($level['cashback_rate'] ?? 0),
             'weekly_bonus_amount' => (float) ($level['weekly_bonus_amount'] ?? 0),
-            'icon_url' => (string) ($level['icon_url'] ?? '/content/images/loyalty_points/bronze.png'),
+            'icon_url' => self::normalizedIconUrl($code, (string) ($level['icon_url'] ?? self::BRONZE_ICON_URL)),
             'color_hex' => (string) ($level['color_hex'] ?? '#b7791f'),
             'sort_order' => (int) ($level['sort_order'] ?? 0),
         ];
@@ -326,16 +329,25 @@ final class ApiLoyalty
             'min_points' => 0,
             'cashback_rate' => 0.0,
             'weekly_bonus_amount' => 0.0,
-            'icon_url' => '/content/images/loyalty_points/bronze.png',
+            'icon_url' => self::BRONZE_ICON_URL,
             'color_hex' => '#b7791f',
             'sort_order' => 10,
         ];
     }
 
+    private static function normalizedIconUrl(string $code, string $iconUrl): string
+    {
+        if (strtolower($code) === 'bronze') {
+            return self::BRONZE_ICON_URL;
+        }
+
+        return $iconUrl;
+    }
+
     private static function defaultLevels(): array
     {
         return [
-            ['code' => 'bronze', 'name' => 'Bronze', 'min_points' => 0, 'cashback_rate' => 0.00, 'weekly_bonus_amount' => 0.00, 'icon_url' => '/content/images/loyalty_points/bronze.png', 'color_hex' => '#b7791f', 'sort_order' => 10],
+            ['code' => 'bronze', 'name' => 'Bronze', 'min_points' => 0, 'cashback_rate' => 0.00, 'weekly_bonus_amount' => 0.00, 'icon_url' => self::BRONZE_ICON_URL, 'color_hex' => '#b7791f', 'sort_order' => 10],
             ['code' => 'silver', 'name' => 'Silver', 'min_points' => 1000, 'cashback_rate' => 1.00, 'weekly_bonus_amount' => 100.00, 'icon_url' => '/content/images/loyalty_points/silver.png', 'color_hex' => '#94a3b8', 'sort_order' => 20],
             ['code' => 'gold', 'name' => 'Gold', 'min_points' => 5000, 'cashback_rate' => 2.00, 'weekly_bonus_amount' => 250.00, 'icon_url' => '/content/images/loyalty_points/gold.png', 'color_hex' => '#f59e0b', 'sort_order' => 30],
             ['code' => 'platinum', 'name' => 'Platinum', 'min_points' => 15000, 'cashback_rate' => 3.00, 'weekly_bonus_amount' => 500.00, 'icon_url' => '/content/images/loyalty_points/platinum.png', 'color_hex' => '#60a5fa', 'sort_order' => 40],

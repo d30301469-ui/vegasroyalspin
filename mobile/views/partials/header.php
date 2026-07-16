@@ -105,8 +105,8 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
         <p class="loyaltyBonusHeaderShadow" aria-hidden="true"></p>
         <p class="loyaltyBonusHeaderBackground" aria-hidden="true"></p>
         <p class="loyaltyBonusHeaderText ellipsis" data-loyalty-level-name><?= htmlspecialchars((string) ($headerLoyaltyBadge['name'] ?? 'Bronze'), ENT_QUOTES, 'UTF-8') ?></p>
-        <img class="loyaltyBonusImg"
-             src="<?= htmlspecialchars((string) ($headerLoyaltyBadge['icon_url'] ?? '/content/images/loyalty_points/bronze.png'), ENT_QUOTES, 'UTF-8') ?>"
+           <img class="loyaltyBonusImg"
+             src="<?= htmlspecialchars((string) ($headerLoyaltyBadge['icon_url'] ?? '/assets/images/loyalty/badges/bronze.png'), ENT_QUOTES, 'UTF-8') ?>"
              alt=""
              width="24"
              height="24"
