@@ -1,7 +1,11 @@
 <?php
 
 $pageTitle = isset($title) ? (string) $title : 'Admin';
-$activePage = isset($active) ? (string) $active : 'dashboard';
+// NOT: 'dashboard' varsayılanı kullanılmamalı. 403/404/500 gibi hata sayfaları
+// 'active' göndermez; varsayılan 'dashboard' olsaydı sidebar'da "Dashboard"
+// yanlışlıkla aktif görünür ve kullanıcı erişim reddedilen sayfadan
+// dashboard'a yönlendirilmiş gibi bir izlenime kapılırdı (bkz. footer bug).
+$activePage = isset($active) ? (string) $active : '';
 $crumbText = isset($crumbs) ? (string) $crumbs : 'Admin';
 $panelName = (string) ($config['name'] ?? 'Nexthub Backoffice');
 $currentModuleKey = isset($moduleKey) ? (string) $moduleKey : '';
