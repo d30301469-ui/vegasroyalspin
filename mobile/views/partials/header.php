@@ -115,26 +115,42 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
              onerror="this.style.display='none'">
       </a>
       <div class="hdr-user-bc hasLoyaltyLevel" data-hdr-shortcuts-strip>
-        <div class="headerExpanded" data-hdr-additional-toggle>
-          <p class="headerExpandedIcons" aria-hidden="true">
+        <div class="headerExpanded"
+             data-hdr-additional-toggle
+             role="button"
+             tabindex="0"
+             aria-expanded="false"
+             aria-label="Kısayolları genişlet">
+          <span class="hdr-expanded-label">KAPAT</span>
+          <p class="headerExpandedIcons headerExpandedIcons--collapsed" aria-hidden="true">
             <i class="bc-i-small-arrow-left"></i>
             <i class="bc-i-small-arrow-left"></i>
           </p>
+          <p class="headerExpandedIcons headerExpandedIcons--open" aria-hidden="true">
+            <i class="bc-i-small-arrow-right"></i>
+            <i class="bc-i-small-arrow-right"></i>
+          </p>
         </div>
-        <a href="/ortaklik"
-           target="_blank"
-           class="user-nav-icon bc-i-standings"
-           aria-label="Header Icon"></a>
-        <a href="#"
-           target="_blank"
-           class="user-nav-icon bc-i-call"
-           onclick="window.open(<?= $mobileHeaderSupportUrlJs ?>,'_blank'); return false;"
-           aria-label="Header Icon"></a>
-        <a href="<?= htmlspecialchars($depositHref, ENT_QUOTES, 'UTF-8') ?>"
-           target="_self"
-           class="user-nav-icon bc-i-wallet"
-           onclick="event.preventDefault(); if (typeof redirectToDeposit === 'function') redirectToDeposit();"
-           aria-label="Header Icon"></a>
+        <div class="hdr-shortcuts-icons">
+          <a href="<?= htmlspecialchars($depositHref, ENT_QUOTES, 'UTF-8') ?>"
+             class="user-nav-icon bc-i-wallet"
+             onclick="event.preventDefault(); if (typeof redirectToDeposit === 'function') redirectToDeposit();"
+             title="Para Yatır"
+             aria-label="Para Yatır"></a>
+          <a href="#"
+             class="user-nav-icon bc-i-call callPanel"
+             onclick="window.open(<?= $mobileHeaderSupportUrlJs ?>,'_blank'); return false;"
+             title="Canlı Destek"
+             aria-label="Canlı Destek"></a>
+          <a href="/ortaklik"
+             class="user-nav-icon bc-i-standings"
+             title="Ortaklık"
+             aria-label="Ortaklık"></a>
+          <a href="/promotions"
+             class="user-nav-icon bc-i-x50-wheel hdr-shortcut-wheel"
+             title="Çark"
+             aria-label="Çark"></a>
+        </div>
       </div>
     </div>
     <?php endif; ?>
