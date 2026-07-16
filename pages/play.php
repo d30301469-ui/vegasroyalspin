@@ -67,6 +67,33 @@ $playBypassShell = $playRequestedOpenMode === 'redirect' || (function_exists('is
 $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES, 'UTF-8');
 
 if ($playBypassShell) {
+  $extractLaunchUrl = static function (array $response): string {
+    $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+    $url = trim((string) ($data['game_url'] ?? $data['launch_url'] ?? $response['game_url'] ?? $response['launch_url'] ?? ''));
+    if ($url === '' || !preg_match('#^https?://#i', $url)) {
+      return '';
+    }
+    return $url;
+  };
+
+  try {
+    $memberJwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
+    $launchResponse = ApiGameLaunch::post($playPayload, $memberJwt !== '' ? $memberJwt : null, 60);
+    if (is_array($launchResponse) && !empty($launchResponse['success'])) {
+      $launchUrl = $extractLaunchUrl($launchResponse);
+      if ($launchUrl !== '') {
+        if (!headers_sent()) {
+          header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+          header('Pragma: no-cache');
+          header('Location: ' . $launchUrl, true, 302);
+        }
+        exit;
+      }
+    }
+  } catch (Throwable) {
+    // If server-side launch fails, fallback to existing JS launch flow below.
+  }
+
     if (!function_exists('metropol_member_api_layout_vars')) {
         require_once __DIR__ . '/../config/member_api_public.php';
     }
