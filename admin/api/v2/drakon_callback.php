@@ -25,6 +25,11 @@ if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? '')) !== 'POST') {
 $rawBody = (string) file_get_contents('php://input');
 $payload = json_decode($rawBody, true);
 
+// Fallback: some provider setups post form-encoded bodies instead of JSON.
+if (!is_array($payload) && !empty($_POST)) {
+    $payload = $_POST;
+}
+
 if (!is_array($payload)) {
     http_response_code(400);
     echo json_encode(['status' => false, 'error' => 'INVALID_JSON']);

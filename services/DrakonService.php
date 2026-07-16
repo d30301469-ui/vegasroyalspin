@@ -1309,12 +1309,18 @@ final class DrakonService
             $fullName = (string) ($user['username'] ?? 'User');
         }
 
+        // Doc expects ISO-8601 UTC (e.g. 2026-03-25T10:00:00Z); MySQL stores a
+        // plain "Y-m-d H:i:s" string, so normalise it.
+        $createdRaw = trim((string) ($user['created_at'] ?? ''));
+        $createdTs  = $createdRaw !== '' ? strtotime($createdRaw) : false;
+        $date       = gmdate('Y-m-d\TH:i:s\Z', $createdTs !== false ? $createdTs : time());
+
         return [
             '__http_status' => 200,
             '__user_id'     => (int) $user['id'],
             'email'         => (string) ($user['email'] ?? ''),
             'name_jogador'  => $fullName,
-            'date'          => (string) ($user['created_at'] ?? date('Y-m-d\TH:i:s\Z')),
+            'date'          => $date,
         ];
     }
 
