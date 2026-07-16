@@ -586,16 +586,43 @@ if (class_exists('ApiMediaUrl', false)) {
         return out;
     }
 
+    function ensurePhoneSearch(panel) {
+        var searchWrap = panel.querySelector('.bc-custom-select__search');
+        if (!searchWrap) {
+            searchWrap = document.createElement('div');
+            searchWrap.className = 'bc-custom-select__search';
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'bc-phone-search-input';
+            input.placeholder = 'Kod ara...';
+            input.autocomplete = 'off';
+            searchWrap.appendChild(input);
+            panel.insertBefore(searchWrap, panel.firstChild || null);
+        }
+        return searchWrap.querySelector('.bc-phone-search-input');
+    }
+
+    function applyPhoneFilter(panel, query) {
+        var q = String(query || '').toLowerCase().trim();
+        panel.querySelectorAll('.bc-custom-select__option').forEach(function (opt) {
+            var txt = (opt.textContent || '').toLowerCase();
+            opt.style.display = (!q || txt.indexOf(q) !== -1) ? '' : 'none';
+        });
+    }
+
     function renderPhoneCodes(items) {
         var wrapper = document.querySelector('#registerModal .bc-custom-select[data-phone-code-select]');
         if (!wrapper) return false;
         var select = wrapper.querySelector('#modal_phone_country_code');
         var panel = wrapper.querySelector('#modal_phone_country_code_listbox');
+        var trigger = wrapper.querySelector('#modal_phone_country_code_trigger');
         var valueEl = wrapper.querySelector('.bc-custom-select__value');
         if (!select || !panel || !valueEl) return false;
 
         select.innerHTML = '';
         panel.innerHTML = '';
+
+        var phoneSearchInput = ensurePhoneSearch(panel);
 
         items.forEach(function (item) {
             var shortLabel = '+' + item.dial;
@@ -614,11 +641,35 @@ if (class_exists('ApiMediaUrl', false)) {
             panel.appendChild(panelOpt);
         });
 
+        if (phoneSearchInput && !phoneSearchInput.__phoneCodeSearchBound) {
+            phoneSearchInput.__phoneCodeSearchBound = true;
+            phoneSearchInput.addEventListener('input', function () {
+                applyPhoneFilter(panel, phoneSearchInput.value || '');
+            });
+            phoneSearchInput.addEventListener('click', function (e) { e.stopPropagation(); });
+            phoneSearchInput.addEventListener('keydown', function (e) { e.stopPropagation(); });
+        }
+
+        if (trigger && !trigger.__phoneCodeSearchFocusBound) {
+            trigger.__phoneCodeSearchFocusBound = true;
+            trigger.addEventListener('click', function () {
+                setTimeout(function () {
+                    var input = panel.querySelector('.bc-phone-search-input');
+                    if (!input) return;
+                    input.value = '';
+                    applyPhoneFilter(panel, '');
+                    try { input.focus(); } catch (e) {}
+                }, 0);
+            });
+        }
+
         select.value = '90';
         if (!select.value && select.options.length) {
             select.selectedIndex = 0;
         }
         valueEl.textContent = select.options[select.selectedIndex] ? select.options[select.selectedIndex].textContent : '+90';
+
+        applyPhoneFilter(panel, '');
 
         return true;
     }
