@@ -37,7 +37,94 @@ final class AdminAuth
 
         $_SESSION['admin_last_activity'] = time();
 
+        self::ensureSuperAdminHasAllPermissions();
+
         return true;
+    }
+
+    /**
+     * Süperadmin hesapları kod tarafında (isSuperAdmin()) her zaman tam yetkiye
+     * sahiptir; ancak admin_permissions tablosunda buna karşılık gelen satırlar
+     * olmayabilir (ör. yeni eklenen bir modül, ya da /permissions ekranı hiç
+     * açılmadıysa). Bu durum hem "Admin Yetkileri" ekranında yanıltıcı şekilde
+     * boş/kapalı görünmesine hem de kod dışı bir kontrol noktasının yanlışlıkla
+     * bu tabloyu tek kaynak sayması hâlinde erişimin reddedilmesine yol açar.
+     * Süperadmin oturumu doğrulandığında (oturum başına bir kez) tüm mevcut
+     * sayfa anahtarlarını granted=1 olarak yazarak bu tabloyu koddaki bypass ile
+     * senkron tutar. Hata durumunda sessizce yutulur (sayfa yüklemesini bozmaz).
+     */
+    private static function ensureSuperAdminHasAllPermissions(): void
+    {
+        if (!self::isSuperAdmin()) {
+            return;
+        }
+        if (!empty($_SESSION['admin_superadmin_perms_synced'])) {
+            return;
+        }
+        $adminId = (int) (self::user()['id'] ?? 0);
+        if ($adminId <= 0) {
+            return;
+        }
+
+        try {
+            $pdo = AdminDatabase::pdo();
+            $pdo->exec(
+                'CREATE TABLE IF NOT EXISTS admin_permissions (
+                    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    admin_id INT UNSIGNED NOT NULL,
+                    page_key VARCHAR(120) NOT NULL,
+                    granted TINYINT(1) NOT NULL DEFAULT 0,
+                    granted_by INT UNSIGNED NULL,
+                    granted_at DATETIME NULL,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY uniq_admin_permissions_admin_page (admin_id, page_key),
+                    KEY idx_admin_permissions_admin (admin_id),
+                    KEY idx_admin_permissions_page (page_key)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO admin_permissions (admin_id, page_key, granted, granted_by, granted_at)
+                 VALUES (:admin_id, :page_key, 1, :granted_by, NOW())
+                 ON DUPLICATE KEY UPDATE granted = 1, granted_by = VALUES(granted_by), granted_at = VALUES(granted_at)'
+            );
+            foreach (self::allCanonicalPermissionKeys() as $pageKey) {
+                $stmt->execute([
+                    'admin_id' => $adminId,
+                    'page_key' => $pageKey,
+                    'granted_by' => $adminId,
+                ]);
+            }
+
+            $_SESSION['admin_superadmin_perms_synced'] = true;
+        } catch (Throwable) {
+            // DB henüz hazır değilse ya da geçici bir hata olursa panel açılmaya devam etsin;
+            // isSuperAdmin() bypass'ı zaten erişimi garanti eder.
+        }
+    }
+
+    /** Navigasyon konfigürasyonundaki tüm benzersiz canonical yetki anahtarları. @return list<string> */
+    private static function allCanonicalPermissionKeys(): array
+    {
+        $config = self::config();
+        $navigation = is_array($config['navigation'] ?? null) ? $config['navigation'] : [];
+        $keys = [];
+        foreach ($navigation as $group) {
+            if (!is_array($group)) {
+                continue;
+            }
+            foreach ((array) ($group['items'] ?? []) as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $key = self::navPermissionKey($item);
+                if ($key !== '') {
+                    $keys[$key] = true;
+                }
+            }
+        }
+
+        return array_keys($keys);
     }
 
     public static function userName(): string

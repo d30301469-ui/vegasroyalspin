@@ -50,6 +50,11 @@ final class AdminPermissionController extends AdminController
         $allowedKeys = array_values(array_filter(array_unique($allowedKeys)));
         $postedKeys = array_map('strval', is_array($_POST['permissions'] ?? null) ? $_POST['permissions'] : []);
         $postedKeys = array_values(array_intersect($postedKeys, $allowedKeys));
+        // Süperadmin hesabının yetkileri formdan yanlışlıkla (veya eksik seçimle) daraltılamaz;
+        // her zaman tüm sayfa anahtarları açık kaydedilir.
+        if ($this->isSuperAdminAccount($adminId)) {
+            $postedKeys = $allowedKeys;
+        }
 
         $pdo = AdminDatabase::pdo();
         $pdo->beginTransaction();
@@ -114,10 +119,41 @@ final class AdminPermissionController extends AdminController
         return (int) $stmt->fetchColumn() > 0;
     }
 
+    private function isSuperAdminAccount(int $adminId): bool
+    {
+        try {
+            $stmt = AdminDatabase::pdo()->prepare('SELECT role FROM admins WHERE id = :id LIMIT 1');
+            $stmt->execute(['id' => $adminId]);
+            $role = strtolower(trim((string) $stmt->fetchColumn()));
+
+            return in_array($role, ['superadmin', 'super_admin', 'owner'], true);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
     private function grantsFor(int $adminId): array
     {
         if ($adminId <= 0) {
             return [];
+        }
+
+        // Süperadmin her zaman tam yetkilidir (AdminAuth::isSuperAdmin() koddaki bypass).
+        // admin_permissions tablosundaki satırlar eksik/gecikmeli olsa bile ekranda tüm
+        // kutuların işaretli görünmesi ve kaydedildiğinde tam yetkinin kalıcı hâle gelmesi
+        // için burada da her zaman "tümü açık" döndürülür.
+        if ($this->isSuperAdminAccount($adminId)) {
+            $grants = [];
+            foreach ($this->permissionGroups() as $group) {
+                foreach ((array) ($group['items'] ?? []) as $item) {
+                    $key = (string) ($item['key'] ?? '');
+                    if ($key !== '') {
+                        $grants[$key] = true;
+                    }
+                }
+            }
+
+            return $grants;
         }
 
         $stmt = AdminDatabase::pdo()->prepare('SELECT page_key, granted FROM admin_permissions WHERE admin_id = :admin_id');
