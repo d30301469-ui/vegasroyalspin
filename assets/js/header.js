@@ -354,7 +354,16 @@
 
     // Oyun açma fonksiyonu
     function openGame(gameId) {
-        window.location.href = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=real&wallet=main';
+        var url = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=real&wallet=main';
+        var isMobileSite = !!(document.body && document.body.classList.contains('mobile-site'));
+        if (isMobileSite) {
+            var newTab = window.open(url, '_blank', 'noopener');
+            if (newTab) {
+                newTab.opener = null;
+                return;
+            }
+        }
+        window.location.href = url;
     }
     window.openGame = openGame;
 

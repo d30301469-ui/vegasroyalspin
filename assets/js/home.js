@@ -117,6 +117,18 @@ function showLoginWarning() {
   }
 }
 
+function openPlayUrl(url) {
+  var isMobileSite = !!(document.body && document.body.classList.contains('mobile-site'));
+  if (isMobileSite) {
+    var newTab = window.open(url, '_blank', 'noopener');
+    if (newTab) {
+      newTab.opener = null;
+      return;
+    }
+  }
+  window.location.href = url;
+}
+
 function handlePlay(gameId) {
   if (!gameId) {
     return;
@@ -137,7 +149,7 @@ function handlePlay(gameId) {
     }
   }
   var url = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=real&wallet=main';
-  window.location.href = url;
+  openPlayUrl(url);
 }
 
 function handleDemo(gameId) {
