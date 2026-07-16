@@ -1,2 +1,8 @@
-Require all denied
+# Block PHP execution and other executable files in all of storage/
+<FilesMatch "\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|bat|cmd)$">
+    Require all denied
+</FilesMatch>
+
+# Allow image/media files in uploads/
+# Everything else (logs, cache, app, framework) remains non-executable and has no direct HTTP entry point.
 

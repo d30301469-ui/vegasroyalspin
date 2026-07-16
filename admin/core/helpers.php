@@ -50,7 +50,7 @@ function asset_url(string $path): string
             if ($hash !== false) {
                 $versionCache[$relative] = substr($hash, 0, 12) . '-' . (string) filesize($fullPath);
             } else {
-                $versionCache[$relative] = (string) filemtime($fullPath);
+                $versionCache[$relative] = (string) (@filemtime($fullPath) ?: '1');
             }
         } else {
             $versionCache[$relative] = '1';

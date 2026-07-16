@@ -125,6 +125,25 @@ body.mobile-site .hdr-main-content-bc .user-balance-dropdown {
   flex-shrink: 0;
 }
 
+body.mobile-site .hdr-main-content-bc .hdr-balance-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(12, 8, 30, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+}
+
+body.mobile-site .hdr-main-content-bc .hdr-balance-trigger:hover,
+body.mobile-site .hdr-main-content-bc .hdr-balance-trigger:focus-visible {
+  border-color: rgba(255, 255, 255, 0.36);
+  background: rgba(12, 8, 30, 0.72);
+}
+
 body.mobile-site .hdr-main-content-bc .hdr-user-info-content-bc {
   display: block;
 }
