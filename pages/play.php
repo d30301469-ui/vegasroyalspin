@@ -139,11 +139,6 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   min-width: 0;
   line-height: 1.28;
   gap: 4px;
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 @media (min-width: 992px) {
   .play-topbar-balance {
@@ -159,20 +154,34 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   }
 }
 .play-topbar-balance .play-bal-main {
+  display: inline-flex;
+  align-items: center;
   font-weight: 700;
   font-size: 15px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   color: #fff;
   white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 .play-topbar-balance .play-bal-bonus {
+  display: inline-flex;
+  align-items: center;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.03em;
   opacity: 0.9;
   color: rgba(255, 255, 255, 0.76);
   white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 .play-topbar-balance .play-bal-bonus strong { color: var(--play-secondary); font-weight: 600; }
 .play-icon-btn {
