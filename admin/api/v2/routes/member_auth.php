@@ -375,10 +375,11 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
     $gender = $genderMap[$genderKey] ?? 'Erkek';
 
     $pdo = AdminDatabase::pdo();
-    $dup = $pdo->prepare('SELECT username, email, identity_number FROM users WHERE username = :username OR email = :email OR (:identity_number <> "" AND identity_number = :identity_number) LIMIT 1');
+    $dup = $pdo->prepare('SELECT username, email, identity_number FROM users WHERE username = :username OR email = :email OR (:identity_number_check <> "" AND identity_number = :identity_number) LIMIT 1');
     $dup->execute([
         'username' => $username,
         'email' => $email,
+        'identity_number_check' => (string) $tc,
         'identity_number' => (string) $tc,
     ]);
     $exists = $dup->fetch(PDO::FETCH_ASSOC);

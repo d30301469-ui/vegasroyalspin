@@ -1081,10 +1081,11 @@ class ApiAuthController
             $genderApi = trim((string) ($prepared['gender_api'] ?? ''));
             $gender = self::genderLabelFromApiValue($genderApi);
 
-            $check = $pdo->prepare('SELECT username, email, identity_number FROM users WHERE username = :username OR email = :email OR (:identity_number <> "" AND identity_number = :identity_number) LIMIT 1');
+            $check = $pdo->prepare('SELECT username, email, identity_number FROM users WHERE username = :username OR email = :email OR (:identity_number_check <> "" AND identity_number = :identity_number) LIMIT 1');
             $check->execute([
                 'username' => $username,
                 'email' => $email,
+                'identity_number_check' => $identityNumber,
                 'identity_number' => $identityNumber,
             ]);
             $exists = $check->fetch(\PDO::FETCH_ASSOC);
