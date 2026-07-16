@@ -3,6 +3,8 @@
 if (!class_exists('ApiMobileMenu', false)) {
     require_once (defined('API_PATH') ? API_PATH : dirname(__DIR__, 2) . '/api') . '/bootstrap.php';
 }
+$ayar = isset($ayar) && is_array($ayar) ? $ayar : [];
+$siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
 $mobileMenuPayload = ApiMobileMenu::fetch();
 $mobileMenuSections = is_array($mobileMenuPayload['sections'] ?? null) ? $mobileMenuPayload['sections'] : [];
 $mobileTabBar = is_array($mobileMenuPayload['tab_bar'] ?? null) && $mobileMenuPayload['tab_bar'] !== []

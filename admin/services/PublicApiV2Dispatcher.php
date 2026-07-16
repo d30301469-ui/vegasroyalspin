@@ -89,6 +89,17 @@ final class PublicApiV2Dispatcher
         $prefix = trim((string) ($_GET['prefix'] ?? ''));
         $removed = ApiCmsRemote::purgeCache($prefix !== '' ? $prefix : null);
 
+        // Site ayarları zarfı storage/cache/ kökünde tutulur (cms/ altında değil),
+        // bu yüzden ApiCmsRemote::purgeCache onu temizlemez. Branding/logo
+        // güncellemesinde (boş prefix = tam purge veya site_settings) bu zarfı da
+        // düşür ki yeni logo API'den anında çekilsin.
+        if ($prefix === '' || stripos($prefix, 'site_settings') !== false || stripos($prefix, 'site-settings') !== false) {
+            require_once BASE_PATH . '/api/SiteSettings.php';
+            if (method_exists('ApiSiteSettings', 'purgeCache')) {
+                ApiSiteSettings::purgeCache();
+            }
+        }
+
         self::json(200, [
             'success' => true,
             'ok' => true,
