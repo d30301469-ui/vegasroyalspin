@@ -357,6 +357,14 @@ final class BackendApiClient
         }
     }
 
+    private static function hasCurlRuntime(): bool
+    {
+        return function_exists('curl_init')
+            && function_exists('curl_setopt')
+            && function_exists('curl_exec')
+            && function_exists('curl_close');
+    }
+
     /**
      * SSL için CA dosyası başarısız olursa sistem CA ile yeniden dener (paylaşımlı hosting / güncel zincir uyumu).
      *
@@ -365,6 +373,10 @@ final class BackendApiClient
      */
     private static function execCurlWithOptionalSslRetry(string $url, int $timeout, callable $configure): array
     {
+        if (!self::hasCurlRuntime()) {
+            return [false, 0];
+        }
+
         $primaryCa = self::resolvePrimaryCainfo();
         $caAttempts = $primaryCa !== null ? [$primaryCa, null] : [null];
         $raw = false;
@@ -471,6 +483,10 @@ final class BackendApiClient
         int $timeout,
         ?string $authorizationHeader = null
     ): ?array {
+        if (!self::hasCurlRuntime()) {
+            return null;
+        }
+
         $path = '/' . ltrim($path, '/');
         $url  = $baseNoTrailingSlash . $path;
         if ($query !== []) {
@@ -590,6 +606,23 @@ final class BackendApiClient
         $base = rtrim($absoluteBaseUrl, '/');
         if ($base === '') {
             return null;
+        }
+
+        if (!self::hasCurlRuntime()) {
+            $message = 'Backend bağlantı hatası: cURL uzantısı yüklü değil.';
+
+            return [
+                'status' => 502,
+                'body' => json_encode([
+                    'success' => false,
+                    'ok' => false,
+                    'code' => 502,
+                    'message' => $message,
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'content_type' => 'application/json; charset=UTF-8',
+                'transport_error' => true,
+                'error_message' => $message,
+            ];
         }
 
         $path = trim($path, '/');
