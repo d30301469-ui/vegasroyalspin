@@ -32,6 +32,10 @@ final class BgamingTwinSyncTest extends TestCase
                 'controllers/Api/ApiBgamingWalletController.php',
                 'admin/controllers/Api/ApiBgamingWalletController.php',
             ],
+            'SlotGamesQuery' => [
+                'services/SlotGamesQuery.php',
+                'admin/services/SlotGamesQuery.php',
+            ],
         ];
     }
 
