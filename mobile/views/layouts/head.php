@@ -108,11 +108,7 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
 
   <link rel="stylesheet" href="/assets/css/bc-mobile-index.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-index.css')) ?>">
   <link rel="stylesheet" href="/assets/css/bc-mobile-header-original.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-header-original.css')) ?>">
-  <link rel="stylesheet" href="/assets/css/bc-mobile-maltabet.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-maltabet.css')) ?>">
-  <link rel="stylesheet" href="/assets/css/bc-mobile-custom.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-custom.css')) ?>">
-
   <link rel="stylesheet" href="/mobile/assets/css/base.css?v=<?= $ver($mobileCssDir . '/base.css') ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/header.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/header.css')) ?>">
   <link rel="stylesheet" href="/mobile/assets/css/menu.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/menu.css')) ?>">
   <link rel="stylesheet" href="/assets/css/mobile-smart-panel.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-smart-panel.css')) ?>">
   <link rel="stylesheet" href="/assets/css/mobile-right-sheet.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-right-sheet.css')) ?>">
