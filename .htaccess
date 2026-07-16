@@ -34,6 +34,8 @@
     RewriteRule ^api/v2/sportsbook-wallet/?$ admin/api/v2/sportsbook_callback.php [END,QSA]
 
     # ─── Private paths: never serve directly from webroot ─────────────────────
+    # Allow storage/uploads/* (promotion images, favicons, media) — block everything else in storage/
+    RewriteRule ^storage/uploads/ - [L,NC]
     RewriteRule ^(?:app|bin|config|database|docs|logs|repositories|scripts|services|storage|tests|tools|vendor)(?:/|$) - [F,L]
 
     # Block project metadata, generated output, and credential/token artifacts from root docroot deployments.

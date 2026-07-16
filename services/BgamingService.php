@@ -33,6 +33,23 @@ final class BgamingService
         self::ensureDefaultConfig($pdo);
     }
 
+    /**
+     * Safe in production — only adds missing columns, never drops or modifies existing data.
+     * Runs at most once per PHP process lifetime.
+     */
+    private static function ensureColumnsIfNeeded(PDO $pdo): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        $done = true;
+        try {
+            self::ensureColumns($pdo);
+        } catch (Throwable) {
+        }
+    }
+
     public static function createSchema(PDO $pdo): void
     {
         if (!self::runtimeSchemaChangesAllowed()) {
@@ -365,7 +382,9 @@ final class BgamingService
         ]);
 
         if (trim((string) ($input['wallet_secret'] ?? '')) !== '') {
-            $pdo->prepare('UPDATE bgaming_config SET pending_wallet_secret = \'\', pending_wallet_secret_activates_at = NULL WHERE id = 1')->execute();
+            if (self::columnExists($pdo, 'bgaming_config', 'pending_wallet_secret')) {
+                $pdo->prepare('UPDATE bgaming_config SET pending_wallet_secret = \'\', pending_wallet_secret_activates_at = NULL WHERE id = 1')->execute();
+            }
         }
     }
 
@@ -941,6 +960,7 @@ final class BgamingService
     {
         $started = microtime(true);
         self::bootstrap($pdo);
+        self::ensureColumnsIfNeeded($pdo);
         $status = 200;
         $response = [];
         try {
