@@ -34,7 +34,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
   <div class="header-bc<?= $hdrAuthClass ?>">
     <div class="hdr-main-content-bc">
       <div class="logo-container">
-        <a class="logo" href="/" title="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
+        <a class="logo" href="/" data-site-logo-link title="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
           <?php if ($mobileHeaderLogoAnimUrl !== ''): ?>
             <?php $mAnimExt = strtolower(pathinfo((string) parse_url($mobileHeaderLogoAnimUrl, PHP_URL_PATH), PATHINFO_EXTENSION)); ?>
             <?php if ($mAnimExt === 'webm' || $mAnimExt === 'mp4'): ?>
