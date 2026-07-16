@@ -201,7 +201,8 @@ body.mobile-site #registerModal .register-modal-top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 50px 0 6px;
+  padding: 0 8px 0 6px;
+  position: relative;
 }
 
 body.mobile-site #login2 .login-logo,
@@ -220,9 +221,14 @@ body.mobile-site #registerModal .register-top-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  margin-left: auto;
+  gap: 3px;
+  margin-left: 0;
   min-height: 100%;
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
 }
 
 body.mobile-site #registerModal .register-modal-login-link,
@@ -1044,7 +1050,7 @@ body.mobile-site #registerModal .register-form--mobile-single .register-phone-ro
 body.mobile-site #registerModal .register-logo {
   flex: 0 1 auto !important;
   min-width: 0 !important;
-  max-width: min(150px, 46%) !important;
+  max-width: calc(100% - 102px) !important;
   overflow: hidden !important;
 }
 
@@ -1052,16 +1058,29 @@ body.mobile-site #registerModal .register-logo {
 body.mobile-site #registerModal .register-modal-login-link {
   min-width: 0 !important;
   height: auto !important;
-  padding: 6px 2px !important;
+  padding: 4px 2px !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   color: rgba(255, 255, 255, 0.85) !important;
-  font-size: 13px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
   text-decoration: underline !important;
   box-shadow: none !important;
+}
+
+body.mobile-site #registerModal .register-modal-close {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  font-size: 20px !important;
+}
+
+body.mobile-site #registerModal .register-modal-close span {
+  font-size: 22px !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Sabit alt bar: KAYIT + WalletConnect + DESTEK dikey istif (referans) */
