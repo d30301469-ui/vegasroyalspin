@@ -86,8 +86,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 999px;
@@ -107,15 +107,15 @@
 }
 
 .login-password-field .form-control-input-bc {
-    padding-right: 52px;
+    padding-right: 42px;
 }
 
 .login-password-field .login-password-toggle-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
     color: rgba(236, 231, 255, 0.92);
     background: none !important;
     border: 0 !important;
@@ -136,8 +136,8 @@
 }
 
 .login-password-field .login-password-toggle-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
@@ -341,14 +341,14 @@
 
     .login-password-field .login-password-toggle {
         right: 8px;
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
     }
 
     .login-password-field .login-password-toggle-icon,
     .login-password-field .login-password-toggle-icon svg {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
     }
 }
 
@@ -376,8 +376,8 @@
     }
 
     #login2 .login-password-field .login-password-toggle {
-        width: 30px;
-        height: 30px;
+        width: 24px;
+        height: 24px;
         right: 8px;
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 999px;
@@ -392,7 +392,7 @@
     }
 
     #login2 .login-password-field .form-control-input-bc {
-        padding-right: 52px;
+        padding-right: 42px;
     }
 
     #login2 .login-password-field .login-password-toggle-icon,
