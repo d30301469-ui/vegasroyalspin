@@ -1049,11 +1049,19 @@
             icon.classList.add('is-password-visible');
             icon.setAttribute('aria-pressed', 'true');
             icon.setAttribute('aria-label', 'Sifreyi gizle');
+            var showIcon = icon.querySelector('.register-password-toggle-icon-show');
+            var hideIcon = icon.querySelector('.register-password-toggle-icon-hide');
+            if (showIcon) showIcon.style.display = 'none';
+            if (hideIcon) hideIcon.style.display = 'inline-flex';
         } else {
             input.type = 'password';
             icon.classList.remove('is-password-visible');
             icon.setAttribute('aria-pressed', 'false');
             icon.setAttribute('aria-label', 'Sifreyi goster');
+            var showIconClosed = icon.querySelector('.register-password-toggle-icon-show');
+            var hideIconClosed = icon.querySelector('.register-password-toggle-icon-hide');
+            if (showIconClosed) showIconClosed.style.display = 'inline-flex';
+            if (hideIconClosed) hideIconClosed.style.display = 'none';
         }
     });
 

@@ -73,15 +73,15 @@ if (class_exists('ApiMediaUrl', false)) {
                         <div class="form-group entrance-f-item-bc">
                             <label class="form-control-label-bc inputs">
                                 <input type="password" class="form-control-input-bc password-input" name="password" id="modal_password" required>
-                                <button type="button" class="toggle-password register-password-toggle" aria-label="Şifreyi göster" aria-pressed="false" data-target-password="#modal_password">
-                                    <span class="register-password-toggle-icon register-password-toggle-icon-show" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
+                                <button type="button" class="toggle-password register-password-toggle" aria-label="Şifreyi göster" aria-pressed="false" data-target-password="#modal_password" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:28px;height:28px;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:999px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.92);cursor:pointer;z-index:5;">
+                                    <span class="register-password-toggle-icon register-password-toggle-icon-show" aria-hidden="true" style="width:16px;height:16px;display:inline-flex;">
+                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;">
                                             <path d="M2 12c1.8-4 6.1-7 10-7s8.2 3 10 7c-1.8 4-6.1 7-10 7S3.8 16 2 12Z"></path>
                                             <circle cx="12" cy="12" r="3.2"></circle>
                                         </svg>
                                     </span>
-                                    <span class="register-password-toggle-icon register-password-toggle-icon-hide" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
+                                    <span class="register-password-toggle-icon register-password-toggle-icon-hide" aria-hidden="true" style="width:16px;height:16px;display:none;">
+                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;">
                                             <path d="M2 12c1.8-4 6.1-7 10-7s8.2 3 10 7c-1.8 4-6.1 7-10 7S3.8 16 2 12Z"></path>
                                             <circle cx="12" cy="12" r="3.2"></circle>
                                             <path d="M5 19 19 5"></path>
@@ -97,15 +97,15 @@ if (class_exists('ApiMediaUrl', false)) {
                         <div class="form-group entrance-f-item-bc">
                             <label class="form-control-label-bc inputs">
                                 <input type="password" class="form-control-input-bc password-input" name="confirm_password" id="modal_confirm_password" required>
-                                <button type="button" class="toggle-password register-password-toggle" aria-label="Şifreyi göster" aria-pressed="false" data-target-password="#modal_confirm_password">
-                                    <span class="register-password-toggle-icon register-password-toggle-icon-show" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
+                                <button type="button" class="toggle-password register-password-toggle" aria-label="Şifreyi göster" aria-pressed="false" data-target-password="#modal_confirm_password" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:28px;height:28px;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:999px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.92);cursor:pointer;z-index:5;">
+                                    <span class="register-password-toggle-icon register-password-toggle-icon-show" aria-hidden="true" style="width:16px;height:16px;display:inline-flex;">
+                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;">
                                             <path d="M2 12c1.8-4 6.1-7 10-7s8.2 3 10 7c-1.8 4-6.1 7-10 7S3.8 16 2 12Z"></path>
                                             <circle cx="12" cy="12" r="3.2"></circle>
                                         </svg>
                                     </span>
-                                    <span class="register-password-toggle-icon register-password-toggle-icon-hide" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
+                                    <span class="register-password-toggle-icon register-password-toggle-icon-hide" aria-hidden="true" style="width:16px;height:16px;display:none;">
+                                        <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;">
                                             <path d="M2 12c1.8-4 6.1-7 10-7s8.2 3 10 7c-1.8 4-6.1 7-10 7S3.8 16 2 12Z"></path>
                                             <circle cx="12" cy="12" r="3.2"></circle>
                                             <path d="M5 19 19 5"></path>
