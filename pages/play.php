@@ -58,8 +58,48 @@ if ($demoFlag) {
 
 $playJsPath = BASE_PATH . '/assets/js/play-page.js';
 $playJsVer  = is_readable($playJsPath) ? (string) filemtime($playJsPath) : '1';
+$playRequestedOpenMode = strtolower(trim((string) ($_GET['open_mode'] ?? '')));
+$playMobileUa = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+$playUaIsMobile = $playMobileUa !== '' && preg_match('/android|iphone|ipad|ipod|mobile|windows phone|opera mini|iemobile/', $playMobileUa) === 1;
+$playBypassShell = $playRequestedOpenMode === 'redirect' || (function_exists('isMobile') && isMobile()) || $playUaIsMobile;
 
 $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES, 'UTF-8');
+
+if ($playBypassShell) {
+    if (!function_exists('metropol_member_api_layout_vars')) {
+        require_once __DIR__ . '/../config/member_api_public.php';
+    }
+    $memberApiLayout = metropol_member_api_layout_vars();
+    ?>
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title><?= $playTitle ?> — Yönlendiriliyor</title>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0f0522; color: #fff; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
+    .play-redirecting { min-height: 100%; display: grid; place-items: center; font-size: 14px; opacity: .85; }
+  </style>
+</head>
+<body>
+  <div class="play-redirecting">Oyun aciliyor...</div>
+  <script>
+  window.__PLAY_LAUNCH_PAYLOAD__ = <?= json_encode($playPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+  window.__USER_LOGGED_IN__ = <?= $loggedIn ? 'true' : 'false' ?>;
+  window.__HAS_MEMBER_JWT__ = <?= $hasMemberJwt ? 'true' : 'false' ?>;
+  window.__CSRF_TOKEN__ = <?= json_encode((string) ($_SESSION['csrf_token'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+  window.__MEMBER_API_BASE__ = <?= json_encode((string) ($memberApiLayout['__MEMBER_API_BASE__'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+  window.__FRONTEND_DIRECT_MEMBER_API__ = <?= !empty($memberApiLayout['__FRONTEND_DIRECT_MEMBER_API__']) ? 'true' : 'false' ?>;
+  </script>
+  <script src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+  <script src="/assets/js/play-page.js?v=<?= htmlspecialchars($playJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
+</body>
+</html>
+    <?php
+    exit;
+}
 ?>
 <!doctype html>
 <html lang="tr">

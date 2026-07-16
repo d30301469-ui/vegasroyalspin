@@ -344,9 +344,17 @@
     }
 
     function openPlayUrl(url) {
+        var targetUrl = String(url || '');
         if (isMobilePlayLaunchMode()) {
+            try {
+                var parsed = new URL(targetUrl, window.location.origin);
+                parsed.searchParams.set('open_mode', 'redirect');
+                targetUrl = parsed.pathname + parsed.search + parsed.hash;
+            } catch (e) {
+                targetUrl += (targetUrl.indexOf('?') === -1 ? '?' : '&') + 'open_mode=redirect';
+            }
             var a = document.createElement('a');
-            a.href = url;
+            a.href = targetUrl;
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
             a.style.display = 'none';
@@ -357,7 +365,7 @@
                 return;
             }
         }
-        window.location.href = url;
+        window.location.href = targetUrl;
     }
 
     function openLoginModal() {
