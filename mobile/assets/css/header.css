@@ -48,6 +48,103 @@ body.mobile-site .mobileHeader-inner {
   background: var(--headerBG, #0e0124);
 }
 
+.mobilePromoStrip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 12px 6px;
+  background: linear-gradient(180deg, rgba(9, 1, 22, 0.98) 0%, rgba(24, 7, 48, 0.98) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobilePromoCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 58px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  text-decoration: none;
+  color: #fff;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.mobilePromoCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 42%);
+  pointer-events: none;
+}
+
+.mobilePromoCard--support {
+  background: linear-gradient(135deg, #3a0d5f 0%, #1b052e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.mobilePromoCard--app {
+  background: linear-gradient(135deg, #5e2a00 0%, #231105 100%);
+  border: 1px solid rgba(255, 210, 120, 0.22);
+}
+
+.mobilePromoCard-eyebrow {
+  position: relative;
+  z-index: 1;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.mobilePromoCard-title {
+  position: relative;
+  z-index: 1;
+  margin-top: 2px;
+  font-size: 15px;
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+
+.mobilePromoCard-subtitle {
+  position: relative;
+  z-index: 1;
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.mobileAddressStrip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px 10px;
+  background: linear-gradient(180deg, rgba(24, 7, 48, 0.98) 0%, rgba(15, 3, 33, 0.98) 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mobileAddressStrip-kicker {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.mobileAddressStrip-link {
+  color: #f7b84b;
+  text-decoration: none;
+}
+
+.mobileAddressStrip-tail {
+  color: rgba(255, 255, 255, 0.76);
+}
+
 /* Mor şerit: sayfa içeriğinin üstünde; sheet (1048) ve sağ panel (1018+) altında kalır */
 body.mobile-site .mobileHeader .mainMenu {
   position: -webkit-sticky;

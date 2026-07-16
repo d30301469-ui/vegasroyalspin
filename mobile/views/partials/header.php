@@ -31,6 +31,31 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
     </div>
   </div>
 
+  <div class="mobilePromoStrip" data-mobile-promo-strip>
+    <a class="mobilePromoCard mobilePromoCard--support"
+       href="<?= htmlspecialchars($mobileHeaderSupportUrl !== '' ? $mobileHeaderSupportUrl : '/', ENT_QUOTES, 'UTF-8') ?>"
+       target="_blank"
+       rel="noopener"
+       aria-label="Telegram'a katıl ve canlı destek al">
+      <span class="mobilePromoCard-eyebrow">TELEGRAM'A KATIL!</span>
+      <span class="mobilePromoCard-title">CANLI DESTEK</span>
+      <span class="mobilePromoCard-subtitle">ANINDA YARDIM İÇİN BİZE ULAŞ</span>
+    </a>
+    <a class="mobilePromoCard mobilePromoCard--app"
+       href="/install-status.php"
+       aria-label="Uygulamayı indir">
+      <span class="mobilePromoCard-eyebrow">UYGULAMAYI İNDİR!</span>
+      <span class="mobilePromoCard-title">MOBİL SÜRÜM</span>
+      <span class="mobilePromoCard-subtitle">HIZLI ERİŞİM VE KOLAY GİRİŞ</span>
+    </a>
+  </div>
+
+  <div class="mobileAddressStrip" data-mobile-address-strip>
+    <span class="mobileAddressStrip-kicker">GÜNCEL ADRES</span>
+    <a class="mobileAddressStrip-link" href="/" aria-label="Ana sayfa">vegasroyalspin.com</a>
+    <span class="mobileAddressStrip-tail">OLACAKTIR.</span>
+  </div>
+
   <div class="header-bc<?= $hdrAuthClass ?>">
     <div class="hdr-main-content-bc" data-mobile-header-main>
       <div class="logo-container">
