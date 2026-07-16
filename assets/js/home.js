@@ -119,14 +119,22 @@ function showLoginWarning() {
 
 function openPlayUrl(url) {
   var isMobileSite = !!(document.body && document.body.classList.contains('mobile-site'));
+  var targetUrl = String(url || '');
   if (!isMobileSite) {
     var hasTouch = (navigator.maxTouchPoints || 0) > 0;
     var narrowViewport = !!(window.matchMedia && window.matchMedia('(max-width: 1024px)').matches);
     isMobileSite = hasTouch && narrowViewport;
   }
   if (isMobileSite) {
+    try {
+      var parsed = new URL(targetUrl, window.location.origin);
+      parsed.searchParams.set('open_mode', 'redirect');
+      targetUrl = parsed.pathname + parsed.search + parsed.hash;
+    } catch (e) {
+      targetUrl += (targetUrl.indexOf('?') === -1 ? '?' : '&') + 'open_mode=redirect';
+    }
     var a = document.createElement('a');
-    a.href = url;
+    a.href = targetUrl;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.style.display = 'none';
@@ -137,7 +145,7 @@ function openPlayUrl(url) {
       return;
     }
   }
-  window.location.href = url;
+  window.location.href = targetUrl;
 }
 
 function handlePlay(gameId) {

@@ -362,6 +362,13 @@
             isMobileSite = hasTouch && narrowViewport;
         }
         if (isMobileSite) {
+            try {
+                var parsed = new URL(url, window.location.origin);
+                parsed.searchParams.set('open_mode', 'redirect');
+                url = parsed.pathname + parsed.search + parsed.hash;
+            } catch (e) {
+                url += '&open_mode=redirect';
+            }
             var a = document.createElement('a');
             a.href = url;
             a.target = '_blank';
