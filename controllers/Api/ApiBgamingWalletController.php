@@ -80,60 +80,11 @@ final class ApiBgamingWalletController
         if ($requestId !== '' && empty($payload['request_id']) && empty($payload['nonce'])) {
             $payload['request_id'] = $requestId;
         }
-        if ($endpoint === 'auth/token_rotation') {
-            $replayError = $this->tokenRotationReplayError($payload);
-            if ($replayError !== null) {
-                http_response_code(409);
-                header('Content-Type: application/json; charset=utf-8');
-                echo json_encode($replayError, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                exit;
-            }
-        }
         $result = BgamingService::wallet(AdminDatabase::pdo(), $endpoint, $payload, $rawBody, $signature);
 
         http_response_code((int) ($result['status'] ?? 200));
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($result['body'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
-    }
-
-    /**
-     * Token rotation changes the shared wallet secret, so it gets a replay guard
-     * on top of BGaming's request signature.
-     *
-     * @return array<string, string>|null
-     */
-    private function tokenRotationReplayError(array $payload): ?array
-    {
-        $rotationDatetime = trim((string) ($payload['rotation_datetime'] ?? ''));
-        if ($rotationDatetime === '') {
-            return ['code' => 'STALE_REQUEST', 'message' => 'Token rotation timestamp is missing or stale'];
-        }
-
-        $rotationAt = strtotime($rotationDatetime);
-        if ($rotationAt === false || $rotationAt < (time() - 31 * 86400)) {
-            return ['code' => 'STALE_REQUEST', 'message' => 'Token rotation timestamp is missing or stale'];
-        }
-
-        $nonce = trim((string) ($payload['nonce'] ?? $payload['request_id'] ?? ''));
-        if ($nonce === '') {
-            return ['code' => 'MISSING_NONCE', 'message' => 'Token rotation nonce is required'];
-        }
-
-        try {
-            $stmt = AdminDatabase::pdo()->prepare(
-                "SELECT COUNT(*)
-                 FROM bgaming_wallet_logs
-                 WHERE endpoint = 'auth/token_rotation' AND request_payload LIKE :needle"
-            );
-            $stmt->execute(['needle' => '%"nonce":"' . str_replace(['%', '_'], ['\\%', '\\_'], $nonce) . '"%']);
-            if ((int) $stmt->fetchColumn() > 0) {
-                return ['code' => 'REPLAYED_REQUEST', 'message' => 'Token rotation nonce was already used'];
-            }
-        } catch (Throwable) {
-            return null;
-        }
-
-        return null;
     }
 }
