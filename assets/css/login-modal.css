@@ -354,6 +354,18 @@
 
 /* Authoritative mobile-login override. Keeps the close button compact and the password toggle polished. */
 @media (max-width: 480px) {
+    body.mobile-site #login2 .login-password-field .login-password-toggle {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+        min-height: 24px !important;
+        right: 8px !important;
+    }
+
+    body.mobile-site #login2 .login-password-field .form-control-input-bc {
+        padding-right: 42px !important;
+    }
+
     #login2 .login-close {
         width: 24px !important;
         height: 24px !important;
