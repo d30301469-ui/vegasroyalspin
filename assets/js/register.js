@@ -456,9 +456,18 @@
                 wrapper.classList.remove('is-open');
                 trigger.setAttribute('aria-expanded', 'false');
                 panel.setAttribute('hidden', '');
+                panel.style.left = '';
+                panel.style.right = '';
+                panel.style.width = '';
             }
 
             function open() {
+                var triggerRect = trigger.getBoundingClientRect();
+                var wrapperRect = wrapper.getBoundingClientRect();
+                var relativeLeft = Math.max(0, triggerRect.left - wrapperRect.left);
+                panel.style.left = relativeLeft + 'px';
+                panel.style.right = 'auto';
+                panel.style.width = triggerRect.width + 'px';
                 panel.removeAttribute('hidden');
                 wrapper.classList.add('is-open');
                 trigger.setAttribute('aria-expanded', 'true');
