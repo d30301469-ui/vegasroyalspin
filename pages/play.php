@@ -37,6 +37,7 @@ if ($demoFlag || in_array($playMode, ['fun', 'demo'], true)) {
 
 $loggedIn     = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 $hasMemberJwt = !empty($_SESSION['member_jwt']);
+$playIsAuthenticated = $loggedIn || $hasMemberJwt;
 
 $playPayload = [
     'game_id' => $playGameId,
@@ -77,17 +78,19 @@ if ($playBypassShell) {
   <meta charset="utf-8">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title><?= $playTitle ?> — Yönlendiriliyor</title>
+  <title><?= $playTitle ?></title>
+  <link rel="icon" type="image/svg+xml" href="/assets/images/favicons/favicon.svg">
   <style>
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0f0522; color: #fff; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
-    .play-redirecting { min-height: 100%; display: grid; place-items: center; font-size: 14px; opacity: .85; }
+    .play-redirecting { min-height: 100%; display: grid; place-items: center; }
+    .play-redirecting img { width: 56px; height: 56px; display: block; }
   </style>
 </head>
 <body>
-  <div class="play-redirecting">Oyun aciliyor...</div>
+  <div class="play-redirecting"><img src="/assets/images/favicons/favicon.svg" alt=""></div>
   <script>
   window.__PLAY_LAUNCH_PAYLOAD__ = <?= json_encode($playPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
-  window.__USER_LOGGED_IN__ = <?= $loggedIn ? 'true' : 'false' ?>;
+  window.__USER_LOGGED_IN__ = <?= $playIsAuthenticated ? 'true' : 'false' ?>;
   window.__HAS_MEMBER_JWT__ = <?= $hasMemberJwt ? 'true' : 'false' ?>;
   window.__CSRF_TOKEN__ = <?= json_encode((string) ($_SESSION['csrf_token'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
   window.__MEMBER_API_BASE__ = <?= json_encode((string) ($memberApiLayout['__MEMBER_API_BASE__'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
@@ -357,7 +360,7 @@ if (!function_exists('metropol_member_api_layout_vars')) {
 $memberApiLayout = metropol_member_api_layout_vars();
 ?>
 window.__PLAY_LAUNCH_PAYLOAD__ = <?= json_encode($playPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
-window.__USER_LOGGED_IN__ = <?= $loggedIn ? 'true' : 'false' ?>;
+window.__USER_LOGGED_IN__ = <?= $playIsAuthenticated ? 'true' : 'false' ?>;
 window.__HAS_MEMBER_JWT__ = <?= $hasMemberJwt ? 'true' : 'false' ?>;
 window.__CSRF_TOKEN__ = <?= json_encode((string) ($_SESSION['csrf_token'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 window.__MEMBER_API_BASE__ = <?= json_encode((string) ($memberApiLayout['__MEMBER_API_BASE__'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
