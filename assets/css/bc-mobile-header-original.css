@@ -479,11 +479,11 @@ body.mobile-site .hdr-additional-info .headerExpandedIcons .bc-i-small-arrow-rig
   margin-inline-start: -6px;
 }
 
-/* Kapalı: üst üste ikonlar, çark gizli */
+/* Kapalı: üst üste ikonlar (katlanmış görünüm — 4px koyu halka), çark gizli */
 body.mobile-site .hdr-additional-info .hdr-user-bc.hasLoyaltyLevel:not(.isExpandedIcons) .hdr-shortcuts-icons .user-nav-icon {
   margin-inline-start: -2px !important;
   margin-inline-end: 0 !important;
-  box-shadow: none !important;
+  box-shadow: 0 0 0 4px rgb(32, 32, 34) !important;
   z-index: 0;
 }
 
@@ -511,7 +511,7 @@ body.mobile-site .hdr-additional-info .hdr-user-bc.hasLoyaltyLevel .user-nav-ico
 
 body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-wallet {
   order: 1;
-  z-index: 1;
+  z-index: 3;
 }
 
 body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-call {
@@ -521,7 +521,7 @@ body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-call {
 
 body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-standings {
   order: 3;
-  z-index: 3;
+  z-index: 1;
 }
 
 body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-wallet {
