@@ -60,6 +60,7 @@ admin/storage/reports/*.json
 # uploads (runtime)
 storage/uploads/**
 !storage/uploads/.gitkeep
+!storage/uploads/.htaccess
 admin/storage/uploads/**
 !admin/storage/uploads/.gitkeep
 
