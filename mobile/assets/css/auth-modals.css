@@ -980,3 +980,31 @@ body.mobile-site #registerModal .register-form--mobile-single .register-actions-
   font-weight: 700 !important;
   text-transform: uppercase !important;
 }
+
+/* ------------------------------------------------------------
+   Header düzeltmesi: logo görseli kutusundan taşıp "GİRİŞ"
+   butonunun üstüne biniyordu. Logoyu kapsayıcıya sığdır.
+   ------------------------------------------------------------ */
+body.mobile-site #registerModal .register-modal-top-bar {
+  gap: 8px !important;
+}
+
+body.mobile-site #registerModal .register-logo {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  max-width: 52% !important;
+  overflow: hidden !important;
+}
+
+body.mobile-site #registerModal .register-logo-img {
+  max-width: 100% !important;
+  width: auto !important;
+  height: 26px !important;
+  max-height: 26px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+}
+
+body.mobile-site #registerModal .register-top-right {
+  flex: 0 0 auto !important;
+}
