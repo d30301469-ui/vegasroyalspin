@@ -19,9 +19,32 @@
         }
     }
 
+    // Mobil tek-adım: KAYIT + WalletConnect butonlarini kaydirilan alandan
+    // sabit alt bar'a tasi (referans m.casinomilyon duzeni). Masaustunu etkilemez.
+    function relocateMobileFooterActions(modalEl) {
+        if (!modalEl || !document.body.classList.contains('mobile-site')) return;
+        var form = modalEl.querySelector('#modalRegisterForm');
+        if (!form || !form.classList.contains('register-form--mobile-single')) return;
+        var footer = modalEl.querySelector('.register-footer-bar');
+        if (!footer) return;
+        var support = footer.querySelector('.register-support-btn');
+        var actions = form.querySelector('.register-step-2 .register-actions-row, .reg-form-content .register-actions-row');
+        var wallet = form.querySelector('.register-step-2 .register-walletconnect-full, .reg-form-content .register-walletconnect-full');
+        if (actions && !footer.contains(actions)) {
+            footer.insertBefore(actions, support || null);
+        }
+        if (wallet && !footer.contains(wallet)) {
+            footer.insertBefore(wallet, support || null);
+        }
+        if (actions || wallet) {
+            footer.classList.add('register-footer-bar--has-actions');
+        }
+    }
+
     function applyMobileRegisterLayoutFix(modalEl) {
         if (!modalEl || !document.body.classList.contains('mobile-site')) return;
         var run = function () {
+            relocateMobileFooterActions(modalEl);
             var authSliderBg = modalEl.querySelector('.auth-slider-bg');
             if (authSliderBg) {
                 authSliderBg.style.position = 'absolute';
