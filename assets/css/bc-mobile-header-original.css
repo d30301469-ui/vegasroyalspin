@@ -335,7 +335,7 @@ body.mobile-site .header-bc .hdr-additional-info > .loyaltyBonusHeader {
   min-height: 46px;
   padding: 0 6px 0 10px;
   margin: 0;
-  margin-inline-end: 8px;
+  margin-inline-end: 0;
   text-decoration: none;
   color: inherit;
   z-index: 1;
@@ -364,7 +364,7 @@ body.mobile-site .header-bc .loyaltyBonusHeader::after {
   position: absolute;
   width: 100%;
   left: 0;
-  background: rgba(var(--hero), 0.95);
+  background: rgb(32, 32, 34);
   z-index: -1;
   pointer-events: none;
 }
@@ -382,18 +382,18 @@ body.mobile-site .header-bc .loyaltyBonusHeader::after {
 }
 
 body.mobile-site .header-bc .loyaltyBonusHeaderText {
-  order: 2;
-  margin: 0 0 0 4px;
+  order: 0;
+  margin: 0 4px 0 0;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: rgba(var(--hero-sc), 0.9);
+  color: rgba(255, 255, 255, 0.9);
   max-width: 120px;
 }
 
 body.mobile-site .header-bc .loyaltyBonusImg {
-  order: 1;
+  order: 0;
   width: 20px;
   max-height: 20px;
   margin-top: -2px;
