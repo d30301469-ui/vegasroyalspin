@@ -195,6 +195,24 @@
             indicator.classList.toggle('step-indicator-active', indicator.getAttribute('data-register-step-indicator') === String(activeStep));
         });
     }
+    function isValidTurkishIdentityNumber(value) {
+        var tc = String(value || '').replace(/\D+/g, '');
+        if (!/^\d{11}$/.test(tc)) return false;
+        if (tc.charAt(0) === '0') return false;
+
+        var d = tc.split('').map(function (n) { return parseInt(n, 10) || 0; });
+        var oddSum = d[0] + d[2] + d[4] + d[6] + d[8];
+        var evenSum = d[1] + d[3] + d[5] + d[7];
+        var d10 = ((oddSum * 7) - evenSum) % 10;
+        if (d10 < 0) d10 += 10;
+        if (d[9] !== d10) return false;
+
+        var sum10 = 0;
+        for (var i = 0; i < 10; i++) {
+            sum10 += d[i];
+        }
+        return (sum10 % 10) === d[10];
+    }
 
     function applyMobileRegisterHeaderFix(registerModal) {
         if (!registerModal || !document.body || !document.body.classList.contains('mobile-site')) return;
@@ -908,6 +926,36 @@
         form.addEventListener('submit', function (e) {
             e.preventDefault();
             hideRegisterError();
+
+            var countryInput = form.querySelector('[name="country"]');
+            var tcInputEl = form.querySelector('[name="tcKimlik"], [name="tc"], [name="identity_number"]');
+            var tcErrorEl = form.querySelector('.register-error-text[data-error-for="tcKimlik"]');
+            var countryCode = String((countryInput && countryInput.value) || '').trim().toUpperCase();
+            var tcDigits = String((tcInputEl && tcInputEl.value) || '').replace(/\D+/g, '');
+
+            if (countryCode === 'TR') {
+                if (tcErrorEl) {
+                    tcErrorEl.classList.add('d-none');
+                    tcErrorEl.textContent = 'Bu alan gerekli';
+                }
+                if (tcDigits.length !== 11) {
+                    if (tcErrorEl) {
+                        tcErrorEl.textContent = 'Kimlik numarası 11 haneli olmalıdır';
+                        tcErrorEl.classList.remove('d-none');
+                    }
+                    showRegisterError('Kimlik numarası 11 haneli olmalıdır.');
+                    return;
+                }
+                if (!isValidTurkishIdentityNumber(tcDigits)) {
+                    if (tcErrorEl) {
+                        tcErrorEl.textContent = 'Geçerli bir kimlik numarası girin';
+                        tcErrorEl.classList.remove('d-none');
+                    }
+                    showRegisterError('Geçerli bir kimlik numarası girin.');
+                    return;
+                }
+            }
+
             var fd = new FormData(form);
             fd.append('register_submit', '1');
             if (Shared.setSubmitButtonLoading) {

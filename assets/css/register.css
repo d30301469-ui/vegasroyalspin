@@ -1267,44 +1267,84 @@ label {
 }
 
 /* Kayıt başarılı kutusu */
+#registerSuccessModal .modal-dialog {
+    max-width: 360px;
+}
+
+#registerSuccessModal .modal-content {
+    background: transparent;
+    border: 0;
+}
+
 #registerSuccessModal .register-success-box {
-    background: var(--menuBG);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
+    background:
+        radial-gradient(120% 120% at 0% 0%, rgba(133, 15, 131, 0.2) 0%, rgba(133, 15, 131, 0) 56%),
+        radial-gradient(125% 130% at 100% 100%, rgba(54, 17, 133, 0.2) 0%, rgba(54, 17, 133, 0) 60%),
+        linear-gradient(180deg, rgba(19, 7, 38, 0.97) 0%, rgba(11, 11, 33, 0.98) 45%, rgba(7, 7, 26, 0.99) 100%);
+    border: 1px solid rgba(133, 15, 131, 0.68);
     padding: 0;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px rgba(133, 15, 131, 0.24), 0 22px 56px rgba(0, 0, 0, 0.68), 0 0 24px rgba(133, 15, 131, 0.26);
 }
 .register-success-body {
-    padding: 24px 20px;
+    padding: 24px 20px 22px;
     text-align: center;
 }
 .register-success-icon {
-    width: 48px;
-    height: 48px;
-    margin: 0 auto 14px;
-    background: rgba(39, 174, 96, 0.25);
-    border: 2px solid #27ae60;
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 12px;
+    background: radial-gradient(circle at 28% 24%, rgba(76, 255, 174, 0.24), rgba(31, 177, 108, 0.14));
+    border: 1px solid rgba(50, 210, 132, 0.64);
     border-radius: 50%;
-    color: #27ae60;
-    font-size: 24px;
+    color: #67f0ae;
+    font-size: 28px;
     font-weight: bold;
-    line-height: 44px;
+    line-height: 52px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 8px 18px rgba(18, 102, 62, 0.28);
 }
 .register-success-title {
     font-size: 18px;
     font-weight: 700;
-    color: #fff;
-    margin-bottom: 8px;
+    color: #f8f4ff;
+    margin-bottom: 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
 .register-success-text {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 18px;
+    color: rgba(232, 221, 255, 0.84);
+    margin-bottom: 16px;
     line-height: 1.4;
 }
 .register-success-ok {
     margin-top: 0;
-    min-width: 120px;
+    min-width: 140px;
+    box-shadow: 0 8px 20px rgba(80, 40, 210, 0.34);
+}
+
+@media (max-width: 480px) {
+    #registerSuccessModal .modal-dialog {
+        max-width: calc(100vw - 22px);
+        margin: 0 auto;
+    }
+
+    #registerSuccessModal .register-success-box {
+        border-radius: 12px;
+    }
+
+    #registerSuccessModal .register-success-body {
+        padding: 21px 16px 18px;
+    }
+
+    #registerSuccessModal .register-success-title {
+        font-size: 17px;
+    }
+
+    #registerSuccessModal .register-success-text {
+        font-size: 13px;
+        margin-bottom: 14px;
+    }
 }
 
 /* Tarih alanı stilleri global.css'te (.register-input[type="date"]) */

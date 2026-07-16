@@ -36,6 +36,30 @@ if (!function_exists('memberResetLink')) {
     }
 }
 
+if (!function_exists('memberIsValidTurkishIdentityNumber')) {
+    function memberIsValidTurkishIdentityNumber(string $tc): bool
+    {
+        if (!preg_match('/^\d{11}$/', $tc)) {
+            return false;
+        }
+        if ($tc[0] === '0') {
+            return false;
+        }
+
+        $d = array_map('intval', str_split($tc));
+        $oddSum = $d[0] + $d[2] + $d[4] + $d[6] + $d[8];
+        $evenSum = $d[1] + $d[3] + $d[5] + $d[7];
+        $d10 = ((($oddSum * 7) - $evenSum) % 10 + 10) % 10;
+        if ($d[9] !== $d10) {
+            return false;
+        }
+
+        $sum10 = array_sum(array_slice($d, 0, 10));
+
+        return ($sum10 % 10) === $d[10];
+    }
+}
+
 if (!function_exists('memberMailSettings')) {
     /** @return array<string,mixed> */
     function memberMailSettings(PDO $pdo): array
@@ -320,8 +344,12 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
     if (strlen($phoneDigits) < 10) {
         $errors['phone'] = 'Telefon en az 10 rakam olmalıdır.';
     }
-    if ($country === 'TR' && strlen((string) $tc) !== 11) {
-        $errors['tc'] = 'Türkiye için 11 haneli T.C. kimlik numarası gerekli.';
+    if ($country === 'TR') {
+        if (strlen((string) $tc) !== 11) {
+            $errors['tc'] = 'Türkiye için 11 haneli T.C. kimlik numarası gerekli.';
+        } elseif (!memberIsValidTurkishIdentityNumber((string) $tc)) {
+            $errors['tc'] = 'T.C. kimlik numarası geçersiz.';
+        }
     }
     if ($errors !== []) {
         $memberEnvelope(400, [
