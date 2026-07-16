@@ -66,6 +66,136 @@ final class AdminDrakonController extends AdminController
         $this->redirect(AdminAuth::url('/drakon/settings'));
     }
 
+    public function campaigns(): void
+    {
+        $this->requirePermission('drakon-settings');
+        $pdo = AdminDatabase::pdo();
+        DrakonService::bootstrap($pdo);
+        DrakonService::ensureCampaignSchema($pdo);
+
+        $vendors     = [];
+        $vendorError = '';
+        try {
+            $vendorResult = DrakonService::campaignVendors($pdo);
+            if (!empty($vendorResult['success']) && is_array($vendorResult['data'] ?? null)) {
+                $vendors = $vendorResult['data'];
+            } else {
+                $vendorError = (string) ($vendorResult['message'] ?? 'Sağlayıcılar alınamadı.');
+            }
+        } catch (Throwable $exception) {
+            $vendorError = $exception->getMessage();
+        }
+
+        $limitVendor = trim((string) ($_GET['vendor'] ?? ''));
+        $limitGames  = trim((string) ($_GET['games'] ?? ''));
+        $limits      = [];
+        $limitsError = '';
+        if ($limitVendor !== '') {
+            try {
+                $limitResult = DrakonService::campaignVendorLimits($pdo, [
+                    'vendors' => $limitVendor,
+                    'games'   => $limitGames,
+                ]);
+                if (!empty($limitResult['success']) && is_array($limitResult['data'] ?? null)) {
+                    $limits = $limitResult['data'];
+                } else {
+                    $limitsError = (string) ($limitResult['message'] ?? 'Limitler alınamadı.');
+                }
+            } catch (Throwable $exception) {
+                $limitsError = $exception->getMessage();
+            }
+        }
+
+        $this->view('drakon/campaigns', [
+            'title'       => 'Drakon Freespin / Kampanya',
+            'active'      => 'datatable',
+            'moduleKey'   => 'drakon-settings',
+            'crumbs'      => 'Games | Drakon Freespins',
+            'configRow'   => DrakonService::config($pdo),
+            'vendors'     => $vendors,
+            'vendorError' => $vendorError,
+            'limits'      => $limits,
+            'limitsError' => $limitsError,
+            'limitVendor' => $limitVendor,
+            'limitGames'  => $limitGames,
+            'campaigns'   => DrakonService::localCampaigns($pdo, 100),
+            'flash'       => $this->pullFlash(),
+        ]);
+    }
+
+    public function createCampaign(): void
+    {
+        $this->requirePermission('drakon-settings');
+        $this->ensurePost();
+        try {
+            $result = DrakonService::createCampaign(AdminDatabase::pdo(), $_POST);
+            if (!empty($result['success'])) {
+                $this->flash('Drakon kampanyası oluşturuldu: ' . (string) ($result['campaign_code'] ?? ''));
+            } else {
+                $this->flash('Kampanya oluşturulamadı: ' . (string) ($result['message'] ?? 'Bilinmeyen hata.'));
+            }
+        } catch (Throwable $exception) {
+            $this->flash('Kampanya oluşturulamadı: ' . $exception->getMessage());
+        }
+        $this->redirect(AdminAuth::url('/drakon/campaigns'));
+    }
+
+    public function cancelCampaign(): void
+    {
+        $this->requirePermission('drakon-settings');
+        $this->ensurePost();
+        $code = trim((string) ($_POST['campaign_code'] ?? ''));
+        try {
+            $result = DrakonService::cancelCampaign(AdminDatabase::pdo(), $code);
+            if (!empty($result['success'])) {
+                $this->flash('Kampanya iptal edildi: ' . $code);
+            } else {
+                $this->flash('Kampanya iptal edilemedi: ' . (string) ($result['message'] ?? 'Bilinmeyen hata.'));
+            }
+        } catch (Throwable $exception) {
+            $this->flash('Kampanya iptal edilemedi: ' . $exception->getMessage());
+        }
+        $this->redirect(AdminAuth::url('/drakon/campaigns'));
+    }
+
+    public function addPlayers(): void
+    {
+        $this->requirePermission('drakon-settings');
+        $this->ensurePost();
+        $code    = trim((string) ($_POST['campaign_code'] ?? ''));
+        $players = (string) ($_POST['players'] ?? '');
+        try {
+            $result = DrakonService::addCampaignPlayers(AdminDatabase::pdo(), $code, $players);
+            if (!empty($result['success'])) {
+                $this->flash('Oyuncular kampanyaya eklendi: ' . $code);
+            } else {
+                $this->flash('Oyuncu eklenemedi: ' . (string) ($result['message'] ?? 'Bilinmeyen hata.'));
+            }
+        } catch (Throwable $exception) {
+            $this->flash('Oyuncu eklenemedi: ' . $exception->getMessage());
+        }
+        $this->redirect(AdminAuth::url('/drakon/campaigns'));
+    }
+
+    public function removePlayers(): void
+    {
+        $this->requirePermission('drakon-settings');
+        $this->ensurePost();
+        $code    = trim((string) ($_POST['campaign_code'] ?? ''));
+        $players = (string) ($_POST['players'] ?? '');
+        try {
+            $result = DrakonService::removeCampaignPlayers(AdminDatabase::pdo(), $code, $players);
+            if (!empty($result['success'])) {
+                $this->flash('Oyuncular kampanyadan çıkarıldı: ' . $code);
+            } else {
+                $this->flash('Oyuncu çıkarılamadı: ' . (string) ($result['message'] ?? 'Bilinmeyen hata.'));
+            }
+        } catch (Throwable $exception) {
+            $this->flash('Oyuncu çıkarılamadı: ' . $exception->getMessage());
+        }
+        $this->redirect(AdminAuth::url('/drakon/campaigns'));
+    }
+
     private function ensurePost(): void
     {
         if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {

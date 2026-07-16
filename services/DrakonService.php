@@ -632,6 +632,446 @@ final class DrakonService
         ];
     }
 
+    // ─── Free Spin / Campaign API ────────────────────────────────────────────
+
+    /**
+     * Idempotent, lazy creation of the campaign/free-spin tables. Safe to call
+     * on every request (CREATE TABLE IF NOT EXISTS) so the feature works even
+     * on production hosts where runtime provider bootstrap is disabled.
+     */
+    public static function ensureCampaignSchema(PDO $pdo): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS drakon_campaigns (
+                    id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    campaign_code        VARCHAR(100) NOT NULL,
+                    vendor               VARCHAR(100) NOT NULL DEFAULT '',
+                    currency_code        VARCHAR(10) NOT NULL DEFAULT '',
+                    freespins_per_player INT NOT NULL DEFAULT 0,
+                    total_bet            VARCHAR(50) NOT NULL DEFAULT '',
+                    game_ids             VARCHAR(500) NOT NULL DEFAULT '',
+                    begins_at            INT UNSIGNED NULL,
+                    expires_at           INT UNSIGNED NULL,
+                    status               VARCHAR(30) NOT NULL DEFAULT 'active',
+                    active               TINYINT(1) NOT NULL DEFAULT 1,
+                    request_id           VARCHAR(100) NULL,
+                    raw_payload          JSON NULL,
+                    created_at           TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at           TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY uniq_drakon_campaign_code (campaign_code),
+                    KEY idx_drakon_campaign_vendor (vendor),
+                    KEY idx_drakon_campaign_active (active)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS drakon_campaign_players (
+                    id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    campaign_code VARCHAR(100) NOT NULL,
+                    player_id     VARCHAR(100) NOT NULL,
+                    status        VARCHAR(20) NOT NULL DEFAULT 'assigned',
+                    created_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY uniq_drakon_campaign_player (campaign_code, player_id),
+                    KEY idx_drakon_cp_player (player_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+            $done = true;
+        } catch (Throwable) {
+            // Leave $done false so a later call can retry.
+        }
+    }
+
+    /**
+     * Perform an authenticated Campaign API request and normalise the envelope.
+     *
+     * @param array<string, mixed> $params
+     * @param list<string>         $extraHeaders
+     * @return array{success: bool, code: int, message: string, error_code: string, data: mixed, meta: array<string,mixed>, raw: array<string,mixed>}
+     */
+    private static function campaignRequest(
+        PDO $pdo,
+        string $method,
+        string $path,
+        array $params = [],
+        array $extraHeaders = []
+    ): array {
+        $token   = self::getToken($pdo);
+        $headers = array_merge([
+            'Authorization: Bearer ' . $token,
+            'Accept: application/json',
+        ], $extraHeaders);
+
+        $response = self::httpRequest($method, self::API_BASE . $path, $params, $headers, 45);
+
+        $status = $response['status'] ?? null;
+        $ok     = $status === true || $status === 'success' || $status === 1;
+
+        return [
+            'success'    => $ok,
+            'code'       => $ok ? 200 : 422,
+            'message'    => (string) ($response['message'] ?? ($ok ? 'İşlem başarılı.' : 'İşlem başarısız.')),
+            'error_code' => (string) ($response['error_code'] ?? $response['error'] ?? ''),
+            'data'       => $response['data'] ?? [],
+            'meta'       => is_array($response['meta'] ?? null) ? $response['meta'] : [],
+            'raw'        => $response,
+        ];
+    }
+
+    /**
+     * List vendors available for campaigns for the authenticated agent.
+     */
+    public static function campaignVendors(PDO $pdo): array
+    {
+        return self::campaignRequest($pdo, 'GET', '/campaigns/vendors');
+    }
+
+    /**
+     * List allowed total_bet / freespin limits for vendors/games.
+     *
+     * @param array{vendors?: string, games?: string} $filters
+     */
+    public static function campaignVendorLimits(PDO $pdo, array $filters = []): array
+    {
+        $params = [];
+        $vendors = trim((string) ($filters['vendors'] ?? ''));
+        $games   = trim((string) ($filters['games'] ?? ''));
+        if ($vendors !== '') {
+            $params['vendors'] = $vendors;
+        }
+        if ($games !== '') {
+            $params['games'] = $games;
+        }
+        return self::campaignRequest($pdo, 'GET', '/campaigns/vendors/limits', $params);
+    }
+
+    /**
+     * Create a free-spin campaign and persist it locally for admin auditing.
+     *
+     * @param array<string, mixed> $input
+     */
+    public static function createCampaign(PDO $pdo, array $input): array
+    {
+        self::ensureCampaignSchema($pdo);
+
+        $campaignCode = trim((string) ($input['campaign_code'] ?? ''));
+        $vendor       = trim((string) ($input['vendor'] ?? ''));
+        $freespins    = (int) ($input['freespins_per_player'] ?? 0);
+        $gameId       = trim((string) ($input['game_id'] ?? ''));
+        $totalBet     = trim((string) ($input['total_bet'] ?? ''));
+        $beginsAt     = self::toUnixTimestamp($input['begins_at'] ?? '');
+        $expiresAt    = self::toUnixTimestamp($input['expires_at'] ?? '');
+
+        if ($campaignCode === '' || $vendor === '' || $freespins <= 0 || $gameId === '' || $totalBet === '') {
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Kampanya kodu, sağlayıcı, oyun, total_bet ve freespin sayısı zorunludur.',
+            ];
+        }
+        if ($beginsAt <= 0 || $expiresAt <= 0 || $expiresAt <= $beginsAt) {
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Başlangıç ve bitiş zamanları geçerli olmalı (bitiş > başlangıç).',
+            ];
+        }
+
+        $players = self::normalizePlayerList($input['players'] ?? '');
+
+        $payload = [
+            'campaign_code'        => $campaignCode,
+            'vendor'               => $vendor,
+            'freespins_per_player' => $freespins,
+            'begins_at'            => $beginsAt,
+            'expires_at'           => $expiresAt,
+            'games'                => [
+                ['game_id' => (int) $gameId, 'total_bet' => $totalBet],
+            ],
+        ];
+        if ($players !== []) {
+            $payload['players'] = $players;
+        }
+
+        $result = self::campaignRequest(
+            $pdo,
+            'POST',
+            '/campaigns/create',
+            $payload,
+            [
+                'Content-Type: application/json',
+                'Idempotency-Key: create-' . $campaignCode,
+                'X-Request-Id: create-' . $campaignCode . '-' . time(),
+            ]
+        );
+
+        if (!$result['success']) {
+            return $result;
+        }
+
+        $data = is_array($result['data']) ? $result['data'] : [];
+        try {
+            $stmt = $pdo->prepare(
+                'INSERT INTO drakon_campaigns
+                    (campaign_code, vendor, currency_code, freespins_per_player, total_bet, game_ids,
+                     begins_at, expires_at, status, active, request_id, raw_payload)
+                 VALUES
+                    (:code, :vendor, :currency, :freespins, :total_bet, :games,
+                     :begins_at, :expires_at, :status, :active, :request_id, :raw)
+                 ON DUPLICATE KEY UPDATE
+                    vendor = VALUES(vendor),
+                    currency_code = VALUES(currency_code),
+                    freespins_per_player = VALUES(freespins_per_player),
+                    total_bet = VALUES(total_bet),
+                    game_ids = VALUES(game_ids),
+                    begins_at = VALUES(begins_at),
+                    expires_at = VALUES(expires_at),
+                    status = VALUES(status),
+                    active = VALUES(active),
+                    request_id = VALUES(request_id),
+                    raw_payload = VALUES(raw_payload)'
+            );
+            $stmt->execute([
+                ':code'       => $campaignCode,
+                ':vendor'     => $vendor,
+                ':currency'   => (string) ($data['currency_code'] ?? ''),
+                ':freespins'  => $freespins,
+                ':total_bet'  => $totalBet,
+                ':games'      => (string) $gameId,
+                ':begins_at'  => $beginsAt,
+                ':expires_at' => $expiresAt,
+                ':status'     => (string) ($data['status'] ?? 'active'),
+                ':active'     => !empty($data['active']) || ($data['status'] ?? '') === 'active' ? 1 : 1,
+                ':request_id' => (string) ($result['meta']['request_id'] ?? ''),
+                ':raw'        => json_encode($result['raw'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+            self::persistCampaignPlayers($pdo, $campaignCode, $players, 'assigned');
+        } catch (Throwable) {
+            // Local persistence is best-effort; remote creation already succeeded.
+        }
+
+        $result['campaign_code'] = $campaignCode;
+        return $result;
+    }
+
+    /**
+     * Fetch campaigns for the authenticated agent from Drakon.
+     *
+     * @param array<string, mixed> $filters
+     */
+    public static function listRemoteCampaigns(PDO $pdo, array $filters = []): array
+    {
+        $params = [];
+        foreach (['vendor', 'status', 'active', 'per_page'] as $key) {
+            $value = trim((string) ($filters[$key] ?? ''));
+            if ($value !== '') {
+                $params[$key] = $value;
+            }
+        }
+        return self::campaignRequest($pdo, 'GET', '/campaigns/list', $params);
+    }
+
+    /**
+     * Fetch a single campaign detail.
+     */
+    public static function getCampaign(PDO $pdo, string $campaignCode): array
+    {
+        $campaignCode = trim($campaignCode);
+        if ($campaignCode === '') {
+            return ['success' => false, 'code' => 422, 'message' => 'Kampanya kodu gereklidir.'];
+        }
+        return self::campaignRequest($pdo, 'GET', '/campaigns/' . rawurlencode($campaignCode));
+    }
+
+    /**
+     * Cancel a campaign and mark it inactive locally.
+     */
+    public static function cancelCampaign(PDO $pdo, string $campaignCode): array
+    {
+        self::ensureCampaignSchema($pdo);
+        $campaignCode = trim($campaignCode);
+        if ($campaignCode === '') {
+            return ['success' => false, 'code' => 422, 'message' => 'Kampanya kodu gereklidir.'];
+        }
+
+        $result = self::campaignRequest(
+            $pdo,
+            'POST',
+            '/campaigns/' . rawurlencode($campaignCode) . '/cancel',
+            [],
+            ['Idempotency-Key: cancel-' . $campaignCode]
+        );
+
+        if ($result['success']) {
+            try {
+                $stmt = $pdo->prepare(
+                    "UPDATE drakon_campaigns SET status = 'canceled', active = 0 WHERE campaign_code = :code"
+                );
+                $stmt->execute([':code' => $campaignCode]);
+            } catch (Throwable) {
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Assign players to a campaign and persist them locally.
+     *
+     * @param string|array<int, string> $players
+     */
+    public static function addCampaignPlayers(PDO $pdo, string $campaignCode, string|array $players): array
+    {
+        self::ensureCampaignSchema($pdo);
+        $campaignCode = trim($campaignCode);
+        $list = self::normalizePlayerList($players);
+        if ($campaignCode === '' || $list === []) {
+            return ['success' => false, 'code' => 422, 'message' => 'Kampanya kodu ve en az bir oyuncu ID gereklidir.'];
+        }
+
+        $result = self::campaignRequest(
+            $pdo,
+            'POST',
+            '/campaigns/' . rawurlencode($campaignCode) . '/players/add',
+            ['players' => $list],
+            [
+                'Content-Type: application/json',
+                'Idempotency-Key: add-' . $campaignCode . '-' . implode('-', $list),
+            ]
+        );
+
+        if ($result['success']) {
+            self::persistCampaignPlayers($pdo, $campaignCode, $list, 'assigned');
+        }
+        return $result;
+    }
+
+    /**
+     * Remove players from a campaign and mark them locally.
+     *
+     * @param string|array<int, string> $players
+     */
+    public static function removeCampaignPlayers(PDO $pdo, string $campaignCode, string|array $players): array
+    {
+        self::ensureCampaignSchema($pdo);
+        $campaignCode = trim($campaignCode);
+        $list = self::normalizePlayerList($players);
+        if ($campaignCode === '' || $list === []) {
+            return ['success' => false, 'code' => 422, 'message' => 'Kampanya kodu ve en az bir oyuncu ID gereklidir.'];
+        }
+
+        $result = self::campaignRequest(
+            $pdo,
+            'POST',
+            '/campaigns/' . rawurlencode($campaignCode) . '/players/remove',
+            ['players' => $list],
+            [
+                'Content-Type: application/json',
+                'Idempotency-Key: remove-' . $campaignCode . '-' . implode('-', $list),
+            ]
+        );
+
+        if ($result['success']) {
+            try {
+                $in = implode(',', array_fill(0, count($list), '?'));
+                $stmt = $pdo->prepare(
+                    "UPDATE drakon_campaign_players SET status = 'removed'
+                     WHERE campaign_code = ? AND player_id IN ($in)"
+                );
+                $stmt->execute(array_merge([$campaignCode], $list));
+            } catch (Throwable) {
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Locally stored campaigns for admin listing.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function localCampaigns(PDO $pdo, int $limit = 100): array
+    {
+        self::ensureCampaignSchema($pdo);
+        try {
+            $limit = max(1, min(500, $limit));
+            $stmt = $pdo->query(
+                'SELECT c.*, (
+                    SELECT COUNT(*) FROM drakon_campaign_players p
+                    WHERE p.campaign_code = c.campaign_code AND p.status = \'assigned\'
+                 ) AS player_count
+                 FROM drakon_campaigns c
+                 ORDER BY c.id DESC
+                 LIMIT ' . $limit
+            );
+            $rows = $stmt?->fetchAll(PDO::FETCH_ASSOC);
+            return is_array($rows) ? $rows : [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @param string|array<int, string> $players
+     * @return list<string>
+     */
+    private static function normalizePlayerList(string|array $players): array
+    {
+        if (is_string($players)) {
+            $players = preg_split('/[\s,;]+/', $players) ?: [];
+        }
+        $clean = [];
+        foreach ($players as $player) {
+            $id = trim((string) $player);
+            if ($id !== '' && !in_array($id, $clean, true)) {
+                $clean[] = $id;
+            }
+        }
+        return $clean;
+    }
+
+    /**
+     * @param list<string> $players
+     */
+    private static function persistCampaignPlayers(PDO $pdo, string $campaignCode, array $players, string $status): void
+    {
+        if ($players === []) {
+            return;
+        }
+        try {
+            $stmt = $pdo->prepare(
+                'INSERT INTO drakon_campaign_players (campaign_code, player_id, status)
+                 VALUES (:code, :player, :status)
+                 ON DUPLICATE KEY UPDATE status = VALUES(status)'
+            );
+            foreach ($players as $player) {
+                $stmt->execute([':code' => $campaignCode, ':player' => $player, ':status' => $status]);
+            }
+        } catch (Throwable) {
+        }
+    }
+
+    private static function toUnixTimestamp(mixed $value): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return 0;
+        }
+        if (ctype_digit($raw)) {
+            return (int) $raw;
+        }
+        $ts = strtotime($raw);
+        return $ts !== false ? $ts : 0;
+    }
+
     // ─── Webhook ─────────────────────────────────────────────────────────────
 
     public static function handleWebhook(PDO $pdo, array $payload): array

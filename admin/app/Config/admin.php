@@ -414,6 +414,7 @@ return [
             'caption' => 'Drakon Katalogları',
             'items' => [
                 ['key' => 'drakon-settings', 'text' => 'Drakon Ayarları', 'url' => '/drakon/settings', 'active' => 'datatable', 'module' => 'drakon-settings', 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><path d="m4.9 4.9 2.8 2.8M16.3 16.3l2.8 2.8M19.1 4.9l-2.8 2.8M7.7 16.3l-2.8 2.8"/>'],
+                ['key' => 'drakon-campaigns', 'text' => 'Freespin / Kampanya', 'url' => '/drakon/campaigns', 'active' => 'datatable', 'module' => 'drakon-settings', 'permission' => 'drakon-settings', 'icon' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/>'],
                 ['key' => 'drakon-providers', 'text' => 'Drakon Sağlayıcılar', 'url' => '/module?key=drakon-providers', 'active' => 'datatable', 'module' => 'drakon-providers', 'icon' => '<path d="M4 6h16M4 12h16M4 18h16"/>'],
                 ['key' => 'drakon-games', 'text' => 'Drakon Oyunları', 'url' => '/module?key=drakon-games', 'active' => 'datatable', 'module' => 'drakon-games', 'icon' => '<rect x="2" y="5" width="20" height="13" rx="2"/><path d="M8 22h8M12 18v4"/>'],
                 ['key' => 'drakon-transactions', 'text' => 'Drakon İşlemleri', 'url' => '/module?key=drakon-transactions', 'active' => 'datatable', 'module' => 'drakon-transactions', 'icon' => '<path d="M3 3v18h18"/><path d="m7 14 3-3 3 2 4-6"/>'],
