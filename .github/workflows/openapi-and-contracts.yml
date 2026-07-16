@@ -46,3 +46,19 @@ jobs:
         env:
           RUN_CONTRACT_TESTS: '1'
         run: vendor/bin/phpunit --testsuite Contract
+
+  unit-feature-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+      - name: Install composer deps
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Run unit and feature test suites
+        run: |
+          vendor/bin/phpunit --testsuite Unit
+          vendor/bin/phpunit --testsuite Feature
+
