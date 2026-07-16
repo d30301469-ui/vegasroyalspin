@@ -343,7 +343,16 @@ body.mobile-site .header-bc .hdr-additional-info > .loyaltyBonusHeader {
 }
 
 body.mobile-site .header-bc .loyaltyBonusHeaderShadow {
-  display: none;
+  width: 116%;
+  height: 30px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #0009;
+  filter: blur(4px);
+  opacity: 0.5;
+  z-index: -2;
 }
 
 body.mobile-site .header-bc .loyaltyBonusHeaderBackground {
