@@ -416,6 +416,7 @@
             var panel = wrapper.querySelector('.bc-custom-select__panel');
             var options = wrapper.querySelectorAll('.bc-custom-select__option');
             var isCountrySelect = wrapper.hasAttribute('data-country-select');
+            var searchInput = isCountrySelect ? panel.querySelector('.bc-country-search-input') : null;
             if (!select || !trigger || !valueEl || !panel) return;
 
             function escapeHtml(str) {
@@ -461,6 +462,15 @@
                 panel.style.width = '';
             }
 
+            function applyCountryFilter(query) {
+                if (!isCountrySelect) return;
+                var q = String(query || '').toLowerCase().trim();
+                panel.querySelectorAll('.bc-custom-select__option').forEach(function (opt) {
+                    var txt = (opt.textContent || '').toLowerCase();
+                    opt.style.display = (!q || txt.indexOf(q) !== -1) ? '' : 'none';
+                });
+            }
+
             function open() {
                 var triggerRect = trigger.getBoundingClientRect();
                 var wrapperRect = wrapper.getBoundingClientRect();
@@ -471,6 +481,16 @@
                 panel.removeAttribute('hidden');
                 wrapper.classList.add('is-open');
                 trigger.setAttribute('aria-expanded', 'true');
+
+                if (isCountrySelect && searchInput) {
+                    searchInput.value = '';
+                    applyCountryFilter('');
+                    setTimeout(function () {
+                        try {
+                            searchInput.focus();
+                        } catch (e) {}
+                    }, 0);
+                }
             }
 
             trigger.addEventListener('click', function (e) {
@@ -513,6 +533,18 @@
                 }
             });
 
+            if (isCountrySelect && searchInput) {
+                searchInput.addEventListener('input', function () {
+                    applyCountryFilter(searchInput.value || '');
+                });
+                searchInput.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+                searchInput.addEventListener('keydown', function (e) {
+                    e.stopPropagation();
+                });
+            }
+
             updateValueDisplay();
         });
     }
@@ -524,8 +556,27 @@
         var panel = wrapper.querySelector('#modal_country_listbox.bc-custom-select__panel');
         if (!select || !panel) return;
 
+        function ensureSearchBox() {
+            var existing = panel.querySelector('.bc-custom-select__search');
+            if (existing) return;
+            var searchWrap = document.createElement('div');
+            searchWrap.className = 'bc-custom-select__search';
+            var searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.className = 'bc-country-search-input';
+            searchInput.placeholder = 'Ulke ara...';
+            searchInput.autocomplete = 'off';
+            searchWrap.appendChild(searchInput);
+            panel.insertBefore(searchWrap, panel.firstChild || null);
+        }
+
         // Tekrar init durumunda listeyi yeniden basmamak icin.
-        if (select.querySelector('option[value="TR"]')) return;
+        if (select.querySelector('option[value="TR"]')) {
+            ensureSearchBox();
+            return;
+        }
+
+        ensureSearchBox();
 
         var countryCodes = [
             'AF','AX','AL','DZ','AS','AD','AO','AI','AQ','AG','AR','AM','AW','AU','AT','AZ',
