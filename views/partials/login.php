@@ -84,8 +84,8 @@ if (class_exists('ApiMediaUrl', false)) {
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    width: 30px;
-                    height: 30px;
+                    width: 24px;
+                    height: 24px;
                     padding: 0;
                     border: 1px solid rgba(255, 255, 255, 0.12);
                     border-radius: 999px;
@@ -101,7 +101,7 @@ if (class_exists('ApiMediaUrl', false)) {
                 }
 
                 body.mobile-site #login2 .login-password-field .form-control-input-bc {
-                    padding-right: 52px;
+                    padding-right: 42px;
                 }
 
                 body.mobile-site #login2 .login-password-field .login-password-toggle-icon,
