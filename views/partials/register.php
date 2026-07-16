@@ -271,14 +271,17 @@ if (class_exists('ApiMediaUrl', false)) {
                         </div>
 
                         <div class="form-group register-phone-row entrance-f-item-bc">
-                            <div class="register-phone-code">
-                                <input type="hidden" name="phone_country_code" id="modal_phone_country_code" value="90">
-                                <div class="bc-fixed-select bc-fixed-select--passive" aria-hidden="true">
-                                    <span class="bc-fixed-select__label">Kodu</span>
-                                    <span class="bc-fixed-select__value bc-fixed-select__value--with-flag">
-                                        <span class="flag-icon flag-icon-tr" aria-hidden="true"></span>
-                                        90
-                                    </span>
+                            <div class="register-phone-code register-form-group bc-custom-select" data-bc-custom-select data-phone-code-select>
+                                <select name="phone_country_code" id="modal_phone_country_code" class="bc-custom-select__native" required aria-hidden="true" tabindex="-1">
+                                    <option value="90" selected>+90</option>
+                                </select>
+                                <button type="button" class="bc-custom-select__trigger" aria-expanded="false" aria-haspopup="listbox" id="modal_phone_country_code_trigger">
+                                    <span class="bc-custom-select__label">Kodu</span>
+                                    <span class="bc-custom-select__value">+90</span>
+                                    <span class="bc-custom-select__arrow" aria-hidden="true"></span>
+                                </button>
+                                <div class="bc-custom-select__panel" role="listbox" id="modal_phone_country_code_listbox" hidden>
+                                    <div class="bc-custom-select__option" data-value="90" role="option">+90 TR - Turkiye</div>
                                 </div>
                             </div>
                             <div class="register-phone-number">
@@ -384,6 +387,12 @@ if (class_exists('ApiMediaUrl', false)) {
     line-height: 1.2;
     outline: none;
 }
+
+#registerModal .register-phone-code .bc-custom-select__panel {
+    min-width: 220px;
+    max-height: 280px;
+    overflow-y: auto;
+}
 </style>
 
 <script>
@@ -460,6 +469,200 @@ if (class_exists('ApiMediaUrl', false)) {
         });
     } else {
         setTimeout(ensureCountrySearch, 0);
+    }
+})();
+
+// Cache fallback: telefon ulke kodu secimini tum ulkeler ile doldur
+(function () {
+    if (window.__registerPhoneCodePatched) return;
+    window.__registerPhoneCodePatched = true;
+
+    function toAsciiLabel(str) {
+        return String(str || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^\x20-\x7E]/g, '');
+    }
+
+    function parseDialCode(idd) {
+        if (!idd || typeof idd !== 'object') return '';
+        var root = String(idd.root || '').replace(/\D/g, '');
+        if (!root) return '';
+        var suffix = '';
+        if (Array.isArray(idd.suffixes) && idd.suffixes.length) {
+            suffix = String(idd.suffixes[0] || '').replace(/\D/g, '');
+        }
+        return (root + suffix).replace(/^0+/, '');
+    }
+
+    function buildFallbackList() {
+        return [
+            { code: 'TR', name: 'Turkiye', dial: '90' },
+            { code: 'US', name: 'United States', dial: '1' },
+            { code: 'GB', name: 'United Kingdom', dial: '44' },
+            { code: 'DE', name: 'Germany', dial: '49' },
+            { code: 'FR', name: 'France', dial: '33' },
+            { code: 'IT', name: 'Italy', dial: '39' },
+            { code: 'ES', name: 'Spain', dial: '34' },
+            { code: 'NL', name: 'Netherlands', dial: '31' },
+            { code: 'BE', name: 'Belgium', dial: '32' },
+            { code: 'CH', name: 'Switzerland', dial: '41' },
+            { code: 'AT', name: 'Austria', dial: '43' },
+            { code: 'SE', name: 'Sweden', dial: '46' },
+            { code: 'NO', name: 'Norway', dial: '47' },
+            { code: 'DK', name: 'Denmark', dial: '45' },
+            { code: 'FI', name: 'Finland', dial: '358' },
+            { code: 'RO', name: 'Romania', dial: '40' },
+            { code: 'GR', name: 'Greece', dial: '30' },
+            { code: 'PT', name: 'Portugal', dial: '351' },
+            { code: 'PL', name: 'Poland', dial: '48' },
+            { code: 'CZ', name: 'Czechia', dial: '420' },
+            { code: 'HU', name: 'Hungary', dial: '36' },
+            { code: 'RU', name: 'Russia', dial: '7' },
+            { code: 'UA', name: 'Ukraine', dial: '380' },
+            { code: 'AZ', name: 'Azerbaijan', dial: '994' },
+            { code: 'GE', name: 'Georgia', dial: '995' },
+            { code: 'KZ', name: 'Kazakhstan', dial: '7' },
+            { code: 'AE', name: 'United Arab Emirates', dial: '971' },
+            { code: 'SA', name: 'Saudi Arabia', dial: '966' },
+            { code: 'QA', name: 'Qatar', dial: '974' },
+            { code: 'KW', name: 'Kuwait', dial: '965' },
+            { code: 'BH', name: 'Bahrain', dial: '973' },
+            { code: 'OM', name: 'Oman', dial: '968' },
+            { code: 'IR', name: 'Iran', dial: '98' },
+            { code: 'IQ', name: 'Iraq', dial: '964' },
+            { code: 'EG', name: 'Egypt', dial: '20' },
+            { code: 'MA', name: 'Morocco', dial: '212' },
+            { code: 'DZ', name: 'Algeria', dial: '213' },
+            { code: 'TN', name: 'Tunisia', dial: '216' },
+            { code: 'LY', name: 'Libya', dial: '218' },
+            { code: 'ZA', name: 'South Africa', dial: '27' },
+            { code: 'NG', name: 'Nigeria', dial: '234' },
+            { code: 'KE', name: 'Kenya', dial: '254' },
+            { code: 'ET', name: 'Ethiopia', dial: '251' },
+            { code: 'IN', name: 'India', dial: '91' },
+            { code: 'PK', name: 'Pakistan', dial: '92' },
+            { code: 'BD', name: 'Bangladesh', dial: '880' },
+            { code: 'LK', name: 'Sri Lanka', dial: '94' },
+            { code: 'NP', name: 'Nepal', dial: '977' },
+            { code: 'CN', name: 'China', dial: '86' },
+            { code: 'JP', name: 'Japan', dial: '81' },
+            { code: 'KR', name: 'South Korea', dial: '82' },
+            { code: 'TH', name: 'Thailand', dial: '66' },
+            { code: 'VN', name: 'Vietnam', dial: '84' },
+            { code: 'MY', name: 'Malaysia', dial: '60' },
+            { code: 'SG', name: 'Singapore', dial: '65' },
+            { code: 'ID', name: 'Indonesia', dial: '62' },
+            { code: 'PH', name: 'Philippines', dial: '63' },
+            { code: 'AU', name: 'Australia', dial: '61' },
+            { code: 'NZ', name: 'New Zealand', dial: '64' },
+            { code: 'CA', name: 'Canada', dial: '1' },
+            { code: 'MX', name: 'Mexico', dial: '52' },
+            { code: 'BR', name: 'Brazil', dial: '55' },
+            { code: 'AR', name: 'Argentina', dial: '54' },
+            { code: 'CL', name: 'Chile', dial: '56' },
+            { code: 'CO', name: 'Colombia', dial: '57' },
+            { code: 'PE', name: 'Peru', dial: '51' },
+            { code: 'VE', name: 'Venezuela', dial: '58' }
+        ];
+    }
+
+    function normalizeAndSort(items) {
+        var seen = {};
+        var out = [];
+        items.forEach(function (item) {
+            var code = String(item.code || '').toUpperCase();
+            var name = toAsciiLabel(item.name || code);
+            var dial = String(item.dial || '').replace(/\D/g, '');
+            if (!code || !dial) return;
+            var key = code + ':' + dial;
+            if (seen[key]) return;
+            seen[key] = true;
+            out.push({ code: code, name: name, dial: dial });
+        });
+        out.sort(function (a, b) {
+            return a.name.localeCompare(b.name, 'en');
+        });
+        return out;
+    }
+
+    function renderPhoneCodes(items) {
+        var wrapper = document.querySelector('#registerModal .bc-custom-select[data-phone-code-select]');
+        if (!wrapper) return false;
+        var select = wrapper.querySelector('#modal_phone_country_code');
+        var panel = wrapper.querySelector('#modal_phone_country_code_listbox');
+        var valueEl = wrapper.querySelector('.bc-custom-select__value');
+        if (!select || !panel || !valueEl) return false;
+
+        select.innerHTML = '';
+        panel.innerHTML = '';
+
+        items.forEach(function (item) {
+            var shortLabel = '+' + item.dial;
+            var fullLabel = shortLabel + ' ' + item.code + ' - ' + item.name;
+
+            var opt = document.createElement('option');
+            opt.value = item.dial;
+            opt.textContent = shortLabel;
+            select.appendChild(opt);
+
+            var panelOpt = document.createElement('div');
+            panelOpt.className = 'bc-custom-select__option';
+            panelOpt.setAttribute('data-value', item.dial);
+            panelOpt.setAttribute('role', 'option');
+            panelOpt.textContent = fullLabel;
+            panel.appendChild(panelOpt);
+        });
+
+        select.value = '90';
+        if (!select.value && select.options.length) {
+            select.selectedIndex = 0;
+        }
+        valueEl.textContent = select.options[select.selectedIndex] ? select.options[select.selectedIndex].textContent : '+90';
+
+        return true;
+    }
+
+    function ensurePhoneCodes() {
+        var fallbackList = normalizeAndSort(buildFallbackList());
+        renderPhoneCodes(fallbackList);
+
+        fetch('https://restcountries.com/v3.1/all?fields=cca2,idd,name', { credentials: 'omit' })
+            .then(function (res) {
+                if (!res.ok) throw new Error('country list request failed');
+                return res.json();
+            })
+            .then(function (rows) {
+                if (!Array.isArray(rows)) throw new Error('country list payload invalid');
+                var mapped = rows.map(function (row) {
+                    var code = String((row && row.cca2) || '').toUpperCase();
+                    var name = row && row.name ? (row.name.common || row.name.official || code) : code;
+                    var dial = parseDialCode(row ? row.idd : null);
+                    return { code: code, name: name, dial: dial };
+                });
+                var normalized = normalizeAndSort(mapped);
+                if (normalized.length < 180) return;
+                renderPhoneCodes(normalized);
+            })
+            .catch(function () {
+                // fallback list zaten uygulandi.
+            });
+    }
+
+    document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !(t.id === 'openRegister' || (t.closest && t.closest('#openRegister')) || t.id === 'openRegister2' || (t.closest && t.closest('#openRegister2')))) {
+            return;
+        }
+        setTimeout(ensurePhoneCodes, 50);
+    }, true);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(ensurePhoneCodes, 0);
+        });
+    } else {
+        setTimeout(ensurePhoneCodes, 0);
     }
 })();
 </script>

@@ -758,14 +758,17 @@
                         </div>
 
                         <div class="form-group register-phone-row entrance-f-item-bc">
-                            <div class="register-phone-code">
-                                <input type="hidden" name="phone_country_code" id="modal_phone_country_code" value="90">
-                                <div class="bc-fixed-select bc-fixed-select--passive" aria-hidden="true">
-                                    <span class="bc-fixed-select__label">Kodu</span>
-                                    <span class="bc-fixed-select__value bc-fixed-select__value--with-flag">
-                                        <span class="flag-icon flag-icon-tr" aria-hidden="true"></span>
-                                        90
-                                    </span>
+                            <div class="register-phone-code register-form-group bc-custom-select" data-bc-custom-select data-phone-code-select>
+                                <select name="phone_country_code" id="modal_phone_country_code" class="bc-custom-select__native" required aria-hidden="true" tabindex="-1">
+                                    <option value="90" selected>+90</option>
+                                </select>
+                                <button type="button" class="bc-custom-select__trigger" aria-expanded="false" aria-haspopup="listbox" id="modal_phone_country_code_trigger">
+                                    <span class="bc-custom-select__label">Kodu</span>
+                                    <span class="bc-custom-select__value">+90</span>
+                                    <span class="bc-custom-select__arrow" aria-hidden="true"></span>
+                                </button>
+                                <div class="bc-custom-select__panel" role="listbox" id="modal_phone_country_code_listbox" hidden>
+                                    <div class="bc-custom-select__option" data-value="90" role="option">+90 TR - Turkiye</div>
                                 </div>
                             </div>
                             <div class="register-phone-number">
@@ -841,6 +844,113 @@
         </div>
     </div>
 </div>
+
+<script>
+// Fallback: telefon ulke kodu secimini tum ulkelerle doldur
+(function () {
+    if (window.__registerPhoneCodePatched) return;
+    window.__registerPhoneCodePatched = true;
+
+    function toAsciiLabel(str) {
+        return String(str || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^\x20-\x7E]/g, '');
+    }
+
+    function parseDialCode(idd) {
+        if (!idd || typeof idd !== 'object') return '';
+        var root = String(idd.root || '').replace(/\D/g, '');
+        if (!root) return '';
+        var suffix = '';
+        if (Array.isArray(idd.suffixes) && idd.suffixes.length) {
+            suffix = String(idd.suffixes[0] || '').replace(/\D/g, '');
+        }
+        return (root + suffix).replace(/^0+/, '');
+    }
+
+    function normalizeAndSort(items) {
+        var seen = {};
+        var out = [];
+        items.forEach(function (item) {
+            var code = String(item.code || '').toUpperCase();
+            var name = toAsciiLabel(item.name || code);
+            var dial = String(item.dial || '').replace(/\D/g, '');
+            if (!code || !dial) return;
+            var key = code + ':' + dial;
+            if (seen[key]) return;
+            seen[key] = true;
+            out.push({ code: code, name: name, dial: dial });
+        });
+        out.sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); });
+        return out;
+    }
+
+    function renderPhoneCodes(items) {
+        var wrapper = document.querySelector('#registerModal .bc-custom-select[data-phone-code-select]');
+        if (!wrapper) return;
+        var select = wrapper.querySelector('#modal_phone_country_code');
+        var panel = wrapper.querySelector('#modal_phone_country_code_listbox');
+        var valueEl = wrapper.querySelector('.bc-custom-select__value');
+        if (!select || !panel || !valueEl) return;
+
+        select.innerHTML = '';
+        panel.innerHTML = '';
+
+        items.forEach(function (item) {
+            var shortLabel = '+' + item.dial;
+            var fullLabel = shortLabel + ' ' + item.code + ' - ' + item.name;
+
+            var opt = document.createElement('option');
+            opt.value = item.dial;
+            opt.textContent = shortLabel;
+            select.appendChild(opt);
+
+            var panelOpt = document.createElement('div');
+            panelOpt.className = 'bc-custom-select__option';
+            panelOpt.setAttribute('data-value', item.dial);
+            panelOpt.setAttribute('role', 'option');
+            panelOpt.textContent = fullLabel;
+            panel.appendChild(panelOpt);
+        });
+
+        select.value = '90';
+        if (!select.value && select.options.length) {
+            select.selectedIndex = 0;
+        }
+        valueEl.textContent = select.options[select.selectedIndex] ? select.options[select.selectedIndex].textContent : '+90';
+    }
+
+    function ensurePhoneCodes() {
+        fetch('https://restcountries.com/v3.1/all?fields=cca2,idd,name', { credentials: 'omit' })
+            .then(function (res) {
+                if (!res.ok) throw new Error('country list request failed');
+                return res.json();
+            })
+            .then(function (rows) {
+                if (!Array.isArray(rows)) throw new Error('country list payload invalid');
+                var mapped = rows.map(function (row) {
+                    var code = String((row && row.cca2) || '').toUpperCase();
+                    var name = row && row.name ? (row.name.common || row.name.official || code) : code;
+                    var dial = parseDialCode(row ? row.idd : null);
+                    return { code: code, name: name, dial: dial };
+                });
+                var normalized = normalizeAndSort(mapped);
+                if (normalized.length < 180) throw new Error('country list too short');
+                renderPhoneCodes(normalized);
+            })
+            .catch(function () {
+                renderPhoneCodes([{ code: 'TR', name: 'Turkiye', dial: '90' }]);
+            });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { setTimeout(ensurePhoneCodes, 0); });
+    } else {
+        setTimeout(ensurePhoneCodes, 0);
+    }
+})();
+</script>
 
 <!-- Kayıt başarılı kutusu -->
 <div class="modal fade" id="registerSuccessModal" tabindex="-1" aria-hidden="true" data-backdrop="static">

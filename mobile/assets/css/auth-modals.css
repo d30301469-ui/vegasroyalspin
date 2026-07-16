@@ -952,6 +952,14 @@ body.mobile-site #registerModal .bc-custom-select[data-country-select] .bc-custo
   -webkit-overflow-scrolling: touch;
 }
 
+body.mobile-site #registerModal .bc-custom-select[data-phone-code-select] .bc-custom-select__panel {
+  min-width: 220px !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: min(46vh, 300px) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 body.mobile-site #registerModal .bc-custom-select[data-country-select] .bc-custom-select__search {
   padding: 7px !important;
 }
