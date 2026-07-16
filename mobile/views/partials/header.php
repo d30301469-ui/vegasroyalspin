@@ -32,7 +32,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
   </div>
 
   <div class="header-bc<?= $hdrAuthClass ?>">
-    <div class="hdr-main-content-bc" data-mobile-header-main>
+    <div class="hdr-main-content-bc">
       <div class="logo-container">
         <a class="logo" href="/" title="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
           <?php if ($mobileHeaderLogoAnimUrl !== ''): ?>
@@ -96,7 +96,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
     </div>
 
     <?php if ($loggedIn): ?>
-    <div class="hdr-additional-info" data-mobile-header-additional>
+    <div class="hdr-additional-info">
       <a class="loyaltyBonusHeader"
         href="/?profile=open&amp;account=bonuses&amp;page=loyalty-points"
          title="<?= htmlspecialchars((string) ($headerLoyaltyBadge['name'] ?? 'Bronze'), ENT_QUOTES, 'UTF-8') ?>"
