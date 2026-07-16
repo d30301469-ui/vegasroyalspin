@@ -1059,11 +1059,15 @@ body.mobile-site #registerModal .register-modal-login-link {
   min-width: 0 !important;
   height: auto !important;
   padding: 4px 2px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   color: rgba(255, 255, 255, 0.85) !important;
   font-size: 11px !important;
+  line-height: 1 !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
   text-decoration: underline !important;
@@ -1075,12 +1079,19 @@ body.mobile-site #registerModal .register-modal-close {
   height: 26px !important;
   min-width: 26px !important;
   min-height: 26px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
   font-size: 18px !important;
 }
 
 body.mobile-site #registerModal .register-modal-close span {
+  display: block !important;
   font-size: 20px !important;
-  transform: translateY(-1px) !important;
+  line-height: 1 !important;
+  transform: none !important;
 }
 
 /* Sabit alt bar: KAYIT + WalletConnect + DESTEK dikey istif (referans) */
