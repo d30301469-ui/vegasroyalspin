@@ -169,15 +169,17 @@ if (class_exists('ApiMediaUrl', false)) {
                             <div class="register-error-text" data-error-for="dob">Bu alan gerekli</div>
                         </div>
 
-                        <div class="form-group entrance-f-item-bc">
-                            <input type="hidden" name="country" id="modal_country" value="TR">
-                            <div class="bc-fixed-select" aria-hidden="true">
-                                <span class="bc-fixed-select__label">Ülke</span>
-                                <span class="bc-fixed-select__value bc-fixed-select__value--with-flag">
-                                    <span class="flag-icon flag-icon-tr" aria-hidden="true"></span>
-                                    Türkiye
-                                </span>
-                            </div>
+                        <div class="register-form-group bc-custom-select entrance-f-item-bc" data-bc-custom-select data-country-select>
+                            <select name="country" id="modal_country" class="bc-custom-select__native" required aria-hidden="true" tabindex="-1">
+                                <option value="" disabled selected>Ülke seçin</option>
+                            </select>
+                            <button type="button" class="bc-custom-select__trigger" aria-expanded="false" aria-haspopup="listbox" id="modal_country_trigger">
+                                <span class="bc-custom-select__label">Ülke *</span>
+                                <span class="bc-custom-select__value">Ülke seçin</span>
+                                <span class="bc-custom-select__arrow" aria-hidden="true"></span>
+                            </button>
+                            <div class="bc-custom-select__panel" role="listbox" id="modal_country_listbox" hidden></div>
+                            <div class="register-error-text" data-error-for="country">Bu alan gerekli</div>
                         </div>
 
                         <div class="form-group entrance-f-item-bc">
