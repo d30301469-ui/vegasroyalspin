@@ -5,7 +5,13 @@ $flash     = trim((string) ($flash ?? ''));
 $text      = static fn (mixed $value): string => htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 
 $siteEndpoint = trim((string) ($configRow['site_endpoint'] ?? getenv('DRAKON_SITE_ENDPOINT') ?: ''));
-$webhookUrl   = $siteEndpoint !== '' ? rtrim($siteEndpoint, '/') . '/drakon_api' : '— site_endpoint ayarlanmamış —';
+// Accept either the base host or a full ".../drakon_api" URL pasted into the
+// field, and always render a single, correct webhook URL.
+$siteEndpointBase = rtrim($siteEndpoint, '/');
+if ($siteEndpointBase !== '' && str_ends_with(strtolower($siteEndpointBase), '/drakon_api')) {
+    $siteEndpointBase = rtrim(substr($siteEndpointBase, 0, -strlen('/drakon_api')), '/');
+}
+$webhookUrl   = $siteEndpointBase !== '' ? $siteEndpointBase . '/drakon_api' : '— site_endpoint ayarlanmamış —';
 $isActive     = !empty($configRow['is_active']) && $configRow['is_active'] !== '0';
 ?>
 <style>
