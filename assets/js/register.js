@@ -461,11 +461,26 @@
                 });
             });
 
+            // Dinamik eklenen option'larda da secim calissin (event delegation).
+            panel.addEventListener('click', function (e) {
+                var target = e.target && e.target.closest ? e.target.closest('.bc-custom-select__option') : null;
+                if (!target || !panel.contains(target)) return;
+                e.preventDefault();
+                var val = target.getAttribute('data-value');
+                if (val) {
+                    select.value = val;
+                    updateValueDisplay();
+                    close();
+                }
+            });
+
             document.addEventListener('click', function (e) {
                 if (wrapper.classList.contains('is-open') && !wrapper.contains(e.target)) {
                     close();
                 }
             });
+
+            updateValueDisplay();
         });
     }
 
