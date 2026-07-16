@@ -194,6 +194,47 @@ final class BgamingService
                 KEY idx_bgaming_token_rotation_created (created_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
         );
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS bgaming_campaigns (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                campaign_code VARCHAR(190) NOT NULL,
+                title VARCHAR(190) NOT NULL,
+                campaign_type VARCHAR(40) NOT NULL DEFAULT 'freespin',
+                game_identifier VARCHAR(120) NULL,
+                vendor VARCHAR(100) NOT NULL DEFAULT 'bgaming',
+                currency_code VARCHAR(8) NULL,
+                freespins_per_player INT NOT NULL DEFAULT 0,
+                promo_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+                wagering_multiplier DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+                begins_at BIGINT NULL,
+                expires_at BIGINT NULL,
+                active TINYINT(1) NOT NULL DEFAULT 1,
+                status VARCHAR(40) NOT NULL DEFAULT 'active',
+                payload JSON NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uniq_bgaming_campaign_code (campaign_code),
+                KEY idx_bgaming_campaign_type (campaign_type),
+                KEY idx_bgaming_campaign_active (active)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS bgaming_campaign_players (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                campaign_code VARCHAR(190) NOT NULL,
+                user_id INT NOT NULL,
+                bonus_id INT NULL,
+                status VARCHAR(40) NOT NULL DEFAULT 'assigned',
+                payload JSON NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uniq_bgaming_campaign_player (campaign_code, user_id),
+                KEY idx_bgaming_campaign_player_user (user_id),
+                KEY idx_bgaming_campaign_player_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
         self::ensureColumns($pdo);
     }
 
@@ -1066,7 +1107,6 @@ final class BgamingService
                 'amount' => $payoutSubunits,
             ]], 'freespins_win');
         }
-
         $fresh = self::user($pdo, (int) ($payload['user_id'] ?? 0));
         return ['balance' => self::toSubunits((float) ($fresh['balance'] ?? 0), $currency)];
     }
@@ -1753,6 +1793,7 @@ final class BgamingService
                     }
                     return $data;
                 }
+
                 $error = is_array($data['error'] ?? null) ? $data['error'] : (is_array($data) ? $data : []);
                 $message = (string) ($error['message'] ?? $error['code'] ?? '');
                 if ($code !== 403 || stripos($message, 'sign') === false) {
