@@ -33,9 +33,9 @@ $run('storage writable', static function () use ($root): bool {
 
     return is_writable($root . '/storage');
 });
-$run('vendor/autoload.php', static fn () use ($root): bool => is_file($root . '/vendor/autoload.php'));
-$run('config/env.php', static fn () use ($root): bool => is_readable($root . '/config/env.php'));
-$run('FrontendInstallGate.php', static fn () use ($root): bool => is_readable($root . '/app/Core/FrontendInstallGate.php'));
+$run('vendor/autoload.php', static fn (): bool => is_file($root . '/vendor/autoload.php'));
+$run('config/env.php', static fn (): bool => is_readable($root . '/config/env.php'));
+$run('FrontendInstallGate.php', static fn (): bool => is_readable($root . '/app/Core/FrontendInstallGate.php'));
 $run('session_start', static function (): bool {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
