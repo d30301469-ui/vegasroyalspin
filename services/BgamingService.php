@@ -1508,15 +1508,24 @@ final class BgamingService
      */
     private static function recordTokenRotationNonce(PDO $pdo, array $payload): ?array
     {
+        // The BGaming spec token rotation payload carries no explicit nonce, so we
+        // derive a stable audit key from the rotation fields. Token rotation is
+        // idempotent by design: the GCP retries until it receives {"status":"success"},
+        // therefore identical repeated requests must never be rejected here.
         $nonce = trim((string) ($payload['nonce'] ?? $payload['request_id'] ?? ''));
         if ($nonce === '') {
-            return ['code' => 'INVALID_REQUEST', 'message' => 'Token rotation nonce is required'];
+            $nonce = 'rot:' . hash('sha256', implode('|', [
+                trim((string) ($payload['server_id'] ?? '')),
+                trim((string) ($payload['new_token'] ?? '')),
+                trim((string) ($payload['rotation_datetime'] ?? '')),
+            ]));
         }
 
         try {
             $stmt = $pdo->prepare(
                 'INSERT INTO bgaming_token_rotation_nonces (nonce_hash, nonce, request_payload)
-                 VALUES (:nonce_hash, :nonce, :request_payload)'
+                 VALUES (:nonce_hash, :nonce, :request_payload)
+                 ON DUPLICATE KEY UPDATE request_payload = VALUES(request_payload)'
             );
             $stmt->execute([
                 'nonce_hash' => hash('sha256', $nonce),
@@ -1524,7 +1533,7 @@ final class BgamingService
                 'request_payload' => json_encode(self::redactSensitivePayload($payload), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
         } catch (Throwable) {
-            return ['code' => 'REPLAYED_REQUEST', 'message' => 'Token rotation nonce was already used or could not be recorded'];
+            // Auditing must never block a validly-signed rotation.
         }
 
         return null;
@@ -1573,7 +1582,15 @@ final class BgamingService
                 $before = $balance;
                 $originalActionId = trim((string) ($action['original_action_id'] ?? ''));
 
-                if ($type === 'rollback') {
+                // A rollback for this action may arrive before the delayed original
+                // bet/win. If so, the original was already cancelled, so we must ignore
+                // it (BGaming rollback tombstone rule) instead of undoing the rollback.
+                $tombstoned = $type !== 'rollback' && self::rollbackTombstoneExists($pdo, $actionId);
+
+                if ($tombstoned) {
+                    $amountSubunits = 0;
+                    $amount = 0.0;
+                } elseif ($type === 'rollback') {
                     [$amountSubunits, $amount, $balance] = self::applyRollbackBalance($pdo, $originalActionId, $balance);
                 } elseif ($type === 'bet' || $type === 'promo_bet') {
                     if ($amount < 0 || $balance < $amount) {
@@ -1657,10 +1674,23 @@ final class BgamingService
         if (in_array($type, ['bet', 'promo_bet'], true)) {
             return [$amountSubunits, $amount, round($balance + $amount, 2)];
         }
-        if ($amount > 0 && $balance < $amount) {
-            throw new RuntimeException('Insufficient funds for rollback');
+        // Rollback of a win must be processed even if the player no longer has the
+        // funds (BGaming rollback rule); the response balance is clamped to zero.
+        return [$amountSubunits, $amount, round(max(0.0, $balance - $amount), 2)];
+    }
+
+    private static function rollbackTombstoneExists(PDO $pdo, string $actionId): bool
+    {
+        if ($actionId === '') {
+            return false;
         }
-        return [$amountSubunits, $amount, round($balance - $amount, 2)];
+        $stmt = $pdo->prepare(
+            "SELECT 1 FROM bgaming_transactions
+             WHERE txn_type = 'rollback' AND original_action_id = :action_id
+             LIMIT 1"
+        );
+        $stmt->execute(['action_id' => $actionId]);
+        return $stmt->fetchColumn() !== false;
     }
 
     private static function request(PDO $pdo, string $method, string $path, array $payload = []): array

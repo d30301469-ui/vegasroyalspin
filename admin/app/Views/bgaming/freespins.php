@@ -25,7 +25,16 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
     .bgaming-fs-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; }
     .bgaming-fs-stack { display:flex; flex-direction:column; gap:16px; }
     .bgaming-fs-inline { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    @media (max-width: 1080px) { .bgaming-fs-grid, .bgaming-fs-inline { grid-template-columns:1fr; } }
+    .bgaming-fs-guide { grid-column:1 / -1; background: var(--bg-card); border:1px solid var(--border); border-radius:18px; box-shadow: var(--shadow-card); padding:16px 20px; }
+    .bgaming-fs-guide h2 { margin:0 0 10px; font-size:16px; }
+    .bgaming-fs-steps { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin:0; padding:0; list-style:none; }
+    .bgaming-fs-steps li { background: var(--bg-soft, rgba(127,127,127,.06)); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
+    .bgaming-fs-steps b { display:block; font-size:13px; margin-bottom:4px; }
+    .bgaming-fs-steps span { color: var(--t-muted); font-size:12px; line-height:1.4; }
+    .bgaming-fs-step-badge { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:999px; background:var(--accent, #6c5ce7); color:#fff; font-size:12px; font-weight:600; margin-right:8px; }
+    .bgaming-fs-hint { color: var(--t-muted); font-size:12px; margin:4px 0 0; }
+    @media (max-width: 1080px) { .bgaming-fs-grid, .bgaming-fs-inline { grid-template-columns:1fr; } .bgaming-fs-steps { grid-template-columns:1fr 1fr; } }
+    @media (max-width: 640px) { .bgaming-fs-steps { grid-template-columns:1fr; } }
 </style>
 
 <section class="hero">
@@ -47,6 +56,16 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
 <?php if ($remoteError !== ''): ?>
     <div class="alert alert--error admin-alert-spaced">Remote freespin API hatası: <?= $text($remoteError) ?></div>
 <?php endif; ?>
+
+<section class="bgaming-fs-guide">
+    <h2>Freespin nasıl yönetilir?</h2>
+    <ol class="bgaming-fs-steps">
+        <li><b><span class="bgaming-fs-step-badge">1</span>Issue Gönder</b><span>Kullanıcıyı, oyunu ve spin adedini seçip BGaming'e freespin tanımlar. Issue ID boşsa otomatik üretilir.</span></li>
+        <li><b><span class="bgaming-fs-step-badge">2</span>Status Sync</b><span>Issue ID ile BGaming'den güncel durumu (active / played / canceled / expired) çekip panele işler.</span></li>
+        <li><b><span class="bgaming-fs-step-badge">3</span>Issue İptal</b><span>Henüz oynanmamış bir freespin'i iptal eder. Oynanan freespin iptal edilemez.</span></li>
+        <li><b><span class="bgaming-fs-step-badge">4</span>Kazanç</b><span>Oyuncu spinleri bitirince BGaming <code>/freespins/finish</code> çağırır; kazanç bakiyeye tek sefer eklenir.</span></li>
+    </ol>
+</section>
 
 <div class="bgaming-fs-grid">
     <div class="bgaming-fs-stack">
@@ -74,6 +93,7 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
                         <div class="field">
                             <label class="field-label" for="fs_games">Game Identifier</label>
                             <input id="fs_games" class="input" type="text" name="games" required placeholder="acceptance:test veya CarnivalBonanza">
+                            <p class="bgaming-fs-hint">Tek oyun kodu yazın. Birden fazla oyun için virgülle ayırın. Accept testinde <code>acceptance:test</code> kullanın.</p>
                         </div>
                         <div class="field">
                             <label class="field-label" for="fs_count">Freespin Adedi</label>
@@ -94,6 +114,7 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
                         <div class="field">
                             <label class="field-label" for="fs_valid_until">Valid Until</label>
                             <input id="fs_valid_until" class="input admin-date-input" type="datetime-local" name="valid_until" required>
+                            <p class="bgaming-fs-hint">Freespin son geçerlilik tarihi (zorunlu). Bu tarihe kadar oynanmayan freespin <code>expired</code> olur.</p>
                         </div>
                     </div>
                     <div class="form-actions admin-action-spaced">
