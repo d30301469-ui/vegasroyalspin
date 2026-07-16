@@ -911,6 +911,17 @@ body.mobile-site #registerModal .register-form--mobile-single .form-control-labe
   color: rgba(255, 255, 255, 0.55) !important;
 }
 
+/* JS class kacirdiginda da davranisi garanti et:
+   inputa tiklaninca ve deger varken etiket yukarida kalsin. */
+body.mobile-site #registerModal .register-form--mobile-single .form-control-label-bc.inputs:focus-within .form-control-title-bc,
+body.mobile-site #registerModal .register-form--mobile-single .form-control-label-bc.inputs .form-control-input-bc:not(:placeholder-shown) + .form-control-input-stroke-bc + .form-control-title-bc,
+body.mobile-site #registerModal .register-form--mobile-single .form-control-label-bc.inputs .form-control-input-bc:-webkit-autofill + .form-control-input-stroke-bc + .form-control-title-bc {
+  top: 9px !important;
+  transform: translateY(0) !important;
+  font-size: 11px !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
 /* Alt çizgi elemanını gizle (dolu kutu stilinde gerek yok) */
 body.mobile-site #registerModal .register-form--mobile-single .form-control-input-stroke-bc {
   display: none !important;
