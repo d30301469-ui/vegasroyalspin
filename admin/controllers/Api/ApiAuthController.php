@@ -239,6 +239,7 @@ class ApiAuthController
             'first_name'            => $src['firstName'] ?? '',
             'surname'               => $src['surname'] ?? '',
             'country'               => $src['country'] ?? '',
+            'currency'              => $src['currency'] ?? '',
             'city'                  => $src['city'] ?? '',
             'birth_date'            => $src['dob'] ?? '',
             'gender'                => $src['gender'] ?? '',

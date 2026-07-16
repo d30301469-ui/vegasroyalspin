@@ -182,12 +182,23 @@ if (class_exists('ApiMediaUrl', false)) {
                             <div class="register-error-text" data-error-for="country">Bu alan gerekli</div>
                         </div>
 
-                        <div class="form-group entrance-f-item-bc">
-                            <input type="hidden" name="currency" id="modal_currency" value="TRY">
-                            <div class="bc-fixed-select" aria-hidden="true">
-                                <span class="bc-fixed-select__label">Para birimi *</span>
-                                <span class="bc-fixed-select__value">TRY</span>
+                        <div class="register-form-group bc-custom-select entrance-f-item-bc" data-bc-custom-select>
+                            <select name="currency" id="modal_currency" class="bc-custom-select__native" required aria-hidden="true" tabindex="-1">
+                                <option value="TRY" selected>TRY</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                            <button type="button" class="bc-custom-select__trigger" aria-expanded="false" aria-haspopup="listbox" id="modal_currency_trigger">
+                                <span class="bc-custom-select__label">Para birimi *</span>
+                                <span class="bc-custom-select__value">TRY</span>
+                                <span class="bc-custom-select__arrow" aria-hidden="true"></span>
+                            </button>
+                            <div class="bc-custom-select__panel" role="listbox" id="modal_currency_listbox" hidden>
+                                <div class="bc-custom-select__option" data-value="TRY" role="option">TRY</div>
+                                <div class="bc-custom-select__option" data-value="USD" role="option">USD</div>
+                                <div class="bc-custom-select__option" data-value="EUR" role="option">EUR</div>
                             </div>
+                            <div class="register-error-text d-none" data-error-for="currency">Bu alan gerekli</div>
                         </div>
 
                         <div class="register-form-group entrance-f-item-bc">

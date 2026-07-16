@@ -455,7 +455,11 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
 if ($method === 'GET' && in_array($route, ['currencies', 'countries', 'languages', 'maintenance-status'], true)) {
     $reference = match ($route) {
         'currencies' => [
-            'items' => [['code' => 'TRY', 'symbol' => '₺', 'name' => 'Turkish Lira', 'default' => true]],
+            'items' => [
+                ['code' => 'TRY', 'symbol' => '₺', 'name' => 'Turkish Lira', 'default' => true],
+                ['code' => 'USD', 'symbol' => '$', 'name' => 'US Dollar', 'default' => false],
+                ['code' => 'EUR', 'symbol' => '€', 'name' => 'Euro', 'default' => false],
+            ],
             'default' => 'TRY',
         ],
         'countries' => [

@@ -21,6 +21,7 @@ final class MemberRegisterPayload
             'first_name'            => trim((string) ($row['first_name'] ?? $row['firstName'] ?? $row['name'] ?? '')),
             'surname'               => trim((string) ($row['surname'] ?? '')),
             'country'               => strtoupper(trim((string) ($row['country'] ?? ''))),
+            'currency'              => strtoupper(trim((string) ($row['currency'] ?? 'TRY'))),
             'city'                  => trim((string) ($row['city'] ?? '')),
             'birth_date'            => trim((string) ($row['birth_date'] ?? $row['dob'] ?? '')),
             'gender_raw'            => trim((string) ($row['gender'] ?? '')),
@@ -74,6 +75,11 @@ final class MemberRegisterPayload
         }
         if ($prepared['country'] === '') {
             $errors['country'] = 'Ülke kodu gerekli.';
+        }
+        if ($prepared['currency'] === '') {
+            $errors['currency'] = 'Para birimi gerekli.';
+        } elseif (!in_array($prepared['currency'], ['TRY', 'USD', 'EUR'], true)) {
+            $errors['currency'] = 'Geçersiz para birimi.';
         }
         if ($prepared['city'] === '') {
             $errors['city'] = 'Şehir gerekli.';
@@ -130,6 +136,7 @@ final class MemberRegisterPayload
             'gender'      => $prepared['gender_api'],
             'birth_date'  => $prepared['birth_date'],
             'country'     => $prepared['country'],
+            'currency'    => $prepared['currency'],
             'city'        => $prepared['city'],
             'address'     => $prepared['address'],
         ];
