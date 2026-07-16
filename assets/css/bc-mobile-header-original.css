@@ -509,7 +509,7 @@ body.mobile-site .hdr-additional-info .hdr-user-bc.hasLoyaltyLevel .user-nav-ico
   font-size: 14px;
 }
 
-body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-standings {
+body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-wallet {
   order: 1;
   z-index: 1;
 }
@@ -519,7 +519,7 @@ body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-call {
   z-index: 2;
 }
 
-body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-wallet {
+body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-standings {
   order: 3;
   z-index: 3;
 }
