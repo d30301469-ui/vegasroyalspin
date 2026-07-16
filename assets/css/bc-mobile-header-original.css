@@ -564,7 +564,7 @@ body.mobile-site .hdr-additional-info .hdr-user-bc.hasLoyaltyLevel.isExpandedIco
   box-shadow: none;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgb(32, 32, 34);
+  background: rgb(32, 32, 34) !important;
   flex-direction: row !important;
   justify-content: space-between;
   align-items: center;
