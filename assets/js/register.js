@@ -1028,19 +1028,32 @@
     document.addEventListener('click', function (e) {
         var icon = e.target && e.target.closest ? e.target.closest('.toggle-password') : null;
         if (!icon) return;
-        var wrapper = icon.parentNode;
-        if (!wrapper) return;
-        var input = wrapper.querySelector('.password-input');
+        var targetSelector = icon.getAttribute('data-target-password') || '';
+        var input = null;
+        if (targetSelector) {
+            try {
+                input = document.querySelector(targetSelector);
+            } catch (err) {
+                input = null;
+            }
+        }
+        if (!input) {
+            var wrapper = icon.parentNode;
+            if (!wrapper) return;
+            input = wrapper.querySelector('.password-input');
+        }
         if (!input) return;
 
         if (input.type === 'password') {
             input.type = 'text';
-            icon.classList.remove('fa-eye');
-            icon.classList.add('fa-eye-slash');
+            icon.classList.add('is-password-visible');
+            icon.setAttribute('aria-pressed', 'true');
+            icon.setAttribute('aria-label', 'Sifreyi gizle');
         } else {
             input.type = 'password';
-            icon.classList.remove('fa-eye-slash');
-            icon.classList.add('fa-eye');
+            icon.classList.remove('is-password-visible');
+            icon.setAttribute('aria-pressed', 'false');
+            icon.setAttribute('aria-label', 'Sifreyi goster');
         }
     });
 
