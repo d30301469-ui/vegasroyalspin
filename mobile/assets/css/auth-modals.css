@@ -221,7 +221,7 @@ body.mobile-site #registerModal .register-top-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 3px;
+  gap: 1px;
   margin-left: 0;
   min-height: 100%;
   position: absolute;
@@ -1071,15 +1071,15 @@ body.mobile-site #registerModal .register-modal-login-link {
 }
 
 body.mobile-site #registerModal .register-modal-close {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  font-size: 20px !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  font-size: 18px !important;
 }
 
 body.mobile-site #registerModal .register-modal-close span {
-  font-size: 22px !important;
+  font-size: 20px !important;
   transform: translateY(-1px) !important;
 }
 
