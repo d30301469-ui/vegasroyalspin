@@ -124,6 +124,23 @@ final class AdminAuth
             'reports-charts' => 'dashboard',
             'reports-calendar' => 'dashboard',
             'backoffice-suite' => 'dashboard',
+            // Eski "be_pages_*" / önceki panel şeması altında kaydedilmiş izinler.
+            // Bu admin_permissions satırları hiç güncellenmediyse (yeni sayfa
+            // adlarıyla tekrar kaydedilmediyse) aşağıdaki eşlemeler olmadan
+            // ilgili admin, panel yeniden adlandırıldığından beri o bölümlere
+            // erişimini sessizce kaybeder.
+            'admin_management' => 'admins',
+            'admin_activity_logs' => 'logs',
+            'visitor_logs' => 'logs',
+            'admin_sessions' => 'sessions',
+            'kyc_requests' => 'kyc',
+            'mail_settings' => 'email',
+            'slider' => 'sliders',
+            'finance_deposits' => 'deposits',
+            'finance_withdraws' => 'withdrawals',
+            'be_pages_admin_access_control' => 'permissions',
+            'be_pages_bonus_claims' => 'bonus-claims',
+            'be_pages_call_me_requests' => 'call-requests',
         ];
     }
 
