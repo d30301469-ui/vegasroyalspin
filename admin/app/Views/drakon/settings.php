@@ -74,12 +74,51 @@ $isActive     = !empty($configRow['is_active']) && $configRow['is_active'] !== '
             <p class="drakon-help">Bearer token almak için <code>base64(agent_token:agent_secret)</code> şeklinde kullanılır.</p>
         </div>
 
+        <?php
+        $currentCurrency = strtoupper(trim((string) ($configRow['currency'] ?? 'TRY')));
+        if ($currentCurrency === '') {
+            $currentCurrency = 'TRY';
+        }
+        $currencyOptions = ['TRY', 'USD', 'EUR', 'GBP', 'RUB', 'AZN', 'UAH', 'KZT', 'BRL', 'USDT'];
+        if (!in_array($currentCurrency, $currencyOptions, true)) {
+            array_unshift($currencyOptions, $currentCurrency);
+        }
+        $currentLang = strtolower(trim((string) ($configRow['lang'] ?? 'tr')));
+        if ($currentLang === '') {
+            $currentLang = 'tr';
+        }
+        $langOptions = [
+            'tr' => 'Türkçe',
+            'en' => 'English',
+            'de' => 'Deutsch',
+            'ru' => 'Русский',
+            'az' => 'Azərbaycanca',
+            'ar' => 'العربية',
+            'fr' => 'Français',
+            'es' => 'Español',
+        ];
+        if (!isset($langOptions[$currentLang])) {
+            $langOptions = [$currentLang => strtoupper($currentLang)] + $langOptions;
+        }
+        ?>
         <div class="field">
             <label class="field-label" for="currency">Para Birimi</label>
-            <input id="currency" class="input" type="text" name="currency"
-                   value="<?= $text(strtoupper(trim((string) ($configRow['currency'] ?? 'USD')))) ?>"
-                   placeholder="USD" maxlength="10" autocomplete="off">
-            <p class="drakon-help">Drakon API'ye iletilen para birimi kodu. Örn: <code>TRY</code>, <code>USD</code>, <code>EUR</code>.</p>
+            <select id="currency" class="input" name="currency">
+                <?php foreach ($currencyOptions as $cur): ?>
+                    <option value="<?= $text($cur) ?>"<?= $cur === $currentCurrency ? ' selected' : '' ?>><?= $text($cur) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <p class="drakon-help">Drakon API'ye iletilen para birimi kodu. Agent hesabınızın desteklediği birimi seçin.</p>
+        </div>
+
+        <div class="field">
+            <label class="field-label" for="lang">Dil</label>
+            <select id="lang" class="input" name="lang">
+                <?php foreach ($langOptions as $langCode => $langLabel): ?>
+                    <option value="<?= $text($langCode) ?>"<?= $langCode === $currentLang ? ' selected' : '' ?>><?= $text($langLabel) ?> (<?= $text($langCode) ?>)</option>
+                <?php endforeach; ?>
+            </select>
+            <p class="drakon-help">Oyun başlatılırken kullanılacak varsayılan dil. Oyun URL'sinde <code>?lang=</code> gelirse o önceliklidir.</p>
         </div>
 
         <div class="field">

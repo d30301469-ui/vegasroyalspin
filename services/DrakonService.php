@@ -195,7 +195,7 @@ final class DrakonService
     public static function updateConfig(PDO $pdo, array $data): void
     {
         self::ensureConfigColumns($pdo);
-        $allowed = ['agent_code', 'agent_token', 'agent_secret', 'currency', 'site_endpoint', 'home_url'];
+        $allowed = ['agent_code', 'agent_token', 'agent_secret', 'currency', 'lang', 'site_endpoint', 'home_url'];
         $sets    = [];
         $params  = [];
         foreach ($allowed as $key) {
@@ -574,7 +574,7 @@ final class DrakonService
         $agentCode  = (string) ($cfg['agent_code'] ?? '');
         $agentToken = (string) ($cfg['agent_token'] ?? '');
         $currency   = strtoupper(trim((string) ($cfg['currency'] ?? 'TRY')));
-        $lang       = strtolower(trim((string) ($input['lang'] ?? 'tr')));
+        $lang       = strtolower(trim((string) ($input['lang'] ?? ($cfg['lang'] ?? 'tr'))));
 
         if ($agentCode === '' || $agentToken === '') {
             return ['success' => false, 'code' => 503, 'message' => 'Drakon agent yapılandırılmamış.'];
