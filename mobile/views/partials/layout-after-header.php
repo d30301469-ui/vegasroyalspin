@@ -6,6 +6,7 @@
 <div class="layout-content-holder-bc">
 <div class="mainContentWrap">
 <?php include VIEW_PATH . '/partials/header-global-panels.php'; ?>
+<?php $registerSingleStepMobile = true; ?>
 <?php include VIEW_PATH . '/partials/register.php'; ?>
 <?php include VIEW_PATH . '/partials/login.php'; ?>
 <?php include VIEW_PATH . '/partials/member-api-layout-script.php'; ?>

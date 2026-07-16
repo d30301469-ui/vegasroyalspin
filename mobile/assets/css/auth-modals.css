@@ -798,3 +798,185 @@ body.mobile-site #registerModal #modalRegisterForm:not([data-active-step="2"]) .
   padding-top: 0 !important;
   padding-bottom: 18px !important;
 }
+
+/* ============================================================
+   MOBİL KAYIT — TEK ADIMLI FORM (referans m.casinomilyon tarzı)
+   Tüm alanlar tek akışta, düz "dolu kutu" inputlar.
+   ============================================================ */
+
+/* Tek adım aktifken içeriği asla dikey ortalama; yukarıdan başlat */
+body.mobile-site #registerModal .register-form--mobile-single .reg-form-content,
+body.mobile-site #registerModal #modalRegisterForm.register-form--mobile-single[data-active-step="1"] .reg-form-content,
+body.mobile-site #registerModal #modalRegisterForm.register-form--mobile-single:not([data-active-step="2"]) .reg-form-content {
+  justify-content: flex-start !important;
+  min-height: auto !important;
+  height: auto !important;
+  padding-top: 6px !important;
+  padding-bottom: 20px !important;
+}
+
+/* Tek adımda adım göstergesi / adım başlıkları gizli */
+body.mobile-site #registerModal .register-form--mobile-single .register-steps-indicator,
+body.mobile-site #registerModal .register-form--mobile-single .steps-indicator,
+body.mobile-site #registerModal .register-form--mobile-single .register-step-title {
+  display: none !important;
+}
+
+/* Başlık satırları */
+body.mobile-site #registerModal .register-form--mobile-single .sg-n-text-row-1-bc {
+  margin: 0 0 4px !important;
+  padding: 0 !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 14px !important;
+  line-height: 18px !important;
+  font-weight: 500 !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single .sg-n-text-row-2-bc {
+  margin: 0 0 16px !important;
+  padding: 0 !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  line-height: 22px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+/* Alan aralığı */
+body.mobile-site #registerModal .register-form--mobile-single .entrance-f-item-bc,
+body.mobile-site #registerModal .register-form--mobile-single .form-group,
+body.mobile-site #registerModal .register-form--mobile-single .register-form-group {
+  margin-bottom: 12px !important;
+}
+
+/* Ortak "dolu kutu" görünümü: input, custom input, select tetikleyicileri */
+body.mobile-site #registerModal .register-form--mobile-single .form-control-input-bc,
+body.mobile-site #registerModal .register-form--mobile-single .register-input,
+body.mobile-site #registerModal .register-form--mobile-single .bc-fixed-select,
+body.mobile-site #registerModal .register-form--mobile-single .bc-custom-select__trigger,
+body.mobile-site #registerModal .register-form--mobile-single .register-dob-trigger {
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  font-size: 14px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: none !important;
+  border-radius: 4px !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Floating-label inputlar: etikete yer açmak için üst dolgu */
+body.mobile-site #registerModal .register-form--mobile-single .form-control-input-bc,
+body.mobile-site #registerModal .register-form--mobile-single .register-input {
+  padding: 20px 15px 4px !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single input.register-input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-size: 14px !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single .form-control-input-bc:focus,
+body.mobile-site #registerModal .register-form--mobile-single .register-input:focus {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: none !important;
+  box-shadow: inset 0 -2px 0 0 rgba(255, 255, 255, 0.55) !important;
+}
+
+/* Floating label metni */
+body.mobile-site #registerModal .register-form--mobile-single .form-control-title-bc {
+  left: 15px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single .form-control-label-bc.focused .form-control-title-bc,
+body.mobile-site #registerModal .register-form--mobile-single .form-control-label-bc.has-value .form-control-title-bc {
+  top: 9px !important;
+  transform: translateY(0) !important;
+  font-size: 11px !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* Alt çizgi elemanını gizle (dolu kutu stilinde gerek yok) */
+body.mobile-site #registerModal .register-form--mobile-single .form-control-input-stroke-bc {
+  display: none !important;
+}
+
+/* Select / sabit select / doğum tarihi tetikleyicisi etiket-değer renkleri */
+body.mobile-site #registerModal .register-form--mobile-single .bc-fixed-select,
+body.mobile-site #registerModal .register-form--mobile-single .bc-custom-select__trigger,
+body.mobile-site #registerModal .register-form--mobile-single .register-dob-trigger {
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single .bc-fixed-select__label,
+body.mobile-site #registerModal .register-form--mobile-single .bc-custom-select__label,
+body.mobile-site #registerModal .register-form--mobile-single .register-dob-label {
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single .bc-fixed-select__value,
+body.mobile-site #registerModal .register-form--mobile-single .bc-custom-select__value,
+body.mobile-site #registerModal .register-form--mobile-single .register-dob-value {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 14px !important;
+}
+
+/* Telefon satırı: kod + numara */
+body.mobile-site #registerModal .register-form--mobile-single .register-phone-row {
+  display: grid !important;
+  grid-template-columns: minmax(86px, 96px) 1fr !important;
+  gap: 8px !important;
+}
+
+/* Onay kutusu metni */
+body.mobile-site #registerModal .register-form--mobile-single .register-terms {
+  margin-top: 4px !important;
+  margin-bottom: 14px !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single .register-terms-label {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single .register-terms-text {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 14px !important;
+  line-height: 16px !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single .register-terms-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  margin-top: 1px !important;
+  flex: 0 0 18px !important;
+}
+
+/* "Kayıt" ana butonu — tam genişlik */
+body.mobile-site #registerModal .register-form--mobile-single .register-actions-row {
+  margin-top: 6px !important;
+}
+
+body.mobile-site #registerModal .register-form--mobile-single .register-actions-row .register-primary-btn {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  border-radius: 4px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
