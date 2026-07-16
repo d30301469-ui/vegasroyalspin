@@ -1026,22 +1026,21 @@
 
     // Password visibility toggle
     document.addEventListener('click', function (e) {
-        if (e.target.classList && e.target.classList.contains('toggle-password')) {
-            var icon = e.target;
-            var wrapper = icon.parentNode;
-            if (!wrapper) return;
-            var input = wrapper.querySelector('.password-input');
-            if (!input) return;
+        var icon = e.target && e.target.closest ? e.target.closest('.toggle-password') : null;
+        if (!icon) return;
+        var wrapper = icon.parentNode;
+        if (!wrapper) return;
+        var input = wrapper.querySelector('.password-input');
+        if (!input) return;
 
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
         }
     });
 
