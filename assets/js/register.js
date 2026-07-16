@@ -415,7 +415,17 @@
             var valueEl = wrapper.querySelector('.bc-custom-select__value');
             var panel = wrapper.querySelector('.bc-custom-select__panel');
             var options = wrapper.querySelectorAll('.bc-custom-select__option');
+            var isCountrySelect = wrapper.hasAttribute('data-country-select');
             if (!select || !trigger || !valueEl || !panel) return;
+
+            function escapeHtml(str) {
+                return String(str || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
 
             function getPlaceholder() {
                 var first = select.querySelector('option[disabled]');
@@ -425,7 +435,21 @@
             function updateValueDisplay() {
                 var val = select.value;
                 var opt = select.querySelector('option[value="' + val + '"]');
-                valueEl.textContent = val && opt ? opt.textContent : getPlaceholder();
+                if (!val || !opt) {
+                    valueEl.textContent = getPlaceholder();
+                    return;
+                }
+                if (isCountrySelect) {
+                    var label = opt.getAttribute('data-label') || opt.textContent || val;
+                    var flagUrl = opt.getAttribute('data-flag-url') || '';
+                    if (flagUrl) {
+                        valueEl.innerHTML = '<span class="bc-option-flag"><img src="' + escapeHtml(flagUrl) + '" alt="" loading="lazy"></span><span class="bc-option-label">' + escapeHtml(label) + '</span>';
+                        return;
+                    }
+                    valueEl.textContent = label;
+                    return;
+                }
+                valueEl.textContent = opt.textContent;
             }
 
             function close() {
@@ -522,36 +546,41 @@
             'ZM','ZW'
         ];
 
-        function codeToFlagEmoji(code) {
-            if (!code || code.length !== 2) return '';
-            var cc = code.toUpperCase();
-            return String.fromCodePoint(cc.charCodeAt(0) + 127397) + String.fromCodePoint(cc.charCodeAt(1) + 127397);
-        }
-
         function codeToDisplayName(code) {
             try {
                 if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
-                    var dn = new Intl.DisplayNames(['tr', 'en'], { type: 'region' });
+                    var dn = new Intl.DisplayNames(['en'], { type: 'region' });
                     return dn.of(code) || code;
                 }
             } catch (e) {}
             return code;
         }
 
+        function toAsciiLabel(str) {
+            return String(str || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\x20-\x7E]/g, '');
+        }
+
         countryCodes.forEach(function (code) {
-            var name = codeToDisplayName(code);
-            var label = codeToFlagEmoji(code) + ' ' + name;
+            var codeLc = code.toLowerCase();
+            var name = toAsciiLabel(codeToDisplayName(code));
+            var label = code + ' - ' + name;
+            var flagUrl = 'https://flagcdn.com/24x18/' + codeLc + '.png';
 
             var opt = document.createElement('option');
             opt.value = code;
             opt.textContent = label;
+            opt.setAttribute('data-label', label);
+            opt.setAttribute('data-flag-url', flagUrl);
             select.appendChild(opt);
 
             var panelOpt = document.createElement('div');
             panelOpt.className = 'bc-custom-select__option';
             panelOpt.setAttribute('data-value', code);
             panelOpt.setAttribute('role', 'option');
-            panelOpt.textContent = label;
+            panelOpt.innerHTML = '<span class="bc-option-flag"><img src="' + flagUrl + '" alt="" loading="lazy"></span><span class="bc-option-label">' + label + '</span>';
             panel.appendChild(panelOpt);
         });
 

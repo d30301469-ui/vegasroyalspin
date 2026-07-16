@@ -949,6 +949,18 @@ body.mobile-site #registerModal .bc-custom-select[data-country-select] .bc-custo
   -webkit-overflow-scrolling: touch;
 }
 
+body.mobile-site #registerModal .bc-custom-select[data-country-select] .bc-option-flag {
+  width: 18px !important;
+  height: 13px !important;
+  flex: 0 0 18px !important;
+  margin-right: 7px !important;
+}
+
+body.mobile-site #registerModal .bc-custom-select[data-country-select] .bc-option-label {
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+}
+
 body.mobile-site #registerModal .register-form--mobile-single .bc-fixed-select__value,
 body.mobile-site #registerModal .register-form--mobile-single .bc-custom-select__value,
 body.mobile-site #registerModal .register-form--mobile-single .register-dob-value {
