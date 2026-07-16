@@ -1136,104 +1136,11 @@ final class DrakonService
 
     // ─── Webhook ─────────────────────────────────────────────────────────────
 
-    /**
-     * Verify an incoming Drakon webhook request before any balance mutation.
-     *
-     * Drakon does NOT document a webhook signature scheme, so the only reliable
-     * transport control is the IP allowlist (drakon_config.callback_allowed_ips
-     * or env DRAKON_CALLBACK_ALLOWED_IPS). It is fail-open: when no allowlist is
-     * configured every caller is accepted, so a live integration is never locked
-     * out (a mis-set signature must never break player authentication).
-     *
-     * @return array{ok: bool, code: int, reason: string}
-     */
-    public static function verifyCallbackRequest(PDO $pdo, string $rawBody): array
-    {
-        $cfg = self::config($pdo);
-
-        $allowlist = trim((string) ($cfg['callback_allowed_ips'] ?? ''));
-        if ($allowlist === '') {
-            $allowlist = trim((string) (getenv('DRAKON_CALLBACK_ALLOWED_IPS') ?: ''));
-        }
-        if ($allowlist !== '') {
-            $clientIp = self::callbackClientIp();
-            if (!self::ipMatchesAllowlist($clientIp, $allowlist)) {
-                error_log('[DrakonService] webhook IP rejected: ' . $clientIp . ' not in allowlist');
-                return ['ok' => false, 'code' => 403, 'reason' => 'IP_NOT_ALLOWED'];
-            }
-        }
-
-        return ['ok' => true, 'code' => 200, 'reason' => ''];
-    }
-
-    /**
-     * Resolve the calling client IP for the webhook allowlist. The site is
-     * fronted by Cloudflare, so CF-Connecting-IP (the real peer) is preferred;
-     * otherwise the TCP peer (REMOTE_ADDR), with proxy headers only when the peer
-     * is a private/loopback address.
-     */
-    private static function callbackClientIp(): string
-    {
-        $cf = trim((string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''));
-        if ($cf !== '' && filter_var($cf, FILTER_VALIDATE_IP) !== false) {
-            return $cf;
-        }
-        $remote = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
-        $isPublicPeer = $remote !== ''
-            && filter_var($remote, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
-        if (!$isPublicPeer) {
-            foreach (['HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR'] as $header) {
-                $value = trim((string) ($_SERVER[$header] ?? ''));
-                if ($value === '') {
-                    continue;
-                }
-                $first = trim(explode(',', $value)[0]);
-                if (filter_var($first, FILTER_VALIDATE_IP) !== false) {
-                    return $first;
-                }
-            }
-        }
-        return $remote;
-    }
-
-    private static function ipMatchesAllowlist(string $ip, string $allowlist): bool
-    {
-        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
-            return false;
-        }
-        foreach (preg_split('/[\s,;]+/', $allowlist) ?: [] as $item) {
-            $item = trim((string) $item);
-            if ($item === '') {
-                continue;
-            }
-            if ($item === $ip) {
-                return true;
-            }
-            if (str_contains($item, '/') && self::ipInCidr($ip, $item)) {
-                return true;
-            }
-            if (str_ends_with($item, '.*')) {
-                $prefix = substr($item, 0, -1); // keep trailing dot, e.g. "1.2.3."
-                if ($prefix !== '' && str_starts_with($ip, $prefix)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static function ipInCidr(string $ip, string $cidr): bool
-    {
-        [$subnet, $bitsRaw] = array_pad(explode('/', $cidr, 2), 2, '');
-        $ipLong     = ip2long($ip);
-        $subnetLong = ip2long($subnet);
-        $bits       = (int) $bitsRaw;
-        if ($ipLong === false || $subnetLong === false || $bits < 0 || $bits > 32) {
-            return false;
-        }
-        $mask = $bits === 0 ? 0 : (~0 << (32 - $bits)) & 0xFFFFFFFF;
-        return ($ipLong & $mask) === ($subnetLong & $mask);
-    }
+    // Per the Drakon integration guide the webhook is a plain JSON endpoint that
+    // dispatches on the `method` field with no transport-level authentication
+    // (no signature, no IP allowlist). Security relies on an unguessable/private
+    // callback URL as recommended by the vendor; correctness (idempotency, row
+    // locking, balance checks) is enforced per-method below.
 
     public static function handleWebhook(PDO $pdo, array $payload): array
     {
