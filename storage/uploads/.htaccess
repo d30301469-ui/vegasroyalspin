@@ -1,0 +1,10 @@
+# Public media uploads — allow image/font/media files, block executables.
+Options -Indexes -ExecCGI
+
+# Block PHP and other executable files
+<FilesMatch "\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|bat|cmd|aspx?)$">
+    Require all denied
+</FilesMatch>
+
+# Allow everything else (images, fonts, etc.)
+Require all granted
