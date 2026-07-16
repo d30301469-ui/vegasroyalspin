@@ -45,16 +45,19 @@ class BeniAraController extends Controller
                 $formData = $this->applyProfilePrefillToPostedCallMeData($this->collectPostData(), $profilePrefill);
                 $hata     = $this->validateForm($formData);
                 if ($hata === '') {
+                    $messageParts = [$formData['neden']];
+                    if ($formData['mesaj'] !== '') {
+                        $messageParts[] = $formData['mesaj'];
+                    }
+
                     $body = [
-                        'fullName' => $formData['ad'],
-                        'phone'    => $formData['telefon'],
-                        'reason'   => $formData['neden'],
+                        'full_name' => $formData['ad'],
+                        'name'      => $formData['ad'],
+                        'phone'     => $formData['telefon'],
+                        'message'   => implode("\n", array_filter($messageParts, static fn ($part) => $part !== '')),
                     ];
                     if ($formData['kullanici_adi'] !== '') {
                         $body['username'] = $formData['kullanici_adi'];
-                    }
-                    if ($formData['mesaj'] !== '') {
-                        $body['message'] = $formData['mesaj'];
                     }
 
                     $res = ApiCallMeRequest::submit($body, $memberJwt);
@@ -70,7 +73,7 @@ class BeniAraController extends Controller
                             if ($callMeSuccessMessage === '') {
                                 $callMeSuccessMessage = (string) ($res['message'] ?? 'Talebiniz alındı. En kısa sürede sizinle iletişime geçeceğiz.');
                             }
-                        } elseif ($code === 400) {
+                        } elseif ($code === 400 || $code === 422) {
                             $hata = $this->formatApiValidationErrors($res);
                         } elseif ($code === 429 || ($res['error'] ?? '') === 'RATE_LIMITED') {
                             $hata = (string) ($res['message'] ?? 'Çok fazla talep gönderildi. Lütfen bir süre sonra tekrar deneyin.');
