@@ -273,7 +273,7 @@ $slotDemoHref = static function (array $game): string {
                             ENT_QUOTES,
                             'UTF-8'
                         );
-                        $mobileOpenPlayJs = 'if(document.body&&document.body.classList.contains(&quot;mobile-site&quot;)){var w=window.open(' . $playHrefJson . ',&quot;_blank&quot;,&quot;noopener&quot;);if(w){w.opener=null;return;}}window.location.href=' . $playHrefJson;
+                        $mobileOpenPlayJs = 'var m=(document.body&&document.body.classList.contains(&quot;mobile-site&quot;))||(((navigator.maxTouchPoints||0)&gt;0)&&window.matchMedia&&window.matchMedia(&quot;(max-width: 1024px)&quot;).matches);if(m){var a=document.createElement(&quot;a&quot;);a.href=' . $playHrefJson . ';a.target=&quot;_blank&quot;;a.rel=&quot;noopener noreferrer&quot;;a.style.display=&quot;none&quot;;document.body.appendChild(a);a.click();a.remove();if(document.visibilityState===&quot;hidden&quot;){return;}}window.location.href=' . $playHrefJson;
                         $openLoginJs = 'if (typeof window.__openLoginModal === &quot;function&quot;) { window.__openLoginModal(); } else { var loginBtn = document.getElementById(&quot;Giris&quot;); if (loginBtn) loginBtn.click(); }';
                         ?>
                         <div class="casinoGameItemContent " data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $loggedIn ? $mobileOpenPlayJs : $openLoginJs ?>">
