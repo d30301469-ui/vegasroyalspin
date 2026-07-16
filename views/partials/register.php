@@ -189,39 +189,51 @@ if (class_exists('ApiMediaUrl', false)) {
                         </div>
 
                         <div class="register-form-group entrance-f-item-bc">
-                            <input
-                                type="text"
-                                name="city"
-                                class="register-input"
-                                id="modal_city"
-                                placeholder="Şehir *"
-                                required
-                            >
+                            <label class="form-control-label-bc inputs">
+                                <input
+                                    type="text"
+                                    name="city"
+                                    class="form-control-input-bc register-input"
+                                    id="modal_city"
+                                    placeholder=" "
+                                    required
+                                >
+                                <i class="form-control-input-stroke-bc"></i>
+                                <span class="form-control-title-bc ellipsis">Şehir *</span>
+                            </label>
                             <div class="register-error-text" data-error-for="city">Bu alan gerekli</div>
                         </div>
 
                         <div class="register-form-group entrance-f-item-bc">
-                            <input
-                                type="text"
-                                name="tcKimlik"
-                                class="register-input"
-                                id="modal_tcKimlik"
-                                placeholder="Kimlik Numarası *"
-                                maxlength="11"
-                                required
-                            >
+                            <label class="form-control-label-bc inputs">
+                                <input
+                                    type="text"
+                                    name="tcKimlik"
+                                    class="form-control-input-bc register-input"
+                                    id="modal_tcKimlik"
+                                    placeholder=" "
+                                    maxlength="11"
+                                    required
+                                >
+                                <i class="form-control-input-stroke-bc"></i>
+                                <span class="form-control-title-bc ellipsis">Kimlik Numarası *</span>
+                            </label>
                             <div class="register-error-text" data-error-for="tcKimlik">Bu alan gerekli</div>
                         </div>
 
                         <div class="register-form-group entrance-f-item-bc">
-                            <input
-                                type="email"
-                                name="email"
-                                class="register-input"
-                                id="modal_email"
-                                placeholder="E-posta *"
-                                required
-                            >
+                            <label class="form-control-label-bc inputs">
+                                <input
+                                    type="email"
+                                    name="email"
+                                    class="form-control-input-bc register-input"
+                                    id="modal_email"
+                                    placeholder=" "
+                                    required
+                                >
+                                <i class="form-control-input-stroke-bc"></i>
+                                <span class="form-control-title-bc ellipsis">E-posta *</span>
+                            </label>
                             <div class="register-error-text" data-error-for="email">Bu alan gerekli</div>
                         </div>
 
@@ -257,15 +269,19 @@ if (class_exists('ApiMediaUrl', false)) {
                                 </div>
                             </div>
                             <div class="register-phone-number">
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    class="register-input"
-                                    id="modal_phone"
-                                    placeholder="Telefon numarası *"
-                                    maxlength="15"
-                                    required
-                                >
+                                <label class="form-control-label-bc inputs">
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        class="form-control-input-bc register-input"
+                                        id="modal_phone"
+                                        placeholder=" "
+                                        maxlength="15"
+                                        required
+                                    >
+                                    <i class="form-control-input-stroke-bc"></i>
+                                    <span class="form-control-title-bc ellipsis">Telefon numarası *</span>
+                                </label>
                                 <div class="register-error-text" data-error-for="phone">Bu alan gerekli</div>
                             </div>
                         </div>
