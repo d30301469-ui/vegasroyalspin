@@ -59,8 +59,13 @@ if (!headers_sent()) {
 }
 
 // Sağlam autoloader: manuel require sırası/eksikliği kaynaklı "Class not found" hatalarını önler.
-require_once __DIR__ . '/Core/AdminAutoloader.php';
-admin_register_autoloader(ADMIN_APP_PATH, defined('METROPOL_ROOT') ? METROPOL_ROOT : admin_project_root());
+$adminAutoloader = __DIR__ . '/Core/AdminAutoloader.php';
+if (!function_exists('admin_register_autoloader') && is_readable($adminAutoloader)) {
+    require_once $adminAutoloader;
+}
+if (function_exists('admin_register_autoloader')) {
+    admin_register_autoloader(ADMIN_APP_PATH, defined('METROPOL_ROOT') ? METROPOL_ROOT : admin_project_root());
+}
 
 // Admin/backend host: panel ve API her zaman açılabilmeli. Provider secret'ları panelden
 // yönetildiği için bootstrap sırasında (config/app.php) zorunlu secret assertion'ları atlanır;

@@ -30,6 +30,17 @@ function asset_url(string $path): string
     static $versionCache = [];
     static $basePath = null;
 
+    $path = trim($path);
+    if ($path === '') {
+        return '/?v=1';
+    }
+    if (preg_match('#^/+https?://#i', $path) === 1) {
+        $path = ltrim($path, '/');
+    }
+    if (preg_match('#^https?://#i', $path) === 1 || str_starts_with($path, '//')) {
+        return $path;
+    }
+
     $relative = ltrim($path, '/');
 
     if (!array_key_exists($relative, $versionCache)) {
