@@ -45,6 +45,7 @@ final class DrakonService
                 is_active            TINYINT(1) NOT NULL DEFAULT 0,
                 api_base_url         VARCHAR(255) NOT NULL DEFAULT '" . self::API_BASE . "',
                 site_endpoint        VARCHAR(255) NOT NULL DEFAULT '',
+                home_url             VARCHAR(255) NOT NULL DEFAULT '',
                 callback_secret      VARCHAR(255) NOT NULL DEFAULT '',
                 callback_allowed_ips TEXT NULL,
                 last_auth_at         DATETIME NULL,
@@ -167,9 +168,34 @@ final class DrakonService
         }
     }
 
+    /**
+     * Lazily reconcile drakon_config columns added after the initial migration
+     * (e.g. home_url), so admin saves and reads work on existing installs.
+     */
+    private static function ensureConfigColumns(PDO $pdo): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        try {
+            $cols = self::tableColumns($pdo, 'drakon_config');
+            if ($cols === []) {
+                return;
+            }
+            if (!in_array('home_url', $cols, true)) {
+                $pdo->exec("ALTER TABLE drakon_config ADD COLUMN home_url VARCHAR(255) NOT NULL DEFAULT '' AFTER site_endpoint");
+            }
+            $done = true;
+        } catch (Throwable $e) {
+            error_log('[DrakonService] ensureConfigColumns failed: ' . $e->getMessage());
+        }
+    }
+
     public static function updateConfig(PDO $pdo, array $data): void
     {
-        $allowed = ['agent_code', 'agent_token', 'agent_secret', 'currency', 'site_endpoint'];
+        self::ensureConfigColumns($pdo);
+        $allowed = ['agent_code', 'agent_token', 'agent_secret', 'currency', 'site_endpoint', 'home_url'];
         $sets    = [];
         $params  = [];
         foreach ($allowed as $key) {
@@ -628,6 +654,7 @@ final class DrakonService
                 'game_url'       => $gameUrl,
                 'launch_url'     => $gameUrl,
                 'mode'           => $mode,
+                'home_url'       => trim((string) ($cfg['home_url'] ?? '')),
                 'launch_options' => ['game_url' => $gameUrl],
             ],
             'game_url' => $gameUrl,

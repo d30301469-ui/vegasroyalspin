@@ -88,6 +88,17 @@ $isActive     = !empty($configRow['is_active']) && $configRow['is_active'] !== '
         </div>
 
         <div class="field">
+            <label class="field-label" for="home_url">Return / Home URL</label>
+            <input id="home_url" class="input" type="text" name="home_url"
+                   value="<?= $text($configRow['home_url'] ?? '') ?>"
+                   placeholder="/slot">
+            <p class="drakon-help">
+                Oyuncu oyundan çıktığında veya oyun içi “ana sayfa” dediğinde yönlendirileceği adres.
+                Tam URL (https://...) ya da site içi yol (örn. <code>/slot</code>) girebilirsiniz. Boşsa <code>/slot</code> kullanılır.
+            </p>
+        </div>
+
+        <div class="field">
             <div style="display:flex;align-items:center;gap:10px;padding:12px 0;">
                 <input id="is_active" type="checkbox" name="is_active" value="1"
                        <?= $isActive ? 'checked' : '' ?> style="width:18px;height:18px;cursor:pointer;">
