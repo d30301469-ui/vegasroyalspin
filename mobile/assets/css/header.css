@@ -48,101 +48,170 @@ body.mobile-site .mobileHeader-inner {
   background: var(--headerBG, #0e0124);
 }
 
-.mobilePromoStrip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding: 10px 12px 6px;
-  background: linear-gradient(180deg, rgba(9, 1, 22, 0.98) 0%, rgba(24, 7, 48, 0.98) 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+body.mobile-site .layout-header-holder-bc.mobile-bc-header {
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  width: 100%;
+  padding-top: env(safe-area-inset-top, 0px);
+  isolation: isolate;
+  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
+  box-shadow: none !important;
 }
 
-.mobilePromoCard {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 58px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  text-decoration: none;
-  color: #fff;
+body.mobile-site .layout-header-holder-bc > .hdr-dynamic-content {
+  display: block !important;
+  position: relative !important;
+  top: auto !important;
+  width: 100%;
+  max-height: none !important;
+  min-height: 0;
+  padding: 0 5px !important;
   overflow: hidden;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  opacity: 1 !important;
+  transform: none !important;
+  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
+  z-index: 2;
 }
 
-.mobilePromoCard::before {
+body.mobile-site .layout-header-holder-bc > .hdr-dynamic-content:empty,
+body.mobile-site .layout-header-holder-bc > .hdr-dynamic-content .hm-row-bc:empty,
+body.mobile-site .layout-header-holder-bc > .hdr-dynamic-content .hm-row-bc-inner:empty {
+  display: none !important;
+}
+
+body.mobile-site #root.layout-bc .layout-header-holder-bc .header-bc {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  display: block;
+  width: 100%;
+  overflow: visible;
+  z-index: 1051;
+  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
+}
+
+body.mobile-site .header-bc .hdr-additional-info > .loyaltyBonusHeader {
+  position: relative;
+  display: inline-flex !important;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 46px;
+  min-height: 46px;
+  padding: 0 6px 0 10px;
+  margin: 0;
+  margin-inline-end: 8px;
+  text-decoration: none;
+  color: inherit;
+  z-index: 1;
+  cursor: pointer;
+}
+
+body.mobile-site .header-bc .loyaltyBonusHeaderShadow {
+  display: none;
+}
+
+body.mobile-site .header-bc .loyaltyBonusHeaderBackground {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 108%;
+  height: 96%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  z-index: -3;
+  pointer-events: none;
+  background: #850f83;
+}
+
+body.mobile-site .header-bc .loyaltyBonusHeader::before,
+body.mobile-site .header-bc .loyaltyBonusHeader::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 42%);
+  width: 100%;
+  left: 0;
+  background: #850f83;
+  z-index: -1;
   pointer-events: none;
 }
 
-.mobilePromoCard--support {
-  background: linear-gradient(135deg, #3a0d5f 0%, #1b052e 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+body.mobile-site .header-bc .loyaltyBonusHeader::before {
+  bottom: 6px;
+  height: 50%;
+  transform: perspective(80px) rotateX(55deg);
+  border-radius: 2px 2px 0 0;
 }
 
-.mobilePromoCard--app {
-  background: linear-gradient(135deg, #5e2a00 0%, #231105 100%);
-  border: 1px solid rgba(255, 210, 120, 0.22);
+body.mobile-site .header-bc .loyaltyBonusHeader::after {
+  top: 6px;
+  height: 50%;
+  transform: perspective(80px) rotateX(125deg);
+  border-radius: 0 0 2px 2px;
 }
 
-.mobilePromoCard-eyebrow {
-  position: relative;
-  z-index: 1;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+body.mobile-site .header-bc .loyaltyBonusHeaderText {
+  order: 1;
+  margin: 0 0 0 4px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.86);
-}
-
-.mobilePromoCard-title {
-  position: relative;
-  z-index: 1;
-  margin-top: 2px;
-  font-size: 15px;
-  line-height: 1.05;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-}
-
-.mobilePromoCard-subtitle {
-  position: relative;
-  z-index: 1;
-  margin-top: 3px;
   font-size: 10px;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.76);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+  max-width: 120px;
 }
 
-.mobileAddressStrip {
+body.mobile-site .header-bc .loyaltyBonusImg {
+  order: 2;
+  width: 18px;
+  height: 18px;
+  max-height: 18px;
+  margin-top: -1px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #d97706, #b45309);
+  box-shadow: 0 0 6px rgba(217, 119, 6, 0.6);
+}
+
+body.mobile-site .header-bc .loyaltyBonusHeader + .hdr-user-bc.hasLoyaltyLevel {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-inline-start: auto !important;
+  gap: 4px;
+  height: 28px;
+  padding: 1px 5px 1px 4px;
+  border-radius: 15px;
+  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
+  box-shadow: none !important;
+}
+
+body.mobile-site .hdr-additional-info .hdr-shortcuts-icons {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+}
+
+body.mobile-site .hdr-additional-info .headerExpanded {
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 12px 10px;
-  background: linear-gradient(180deg, rgba(24, 7, 48, 0.98) 0%, rgba(15, 3, 33, 0.98) 100%);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.mobileAddressStrip-kicker {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.mobileAddressStrip-link {
-  color: #f7b84b;
-  text-decoration: none;
-}
-
-.mobileAddressStrip-tail {
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 /* Mor şerit: sayfa içeriğinin üstünde; sheet (1048) ve sağ panel (1018+) altında kalır */
@@ -358,82 +427,4 @@ body.mobile-site .mobileHeader .mainMenu {
 .mobileHeader .mainMenu ul li a.active .CMSIconSVGWrapper svg {
   color: #fcac00;
   fill: #fcac00;
-}
-
-/*
- * Sağdan açılan paneller + arama: logo şeridi altından (--mobile-promo-sheet-top). Mor .mainMenu z-index:1020 sheet (1048) altında.
- * footer.js: --mobile-promo-sheet-top = .mobileHeader-inner altı.
- */
-body.mobile-site .right-sidebar-overlay,
-body.mobile-site .search-overlay {
-  z-index: 1018;
-  top: var(--mobile-promo-sheet-top, var(--mobile-top-bar-height, 64px));
-  bottom: calc(var(--mobile-footer-height, 64px) + env(safe-area-inset-bottom, 0px));
-  height: auto;
-  min-height: 0;
-}
-
-body.mobile-site .right-sidebar,
-body.mobile-site .search-panel {
-  z-index: 1019;
-  top: var(--mobile-promo-sheet-top, var(--mobile-top-bar-height, 64px));
-  bottom: calc(var(--mobile-footer-height, 64px) + env(safe-area-inset-bottom, 0px));
-  height: auto;
-  min-height: 0;
-  max-height: none;
-}
-
-/* Mobil sheet (bildirimler/favoriler/ayarlar) — sağdan tam yükseklik.
- * z-index: header-bc (1051) + layout-header-holder-bc (1050) ustunde olmali ki
- * sheet basligi (baslik/geri/kapat) + alt serit (tarih/temizle) hizli-erisim
- * kisayollari ve urun menusunun ustunde gorunsun. Logo seridi (top:65px) ustte kalir. */
-body.mobile-site .mobile-right-sheet-overlay {
-  z-index: 1060;
-  top: var(--mobile-promo-sheet-top, var(--mobile-top-bar-height, 64px));
-  bottom: calc(var(--mobile-footer-height, 64px) + env(safe-area-inset-bottom, 0px));
-  height: auto;
-  min-height: 0;
-}
-
-body.mobile-site .mobile-right-sheet {
-  z-index: 1061;
-  height: 100%;
-  max-height: 100%;
-}
-
-/* Smart menü: mobilde aşırı büyük ikon satırlarını kompaktlaştır */
-body.mobile-site .sp-button-bc {
-  width: 50px !important;
-  height: 46px !important;
-}
-
-body.mobile-site .sp-button-icon-bc {
-  font-size: 17px !important;
-}
-
-/* Taşındı: assets/css/header.css — dar viewport / tablet (yalnız m. şablonu) */
-body.mobile-site .cert-image {
-  width: 60px;
-}
-
-body.mobile-site .headBar .settingBar .container-fluid,
-body.mobile-site .headBar > .container-fluid {
-  max-width: 100%;
-  padding: 0 4px;
-}
-
-body.mobile-site .headerItem .loginCol {
-  margin: 0 8px 0 12px;
-  gap: var(--header-item-padding);
-}
-
-body.mobile-site .headerItem .loginCol .loginBtn {
-  padding: 0 14px 0 calc(14px + max(var(--header-item-padding), 0.5rem));
-  margin-left: max(var(--header-item-padding), 0.5rem);
-  font-size: 13px;
-}
-
-body.mobile-site .headerItem .loginCol #openRegister {
-  padding: 0 16px;
-  font-size: 13px;
 }
