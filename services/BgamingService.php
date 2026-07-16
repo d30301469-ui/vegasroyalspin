@@ -1767,7 +1767,7 @@ final class BgamingService
         }
 
         $base = (string) $parts['scheme'] . '://' . (string) $parts['host'];
-        if (!empty($parts['port'])) {
+        if (isset($parts['port'])) {
             $base .= ':' . (string) $parts['port'];
         }
 

@@ -53,8 +53,13 @@ if (session_status() === PHP_SESSION_NONE
     session_start();
 }
 
-require_once __DIR__ . '/Core/AdminAutoloader.php';
-admin_register_autoloader(ADMIN_APP_PATH, defined('METROPOL_ROOT') ? METROPOL_ROOT : admin_project_root());
+$adminAutoloader = __DIR__ . '/Core/AdminAutoloader.php';
+if (!function_exists('admin_register_autoloader') && is_readable($adminAutoloader)) {
+    require_once $adminAutoloader;
+}
+if (function_exists('admin_register_autoloader')) {
+    admin_register_autoloader(ADMIN_APP_PATH, defined('METROPOL_ROOT') ? METROPOL_ROOT : admin_project_root());
+}
 
 $rootConfig = admin_project_path('config/bootstrap_api.php');
 if (!admin_is_readable_file($rootConfig)) {
