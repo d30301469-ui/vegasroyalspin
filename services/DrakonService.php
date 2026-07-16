@@ -584,9 +584,22 @@ final class DrakonService
             return ['success' => false, 'code' => 503, 'message' => 'Drakon API bağlantı hatası: ' . $e->getMessage()];
         }
 
-        $gameUrl = (string) ($response['game_url'] ?? '');
+        $responseData = is_array($response['data'] ?? null) ? $response['data'] : [];
+        $launchOptions = is_array($responseData['launch_options'] ?? null) ? $responseData['launch_options'] : [];
+        $gameUrl = trim((string) (
+            $response['game_url']
+            ?? $responseData['game_url']
+            ?? $response['launch_url']
+            ?? $responseData['launch_url']
+            ?? $response['url']
+            ?? $responseData['url']
+            ?? $launchOptions['game_url']
+            ?? $launchOptions['launch_url']
+            ?? $launchOptions['url']
+            ?? ''
+        ));
         if ($gameUrl === '') {
-            $errorCode = strtoupper(trim((string) ($response['error'] ?? '')));
+            $errorCode = strtoupper(trim((string) ($response['error'] ?? $responseData['error'] ?? '')));
             if ($errorCode === 'FUN_MODE_NOT_AVAILABLE') {
                 return [
                     'success' => false,
