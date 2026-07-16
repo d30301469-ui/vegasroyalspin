@@ -347,10 +347,16 @@ final class SlotGamesQuery
         $search       = trim((string) ($query['search'] ?? ''));
         $provider     = trim((string) ($query['provider'] ?? $query['provider_code'] ?? ''));
         $onlyFeatured = (string) ($query['is_featured'] ?? '') === '1';
+        // Optional source restriction: 'bgaming' shows only the direct BGaming
+        // catalog, 'drakon' only the Drakon catalog. Empty means both providers.
+        // Required because Drakon (aggregator) also carries BGaming-branded games,
+        // so filtering by provider name alone would leak Drakon rows onto the
+        // dedicated /bgaming page.
+        $source       = strtolower(trim((string) ($query['source'] ?? '')));
 
         $union = [];
         // BGaming catalog is slot-only; include only on the slot lobby.
-        if ($gameType === 0) {
+        if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
             $union[] = "SELECT
                     CONCAT('bgaming:', identifier) AS game_id,
                     title AS name,
@@ -363,17 +369,36 @@ final class SlotGamesQuery
                 FROM bgaming_games
                 WHERE is_active = 1";
         }
-        $union[] = "SELECT
-                CONCAT('drakon:', game_id) AS game_id,
-                game_name AS name,
-                provider_name AS provider,
-                provider_name AS provider_code,
-                COALESCE(NULLIF(image_url, ''), NULLIF(banner, ''), '') AS image_url,
-                is_featured AS is_featured,
-                'drakon' AS source,
-                CAST(id AS CHAR) AS row_id
-            FROM drakon_games
-            WHERE is_active = 1 AND game_type = {$gameType}";
+        if ($source === '' || $source === 'drakon') {
+            $union[] = "SELECT
+                    CONCAT('drakon:', game_id) AS game_id,
+                    game_name AS name,
+                    provider_name AS provider,
+                    provider_name AS provider_code,
+                    COALESCE(NULLIF(image_url, ''), NULLIF(banner, ''), '') AS image_url,
+                    is_featured AS is_featured,
+                    'drakon' AS source,
+                    CAST(id AS CHAR) AS row_id
+                FROM drakon_games
+                WHERE is_active = 1 AND game_type = {$gameType}";
+        }
+
+        if ($union === []) {
+            return [
+                'games' => [],
+                'items' => [],
+                'pagination' => [
+                    'page'       => $page,
+                    'perPage'    => $limit,
+                    'limit'      => $limit,
+                    'offset'     => $offset,
+                    'total'      => 0,
+                    'totalPages' => 0,
+                    'hasNext'    => false,
+                    'hasPrev'    => $offset > 0,
+                ],
+            ];
+        }
 
         $unionSql = '(' . implode(' UNION ALL ', $union) . ') AS catalog';
 

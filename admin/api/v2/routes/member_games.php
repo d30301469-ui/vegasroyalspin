@@ -94,9 +94,14 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $provider = trim((string) ($_GET['provider'] ?? $_GET['provider_code'] ?? ''));
     $onlyFeatured = (string) ($_GET['is_featured'] ?? '') === '1'
         || in_array(strtolower((string) ($_GET['sort'] ?? '')), ['popular', 'liked'], true);
+    // Optional source restriction (matches SlotGamesQuery::combinedCatalogPage):
+    // 'bgaming' -> only the direct BGaming catalog, 'drakon' -> only Drakon,
+    // empty -> both providers. Prevents Drakon (aggregator) BGaming-branded games
+    // from leaking onto the dedicated /bgaming page.
+    $source = strtolower(trim((string) ($_GET['source'] ?? '')));
 
     $union = [];
-    if ($gameType === 0) {
+    if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
         $union[] = "SELECT
                 CONCAT('bgaming:', identifier) AS game_id,
                 title AS name,
@@ -109,21 +114,23 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             FROM bgaming_games
             WHERE is_active = 1";
     }
-    $drakonGameTypeWhere = $gameType === 1
-        ? "(COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live')"
-        : "(COALESCE(game_type, 0) <> 1 AND LOWER(COALESCE(type, '')) <> 'live')";
+    if ($source === '' || $source === 'drakon') {
+        $drakonGameTypeWhere = $gameType === 1
+            ? "(COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live')"
+            : "(COALESCE(game_type, 0) <> 1 AND LOWER(COALESCE(type, '')) <> 'live')";
 
-    $union[] = "SELECT
-            CONCAT('drakon:', game_id) AS game_id,
-            game_name AS name,
-            provider_name AS provider,
-            provider_name AS provider_code,
-            COALESCE(NULLIF(image_url, ''), NULLIF(banner, ''), '') AS image_url,
-            is_featured AS is_featured,
-            'drakon' AS source,
-            CAST(id AS CHAR) AS row_id
-        FROM drakon_games
-        WHERE is_active = 1 AND {$drakonGameTypeWhere}";
+        $union[] = "SELECT
+                CONCAT('drakon:', game_id) AS game_id,
+                game_name AS name,
+                provider_name AS provider,
+                provider_name AS provider_code,
+                COALESCE(NULLIF(image_url, ''), NULLIF(banner, ''), '') AS image_url,
+                is_featured AS is_featured,
+                'drakon' AS source,
+                CAST(id AS CHAR) AS row_id
+            FROM drakon_games
+            WHERE is_active = 1 AND {$drakonGameTypeWhere}";
+    }
     $unionSql = '(' . implode(' UNION ALL ', $union) . ') AS catalog';
 
     $where  = [];
