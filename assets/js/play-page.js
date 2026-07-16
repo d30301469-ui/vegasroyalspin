@@ -350,7 +350,18 @@
         }
     }
 
-    function resolveLaunchTarget(data) {
+    function normalizeOpenMode(value, fallbackMode) {
+        var mode = String(value || '').toLowerCase();
+        if (mode !== 'iframe' && mode !== 'redirect') {
+            mode = String(fallbackMode || '').toLowerCase();
+        }
+        if (mode !== 'iframe' && mode !== 'redirect') {
+            mode = 'iframe';
+        }
+        return mode;
+    }
+
+    function resolveLaunchTarget(data, fallbackOpenMode) {
         if (!data) {
             return null;
         }
@@ -360,7 +371,7 @@
         }
         return {
             url: url,
-            openMode: String(data.open_mode || 'iframe').toLowerCase()
+            openMode: normalizeOpenMode(data.open_mode, fallbackOpenMode)
         };
     }
 
@@ -450,7 +461,7 @@
                     console.warn('[game-launch] 422', x.j.message || x.j.error || x.j);
                 }
                 if (x.j.success === true && x.j.data) {
-                    var launchTarget = resolveLaunchTarget(x.j.data);
+                    var launchTarget = resolveLaunchTarget(x.j.data, launchPayload.open_mode);
                     if (launchTarget) {
                         if (!isSafeLaunchUrl(launchTarget.url)) {
                             showFatal(
