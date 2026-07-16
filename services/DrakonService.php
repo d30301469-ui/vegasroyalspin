@@ -132,6 +132,8 @@ final class DrakonService
                 transaction_id VARCHAR(200) NULL,
                 http_status    SMALLINT NOT NULL DEFAULT 200,
                 error_code     VARCHAR(50) NULL,
+                request_payload  MEDIUMTEXT NULL,
+                response_payload MEDIUMTEXT NULL,
                 duration_ms    SMALLINT UNSIGNED NULL,
                 created_at     TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (id),
@@ -545,7 +547,7 @@ final class DrakonService
 
         $agentCode  = (string) ($cfg['agent_code'] ?? '');
         $agentToken = (string) ($cfg['agent_token'] ?? '');
-        $currency   = strtoupper(trim((string) ($cfg['currency'] ?? 'USD')));
+        $currency   = strtoupper(trim((string) ($cfg['currency'] ?? 'TRY')));
         $lang       = strtolower(trim((string) ($input['lang'] ?? 'tr')));
 
         if ($agentCode === '' || $agentToken === '') {
@@ -646,45 +648,65 @@ final class DrakonService
             return;
         }
         try {
+            // Canonical schema is authored by
+            // database/migrations/*_create_provider_tables.php. These CREATE IF
+            // NOT EXISTS statements mirror that schema for fresh/dev hosts; the
+            // ALTERs below reconcile older migration-created tables that lack the
+            // extra display columns this service writes, so INSERTs never fail
+            // silently.
             $pdo->exec(
                 "CREATE TABLE IF NOT EXISTS drakon_campaigns (
                     id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                    campaign_code        VARCHAR(100) NOT NULL,
+                    campaign_code        VARCHAR(190) NOT NULL,
                     vendor               VARCHAR(100) NOT NULL DEFAULT '',
-                    currency_code        VARCHAR(10) NOT NULL DEFAULT '',
+                    currency_code        CHAR(3) NULL,
                     freespins_per_player INT NOT NULL DEFAULT 0,
-                    total_bet            VARCHAR(50) NOT NULL DEFAULT '',
-                    game_ids             VARCHAR(500) NOT NULL DEFAULT '',
-                    begins_at            INT UNSIGNED NULL,
-                    expires_at           INT UNSIGNED NULL,
-                    status               VARCHAR(30) NOT NULL DEFAULT 'active',
+                    total_bet            VARCHAR(50) NULL,
+                    game_ids             VARCHAR(500) NULL,
+                    begins_at            BIGINT NULL,
+                    expires_at           BIGINT NULL,
                     active               TINYINT(1) NOT NULL DEFAULT 1,
-                    request_id           VARCHAR(100) NULL,
-                    raw_payload          JSON NULL,
+                    status               VARCHAR(40) NOT NULL DEFAULT 'active',
+                    request_id           VARCHAR(190) NULL,
+                    payload              JSON NULL,
+                    remote_response      JSON NULL,
                     created_at           TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at           TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     PRIMARY KEY (id),
-                    UNIQUE KEY uniq_drakon_campaign_code (campaign_code),
-                    KEY idx_drakon_campaign_vendor (vendor),
-                    KEY idx_drakon_campaign_active (active)
+                    UNIQUE KEY uniq_drakon_campaign_code (campaign_code)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
             );
             $pdo->exec(
                 "CREATE TABLE IF NOT EXISTS drakon_campaign_players (
-                    id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                    campaign_code VARCHAR(100) NOT NULL,
-                    player_id     VARCHAR(100) NOT NULL,
-                    status        VARCHAR(20) NOT NULL DEFAULT 'assigned',
-                    created_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    campaign_code   VARCHAR(190) NOT NULL,
+                    user_id         INT NOT NULL,
+                    status          VARCHAR(40) NOT NULL DEFAULT 'assigned',
+                    remote_response JSON NULL,
+                    created_at      TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at      TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     PRIMARY KEY (id),
-                    UNIQUE KEY uniq_drakon_campaign_player (campaign_code, player_id),
-                    KEY idx_drakon_cp_player (player_id)
+                    UNIQUE KEY uniq_drakon_campaign_player (campaign_code, user_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
             );
+
+            // Reconcile migration-created tables missing the display columns.
+            $campaignCols = self::tableColumns($pdo, 'drakon_campaigns');
+            if ($campaignCols !== []) {
+                if (!in_array('total_bet', $campaignCols, true)) {
+                    $pdo->exec('ALTER TABLE drakon_campaigns ADD COLUMN total_bet VARCHAR(50) NULL AFTER freespins_per_player');
+                }
+                if (!in_array('game_ids', $campaignCols, true)) {
+                    $pdo->exec('ALTER TABLE drakon_campaigns ADD COLUMN game_ids VARCHAR(500) NULL AFTER total_bet');
+                }
+                if (!in_array('request_id', $campaignCols, true)) {
+                    $pdo->exec('ALTER TABLE drakon_campaigns ADD COLUMN request_id VARCHAR(190) NULL AFTER status');
+                }
+            }
             $done = true;
-        } catch (Throwable) {
-            // Leave $done false so a later call can retry.
+        } catch (Throwable $e) {
+            // Leave $done false so a later call can retry; surface the reason.
+            error_log('[DrakonService] ensureCampaignSchema failed: ' . $e->getMessage());
         }
     }
 
@@ -805,7 +827,6 @@ final class DrakonService
             '/campaigns/create',
             $payload,
             [
-                'Content-Type: application/json',
                 'Idempotency-Key: create-' . $campaignCode,
                 'X-Request-Id: create-' . $campaignCode . '-' . time(),
             ]
@@ -816,14 +837,18 @@ final class DrakonService
         }
 
         $data = is_array($result['data']) ? $result['data'] : [];
+        $isActive = (string) ($data['status'] ?? 'active') === 'canceled' ? 0 : 1;
+        if (array_key_exists('active', $data)) {
+            $isActive = !empty($data['active']) ? 1 : 0;
+        }
         try {
             $stmt = $pdo->prepare(
                 'INSERT INTO drakon_campaigns
                     (campaign_code, vendor, currency_code, freespins_per_player, total_bet, game_ids,
-                     begins_at, expires_at, status, active, request_id, raw_payload)
+                     begins_at, expires_at, status, active, request_id, payload, remote_response)
                  VALUES
                     (:code, :vendor, :currency, :freespins, :total_bet, :games,
-                     :begins_at, :expires_at, :status, :active, :request_id, :raw)
+                     :begins_at, :expires_at, :status, :active, :request_id, :payload, :remote)
                  ON DUPLICATE KEY UPDATE
                     vendor = VALUES(vendor),
                     currency_code = VALUES(currency_code),
@@ -835,7 +860,8 @@ final class DrakonService
                     status = VALUES(status),
                     active = VALUES(active),
                     request_id = VALUES(request_id),
-                    raw_payload = VALUES(raw_payload)'
+                    payload = VALUES(payload),
+                    remote_response = VALUES(remote_response)'
             );
             $stmt->execute([
                 ':code'       => $campaignCode,
@@ -847,13 +873,15 @@ final class DrakonService
                 ':begins_at'  => $beginsAt,
                 ':expires_at' => $expiresAt,
                 ':status'     => (string) ($data['status'] ?? 'active'),
-                ':active'     => !empty($data['active']) || ($data['status'] ?? '') === 'active' ? 1 : 1,
+                ':active'     => $isActive,
                 ':request_id' => (string) ($result['meta']['request_id'] ?? ''),
-                ':raw'        => json_encode($result['raw'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ':payload'    => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ':remote'     => json_encode($result['raw'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
             self::persistCampaignPlayers($pdo, $campaignCode, $players, 'assigned');
-        } catch (Throwable) {
-            // Local persistence is best-effort; remote creation already succeeded.
+        } catch (Throwable $e) {
+            // Local persistence is best-effort; log so a schema mismatch is visible.
+            error_log('[DrakonService] createCampaign local persist failed: ' . $e->getMessage());
         }
 
         $result['campaign_code'] = $campaignCode;
@@ -940,7 +968,6 @@ final class DrakonService
             '/campaigns/' . rawurlencode($campaignCode) . '/players/add',
             ['players' => $list],
             [
-                'Content-Type: application/json',
                 'Idempotency-Key: add-' . $campaignCode . '-' . implode('-', $list),
             ]
         );
@@ -971,7 +998,6 @@ final class DrakonService
             '/campaigns/' . rawurlencode($campaignCode) . '/players/remove',
             ['players' => $list],
             [
-                'Content-Type: application/json',
                 'Idempotency-Key: remove-' . $campaignCode . '-' . implode('-', $list),
             ]
         );
@@ -981,10 +1007,11 @@ final class DrakonService
                 $in = implode(',', array_fill(0, count($list), '?'));
                 $stmt = $pdo->prepare(
                     "UPDATE drakon_campaign_players SET status = 'removed'
-                     WHERE campaign_code = ? AND player_id IN ($in)"
+                     WHERE campaign_code = ? AND user_id IN ($in)"
                 );
-                $stmt->execute(array_merge([$campaignCode], $list));
-            } catch (Throwable) {
+                $stmt->execute(array_merge([$campaignCode], array_map('intval', $list)));
+            } catch (Throwable $e) {
+                error_log('[DrakonService] removeCampaignPlayers local update failed: ' . $e->getMessage());
             }
         }
         return $result;
@@ -1045,14 +1072,15 @@ final class DrakonService
         }
         try {
             $stmt = $pdo->prepare(
-                'INSERT INTO drakon_campaign_players (campaign_code, player_id, status)
-                 VALUES (:code, :player, :status)
+                'INSERT INTO drakon_campaign_players (campaign_code, user_id, status)
+                 VALUES (:code, :user, :status)
                  ON DUPLICATE KEY UPDATE status = VALUES(status)'
             );
             foreach ($players as $player) {
-                $stmt->execute([':code' => $campaignCode, ':player' => $player, ':status' => $status]);
+                $stmt->execute([':code' => $campaignCode, ':user' => (int) $player, ':status' => $status]);
             }
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            error_log('[DrakonService] persistCampaignPlayers failed: ' . $e->getMessage());
         }
     }
 
@@ -1073,6 +1101,117 @@ final class DrakonService
     }
 
     // ─── Webhook ─────────────────────────────────────────────────────────────
+
+    /**
+     * Verify an incoming Drakon webhook request before any balance mutation.
+     * Enforces the configured IP allowlist (drakon_config.callback_allowed_ips
+     * or env DRAKON_CALLBACK_ALLOWED_IPS) and, when a callback_secret is set and
+     * the provider sends a signature header, an HMAC-SHA256 body signature.
+     *
+     * @return array{ok: bool, code: int, reason: string}
+     */
+    public static function verifyCallbackRequest(PDO $pdo, string $rawBody): array
+    {
+        $cfg = self::config($pdo);
+
+        // 1) IP allowlist — enforced only when configured, so a live integration
+        //    that has not populated the list yet is never locked out.
+        $allowlist = trim((string) ($cfg['callback_allowed_ips'] ?? ''));
+        if ($allowlist === '') {
+            $allowlist = trim((string) (getenv('DRAKON_CALLBACK_ALLOWED_IPS') ?: ''));
+        }
+        if ($allowlist !== '' && !self::ipMatchesAllowlist(self::callbackClientIp(), $allowlist)) {
+            return ['ok' => false, 'code' => 403, 'reason' => 'IP_NOT_ALLOWED'];
+        }
+
+        // 2) Optional HMAC signature (defense-in-depth). Enforced only when a
+        //    secret is configured AND the provider actually sends a signature
+        //    header, so it never breaks a provider that omits it.
+        $secret = trim((string) ($cfg['callback_secret'] ?? ''));
+        if ($secret !== '') {
+            $signature = '';
+            foreach (['HTTP_X_DRAKON_SIGNATURE', 'HTTP_X_SIGNATURE', 'HTTP_X_CALLBACK_SIGNATURE'] as $header) {
+                $candidate = trim((string) ($_SERVER[$header] ?? ''));
+                if ($candidate !== '') {
+                    $signature = $candidate;
+                    break;
+                }
+            }
+            if ($signature !== '') {
+                $provided = str_contains($signature, '=') ? trim(explode('=', $signature, 2)[1]) : $signature;
+                $expected = hash_hmac('sha256', $rawBody, $secret);
+                if (!hash_equals($expected, strtolower($provided))) {
+                    return ['ok' => false, 'code' => 403, 'reason' => 'SIGNATURE_MISMATCH'];
+                }
+            }
+        }
+
+        return ['ok' => true, 'code' => 200, 'reason' => ''];
+    }
+
+    /**
+     * Resolve the calling client IP for the webhook allowlist. Prefers the real
+     * TCP peer (REMOTE_ADDR); falls back to well-known proxy headers only when
+     * REMOTE_ADDR is a private/loopback address (e.g. behind a local proxy).
+     */
+    private static function callbackClientIp(): string
+    {
+        $remote = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        $isPublicPeer = $remote !== ''
+            && filter_var($remote, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+        if (!$isPublicPeer) {
+            foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR'] as $header) {
+                $value = trim((string) ($_SERVER[$header] ?? ''));
+                if ($value === '') {
+                    continue;
+                }
+                $first = trim(explode(',', $value)[0]);
+                if (filter_var($first, FILTER_VALIDATE_IP) !== false) {
+                    return $first;
+                }
+            }
+        }
+        return $remote;
+    }
+
+    private static function ipMatchesAllowlist(string $ip, string $allowlist): bool
+    {
+        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+        foreach (preg_split('/[\s,;]+/', $allowlist) ?: [] as $item) {
+            $item = trim((string) $item);
+            if ($item === '') {
+                continue;
+            }
+            if ($item === $ip) {
+                return true;
+            }
+            if (str_contains($item, '/') && self::ipInCidr($ip, $item)) {
+                return true;
+            }
+            if (str_ends_with($item, '.*')) {
+                $prefix = substr($item, 0, -1); // keep trailing dot, e.g. "1.2.3."
+                if ($prefix !== '' && str_starts_with($ip, $prefix)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static function ipInCidr(string $ip, string $cidr): bool
+    {
+        [$subnet, $bitsRaw] = array_pad(explode('/', $cidr, 2), 2, '');
+        $ipLong     = ip2long($ip);
+        $subnetLong = ip2long($subnet);
+        $bits       = (int) $bitsRaw;
+        if ($ipLong === false || $subnetLong === false || $bits < 0 || $bits > 32) {
+            return false;
+        }
+        $mask = $bits === 0 ? 0 : (~0 << (32 - $bits)) & 0xFFFFFFFF;
+        return ($ipLong & $mask) === ($subnetLong & $mask);
+    }
 
     public static function handleWebhook(PDO $pdo, array $payload): array
     {
@@ -1108,7 +1247,17 @@ final class DrakonService
 
         $duration = (int) round((microtime(true) - $start) * 1000);
         try {
-            self::logWebhook($pdo, $method, $userId, $txnId, $status, $errCode, $duration);
+            self::logWebhook(
+                $pdo,
+                $method,
+                $userId,
+                $txnId,
+                $status,
+                $errCode,
+                $duration,
+                $payload,
+                is_array($result) ? $result : null
+            );
         } catch (Throwable) {}
 
         return ['status' => $status, 'body' => $result];
@@ -1496,6 +1645,10 @@ final class DrakonService
         return $cache[$userId];
     }
 
+    /**
+     * @param array<string, mixed>|null $requestPayload
+     * @param array<string, mixed>|null $responsePayload
+     */
     private static function logWebhook(
         PDO $pdo,
         string $method,
@@ -1503,8 +1656,38 @@ final class DrakonService
         ?string $txnId,
         int $status,
         ?string $errCode,
-        int $duration
+        int $duration,
+        ?array $requestPayload = null,
+        ?array $responsePayload = null
     ): void {
+        self::ensureWebhookLogColumns($pdo);
+        $cols = self::tableColumns($pdo, 'drakon_webhook_logs');
+        $hasPayloadCols = in_array('request_payload', $cols, true)
+            && in_array('response_payload', $cols, true);
+
+        if ($hasPayloadCols) {
+            $pdo->prepare(
+                "INSERT INTO drakon_webhook_logs
+                    (method, user_id, transaction_id, http_status, error_code,
+                     request_payload, response_payload, duration_ms)
+                 VALUES (:m, :u, :t, :s, :e, :req, :res, :d)"
+            )->execute([
+                ':m'   => $method,
+                ':u'   => $userId,
+                ':t'   => $txnId,
+                ':s'   => $status,
+                ':e'   => $errCode,
+                ':req' => $requestPayload !== null
+                    ? json_encode(self::redactWebhookPayload($requestPayload), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                    : null,
+                ':res' => $responsePayload !== null
+                    ? json_encode(self::redactWebhookPayload($responsePayload), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                    : null,
+                ':d'   => $duration,
+            ]);
+            return;
+        }
+
         $pdo->prepare(
             "INSERT INTO drakon_webhook_logs
                 (method, user_id, transaction_id, http_status, error_code, duration_ms)
@@ -1517,6 +1700,51 @@ final class DrakonService
             ':e' => $errCode,
             ':d' => $duration,
         ]);
+    }
+
+    private static function ensureWebhookLogColumns(PDO $pdo): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        try {
+            $cols = self::tableColumns($pdo, 'drakon_webhook_logs');
+            if ($cols === []) {
+                return; // table not present yet; nothing to alter
+            }
+            if (!in_array('request_payload', $cols, true)) {
+                $pdo->exec('ALTER TABLE drakon_webhook_logs ADD COLUMN request_payload MEDIUMTEXT NULL AFTER error_code');
+            }
+            if (!in_array('response_payload', $cols, true)) {
+                $pdo->exec('ALTER TABLE drakon_webhook_logs ADD COLUMN response_payload MEDIUMTEXT NULL AFTER request_payload');
+            }
+            $done = true;
+        } catch (Throwable $e) {
+            error_log('[DrakonService] ensureWebhookLogColumns failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Recursively mask sensitive keys before persisting webhook payloads.
+     */
+    private static function redactWebhookPayload(mixed $data): mixed
+    {
+        if (!is_array($data)) {
+            return $data;
+        }
+        static $sensitive = ['agent_token', 'agent_secret', 'access_token', 'token', 'secret', 'authorization', 'callback_secret', 'password'];
+        $out = [];
+        foreach ($data as $key => $value) {
+            if (is_string($key) && in_array(strtolower($key), $sensitive, true)) {
+                $out[$key] = '[redacted]';
+            } elseif (is_array($value)) {
+                $out[$key] = self::redactWebhookPayload($value);
+            } else {
+                $out[$key] = $value;
+            }
+        }
+        return $out;
     }
 
     // ─── HTTP ─────────────────────────────────────────────────────────────────

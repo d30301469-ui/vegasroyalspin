@@ -32,7 +32,17 @@ if (!is_array($payload)) {
 }
 
 try {
-    $pdo    = AdminDatabase::pdo();
+    $pdo = AdminDatabase::pdo();
+
+    // Authenticate the caller (IP allowlist + optional HMAC) before any
+    // balance-mutating dispatch. Enforcement is active only when configured.
+    $verify = DrakonService::verifyCallbackRequest($pdo, $rawBody);
+    if (empty($verify['ok'])) {
+        http_response_code((int) ($verify['code'] ?? 403));
+        echo json_encode(['status' => false, 'error' => (string) ($verify['reason'] ?? 'FORBIDDEN')]);
+        exit;
+    }
+
     $result = DrakonService::handleWebhook($pdo, $payload);
 
     http_response_code((int) ($result['status'] ?? 200));

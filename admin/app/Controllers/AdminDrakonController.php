@@ -132,7 +132,12 @@ final class AdminDrakonController extends AdminController
             if (!empty($result['success'])) {
                 $this->flash('Drakon kampanyası oluşturuldu: ' . (string) ($result['campaign_code'] ?? ''));
             } else {
-                $this->flash('Kampanya oluşturulamadı: ' . (string) ($result['message'] ?? 'Bilinmeyen hata.'));
+                $reason = trim((string) ($result['message'] ?? 'Bilinmeyen hata.'));
+                $errorCode = trim((string) ($result['error_code'] ?? ''));
+                if ($errorCode !== '') {
+                    $reason .= ' [' . $errorCode . ']';
+                }
+                $this->flash('Kampanya oluşturulamadı: ' . $reason);
             }
         } catch (Throwable $exception) {
             $this->flash('Kampanya oluşturulamadı: ' . $exception->getMessage());
