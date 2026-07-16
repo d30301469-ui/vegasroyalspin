@@ -56,7 +56,7 @@ body.mobile-site .hdr-additional-info {
   height: 40px !important;
   min-height: 40px !important;
   max-height: 40px !important;
-  padding: 0 8px 0 var(--padding-page-aside, 10px) !important;
+  padding: 0 8px 0 10px !important;
   background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   overflow: visible;
@@ -84,18 +84,18 @@ body.mobile-site .header-bc .loyaltyBonusHeaderShadow {
   display: none;
 }
 
-body.mobile-site .header-bc .loyaltyBonusHeaderBackground {
+  font-size: 10px;
   position: absolute;
-  left: 50%;
+  letter-spacing: 0.06em;
   top: 50%;
-  width: 106%;
-  height: 100%;
+  width: 108%;
+  height: 96%;
   margin: 0;
   transform: translate(-50%, -50%);
   z-index: -3;
-  pointer-events: none;
-  background: #850f83;
-}
+  width: 18px;
+  height: 18px;
+  max-height: 18px;
 
 body.mobile-site .header-bc .loyaltyBonusHeader::before,
 body.mobile-site .header-bc .loyaltyBonusHeader::after {
@@ -124,18 +124,18 @@ body.mobile-site .header-bc .loyaltyBonusHeaderText {
   order: 1;
   margin: 0 0 0 4px;
   text-transform: uppercase;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: normal;
+  letter-spacing: 0.06em;
   color: rgba(255, 255, 255, 0.9);
   max-width: 120px;
 }
 
 body.mobile-site .header-bc .loyaltyBonusImg {
   order: 2;
-  width: 20px;
-  height: 20px;
-  max-height: 20px;
+  width: 18px;
+  height: 18px;
+  max-height: 18px;
   margin-top: -2px;
   margin-left: 0;
   object-fit: contain;
