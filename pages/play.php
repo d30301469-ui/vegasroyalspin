@@ -28,6 +28,10 @@ if ($playMode === '') {
 
 $playLang     = trim((string) ($_GET['lang'] ?? ''));
 $playCurrency = trim((string) ($_GET['currency'] ?? ''));
+$playRequestedOpenMode = strtolower(trim((string) ($_GET['open_mode'] ?? '')));
+if (!in_array($playRequestedOpenMode, ['iframe', 'redirect'], true)) {
+  $playRequestedOpenMode = '';
+}
 
 $demoFlag = isset($_GET['demo']) && ($_GET['demo'] === '1' || $_GET['demo'] === 'true');
 if ($demoFlag || in_array($playMode, ['fun', 'demo'], true)) {
@@ -43,7 +47,9 @@ $playPayload = [
     'game_id' => $playGameId,
     'mode'    => $playMode,
 ];
-$playPayload['open_mode'] = (function_exists('isMobile') && isMobile()) ? 'redirect' : 'iframe';
+$playPayload['open_mode'] = $playRequestedOpenMode !== ''
+  ? $playRequestedOpenMode
+  : ((function_exists('isMobile') && isMobile()) ? 'redirect' : 'iframe');
 if ($playMode === 'real' && $playWallet !== '') {
     $playPayload['wallet'] = $playWallet;
 }
@@ -59,7 +65,6 @@ if ($demoFlag) {
 
 $playJsPath = BASE_PATH . '/assets/js/play-page.js';
 $playJsVer  = is_readable($playJsPath) ? (string) filemtime($playJsPath) : '1';
-$playRequestedOpenMode = strtolower(trim((string) ($_GET['open_mode'] ?? '')));
 $playMobileUa = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
 $playUaIsMobile = $playMobileUa !== '' && preg_match('/android|iphone|ipad|ipod|mobile|windows phone|opera mini|iemobile/', $playMobileUa) === 1;
 $playBypassShell = $playRequestedOpenMode === 'redirect' || (function_exists('isMobile') && isMobile()) || $playUaIsMobile;
@@ -67,33 +72,6 @@ $playBypassShell = $playRequestedOpenMode === 'redirect' || (function_exists('is
 $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES, 'UTF-8');
 
 if ($playBypassShell) {
-  $extractLaunchUrl = static function (array $response): string {
-    $data = is_array($response['data'] ?? null) ? $response['data'] : [];
-    $url = trim((string) ($data['game_url'] ?? $data['launch_url'] ?? $response['game_url'] ?? $response['launch_url'] ?? ''));
-    if ($url === '' || !preg_match('#^https?://#i', $url)) {
-      return '';
-    }
-    return $url;
-  };
-
-  try {
-    $memberJwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
-    $launchResponse = ApiGameLaunch::post($playPayload, $memberJwt !== '' ? $memberJwt : null, 60);
-    if (is_array($launchResponse) && !empty($launchResponse['success'])) {
-      $launchUrl = $extractLaunchUrl($launchResponse);
-      if ($launchUrl !== '') {
-        if (!headers_sent()) {
-          header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-          header('Pragma: no-cache');
-          header('Location: ' . $launchUrl, true, 302);
-        }
-        exit;
-      }
-    }
-  } catch (Throwable) {
-    // If server-side launch fails, fallback to existing JS launch flow below.
-  }
-
     if (!function_exists('metropol_member_api_layout_vars')) {
         require_once __DIR__ . '/../config/member_api_public.php';
     }

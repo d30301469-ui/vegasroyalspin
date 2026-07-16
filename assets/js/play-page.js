@@ -335,15 +335,6 @@
             if (!path && host === currentHost) {
                 return false;
             }
-            var query = parsed.search.toLowerCase();
-            if (
-                path.indexOf('games/game_launch') !== -1
-            ) {
-                return false;
-            }
-            if (/(?:^|&)(?:agent_token|agent_secret|agent_secret_key|agent_code)=/.test(query)) {
-                return false;
-            }
             return true;
         } catch (e) {
             return false;
