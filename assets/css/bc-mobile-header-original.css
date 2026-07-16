@@ -335,6 +335,7 @@ body.mobile-site .header-bc .hdr-additional-info > .loyaltyBonusHeader {
   min-height: 46px;
   padding: 0 6px 0 10px;
   margin: 0;
+  margin-inline-start: 8px;
   margin-inline-end: 0;
   text-decoration: none;
   color: inherit;
@@ -359,12 +360,34 @@ body.mobile-site .header-bc .loyaltyBonusHeaderBackground {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 108%;
-  height: 96%;
+  width: 106%;
+  height: 100%;
   margin: 0;
   transform: translate(-50%, -50%);
   z-index: -3;
   pointer-events: none;
+}
+
+body.mobile-site .header-bc .loyaltyBonusHeaderBackground::before,
+body.mobile-site .header-bc .loyaltyBonusHeaderBackground::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 50%;
+  left: 0;
+  background: rgb(32, 32, 34);
+  z-index: -3;
+  pointer-events: none;
+}
+
+body.mobile-site .header-bc .loyaltyBonusHeaderBackground::before {
+  bottom: 10px;
+  transform: perspective(80px) rotateX(55deg);
+}
+
+body.mobile-site .header-bc .loyaltyBonusHeaderBackground::after {
+  top: 10px;
+  transform: perspective(80px) rotateX(125deg);
 }
 
 body.mobile-site .header-bc .loyaltyBonusHeader::before,
