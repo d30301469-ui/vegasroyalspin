@@ -401,7 +401,7 @@ body.mobile-site .header-bc .loyaltyBonusImg {
   flex-shrink: 0;
 }
 
-/* Kısayol şeridi — kapalı: << | cüzdan | telefon | ortaklık (pill) */
+/* Kısayol şeridi — kapalı: << | ortaklık | telefon | cüzdan (üst üste, şeffaf) */
 body.mobile-site .header-bc .loyaltyBonusHeader + .hdr-user-bc.hasLoyaltyLevel {
   display: flex !important;
   flex-direction: row !important;
@@ -411,11 +411,11 @@ body.mobile-site .header-bc .loyaltyBonusHeader + .hdr-user-bc.hasLoyaltyLevel {
   flex: 0 1 auto;
   min-width: 0;
   margin-inline-start: auto !important;
-  gap: 4px;
-  height: 28px;
-  padding: 1px 5px 1px 4px;
-  border-radius: 15px;
-  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
+  gap: 0;
+  height: 26px;
+  padding: 0;
+  border-radius: 0;
+  background: none !important;
   box-shadow: none !important;
 }
 
@@ -424,7 +424,7 @@ body.mobile-site .hdr-additional-info .hdr-shortcuts-icons {
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
+  gap: 0;
 }
 
 body.mobile-site .hdr-additional-info .headerExpanded {
@@ -436,11 +436,10 @@ body.mobile-site .hdr-additional-info .headerExpanded {
   height: 26px;
   min-width: 30px;
   cursor: pointer;
-  padding: 0 5px;
-  padding-inline-end: 3px;
+  padding: 0 2px 0 0;
   box-shadow: none !important;
-  background: transparent !important;
-  border-radius: 5px 0 0 5px;
+  background: rgb(32, 32, 34) !important;
+  border-radius: 0;
 }
 
 body.mobile-site .hdr-additional-info .headerExpanded .hdr-expanded-label {
@@ -482,7 +481,7 @@ body.mobile-site .hdr-additional-info .headerExpandedIcons .bc-i-small-arrow-rig
 
 /* Kapalı: üst üste ikonlar, çark gizli */
 body.mobile-site .hdr-additional-info .hdr-user-bc.hasLoyaltyLevel:not(.isExpandedIcons) .hdr-shortcuts-icons .user-nav-icon {
-  margin-inline-start: 0 !important;
+  margin-inline-start: -2px !important;
   margin-inline-end: 0 !important;
   box-shadow: none !important;
   z-index: 0;
@@ -493,10 +492,10 @@ body.mobile-site .hdr-additional-info .hdr-user-bc.hasLoyaltyLevel:not(.isExpand
 }
 
 body.mobile-site .hdr-additional-info .hdr-user-bc.hasLoyaltyLevel .user-nav-icon {
-  width: 28px !important;
-  height: 26px !important;
-  min-width: 28px;
-  border-radius: 5px;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px;
+  border-radius: 4px;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -507,12 +506,27 @@ body.mobile-site .hdr-additional-info .hdr-user-bc.hasLoyaltyLevel .user-nav-ico
 }
 
 body.mobile-site .hdr-additional-info .hdr-user-bc.hasLoyaltyLevel .user-nav-icon::before {
-  font-size: 16px;
+  font-size: 14px;
+}
+
+body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-standings {
+  order: 1;
+  z-index: 1;
+}
+
+body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-call {
+  order: 2;
+  z-index: 2;
+}
+
+body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-wallet {
+  order: 3;
+  z-index: 3;
 }
 
 body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-wallet {
   background: #105431 !important;
-  box-shadow: 0 0 7px 2px #16ff00;
+  box-shadow: none !important;
 }
 
 body.mobile-site .hdr-additional-info .user-nav-icon.bc-i-call,
