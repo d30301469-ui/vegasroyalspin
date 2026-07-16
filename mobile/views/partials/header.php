@@ -178,7 +178,6 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
     </div>
     <?php endif; ?>
 
-    <?php if ($loggedIn) include VIEW_PATH . '/partials/mobile-hdr-crypto.php'; ?>
     <?php include VIEW_PATH . '/partials/mobile-bc-nav-menu.php'; ?>
   </div>
 </div>
