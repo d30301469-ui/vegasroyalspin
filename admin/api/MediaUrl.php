@@ -28,6 +28,11 @@ final class ApiMediaUrl
         if ($path === '') {
             return '';
         }
+        // Some legacy records are saved as "/https://host/path".
+        // Normalize them to a valid absolute URL before path-based handling.
+        if (preg_match('#^/+https?://#i', $path) === 1) {
+            $path = ltrim($path, '/');
+        }
         if (preg_match('#^https?://#i', $path)) {
             return self::rewriteAbsoluteUrl($path);
         }

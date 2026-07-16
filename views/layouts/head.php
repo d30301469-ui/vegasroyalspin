@@ -53,15 +53,31 @@ $headSiteName = (string) ($headBranding['site_name'] ?? $ayar['site_adi'] ?? 'Ma
 $headDescription = (string) ($headMeta['description'] ?? $headBranding['description'] ?? $ayar['site_aciklama'] ?? '');
 $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headDescription));
 $headFaviconPath = (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
-$headFaviconUrl = cms_asset_url($headFaviconPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headFaviconPath, '/')) ?: time());
+$headFaviconPathForCheck = ltrim($headFaviconPath, '/');
+$headFaviconVersion = time();
+if (preg_match('#^https?://#i', $headFaviconPathForCheck) !== 1) {
+  $faviconLocalPath = BASE_PATH . '/' . ltrim($headFaviconPath, '/');
+  if (is_file($faviconLocalPath)) {
+    $headFaviconVersion = (int) filemtime($faviconLocalPath);
+  }
+}
+$headFaviconUrl = cms_asset_url($headFaviconPath) . '?v=' . $headFaviconVersion;
 $headManifestPath = (string) ($headBranding['manifest_url'] ?? '/assets/images/favicons/site.webmanifest');
+$headManifestPathForCheck = ltrim($headManifestPath, '/');
 $headManifestDefaultPath = '/assets/images/favicons/site.webmanifest';
 $headCurrentHost = strtolower((string) preg_replace('/:\\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
 $headManifestHost = strtolower((string) (parse_url($headManifestPath, PHP_URL_HOST) ?: ''));
 if ($headManifestPath === '' || ($headManifestHost !== '' && $headManifestHost !== $headCurrentHost)) {
   $headManifestPath = $headManifestDefaultPath;
 }
-$headManifestUrl = cms_asset_url($headManifestPath) . '?v=' . (int)(filemtime(BASE_PATH . '/' . ltrim($headManifestPath, '/')) ?: time());
+$headManifestVersion = time();
+if (preg_match('#^https?://#i', $headManifestPathForCheck) !== 1) {
+  $manifestLocalPath = BASE_PATH . '/' . ltrim($headManifestPath, '/');
+  if (is_file($manifestLocalPath)) {
+    $headManifestVersion = (int) filemtime($manifestLocalPath);
+  }
+}
+$headManifestUrl = cms_asset_url($headManifestPath) . '?v=' . $headManifestVersion;
 $headOgImageUrl = cms_asset_url((string) ($headBranding['og_image_url'] ?? $headBranding['logo_url'] ?? ''));
 $headKeywords = (string) ($headMeta['keywords'] ?? '');
 $headRobots = (string) ($headMeta['robots'] ?? 'index, follow');
