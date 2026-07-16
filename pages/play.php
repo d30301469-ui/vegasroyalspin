@@ -78,6 +78,7 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   --play-header-bg: #0e0124;
   --play-header-border: rgba(104, 9, 76, 0.55);
   --play-body-bg: #0f0522;
+  --play-balance-box-height: 36px;
   --play-font-ui: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Roboto", "Helvetica Neue", Arial, sans-serif;
 }
 /* Sitenin profesyonel cüzdan ikonu (BetConstruct-Icons) — play sayfası bağımsız yüklendiği için burada tanımlanıyor */
@@ -128,8 +129,8 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: var(--play-balance-box-height);
+  height: var(--play-balance-box-height);
   border-radius: 10px;
   border: 1px solid rgba(51, 193, 107, 0.45);
   background: rgba(51, 193, 107, 0.14);
@@ -163,14 +164,14 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
+  height: var(--play-balance-box-height);
   font-weight: 700;
   font-size: 15px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   color: #fff;
   white-space: nowrap;
-  padding: 6px 10px;
+  padding: 0 10px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.1);
@@ -181,14 +182,14 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
+  height: var(--play-balance-box-height);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.03em;
   opacity: 0.9;
   color: rgba(255, 255, 255, 0.76);
   white-space: nowrap;
-  padding: 6px 10px;
+  padding: 0 10px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);

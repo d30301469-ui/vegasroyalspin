@@ -333,6 +333,21 @@
         return '#login';
     }
 
+    function isMobilePlayLaunchMode() {
+        return !!(document.body && document.body.classList.contains('mobile-site'));
+    }
+
+    function openPlayUrl(url) {
+        if (isMobilePlayLaunchMode()) {
+            var newTab = window.open(url, '_blank', 'noopener');
+            if (newTab) {
+                newTab.opener = null;
+                return;
+            }
+        }
+        window.location.href = url;
+    }
+
     function openLoginModal() {
         if (typeof window.__openLoginModal === 'function') {
             window.__openLoginModal();
@@ -364,7 +379,7 @@
 
     function realPlayClickJs(gameUrlJs) {
         if (slotLoggedIn) {
-            return "window.location.href='" + gameUrlJs + "'";
+            return "window.__slotOpenPlayUrl&&window.__slotOpenPlayUrl('" + gameUrlJs + "')";
         }
         return "if(event){event.preventDefault();event.stopPropagation();}window.__slotOpenLoginModal&&window.__slotOpenLoginModal()";
     }
@@ -380,12 +395,13 @@
         const gameUrlJs = gameUrl.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
         const demoUrl = playUrlFun(gameId);
         window.__slotOpenLoginModal = openLoginModal;
+        window.__slotOpenPlayUrl = openPlayUrl;
         const actionsHtml = ACTION_BUTTONS ? (
             '<div class="game-overlay">' +
             '<div class="game-overlay-top"></div>' +
             '<div class="game-title-wrap"><p class="game-title-text">' + name + '</p></div>' +
             '<div class="game-actions">' +
-            '<a class="play-btn" href="' + escapeHtml(gameUrl) + '" onclick="' + (slotLoggedIn ? 'event.stopPropagation()' : 'event.preventDefault();event.stopPropagation();window.__slotOpenLoginModal&&window.__slotOpenLoginModal()') + '">OYNA</a>' +
+            '<a class="play-btn" href="' + escapeHtml(gameUrl) + '" onclick="' + (slotLoggedIn ? ('event.preventDefault();event.stopPropagation();window.__slotOpenPlayUrl&&window.__slotOpenPlayUrl(\'' + gameUrlJs + '\')') : 'event.preventDefault();event.stopPropagation();window.__slotOpenLoginModal&&window.__slotOpenLoginModal()') + '">OYNA</a>' +
             '<a class="demo-btn" href="' + escapeHtml(demoUrl) + '" onclick="event.stopPropagation()">DEMO</a>' +
             '</div>' +
             '</div>'
