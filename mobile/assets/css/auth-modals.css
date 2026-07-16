@@ -876,14 +876,21 @@ body.mobile-site #registerModal .register-form--mobile-single .register-dob-trig
 }
 
 /* Floating-label inputlar: etikete yer açmak için üst dolgu */
-body.mobile-site #registerModal .register-form--mobile-single .form-control-input-bc,
-body.mobile-site #registerModal .register-form--mobile-single .register-input {
+body.mobile-site #registerModal .register-form--mobile-single .form-control-input-bc {
   padding: 20px 15px 4px !important;
+}
+
+/* Duz placeholder kullanan alanlar (city, tcKimlik, email, phone)
+   floating-label olmadigi icin standart ic bosluk kullanir. */
+body.mobile-site #registerModal .register-form--mobile-single .register-input {
+  padding: 14px 15px !important;
+  line-height: 1.2 !important;
 }
 
 body.mobile-site #registerModal .register-form--mobile-single input.register-input::placeholder {
   color: rgba(255, 255, 255, 0.4) !important;
   font-size: 14px !important;
+  opacity: 1 !important;
 }
 
 body.mobile-site #registerModal .register-form--mobile-single .form-control-input-bc:focus,
