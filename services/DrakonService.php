@@ -735,10 +735,39 @@ final class DrakonService
         $status = $response['status'] ?? null;
         $ok     = $status === true || $status === 'success' || $status === 1;
 
+        $message = (string) ($response['message'] ?? ($ok ? 'İşlem başarılı.' : 'İşlem başarısız.'));
+
+        if (!$ok) {
+            // Surface Laravel-style field validation errors so the operator sees
+            // exactly which field failed instead of a generic "Validation failed".
+            $errors = $response['errors']
+                ?? (is_array($response['data'] ?? null) ? ($response['data']['errors'] ?? null) : null);
+            if (is_array($errors) && $errors !== []) {
+                $flat = [];
+                foreach ($errors as $field => $fieldErrors) {
+                    $detail = is_array($fieldErrors)
+                        ? implode(', ', array_map('strval', $fieldErrors))
+                        : (string) $fieldErrors;
+                    $flat[] = $field . ': ' . $detail;
+                }
+                if ($flat !== []) {
+                    $message .= ' — ' . implode(' | ', $flat);
+                }
+            }
+            error_log(sprintf(
+                '[DrakonService] campaign %s %s failed (%s): req=%s res=%s',
+                $method,
+                $path,
+                (string) ($response['error_code'] ?? $response['error'] ?? ''),
+                json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                substr((string) json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 0, 1200)
+            ));
+        }
+
         return [
             'success'    => $ok,
             'code'       => $ok ? 200 : 422,
-            'message'    => (string) ($response['message'] ?? ($ok ? 'İşlem başarılı.' : 'İşlem başarısız.')),
+            'message'    => $message,
             'error_code' => (string) ($response['error_code'] ?? $response['error'] ?? ''),
             'data'       => $response['data'] ?? [],
             'meta'       => is_array($response['meta'] ?? null) ? $response['meta'] : [],
@@ -786,7 +815,12 @@ final class DrakonService
         $vendor       = trim((string) ($input['vendor'] ?? ''));
         $freespins    = (int) ($input['freespins_per_player'] ?? 0);
         $gameId       = trim((string) ($input['game_id'] ?? ''));
-        $totalBet     = trim((string) ($input['total_bet'] ?? ''));
+        // Operators may paste the catalogue id ("drakon:17000"); the campaign API
+        // expects the bare provider game id.
+        if (self::ownsGameId($gameId)) {
+            $gameId = substr($gameId, strlen(self::GAME_ID_PREFIX));
+        }
+        $totalBet     = str_replace(',', '.', trim((string) ($input['total_bet'] ?? '')));
         $beginsAt     = self::toUnixTimestamp($input['begins_at'] ?? '');
         $expiresAt    = self::toUnixTimestamp($input['expires_at'] ?? '');
 
