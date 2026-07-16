@@ -350,6 +350,109 @@ if (class_exists('ApiMediaUrl', false)) {
     </div>
 </div>
 
+<style>
+/* Cache fallback: ulke dropdown arama kutusu */
+#registerModal .bc-custom-select__search {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 7px;
+    background: var(--menuBG);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#registerModal .bc-country-search-input {
+    width: 100%;
+    height: 36px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(245, 240, 255, 0.95);
+    font-size: 13px;
+    line-height: 1.2;
+    outline: none;
+}
+</style>
+
+<script>
+// Cache fallback: ulke secim dropdown'u icin arama kutusu ve canli filtre
+(function () {
+    if (window.__registerCountrySearchPatched) return;
+    window.__registerCountrySearchPatched = true;
+
+    function applyFilter(panel, query) {
+        var q = String(query || '').toLowerCase().trim();
+        panel.querySelectorAll('.bc-custom-select__option').forEach(function (opt) {
+            var txt = (opt.textContent || '').toLowerCase();
+            opt.style.display = (!q || txt.indexOf(q) !== -1) ? '' : 'none';
+        });
+    }
+
+    function ensureCountrySearch() {
+        var wrapper = document.querySelector('#registerModal .bc-custom-select[data-country-select]');
+        if (!wrapper) return false;
+        var panel = wrapper.querySelector('.bc-custom-select__panel');
+        var trigger = wrapper.querySelector('.bc-custom-select__trigger');
+        if (!panel || !trigger) return false;
+
+        var searchWrap = panel.querySelector('.bc-custom-select__search');
+        if (!searchWrap) {
+            searchWrap = document.createElement('div');
+            searchWrap.className = 'bc-custom-select__search';
+
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'bc-country-search-input';
+            input.placeholder = 'Ulke ara...';
+            input.autocomplete = 'off';
+
+            input.addEventListener('input', function () {
+                applyFilter(panel, input.value || '');
+            });
+            input.addEventListener('click', function (e) { e.stopPropagation(); });
+            input.addEventListener('keydown', function (e) { e.stopPropagation(); });
+
+            searchWrap.appendChild(input);
+            panel.insertBefore(searchWrap, panel.firstChild || null);
+        }
+
+        if (!trigger.__countrySearchFocusBound) {
+            trigger.__countrySearchFocusBound = true;
+            trigger.addEventListener('click', function () {
+                setTimeout(function () {
+                    var inp = panel.querySelector('.bc-country-search-input');
+                    if (!inp) return;
+                    inp.value = '';
+                    applyFilter(panel, '');
+                    try { inp.focus(); } catch (e) {}
+                }, 0);
+            });
+        }
+
+        return true;
+    }
+
+    // Modal acildiginda dropdown elemanlari olusmus olur.
+    document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !(t.id === 'openRegister' || (t.closest && t.closest('#openRegister')) || t.id === 'openRegister2' || (t.closest && t.closest('#openRegister2')))) {
+            return;
+        }
+        setTimeout(ensureCountrySearch, 50);
+        setTimeout(ensureCountrySearch, 300);
+    }, true);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(ensureCountrySearch, 0);
+        });
+    } else {
+        setTimeout(ensureCountrySearch, 0);
+    }
+})();
+</script>
+
 <!-- Kayıt başarılı kutusu -->
 <div class="modal fade" id="registerSuccessModal" tabindex="-1" aria-hidden="true" data-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-sm">
