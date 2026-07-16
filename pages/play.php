@@ -80,6 +80,26 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   --play-body-bg: #0f0522;
   --play-font-ui: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Roboto", "Helvetica Neue", Arial, sans-serif;
 }
+/* Sitenin profesyonel cüzdan ikonu (BetConstruct-Icons) — play sayfası bağımsız yüklendiği için burada tanımlanıyor */
+@font-face {
+  font-family: BetConstruct-Icons;
+  src: url("/assets/fonts/BetConstruct-Icons.woff") format("woff"),
+       url("/assets/fonts/BetConstruct-Icons.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+.bc-i-wallet {
+  font-family: BetConstruct-Icons !important;
+  font-style: normal;
+  font-weight: 400;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.bc-i-wallet::before { content: "\e918"; }
 .play-shell-body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--play-body-bg); color: #e8eaed; }
 .play-topbar {
   display: flex; align-items: center; justify-content: space-between;
@@ -222,7 +242,7 @@ if ($playLogoUrl !== '') {
   </a>
   <div class="play-topbar-actions">
     <div class="play-topbar-balance<?= $loggedIn ? ' is-visible' : '' ?>" id="playBalanceWrap" aria-live="polite">
-      <span class="play-topbar-balance-icon" aria-hidden="true"><i class="fa-solid fa-wallet"></i></span>
+      <span class="play-topbar-balance-icon" aria-hidden="true"><i class="bc-i-wallet"></i></span>
       <div class="play-topbar-balance-text">
         <span class="play-bal-main"><span id="playBalanceMain">0,00</span> ₺</span>
         <span class="play-bal-bonus">Bonus <strong><span id="playBalanceBonus">0,00</span> ₺</strong></span>
