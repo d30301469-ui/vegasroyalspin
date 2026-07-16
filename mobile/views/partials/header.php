@@ -98,7 +98,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
     <?php if ($loggedIn): ?>
     <div class="hdr-additional-info" data-mobile-header-additional>
       <a class="loyaltyBonusHeader"
-         href="/profile/deposit-withdraw"
+        href="/?profile=open&amp;account=bonuses&amp;page=loyalty-points"
          title="<?= htmlspecialchars((string) ($headerLoyaltyBadge['name'] ?? 'Bronze'), ENT_QUOTES, 'UTF-8') ?>"
          data-loyalty-badge
          data-loyalty-code="<?= htmlspecialchars((string) ($headerLoyaltyBadge['code'] ?? 'bronze'), ENT_QUOTES, 'UTF-8') ?>">
