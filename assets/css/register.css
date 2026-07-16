@@ -81,19 +81,55 @@ label {
     appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
-    #registerModal .toggle-password {
+    #registerModal .register-password-toggle {
         position: absolute;
         right: 12px;
         top: 50%;
         transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 14px;
+        width: 28px;
+        height: 28px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.86);
+        padding: 0;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         z-index: 3;
     }
 
-    #registerModal .toggle-password:hover {
-        color: #ffffff;
+    #registerModal .register-password-toggle:hover {
+        background: rgba(255, 255, 255, 0.14);
+    }
+
+    #registerModal .register-password-toggle-icon {
+        width: 16px;
+        height: 16px;
+        display: inline-flex;
+    }
+
+    #registerModal .register-password-toggle-icon svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    #registerModal .register-password-toggle-icon-hide {
+        display: none;
+    }
+
+    #registerModal .register-password-toggle.is-password-visible .register-password-toggle-icon-show {
+        display: none;
+    }
+
+    #registerModal .register-password-toggle.is-password-visible .register-password-toggle-icon-hide {
+        display: inline-flex;
     }
     background-position: right 16px center;
     background-size: 16px;
