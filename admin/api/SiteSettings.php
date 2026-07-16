@@ -241,6 +241,46 @@ final class ApiSiteSettings
         } else {
             $payload = $data;
         }
+
+        // Farkli backend surumlerinde ayarlar branding/meta altinda gelebilir.
+        // Duz contract'a mapleyip title/logo'nun defaulta dusmesini engeller.
+        $branding = is_array($data['branding'] ?? null) ? $data['branding'] : [];
+        $meta = is_array($data['meta'] ?? null) ? $data['meta'] : [];
+
+        if (!isset($payload['site_adi']) || trim((string) $payload['site_adi']) === '') {
+            $payload['site_adi'] = (string) ($payload['site_name'] ?? $branding['site_name'] ?? '');
+        }
+        if (!isset($payload['site_aciklama']) || trim((string) $payload['site_aciklama']) === '') {
+            $payload['site_aciklama'] = (string) ($payload['description'] ?? $branding['description'] ?? $meta['description'] ?? '');
+        }
+        if (!isset($payload['logo_url']) || trim((string) $payload['logo_url']) === '') {
+            $payload['logo_url'] = (string) ($payload['site_logo'] ?? $branding['logo_url'] ?? '');
+        }
+        if (!isset($payload['favicon_url']) || trim((string) $payload['favicon_url']) === '') {
+            $payload['favicon_url'] = (string) ($branding['favicon_url'] ?? '');
+        }
+        if (!isset($payload['manifest_url']) || trim((string) $payload['manifest_url']) === '') {
+            $payload['manifest_url'] = (string) ($branding['manifest_url'] ?? '');
+        }
+        if (!isset($payload['og_image_url']) || trim((string) $payload['og_image_url']) === '') {
+            $payload['og_image_url'] = (string) ($branding['og_image_url'] ?? '');
+        }
+        if (!isset($payload['meta_title']) || trim((string) $payload['meta_title']) === '') {
+            $payload['meta_title'] = (string) ($meta['title'] ?? $payload['site_title'] ?? '');
+        }
+        if (!isset($payload['site_keywords']) || trim((string) $payload['site_keywords']) === '') {
+            $payload['site_keywords'] = (string) ($meta['keywords'] ?? '');
+        }
+        if (!isset($payload['robots']) || trim((string) $payload['robots']) === '') {
+            $payload['robots'] = (string) ($meta['robots'] ?? '');
+        }
+        if (!isset($payload['language']) || trim((string) $payload['language']) === '') {
+            $payload['language'] = (string) ($meta['language'] ?? '');
+        }
+        if (!isset($payload['theme_color']) || trim((string) $payload['theme_color']) === '') {
+            $payload['theme_color'] = (string) ($meta['theme_color'] ?? '');
+        }
+
         if (class_exists('ApiMediaUrl', false)) {
             $rewritten = ApiMediaUrl::rewriteDeep($payload);
             return is_array($rewritten) ? $rewritten : $payload;
@@ -442,8 +482,10 @@ final class ApiSiteSettings
 
         $normalizedSettings = array_merge($settings, [
             'site_adi' => $siteName,
+            'site_name' => $siteName,
             'site_aciklama' => $description,
             'logo_url' => $logoUrl,
+            'site_logo' => $logoUrl,
             'favicon_url' => $faviconUrl,
             'manifest_url' => $manifestUrl,
             'og_image_url' => $ogImageUrl,
@@ -463,6 +505,8 @@ final class ApiSiteSettings
 
         $payload = array_merge($normalizedSettings, [
             'site_settings' => $normalizedSettings,
+            'site_name' => $siteName,
+            'site_logo' => $logoUrl,
             'branding' => [
                 'site_name'         => $siteName,
                 'description'       => $description,
@@ -506,6 +550,8 @@ final class ApiSiteSettings
             ],
             'updated_at' => (string) ($settings['updated_at'] ?? ''),
         ]);
+        $payload['site_title'] = (string) (($payload['meta']['title'] ?? '') ?: ($normalizedSettings['meta_title'] ?? ''));
+        $payload['site_settings']['site_title'] = $payload['site_title'];
         self::ensureMediaUrl();
         if (class_exists('ApiMediaUrl', false)) {
             $rewritten = ApiMediaUrl::rewriteDeep($payload);
