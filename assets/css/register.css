@@ -1027,9 +1027,16 @@ label {
     min-width: 90px;
 }
 
-.register-phone-code .bc-fixed-select {
+.register-phone-code .bc-fixed-select,
+.register-phone-code .bc-custom-select__trigger {
     height: 50px;
     min-height: 50px;
+}
+
+.register-phone-code .bc-custom-select__panel {
+    min-width: 220px;
+    max-height: 280px;
+    overflow-y: auto;
 }
 
 .register-phone-number {

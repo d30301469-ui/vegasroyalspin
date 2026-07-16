@@ -659,7 +659,12 @@
             var valueEl = wrapper.querySelector('.bc-custom-select__value');
             if (!select || !valueEl) return;
             var first = select.querySelector('option[disabled]');
-            valueEl.textContent = first ? first.textContent : 'Seçin';
+            if (first) {
+                valueEl.textContent = first.textContent;
+                return;
+            }
+            var selected = select.options[select.selectedIndex] || select.options[0] || null;
+            valueEl.textContent = selected ? selected.textContent : 'Secin';
         });
     }
 
