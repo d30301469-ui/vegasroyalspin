@@ -960,6 +960,15 @@ body.mobile-site #registerModal .bc-custom-select[data-phone-code-select] .bc-cu
   -webkit-overflow-scrolling: touch;
 }
 
+body.mobile-site #registerModal .bc-custom-select[data-phone-code-select] .bc-custom-select__search {
+  padding: 7px !important;
+}
+
+body.mobile-site #registerModal .bc-custom-select[data-phone-code-select] .bc-phone-search-input {
+  height: 36px !important;
+  font-size: 13px !important;
+}
+
 body.mobile-site #registerModal .bc-custom-select[data-country-select] .bc-custom-select__search {
   padding: 7px !important;
 }

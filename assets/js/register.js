@@ -416,7 +416,13 @@
             var panel = wrapper.querySelector('.bc-custom-select__panel');
             var options = wrapper.querySelectorAll('.bc-custom-select__option');
             var isCountrySelect = wrapper.hasAttribute('data-country-select');
-            var searchInput = isCountrySelect ? panel.querySelector('.bc-country-search-input') : null;
+            var isPhoneCodeSelect = wrapper.hasAttribute('data-phone-code-select');
+            var searchInput = null;
+            if (isCountrySelect) {
+                searchInput = panel.querySelector('.bc-country-search-input');
+            } else if (isPhoneCodeSelect) {
+                searchInput = panel.querySelector('.bc-phone-search-input');
+            }
             if (!select || !trigger || !valueEl || !panel) return;
 
             function escapeHtml(str) {
@@ -462,8 +468,8 @@
                 panel.style.width = '';
             }
 
-            function applyCountryFilter(query) {
-                if (!isCountrySelect) return;
+            function applyOptionFilter(query) {
+                if (!isCountrySelect && !isPhoneCodeSelect) return;
                 var q = String(query || '').toLowerCase().trim();
                 panel.querySelectorAll('.bc-custom-select__option').forEach(function (opt) {
                     var txt = (opt.textContent || '').toLowerCase();
@@ -482,9 +488,9 @@
                 wrapper.classList.add('is-open');
                 trigger.setAttribute('aria-expanded', 'true');
 
-                if (isCountrySelect && searchInput) {
+                if ((isCountrySelect || isPhoneCodeSelect) && searchInput) {
                     searchInput.value = '';
-                    applyCountryFilter('');
+                    applyOptionFilter('');
                     setTimeout(function () {
                         try {
                             searchInput.focus();
@@ -533,9 +539,9 @@
                 }
             });
 
-            if (isCountrySelect && searchInput) {
+            if ((isCountrySelect || isPhoneCodeSelect) && searchInput) {
                 searchInput.addEventListener('input', function () {
-                    applyCountryFilter(searchInput.value || '');
+                    applyOptionFilter(searchInput.value || '');
                 });
                 searchInput.addEventListener('click', function (e) {
                     e.stopPropagation();
