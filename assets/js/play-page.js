@@ -24,6 +24,52 @@
         return window.__USER_LOGGED_IN__ || (Shared.getMemberJwt && !!Shared.getMemberJwt());
     }
 
+    var balanceSyncTimers = [];
+    var lastBalanceSyncAt = 0;
+    var BALANCE_SYNC_MIN_GAP_MS = 250;
+
+    function queueBalanceSyncBurst() {
+        if (!memberLoggedIn()) {
+            return;
+        }
+        while (balanceSyncTimers.length) {
+            window.clearTimeout(balanceSyncTimers.pop());
+        }
+        [0, 350, 1100, 2200].forEach(function (delay) {
+            var timerId = window.setTimeout(function () {
+                tickBalance(true);
+            }, delay);
+            balanceSyncTimers.push(timerId);
+        });
+    }
+
+    function isBalanceAffectingEvent(eventName, eventData, context) {
+        if (!eventName) {
+            return false;
+        }
+        if (/(^|_)(balance|bet|win|wager|round|spin|transaction|rollback|settle|payout|credit|debit|cashout|bonus|freespin)(_|$)/.test(eventName)) {
+            return true;
+        }
+        if (context && typeof context === 'object') {
+            if (
+                Object.prototype.hasOwnProperty.call(context, 'balance') ||
+                Object.prototype.hasOwnProperty.call(context, 'wallet') ||
+                Object.prototype.hasOwnProperty.call(context, 'amount')
+            ) {
+                return true;
+            }
+        }
+        if (eventData && typeof eventData === 'object') {
+            if (
+                Object.prototype.hasOwnProperty.call(eventData, 'balance') ||
+                Object.prototype.hasOwnProperty.call(eventData, 'amount')
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function fetchFreespinCount() {
         if (!memberLoggedIn()) {
             return Promise.resolve(0);
@@ -94,10 +140,15 @@
         });
     }
 
-    function tickBalance() {
+    function tickBalance(force) {
         if (!memberLoggedIn()) {
             return;
         }
+        var now = Date.now();
+        if (!force && now - lastBalanceSyncAt < BALANCE_SYNC_MIN_GAP_MS) {
+            return;
+        }
+        lastBalanceSyncAt = now;
         if (typeof window.__refreshHeaderBalance === 'function') {
             window.__refreshHeaderBalance();
             return;
@@ -234,7 +285,7 @@
             var context = providerEvent.context && typeof providerEvent.context === 'object' ? providerEvent.context : {};
 
             if (eventName === 'balance_update' || eventName === 'api_response') {
-                tickBalance();
+                queueBalanceSyncBurst();
                 return;
             }
 
@@ -256,6 +307,11 @@
 
             if (eventName === 'button-click' && String(eventData || '').toLowerCase() === 'deposit') {
                 window.location.href = '/deposit';
+                return;
+            }
+
+            if (isBalanceAffectingEvent(eventName, eventData, context)) {
+                queueBalanceSyncBurst();
             }
         });
     }
@@ -516,6 +572,11 @@
             return;
         }
         tickBalance();
+        window.setInterval(function () {
+            if (!document.hidden) {
+                tickBalance();
+            }
+        }, 2000);
         window.addEventListener('focus', tickBalance);
         document.addEventListener('visibilitychange', function () {
             if (!document.hidden) {
