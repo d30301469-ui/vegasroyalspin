@@ -178,6 +178,9 @@
     }
 
     function applyLoyalty(row) {
+        if (row && String(row.code || '').toLowerCase() === 'bronze') {
+            row.icon_url = '/assets/images/loyalty/badges/bronze.png';
+        }
         document.querySelectorAll('[data-loyalty-badge]').forEach(function (el) {
             el.setAttribute('title', row.name);
             el.setAttribute('data-loyalty-code', row.code);
