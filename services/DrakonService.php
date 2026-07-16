@@ -1138,9 +1138,12 @@ final class DrakonService
 
     /**
      * Verify an incoming Drakon webhook request before any balance mutation.
-     * Enforces the configured IP allowlist (drakon_config.callback_allowed_ips
-     * or env DRAKON_CALLBACK_ALLOWED_IPS) and, when a callback_secret is set and
-     * the provider sends a signature header, an HMAC-SHA256 body signature.
+     *
+     * Drakon does NOT document a webhook signature scheme, so the only reliable
+     * transport control is the IP allowlist (drakon_config.callback_allowed_ips
+     * or env DRAKON_CALLBACK_ALLOWED_IPS). It is fail-open: when no allowlist is
+     * configured every caller is accepted, so a live integration is never locked
+     * out (a mis-set signature must never break player authentication).
      *
      * @return array{ok: bool, code: int, reason: string}
      */
@@ -1148,35 +1151,15 @@ final class DrakonService
     {
         $cfg = self::config($pdo);
 
-        // 1) IP allowlist — enforced only when configured, so a live integration
-        //    that has not populated the list yet is never locked out.
         $allowlist = trim((string) ($cfg['callback_allowed_ips'] ?? ''));
         if ($allowlist === '') {
             $allowlist = trim((string) (getenv('DRAKON_CALLBACK_ALLOWED_IPS') ?: ''));
         }
-        if ($allowlist !== '' && !self::ipMatchesAllowlist(self::callbackClientIp(), $allowlist)) {
-            return ['ok' => false, 'code' => 403, 'reason' => 'IP_NOT_ALLOWED'];
-        }
-
-        // 2) Optional HMAC signature (defense-in-depth). Enforced only when a
-        //    secret is configured AND the provider actually sends a signature
-        //    header, so it never breaks a provider that omits it.
-        $secret = trim((string) ($cfg['callback_secret'] ?? ''));
-        if ($secret !== '') {
-            $signature = '';
-            foreach (['HTTP_X_DRAKON_SIGNATURE', 'HTTP_X_SIGNATURE', 'HTTP_X_CALLBACK_SIGNATURE'] as $header) {
-                $candidate = trim((string) ($_SERVER[$header] ?? ''));
-                if ($candidate !== '') {
-                    $signature = $candidate;
-                    break;
-                }
-            }
-            if ($signature !== '') {
-                $provided = str_contains($signature, '=') ? trim(explode('=', $signature, 2)[1]) : $signature;
-                $expected = hash_hmac('sha256', $rawBody, $secret);
-                if (!hash_equals($expected, strtolower($provided))) {
-                    return ['ok' => false, 'code' => 403, 'reason' => 'SIGNATURE_MISMATCH'];
-                }
+        if ($allowlist !== '') {
+            $clientIp = self::callbackClientIp();
+            if (!self::ipMatchesAllowlist($clientIp, $allowlist)) {
+                error_log('[DrakonService] webhook IP rejected: ' . $clientIp . ' not in allowlist');
+                return ['ok' => false, 'code' => 403, 'reason' => 'IP_NOT_ALLOWED'];
             }
         }
 
@@ -1184,17 +1167,22 @@ final class DrakonService
     }
 
     /**
-     * Resolve the calling client IP for the webhook allowlist. Prefers the real
-     * TCP peer (REMOTE_ADDR); falls back to well-known proxy headers only when
-     * REMOTE_ADDR is a private/loopback address (e.g. behind a local proxy).
+     * Resolve the calling client IP for the webhook allowlist. The site is
+     * fronted by Cloudflare, so CF-Connecting-IP (the real peer) is preferred;
+     * otherwise the TCP peer (REMOTE_ADDR), with proxy headers only when the peer
+     * is a private/loopback address.
      */
     private static function callbackClientIp(): string
     {
+        $cf = trim((string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''));
+        if ($cf !== '' && filter_var($cf, FILTER_VALIDATE_IP) !== false) {
+            return $cf;
+        }
         $remote = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
         $isPublicPeer = $remote !== ''
             && filter_var($remote, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
         if (!$isPublicPeer) {
-            foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR'] as $header) {
+            foreach (['HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR'] as $header) {
                 $value = trim((string) ($_SERVER[$header] ?? ''));
                 if ($value === '') {
                     continue;
