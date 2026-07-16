@@ -128,7 +128,7 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--play-secondary);
+  color: #33c16b;
   font-size: 18px;
 }
 .play-topbar-balance-text {
@@ -139,6 +139,24 @@ $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES
   min-width: 0;
   line-height: 1.28;
   gap: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+@media (min-width: 992px) {
+  .play-topbar-balance {
+    max-width: min(62vw, 420px);
+  }
+  .play-topbar-balance-text {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .play-topbar-balance .play-bal-bonus {
+    font-size: 12px;
+  }
 }
 .play-topbar-balance .play-bal-main {
   font-weight: 700;
