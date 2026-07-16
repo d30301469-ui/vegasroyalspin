@@ -477,8 +477,19 @@
             }
         }
 
+        function isMobileSite() {
+            return !!(document.body && document.body.classList.contains('mobile-site'));
+        }
+
+        function notify(type, msg, title) {
+            if (isMobileSite()) {
+                return;
+            }
+            toast(type, msg, title);
+        }
+
         function showError(msg) {
-            toast('error', msg || 'Bir hata oluştu.', 'Giriş');
+            notify('error', msg || 'Bir hata oluştu.', 'Giriş');
             if (!alertContainer) return;
             alertContainer.textContent = msg || 'Bir hata oluştu.';
             alertContainer.classList.remove('d-none');
@@ -573,7 +584,7 @@
                         window.__USER_LOGGED_IN__ = true;
                         window.__HAS_MEMBER_JWT__ = true;
                         window.__MEMBER_LOGIN_AT__ = Date.now();
-                        toast('success', data.message || 'Giriş başarılı.', 'Giriş');
+                        notify('success', data.message || 'Giriş başarılı.', 'Giriş');
                         hideLoginModal();
                         loginForm.reset();
                         hideError();
