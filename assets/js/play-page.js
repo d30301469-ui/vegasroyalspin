@@ -201,6 +201,11 @@
         }
     }
 
+    function playHomeUrl() {
+        var url = window.__PLAY_HOME_URL__ ? String(window.__PLAY_HOME_URL__).trim() : '';
+        return url !== '' ? url : '/slot';
+    }
+
     function showNotice(msg, kind) {
         var text = String(msg || '').trim();
         if (!text) {
@@ -290,7 +295,7 @@
             }
 
             if (eventName === 'go_home') {
-                window.location.href = '/slot';
+                window.location.href = playHomeUrl();
                 return;
             }
 
@@ -461,6 +466,9 @@
                             );
                             return;
                         }
+                        if (x.j.data.home_url) {
+                            window.__PLAY_HOME_URL__ = String(x.j.data.home_url);
+                        }
                         openLaunchUrl(launchTarget.url, launchTarget.openMode);
                         notifyFreespinsOnLaunch();
                         return;
@@ -487,7 +495,7 @@
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {
-                    window.location.href = '/slot';
+                    window.location.href = playHomeUrl();
                 }
             });
         }
