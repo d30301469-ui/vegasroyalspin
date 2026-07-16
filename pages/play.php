@@ -42,6 +42,7 @@ $playPayload = [
     'game_id' => $playGameId,
     'mode'    => $playMode,
 ];
+$playPayload['open_mode'] = (function_exists('isMobile') && isMobile()) ? 'redirect' : 'iframe';
 if ($playMode === 'real' && $playWallet !== '') {
     $playPayload['wallet'] = $playWallet;
 }

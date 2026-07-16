@@ -908,6 +908,29 @@ if ($method === 'GET' && in_array($route, ['freespins.php', 'me/freespins', 'pro
 
 if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], true)) {
     $input = $memberInput($payload);
+    $requestedOpenMode = strtolower(trim((string) ($input['open_mode'] ?? '')));
+    if (!in_array($requestedOpenMode, ['iframe', 'redirect'], true)) {
+        $requestedOpenMode = '';
+    }
+
+    $normalizeLaunchResult = static function (array $result, string $fallbackOpenMode): array {
+        if (empty($result['success'])) {
+            return $result;
+        }
+
+        $data = is_array($result['data'] ?? null) ? $result['data'] : [];
+        $resolvedOpenMode = strtolower(trim((string) ($data['open_mode'] ?? ($result['open_mode'] ?? $fallbackOpenMode))));
+        if (!in_array($resolvedOpenMode, ['iframe', 'redirect'], true)) {
+            $resolvedOpenMode = 'iframe';
+        }
+
+        $data['open_mode'] = $resolvedOpenMode;
+        $result['data'] = $data;
+        $result['open_mode'] = $resolvedOpenMode;
+
+        return $result;
+    };
+
     $mode = strtolower(trim((string) ($input['mode'] ?? 'real')));
     $isDemo = in_array($mode, ['fun', 'demo'], true) || !empty($input['demo']) || !empty($input['isDemo']);
     if ($isDemo) {
@@ -952,6 +975,7 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
 
         if (DrakonService::ownsGameId($gameId)) {
             $result   = DrakonService::launch(AdminDatabase::pdo(), $user, $input);
+            $result   = $normalizeLaunchResult($result, $requestedOpenMode);
             $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
             if ($httpCode >= 500 && $httpCode !== 503) {
                 $httpCode = 422;
@@ -967,6 +991,7 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
             ]);
         }
         $result = BgamingService::launch(AdminDatabase::pdo(), $user, $input);
+        $result = $normalizeLaunchResult($result, $requestedOpenMode);
         $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
         if ($httpCode >= 500 && $httpCode !== 503) {
             $httpCode = 422;
