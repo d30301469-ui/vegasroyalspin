@@ -1103,10 +1103,11 @@ class ApiAuthController
             $genderApi = trim((string) ($prepared['gender_api'] ?? ''));
             $gender = self::genderLabelFromApiValue($genderApi);
 
-            $check = $pdo->prepare('SELECT username, email FROM users WHERE username = :username OR email = :email LIMIT 1');
+            $check = $pdo->prepare('SELECT username, email, identity_number FROM users WHERE username = :username OR email = :email OR (:identity_number <> "" AND identity_number = :identity_number) LIMIT 1');
             $check->execute([
                 'username' => $username,
                 'email' => $email,
+                'identity_number' => $identityNumber,
             ]);
             $exists = $check->fetch(\PDO::FETCH_ASSOC);
             if (is_array($exists)) {
@@ -1117,12 +1118,15 @@ class ApiAuthController
                 if (strcasecmp((string) ($exists['email'] ?? ''), $email) === 0) {
                     $errors['email'] = 'Bu e-posta zaten kayıtlı.';
                 }
+                if ($identityNumber !== '' && (string) ($exists['identity_number'] ?? '') === $identityNumber) {
+                    $errors['tc'] = 'Bu kimlik numarası zaten kayıtlı.';
+                }
 
                 return [
                     'success' => false,
                     'code' => 409,
                     'error' => 'DUPLICATE_USER',
-                    'message' => 'Kullanıcı adı veya e-posta zaten kayıtlı.',
+                    'message' => 'Kullanıcı adı, e-posta veya kimlik numarası zaten kayıtlı.',
                     'errors' => $errors,
                 ];
             }
@@ -1150,7 +1154,7 @@ class ApiAuthController
                 'surname' => $surname,
                 'username' => $username,
                 'email' => $email,
-                'identity_number' => $identityNumber,
+                'identity_number' => $identityNumber !== '' ? $identityNumber : null,
                 'gender' => $gender,
                 'dob' => $birthDate,
                 'phone' => $phone,
