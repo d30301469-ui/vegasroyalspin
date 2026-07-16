@@ -88,15 +88,6 @@ $isActive     = !empty($configRow['is_active']) && $configRow['is_active'] !== '
         </div>
 
         <div class="field">
-            <label class="field-label" for="callback_secret">Callback Secret (Opsiyonel)</label>
-            <input id="callback_secret" class="input drakon-secret" type="password" name="callback_secret"
-                   value=""
-                   placeholder="<?= trim((string) ($configRow['callback_secret'] ?? '')) !== '' ? 'Mevcut secret korunacak' : 'Webhook imzalama secret (opsiyonel)' ?>"
-                   autocomplete="new-password">
-            <p class="drakon-help">Drakon webhook isteklerini imzalamak için kullanılıyorsa buraya girin.</p>
-        </div>
-
-        <div class="field">
             <div style="display:flex;align-items:center;gap:10px;padding:12px 0;">
                 <input id="is_active" type="checkbox" name="is_active" value="1"
                        <?= $isActive ? 'checked' : '' ?> style="width:18px;height:18px;cursor:pointer;">
@@ -135,6 +126,11 @@ $isActive     = !empty($configRow['is_active']) && $configRow['is_active'] !== '
             <p class="drakon-help" style="margin-top:8px">
                 ngrok aktifken ngrok URL'yi, üretimde domain URL'nizi kullanın.
             </p>
+            <p class="drakon-help" style="margin-top:8px">
+                Drakon callback'i kimlik doğrulaması kullanmaz; güvenlik bu URL'nin
+                gizli/tahmin edilemez kalmasına dayanır. Düşük gecikme için Drakon,
+                bu adresi Cloudflare proxy'si kapalı ayrı bir subdomain'de yayınlamayı önerir.
+            </p>
         </div>
 
         <div class="drakon-card">
@@ -160,6 +156,7 @@ $isActive     = !empty($configRow['is_active']) && $configRow['is_active'] !== '
             <div style="font-weight:700;margin-bottom:12px">🗂 Modüller</div>
             <?php
             $moduleLinks = [
+                'drakon-campaigns'      => ['label' => 'Freespin / Kampanya', 'path' => '/drakon/campaigns'],
                 'drakon-providers'      => ['label' => 'Sağlayıcılar',   'path' => '/admin/tables/drakon_providers'],
                 'drakon-games'          => ['label' => 'Oyun Kataloğu',  'path' => '/admin/tables/drakon_games'],
                 'drakon-transactions'   => ['label' => 'İşlemler',       'path' => '/admin/tables/drakon_transactions'],

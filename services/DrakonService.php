@@ -169,7 +169,7 @@ final class DrakonService
 
     public static function updateConfig(PDO $pdo, array $data): void
     {
-        $allowed = ['agent_code', 'agent_token', 'agent_secret', 'currency', 'site_endpoint', 'callback_secret'];
+        $allowed = ['agent_code', 'agent_token', 'agent_secret', 'currency', 'site_endpoint'];
         $sets    = [];
         $params  = [];
         foreach ($allowed as $key) {
