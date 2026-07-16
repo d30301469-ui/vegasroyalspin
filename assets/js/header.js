@@ -356,10 +356,21 @@
     function openGame(gameId) {
         var url = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=real&wallet=main';
         var isMobileSite = !!(document.body && document.body.classList.contains('mobile-site'));
+        if (!isMobileSite) {
+            var hasTouch = (navigator.maxTouchPoints || 0) > 0;
+            var narrowViewport = !!(window.matchMedia && window.matchMedia('(max-width: 1024px)').matches);
+            isMobileSite = hasTouch && narrowViewport;
+        }
         if (isMobileSite) {
-            var newTab = window.open(url, '_blank', 'noopener');
-            if (newTab) {
-                newTab.opener = null;
+            var a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            if (document.visibilityState === 'hidden') {
                 return;
             }
         }
