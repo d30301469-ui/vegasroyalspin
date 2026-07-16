@@ -943,6 +943,12 @@ body.mobile-site #registerModal .register-form--mobile-single .register-dob-labe
   line-height: 1 !important;
 }
 
+body.mobile-site #registerModal .bc-custom-select[data-country-select] .bc-custom-select__panel {
+  max-height: min(48vh, 320px) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 body.mobile-site #registerModal .register-form--mobile-single .bc-fixed-select__value,
 body.mobile-site #registerModal .register-form--mobile-single .bc-custom-select__value,
 body.mobile-site #registerModal .register-form--mobile-single .register-dob-value {
