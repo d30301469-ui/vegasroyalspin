@@ -944,6 +944,9 @@ body.mobile-site #registerModal .register-form--mobile-single .register-dob-labe
 }
 
 body.mobile-site #registerModal .bc-custom-select[data-country-select] .bc-custom-select__panel {
+  left: 7px !important;
+  right: 7px !important;
+  width: auto !important;
   max-height: min(48vh, 320px) !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
