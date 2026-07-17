@@ -11,8 +11,6 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../core/bootstrap.php';
 
-$loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
-
 $pageTitle = 'Spor Bahisleri';
 $sbLang    = trim((string) ($_GET['lang'] ?? 'tr'));
 ?>
@@ -43,7 +41,6 @@ $sbLang    = trim((string) ($_GET['lang'] ?? 'tr'));
 <script>
 (function () {
   var SB_LANG = <?= json_encode($sbLang, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
-  var IS_LOGGED_IN = <?= $loggedIn ? 'true' : 'false' ?>;
 
   function el(id) { return document.getElementById(id); }
   function showError(html) {
@@ -51,51 +48,6 @@ $sbLang    = trim((string) ($_GET['lang'] ?? 'tr'));
     if (l) l.hidden = true;
     if (t) t.innerHTML = html;
     if (e) e.hidden = false;
-  }
-
-  function openLoginModalWithNext() {
-    var nextEl = el('loginFormNext');
-    if (nextEl) {
-      nextEl.value = '/sportbook';
-    }
-
-    if (typeof window.__openLoginModal === 'function') {
-      window.__openLoginModal();
-      return true;
-    }
-    if (window.MaltabetAuth && typeof window.MaltabetAuth.showLoginModal === 'function') {
-      window.MaltabetAuth.showLoginModal();
-      return true;
-    }
-    var loginBtn = el('Giris');
-    if (loginBtn && typeof loginBtn.click === 'function') {
-      loginBtn.click();
-      return true;
-    }
-
-    return false;
-  }
-
-  function requireLogin() {
-    var l = el('sbLoader');
-    if (l) l.hidden = true;
-    var opened = openLoginModalWithNext();
-    if (opened) return;
-
-    // login.js bazen bu scriptten biraz sonra init oluyor; kısa bir retry dene.
-    var retries = 0;
-    var maxRetries = 12;
-    var timer = setInterval(function () {
-      retries++;
-      if (openLoginModalWithNext()) {
-        clearInterval(timer);
-        return;
-      }
-      if (retries >= maxRetries) {
-        clearInterval(timer);
-        window.location.href = '/login?next=' + encodeURIComponent('/sportbook');
-      }
-    }, 100);
   }
 
   function doLaunch(Shared) {
@@ -115,10 +67,6 @@ $sbLang    = trim((string) ($_GET['lang'] ?? 'tr'));
         return { ok: res.ok, status: res.status, j: j };
       });
     }).then(function (x) {
-      if (x.status === 401) {
-        requireLogin();
-        return;
-      }
       var data = (x.j && (x.j.data || x.j)) || {};
       var url = data.game_url || data.launch_url || data.launchUrl || '';
       if (x.ok && /^https?:\/\//i.test(url)) {
@@ -136,11 +84,6 @@ $sbLang    = trim((string) ($_GET['lang'] ?? 'tr'));
   }
 
   function boot(tries) {
-    if (!IS_LOGGED_IN) {
-      requireLogin();
-      return;
-    }
-
     var Shared = window.BetcoAuthShared || window.MetropolShared || {};
     if (Shared && Shared.apiUrl) {
       if (Shared.onReady) { Shared.onReady(function () { doLaunch(Shared); }); }

@@ -16,6 +16,30 @@ final class AdminUserController extends AdminController
 
         $this->ensureAdjustmentTable();
         MegaPayzService::bootstrap(AdminDatabase::pdo());
+        $sportsbookCoupons = $this->rows(
+            "SELECT
+                id,
+                txn_code AS transaction_id,
+                COALESCE(wager_id, '-') AS coupon_id,
+                COALESCE(round_id, '-') AS round_id,
+                COALESCE(vendor_code, '-') AS vendor_code,
+                COALESCE(game_code, '-') AS game_code,
+                txn_type,
+                amount,
+                before_balance,
+                after_balance,
+                currency,
+                CASE WHEN is_finished = 1 THEN 'completed' ELSE 'active' END AS status,
+                detail,
+                raw_payload,
+                created_at
+             FROM sportsbook_transactions
+             WHERE user_id = :user_id
+             ORDER BY id DESC
+             LIMIT 100",
+            $userId
+        );
+        $sportsbookCoupons = $this->formatSportsbookCoupons($sportsbookCoupons);
 
         $this->view('users/detail', [
             'title' => 'Kullanıcı Detayı',
@@ -28,27 +52,7 @@ final class AdminUserController extends AdminController
             'withdrawals' => $this->rows("SELECT id, method, 'megapayz' AS provider, amount, fee, currency, status, NULL AS admin_status, trx, created_at, updated_at FROM megapayz_transactions WHERE user_id = :user_id AND type = 'withdraw' ORDER BY id DESC LIMIT 30", $userId),
             'adjustments' => $this->rows('SELECT id, wallet, action, amount, before_balance, after_balance, note, admin_username, created_at FROM admin_balance_adjustments WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 30', $userId),
             'games' => [],
-            'sportsbookCoupons' => $this->rows(
-                "SELECT
-                    id,
-                    txn_code AS transaction_id,
-                    COALESCE(wager_id, '-') AS coupon_id,
-                    COALESCE(round_id, '-') AS round_id,
-                    COALESCE(vendor_code, '-') AS vendor_code,
-                    COALESCE(game_code, '-') AS game_code,
-                    txn_type,
-                    amount,
-                    before_balance,
-                    after_balance,
-                    currency,
-                    CASE WHEN is_finished = 1 THEN 'completed' ELSE 'active' END AS status,
-                    created_at
-                 FROM sportsbook_transactions
-                 WHERE user_id = :user_id
-                 ORDER BY id DESC
-                 LIMIT 100",
-                $userId
-            ),
+            'sportsbookCoupons' => $sportsbookCoupons,
             'bonusClaims' => $this->rows('SELECT id, bonus_name, requested_amount, status, processed_by, processed_at, created_at FROM bonus_claim_requests WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 20', $userId),
             'activeBonuses' => $this->rows('SELECT id, name, initial_amount, current_bonus_balance, status, deadline, created_at FROM user_active_bonuses WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 20', $userId),
             'notes' => $this->notesForUser($userId),
@@ -560,6 +564,151 @@ final class AdminUserController extends AdminController
         } catch (Throwable) {
             return [];
         }
+    }
+
+    private function formatSportsbookCoupons(array $rows): array
+    {
+        foreach ($rows as $index => $row) {
+            $payload = $this->decodeJsonArray($row['raw_payload'] ?? null);
+            $detailData = $this->decodeJsonArray($row['detail'] ?? null);
+            if ($detailData === [] && isset($payload['detail'])) {
+                $detailData = $this->decodeJsonArray($payload['detail']);
+            }
+
+            $context = array_merge($payload, ['detail' => $detailData]);
+            $rows[$index]['processed_coupon'] = $this->couponSummaryFromContext($context, $row);
+            $rows[$index]['match_result'] = $this->matchResultFromContext($context, $row);
+            unset($rows[$index]['detail'], $rows[$index]['raw_payload']);
+        }
+
+        return $rows;
+    }
+
+    private function decodeJsonArray(mixed $raw): array
+    {
+        if (is_array($raw)) {
+            return $raw;
+        }
+        if (!is_string($raw)) {
+            return [];
+        }
+        $trimmed = trim($raw);
+        if ($trimmed === '' || $trimmed === 'null') {
+            return [];
+        }
+        $decoded = json_decode($trimmed, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function couponSummaryFromContext(array $context, array $row): string
+    {
+        $detail = is_array($context['detail'] ?? null) ? $context['detail'] : [];
+        $legs = [];
+        foreach (['selections', 'legs', 'bets', 'items', 'events', 'markets'] as $key) {
+            $candidate = $detail[$key] ?? $context[$key] ?? null;
+            if (is_array($candidate) && isset($candidate[0]) && is_array($candidate[0])) {
+                $legs = $candidate;
+                break;
+            }
+        }
+
+        $segments = [];
+        foreach (array_slice($legs, 0, 5) as $leg) {
+            $event = trim((string) ($leg['eventName'] ?? $leg['event_name'] ?? $leg['match'] ?? $leg['fixture'] ?? ''));
+            $market = trim((string) ($leg['marketName'] ?? $leg['market'] ?? ''));
+            $pick = trim((string) ($leg['selectionName'] ?? $leg['selection'] ?? $leg['outcome'] ?? $leg['pick'] ?? ''));
+            $odds = trim((string) ($leg['odds'] ?? $leg['price'] ?? ''));
+
+            $line = $event;
+            if ($market !== '') {
+                $line .= ($line !== '' ? ' | ' : '') . $market;
+            }
+            if ($pick !== '') {
+                $line .= ($line !== '' ? ' | ' : '') . $pick;
+            }
+            if ($odds !== '') {
+                $line .= ($line !== '' ? ' | ' : '') . 'Odd: ' . $odds;
+            }
+            if ($line !== '') {
+                $segments[] = $line;
+            }
+        }
+
+        if ($segments !== []) {
+            $summary = implode(' || ', $segments);
+            if (count($legs) > 5) {
+                $summary .= ' || ...';
+            }
+            return $summary;
+        }
+
+        $couponId = (string) ($row['coupon_id'] ?? '-');
+        $txnType = $this->translateSportsbookTxnType((string) ($row['txn_type'] ?? ''));
+        $amount = number_format((float) ($row['amount'] ?? 0), 2, '.', '');
+        $currency = strtoupper((string) ($row['currency'] ?? 'TRY'));
+        return 'Kupon: ' . $couponId . ' | Hareket: ' . $txnType . ' | Tutar: ' . $amount . ' ' . $currency;
+    }
+
+    private function matchResultFromContext(array $context, array $row): string
+    {
+        $keys = ['match_result', 'matchResult', 'event_result', 'eventResult', 'result', 'score', 'final_score', 'finalScore'];
+        $result = $this->extractFirstScalar($context, $keys);
+        if ($result !== '') {
+            return $result;
+        }
+
+        $homeScore = $this->extractFirstScalar($context, ['home_score', 'homeScore']);
+        $awayScore = $this->extractFirstScalar($context, ['away_score', 'awayScore']);
+        if ($homeScore !== '' || $awayScore !== '') {
+            return trim($homeScore) . ' - ' . trim($awayScore);
+        }
+
+        if ((string) ($row['status'] ?? '') === 'completed') {
+            return 'Tamamlandi';
+        }
+
+        return '-';
+    }
+
+    private function extractFirstScalar(mixed $data, array $keys): string
+    {
+        if (!is_array($data)) {
+            if (is_scalar($data)) {
+                return trim((string) $data);
+            }
+            return '';
+        }
+
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $data) && is_scalar($data[$key])) {
+                $value = trim((string) $data[$key]);
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        foreach ($data as $value) {
+            if (is_array($value)) {
+                $found = $this->extractFirstScalar($value, $keys);
+                if ($found !== '') {
+                    return $found;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private function translateSportsbookTxnType(string $type): string
+    {
+        $type = strtolower(trim($type));
+        return match ($type) {
+            'bet', 'promo_bet' => 'Kayıp',
+            'win', 'promo_win', 'freespins_win' => 'Kazanç',
+            'cancel', 'rollback' => 'İptal',
+            default => $type !== '' ? ucfirst($type) : '-',
+        };
     }
 
     private function ensureNotesTable(): void

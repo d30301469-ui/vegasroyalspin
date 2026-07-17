@@ -20,10 +20,20 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
 $badgeClass = static function (mixed $value): string {
     $value = strtolower((string) $value);
     return match (true) {
-        in_array($value, ['active', 'confirmed', 'approved', 'success', '1', 'completed'], true) => 'success dot',
+        in_array($value, ['active', 'confirmed', 'approved', 'success', '1', 'completed', 'win', 'kazanç'], true) => 'success dot',
         in_array($value, ['pending', 'waiting_approval', 'draft'], true) => 'warning dot',
-        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'banned', '0'], true) => 'danger dot',
+        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'banned', '0', 'bet', 'kayıp'], true) => 'danger dot',
+        in_array($value, ['cancel', 'rollback', 'iptal'], true) => 'warning dot',
         default => 'primary',
+    };
+};
+$txnTypeLabel = static function (mixed $value): string {
+    $value = strtolower(trim((string) $value));
+    return match ($value) {
+        'bet', 'promo_bet' => 'Kayıp',
+        'win', 'promo_win', 'freespins_win' => 'Kazanç',
+        'cancel', 'rollback' => 'İptal',
+        default => $value !== '' ? ucfirst($value) : '-',
     };
 };
 $renderRows = static function (array $rows, array $columns) use ($text, $money, $badgeClass): void {
@@ -186,7 +196,7 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
         ['title' => 'Çekimler', 'rows' => $withdrawals, 'columns' => ['id' => 'ID', 'method' => 'Metot', 'provider' => 'Provider', 'amount' => 'Tutar', 'status' => 'Durum', 'admin_status' => 'Admin', 'created_at' => 'Tarih']],
         ['title' => 'Admin bakiye işlemleri', 'rows' => $adjustments, 'columns' => ['id' => 'ID', 'wallet' => 'Cüzdan', 'action' => 'İşlem', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'admin_username' => 'Admin', 'created_at' => 'Tarih']],
         ['title' => 'Oyun işlemleri', 'type' => 'games', 'rows' => $games, 'columns' => ['id' => 'ID', 'game_name' => 'Oyun', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'txn_type' => 'Tip', 'bet_amount' => 'Bet', 'win_amount' => 'Win', 'balance_after' => 'Bakiye', 'created_at' => 'Tarih']],
-        ['title' => 'Spor kuponları', 'rows' => $sportsbookCoupons, 'columns' => ['id' => 'ID', 'coupon_id' => 'Kupon', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'vendor_code' => 'Vendor', 'game_code' => 'Sport', 'txn_type' => 'Tip', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'currency' => 'Para', 'status' => 'Durum', 'created_at' => 'Tarih']],
+        ['title' => 'Spor kuponları', 'rows' => $sportsbookCoupons, 'columns' => ['id' => 'ID', 'coupon_id' => 'Kupon', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'vendor_code' => 'Vendor', 'game_code' => 'Sport', 'txn_type' => 'Kazanç/Kayıp', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'currency' => 'Para', 'match_result' => 'Maç Sonucu', 'processed_coupon' => 'İşlenmiş Kupon', 'status' => 'Durum', 'created_at' => 'Tarih']],
         ['title' => 'Bonus talepleri', 'rows' => $bonusClaims, 'columns' => ['id' => 'ID', 'bonus_name' => 'Bonus', 'requested_amount' => 'Tutar', 'status' => 'Durum', 'processed_by' => 'İşleyen', 'processed_at' => 'İşlem tarihi', 'created_at' => 'Tarih']],
         ['title' => 'Aktif bonuslar', 'rows' => $activeBonuses, 'columns' => ['id' => 'ID', 'name' => 'Bonus', 'initial_amount' => 'İlk tutar', 'current_bonus_balance' => 'Mevcut', 'status' => 'Durum', 'deadline' => 'Deadline', 'created_at' => 'Tarih']],
     ];
@@ -222,7 +232,10 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
                                             </div>
                                         <?php elseif (preg_match('/amount|balance|fee/i', (string) $column) === 1): ?>
                                             <span class="data-cell-mono"><?= $text($money($row[$column] ?? 0)) ?></span>
-                                        <?php elseif (preg_match('/status|txn_type|action/i', (string) $column) === 1): ?>
+                                        <?php elseif ($column === 'txn_type'): ?>
+                                            <?php $txnLabel = $txnTypeLabel($row[$column] ?? ''); ?>
+                                            <span class="badge <?= $text($badgeClass($row[$column] ?? '')) ?>"><?= $text($txnLabel) ?></span>
+                                        <?php elseif (preg_match('/status|action/i', (string) $column) === 1): ?>
                                             <span class="badge <?= $text($badgeClass($row[$column] ?? '')) ?>"><?= $text($row[$column] ?? '') ?></span>
                                         <?php else: ?>
                                             <?= $text($row[$column] ?? '') ?>

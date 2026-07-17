@@ -9,11 +9,22 @@ declare(strict_types=1);
  */
 
 if ($method === 'POST' && in_array($route, ['sportsbook_launch.php', 'sportsbook-launch', 'sportsbook/launch'], true)) {
-    $userId = $memberRequireLogin();
     $pdo    = AdminDatabase::pdo();
-    $user   = $memberUserById($pdo, $userId);
-    if (!is_array($user)) {
-        $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'Kullanıcı bulunamadı.']);
+    $user   = null;
+
+    $userId = 0;
+    if (isset($memberJwtOptionalUserId) && is_callable($memberJwtOptionalUserId)) {
+        $optionalUserId = $memberJwtOptionalUserId($pdo);
+        $userId = is_int($optionalUserId) ? $optionalUserId : (int) $optionalUserId;
+    } elseif (!empty($_SESSION['loggedin'])) {
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+    }
+
+    if ($userId > 0) {
+        $user = $memberUserById($pdo, $userId);
+        if (!is_array($user)) {
+            $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'Kullanıcı bulunamadı.']);
+        }
     }
 
     $result = SportsbookService::launch($pdo, $user, $memberInput($payload));

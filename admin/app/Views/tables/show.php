@@ -60,9 +60,10 @@ $formatValue = static function (string $column, mixed $value): string {
 $badgeClass = static function (string $value): string {
     $value = strtolower($value);
     return match (true) {
-        in_array($value, ['active', 'confirmed', 'approved', 'success', '1'], true) => 'success dot',
+        in_array($value, ['active', 'confirmed', 'approved', 'success', '1', 'win', 'kazanç'], true) => 'success dot',
         in_array($value, ['pending', 'waiting_approval', 'draft'], true) => 'warning dot',
-        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'banned', '0'], true) => 'danger dot',
+        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'banned', '0', 'bet', 'kayıp'], true) => 'danger dot',
+        in_array($value, ['cancel', 'rollback', 'iptal'], true) => 'warning dot',
         default => 'primary',
     };
 };
