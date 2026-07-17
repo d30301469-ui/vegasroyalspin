@@ -486,10 +486,10 @@
     }
 }
 
-/* ========== Mobil site (m.) — MobileRightSheet ile aynı katman (1048); logo şeridi 1050 üstte ========== */
+/* ========== Mobil site (m.) — orijinal gibi tam header altından açılır (header-sticky-top) ========== */
 body.mobile-site .bonus-modal-overlay {
     inset: auto;
-    top: var(--mobile-promo-sheet-top, var(--mobile-top-bar-height, 64px));
+    top: var(--header-sticky-top, 139px);
     right: 0;
     bottom: 0;
     left: 0;
@@ -499,7 +499,7 @@ body.mobile-site .bonus-modal-overlay {
     justify-content: stretch;
     overflow: hidden;
     -webkit-overflow-scrolling: touch;
-    z-index: 1048;
+    z-index: 1049;
 }
 
 body.mobile-site .bonus-modal {

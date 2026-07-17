@@ -176,7 +176,7 @@ foreach ($rows as $i => $b) {
 
 // Kategori filtresi — api.md GET category: sports | live_casino | slots | loss_bonus | vip
 $kategoriler = [
-    ['id' => 'tumu', 'label' => 'TÜMÜ', 'icon' => 'bc-i-all-games1', 'active' => true],
+    ['id' => 'tumu', 'label' => 'TÜMÜ', 'icon' => 'bc-i-default-icon bc-i-all', 'active' => true],
     ['id' => 'sports', 'label' => 'SPOR', 'icon' => 'bc-i-prematch'],
     ['id' => 'live_casino', 'label' => 'CANLI CASINO', 'icon' => 'bc-i-livecasino'],
     ['id' => 'slots', 'label' => 'SLOT', 'icon' => 'bc-i-slots-v1'],
