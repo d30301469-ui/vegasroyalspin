@@ -1425,8 +1425,8 @@ label {
 
     /* --- Dialog width --- */
     #registerModal .modal-dialog {
-        max-width: 840px !important;
-        width: 840px !important;
+        max-width: 960px !important;
+        width: min(94vw, 960px) !important;
         margin: auto !important;
     }
 
@@ -1434,8 +1434,8 @@ label {
     #registerModal .modal-content {
         height: auto !important;
         min-height: 0 !important;
-        max-height: min(90vh, 780px) !important;
-        border-radius: 20px !important;
+        max-height: min(94vh, 840px) !important;
+        border-radius: 8px !important;
         overflow: hidden !important;
         border: none !important;
         box-shadow: 0 18px 54px rgba(0,0,0,0.75) !important;
@@ -1444,7 +1444,7 @@ label {
             url("/assets/images/register-bg.jpg")
             no-repeat 0 0 / 50% 100% !important;
         /* Push all content to right half */
-        padding-left: 420px !important;
+        padding-left: min(47vw, 480px) !important;
         display: block !important;
     }
 
