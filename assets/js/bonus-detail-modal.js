@@ -37,6 +37,85 @@
     var PROMO_CLAIM_URL = apiUrl('/api/v2/bonus-claim');
     var previousActiveElement = null;
     var escapeEl = null;
+    var isScrollLockedByModal = false;
+
+    function getSharedScrollLock() {
+        if (global.__BodyScrollLock && typeof global.__BodyScrollLock.lock === 'function' && typeof global.__BodyScrollLock.unlock === 'function') {
+            return global.__BodyScrollLock;
+        }
+
+        var state = {
+            count: 0,
+            scrollY: 0,
+            prev: null
+        };
+
+        function lock() {
+            state.count += 1;
+            if (state.count > 1) return;
+
+            var body = document.body;
+            var docEl = document.documentElement;
+            state.scrollY = global.scrollY || global.pageYOffset || 0;
+            state.prev = {
+                position: body.style.position,
+                top: body.style.top,
+                left: body.style.left,
+                right: body.style.right,
+                width: body.style.width,
+                overflow: body.style.overflow,
+                touchAction: body.style.touchAction,
+                paddingRight: body.style.paddingRight
+            };
+
+            var scrollbarWidth = Math.max(0, global.innerWidth - docEl.clientWidth);
+            if (scrollbarWidth > 0) {
+                body.style.paddingRight = scrollbarWidth + 'px';
+            }
+
+            body.style.position = 'fixed';
+            body.style.top = -state.scrollY + 'px';
+            body.style.left = '0';
+            body.style.right = '0';
+            body.style.width = '100%';
+            body.style.overflow = 'hidden';
+            body.style.touchAction = 'none';
+            body.classList.add('body-scroll-locked');
+        }
+
+        function unlock() {
+            if (state.count <= 0) return;
+            state.count -= 1;
+            if (state.count > 0) return;
+
+            var body = document.body;
+            var restoreY = state.scrollY;
+            var prev = state.prev || {};
+
+            body.style.position = prev.position || '';
+            body.style.top = prev.top || '';
+            body.style.left = prev.left || '';
+            body.style.right = prev.right || '';
+            body.style.width = prev.width || '';
+            body.style.overflow = prev.overflow || '';
+            body.style.touchAction = prev.touchAction || '';
+            body.style.paddingRight = prev.paddingRight || '';
+            body.classList.remove('body-scroll-locked');
+
+            var html = document.documentElement;
+            var previousBehavior = html.style.scrollBehavior;
+            html.style.scrollBehavior = 'auto';
+            global.scrollTo(0, restoreY);
+            html.style.scrollBehavior = previousBehavior || '';
+        }
+
+        global.__BodyScrollLock = {
+            lock: lock,
+            unlock: unlock
+        };
+
+        return global.__BodyScrollLock;
+    }
 
     function getElements() {
         overlay = document.getElementById('bonus-detail-modal-overlay');
@@ -380,7 +459,8 @@
             modal.setAttribute('aria-hidden', 'false');
             modal.focus();
         }
-        document.body.style.overflow = 'hidden';
+        getSharedScrollLock().lock();
+        isScrollLockedByModal = true;
         document.addEventListener('keydown', handleKeydown);
 
         if (payload) {
@@ -404,7 +484,10 @@
         overlay.classList.remove('is-open');
         overlay.setAttribute('aria-hidden', 'true');
         if (modal) modal.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
+        if (isScrollLockedByModal) {
+            getSharedScrollLock().unlock();
+            isScrollLockedByModal = false;
+        }
         document.removeEventListener('keydown', handleKeydown);
         if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
             previousActiveElement.focus();

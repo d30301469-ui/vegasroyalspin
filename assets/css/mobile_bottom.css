@@ -336,7 +336,8 @@
 }
 
 /* Body scroll lock */
-body.mobileMenu-locked {
+body.mobileMenu-locked,
+body.body-scroll-locked {
   overflow: hidden !important;
   position: fixed;
   width: 100%;
