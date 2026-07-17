@@ -325,9 +325,9 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
 
 .bonus-page-cats .promo-cat-btn .promo-cat-icon,
 .bonus-page-cats .promo-cat-btn i {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -442,9 +442,9 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
 
     .bonus-page-cats .promo-cat-btn .promo-cat-icon,
     .bonus-page-cats .promo-cat-btn i {
-        font-size: 15px;
-        width: 15px;
-        height: 15px;
+        font-size: 14px !important;
+        width: 14px !important;
+        height: 14px !important;
     }
 
     .bonus-page-cats .promo-cat-btn span {
@@ -454,6 +454,23 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     .promo-cats-scroll-hint {
         width: 26px;
         font-size: 11px;
+    }
+}
+
+/* Cache/cascade farklari icin sert override */
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-btn i,
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-btn .promo-cat-icon {
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+}
+
+@media (max-width: 991px) {
+    .mainWrap.page-promotions .bonus-page-cats .promo-cat-btn i,
+    .mainWrap.page-promotions .bonus-page-cats .promo-cat-btn .promo-cat-icon {
+        font-size: 14px !important;
+        width: 14px !important;
+        height: 14px !important;
     }
 }
 
