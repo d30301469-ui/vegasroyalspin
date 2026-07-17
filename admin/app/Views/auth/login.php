@@ -2,8 +2,8 @@
 
 // Giriş ekranı tamamen statiktir: veritabanından marka/site bilgisi çekilmez.
 $panelName = 'Yetkili Yönetim';
-$siteName = 'Nexthub Backoffice';
-$siteDescription = 'Tüm yönetim işlemleri Nexthub panelinden yürütülür.';
+$siteName = 'Backoffice';
+$siteDescription = 'Tüm yönetim işlemleri Backoffice panelinden yürütülür.';
 $logoUrl = '';
 $siteInitials = 'NH';
 ?>

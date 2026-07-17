@@ -237,7 +237,7 @@ if (!defined('API_BACKEND_CURL_CAINFO')) {
 
 /**
  * Server-side curl base (Apache same-server: http://127.0.0.1/api/v2 + Host header).
- * Public API_BACKEND_MAIN_BASE_URL stays https://bo-nexthub.site/api/v2 for diagnostics.
+ * Public API_BACKEND_MAIN_BASE_URL stays https://bo-backoffice.site/api/v2 for diagnostics.
  */
 if (!defined('API_BACKEND_INTERNAL_BASE_URL')) {
     define('API_BACKEND_INTERNAL_BASE_URL', frontend_env_string('API_BACKEND_INTERNAL_BASE_URL', ''));
@@ -252,7 +252,7 @@ if (!defined('API_BACKEND_INTERNAL_HOST')) {
         $internalHost = strtolower((string) (parse_url(
             frontend_env_string('BACKEND_URL', deploy_domain('backend_url')),
             PHP_URL_HOST
-        ) ?: 'bo-nexthub.site'));
+        ) ?: 'bo-backoffice.site'));
     }
     if (str_starts_with($internalHost, 'api.')) {
         $internalHost = substr($internalHost, 4);

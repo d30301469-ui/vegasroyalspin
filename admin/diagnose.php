@@ -11,7 +11,7 @@ header('Cache-Control: no-store');
 
 $started = microtime(true);
 $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
-$isBackend = str_contains($host, 'bo-nexthub') || str_contains($host, 'nexthub');
+$isBackend = str_contains($host, 'bo-backoffice') || str_contains($host, 'backoffice');
 
 $result = [
     'ok' => true,
@@ -70,7 +70,7 @@ if (!$isBackend) {
             : 'fail:' . ($err !== '' ? $err : 'http_' . $code);
         if (!str_starts_with((string) $result['checks']['backend_sliders_probe'], 'ok:')) {
             $result['ok'] = false;
-            $result['hints'][] = 'Frontend backend\'e ulasamiyor. once bo-nexthub.site/ping.php calissin.';
+            $result['hints'][] = 'Frontend backend\'e ulasamiyor. once bo-backoffice.site/ping.php calissin.';
         }
     }
 } else {
@@ -79,7 +79,7 @@ if (!$isBackend) {
     } else {
         $result['checks']['env'] = 'missing';
         $result['ok'] = false;
-        $result['hints'][] = 'https://bo-nexthub.site/install';
+        $result['hints'][] = 'https://bo-backoffice.site/install';
     }
 }
 

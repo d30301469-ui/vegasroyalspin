@@ -54,7 +54,7 @@ final class SplitDeployDiagnostics
                 isset($parsed['MEMBER_JWT_SECRET'])
                 && str_contains(strtolower((string) $parsed['MEMBER_JWT_SECRET']), 'change-me')
             ) {
-                $result['hints'][] = 'MEMBER_JWT_SECRET hala CHANGE-ME — bo-nexthub.site .env degerini kopyalayin';
+                $result['hints'][] = 'MEMBER_JWT_SECRET hala CHANGE-ME — bo-backoffice.site .env degerini kopyalayin';
             }
         }
 
@@ -131,7 +131,7 @@ final class SplitDeployDiagnostics
 
         if ($includeApiProbes && $backendBase !== '' && is_readable($root . '/services/BackendConnectivityProbe.php')) {
             require_once $root . '/services/BackendConnectivityProbe.php';
-            $backendHost = strtolower((string) (parse_url($backendUrl !== '' ? $backendUrl : $backendBase, PHP_URL_HOST) ?: 'bo-nexthub.site'));
+            $backendHost = strtolower((string) (parse_url($backendUrl !== '' ? $backendUrl : $backendBase, PHP_URL_HOST) ?: 'bo-backoffice.site'));
             $connectivity = BackendConnectivityProbe::run($backendBase, $backendHost);
             $result['checks']['backend_dns'] = $connectivity['backend_dns'] ?? '';
             $result['checks']['backend_probes'] = $connectivity['probes'] ?? [];

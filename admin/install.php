@@ -35,7 +35,7 @@ function admin_install_fail(string $message, int $code = 500): void
     echo '<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Kurulum hatası</title></head><body style="font-family:Inter,sans-serif;padding:24px;max-width:720px;margin:0 auto">';
     echo '<h1>Kurulum hatası</h1>';
     echo '<pre style="white-space:pre-wrap;background:#f5f5f5;padding:16px;border-radius:8px">' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</pre>';
-    echo '<p style="color:#666">Log: /www/wwwlogs/bo-nexthub.site.error.log</p></body></html>';
+    echo '<p style="color:#666">Log: /www/wwwlogs/bo-backoffice.site.error.log</p></body></html>';
     exit;
 }
 

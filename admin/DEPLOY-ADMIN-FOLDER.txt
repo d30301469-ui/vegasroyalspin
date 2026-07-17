@@ -1,7 +1,7 @@
-ADMIN KLASÖRÜ — bağımsız backend (bo-nexthub.site)
+ADMIN KLASÖRÜ — bağımsız backend (bo-backoffice.site)
 
 Bu admin/ klasörünün TAMAMINI sunucu köküne yükleyin:
-  Hedef: /www/wwwroot/bo-nexthub.site/
+  Hedef: /www/wwwroot/bo-backoffice.site/
 
 Dizin yapısı:
   index.php
@@ -19,7 +19,7 @@ Dizin yapısı:
   storage/
 
 Kurulum:
-  cd /www/wwwroot/bo-nexthub.site
+  cd /www/wwwroot/bo-backoffice.site
   composer install --no-dev
   cp .env.example .env
   # .env içinde DB_* ve MEMBER_JWT_SECRET doldurun

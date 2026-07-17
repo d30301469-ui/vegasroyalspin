@@ -293,7 +293,7 @@ if (!function_exists('admin_paths_bootstrap')) {
 
     /**
      * Public URL prefix for panel routes and assets.
-     * Set ADMIN_URL_PREFIX= in .env for https://bo-nexthub.site/ (no /admin segment).
+     * Set ADMIN_URL_PREFIX= in .env for https://bo-backoffice.site/ (no /admin segment).
      */
     function admin_url_prefix(): string
     {

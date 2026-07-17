@@ -1,6 +1,6 @@
 <?php
 /**
- * Member API CORS — vegasroyalspin.com → api.bo-nexthub.site doğrudan çağrılar için.
+ * Member API CORS — vegasroyalspin.com → api.bo-backoffice.site doğrudan çağrılar için.
  * .env yüklenmeden önce çalışır; ALLOWED_URL_HOSTS + deploy_domains fallback kullanır.
  */
 if (!function_exists('member_api_cors_project_root')) {

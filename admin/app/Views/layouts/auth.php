@@ -2,8 +2,8 @@
 
 // Giriş ekranı statiktir: marka/site bilgisi veritabanından çekilmez.
 $pageTitle = isset($title) ? (string) $title : 'Admin Giriş';
-$panelName = 'Nexthub Backoffice';
-$siteName = 'Nexthub Backoffice';
+$panelName = 'Backoffice';
+$siteName = 'Backoffice';
 $faviconUrl = '';
 $htmlLang = 'tr';
 ?>

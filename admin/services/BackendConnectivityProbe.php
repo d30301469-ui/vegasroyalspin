@@ -98,7 +98,7 @@ final class BackendConnectivityProbe
     /**
      * @return array{internal_base: string, internal_host: string}|null
      */
-    public static function detectInternalConfig(string $backendHost = 'bo-nexthub.site'): ?array
+    public static function detectInternalConfig(string $backendHost = 'bo-backoffice.site'): ?array
     {
         $backendHost = trim($backendHost);
         if ($backendHost === '') {
@@ -179,7 +179,7 @@ final class BackendConnectivityProbe
             if ($ping['ok']) {
                 return [
                     'ok' => true,
-                    'message' => 'Backend ping OK — API henüz hazır olmayabilir. bo-nexthub.site/install kontrol edin.',
+                    'message' => 'Backend ping OK — API henüz hazır olmayabilir. bo-backoffice.site/install kontrol edin.',
                 ];
             }
         }
@@ -188,14 +188,14 @@ final class BackendConnectivityProbe
             'ok' => false,
             'message' => 'Backend erişilemiyor (public: '
                 . ($publicProbe['error'] !== '' ? $publicProbe['error'] : 'fail')
-                . '). Önce bo-nexthub.site/install tamamlayın.',
+                . '). Önce bo-backoffice.site/install tamamlayın.',
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    public static function run(string $publicApiBase, string $backendHost = 'bo-nexthub.site'): array
+    public static function run(string $publicApiBase, string $backendHost = 'bo-backoffice.site'): array
     {
         $publicApiBase = rtrim($publicApiBase, '/');
         $hostHeader = ['Host: ' . $backendHost];
@@ -251,7 +251,7 @@ final class BackendConnectivityProbe
             $out['hints'] = [
                 'Cloudflare SSL: origin HTTP (aaPanel Force HTTPS kapali), public .env https://',
                 'php deploy/aapanel/fix-cloudflare-env.php',
-                'Once bo-nexthub.site/install, sonra vegasroyalspin.com/install',
+                'Once bo-backoffice.site/install, sonra vegasroyalspin.com/install',
             ];
         }
 

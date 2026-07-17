@@ -12,7 +12,7 @@ final class ApiCmsRemote
 
     public static function adminDatabaseFile(): string
     {
-        // Standalone admin deploy (bo-nexthub.site): app/Core/AdminDatabase.php
+        // Standalone admin deploy (bo-backoffice.site): app/Core/AdminDatabase.php
         if (defined('ADMIN_APP_PATH')) {
             $panelDb = rtrim((string) ADMIN_APP_PATH, '/\\') . '/Core/AdminDatabase.php';
             if (is_file($panelDb)) {

@@ -13,7 +13,7 @@ declare(strict_types=1);
  *     --db-host=127.0.0.1 --db-port=3306 --db-name=metropol_db \
  *     --db-user=metropol_user --db-pass=secret \
  *     --admin-email=admin@example.com --admin-user=admin --admin-pass=Secret123! \
- *     --backend-url=https://bo-nexthub.site --frontend-url=https://vegasroyalspin.com
+ *     --backend-url=https://bo-backoffice.site --frontend-url=https://vegasroyalspin.com
  */
 
 $root = dirname(__DIR__);

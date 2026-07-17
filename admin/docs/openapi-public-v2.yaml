@@ -2,9 +2,9 @@ openapi: 3.1.0
 info:
   title: Metropol Casino Public API v2
   version: 2.0.0
-  description: Frontend üye API — bo-nexthub.site/api/v2
+  description: Frontend üye API — bo-backoffice.site/api/v2
 servers:
-  - url: https://bo-nexthub.site/api/v2
+  - url: https://bo-backoffice.site/api/v2
 paths:
   /auth/login:
     post:
