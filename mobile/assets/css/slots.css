@@ -15,7 +15,7 @@ body.mobile-site .slot-page-root .slots-filter-and-games {
 html.mobile-root:has(.slot-page-root),
 html.mobile-root.slot-page-active,
 body.mobile-site:has(.slot-page-root) {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body.mobile-site:has(.slot-page-root) .mainContentWrap,
