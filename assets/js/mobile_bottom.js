@@ -1,6 +1,84 @@
 (function () {
     var scrollY = 0;
 
+    function getSharedScrollLock() {
+        if (window.__BodyScrollLock && typeof window.__BodyScrollLock.lock === 'function' && typeof window.__BodyScrollLock.unlock === 'function') {
+            return window.__BodyScrollLock;
+        }
+
+        var state = {
+            count: 0,
+            scrollY: 0,
+            prev: null
+        };
+
+        function lock() {
+            state.count += 1;
+            if (state.count > 1) return;
+
+            var body = document.body;
+            var docEl = document.documentElement;
+            state.scrollY = window.scrollY || window.pageYOffset || 0;
+            state.prev = {
+                position: body.style.position,
+                top: body.style.top,
+                left: body.style.left,
+                right: body.style.right,
+                width: body.style.width,
+                overflow: body.style.overflow,
+                touchAction: body.style.touchAction,
+                paddingRight: body.style.paddingRight
+            };
+
+            var scrollbarWidth = Math.max(0, window.innerWidth - docEl.clientWidth);
+            if (scrollbarWidth > 0) {
+                body.style.paddingRight = scrollbarWidth + 'px';
+            }
+
+            body.style.position = 'fixed';
+            body.style.top = -state.scrollY + 'px';
+            body.style.left = '0';
+            body.style.right = '0';
+            body.style.width = '100%';
+            body.style.overflow = 'hidden';
+            body.style.touchAction = 'none';
+            body.classList.add('body-scroll-locked');
+        }
+
+        function unlock() {
+            if (state.count <= 0) return;
+            state.count -= 1;
+            if (state.count > 0) return;
+
+            var body = document.body;
+            var restoreY = state.scrollY;
+            var prev = state.prev || {};
+
+            body.style.position = prev.position || '';
+            body.style.top = prev.top || '';
+            body.style.left = prev.left || '';
+            body.style.right = prev.right || '';
+            body.style.width = prev.width || '';
+            body.style.overflow = prev.overflow || '';
+            body.style.touchAction = prev.touchAction || '';
+            body.style.paddingRight = prev.paddingRight || '';
+            body.classList.remove('body-scroll-locked');
+
+            var html = document.documentElement;
+            var previousBehavior = html.style.scrollBehavior;
+            html.style.scrollBehavior = 'auto';
+            window.scrollTo(0, restoreY);
+            html.style.scrollBehavior = previousBehavior || '';
+        }
+
+        window.__BodyScrollLock = {
+            lock: lock,
+            unlock: unlock
+        };
+
+        return window.__BodyScrollLock;
+    }
+
     function openMenu() {
         var menu = document.getElementById('mobileMenu');
         var overlay = document.getElementById('mobileMenu-overlay');
@@ -9,8 +87,8 @@
 
         // Mevcut scroll konumunu sakla ve gövdeyi sabitle
         scrollY = window.scrollY || window.pageYOffset || 0;
+        getSharedScrollLock().lock();
         document.body.classList.add('mobileMenu-locked');
-        document.body.style.top = -scrollY + 'px';
 
         overlay.classList.add('is-open');
         menu.classList.add('is-open');
@@ -28,20 +106,8 @@
         if (toggle) toggle.classList.remove('is-open');
 
         // Body sabitlenmeden önceki scroll konumuna anlık (animasyonsuz) dön
-        var topValue = document.body.style.top || '0';
-        var lockedScroll = parseInt(topValue, 10);
         document.body.classList.remove('mobileMenu-locked');
-        document.body.style.top = '';
-
-        if (!isNaN(lockedScroll) && lockedScroll !== 0) {
-            var html = document.documentElement;
-            var previousBehavior = html.style.scrollBehavior;
-            // Geçici olarak smooth davranışını kapat
-            html.style.scrollBehavior = 'auto';
-            window.scrollTo(0, -lockedScroll);
-            // Önceki değeri geri yükle
-            html.style.scrollBehavior = previousBehavior || '';
-        }
+        getSharedScrollLock().unlock();
     }
 
     function highlightActiveTab() {
