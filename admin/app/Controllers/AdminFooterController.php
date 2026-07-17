@@ -49,7 +49,7 @@ final class AdminFooterController extends AdminController
         } catch (Throwable $e) {
             $_SESSION['admin_footer_error'] = 'Mevcut footer verisi okunamadı.';
             error_log('Footer update - fetch failed: ' . $e->getMessage());
-            $this->redirect(AdminAuth::url('/footer'));
+            $this->redirect(AdminAuth::url('/module?key=footer-settings'));
         }
 
         $payload = $current;
@@ -84,7 +84,7 @@ final class AdminFooterController extends AdminController
             if (!is_array($decoded)) {
                 error_log('Footer update - JSON validation FAILED for field: ' . $field . ', raw: ' . $postValue);
                 $_SESSION['admin_footer_error'] = $field . ' alanı geçerli JSON değil. Lütfen formatı kontrol edin.';
-                $this->redirect(AdminAuth::url('/footer'));
+                $this->redirect(AdminAuth::url('/module?key=footer-settings'));
             }
             $payload[$field] = $decoded;
             error_log('Footer update - JSON OK for field: ' . $field);
@@ -127,7 +127,7 @@ final class AdminFooterController extends AdminController
             error_log('Footer update - DB save FAILED: ' . $e->getMessage());
             $_SESSION['admin_footer_error'] = 'Veritabanı kaydı başarısız: ' . $e->getMessage();
             error_log('Footer update - DB save failed: ' . $e->getMessage());
-            $this->redirect(AdminAuth::url('/footer'));
+            $this->redirect(AdminAuth::url('/module?key=footer-settings'));
         }
 
         error_log('Footer update - COMPLETED SUCCESSFULLY');
@@ -139,7 +139,8 @@ final class AdminFooterController extends AdminController
                 error_log('Footer update - cache purge failed: ' . $e->getMessage());
             }
         }
-        $this->redirect(AdminAuth::url('/footer'));
+        // Redirect back to the module view so the form renders with updated data
+        $this->redirect(AdminAuth::url('/module?key=footer-settings'));
     }
 
     /**
