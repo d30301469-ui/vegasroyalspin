@@ -217,9 +217,25 @@
 .register-turnstile-wrap {
     display: flex;
     justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
     margin: 4px 0 12px;
 }
 
 .turnstile-widget {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
     min-height: 65px;
+}
+
+@media (max-width: 380px) {
+    .register-turnstile-wrap .turnstile-widget {
+        transform: scale(0.92);
+        transform-origin: center top;
+        min-height: 60px;
+    }
 }
