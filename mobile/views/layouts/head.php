@@ -66,6 +66,7 @@ $slotRoutes = ['/slot', '/livecasino', '/bgaming', '/sanal-sporlar'];
 $isSlotRoute = in_array($requestPath, $slotRoutes, true);
 $mobileBodyClass = 'mobile-site' . ($isSlotRoute ? ' slot-page-active' : '');
 $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active' : '');
+$isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOOK_LIGHTWEIGHT_LAYOUT;
 ?>
 <!doctype html>
 <html lang="tr" class="<?= htmlspecialchars($mobileHtmlClass, ENT_QUOTES, 'UTF-8') ?>">
@@ -125,14 +126,17 @@ $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active'
   <link rel="stylesheet" href="/mobile/assets/css/auth-modals.css?v=<?= $ver($mobileCssDir . '/auth-modals.css') ?>">
   <link rel="stylesheet" href="/assets/css/login-modal.css?v=<?= $ver($assetCssDir . '/login-modal.css') ?>">
   <link rel="stylesheet" href="/assets/css/register-modal.css?v=<?= $ver($assetCssDir . '/register-modal.css') ?>">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <?php if ($requestPath === '/beni-ara'): ?>
   <link rel="stylesheet" href="/assets/css/beni-ara.css?v=<?= $ver($assetCssDir . '/beni-ara.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/beni-ara.css?v=<?= $ver($mobileCssDir . '/beni-ara.css') ?>">
   <?php endif; ?>
+  <?php if (!$isSportsbookLightweight): ?>
   <script defer src="/assets/js/swiper-bundle.min.js?v=<?= $ver(BASE_PATH . '/assets/js/swiper-bundle.min.js') ?>"></script>
   <script defer src="/assets/js/pwa-register.js?v=<?= $ver(BASE_PATH . '/assets/js/pwa-register.js') ?>"></script>
   <script defer src="/assets/js/mobile-right-sheet.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/mobile-right-sheet.js')) ?>"></script>
   <script defer src="/assets/js/footer.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/footer.js')) ?>"></script>
+  <?php endif; ?>
 </head>
 <body class="<?= htmlspecialchars($mobileBodyClass, ENT_QUOTES, 'UTF-8') ?>">
 <?php include MOBILE_PATH . '/views/layouts/bc-root-open.php'; ?>
