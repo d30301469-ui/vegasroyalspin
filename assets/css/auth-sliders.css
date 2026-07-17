@@ -66,16 +66,13 @@
     }
 
     #registerModal .auth-slider-bg__slide {
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        background: #07071a;
+        display: block;
     }
 
     #registerModal .auth-slider-bg__image {
-        object-fit: contain;
-        object-position: center bottom;
-        transform: scale(1.02);
+        object-fit: cover;
+        object-position: center top;
+        transform: none;
         transform-origin: center bottom;
     }
 
