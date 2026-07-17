@@ -720,6 +720,13 @@
         max-height: 420px !important;
     }
 
+    @media (min-width: 481px) {
+        #login2 .sg-n-text-row-2-bc {
+            min-height: 110px !important;
+            max-height: 220px !important;
+        }
+    }
+
     /* --- Form inputs --- */
     #login2 .form-group.entrance-f-item-bc {
         margin-bottom: 10px !important;

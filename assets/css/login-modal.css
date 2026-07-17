@@ -23,6 +23,28 @@
     gap: 16px;
 }
 
+@media (min-width: 481px) {
+    #login2 .modal-dialog {
+        max-width: 620px;
+        margin: 24px auto;
+    }
+
+    #login2 .modal-content {
+        max-height: calc(100vh - 48px);
+        overflow: hidden;
+    }
+
+    #login2 .modal-body {
+        overflow-y: auto;
+        max-height: calc(100vh - 48px);
+        padding-bottom: 22px;
+    }
+
+    #login2 .login-modal-container {
+        min-height: 0;
+    }
+}
+
 .login-modal-header {
     display: flex;
     align-items: center;
