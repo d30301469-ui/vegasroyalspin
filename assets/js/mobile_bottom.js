@@ -76,40 +76,21 @@
         if (!mql.matches) return;
 
         var mainMenu = document.querySelector('.mainMenu');
-        var lastScrollY = window.scrollY;
-        var ticking = false;
-        var state = { isHidden: false };
-
-        function onScroll() {
-            if (ticking) return;
-            ticking = true;
-            window.requestAnimationFrame(function () {
-                var currentScrollY = window.scrollY;
-                var delta = currentScrollY - lastScrollY;
-                lastScrollY = currentScrollY;
-
-                var scrollingDown = delta > 0;
-                var shouldHide = scrollingDown && currentScrollY > 80;
-
-                if (mainMenu && shouldHide !== state.isHidden) {
-                    state.isHidden = shouldHide;
-                    if (shouldHide) {
-                        mainMenu.classList.add('header-hidden');
-                    } else {
-                        mainMenu.classList.remove('header-hidden');
-                    }
-                }
-
-                ticking = false;
-            });
+        if (mainMenu) {
+            mainMenu.classList.remove('header-hidden');
         }
 
-        window.addEventListener('scroll', onScroll, { passive: true });
+        if (typeof window.__syncHeaderStickyTop === 'function') {
+            window.__syncHeaderStickyTop();
+        }
 
         mql.addEventListener('change', function (e) {
-            if (!e.matches && mainMenu) {
+            if (mainMenu) {
                 mainMenu.classList.remove('header-hidden');
-                state.isHidden = false;
+            }
+
+            if (typeof window.__syncHeaderStickyTop === 'function') {
+                window.__syncHeaderStickyTop();
             }
         });
     }
