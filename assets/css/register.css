@@ -1434,7 +1434,7 @@ label {
     #registerModal .modal-content {
         height: auto !important;
         min-height: 0 !important;
-        max-height: min(88vh, 760px) !important;
+        max-height: min(86vh, 720px) !important;
         border-radius: 20px !important;
         overflow: hidden !important;
         border: none !important;
@@ -1454,14 +1454,16 @@ label {
 
     /* --- Content wrapper fills right half height --- */
     #registerModal .e-p-content-holder-bc {
-        height: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
         display: flex !important;
         flex-direction: column !important;
         background: linear-gradient(180deg, #130726 0%, #0b0b21 45%, #07071a 100%) !important;
     }
 
     #registerModal .e-p-content-bc {
-        height: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
         display: flex !important;
         flex-direction: column !important;
     }
@@ -1571,8 +1573,8 @@ label {
 
     /* --- Body area fills remaining height --- */
     #registerModal .register-modal-body.e-p-body-bc {
-        flex: 1 !important;
-        overflow: hidden !important;
+        flex: 0 1 auto !important;
+        overflow: visible !important;
         display: flex !important;
         flex-direction: column !important;
         padding: 8px 18px !important;
@@ -1581,18 +1583,19 @@ label {
 
     #registerModal .reg-form-block-bc,
     #registerModal .entrance-form-bc.registration.popup {
-        flex: 1 !important;
+        flex: 0 1 auto !important;
         display: flex !important;
         flex-direction: column !important;
-        overflow: hidden !important;
+        overflow: visible !important;
     }
 
     /* --- Scrollable form area --- */
     #registerModal .register-steps-scroll.entrance-form-content-bc.single-side.step-0 {
-        flex: 1 !important;
+        flex: 0 1 auto !important;
         overflow-y: auto !important;
-        max-height: none !important;
+        max-height: min(58vh, 540px) !important;
         padding-right: 4px !important;
+        padding-bottom: 6px !important;
     }
 
     #registerModal .reg-form-content {
