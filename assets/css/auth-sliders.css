@@ -62,7 +62,9 @@
 
 @media (min-width: 992px) {
     #registerModal .auth-slider-bg {
-        right: 50%;
+        left: 0;
+        right: auto;
+        width: var(--register-art-share, 41%);
     }
 
     #registerModal .auth-slider-bg__slide {
