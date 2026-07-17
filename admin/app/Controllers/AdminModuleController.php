@@ -68,6 +68,19 @@ final class AdminModuleController extends AdminController
         ]);
     }
 
+    public function update(): void
+    {
+        $moduleKey = trim((string) ($_GET['key'] ?? $_POST['key'] ?? ''));
+        if ($moduleKey === 'footer-settings') {
+            $this->requirePermission('footer-settings');
+            (new AdminFooterController())->update();
+            return;
+        }
+        // Generic module update not implemented yet
+        http_response_code(404);
+        echo 'Bu modülün güncelleme işlevi desteklenmiyor.';
+    }
+
     private function module(string $moduleKey): array
     {
         $modules = isset($this->config['modules']) && is_array($this->config['modules']) ? $this->config['modules'] : [];

@@ -202,6 +202,7 @@ $router->get('/table/edit', [AdminTableController::class, 'edit']);
 $router->post('/table/update', [AdminTableController::class, 'update']);
 $router->post('/table/delete', [AdminTableController::class, 'delete']);
 $router->get('/module', [AdminModuleController::class, 'show']);
+$router->post('/module', [AdminModuleController::class, 'update']);
 $router->get('/bgaming/settings', [AdminBgamingController::class, 'settings']);
 $router->post('/bgaming/settings', [AdminBgamingController::class, 'updateSettings']);
 $router->post('/bgaming/sync-games', [AdminBgamingController::class, 'syncGames']);
