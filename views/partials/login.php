@@ -359,6 +359,10 @@ if (class_exists('ApiMediaUrl', false)) {
                                         <?php endif; ?>
                                         <div class="login-error-box login-ajax-alert d-none" id="loginAjaxAlert" role="alert"></div>
 
+                                        <div class="login-turnstile-wrap">
+                                            <div id="loginTurnstile" class="turnstile-widget" data-turnstile-widget="login"></div>
+                                        </div>
+
                                         <div class="entrance-form-actions-holder-bc reg-ext-1">
                                             <button type="submit" class="login-btn btn a-color">
                                                 <span class="btn-text">GİRİŞ YAP</span>

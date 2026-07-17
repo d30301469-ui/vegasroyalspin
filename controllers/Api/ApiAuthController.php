@@ -10,6 +10,158 @@ require_once SERVICE_PATH . '/MemberRegisterPayload.php';
  */
 class ApiAuthController
 {
+    private static function turnstileSettings(): array
+    {
+        $defaults = [
+            'enabled' => false,
+            'site_key' => '',
+            'secret_key' => '',
+        ];
+
+        try {
+            $pdo = self::localDbPdo();
+            if (!($pdo instanceof PDO)) {
+                return $defaults;
+            }
+
+            $stmt = $pdo->query('SELECT turnstile_enabled, turnstile_site_key, turnstile_secret_key FROM site_ayarlar ORDER BY id ASC LIMIT 1');
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+            if (!is_array($row)) {
+                return $defaults;
+            }
+
+            return [
+                'enabled' => !in_array(strtolower(trim((string) ($row['turnstile_enabled'] ?? '0'))), ['0', '', 'false', 'off', 'no'], true),
+                'site_key' => trim((string) ($row['turnstile_site_key'] ?? '')),
+                'secret_key' => trim((string) ($row['turnstile_secret_key'] ?? '')),
+            ];
+        } catch (Throwable) {
+            return $defaults;
+        }
+    }
+
+    private static function turnstileTokenFromRequest(): string
+    {
+        $keys = ['turnstile_response', 'cf-turnstile-response', 'turnstile_token'];
+        foreach ($keys as $key) {
+            $value = trim((string) ($_POST[$key] ?? $_GET[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        $raw = file_get_contents('php://input');
+        if (is_string($raw) && trim($raw) !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                foreach ($keys as $key) {
+                    $value = trim((string) ($decoded[$key] ?? ''));
+                    if ($value !== '') {
+                        return $value;
+                    }
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private static function verifyTurnstileOrRespond(): bool
+    {
+        $settings = self::turnstileSettings();
+        if (empty($settings['enabled']) || trim((string) $settings['site_key']) === '' || trim((string) $settings['secret_key']) === '') {
+            return true;
+        }
+
+        $token = self::turnstileTokenFromRequest();
+        if ($token === '') {
+            self::respondJson(400, [
+                'success' => false,
+                'code' => 400,
+                'message' => 'Cloudflare doğrulaması gerekli.',
+            ]);
+
+            return false;
+        }
+
+        $ip = function_exists('metropol_cloudflare_client_ip')
+            ? metropol_cloudflare_client_ip()
+            : (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+
+        $response = self::postTurnstileVerify($settings['secret_key'], $token, $ip);
+        if ($response === null || empty($response['success'])) {
+            self::respondJson(403, [
+                'success' => false,
+                'code' => 403,
+                'error' => 'TURNSTILE_FAILED',
+                'message' => 'Cloudflare doğrulaması başarısız.',
+            ]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private static function postTurnstileVerify(string $secret, string $token, string $remoteIp = ''): ?array
+    {
+        $secret = trim($secret);
+        $token = trim($token);
+        if ($secret === '' || $token === '') {
+            return null;
+        }
+
+        $url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        $payload = http_build_query([
+            'secret' => $secret,
+            'response' => $token,
+            'remoteip' => $remoteIp,
+        ], '', '&');
+
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            if ($ch === false) {
+                return null;
+            }
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CONNECTTIMEOUT => 4,
+                CURLOPT_TIMEOUT => 8,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded', 'Accept: application/json'],
+            ]);
+            $raw = curl_exec($ch);
+            curl_close($ch);
+            if (!is_string($raw) || trim($raw) === '') {
+                return null;
+            }
+            $decoded = json_decode($raw, true);
+
+            return is_array($decoded) ? $decoded : null;
+        }
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/x-www-form-urlencoded\r\nAccept: application/json\r\n",
+                'content' => $payload,
+                'timeout' => 8,
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+        $raw = @file_get_contents($url, false, $context);
+        if (!is_string($raw) || trim($raw) === '') {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
     private static function allowLocalAuthFallback(): bool
     {
         if (function_exists('frontend_is_api_only') && frontend_is_api_only()) {
@@ -254,6 +406,10 @@ class ApiAuthController
     public function register(): void
     {
         self::jsonHeaders();
+
+        if (!self::verifyTurnstileOrRespond()) {
+            return;
+        }
 
         $path = self::requestPath();
         $ct = (string) ($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '');
@@ -860,6 +1016,10 @@ class ApiAuthController
     public function login(): void
     {
         self::jsonHeaders();
+
+        if (!self::verifyTurnstileOrRespond()) {
+            return;
+        }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
