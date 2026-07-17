@@ -691,6 +691,11 @@ label {
     visibility: hidden;
     transform: translateY(-6px);
     pointer-events: none;
+    /* Kapalı panel absolute olsa da tüm seçenekleriyle render edilip
+       kaydırılabilir kapsayıcının scrollHeight'ini şişiriyor ve formun
+       altında hayalet boşluk yaratıyordu. Kapalıyken yüksekliği sıfırla. */
+    max-height: 0 !important;
+    overflow: hidden !important;
 }
 
 .bc-custom-select__search {
