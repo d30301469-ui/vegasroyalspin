@@ -418,6 +418,9 @@
             smartToggle.classList.remove('is-open');
             smartToggle.setAttribute('aria-expanded', 'false');
         }
+        if (typeof window.__closeSmartPanel === 'function') {
+            window.__closeSmartPanel();
+        }
         var smartPanelFixed = document.getElementById('smartPanelFixed');
         if (smartPanelFixed) {
             smartPanelFixed.classList.remove('is-open');

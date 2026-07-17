@@ -341,6 +341,9 @@
         // Smart panel — YENİ YAPI: sağ taraftan kayan sabit panel (header.js yönetir)
         // footer.js sadece sp-button tıklamalarını right-sidebar ile köprüler.
         function closeNewSmartPanel() {
+            if (typeof window.__closeSmartPanel === "function") {
+                window.__closeSmartPanel();
+            }
             var panel  = document.getElementById("smartPanelFixed");
             var toggle = document.getElementById("smart-panel-holder");
             var arrowHolder = document.querySelector(".hdr-smart-panel-holder-arrow-bc");
