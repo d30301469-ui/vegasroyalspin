@@ -23,6 +23,9 @@
                 <div class="bonus-accordion-list" role="list"></div>
                 <div class="bonus-modal-claim" id="bonus-modal-claim" hidden>
                     <div class="bonus-modal-claim-actions">
+                        <a class="bonus-modal-claim-login bonus-modal-link" id="bonus-modal-link" href="#" hidden>Promosyona git</a>
+                    </div>
+                    <div class="bonus-modal-claim-actions">
                         <a class="bonus-modal-claim-login" id="bonus-modal-claim-login" href="/login">Giriş yap</a>
                         <button type="button" class="bonus-modal-claim-submit" id="bonus-modal-claim-submit">Bonus talep et</button>
                     </div>
