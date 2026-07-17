@@ -1727,6 +1727,34 @@ label {
         height: 44px !important;
     }
 
+    /* DOB alanı iki satırlı (label + value) yapı kullandığı için
+       genel input label kuralını ezip çakışma yaratmaması gerekir. */
+    #registerModal .register-dob-trigger {
+        height: 48px !important;
+        min-height: 48px !important;
+        padding: 7px 40px 7px 14px !important;
+        align-items: flex-start !important;
+    }
+
+    #registerModal .register-dob-trigger .form-control-title-bc.register-dob-label {
+        position: static !important;
+        left: auto !important;
+        top: auto !important;
+        transform: none !important;
+        font-size: 10px !important;
+        line-height: 1.1 !important;
+    }
+
+    #registerModal .register-dob-trigger-text {
+        gap: 1px !important;
+    }
+
+    #registerModal .register-dob-value {
+        font-size: 12px !important;
+        line-height: 1.2 !important;
+        margin-top: 1px !important;
+    }
+
     #registerModal .bc-custom-select__label,
     #registerModal .bc-fixed-select__label {
         color: rgba(200, 185, 255, 0.65) !important;
