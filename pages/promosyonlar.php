@@ -11,7 +11,7 @@ include __DIR__ . '/../views/partials/header.php';
 $kategoriler = [
     ['id' => 'bonuslar', 'label' => 'BONUSLAR', 'icon' => 'bc-i-all-games1', 'active' => true],
     ['id' => 'spor', 'label' => 'SPOR', 'icon' => 'bc-i-prematch'],
-    ['id' => 'slot-casino', 'label' => 'SLOT & CASINO', 'icon' => 'bc-i-livecasino'],
+    ['id' => 'slot-casino', 'label' => 'SLOT & CASINO', 'icon' => 'bc-i-slots-v1'],
     ['id' => 'yeni-uyeler', 'label' => 'YENİ ÜYELERE ÖZEL', 'icon' => 'bc-i-user'],
     ['id' => 'kayip-bonuslari', 'label' => 'KAYIP BONUSLARI', 'icon' => 'bc-i-circle-dollar'],
     ['id' => 'yatirim-bonuslari', 'label' => 'YATIRIM BONUSLARI', 'icon' => 'bc-i-wallet'],
