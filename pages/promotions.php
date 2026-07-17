@@ -263,6 +263,7 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
 </script>
 <script src="/assets/js/bonus-detail-modal.js?v=<?= (string) (file_exists(__DIR__ . '/../assets/js/bonus-detail-modal.js') ? filemtime(__DIR__ . '/../assets/js/bonus-detail-modal.js') : 1) ?>"></script>
 <script src="/assets/js/promosyonlar.js?v=<?= (string) (file_exists(__DIR__ . '/../assets/js/promosyonlar.js') ? filemtime(__DIR__ . '/../assets/js/promosyonlar.js') : 1) ?>"></script>
+<link rel="stylesheet" href="/assets/css/bonus-detail-modal.css?v=<?= (string) (file_exists(__DIR__ . '/../assets/css/bonus-detail-modal.css') ? filemtime(__DIR__ . '/../assets/css/bonus-detail-modal.css') : 1) ?>">
 
 <?php include __DIR__ . '/../views/partials/bonus-detail-modal.php'; ?>
 
