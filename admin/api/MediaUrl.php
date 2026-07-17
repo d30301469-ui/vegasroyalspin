@@ -215,7 +215,8 @@ final class ApiMediaUrl
 
         return str_starts_with($lower, '/uploads/')
             || str_starts_with($lower, '/storage/uploads/')
-            || str_starts_with($lower, '/admin/uploads/');
+            || str_starts_with($lower, '/admin/uploads/')
+            || str_starts_with($lower, '/upload/');
     }
 
     private static function backendOrigin(): string

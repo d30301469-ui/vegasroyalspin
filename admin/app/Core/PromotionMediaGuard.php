@@ -65,7 +65,7 @@ final class PromotionMediaGuard
      */
     public static function listLibraryImages(): array
     {
-        $dir = self::libraryDir();
+        $dir = self::sourceDir();
         if (!is_dir($dir)) {
             return [];
         }
@@ -79,7 +79,7 @@ final class PromotionMediaGuard
             if (!in_array($ext, self::ALLOWED_EXT, true)) {
                 continue;
             }
-            $out[] = ['filename' => $file, 'url' => '/uploads/promotions/' . $file];
+            $out[] = ['filename' => $file, 'url' => '/upload/bonuses/' . $file];
         }
 
         usort($out, static fn (array $a, array $b): int => strcmp($a['filename'], $b['filename']));
@@ -90,10 +90,14 @@ final class PromotionMediaGuard
     /**
      * admin/upload/bonuses içindeki hazır görselleri /uploads/promotions/ olarak
      * servis edilebilen dizine kopyalar (idempotent — mevcut dosyaların üzerine yazmaz).
+     * Bu adım en iyi çaba (best-effort) niteliğindedir: hedef dizin yazılabilir
+     * değilse (ör. üretimde izin sorunu) sessizce hiçbir şey yapmaz — görsellerin
+     * çalışması buna bağlı DEĞİLDİR, çünkü repairMissingImages() doğrudan git ile
+     * deploy edilen /upload/bonuses/ kaynağını referans alır.
      */
     public static function syncUploadLibrary(): int
     {
-        $source = self::rootPath() . '/upload/bonuses';
+        $source = self::sourceDir();
         $target = self::libraryDir();
 
         if (!is_dir($source)) {
@@ -133,9 +137,12 @@ final class PromotionMediaGuard
 
     /**
      * Diskte bulunmayan yerel image_url kayıtlarını başlığa en yakın kütüphane
-     * görseliyle eşleştirip düzeltir. Yalnızca /uploads/, /storage/uploads/ veya
-     * /admin/uploads/ ile başlayan (yani backend'de barındırılan) yollar için
-     * çalışır; harici CDN URL'lerine (icons.casinomilyon*.com vb.) dokunmaz.
+     * görseliyle eşleştirip düzeltir. Yalnızca /uploads/, /storage/uploads/,
+     * /admin/uploads/ veya /upload/bonuses/ ile başlayan (yani backend'de
+     * barındırılan) yollar için çalışır; harici CDN URL'lerine
+     * (icons.casinomilyon*.com vb.) dokunmaz. Onarılan kayıtlar, izin sorunu
+     * olsa bile her zaman çalışan git-deploy edilmiş /upload/bonuses/ kaynağına
+     * yönlendirilir.
      */
     public static function repairMissingImages(PDO $pdo): int
     {
@@ -167,12 +174,22 @@ final class PromotionMediaGuard
             }
 
             $relative = self::normalizeToUploadsRelative($raw);
-            if (!str_starts_with($relative, '/uploads/')) {
+            if (!str_starts_with($relative, '/uploads/') && !str_starts_with($relative, '/upload/bonuses/')) {
                 continue;
             }
 
-            $diskPath = self::rootPath() . '/storage' . $relative;
-            if (is_file($diskPath)) {
+            // Kayıt zaten doğrudan çalışan /upload/bonuses/ kaynağını mı gösteriyor?
+            $filename = basename($relative);
+
+            if ($filename !== '' && is_file(self::sourceDir() . '/' . $filename)) {
+                // Dosya adı kütüphanede birebir mevcut — kaydı her zaman çalışan
+                // /upload/bonuses/ yoluna sabitle (eski /uploads/promotions/ önekini
+                // senkron kopyanın var olup olmamasına bağlı kalmadan düzelt).
+                $canonical = '/upload/bonuses/' . $filename;
+                if ($raw !== $canonical) {
+                    $update->execute(['image_url' => $canonical, 'id' => $row['id']]);
+                    $fixed++;
+                }
                 continue;
             }
 
@@ -201,7 +218,7 @@ final class PromotionMediaGuard
             }
 
             if ($best !== null && $bestPct >= 55.0 && ($bestPct - $secondPct) >= 8.0) {
-                $update->execute(['image_url' => '/uploads/promotions/' . $best, 'id' => $row['id']]);
+                $update->execute(['image_url' => '/upload/bonuses/' . $best, 'id' => $row['id']]);
                 $fixed++;
             }
         }
@@ -280,6 +297,11 @@ final class PromotionMediaGuard
     private static function libraryDir(): string
     {
         return self::rootPath() . '/storage/uploads/promotions';
+    }
+
+    private static function sourceDir(): string
+    {
+        return self::rootPath() . '/upload/bonuses';
     }
 
     private static function rootPath(): string
