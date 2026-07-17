@@ -9,12 +9,16 @@ $id = (string) ($promotion['id'] ?? '');
 
 $text = static fn (mixed $v): string => htmlspecialchars((string) ($v ?? ''), ENT_QUOTES, 'UTF-8');
 $val = static fn (string $field, mixed $default = ''): string => htmlspecialchars((string) ($promotion[$field] ?? $default), ENT_QUOTES, 'UTF-8');
+$categoryOptions = is_array($categoryOptions ?? null) ? $categoryOptions : [];
+$libraryImages = is_array($libraryImages ?? null) ? $libraryImages : [];
+$currentType = (string) ($promotion['type'] ?? '');
+$currentImage = (string) ($promotion['image_url'] ?? '');
 ?>
 <?php if ($flash !== ''): ?>
     <div class="alert alert--danger" style="margin-bottom:12px"><?= $text($flash) ?></div>
 <?php endif; ?>
 
-<form method="post" action="<?= $text(AdminAuth::url($isEdit ? '/promotion/update' : '/promotion/store')) ?>">
+<form method="post" enctype="multipart/form-data" action="<?= $text(AdminAuth::url($isEdit ? '/promotion/update' : '/promotion/store')) ?>">
     <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
     <?php if ($isEdit): ?><input type="hidden" name="id" value="<?= $text($id) ?>"><?php endif; ?>
 
@@ -30,13 +34,22 @@ $val = static fn (string $field, mixed $default = ''): string => htmlspecialchar
         </div>
 
         <div class="field">
-            <label class="field-label" for="promoType">Tip</label>
-            <input id="promoType" class="input" type="text" name="type" value="<?= $val('type') ?>" maxlength="60" placeholder="welcome, deposit, freespin...">
+            <label class="field-label" for="promoType">Kategori <span style="color:var(--danger)">*</span></label>
+            <select id="promoType" class="select" name="type" required>
+                <option value="">Kategori seçin...</option>
+                <?php foreach ($categoryOptions as $slug => $label): ?>
+                    <option value="<?= $text($slug) ?>"<?= ($currentType === $slug ? ' selected' : '') ?>><?= $text($label) ?></option>
+                <?php endforeach; ?>
+                <?php if ($currentType !== '' && !array_key_exists($currentType, $categoryOptions)): ?>
+                    <option value="<?= $text($currentType) ?>" selected><?= $text($currentType) ?> (eski değer)</option>
+                <?php endif; ?>
+            </select>
+            <small style="display:block;margin-top:6px;color:#667085">Frontend promosyon sayfasindaki kategori filtresini bu değer belirler.</small>
         </div>
 
         <div class="field">
-            <label class="field-label" for="promoCategory">Kategori</label>
-            <input id="promoCategory" class="input" type="text" name="category" value="<?= $val('category') ?>" maxlength="60" placeholder="casino, sports...">
+            <label class="field-label" for="promoCategory">Etiket / alt kategori (opsiyonel)</label>
+            <input id="promoCategory" class="input" type="text" name="category" value="<?= $val('category') ?>" maxlength="60" placeholder="opsiyonel serbest etiket">
         </div>
 
         <div class="field">
@@ -64,9 +77,34 @@ $val = static fn (string $field, mixed $default = ''): string => htmlspecialchar
         </div>
 
         <div class="field" style="grid-column:1/-1">
+            <label class="field-label" for="promoImageLibrary">Kütüphaneden görsel seç</label>
+            <select id="promoImageLibrary" class="select" onchange="var f=document.getElementById('promoImage'); if(this.value){ f.value = this.value; } document.getElementById('promoImagePreview').src = this.value || f.value;">
+                <option value="">-- admin/upload/bonuses kütüphanesinden seçin --</option>
+                <?php foreach ($libraryImages as $img): ?>
+                    <option value="<?= $text($img['url']) ?>"<?= ($currentImage === $img['url'] ? ' selected' : '') ?>><?= $text($img['filename']) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <small style="display:block;margin-top:6px;color:#667085">Seçilen görsel aşağıdaki URL alanına otomatik yazılır.</small>
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
             <label class="field-label" for="promoImage">Resim URL</label>
-            <input id="promoImage" class="input" type="text" name="image_url" value="<?= $val('image_url') ?>" maxlength="700" placeholder="https://icons... veya /uploads/...">
+            <input id="promoImage" class="input" type="text" name="image_url" value="<?= $val('image_url') ?>" maxlength="700" placeholder="https://icons... veya /uploads/..." oninput="document.getElementById('promoImagePreview').src = this.value;">
             <small style="display:block;margin-top:6px;color:#667085">Kaydet ile birlikte image URL veritabaninda otomatik normalize edilir.</small>
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
+            <label class="field-label" for="promoImageFile">Veya yeni görsel yükle</label>
+            <input id="promoImageFile" class="input" type="file" name="image_file" accept=".jpg,.jpeg,.png,.webp,.gif">
+            <small style="display:block;margin-top:6px;color:#667085">Yüklenen dosya varsa, URL/kütüphane seçimine öncelikli olarak kullanılır (maks. 5MB).</small>
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
+            <?php if ($currentImage !== ''): ?>
+                <img id="promoImagePreview" src="<?= $text($currentImage) ?>" alt="" style="max-width:160px;max-height:100px;border-radius:8px;border:1px solid var(--border);object-fit:cover">
+            <?php else: ?>
+                <img id="promoImagePreview" src="" alt="" style="max-width:160px;max-height:100px;border-radius:8px;border:1px solid var(--border);object-fit:cover;display:none">
+            <?php endif; ?>
         </div>
 
         <div class="field" style="grid-column:1/-1">
