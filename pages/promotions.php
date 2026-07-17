@@ -319,7 +319,11 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     font-size: 10px;
     font-weight: 400;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    transform: translateY(0);
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+                background 0.24s ease,
+                color 0.24s ease,
+                box-shadow 0.24s ease;
     white-space: nowrap;
 }
 
@@ -332,6 +336,7 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     align-items: center;
     justify-content: center;
     opacity: 1;
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), color 0.24s ease;
 }
 
 .bonus-page-cats .promo-cat-btn span {
@@ -343,13 +348,23 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
 .bonus-page-cats .promo-cat-btn:focus-visible {
     background: rgba(255, 255, 255, 0.16);
     color: rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
     outline: none;
+}
+
+.bonus-page-cats .promo-cat-btn:hover .promo-cat-icon,
+.bonus-page-cats .promo-cat-btn:hover i,
+.bonus-page-cats .promo-cat-btn:focus-visible .promo-cat-icon,
+.bonus-page-cats .promo-cat-btn:focus-visible i {
+    transform: scale(1.08);
 }
 
 .bonus-page-cats .promo-cat-btn.active {
     background: rgb(32, 32, 34);
     color: #fff;
     box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.15);
+    transform: translateY(0);
 }
 
 .bonus-page-cats .promo-cat-btn.active .promo-cat-icon,
@@ -504,14 +519,30 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     border: none;
     overflow: hidden;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.32s cubic-bezier(0.22, 1, 0.36, 1);
     box-shadow: none;
     display: block;
 }
 
 .bonus-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    transform: translateY(-4px);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.38);
+}
+
+.bonus-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    pointer-events: none;
+    background: linear-gradient(130deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
+    opacity: 0;
+    transition: opacity 0.32s ease;
+}
+
+.bonus-card:hover::after {
+    opacity: 1;
 }
 
 .bonus-card-inner {
@@ -535,6 +566,13 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     object-fit: cover;
     display: block;
     border-radius: 4px 4px 0 0;
+    transform: scale(1);
+    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), filter 0.32s ease;
+}
+
+.bonus-card:hover .bonus-image img {
+    transform: scale(1.03);
+    filter: brightness(1.05);
 }
 
 /* Kart başlık çubuğu — orijinal CasinoMilyon: rgba(255,255,255,0.1) arka plan */
@@ -551,6 +589,29 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: background 0.28s ease;
+}
+
+.bonus-card:hover .bonus-card-title {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bonus-page-cats .promo-cat-btn,
+    .bonus-page-cats .promo-cat-btn .promo-cat-icon,
+    .bonus-page-cats .promo-cat-btn i,
+    .bonus-card,
+    .bonus-card::after,
+    .bonus-image img,
+    .bonus-card-title {
+        transition: none !important;
+    }
+
+    .bonus-page-cats .promo-cat-btn:hover,
+    .bonus-page-cats .promo-cat-btn:focus-visible,
+    .bonus-card:hover {
+        transform: none;
+    }
 }
 
 /* Countdown banner (opsiyonel) — kart üzerinde sol üst */
