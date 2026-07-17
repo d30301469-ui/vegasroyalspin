@@ -73,11 +73,17 @@ final class AdminFooterController extends AdminController
         ];
 
         foreach (['social_icons', 'menu_columns', 'payments', 'licence_rows', 'awards', 'partner_logos', 'jackpot_config'] as $field) {
-            $decoded = json_decode((string) ($_POST[$field] ?? ''), true);
+            $postValue = (string) ($_POST[$field] ?? '');
+            if (trim($postValue) === '') {
+                // Use current value or empty array
+                $payload[$field] = $current[$field] ?? [];
+                error_log('Footer update - JSON field empty, using current: ' . $field);
+                continue;
+            }
+            $decoded = json_decode($postValue, true);
             if (!is_array($decoded)) {
-                error_log('Footer update - JSON validation FAILED for field: ' . $field . ', raw: ' . (string) ($_POST[$field] ?? '(empty)'));
+                error_log('Footer update - JSON validation FAILED for field: ' . $field . ', raw: ' . $postValue);
                 $_SESSION['admin_footer_error'] = $field . ' alanı geçerli JSON değil. Lütfen formatı kontrol edin.';
-                error_log('Footer update - invalid JSON in ' . $field);
                 $this->redirect(AdminAuth::url('/footer'));
             }
             $payload[$field] = $decoded;
