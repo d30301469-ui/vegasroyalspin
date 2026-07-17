@@ -384,6 +384,8 @@ if (class_exists('ApiMediaUrl', false)) {
                             <div id="registerTurnstile" class="turnstile-widget" data-turnstile-widget="register"></div>
                         </div>
                     </div>
+                    </div>
+                    </div>
                     </div><!-- .register-steps-scroll -->
 
                     <div class="register-footer-bar reg-form-footer-bc via-wallet-enabled">
