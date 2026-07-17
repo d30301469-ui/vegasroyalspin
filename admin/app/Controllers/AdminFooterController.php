@@ -42,6 +42,8 @@ final class AdminFooterController extends AdminController
             return;
         }
 
+        error_log('Footer update: STARTED, POST data keys: ' . json_encode(array_keys($_POST)));
+
         try {
             $current = $this->footerPayload();
         } catch (Throwable $e) {
@@ -73,11 +75,13 @@ final class AdminFooterController extends AdminController
         foreach (['social_icons', 'menu_columns', 'payments', 'licence_rows', 'awards', 'partner_logos', 'jackpot_config'] as $field) {
             $decoded = json_decode((string) ($_POST[$field] ?? ''), true);
             if (!is_array($decoded)) {
+                error_log('Footer update - JSON validation FAILED for field: ' . $field . ', raw: ' . (string) ($_POST[$field] ?? '(empty)'));
                 $_SESSION['admin_footer_error'] = $field . ' alanı geçerli JSON değil. Lütfen formatı kontrol edin.';
                 error_log('Footer update - invalid JSON in ' . $field);
                 $this->redirect(AdminAuth::url('/footer'));
             }
             $payload[$field] = $decoded;
+            error_log('Footer update - JSON OK for field: ' . $field);
         }
 
         // Not: Eskiden burada frontend ApiFooter::normalize() çağrılıyordu.
@@ -96,24 +100,31 @@ final class AdminFooterController extends AdminController
         try {
             $pdo = AdminDatabase::pdo();
             $this->ensureFooterTable($pdo);
+            error_log('Footer update - ensureFooterTable OK');
             $pdo->exec('UPDATE footer_settings SET is_active = 0');
+            error_log('Footer update - SET is_active=0 OK');
 
             $stmt = $pdo->prepare('SELECT id FROM footer_settings WHERE name = :name ORDER BY id DESC LIMIT 1');
             $stmt->execute(['name' => 'default']);
             $id = (int) $stmt->fetchColumn();
+            error_log('Footer update - found existing id: ' . $id);
             if ($id > 0) {
                 $update = $pdo->prepare('UPDATE footer_settings SET payload = :payload, is_active = 1 WHERE id = :id');
                 $update->execute(['payload' => $encoded, 'id' => $id]);
+                error_log('Footer update - UPDATED existing record id=' . $id);
             } else {
                 $insert = $pdo->prepare('INSERT INTO footer_settings (name, payload, is_active) VALUES (:name, :payload, 1)');
                 $insert->execute(['name' => 'default', 'payload' => $encoded]);
+                error_log('Footer update - INSERTED new record');
             }
         } catch (Throwable $e) {
+            error_log('Footer update - DB save FAILED: ' . $e->getMessage());
             $_SESSION['admin_footer_error'] = 'Veritabanı kaydı başarısız: ' . $e->getMessage();
             error_log('Footer update - DB save failed: ' . $e->getMessage());
             $this->redirect(AdminAuth::url('/footer'));
         }
 
+        error_log('Footer update - COMPLETED SUCCESSFULLY');
         $_SESSION['admin_footer_flash'] = 'Footer ayarları güncellendi.';
         if (function_exists('metropol_notify_frontend_cms_purge')) {
             try {
