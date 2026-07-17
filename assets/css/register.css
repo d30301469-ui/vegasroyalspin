@@ -1425,8 +1425,10 @@ label {
 
     /* --- Dialog width --- */
     #registerModal .modal-dialog {
-        max-width: 960px !important;
-        width: min(94vw, 960px) !important;
+        --register-art-width: clamp(380px, 33vw, 500px);
+        --register-form-width: clamp(620px, 52vw, 760px);
+        max-width: calc(var(--register-art-width) + var(--register-form-width)) !important;
+        width: min(96vw, calc(var(--register-art-width) + var(--register-form-width))) !important;
         margin: auto !important;
     }
 
@@ -1439,12 +1441,9 @@ label {
         overflow: hidden !important;
         border: none !important;
         box-shadow: 0 18px 54px rgba(0,0,0,0.75) !important;
-        /* Left 50% = background image; right 50% = dark */
-        background:
-            url("/assets/images/register-bg.jpg")
-            no-repeat 0 0 / 50% 100% !important;
-        /* Push all content to right half */
-        padding-left: min(47vw, 480px) !important;
+        background: #07071a !important;
+        /* Push all content to the exact artwork area width */
+        padding-left: var(--register-art-width) !important;
         display: block !important;
     }
 

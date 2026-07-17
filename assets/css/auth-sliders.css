@@ -62,7 +62,9 @@
 
 @media (min-width: 992px) {
     #registerModal .auth-slider-bg {
-        right: 50%;
+        left: 0;
+        right: auto;
+        width: var(--register-art-width, 50%);
     }
 
     #registerModal .auth-slider-bg__slide {
@@ -75,7 +77,7 @@
     #registerModal .auth-slider-bg__image {
         object-fit: contain;
         object-position: center bottom;
-        transform: scale(1.02);
+        transform: none;
         transform-origin: center bottom;
     }
 
