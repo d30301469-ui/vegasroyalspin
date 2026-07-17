@@ -677,6 +677,8 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                         <div class="data-cell-user-email" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($table, ENT_QUOTES, 'UTF-8') ?></div>
                                     </div>
                                 </div>
+                            <?php elseif ($columnName === 'txn_type'): ?>
+                                <span class="badge <?= htmlspecialchars($badgeClass((string) $rawValue), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($textValue, ENT_QUOTES, 'UTF-8') ?></span>
                             <?php elseif (preg_match('/status|active|verified|banned|enabled/i', $columnName) === 1): ?>
                                 <span class="badge <?= htmlspecialchars($badgeClass((string) $rawValue), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($textValue, ENT_QUOTES, 'UTF-8') ?></span>
                             <?php elseif (preg_match('/id$|_id$|amount|balance|created_at|updated_at|date/i', $columnName) === 1): ?>
