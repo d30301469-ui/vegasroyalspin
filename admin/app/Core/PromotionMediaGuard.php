@@ -37,14 +37,25 @@ final class PromotionMediaGuard
 
         self::ensureSchema($pdo);
 
+        // syncUploadLibrary() bir dizin taraması + dosya kopyalama denemesidir,
+        // bu yüzden ağır sayılıp throttle edilir (en fazla 10 dakikada bir).
         if (self::shouldRunMaintenance()) {
             try {
                 self::syncUploadLibrary();
-                self::repairMissingImages($pdo);
             } catch (Throwable) {
                 // Bakım işlemleri sayfayı asla kırmamalı.
             }
             self::markMaintenanceRun();
+        }
+
+        // repairMissingImages() ucuz bir işlemdir (tek SELECT + gerektiğinde
+        // birkaç UPDATE, düzeltildikten sonra no-op'a yakınsar) — throttle'a
+        // bağlı KALMADAN her istekte çalıştırılır ki tek bir satırda oluşacak
+        // beklenmeyen bir hata/istisna tüm partiyi 10 dakika boyunca kilitlemesin.
+        try {
+            self::repairMissingImages($pdo);
+        } catch (Throwable) {
+            // Onarım hatası sayfayı asla kırmamalı.
         }
     }
 
@@ -168,62 +179,82 @@ final class PromotionMediaGuard
         $fixed = 0;
 
         foreach ($rows as $row) {
-            $raw = trim((string) ($row['image_url'] ?? ''));
-            if ($raw === '' || preg_match('#^https?://#i', $raw) === 1) {
-                continue;
-            }
-
-            $relative = self::normalizeToUploadsRelative($raw);
-            if (!str_starts_with($relative, '/uploads/') && !str_starts_with($relative, '/upload/bonuses/')) {
-                continue;
-            }
-
-            // Kayıt zaten doğrudan çalışan /upload/bonuses/ kaynağını mı gösteriyor?
-            $filename = basename($relative);
-
-            if ($filename !== '' && is_file(self::sourceDir() . '/' . $filename)) {
-                // Dosya adı kütüphanede birebir mevcut — kaydı her zaman çalışan
-                // /upload/bonuses/ yoluna sabitle (eski /uploads/promotions/ önekini
-                // senkron kopyanın var olup olmamasına bağlı kalmadan düzelt).
-                $canonical = '/upload/bonuses/' . $filename;
-                if ($raw !== $canonical) {
-                    $update->execute(['image_url' => $canonical, 'id' => $row['id']]);
+            try {
+                if (self::repairSingleRow($row, $update, $libraryFiles)) {
                     $fixed++;
                 }
-                continue;
-            }
-
-            $titleSlug = self::slugify((string) ($row['title'] ?? ''));
-            if ($titleSlug === '') {
-                continue;
-            }
-
-            $best = null;
-            $bestPct = 0.0;
-            $secondPct = 0.0;
-            foreach ($libraryFiles as $file) {
-                $fileSlug = self::slugify(pathinfo($file, PATHINFO_FILENAME));
-                if ($fileSlug === '') {
-                    continue;
-                }
-                $pct = 0.0;
-                similar_text($titleSlug, $fileSlug, $pct);
-                if ($pct > $bestPct) {
-                    $secondPct = $bestPct;
-                    $bestPct = $pct;
-                    $best = $file;
-                } elseif ($pct > $secondPct) {
-                    $secondPct = $pct;
-                }
-            }
-
-            if ($best !== null && $bestPct >= 55.0 && ($bestPct - $secondPct) >= 8.0) {
-                $update->execute(['image_url' => '/upload/bonuses/' . $best, 'id' => $row['id']]);
-                $fixed++;
+            } catch (Throwable) {
+                // Tek bir satırdaki beklenmeyen bir hata diğer satırların
+                // onarılmasını engellememeli.
             }
         }
 
         return $fixed;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @param list<string> $libraryFiles
+     */
+    private static function repairSingleRow(array $row, PDOStatement $update, array $libraryFiles): bool
+    {
+        $raw = trim((string) ($row['image_url'] ?? ''));
+        if ($raw === '' || preg_match('#^https?://#i', $raw) === 1) {
+            return false;
+        }
+
+        $relative = self::normalizeToUploadsRelative($raw);
+        if (!str_starts_with($relative, '/uploads/') && !str_starts_with($relative, '/upload/bonuses/')) {
+            return false;
+        }
+
+        // Kayıt zaten doğrudan çalışan /upload/bonuses/ kaynağını mı gösteriyor?
+        $filename = basename($relative);
+
+        if ($filename !== '' && is_file(self::sourceDir() . '/' . $filename)) {
+            // Dosya adı kütüphanede birebir mevcut — kaydı her zaman çalışan
+            // /upload/bonuses/ yoluna sabitle (eski /uploads/promotions/ önekini
+            // senkron kopyanın var olup olmamasına bağlı kalmadan düzelt).
+            $canonical = '/upload/bonuses/' . $filename;
+            if ($raw === $canonical) {
+                return false;
+            }
+            $update->execute(['image_url' => $canonical, 'id' => $row['id']]);
+
+            return true;
+        }
+
+        $titleSlug = self::slugify((string) ($row['title'] ?? ''));
+        if ($titleSlug === '') {
+            return false;
+        }
+
+        $best = null;
+        $bestPct = 0.0;
+        $secondPct = 0.0;
+        foreach ($libraryFiles as $file) {
+            $fileSlug = self::slugify(pathinfo($file, PATHINFO_FILENAME));
+            if ($fileSlug === '') {
+                continue;
+            }
+            $pct = 0.0;
+            similar_text($titleSlug, $fileSlug, $pct);
+            if ($pct > $bestPct) {
+                $secondPct = $bestPct;
+                $bestPct = $pct;
+                $best = $file;
+            } elseif ($pct > $secondPct) {
+                $secondPct = $pct;
+            }
+        }
+
+        if ($best !== null && $bestPct >= 55.0 && ($bestPct - $secondPct) >= 8.0) {
+            $update->execute(['image_url' => '/upload/bonuses/' . $best, 'id' => $row['id']]);
+
+            return true;
+        }
+
+        return false;
     }
 
     private static function ensureColumn(PDO $pdo, string $column, string $definitionSql): void
