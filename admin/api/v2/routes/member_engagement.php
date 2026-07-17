@@ -61,6 +61,14 @@ if (($route === 'call_me_request.php' || $route === 'call-me-request') && in_arr
 
 if (($route === 'promotions.php' || $route === 'content/promotions') && in_array($method, ['GET', 'POST'], true)) {
     $pdo = AdminDatabase::pdo();
+    // Şema kolonlarını (link_url, category, genişletilmiş image_url) ve promosyon
+    // görsellerini (admin/upload/bonuses -> /uploads/promotions/) otomatik onarır.
+    // Canlı ortamda da manuel migration gerekmeden ilk istekte kendi kendine kurulur.
+    try {
+        PromotionMediaGuard::bootstrap();
+    } catch (Throwable) {
+        // Guard hatası isteği asla kesmemeli.
+    }
     $viewerUserId = $memberJwtOptionalUserId($pdo);
     if ($method === 'GET') {
         $hasPromotionLinkUrl = false;

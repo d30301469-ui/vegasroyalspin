@@ -6,6 +6,15 @@ final class AdminPromotionController extends AdminController
 {
     private static bool $promotionSchemaEnsured = false;
 
+    /** @var array<string, string> Frontend kategori filtresiyle uyumlu değerler (ApiPromotions::CATEGORY_SLUGS). */
+    private const CATEGORY_OPTIONS = [
+        'sports' => 'Spor',
+        'live_casino' => 'Canlı Casino',
+        'slots' => 'Slot',
+        'loss_bonus' => 'Kayıp Bonusu',
+        'vip' => 'VIP',
+    ];
+
     public function index(): void
     {
         $this->requirePermission('promotions');
@@ -64,6 +73,8 @@ final class AdminPromotionController extends AdminController
             'crumbs' => 'Marketing | Promotions | Ekle',
             'promotion' => [],
             'mode' => 'create',
+            'categoryOptions' => self::CATEGORY_OPTIONS,
+            'libraryImages' => PromotionMediaGuard::listLibraryImages(),
             'flash' => $this->pullFlash(),
         ]);
     }
@@ -81,7 +92,8 @@ final class AdminPromotionController extends AdminController
         }
 
         try {
-            $imageUrl = self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
+            $uploadedImageUrl = self::handleImageUpload($_FILES['image_file'] ?? null);
+            $imageUrl = $uploadedImageUrl ?? self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
             $linkUrl = self::normalizePromotionLinkUrl((string) ($_POST['link_url'] ?? ''));
             AdminDatabase::pdo()->prepare(
                 'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, link_url, bonus_amount, wagering_multiplier, created_at, updated_at)
@@ -124,6 +136,8 @@ final class AdminPromotionController extends AdminController
             'crumbs' => 'Marketing | Promotions | Düzenle',
             'promotion' => $promotion,
             'mode' => 'edit',
+            'categoryOptions' => self::CATEGORY_OPTIONS,
+            'libraryImages' => PromotionMediaGuard::listLibraryImages(),
             'flash' => $this->pullFlash(),
         ];
 
@@ -155,7 +169,8 @@ final class AdminPromotionController extends AdminController
         }
 
         try {
-            $imageUrl = self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
+            $uploadedImageUrl = self::handleImageUpload($_FILES['image_file'] ?? null);
+            $imageUrl = $uploadedImageUrl ?? self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
             $linkUrl = self::normalizePromotionLinkUrl((string) ($_POST['link_url'] ?? ''));
             AdminDatabase::pdo()->prepare(
                 'UPDATE promotions SET title = :title, description = :description, type = :type, category = :category,
@@ -214,6 +229,56 @@ final class AdminPromotionController extends AdminController
         }
 
         return $imageUrl;
+    }
+
+    /**
+     * @param array{name?: string, type?: string, tmp_name?: string, error?: int, size?: int}|null $file
+     */
+    private static function handleImageUpload(?array $file): ?string
+    {
+        if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        if ((int) ($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $tmpName = (string) ($file['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return null;
+        }
+
+        $size = (int) ($file['size'] ?? 0);
+        if ($size <= 0 || $size > 5 * 1024 * 1024) {
+            return null;
+        }
+
+        $ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        if (!in_array($ext, $allowed, true)) {
+            return null;
+        }
+
+        // Gerçek görsel içeriği doğrulanır (uzantı sahteciliğine karşı savunma).
+        if (@getimagesize($tmpName) === false) {
+            return null;
+        }
+
+        $targetDir = (defined('STORAGE_PATH') ? STORAGE_PATH : '') . '/uploads/promotions';
+        if (!is_dir($targetDir) && !@mkdir($targetDir, 0755, true) && !is_dir($targetDir)) {
+            return null;
+        }
+        if (!is_writable($targetDir)) {
+            return null;
+        }
+
+        $filename = 'promo_' . bin2hex(random_bytes(8)) . '.' . $ext;
+        $destination = $targetDir . '/' . $filename;
+        if (!move_uploaded_file($tmpName, $destination)) {
+            return null;
+        }
+
+        return '/uploads/promotions/' . $filename;
     }
 
     private static function normalizePromotionLinkUrl(string $linkUrl): string
@@ -496,19 +561,10 @@ final class AdminPromotionController extends AdminController
 
         self::$promotionSchemaEnsured = true;
 
-        try {
-            $pdo = AdminDatabase::pdo();
-            $stmt = $pdo->prepare(
-                "SELECT COUNT(*) FROM information_schema.COLUMNS
-                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions' AND COLUMN_NAME = 'link_url'"
-            );
-            $stmt->execute();
-            $exists = (int) $stmt->fetchColumn() > 0;
-            if (!$exists) {
-                $pdo->exec("ALTER TABLE promotions ADD COLUMN link_url VARCHAR(700) NULL AFTER image_url");
-            }
-        } catch (Throwable) {
-            // Partially migrated environments should continue to render instead of hard-failing here.
-        }
+        // Şema kolonlarını (link_url, category, genişletilmiş image_url) otomatik
+        // oluşturur/onarır ve admin/upload/bonuses görsellerini /uploads/promotions/
+        // altına senkronize ederek kayıp görselleri kendiliğinden düzeltir.
+        // Hem local hem canlıda her istek akışında güvenle çalışır.
+        PromotionMediaGuard::bootstrap();
     }
 }
