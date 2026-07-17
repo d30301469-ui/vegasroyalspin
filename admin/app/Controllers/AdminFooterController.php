@@ -6,8 +6,20 @@ final class AdminFooterController extends AdminController
 {
     public function edit(): void
     {
-        $this->requirePermission('footer-settings');
-        $payload = $this->footerPayload();
+        try {
+            $this->requirePermission('footer-settings');
+        } catch (Throwable $e) {
+            error_log('Footer: Permission check failed: ' . $e->getMessage());
+            throw $e;
+        }
+
+        try {
+            $payload = $this->footerPayload();
+        } catch (Throwable $e) {
+            error_log('Footer: Payload fetch failed: ' . $e->getMessage());
+            $_SESSION['admin_footer_error'] = 'Footer verileri yüklenemedi: ' . $e->getMessage();
+            $payload = ApiFooter::defaultPayload();
+        }
 
         $this->view('footer/edit', [
             'title' => 'Footer Yönetimi',
@@ -30,7 +42,14 @@ final class AdminFooterController extends AdminController
             return;
         }
 
-        $current = $this->footerPayload();
+        try {
+            $current = $this->footerPayload();
+        } catch (Throwable $e) {
+            $_SESSION['admin_footer_error'] = 'Mevcut footer verisi okunamadı.';
+            error_log('Footer update - fetch failed: ' . $e->getMessage());
+            $this->redirect(AdminAuth::url('/footer'));
+        }
+
         $payload = $current;
 
         $payload['site_name'] = trim((string) ($_POST['site_name'] ?? $current['site_name'] ?? ''));
@@ -54,37 +73,55 @@ final class AdminFooterController extends AdminController
         foreach (['social_icons', 'menu_columns', 'payments', 'licence_rows', 'awards', 'partner_logos', 'jackpot_config'] as $field) {
             $decoded = json_decode((string) ($_POST[$field] ?? ''), true);
             if (!is_array($decoded)) {
-                $_SESSION['admin_footer_error'] = $field . ' alanı işlenemedi.';
+                $_SESSION['admin_footer_error'] = $field . ' alanı geçerli JSON değil. Lütfen formatı kontrol edin.';
+                error_log('Footer update - invalid JSON in ' . $field);
                 $this->redirect(AdminAuth::url('/footer'));
             }
             $payload[$field] = $decoded;
         }
 
-        $payload = ApiFooter::normalize($payload);
+        try {
+            $payload = ApiFooter::normalize($payload);
+        } catch (Throwable $e) {
+            $_SESSION['admin_footer_error'] = 'Footer verileri normalize edilemedi: ' . $e->getMessage();
+            error_log('Footer update - normalize failed: ' . $e->getMessage());
+            $this->redirect(AdminAuth::url('/footer'));
+        }
+
         $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if (!is_string($encoded)) {
             $_SESSION['admin_footer_error'] = 'Footer verisi kaydedilemedi.';
             $this->redirect(AdminAuth::url('/footer'));
         }
 
-        $pdo = AdminDatabase::pdo();
-        ApiFooter::ensureStorage($pdo, ApiFooter::defaultPayload());
-        $pdo->exec('UPDATE footer_settings SET is_active = 0');
+        try {
+            $pdo = AdminDatabase::pdo();
+            ApiFooter::ensureStorage($pdo, ApiFooter::defaultPayload());
+            $pdo->exec('UPDATE footer_settings SET is_active = 0');
 
-        $stmt = $pdo->prepare('SELECT id FROM footer_settings WHERE name = :name ORDER BY id DESC LIMIT 1');
-        $stmt->execute(['name' => 'default']);
-        $id = (int) $stmt->fetchColumn();
-        if ($id > 0) {
-            $update = $pdo->prepare('UPDATE footer_settings SET payload = :payload, is_active = 1 WHERE id = :id');
-            $update->execute(['payload' => $encoded, 'id' => $id]);
-        } else {
-            $insert = $pdo->prepare('INSERT INTO footer_settings (name, payload, is_active) VALUES (:name, :payload, 1)');
-            $insert->execute(['name' => 'default', 'payload' => $encoded]);
+            $stmt = $pdo->prepare('SELECT id FROM footer_settings WHERE name = :name ORDER BY id DESC LIMIT 1');
+            $stmt->execute(['name' => 'default']);
+            $id = (int) $stmt->fetchColumn();
+            if ($id > 0) {
+                $update = $pdo->prepare('UPDATE footer_settings SET payload = :payload, is_active = 1 WHERE id = :id');
+                $update->execute(['payload' => $encoded, 'id' => $id]);
+            } else {
+                $insert = $pdo->prepare('INSERT INTO footer_settings (name, payload, is_active) VALUES (:name, :payload, 1)');
+                $insert->execute(['name' => 'default', 'payload' => $encoded]);
+            }
+        } catch (Throwable $e) {
+            $_SESSION['admin_footer_error'] = 'Veritabanı kaydı başarısız: ' . $e->getMessage();
+            error_log('Footer update - DB save failed: ' . $e->getMessage());
+            $this->redirect(AdminAuth::url('/footer'));
         }
 
         $_SESSION['admin_footer_flash'] = 'Footer ayarları güncellendi.';
         if (function_exists('metropol_notify_frontend_cms_purge')) {
-            metropol_notify_frontend_cms_purge('footer');
+            try {
+                metropol_notify_frontend_cms_purge('footer');
+            } catch (Throwable $e) {
+                error_log('Footer update - cache purge failed: ' . $e->getMessage());
+            }
         }
         $this->redirect(AdminAuth::url('/footer'));
     }
