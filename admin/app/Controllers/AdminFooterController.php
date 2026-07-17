@@ -100,7 +100,7 @@ final class AdminFooterController extends AdminController
         $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if (!is_string($encoded)) {
             $_SESSION['admin_footer_error'] = 'Footer verisi kaydedilemedi.';
-            $this->redirect(AdminAuth::url('/footer'));
+            $this->redirect(AdminAuth::url('/module?key=footer-settings'));
         }
 
         try {
