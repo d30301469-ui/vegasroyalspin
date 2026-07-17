@@ -1,5 +1,5 @@
 <?php
-$registerMobileSingleStep = !empty($registerSingleStepMobile);
+$registerMobileSingleStep = true;
 $registerAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('register') : [];
 $registerAuthSliderClass = $registerAuthSliderItems !== [] ? ' has-auth-slider' : '';
 $registerBranding = (isset($siteBranding) && is_array($siteBranding)) ? $siteBranding : [];
@@ -9,7 +9,7 @@ if (class_exists('ApiMediaUrl', false)) {
     $registerLogoUrl = ApiMediaUrl::resolve($registerLogoUrl);
 }
 ?>
-<!-- KAYIT MODAL (masaüstü: iki adım; mobil: tek form) -->
+<!-- KAYIT MODAL (tek form akışı) -->
 <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered register-modal-dialog">
         <div class="modal-content register-modal-content entrance-popup-bc register<?= htmlspecialchars($registerAuthSliderClass, ENT_QUOTES, 'UTF-8') ?>">
