@@ -1,5 +1,5 @@
 /* vegasroyalspin PWA service worker */
-const SW_VERSION = 'v1';
+const SW_VERSION = 'v2-turnstile-auth';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -55,6 +55,22 @@ function isCacheableStatic(requestUrl) {
   );
 }
 
+function isAuthAppAsset(requestUrl) {
+  if (requestUrl.origin !== self.location.origin) {
+    return false;
+  }
+
+  return (
+    requestUrl.pathname.startsWith('/assets/js/auth-') ||
+    requestUrl.pathname.startsWith('/assets/js/login') ||
+    requestUrl.pathname.startsWith('/assets/js/register') ||
+    requestUrl.pathname.startsWith('/assets/js/pwa-register') ||
+    requestUrl.pathname.startsWith('/assets/css/login') ||
+    requestUrl.pathname.startsWith('/assets/css/register') ||
+    requestUrl.pathname.startsWith('/mobile/assets/css/auth-modals')
+  );
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
@@ -74,6 +90,21 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (!isCacheableStatic(requestUrl)) {
+    return;
+  }
+
+  if (isAuthAppAsset(requestUrl)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const cloned = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => cache.put(request, cloned));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
     return;
   }
 
