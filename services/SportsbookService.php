@@ -330,20 +330,26 @@ final class SportsbookService
             return ['success' => false, 'code' => 503, 'message' => $e->getMessage()];
         }
 
-        if (!is_array($user) || (int) ($user['id'] ?? 0) <= 0) {
-            return ['success' => false, 'code' => 401, 'message' => 'Spor bahisleri için giriş yapın.'];
+        $isGuest = !is_array($user) || (int) ($user['id'] ?? 0) <= 0;
+        $userId  = $isGuest ? 0 : (int) $user['id'];
+        if ($isGuest) {
+            $seed = session_id();
+            if ($seed === '') {
+                $seed = (string) ($_SERVER['REMOTE_ADDR'] ?? '') . '|' . (string) ($_SERVER['HTTP_USER_AGENT'] ?? '') . '|' . date('Ymd');
+            }
+            $userCode = 'guest_' . substr(hash('sha256', $seed), 0, 24);
+            $nickname = 'guest';
+        } else {
+            $userCode = (string) $userId;
+            $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
         }
-
-        $userId   = (int) $user['id'];
-        $userCode = (string) $userId;
-        $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
         $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'TRY')));
         $lang     = strtolower(trim((string) ($input['lang'] ?? $cfg['lang'] ?? 'tr')));
         $channel  = strtolower(trim((string) ($input['channel'] ?? 'desktop')));
         $channel  = in_array($channel, ['desktop', 'mobile'], true) ? $channel : 'desktop';
 
         // Transfer mode: ensure the user exists on the provider before launch.
-        if (strtolower((string) ($cfg['api_mode'] ?? 'seamless')) === 'transfer') {
+        if (!$isGuest && strtolower((string) ($cfg['api_mode'] ?? 'seamless')) === 'transfer') {
             try {
                 self::request($pdo, [
                     'method'    => 'CreateUser',
@@ -403,7 +409,7 @@ final class SportsbookService
                 ?? ('status ' . $status)
             );
             try {
-                self::logWallet($pdo, 'GetGameUrl', $userId, '', 200, $status, $providerMsg, 0, $payload, $response);
+                self::logWallet($pdo, 'GetGameUrl', $userId > 0 ? $userId : null, '', 200, $status, $providerMsg, 0, $payload, $response);
             } catch (Throwable) {
             }
             return [
@@ -420,7 +426,7 @@ final class SportsbookService
                     (user_id, username, user_code, vendor_code, game_code, currency, lang, channel, launch_url, request_payload, response_payload)
                  VALUES (:uid, :uname, :ucode, :vendor, :game, :cur, :lang, :chan, :url, :req, :res)"
             )->execute([
-                ':uid'    => $userId,
+                ':uid'    => $userId > 0 ? $userId : null,
                 ':uname'  => $nickname,
                 ':ucode'  => $userCode,
                 ':vendor' => self::VENDOR_CODE,
@@ -443,7 +449,7 @@ final class SportsbookService
             'data'     => [
                 'game_url'   => $launchUrl,
                 'launch_url' => $launchUrl,
-                'mode'       => 'real',
+                'mode'       => $isGuest ? 'guest' : 'real',
             ],
             'game_url' => $launchUrl,
         ];

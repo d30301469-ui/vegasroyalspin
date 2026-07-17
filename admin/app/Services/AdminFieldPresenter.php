@@ -12,6 +12,7 @@ final class AdminFieldPresenter
             'game_id' => 'Oyun ID',
             'game_name' => 'Oyun Adı',
             'provider_name' => 'Sağlayıcı',
+            'txn_type' => 'Kazanç/Kayıp',
             'code' => 'Kod',
             'level_code' => 'Seviye',
             'min_points' => 'Minimum Puan',
@@ -30,6 +31,16 @@ final class AdminFieldPresenter
 
     public static function format(string $column, mixed $value, int $limit = 80): string
     {
+        if ($column === 'txn_type') {
+            $value = strtolower(trim((string) $value));
+            return match ($value) {
+                'bet', 'promo_bet' => 'Kayıp',
+                'win', 'promo_win', 'freespins_win' => 'Kazanç',
+                'cancel', 'rollback' => 'İptal',
+                default => $value !== '' ? ucfirst($value) : '-',
+            };
+        }
+
         return AdminDataRedactor::format($column, $value, $limit);
     }
 
