@@ -361,6 +361,10 @@ if (class_exists('ApiMediaUrl', false)) {
                             <div class="register-error-text" data-error-for="terms_accepted">Devam etmek için bu kutuyu işaretlemelisiniz.</div>
                         </div>
 
+                        <div class="register-turnstile-wrap">
+                            <div id="registerTurnstile" class="turnstile-widget" data-turnstile-widget="register"></div>
+                        </div>
+
                         <div class="register-actions register-actions-row entrance-form-actions-holder-bc reg-ext-1">
                             <?php if (!$registerMobileSingleStep): ?>
                             <button type="button" class="register-secondary-btn" id="registerPrevStep">
@@ -379,9 +383,6 @@ if (class_exists('ApiMediaUrl', false)) {
                             </span>
                         </button>
 
-                        <div class="register-turnstile-wrap">
-                            <div id="registerTurnstile" class="turnstile-widget" data-turnstile-widget="register"></div>
-                        </div>
                     </div>
                     </div>
                     </div>
