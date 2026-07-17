@@ -316,13 +316,21 @@
     .bonus-modal {
         min-height: auto;
         max-height: calc(100vh - 32px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bonus-modal-body {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .bonus-modal-title {
         font-size: 21px;
         padding-right: 40px;
     }
-}
 
 /* ========== Responsive — mobil (tam ekran, kaydırma, dokunma) ========== */
 @media (max-width: 767px) {
