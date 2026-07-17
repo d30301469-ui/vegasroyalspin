@@ -1,6 +1,15 @@
 // Header ve mobil menü ile ilgili tüm JS fonksiyonları
 (function () {
     var Shared = window.BetcoAuthShared || {};
+    function isLoggedInUser() {
+        if (window.__USER_LOGGED_IN__ === true) {
+            return true;
+        }
+        if (document.body && document.body.classList) {
+            return document.body.classList.contains('hdr-auth-user');
+        }
+        return false;
+    }
     function apiUrl(path) {
         return Shared.apiUrl ? Shared.apiUrl(path) : path;
     }
@@ -491,7 +500,8 @@
             var url = appendQuery(apiUrl(baseUrl), "action=all");
             var token = ++announcementsLoadToken;
             drawerList.innerHTML = "<p class=\"notification-drawer__loading\" role=\"status\">Yükleniyor…</p>";
-            Promise.all([fetchJsonSafe(url), fetchFreespinNotificationItems()])
+            var freespinPromise = isLoggedInUser() ? fetchFreespinNotificationItems() : Promise.resolve([]);
+            Promise.all([fetchJsonSafe(url), freespinPromise])
                 .then(function (result) {
                     if (token !== announcementsLoadToken) return;
                     var json = result[0];
@@ -595,7 +605,9 @@
                     });
 
                     updateNotificationBadge(items.length + freespinItems.length);
-                    notifyFreespinToast(freespinItems);
+                    if (isLoggedInUser()) {
+                        notifyFreespinToast(freespinItems);
+                    }
                 })
                 .catch(function () {
                     if (token !== announcementsLoadToken) return;
@@ -1017,7 +1029,7 @@
             });
         }
 
-        if (document.querySelector(".smart-panel-messages-entry") || document.querySelector(".js-profile-inbox-unread")) {
+        if (isLoggedInUser() && (document.querySelector(".smart-panel-messages-entry") || document.querySelector(".js-profile-inbox-unread"))) {
             window.MemberInboxBadges.syncBadges();
         }
 

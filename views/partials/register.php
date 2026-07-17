@@ -768,27 +768,6 @@ if (class_exists('ApiMediaUrl', false)) {
     function ensurePhoneCodes() {
         var fallbackList = normalizeAndSort(buildFallbackList());
         renderPhoneCodes(fallbackList);
-
-        fetch('https://restcountries.com/v3.1/all?fields=cca2,idd,name', { credentials: 'omit' })
-            .then(function (res) {
-                if (!res.ok) throw new Error('country list request failed');
-                return res.json();
-            })
-            .then(function (rows) {
-                if (!Array.isArray(rows)) throw new Error('country list payload invalid');
-                var mapped = rows.map(function (row) {
-                    var code = String((row && row.cca2) || '').toUpperCase();
-                    var name = row && row.name ? (row.name.common || row.name.official || code) : code;
-                    var dial = parseDialCode(row ? row.idd : null);
-                    return { code: code, name: name, dial: dial };
-                });
-                var normalized = normalizeAndSort(mapped);
-                if (normalized.length < 180) return;
-                renderPhoneCodes(normalized);
-            })
-            .catch(function () {
-                // fallback list zaten uygulandi.
-            });
     }
 
     document.addEventListener('click', function (e) {
