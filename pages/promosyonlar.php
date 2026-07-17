@@ -9,14 +9,14 @@ include __DIR__ . '/../views/partials/header.php';
 
 // Kategoriler (görseldeki gibi)
 $kategoriler = [
-    ['id' => 'bonuslar', 'label' => 'BONUSLAR', 'icon' => 'fa-th-large', 'active' => true],
-    ['id' => 'spor', 'label' => 'SPOR', 'icon' => 'fa-futbol'],
-    ['id' => 'slot-casino', 'label' => 'SLOT & CASINO', 'icon' => 'fa-dice'],
-    ['id' => 'yeni-uyeler', 'label' => 'YENİ ÜYELERE ÖZEL', 'icon' => 'fa-gift'],
-    ['id' => 'kayip-bonuslari', 'label' => 'KAYIP BONUSLARI', 'icon' => 'fa-coins'],
-    ['id' => 'yatirim-bonuslari', 'label' => 'YATIRIM BONUSLARI', 'icon' => 'fa-chart-line'],
-    ['id' => 'telegram', 'label' => 'TELEGRAM BONUSU', 'icon' => 'fa-paper-plane'],
-    ['id' => 'turnuvalar', 'label' => 'TURNUVALAR', 'icon' => 'fa-trophy'],
+    ['id' => 'bonuslar', 'label' => 'BONUSLAR', 'icon' => 'bc-i-all-games1', 'active' => true],
+    ['id' => 'spor', 'label' => 'SPOR', 'icon' => 'bc-i-prematch'],
+    ['id' => 'slot-casino', 'label' => 'SLOT & CASINO', 'icon' => 'bc-i-livecasino'],
+    ['id' => 'yeni-uyeler', 'label' => 'YENİ ÜYELERE ÖZEL', 'icon' => 'bc-i-user'],
+    ['id' => 'kayip-bonuslari', 'label' => 'KAYIP BONUSLARI', 'icon' => 'bc-i-circle-dollar'],
+    ['id' => 'yatirim-bonuslari', 'label' => 'YATIRIM BONUSLARI', 'icon' => 'bc-i-wallet'],
+    ['id' => 'telegram', 'label' => 'TELEGRAM BONUSU', 'icon' => 'bc-i-telegram'],
+    ['id' => 'turnuvalar', 'label' => 'TURNUVALAR', 'icon' => 'bc-i-tournament'],
 ];
 
 // Veritabanından bonusları çek (bonuses tablosu hazır olduğunda tekrar aktif edilebilir)
@@ -114,7 +114,7 @@ if (empty($promosyonlar)) {
             <div class="promo-categories-inner">
                 <?php foreach ($kategoriler as $kat): ?>
                 <button type="button" class="promo-cat-btn <?= !empty($kat['active']) ? 'active' : '' ?>" data-category="<?= htmlspecialchars($kat['id']) ?>">
-                    <i class="fa-solid <?= $kat['icon'] ?>"></i>
+                    <i class="bc-i-default-icon <?= $kat['icon'] ?>" aria-hidden="true"></i>
                     <span><?= htmlspecialchars($kat['label']) ?></span>
                 </button>
                 <?php endforeach; ?>
