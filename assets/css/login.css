@@ -560,16 +560,16 @@
 
     /* --- Dialog width --- */
     #login2 .modal-dialog {
-        max-width: 620px !important;
-        width: min(92vw, 620px) !important;
+        max-width: 560px !important;
+        width: min(90vw, 560px) !important;
         margin: auto !important;
     }
 
     /* --- Modal shell: full-cover background image, fixed height --- */
     #login2 .modal-content {
-        height: 82vh !important;
-        min-height: 620px !important;
-        max-height: 980px !important;
+        height: 76vh !important;
+        min-height: 560px !important;
+        max-height: 880px !important;
         border-radius: 8px !important;
         overflow: hidden !important;
         border: none !important;
