@@ -292,7 +292,8 @@
                 (function attachAccordionClick(itemEl) {
                     var btn = itemEl.querySelector('.bonus-accordion-trigger');
                     if (btn) {
-                        btn.addEventListener('click', function () {
+                        btn.addEventListener('click', function (e) {
+                            e.stopPropagation(); /* delegationun çift-tetiklenmesini önle */
                             var isOpen = itemEl.classList.contains('is-open');
                             if (isOpen) {
                                 itemEl.classList.remove('is-open');
