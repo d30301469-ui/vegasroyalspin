@@ -392,16 +392,8 @@
         });
 
         document.querySelectorAll('a[href="/sportbook"], a[href="/sportsbook"]').forEach(function (sportsbookLink) {
-            sportsbookLink.addEventListener("click", function (event) {
-                if (isLoggedInUser()) {
-                    return;
-                }
-                event.preventDefault();
-                event.stopPropagation();
+            sportsbookLink.addEventListener("click", function () {
                 closeNewSmartPanel();
-                if (!openLoginModalFor("/sportbook")) {
-                    window.location.href = "/login?next=" + encodeURIComponent("/sportbook");
-                }
             }, true);
         });
 
