@@ -18,7 +18,7 @@ final class AdminFooterController extends AdminController
         } catch (Throwable $e) {
             error_log('Footer: Payload fetch failed: ' . $e->getMessage());
             $_SESSION['admin_footer_error'] = 'Footer verileri yüklenemedi: ' . $e->getMessage();
-            $payload = ApiFooter::defaultPayload();
+            $payload = $this->footerDefaults();
         }
 
         $this->view('footer/edit', [
@@ -80,13 +80,12 @@ final class AdminFooterController extends AdminController
             $payload[$field] = $decoded;
         }
 
-        try {
-            $payload = ApiFooter::normalize($payload);
-        } catch (Throwable $e) {
-            $_SESSION['admin_footer_error'] = 'Footer verileri normalize edilemedi: ' . $e->getMessage();
-            error_log('Footer update - normalize failed: ' . $e->getMessage());
-            $this->redirect(AdminAuth::url('/footer'));
-        }
+        // Not: Eskiden burada frontend ApiFooter::normalize() çağrılıyordu.
+        // Ayrık admin dağıtımında frontend yığınını yüklemek sayfanın
+        // açılmamasına yol açabildiği için kaldırıldı; alanlar zaten POST'tan
+        // yapılandırılmış olarak geliyor. Sadece varsayılan anahtarların
+        // eksiksiz olmasını garanti ediyoruz.
+        $payload = $this->mergeFooterDefaults($payload);
 
         $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if (!is_string($encoded)) {
@@ -96,7 +95,7 @@ final class AdminFooterController extends AdminController
 
         try {
             $pdo = AdminDatabase::pdo();
-            ApiFooter::ensureStorage($pdo, ApiFooter::defaultPayload());
+            $this->ensureFooterTable($pdo);
             $pdo->exec('UPDATE footer_settings SET is_active = 0');
 
             $stmt = $pdo->prepare('SELECT id FROM footer_settings WHERE name = :name ORDER BY id DESC LIMIT 1');
@@ -126,18 +125,116 @@ final class AdminFooterController extends AdminController
         $this->redirect(AdminAuth::url('/footer'));
     }
 
+    /**
+     * Footer verisini doğrudan admin veritabanından okur.
+     *
+     * Not: Eskiden bu metod frontend API yığınını (api/bootstrap.php + ApiFooter)
+     * yüklüyordu. Ayrık (split) admin dağıtımında bu yığın farklı davranıp
+     * (uzak CMS'e HTTP isteği / farklı DB politikası) footer yönetim sayfasının
+     * açılmamasına ve /login'e yönlenmesine yol açabiliyordu. Artık tıpkı çalışan
+     * "/module?key=footer-settings" liste ekranı gibi AdminDatabase üzerinden
+     * footer_settings tablosu doğrudan okunur; hata olursa yerel varsayılan döner.
+     */
     private function footerPayload(): array
     {
-        $this->loadFooterApi();
-        return ApiFooter::fetch();
+        try {
+            $pdo = AdminDatabase::pdo();
+            $this->ensureFooterTable($pdo);
+            $stmt = $pdo->query(
+                'SELECT payload FROM footer_settings
+                 WHERE is_active = 1
+                 ORDER BY updated_at DESC, id DESC
+                 LIMIT 1'
+            );
+            $raw = $stmt !== false ? $stmt->fetchColumn() : false;
+            if (is_string($raw) && trim($raw) !== '') {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    return $this->mergeFooterDefaults($decoded);
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('Footer: veritabanindan okunamadi: ' . $e->getMessage());
+        }
+
+        return $this->footerDefaults();
     }
 
-    private function loadFooterApi(): void
+    /**
+     * footer_settings tablosu yoksa oluşturur (liste ekranıyla aynı şema).
+     */
+    private function ensureFooterTable(PDO $pdo): void
     {
-        if (!defined('API_PATH')) {
-            define('API_PATH', admin_project_path('api'));
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS footer_settings (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                name VARCHAR(120) NOT NULL DEFAULT \'default\',
+                payload JSON NOT NULL,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_footer_settings_active (is_active)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+    }
+
+    /**
+     * Kaydedilmiş veriyle varsayılanları birleştirir; view'in beklediği tüm
+     * üst düzey anahtarların her zaman var olmasını garanti eder.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function mergeFooterDefaults(array $payload): array
+    {
+        return array_merge($this->footerDefaults(), $payload);
+    }
+
+    /**
+     * Frontend API'ye ihtiyaç duymadan, kendi kendine yeten varsayılan footer
+     * yapısı. Site adı admin bağlamından (site_ayarlar) alınır.
+     *
+     * @return array<string, mixed>
+     */
+    private function footerDefaults(): array
+    {
+        $siteName = '';
+        try {
+            $siteName = trim((string) (AdminSiteContext::globals()['site_name'] ?? ''));
+        } catch (Throwable) {
+            $siteName = '';
         }
-        require_once API_PATH . '/bootstrap.php';
+
+        return [
+            'social_icons' => [],
+            'menu_columns' => [],
+            'payments' => [],
+            'licence_rows' => [],
+            'awards' => [],
+            'partner_logos' => [],
+            'jackpot_config' => [
+                'epoch' => date('Y-m-d H:i:s'),
+                'providers' => [],
+            ],
+            'flag_image' => '',
+            'copyright_since' => (int) date('Y'),
+            'site_name' => $siteName,
+            'show_custom_content' => false,
+            'support_badge' => [
+                'enabled' => false,
+                'label' => '7/24',
+                'text' => 'ONLINE',
+                'href' => 'javascript:void(0)',
+            ],
+            'about' => [
+                'history_title' => '',
+                'history_text' => '',
+                'future_title' => '',
+                'future_text' => '',
+                'awards_title' => '',
+            ],
+        ];
     }
 
     private function jsonFields(array $payload): array
