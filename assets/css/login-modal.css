@@ -23,6 +23,33 @@
     gap: 16px;
 }
 
+#login2 .form-group.entrance-f-item-bc {
+    position: relative;
+    margin-bottom: 8px;
+    padding-bottom: 24px;
+}
+
+#login2 .login-error-text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-top: 0;
+}
+
+#login2 .login-error-box.login-ajax-alert.d-none,
+#login2 .login-error-box#forgotPasswordAjaxAlert.d-none,
+#login2 .login-success-box#forgotPasswordSuccess.d-none {
+    display: block !important;
+    min-height: 22px;
+    margin-top: 4px;
+    margin-bottom: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    visibility: hidden;
+}
+
 @media (min-width: 481px) {
     #login2 .modal-dialog {
         max-width: 620px;
