@@ -1434,7 +1434,7 @@ label {
     #registerModal .modal-content {
         height: auto !important;
         min-height: 0 !important;
-        max-height: min(86vh, 720px) !important;
+        max-height: min(90vh, 780px) !important;
         border-radius: 20px !important;
         overflow: hidden !important;
         border: none !important;
@@ -1593,7 +1593,7 @@ label {
     #registerModal .register-steps-scroll.entrance-form-content-bc.single-side.step-0 {
         flex: 0 1 auto !important;
         overflow-y: auto !important;
-        max-height: min(58vh, 540px) !important;
+        max-height: min(61vh, 590px) !important;
         padding-right: 4px !important;
         padding-bottom: 6px !important;
     }

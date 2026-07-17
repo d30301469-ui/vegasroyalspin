@@ -71,7 +71,7 @@
 
     #registerModal .auth-slider-bg__image {
         object-fit: cover;
-        object-position: center top;
+        object-position: center center;
     }
 
     #registerModal .auth-slider-bg::after {
