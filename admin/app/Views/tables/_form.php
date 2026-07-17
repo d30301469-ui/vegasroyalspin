@@ -77,9 +77,9 @@ $fieldLabel = static function (string $name): string {
 };
 $fieldHelp = [
     'frontend_url' => 'Public site domaini. Örn: https://vegasroyalspin.com',
-    'backend_url' => 'Admin/API/callback backend domaini. Örn: https://bo-nexthub.site',
-    'backend_api_base_url' => 'Frontend isteklerinin gideceği API tabanı. Örn: https://bo-nexthub.site/api/v2',
-    'allowed_url_hosts' => 'Virgülle ayrılmış güvenli host listesi. Örn: vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,bo-nexthub.site',
+    'backend_url' => 'Admin/API/callback backend domaini. Örn: https://bo-backoffice.site',
+    'backend_api_base_url' => 'Frontend isteklerinin gideceği API tabanı. Örn: https://bo-backoffice.site/api/v2',
+    'allowed_url_hosts' => 'Virgülle ayrılmış güvenli host listesi. Örn: vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,bo-backoffice.site',
     'category' => $table === 'sliders'
         ? 'Slider yüzeyi: home, slots, live_casino veya bgaming. Desktop/mobil görseller desktop_path ve mobile_path alanlarından yönetilir.'
         : 'Kategori',

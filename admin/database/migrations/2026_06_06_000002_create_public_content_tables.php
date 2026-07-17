@@ -31,9 +31,9 @@ return static function (PDO $pdo): void {
     $whatsappUrl = $sqlDefault($envDefault('WHATSAPP_URL', ''));
     $telegramUrl = $sqlDefault($envDefault('TELEGRAM_URL', 'https://t.me'));
     $frontendUrl = $sqlDefault($envDefault('FRONTEND_FALLBACK_URL', $deployDefault('frontend_fallback_url', 'https://vegasroyalspin.com')));
-    $backendUrl = $sqlDefault($envDefault('BACKEND_FALLBACK_URL', $deployDefault('backend_url', 'https://bo-nexthub.site')));
-    $backendApiBaseUrl = $sqlDefault($envDefault('API_BACKEND_FALLBACK_BASE_URL', $deployDefault('backend_api_base_url', rtrim($envDefault('BACKEND_FALLBACK_URL', 'https://bo-nexthub.site'), '/') . '/api/v2')));
-    $allowedUrlHosts = $sqlDefault($envDefault('DEFAULT_ALLOWED_URL_HOSTS', $deployDefault('default_allowed_url_hosts', 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,bo-nexthub.site')));
+    $backendUrl = $sqlDefault($envDefault('BACKEND_FALLBACK_URL', $deployDefault('backend_url', 'https://bo-backoffice.site')));
+    $backendApiBaseUrl = $sqlDefault($envDefault('API_BACKEND_FALLBACK_BASE_URL', $deployDefault('backend_api_base_url', rtrim($envDefault('BACKEND_FALLBACK_URL', 'https://bo-backoffice.site'), '/') . '/api/v2')));
+    $allowedUrlHosts = $sqlDefault($envDefault('DEFAULT_ALLOWED_URL_HOSTS', $deployDefault('default_allowed_url_hosts', 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,bo-backoffice.site')));
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS `site_ayarlar` (

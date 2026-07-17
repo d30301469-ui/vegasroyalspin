@@ -268,7 +268,7 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
             'success' => false,
             'code' => 503,
             'message' => 'Oturum servisi hazır değil. Backend kurulumunu tamamlayın (member_jwt_tokens tablosu).',
-            'hint' => 'https://bo-nexthub.site/install — migration çalıştırın',
+            'hint' => 'https://bo-backoffice.site/install — migration çalıştırın',
         ]);
     }
     $memberEnvelope(200, [
@@ -467,7 +467,7 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
             'success' => false,
             'code' => 503,
             'message' => 'Oturum servisi hazır değil. Backend kurulumunu tamamlayın (member_jwt_tokens tablosu).',
-            'hint' => 'https://bo-nexthub.site/install — migration çalıştırın',
+            'hint' => 'https://bo-backoffice.site/install — migration çalıştırın',
         ]);
     }
     $memberEnvelope(201, [

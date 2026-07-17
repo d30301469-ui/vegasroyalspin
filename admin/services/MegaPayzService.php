@@ -954,7 +954,7 @@ final class MegaPayzService
 
     private static function defaultCallbackUrl(): string
     {
-        $backend = defined('BACKEND_URL') ? rtrim((string) BACKEND_URL, '/') : rtrim((string) (getenv('BACKEND_URL') ?: getenv('BACKEND_FALLBACK_URL') ?: 'https://bo-nexthub.site'), '/');
+        $backend = defined('BACKEND_URL') ? rtrim((string) BACKEND_URL, '/') : rtrim((string) (getenv('BACKEND_URL') ?: getenv('BACKEND_FALLBACK_URL') ?: 'https://bo-backoffice.site'), '/');
         return $backend . '/api/v2/megapayz-callback';
     }
 

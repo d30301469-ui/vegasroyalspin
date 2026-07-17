@@ -1,5 +1,5 @@
-# Apache — bo-nexthub.site standalone admin/backend
-# Upload to: /www/wwwroot/bo-nexthub.site/.htaccess
+# Apache — bo-backoffice.site standalone admin/backend
+# Upload to: /www/wwwroot/bo-backoffice.site/.htaccess
 
 <IfModule mod_rewrite.c>
     RewriteEngine On

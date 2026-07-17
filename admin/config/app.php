@@ -243,7 +243,7 @@ if (metropol_should_run_production_assertions()) {
 
 if (!defined('BACKEND_HOST')) {
     $backendHost = parse_url((string) BACKEND_URL, PHP_URL_HOST);
-    $backendFallbackHost = parse_url(frontend_env_value(['BACKEND_FALLBACK_URL'], 'https://bo-nexthub.site'), PHP_URL_HOST);
+    $backendFallbackHost = parse_url(frontend_env_value(['BACKEND_FALLBACK_URL'], 'https://bo-backoffice.site'), PHP_URL_HOST);
     define('BACKEND_HOST', strtolower((string) ($backendHost ?: $backendFallbackHost ?: '')));
 }
 

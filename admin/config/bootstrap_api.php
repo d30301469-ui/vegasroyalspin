@@ -76,7 +76,7 @@ try {
         define('API_BACKEND_INTERNAL_BASE_URL', '');
     }
     if (!defined('API_BACKEND_INTERNAL_HOST')) {
-        define('API_BACKEND_INTERNAL_HOST', 'bo-nexthub.site');
+        define('API_BACKEND_INTERNAL_HOST', 'bo-backoffice.site');
     }
 }
 

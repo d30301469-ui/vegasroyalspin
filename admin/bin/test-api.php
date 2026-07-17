@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 /**
  * Backend API smoke test — CLI: php bin/test-api.php [base-url]
- * Örnek: php bin/test-api.php https://bo-nexthub.site
+ * Örnek: php bin/test-api.php https://bo-backoffice.site
  *
  * HTTP kodu + JSON gövde doğrulaması yapar (PHP Fatal / HTML yanıtları FAIL sayılır).
  */
 
-$base = rtrim($argv[1] ?? 'https://bo-nexthub.site', '/');
+$base = rtrim($argv[1] ?? 'https://bo-backoffice.site', '/');
 
 /** @var list<array{0:string,1:string,2:?string,3:list<int>,4:string}> */
 $tests = [

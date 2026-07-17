@@ -101,7 +101,7 @@ final class AdminSiteSettingsController extends AdminController
                 'label' => 'Genel',
                 'caption' => 'Marka adı, dil ve bakım',
                 'fields' => [
-                    ['name' => 'site_adi', 'label' => 'Site adı', 'type' => 'text', 'placeholder' => 'Nexthub Casino'],
+                    ['name' => 'site_adi', 'label' => 'Site adı', 'type' => 'text', 'placeholder' => 'Backoffice Casino'],
                     ['name' => 'site_aciklama', 'label' => 'Kısa açıklama', 'type' => 'textarea', 'placeholder' => 'Güvenilir casino ve bahis'],
                     ['name' => 'language', 'label' => 'Dil kodu', 'type' => 'text', 'placeholder' => 'tr'],
                     ['name' => 'theme_color', 'label' => 'Tema rengi', 'type' => 'color', 'placeholder' => '#120023'],

@@ -12,7 +12,7 @@ if (!function_exists('install_asset')) {
 }
 
 $pageTitle = isset($title) ? (string) $title : 'Kurulum';
-$panelName = (string) ($panelName ?? 'Nexthub Backoffice');
+$panelName = (string) ($panelName ?? 'Backoffice');
 $siteName = (string) ($siteName ?? 'Metropol Casino');
 ?>
 <!doctype html>

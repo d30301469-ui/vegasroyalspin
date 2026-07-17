@@ -154,7 +154,7 @@ final class BackendApiClient
         }
         if ($backendHost === '') {
             $public = self::effectiveMainBaseUrl();
-            $backendHost = strtolower((string) (parse_url($public, PHP_URL_HOST) ?: 'bo-nexthub.site'));
+            $backendHost = strtolower((string) (parse_url($public, PHP_URL_HOST) ?: 'bo-backoffice.site'));
         }
         if (str_starts_with($backendHost, 'api.')) {
             $backendHost = substr($backendHost, 4);
@@ -235,12 +235,12 @@ final class BackendApiClient
         }
 
         $public = self::effectiveMainBaseUrl();
-        $host = strtolower((string) (parse_url($public, PHP_URL_HOST) ?: 'bo-nexthub.site'));
+        $host = strtolower((string) (parse_url($public, PHP_URL_HOST) ?: 'bo-backoffice.site'));
         if (str_starts_with($host, 'api.')) {
             $host = substr($host, 4);
         }
 
-        return $host !== '' ? $host : 'bo-nexthub.site';
+        return $host !== '' ? $host : 'bo-backoffice.site';
     }
 
     /**

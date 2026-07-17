@@ -42,12 +42,12 @@ final class Request
     {
         $candidates = array_merge(
             [
-                Config::get('security.admin_host', 'bo-nexthub.site'),
+                Config::get('security.admin_host', 'bo-backoffice.site'),
                 getenv('ADMIN_URL_HOST') ?: '',
                 getenv('BACKEND_HOST') ?: '',
                 parse_url((string) (getenv('BACKEND_URL') ?: ''), PHP_URL_HOST) ?: '',
             ],
-            Config::get('security.backend_hosts', function_exists('deploy_backend_hosts') ? deploy_backend_hosts() : ['bo-nexthub.site', 'api.bo-nexthub.site'])
+            Config::get('security.backend_hosts', function_exists('deploy_backend_hosts') ? deploy_backend_hosts() : ['bo-backoffice.site', 'api.bo-backoffice.site'])
         );
 
         $hosts = [];

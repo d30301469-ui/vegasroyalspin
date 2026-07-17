@@ -7,7 +7,7 @@ $pageTitle = isset($title) ? (string) $title : 'Admin';
 // dashboard'a yönlendirilmiş gibi bir izlenime kapılırdı (bkz. footer bug).
 $activePage = isset($active) ? (string) $active : '';
 $crumbText = isset($crumbs) ? (string) $crumbs : 'Admin';
-$panelName = (string) ($config['name'] ?? 'Nexthub Backoffice');
+$panelName = (string) ($config['name'] ?? 'Backoffice');
 $currentModuleKey = isset($moduleKey) ? (string) $moduleKey : '';
 $rawNavigation = is_array($config['navigation'] ?? null) ? $config['navigation'] : [];
 $currentUser = AdminAuth::user();
@@ -78,7 +78,7 @@ $layoutRows = static function (string $sql): array {
     }
 };
 $adminName = (string) ($currentUser['username'] ?? 'Admin');
-$adminEmail = (string) ($currentUser['email'] ?? 'admin@nexthub.local');
+$adminEmail = (string) ($currentUser['email'] ?? 'admin@backoffice.local');
 $adminRole = (string) ($currentUser['role'] ?? 'admin');
 $adminInitials = strtoupper(substr($adminName, 0, 2));
 $canWithdrawals = AdminAuth::can('withdrawals');
@@ -1283,7 +1283,7 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
                 <span class="brand-mark">NH</span>
                 <span class="brand-copy">
                     <span class="brand-title"><?= htmlspecialchars($panelName, ENT_QUOTES, 'UTF-8') ?></span>
-                    <span class="brand-subtitle">Nexthub</span>
+                    <span class="brand-subtitle">Backoffice</span>
                 </span>
             </a>
             <button class="sidebar-close" type="button" data-drawer-close aria-label="Close navigation">

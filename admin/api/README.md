@@ -1,6 +1,6 @@
 # Backoffice API v2
 
-Backend host (`bo-nexthub.site`) iki katman sunar:
+Backend host (`bo-backoffice.site`) iki katman sunar:
 
 | Katman | Base URL | Auth |
 |--------|----------|------|
@@ -94,7 +94,7 @@ Panel UI (Phase 3):
 ## Test
 
 ```bash
-php bin/test-api.php https://bo-nexthub.site
+php bin/test-api.php https://bo-backoffice.site
 ```
 
 ### Sorumlu oyun

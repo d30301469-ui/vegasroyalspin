@@ -70,7 +70,7 @@ final class AdminInstallController
 
         $csrf = AdminInstallGate::csrfToken($this->root);
         $title = 'Admin Kurulum';
-        $panelName = getenv('ADMIN_PANEL_NAME') ?: 'Nexthub Backoffice';
+        $panelName = getenv('ADMIN_PANEL_NAME') ?: 'Backoffice';
         $siteName = $defaults['site_name'];
         $seedAvailable = SqlSeedImporter::isAvailable($this->root);
         $seedSize = SqlSeedImporter::humanSize($this->root);

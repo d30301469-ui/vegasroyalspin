@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 /**
- * Public member API base URL (api.bo-nexthub.site) — browser + server-side CMS.
+ * Public member API base URL (api.bo-backoffice.site) — browser + server-side CMS.
  */
 if (!function_exists('metropol_normalize_member_api_public_url')) {
     /**
-     * Tarayıcı üye API'si her zaman api.* subdomain üzerinden (bo-nexthub.site değil).
+     * Tarayıcı üye API'si her zaman api.* subdomain üzerinden (bo-backoffice.site değil).
      */
     function metropol_normalize_member_api_public_url(string $url): string
     {

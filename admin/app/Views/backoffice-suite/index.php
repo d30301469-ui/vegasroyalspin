@@ -50,9 +50,9 @@ $statusClass = static fn (string $status): string => match ($status) {
 <section class="admin-surface">
 <div class="hero">
     <div class="hero-text">
-        <span class="eyebrow">Nexthub modül haritası</span>
+        <span class="eyebrow">Backoffice modül haritası</span>
         <h1 class="hero-title">Backoffice <span class="accent">Suite</span></h1>
-        <p class="hero-sub">Nexthub backoffice ekranları, mevcut admin temasındaki gerçek modüllerle eşleştirildi. Bu sayfa kopya görsel kullanmadan yapı, kapsam ve eksik modülleri takip etmek için kuruldu.</p>
+        <p class="hero-sub">Backoffice ekranları, mevcut admin temasındaki gerçek modüllerle eşleştirildi. Bu sayfa kopya görsel kullanmadan yapı, kapsam ve eksik modülleri takip etmek için kuruldu.</p>
     </div>
     <div class="hero-actions">
         <a class="btn btn--primary" href="<?= htmlspecialchars(AdminAuth::url('/dashboard'), ENT_QUOTES, 'UTF-8') ?>">Canlı dashboard</a>

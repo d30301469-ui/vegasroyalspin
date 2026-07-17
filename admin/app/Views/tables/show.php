@@ -555,7 +555,7 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
 <section class="admin-surface">
     <div class="hero">
         <div class="hero-text">
-            <span class="eyebrow">Nexthub · Modül</span>
+            <span class="eyebrow">Backoffice · Modül</span>
             <h1 class="hero-title"><?= htmlspecialchars((string) ($module['title'] ?? $table), ENT_QUOTES, 'UTF-8') ?> <span class="accent">kayıtları</span></h1>
             <p class="hero-sub"><?= htmlspecialchars((string) $total, ENT_QUOTES, 'UTF-8') ?> kayıt · Arama, kolon filtreleri, seçim ve dışa aktarma bu ekranda yönetilir.</p>
         </div>

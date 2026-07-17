@@ -55,14 +55,14 @@ final class BackendMemberApiProxy
                 'retry_after_seconds' => function_exists('metropol_member_api_circuit_seconds')
                     ? metropol_member_api_circuit_seconds()
                     : 5,
-                'hint' => 'Frontend .env: API_BACKEND_INTERNAL_BASE_URL=http://127.0.0.1/api/v2 ve API_BACKEND_INTERNAL_HOST=bo-nexthub.site',
+                'hint' => 'Frontend .env: API_BACKEND_INTERNAL_BASE_URL=http://127.0.0.1/api/v2 ve API_BACKEND_INTERNAL_HOST=bo-backoffice.site',
             ]);
         }
 
         $base = BackendApiClient::effectiveMemberApiOutboundBaseUrl();
         if ($base === '') {
             self::jsonError(503, 'Backend API base URL is not configured.', [
-                'hint' => 'Frontend .env: API_BACKEND_MAIN_BASE_URL=https://api.bo-nexthub.site/api/v2',
+                'hint' => 'Frontend .env: API_BACKEND_MAIN_BASE_URL=https://api.bo-backoffice.site/api/v2',
                 'check' => '/health.php',
             ]);
         }
@@ -235,7 +235,7 @@ final class BackendMemberApiProxy
         self::jsonError(502, $lastError, [
             'backend' => $lastBackend,
             'backends_tried' => $baseCandidates,
-            'hint' => '502: backend erişilemiyor — .env: API_BACKEND_MAIN_BASE_URL=https://api.bo-nexthub.site/api/v2',
+            'hint' => '502: backend erişilemiyor — .env: API_BACKEND_MAIN_BASE_URL=https://api.bo-backoffice.site/api/v2',
         ]);
     }
 
