@@ -463,11 +463,28 @@
             if (!panel) return;
             var rect = toggle.getBoundingClientRect();
             if (rect.width === 0 && rect.height === 0) return;
+
+            var safeTop = 52;
+            if (isMobile) {
+                var rootStyles = getComputedStyle(document.documentElement);
+                var promoTop = parseFloat(rootStyles.getPropertyValue('--mobile-promo-sheet-top'));
+                var stickyTop = parseFloat(rootStyles.getPropertyValue('--header-sticky-top'));
+                if (!isNaN(promoTop) && promoTop > 0) {
+                    safeTop = promoTop;
+                } else if (!isNaN(stickyTop) && stickyTop > 0) {
+                    safeTop = stickyTop;
+                }
+            }
+
+            var computedTop = Math.ceil(rect.bottom + 8);
+            if (!isNaN(safeTop) && computedTop < safeTop) {
+                computedTop = Math.ceil(safeTop + 2);
+            }
             
             panel.style.setProperty('position', 'fixed', 'important');
             panel.style.setProperty('bottom', 'auto', 'important');
             panel.style.setProperty('left', 'auto', 'important');
-            panel.style.setProperty('top', Math.ceil(rect.bottom + 8) + 'px', 'important');
+            panel.style.setProperty('top', computedTop + 'px', 'important');
             panel.style.setProperty('right', Math.max(8, Math.round(window.innerWidth - rect.right)) + 'px', 'important');
         }
 
