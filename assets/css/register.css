@@ -1517,12 +1517,12 @@ label {
     #registerModal .register-modal-login-link {
         background: rgba(255, 255, 255, 0.04) !important;
         border: 1px solid rgba(255, 255, 255, 0.16) !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
         color: #fff !important;
-        font-size: 12px !important;
+        font-size: 10px !important;
         font-weight: 700 !important;
         letter-spacing: 0.04em !important;
-        padding: 7px 14px !important;
+        padding: 5px 11px !important;
         cursor: pointer !important;
         text-transform: uppercase !important;
         line-height: 1 !important;
@@ -1535,16 +1535,16 @@ label {
     }
 
     #registerModal .register-modal-close {
-        width: 36px !important;
-        height: 36px !important;
-        min-width: 36px !important;
-        min-height: 36px !important;
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        min-height: 30px !important;
         padding: 0 !important;
         border-radius: 50% !important;
         border: 1px solid rgba(255, 255, 255, 0.18) !important;
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06)) !important;
         color: #fff !important;
-        font-size: 28px !important;
+        font-size: 22px !important;
         line-height: 1 !important;
         cursor: pointer !important;
         display: inline-flex !important;
@@ -1560,7 +1560,7 @@ label {
     }
 
     #registerModal .register-modal-close span {
-        font-size: 30px !important;
+        font-size: 24px !important;
         line-height: 1 !important;
         transform: translateY(-1px);
     }
