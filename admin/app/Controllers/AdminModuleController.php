@@ -18,6 +18,9 @@ final class AdminModuleController extends AdminController
         if ($moduleKey === 'site-settings') {
             $this->redirect(AdminAuth::url('/site-settings'));
         }
+        if ($moduleKey === 'footer-settings') {
+            $this->redirect(AdminAuth::url('/footer'));
+        }
         $this->requirePermission($moduleKey);
         $module = $this->module($moduleKey);
         $table = (string) $module['table'];
