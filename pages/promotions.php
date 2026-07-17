@@ -189,7 +189,7 @@ $kategoriler = [
         <div class="promo-categories-inner" data-promo-cats-scroll>
             <?php foreach ($kategoriler as $kat): ?>
             <button type="button" class="promo-cat-btn <?= !empty($kat['active']) ? 'active' : '' ?>" data-category="<?= htmlspecialchars($kat['id']) ?>">
-                <i class="bc-i-default-icon <?= $kat['icon'] ?>" aria-hidden="true"></i>
+                <i class="promo-cat-icon <?= $kat['icon'] ?>" aria-hidden="true"></i>
                 <span><?= htmlspecialchars($kat['label']) ?></span>
             </button>
             <?php endforeach; ?>
@@ -323,10 +323,11 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     white-space: nowrap;
 }
 
+.bonus-page-cats .promo-cat-btn .promo-cat-icon,
 .bonus-page-cats .promo-cat-btn i {
-    font-size: 28px;
-    width: 28px;
-    height: 28px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -351,6 +352,7 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.15);
 }
 
+.bonus-page-cats .promo-cat-btn.active .promo-cat-icon,
 .bonus-page-cats .promo-cat-btn.active i {
     color: #fff;
 }
@@ -438,10 +440,11 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
         gap: 5px;
     }
 
+    .bonus-page-cats .promo-cat-btn .promo-cat-icon,
     .bonus-page-cats .promo-cat-btn i {
-        font-size: 24px;
-        width: 24px;
-        height: 24px;
+        font-size: 15px;
+        width: 15px;
+        height: 15px;
     }
 
     .bonus-page-cats .promo-cat-btn span {
