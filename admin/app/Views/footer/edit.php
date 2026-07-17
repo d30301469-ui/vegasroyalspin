@@ -59,7 +59,7 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
     </div>
 <?php endif; ?>
 
-<form id="footerSettingsForm" method="post" action="<?= $h(AdminAuth::url('/footer')) ?>">
+<form id="footerSettingsForm" method="post" action="<?= $h(AdminAuth::url('/module?key=footer-settings')) ?>">
     <input type="hidden" name="_token" value="<?= $h(AdminAuth::csrfToken()) ?>">
 
     <div class="grid">
