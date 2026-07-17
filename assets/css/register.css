@@ -1432,6 +1432,7 @@ label {
 
     /* --- Modal shell: left-half image, right-half dark, fixed height --- */
     #registerModal .modal-content {
+        --register-art-share: 41%;
         height: auto !important;
         min-height: 0 !important;
         max-height: min(94vh, 840px) !important;
@@ -1442,9 +1443,9 @@ label {
         /* Left 50% = background image; right 50% = dark */
         background:
             url("/assets/images/register-bg.jpg")
-            no-repeat 0 0 / 50% 100% !important;
+            no-repeat 0 0 / var(--register-art-share) 100% !important;
         /* Push all content to right half */
-        padding-left: min(47vw, 480px) !important;
+        padding-left: var(--register-art-share) !important;
         display: block !important;
     }
 
