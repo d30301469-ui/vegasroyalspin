@@ -203,10 +203,12 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   }
   $cspConnectSrc = function_exists('metropol_csp_connect_src_directive')
       ? metropol_csp_connect_src_directive()
-      : "connect-src 'self' wss://*.sptpub.com https://*.sptpub.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://*.livechatinc.com wss://*.livechatinc.com https://*.livechat.com wss://*.livechat.com https://*.livechat-static.com https://api.vegasroyalspin.com https://admin.vegasroyalspin.com";
+      : "connect-src 'self' wss://*.sptpub.com https://*.sptpub.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://*.livechatinc.com wss://*.livechatinc.com https://*.livechat.com wss://*.livechat.com https://*.livechat-static.com https://api.vegasroyalspin.com https://admin.vegasroyalspin.com https://challenges.cloudflare.com";
   ?>
   <meta http-equiv="Content-Security-Policy" content="<?= htmlspecialchars($cspConnectSrc, ENT_QUOTES, 'UTF-8') ?>">
+    <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
 
+  <?php if (!(defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOOK_LIGHTWEIGHT_LAYOUT)): ?>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
@@ -250,6 +252,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <script defer src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>
   <script defer src="/assets/js/toastify-helper.js?v=<?= $assetVer ?>"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+  <?php endif; ?>
   
   <!-- runtime-es2015 / polyfills kaldırıldı: Angular build artığıydı; window.global assets/js/modal-polyfill.js içinde set ediliyor -->
 </head>

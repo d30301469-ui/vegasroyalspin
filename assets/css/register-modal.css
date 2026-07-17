@@ -213,3 +213,13 @@
         transform: translateY(-1px);
     }
 }
+
+.register-turnstile-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 4px 0 12px;
+}
+
+.turnstile-widget {
+    min-height: 65px;
+}

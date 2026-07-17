@@ -125,6 +125,7 @@
         document.body.classList.add('login-modal-open');
         document.body.classList.remove('register-modal-open');
         applyMobileAuthLayoutFix('login2');
+        ensureLoginTurnstileWidget();
     }
     window.__openLoginModal = showLoginModal;
     window.MaltabetAuth = window.MaltabetAuth || {};
@@ -145,6 +146,7 @@
             document.body.style.overflow = '';
         }
         document.body.classList.remove('login-modal-open');
+        resetLoginTurnstileWidget();
     }
 
     function showRegisterModal() {
@@ -189,6 +191,33 @@
         if (staleBtn && staleBtn.parentNode) {
             staleBtn.parentNode.removeChild(staleBtn);
         }
+    }
+
+    function loginTurnstileContainer() {
+        return document.getElementById('loginTurnstile');
+    }
+
+    function ensureLoginTurnstileWidget() {
+        if (!Shared.hasTurnstile || !Shared.hasTurnstile()) return;
+        var container = loginTurnstileContainer();
+        if (!container || container.getAttribute('data-turnstile-widget-id')) return;
+        if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+            window.setTimeout(ensureLoginTurnstileWidget, 120);
+            return;
+        }
+        Shared.renderTurnstileWidget(container, { theme: 'dark', action: 'login' });
+    }
+
+    function resetLoginTurnstileWidget() {
+        var container = loginTurnstileContainer();
+        if (!container) return;
+        Shared.resetTurnstileWidget(container);
+    }
+
+    function loginTurnstileToken() {
+        var container = loginTurnstileContainer();
+        if (!container) return '';
+        return Shared.turnstileTokenFromContainer(container);
     }
 
     function initPasswordToggle() {
@@ -527,8 +556,14 @@
             e.preventDefault();
             var username = (loginForm.querySelector('[name="username"]') || {}).value || '';
             var password = (loginForm.querySelector('[name="password"]') || {}).value || '';
+            var turnstileToken = loginTurnstileToken();
             if (!username.trim() || !password) {
                 showError('Kullanıcı adı ve şifre gerekli.');
+                return;
+            }
+            if (Shared.hasTurnstile && Shared.hasTurnstile() && !turnstileToken) {
+                showError('Cloudflare doğrulamasını tamamlayın.');
+                ensureLoginTurnstileWidget();
                 return;
             }
 
@@ -537,7 +572,12 @@
 
             var fd = new FormData(loginForm);
             fd.set('username', username.trim());
+            fd.set('login', username.trim());
             fd.set('password', password);
+            if (turnstileToken) {
+                fd.set('turnstile_response', turnstileToken);
+                fd.set('cf-turnstile-response', turnstileToken);
+            }
 
             var loginUrl = Shared.proxyApiUrl
                 ? Shared.proxyApiUrl('/auth/login')
@@ -545,14 +585,11 @@
 
             fetch(loginUrl, {
                 method: 'POST',
-                body: JSON.stringify({
-                    login: username.trim(),
-                    password: password
-                }),
+                body: fd,
                 credentials: 'same-origin',
                 headers: Shared.memberAuthHeaders
-                    ? Shared.memberAuthHeaders({ Accept: 'application/json', 'Content-Type': 'application/json' })
-                    : { Accept: 'application/json', 'Content-Type': 'application/json' }
+                    ? Shared.memberAuthHeaders({ Accept: 'application/json' })
+                    : { Accept: 'application/json' }
             })
                 .then(function (res) {
                     return res.text().then(function (text) {
@@ -616,11 +653,13 @@
                         return;
                     } else {
                         showError(data.message || 'Giriş başarısız.');
+                        resetLoginTurnstileWidget();
                     }
                 })
                 .catch(function () {
                     setLoading(false);
                     showError(Shared.MSG_CONN || 'Bağlantı hatası. Lütfen tekrar deneyin.');
+                    resetLoginTurnstileWidget();
                 });
         });
     }
@@ -756,5 +795,6 @@
         initLoginForm();
         initLoginAjaxSubmit();
         initForgotPasswordForm();
+        ensureLoginTurnstileWidget();
     });
 })();

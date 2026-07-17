@@ -1,7 +1,7 @@
 <?php
 
-$row = is_array($row ?? null) ? $row : [];
-$sections = is_array($sections ?? null) ? $sections : [];
+$row = isset($row) && is_array($row) ? $row : [];
+$sections = isset($sections) && is_array($sections) ? $sections : [];
 $section = (string) ($section ?? 'general');
 $activeSection = $sections[$section] ?? ['label' => 'Ayarlar', 'caption' => '', 'fields' => []];
 $fields = is_array($activeSection['fields'] ?? null) ? $activeSection['fields'] : [];
@@ -225,7 +225,7 @@ $brandingDataJson = json_encode($brandingData);
                                 <input
                                     id="field-<?= $h($name) ?>"
                                     class="input"
-                                    type="<?= $h(in_array($type, ['url', 'color', 'email', 'number'], true) ? $type : 'text') ?>"
+                                    type="<?= $h(in_array($type, ['url', 'color', 'email', 'number', 'password'], true) ? $type : 'text') ?>"
                                     name="<?= $h($name) ?>"
                                     value="<?= $h($value) ?>"
                                     placeholder="<?= $h($field['placeholder'] ?? '') ?>"

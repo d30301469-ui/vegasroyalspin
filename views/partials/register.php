@@ -132,6 +132,10 @@ if (class_exists('ApiMediaUrl', false)) {
                             </span>
                         </button>
                         <?php endif; ?>
+
+                        <div class="register-turnstile-wrap">
+                            <div id="registerTurnstile" class="turnstile-widget" data-turnstile-widget="register"></div>
+                        </div>
                     </div>
 
                     <!-- ADIM 2 -->

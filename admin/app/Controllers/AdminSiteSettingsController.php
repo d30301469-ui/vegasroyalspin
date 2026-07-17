@@ -149,6 +149,15 @@ final class AdminSiteSettingsController extends AdminController
                     ['name' => 'robots', 'label' => 'Robots', 'type' => 'text', 'placeholder' => 'index, follow'],
                 ],
             ],
+            'security' => [
+                'label' => 'Güvenlik',
+                'caption' => 'Cloudflare Turnstile doğrulaması',
+                'fields' => [
+                    ['name' => 'turnstile_enabled', 'label' => 'Turnstile aktif', 'type' => 'checkbox', 'help' => 'Login ve kayıt modallarında Cloudflare insan doğrulaması zorunlu olur.'],
+                    ['name' => 'turnstile_site_key', 'label' => 'Turnstile site key', 'type' => 'text', 'placeholder' => '0x4AAAAA...'],
+                    ['name' => 'turnstile_secret_key', 'label' => 'Turnstile secret key', 'type' => 'password', 'placeholder' => '0x4AAAAA...'],
+                ],
+            ],
             'urls' => [
                 'label' => 'URL & API',
                 'caption' => 'Frontend, backend ve izinli hostlar',

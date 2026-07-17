@@ -524,6 +524,83 @@
                 btnLoading.style.display = loading ? 'inline-block' : 'none';
             }
         },
+        turnstileEnabled: function () {
+            return w.__TURNSTILE_ENABLED__ === true || w.__TURNSTILE_ENABLED__ === 1 || w.__TURNSTILE_ENABLED__ === '1';
+        },
+        turnstileSiteKey: function () {
+            return typeof w.__TURNSTILE_SITE_KEY__ === 'string' ? w.__TURNSTILE_SITE_KEY__.trim() : '';
+        },
+        hasTurnstile: function () {
+            return this.turnstileEnabled() && this.turnstileSiteKey() !== '';
+        },
+        resolveTurnstileContainer: function (container) {
+            if (!container) return null;
+            if (typeof container === 'string') {
+                return document.querySelector(container);
+            }
+            return container.nodeType === 1 ? container : null;
+        },
+        renderTurnstileWidget: function (container, options) {
+            if (!this.hasTurnstile() || !w.turnstile || typeof w.turnstile.render !== 'function') {
+                return '';
+            }
+            var el = this.resolveTurnstileContainer(container);
+            if (!el) {
+                return '';
+            }
+            var existing = el.getAttribute('data-turnstile-widget-id');
+            if (existing) {
+                return existing;
+            }
+            var cfg = options && typeof options === 'object' ? options : {};
+            var widgetId = w.turnstile.render(el, {
+                sitekey: this.turnstileSiteKey(),
+                theme: cfg.theme || 'dark',
+                action: cfg.action || '',
+                callback: typeof cfg.callback === 'function' ? cfg.callback : undefined,
+                'error-callback': typeof cfg.errorCallback === 'function' ? cfg.errorCallback : undefined,
+                'expired-callback': typeof cfg.expiredCallback === 'function' ? cfg.expiredCallback : undefined,
+            });
+            if (widgetId !== undefined && widgetId !== null && widgetId !== '') {
+                el.setAttribute('data-turnstile-widget-id', String(widgetId));
+                return String(widgetId);
+            }
+
+            return '';
+        },
+        turnstileTokenFromContainer: function (container) {
+            if (!this.hasTurnstile() || !w.turnstile || typeof w.turnstile.getResponse !== 'function') {
+                return '';
+            }
+            var el = this.resolveTurnstileContainer(container);
+            if (!el) {
+                return '';
+            }
+            var widgetId = el.getAttribute('data-turnstile-widget-id') || '';
+            if (widgetId === '') {
+                return '';
+            }
+
+            return String(w.turnstile.getResponse(widgetId) || '').trim();
+        },
+        resetTurnstileWidget: function (container) {
+            if (!this.hasTurnstile() || !w.turnstile || typeof w.turnstile.reset !== 'function') {
+                return;
+            }
+            var el = this.resolveTurnstileContainer(container);
+            if (!el) {
+                return;
+            }
+            var widgetId = el.getAttribute('data-turnstile-widget-id') || '';
+            if (widgetId === '') {
+                return;
+            }
+            try {
+                w.turnstile.reset(widgetId);
+            } catch (e) {
+                /* ignore */
+            }
+        },
         MSG_CONN: 'Bağlantı hatası. Lütfen tekrar deneyin.'
     };
 

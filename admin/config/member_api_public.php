@@ -81,6 +81,7 @@ if (!function_exists('metropol_csp_connect_src_directive')) {
             'https://*.livechat-static.com',
             'https://static.cloudflareinsights.com',
             'https://iceexchange.sptpub.com',
+            'https://challenges.cloudflare.com',
         ];
 
         $urlCandidates = [];

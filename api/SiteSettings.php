@@ -281,6 +281,12 @@ final class ApiSiteSettings
             $payload['theme_color'] = (string) ($meta['theme_color'] ?? '');
         }
 
+        $turnstileEnabled = !in_array(strtolower(trim((string) ($payload['turnstile_enabled'] ?? '0'))), ['0', '', 'false', 'off', 'no'], true);
+        $turnstileSiteKey = trim((string) ($payload['turnstile_site_key'] ?? ''));
+        unset($payload['turnstile_secret_key']);
+        $payload['turnstile_enabled'] = $turnstileEnabled ? 1 : 0;
+        $payload['turnstile_site_key'] = $turnstileSiteKey;
+
         if (class_exists('ApiMediaUrl', false)) {
             $rewritten = ApiMediaUrl::rewriteDeep($payload);
             return is_array($rewritten) ? $rewritten : $payload;
@@ -610,6 +616,9 @@ final class ApiSiteSettings
             'reset_password_hero_bottom_border_color' => "varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT '#ff00ff'",
             'reset_password_input_border_color' => "varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT '#ec46aa'",
             'reset_password_button_text_color' => "varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT '#d2d6eb'",
+            'turnstile_enabled' => "tinyint(1) NOT NULL DEFAULT 0",
+            'turnstile_site_key' => "varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
+            'turnstile_secret_key' => "varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL",
         ];
     }
 

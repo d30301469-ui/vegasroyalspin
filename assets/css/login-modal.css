@@ -570,3 +570,13 @@
         font-size: 12px;
     }
 }
+
+.login-turnstile-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 2px 0 10px;
+}
+
+.turnstile-widget {
+    min-height: 65px;
+}

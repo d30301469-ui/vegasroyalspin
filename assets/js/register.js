@@ -114,6 +114,7 @@
             if (modalEl.id === 'registerModal') {
                 document.body.classList.add('register-modal-open');
                 document.body.classList.remove('login-modal-open');
+                ensureRegisterTurnstileWidget();
             }
             return;
         }
@@ -122,6 +123,7 @@
             if (modalEl.id === 'registerModal') {
                 document.body.classList.add('register-modal-open');
                 document.body.classList.remove('login-modal-open');
+                ensureRegisterTurnstileWidget();
             }
             return;
         }
@@ -133,6 +135,7 @@
         if (modalEl.id === 'registerModal') {
             document.body.classList.add('register-modal-open');
             document.body.classList.remove('login-modal-open');
+            ensureRegisterTurnstileWidget();
         }
         applyMobileRegisterLayoutFix(modalEl);
     }
@@ -144,6 +147,7 @@
             jq(modalEl).modal('hide');
             if (modalEl.id === 'registerModal') {
                 document.body.classList.remove('register-modal-open');
+                resetRegisterTurnstileWidget();
             }
             return;
         }
@@ -151,6 +155,7 @@
             window.hideModalById(modalEl.id);
             if (modalEl.id === 'registerModal') {
                 document.body.classList.remove('register-modal-open');
+                resetRegisterTurnstileWidget();
             }
             return;
         }
@@ -161,6 +166,7 @@
         document.body.style.overflow = '';
         if (modalEl.id === 'registerModal') {
             document.body.classList.remove('register-modal-open');
+            resetRegisterTurnstileWidget();
         }
     }
 
@@ -873,6 +879,33 @@
         }
     }
 
+    function registerTurnstileContainer() {
+        return document.getElementById('registerTurnstile');
+    }
+
+    function ensureRegisterTurnstileWidget() {
+        if (!Shared.hasTurnstile || !Shared.hasTurnstile()) return;
+        var container = registerTurnstileContainer();
+        if (!container || container.getAttribute('data-turnstile-widget-id')) return;
+        if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+            window.setTimeout(ensureRegisterTurnstileWidget, 120);
+            return;
+        }
+        Shared.renderTurnstileWidget(container, { theme: 'dark', action: 'register' });
+    }
+
+    function resetRegisterTurnstileWidget() {
+        var container = registerTurnstileContainer();
+        if (!container) return;
+        Shared.resetTurnstileWidget(container);
+    }
+
+    function registerTurnstileToken() {
+        var container = registerTurnstileContainer();
+        if (!container) return '';
+        return Shared.turnstileTokenFromContainer(container);
+    }
+
     function initRegisterFormSubmit() {
         var form = document.getElementById('modalRegisterForm');
         var registerModal = document.getElementById('registerModal');
@@ -927,6 +960,13 @@
             e.preventDefault();
             hideRegisterError();
 
+            var turnstileToken = registerTurnstileToken();
+            if (Shared.hasTurnstile && Shared.hasTurnstile() && !turnstileToken) {
+                showRegisterError('Cloudflare doğrulamasını tamamlayın.');
+                ensureRegisterTurnstileWidget();
+                return;
+            }
+
             var countryInput = form.querySelector('[name="country"]');
             var tcInputEl = form.querySelector('[name="tcKimlik"], [name="tc"], [name="identity_number"]');
             var tcErrorEl = form.querySelector('.register-error-text[data-error-for="tcKimlik"]');
@@ -958,6 +998,10 @@
 
             var fd = new FormData(form);
             fd.append('register_submit', '1');
+            if (turnstileToken) {
+                fd.append('turnstile_response', turnstileToken);
+                fd.append('cf-turnstile-response', turnstileToken);
+            }
             if (Shared.setSubmitButtonLoading) {
                 Shared.setSubmitButtonLoading(submitBtn, true);
             } else if (submitBtn) {
@@ -1027,6 +1071,7 @@
                     }
                     showRegisterError(msg);
                     notify('error', msg, 'Kayıt');
+                    resetRegisterTurnstileWidget();
                 })
                 .catch(function (err) {
                     if (Shared.setSubmitButtonLoading) {
@@ -1037,6 +1082,7 @@
                     var conn = Shared.MSG_CONN || 'Bağlantı hatası. Lütfen tekrar deneyin.';
                     showRegisterError(conn);
                     notify('error', conn, 'Kayıt');
+                    resetRegisterTurnstileWidget();
                 });
         });
 
@@ -1059,6 +1105,7 @@
         initCustomSelects();
         initRegisterDatepicker();
         initRegisterFormSubmit();
+        ensureRegisterTurnstileWidget();
     });
 
     // TC Kimlik numarası formatı (modal veya standalone form)
