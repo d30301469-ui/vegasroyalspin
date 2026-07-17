@@ -344,6 +344,17 @@ if (class_exists('ApiMediaUrl', false)) {
                             </label>
                         </div>
 
+                        <div class="register-actions register-actions-row entrance-form-actions-holder-bc reg-ext-1">
+                            <?php if (!$registerMobileSingleStep): ?>
+                            <button type="button" class="register-secondary-btn" id="registerPrevStep">
+                                GERİ
+                            </button>
+                            <?php endif; ?>
+                            <button type="submit" class="register-primary-btn btn a-color" id="modalRegisterSubmit" title="Kayıt">
+                                <span>Kayıt</span>
+                            </button>
+                        </div>
+
                         <div class="register-form-group register-terms entrance-f-item-bc">
                             <label class="register-terms-label">
                                 <input type="checkbox" name="terms_accepted" id="modal_terms_accepted" required class="register-terms-checkbox">
@@ -361,16 +372,6 @@ if (class_exists('ApiMediaUrl', false)) {
                             <div class="register-error-text" data-error-for="terms_accepted">Devam etmek için bu kutuyu işaretlemelisiniz.</div>
                         </div>
 
-                        <div class="register-actions register-actions-row entrance-form-actions-holder-bc reg-ext-1">
-                            <?php if (!$registerMobileSingleStep): ?>
-                            <button type="button" class="register-secondary-btn" id="registerPrevStep">
-                                GERİ
-                            </button>
-                            <?php endif; ?>
-                            <button type="submit" class="register-primary-btn btn a-color" id="modalRegisterSubmit" title="Kayıt">
-                                <span>Kayıt</span>
-                            </button>
-                        </div>
                         <button type="button" class="register-secondary-btn register-walletconnect-btn register-walletconnect-full btn">
                             <span class="register-walletconnect-icon">
                                 <svg width="141" height="24" viewBox="0 0 178 29" id="w3m-wc-logo-step2" aria-hidden="true">
