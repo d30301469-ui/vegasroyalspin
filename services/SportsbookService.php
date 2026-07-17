@@ -373,6 +373,7 @@ final class SportsbookService
             'currencyCode' => $currency,
             'language'     => $lang,
             'channel'      => $channel,
+            'isDemo'       => $isGuest,
         ];
         $homeUrl = trim((string) ($input['home_url'] ?? ''));
         if ($homeUrl === '') {
