@@ -297,10 +297,6 @@ final class ApiSiteSettings
 
     public static function ensureStorage(): void
     {
-        if (function_exists('frontend_database_allowed') && !frontend_database_allowed()) {
-            return;
-        }
-
         if (!class_exists('AdminDatabase', false)) {
             return;
         }
