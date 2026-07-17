@@ -65,6 +65,18 @@
         right: 50%;
     }
 
+    #registerModal .auth-slider-bg__slide {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        background: #07071a;
+    }
+
+    #registerModal .auth-slider-bg__image {
+        object-fit: contain;
+        object-position: center bottom;
+    }
+
     #registerModal .auth-slider-bg::after {
         background: linear-gradient(90deg, rgba(7, 7, 26, 0) 0%, rgba(7, 7, 26, 0.18) 74%, rgba(7, 7, 26, 0.84) 100%);
     }
