@@ -46,4 +46,22 @@ $memberBootstrapState = [
         'telegramUrl' => defined('TELEGRAM_URL') ? (string) TELEGRAM_URL : '',
         'megapayzLogoBaseUrl' => defined('MEGAPAYZ_LOGO_BASE_URL') ? (string) MEGAPAYZ_LOGO_BASE_URL : '',
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+
+    (function () {
+        if (!window.__TURNSTILE_ENABLED__ || document.querySelector('script[data-turnstile-loader="1"]')) {
+            return;
+        }
+
+        var existing = document.querySelector('script[src*="challenges.cloudflare.com/turnstile/v0/api.js"]');
+        if (existing) {
+            return;
+        }
+
+        var script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+        script.async = true;
+        script.defer = true;
+        script.setAttribute('data-turnstile-loader', '1');
+        document.head.appendChild(script);
+    })();
 </script>
