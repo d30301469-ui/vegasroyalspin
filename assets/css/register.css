@@ -1432,9 +1432,9 @@ label {
 
     /* --- Modal shell: left-half image, right-half dark, fixed height --- */
     #registerModal .modal-content {
-        height: 77vh !important;
-        min-height: 560px !important;
-        max-height: 900px !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: min(88vh, 760px) !important;
         border-radius: 20px !important;
         overflow: hidden !important;
         border: none !important;
@@ -1446,6 +1446,10 @@ label {
         /* Push all content to right half */
         padding-left: 420px !important;
         display: block !important;
+    }
+
+    #registerModal .register-modal-content.has-auth-slider {
+        background: #07071a !important;
     }
 
     /* --- Content wrapper fills right half height --- */
