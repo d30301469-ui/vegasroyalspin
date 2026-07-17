@@ -465,6 +465,13 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     height: 16px !important;
 }
 
+/* SLOT ikonunu global slots.css override'ından koru */
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-icon.bc-i-slots::before {
+    font-family: BetConstruct-Icons !important;
+    font-weight: 400 !important;
+    content: "\e955" !important;
+}
+
 @media (max-width: 991px) {
     .mainWrap.page-promotions .bonus-page-cats .promo-cat-btn i,
     .mainWrap.page-promotions .bonus-page-cats .promo-cat-btn .promo-cat-icon {
