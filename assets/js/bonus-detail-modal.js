@@ -288,6 +288,22 @@
                     '  <div class="bonus-accordion-content-inner">' + content + '</div>',
                     '</div>'
                 ].join('');
+                /* Angular zone.js interferansını önlemek için delegation yerine doğrudan listener */
+                (function attachAccordionClick(itemEl) {
+                    var btn = itemEl.querySelector('.bonus-accordion-trigger');
+                    if (btn) {
+                        btn.addEventListener('click', function () {
+                            var isOpen = itemEl.classList.contains('is-open');
+                            if (isOpen) {
+                                itemEl.classList.remove('is-open');
+                                btn.setAttribute('aria-expanded', 'false');
+                            } else {
+                                itemEl.classList.add('is-open');
+                                btn.setAttribute('aria-expanded', 'true');
+                            }
+                        });
+                    }
+                }(item));
                 fragment.appendChild(item);
             }
             accordionList.innerHTML = '';
