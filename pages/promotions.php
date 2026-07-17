@@ -176,12 +176,12 @@ foreach ($rows as $i => $b) {
 
 // Kategori filtresi — api.md GET category: sports | live_casino | slots | loss_bonus | vip
 $kategoriler = [
-    ['id' => 'tumu', 'label' => 'TÜMÜ', 'icon' => 'fa-th-large', 'active' => true],
-    ['id' => 'sports', 'label' => 'SPOR', 'icon' => 'fa-futbol'],
-    ['id' => 'live_casino', 'label' => 'CANLI CASINO', 'icon' => 'fa-dice'],
-    ['id' => 'slots', 'label' => 'SLOT', 'icon' => 'fa-coins'],
-    ['id' => 'loss_bonus', 'label' => 'KAYIP BONUSU', 'icon' => 'fa-layer-group'],
-    ['id' => 'vip', 'label' => 'VIP', 'icon' => 'fa-crown'],
+    ['id' => 'tumu', 'label' => 'TÜMÜ', 'icon' => 'bc-i-all-games1', 'active' => true],
+    ['id' => 'sports', 'label' => 'SPOR', 'icon' => 'bc-i-prematch'],
+    ['id' => 'live_casino', 'label' => 'CANLI CASINO', 'icon' => 'bc-i-livecasino'],
+    ['id' => 'slots', 'label' => 'SLOT', 'icon' => 'bc-i-slots'],
+    ['id' => 'loss_bonus', 'label' => 'KAYIP BONUSU', 'icon' => 'bc-i-circle-dollar'],
+    ['id' => 'vip', 'label' => 'VIP', 'icon' => 'bc-i-star'],
 ];
 ?>
 <div class="promo-categories-scroll-wrap" data-promo-cats-wrap>
@@ -189,7 +189,7 @@ $kategoriler = [
         <div class="promo-categories-inner" data-promo-cats-scroll>
             <?php foreach ($kategoriler as $kat): ?>
             <button type="button" class="promo-cat-btn <?= !empty($kat['active']) ? 'active' : '' ?>" data-category="<?= htmlspecialchars($kat['id']) ?>">
-                <i class="fas <?= $kat['icon'] ?>" aria-hidden="true"></i>
+                <i class="bc-i-default-icon <?= $kat['icon'] ?>" aria-hidden="true"></i>
                 <span><?= htmlspecialchars($kat['label']) ?></span>
             </button>
             <?php endforeach; ?>
