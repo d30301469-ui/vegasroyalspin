@@ -1435,7 +1435,7 @@ label {
         --register-art-share: 41%;
         height: auto !important;
         min-height: 0 !important;
-        max-height: min(94vh, 840px) !important;
+        max-height: min(95vh, 870px) !important;
         border-radius: 8px !important;
         overflow: hidden !important;
         border: none !important;
@@ -1594,7 +1594,7 @@ label {
     #registerModal .register-steps-scroll.entrance-form-content-bc.single-side.step-0 {
         flex: 0 1 auto !important;
         overflow-y: auto !important;
-        max-height: min(61vh, 590px) !important;
+        max-height: min(63vh, 630px) !important;
         padding-right: 4px !important;
         padding-bottom: 6px !important;
     }
@@ -1664,8 +1664,8 @@ label {
     #registerModal .register-input,
     #registerModal .form-control-input-bc {
         width: 100% !important;
-        height: 48px !important;
-        padding: 22px 16px 8px 16px !important;
+        height: 44px !important;
+        padding: 18px 14px 6px 14px !important;
         font-size: 13px !important;
         color: #ece7ff !important;
         background: rgba(255, 255, 255, 0.08) !important;
@@ -1691,7 +1691,7 @@ label {
     /* --- Floating label text --- */
     #registerModal .form-control-title-bc {
         position: absolute !important;
-        left: 16px !important;
+        left: 14px !important;
         top: 50% !important;
         transform: translateY(-50%) !important;
         font-size: 12px !important;
@@ -1705,7 +1705,7 @@ label {
     /* Focused / has-value: float label up */
     #registerModal .form-control-label-bc.focused .form-control-title-bc,
     #registerModal .form-control-label-bc.has-value .form-control-title-bc {
-        top: 10px !important;
+        top: 8px !important;
         transform: translateY(0) !important;
         font-size: 10px !important;
         color: rgba(172, 102, 255, 0.9) !important;
@@ -1719,7 +1719,7 @@ label {
         border: 1px solid rgba(172, 102, 255, 0.3) !important;
         border-radius: 6px !important;
         color: #ece7ff !important;
-        height: 48px !important;
+        height: 44px !important;
     }
 
     #registerModal .bc-custom-select__label,
