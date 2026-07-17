@@ -59,7 +59,23 @@
     }
 
     function createOverlayIfMissing() {
-        if (document.getElementById('bonus-detail-modal-overlay')) return;
+        var existing = document.getElementById('bonus-detail-modal-overlay');
+        if (existing) {
+            /* Static PHP partial içinde olabilir — body'ye taşı ki z-index header'ı geçsin */
+            if (existing.parentElement !== document.body) {
+                document.body.appendChild(existing);
+                /* Elemanı taşıdıktan sonra bağlantıları sıfırla ve yeniden bağla */
+                existing.removeAttribute('data-bonus-modal-bound');
+                if (existing.querySelector('.bonus-accordion-list')) {
+                    existing.querySelector('.bonus-accordion-list').removeAttribute('data-bonus-accordion-bound');
+                }
+            }
+            getElements();
+            bindCloseAndOverlay();
+            bindAccordionDelegation();
+            bindClaimSubmitOnce();
+            return;
+        }
         var div = document.createElement('div');
         div.id = 'bonus-detail-modal-overlay';
         div.className = 'bonus-modal-overlay';
