@@ -211,7 +211,7 @@ if (!empty($rows)) {
     foreach ($rows as $index => $bonus) {
         // Modern bonus kartı (data-category: ileride veritabanından gelebilir)
         $card_category = isset($bonus['category_id']) ? $bonus['category_id'] : 'slots';
-        echo '<div class="bonus-card" data-category="' . htmlspecialchars($card_category) . '" data-promo-index="' . (int) $index . '">';
+        echo '<article class="bonus-card" data-category="' . htmlspecialchars($card_category) . '" data-promo-index="' . (int) $index . '">';
         echo '<div class="bonus-card-inner">';
         
         // Görsel URL kontrolü (modal için tam URL)
@@ -220,10 +220,11 @@ if (!empty($rows)) {
             $image_url = '/' . ltrim($image_url, '/');
         }
         echo '<div class="bonus-image">';
-        echo '<img src="' . htmlspecialchars($image_url) . '" alt="' . htmlspecialchars($bonus['title']) . '">';
+        echo '<img src="' . htmlspecialchars($image_url) . '" alt="' . htmlspecialchars($bonus['title']) . '" loading="lazy" decoding="async">';
         echo '</div>';
+        echo '<h3 class="bonus-card-title">' . htmlspecialchars($bonus['title']) . '</h3>';
         echo '</div>';
-        echo '</div>';
+        echo '</article>';
     }
     
     echo '</div>';
@@ -303,39 +304,51 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
 }
 
 .bonus-page-cats .promo-cat-btn {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.9rem;
-    border: 1px solid rgba(81, 33, 223, 0.3);
+    justify-content: center;
+    gap: 6px;
+    width: 80px;
+    min-width: 80px;
+    padding: 5px;
+    border: none;
     border-radius: 4px;
-    background: rgba(40, 25, 70, 0.8);
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.8rem;
-    font-weight: 600;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    font-weight: 400;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
     white-space: nowrap;
 }
 
 .bonus-page-cats .promo-cat-btn i {
-    font-size: 0.95rem;
-    opacity: 0.95;
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+}
+
+.bonus-page-cats .promo-cat-btn span {
+    font-size: 10px;
+    line-height: 1.2;
 }
 
 .bonus-page-cats .promo-cat-btn:hover,
 .bonus-page-cats .promo-cat-btn:focus-visible {
-    background: rgba(81, 33, 223, 0.35);
-    border-color: rgba(129, 80, 235, 0.5);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.9);
     outline: none;
 }
 
 .bonus-page-cats .promo-cat-btn.active {
-    background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
-    border-color: #7c3aed;
+    background: rgb(32, 32, 34);
     color: #fff;
-    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.15);
 }
 
 .bonus-page-cats .promo-cat-btn.active i {
@@ -419,14 +432,20 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
 
     .bonus-page-cats .promo-cat-btn {
         flex-shrink: 0;
-        font-size: 0.62rem;
-        padding: 0.35rem 0.45rem;
-        gap: 0.28rem;
-        letter-spacing: 0.02em;
+        width: 72px;
+        min-width: 72px;
+        padding: 5px;
+        gap: 5px;
     }
 
     .bonus-page-cats .promo-cat-btn i {
-        font-size: 0.72rem;
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+    }
+
+    .bonus-page-cats .promo-cat-btn span {
+        font-size: 9px;
     }
 
     .promo-cats-scroll-hint {
@@ -438,78 +457,107 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
 /* Bonus Grid Container */
 .bonus-grid-container {
     width: 100%;
-    padding: 20px 0;
+    padding: 10px 0;
 }
 
-/* Modern Bonus Grid - Masaüstü 4 sütun, mobil alt alta */
+/* Modern Bonus Grid - CasinoMilyon tasarımı: masaüstü 2 sütun, mobil tek sütun */
 .bonus-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 25px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
     width: 100%;
+    padding: 0 7px;
 }
 
-/* Bonus Kartları */
+/* Bonus Kartları — sade, köşeleri 4px, başlık çubuğu altta */
 .bonus-card {
     position: relative;
-    background: linear-gradient(145deg, #0a0a0a, #111111);
-    border-radius: 16px;
-    border: 1px solid rgba(133, 106, 0, 0.2);
+    background: transparent;
+    border-radius: 4px;
+    border: none;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: none;
+    display: block;
 }
 
-/* Soldan sağa mor neon parlama (shine) hover efekti */
-.bonus-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 70%;
-    height: 100%;
-    background: linear-gradient(
-        105deg,
-        transparent 0%,
-        transparent 30%,
-        rgba(139, 92, 246, 0.5) 45%,
-        rgba(167, 139, 250, 0.85) 50%,
-        rgba(139, 92, 246, 0.5) 55%,
-        transparent 70%,
-        transparent 100%
-    );
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
-    transition: left 0.5s ease;
-    pointer-events: none;
-}
-
-.bonus-card:hover::after {
-    left: 100%;
+.bonus-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .bonus-card-inner {
-    height: 100%;
     display: flex;
     flex-direction: column;
 }
 
-/* Bonus Görsel - 57:40 en-boy oranı */
+/* Bonus Görsel */
 .bonus-image {
     position: relative;
     width: 100%;
-    aspect-ratio: 57 / 40;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     flex-shrink: 0;
+    border-radius: 4px 4px 0 0;
 }
 
 .bonus-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
+    border-radius: 4px 4px 0 0;
+}
+
+/* Kart başlık çubuğu — orijinal CasinoMilyon: rgba(255,255,255,0.1) arka plan */
+.bonus-card-title {
+    margin: 1px 0 0;
+    padding: 0 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 34px;
+    text-align: left;
+    text-transform: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Countdown banner (opsiyonel) — kart üzerinde sol üst */
+.bonus-card .countdown-banner-content {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    display: flex;
+    padding: 5px;
+    background: rgba(32, 32, 34, 0.8);
+    border-radius: 4px;
+    z-index: 1;
+}
+
+.bonus-card .countdown-banner-counter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 9px 0 0;
+}
+
+.bonus-card .countdown-banner-counter:last-child {
+    padding-right: 0;
+}
+
+.bonus-card .countdown-banner-date {
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+}
+
+.bonus-card .countdown-banner-names {
+    font-size: 10px;
+    color: #fff;
 }
 
 
@@ -584,28 +632,24 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     line-height: 1.5;
 }
 
-/* Responsive Breakpoints */
-/* Büyük masaüstü (1200px+) — 4 yan yana */
+/* Responsive Breakpoints — CasinoMilyon: masaüstü 2 sütun, mobil tek sütun */
+/* Büyük masaüstü (1200px+) — 2 yan yana */
 @media (min-width: 1200px) {
     .bonus-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 30px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
-    
+
     .bonus-card {
         max-width: 100%;
     }
 }
 
-/* Orta masaüstü (992px - 1199px) — 4 yan yana */
+/* Orta masaüstü (992px - 1199px) — 2 yan yana */
 @media (min-width: 992px) and (max-width: 1199px) {
     .bonus-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 25px;
-    }
-    
-    .bonus-title {
-        font-size: 16px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
 }
 
@@ -613,11 +657,7 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
 @media (max-width: 991px) {
     .bonus-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-    }
-    
-    .bonus-content {
-        padding: 15px;
+        gap: 10px;
     }
 }
 
@@ -625,10 +665,10 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
 @media (max-width: 767px) {
     .bonus-grid {
         grid-template-columns: 1fr;
-        gap: 15px;
-        padding: 15px 0;
+        gap: 10px;
+        padding: 0 7px;
     }
-    
+
     .bonus-grid-container {
         padding: 10px 0;
     }
@@ -639,10 +679,9 @@ window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICO
     .bonus-grid {
         grid-template-columns: 1fr;
     }
-    
-    .bonus-title {
-        font-size: 16px;
-        min-height: auto;
+
+    .bonus-card-title {
+        font-size: 12px;
     }
 }
 </style>
