@@ -442,7 +442,7 @@ final class PromotionMediaGuard
 
     private static function sourceDir(): string
     {
-        return self::rootPath() . '/upload/bonuses';
+        return self::rootPath() . '/admin/upload/bonuses';
     }
 
     private static function rootPath(): string
