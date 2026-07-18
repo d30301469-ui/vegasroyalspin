@@ -36,15 +36,6 @@ body.mobile-site .mobile-right-sheet-overlay {
   -webkit-overflow-scrolling: touch;
 }
 
-/*
- * Right sheet açıkken arka plan scroll'unu kilitle; sticky header konumunu
- * bozmamak için fixed-body lock kullanılmaz.
- */
-body.mobile-site.mobile-right-sheet-open {
-  overflow: hidden !important;
-  touch-action: none;
-}
-
 .mobile-right-sheet-overlay.is-open {
   opacity: 1;
   visibility: visible;
