@@ -40,6 +40,32 @@
     var escapeEl = null;
     var isScrollLockedByModal = false;
 
+    function openLoginModal(nextPath) {
+        var targetPath = (typeof nextPath === 'string' && nextPath.trim()) ? nextPath.trim() : '/promotions';
+        var nextEl = document.getElementById('loginFormNext');
+        if (nextEl) {
+            nextEl.value = targetPath;
+        }
+        if (typeof global.__openLoginModal === 'function') {
+            global.__openLoginModal();
+            return true;
+        }
+        if (global.MaltabetAuth && typeof global.MaltabetAuth.showLoginModal === 'function') {
+            global.MaltabetAuth.showLoginModal();
+            return true;
+        }
+        if (typeof global.showModalById === 'function') {
+            global.showModalById('login2');
+            return true;
+        }
+        var loginBtn = document.getElementById('Giris');
+        if (loginBtn && typeof loginBtn.click === 'function') {
+            loginBtn.click();
+            return true;
+        }
+        return false;
+    }
+
     function getSharedScrollLock() {
         if (global.__BodyScrollLock && typeof global.__BodyScrollLock.lock === 'function' && typeof global.__BodyScrollLock.unlock === 'function') {
             return global.__BodyScrollLock;
@@ -227,6 +253,17 @@
     function bindClaimSubmitOnce() {
         if (claimSubmitListenerBound) return;
         claimSubmitListenerBound = true;
+        document.addEventListener('click', function (e) {
+            var loginLink = e.target && e.target.closest ? e.target.closest('#bonus-modal-claim-login') : null;
+            if (!loginLink) return;
+
+            e.preventDefault();
+            var nextPath = location && location.pathname ? location.pathname : '/promotions';
+            close();
+            if (!openLoginModal(nextPath)) {
+                global.location.href = loginLink.getAttribute('href') || '/login';
+            }
+        });
         document.addEventListener('click', function (e) {
             var btn = e.target && e.target.closest ? e.target.closest('#bonus-modal-claim-submit') : null;
             if (!btn || btn.disabled) return;
