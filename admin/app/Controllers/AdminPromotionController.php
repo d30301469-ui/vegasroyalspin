@@ -285,7 +285,8 @@ final class AdminPromotionController extends AdminController
             return null;
         }
 
-        $targetDir = (defined('STORAGE_PATH') ? STORAGE_PATH : '') . '/uploads/promotions';
+        $base = defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__, 3);
+        $targetDir = rtrim($base, '/\\') . '/admin/upload/bonuses';
         if (!is_dir($targetDir) && !@mkdir($targetDir, 0755, true) && !is_dir($targetDir)) {
             return null;
         }
@@ -299,7 +300,7 @@ final class AdminPromotionController extends AdminController
             return null;
         }
 
-        return '/uploads/promotions/' . $filename;
+        return '/upload/bonuses/' . $filename;
     }
 
     private static function normalizePromotionLinkUrl(string $linkUrl): string
