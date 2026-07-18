@@ -263,7 +263,7 @@
             if (!openLoginModal(nextPath)) {
                 global.location.href = loginLink.getAttribute('href') || '/login';
             }
-        });
+        }, true);
         document.addEventListener('click', function (e) {
             var btn = e.target && e.target.closest ? e.target.closest('#bonus-modal-claim-submit') : null;
             if (!btn || btn.disabled) return;
@@ -320,7 +320,7 @@
                 .then(function () {
                     btn.disabled = false;
                 });
-        });
+        }, true);
     }
 
     function configureClaimBlock(data) {
