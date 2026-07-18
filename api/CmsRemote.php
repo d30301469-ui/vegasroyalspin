@@ -522,13 +522,30 @@ final class ApiCmsRemote
             return 0;
         }
         $removed = 0;
-        $prefix = $cacheKeyPrefix !== null ? preg_replace('/[^a-z0-9_\-]/i', '_', trim($cacheKeyPrefix)) : '';
+        $prefixRaw = $cacheKeyPrefix !== null ? preg_replace('/[^a-z0-9_\-]/i', '_', trim($cacheKeyPrefix)) : '';
+        $prefixVariants = [];
+        if ($prefixRaw !== '') {
+            $prefixVariants[] = $prefixRaw;
+            $prefixVariants[] = str_replace('-', '_', $prefixRaw);
+            $prefixVariants[] = str_replace('_', '-', $prefixRaw);
+            $prefixVariants = array_values(array_unique(array_filter($prefixVariants, static fn ($v): bool => $v !== '')));
+        }
         foreach (glob($dir . '/*.json') ?: [] as $file) {
             if (!is_string($file) || !is_file($file)) {
                 continue;
             }
-            if ($prefix !== '' && !str_starts_with(basename($file), $prefix)) {
-                continue;
+            if ($prefixVariants !== []) {
+                $basename = basename($file);
+                $matched = false;
+                foreach ($prefixVariants as $prefix) {
+                    if (str_starts_with($basename, $prefix)) {
+                        $matched = true;
+                        break;
+                    }
+                }
+                if (!$matched) {
+                    continue;
+                }
             }
             if (@unlink($file)) {
                 $removed++;
