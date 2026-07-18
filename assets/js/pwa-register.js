@@ -167,9 +167,16 @@
       return;
     }
 
-    navigator.serviceWorker.register('/service-worker.js', { scope: '/' }).catch(function (error) {
-      console.error('Service worker registration failed:', error);
-    });
+    // Surum parametresi CDN/edge cache'ini atlayarak yeni SW'nin inmesini garantiler.
+    navigator.serviceWorker.register('/service-worker.js?v=4-turnstile-iframe-fix', { scope: '/' })
+      .then(function (reg) {
+        if (reg && typeof reg.update === 'function') {
+          reg.update().catch(function () { /* ignore */ });
+        }
+      })
+      .catch(function (error) {
+        console.error('Service worker registration failed:', error);
+      });
   }
 
   window.addEventListener('beforeinstallprompt', function (event) {
