@@ -657,6 +657,10 @@ if (!window.__promoInlineDelegationBound) {
         image-rendering: crisp-edges;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+        object-position: center center !important;
     }
 
     .bonus-card,
@@ -664,6 +668,10 @@ if (!window.__promoInlineDelegationBound) {
     .bonus-image {
         transform: none !important;
         filter: none !important;
+    }
+
+    .bonus-image {
+        background: #120424;
     }
 }
 
