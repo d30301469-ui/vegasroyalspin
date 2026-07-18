@@ -100,6 +100,14 @@
             }
         }
 
+        function applyFromEventTarget(target) {
+            if (!target || !target.closest) return false;
+            var btn = target.closest('.promo-cat-btn');
+            if (!btn || !bar.contains(btn)) return false;
+            applyCategoryFilter(btn);
+            return true;
+        }
+
         btns.forEach(function (btn) {
             btn.addEventListener('click', function () {
                 applyCategoryFilter(btn);
@@ -111,6 +119,11 @@
                 }
                 applyCategoryFilter(btn);
             }, { passive: false });
+        });
+
+        // Bazı mobil tarayıcılarda click/touchend sırası farklı olabildiği için pointerup fallback.
+        bar.addEventListener('pointerup', function (e) {
+            applyFromEventTarget(e && e.target ? e.target : null);
         });
     }
 

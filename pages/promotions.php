@@ -375,6 +375,14 @@ if (!window.__promoInlineCategoryFilterBound) {
             runFilter(btn);
         }, { capture: true, passive: false });
 
+        document.addEventListener('pointerup', function (event) {
+            var target = event.target;
+            if (!target || !target.closest) return;
+            var btn = target.closest('.promo-categories-inner .promo-cat-btn');
+            if (!btn) return;
+            runFilter(btn);
+        }, true);
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function () {
                 var initial = document.querySelector('.promo-categories-inner .promo-cat-btn.active') || document.querySelector('.promo-categories-inner .promo-cat-btn');
