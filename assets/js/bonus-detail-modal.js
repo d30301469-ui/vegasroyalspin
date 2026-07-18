@@ -452,6 +452,11 @@
         }
         if (document.body.classList.contains('mobile-site') && typeof window.__syncHeaderStickyTop === 'function') {
             window.__syncHeaderStickyTop();
+            requestAnimationFrame(function () {
+                if (typeof window.__syncHeaderStickyTop === 'function') {
+                    window.__syncHeaderStickyTop();
+                }
+            });
         }
         overlay.classList.add('is-open');
         overlay.setAttribute('aria-hidden', 'false');
