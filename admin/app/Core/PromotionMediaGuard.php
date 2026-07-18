@@ -259,6 +259,12 @@ final class PromotionMediaGuard
             return false;
         }
 
+        // Üretimde BACKEND_URL farklı bir yönetim hostuna işaret etse bile
+        // admin.* alan adları backend olarak kabul edilir.
+        if (str_starts_with($host, 'admin.')) {
+            return true;
+        }
+
         if (self::$backendHost === null) {
             $backend = '';
             if (defined('BACKEND_URL')) {
@@ -277,8 +283,7 @@ final class PromotionMediaGuard
             return $host === self::$backendHost;
         }
 
-        // Fallback: admin alt alan adını backend kabul et.
-        return str_starts_with($host, 'admin.');
+        return false;
     }
 
     private static function ensureColumn(PDO $pdo, string $column, string $definitionSql): void
