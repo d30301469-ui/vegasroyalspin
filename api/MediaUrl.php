@@ -381,6 +381,12 @@ final class ApiMediaUrl
 
     private static function frontendMediaPath(string $path): string
     {
+        // Promotion and backend-uploaded media paths are served by backend host in split deploy.
+        $backend = self::backendOrigin();
+        if ($backend !== '') {
+            return $backend . $path;
+        }
+
         $sitePath = '';
         if (defined('SITE_URL')) {
             $sitePath = (string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?: '');

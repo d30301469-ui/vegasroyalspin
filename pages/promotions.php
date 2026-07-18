@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . '/../core/bootstrap.php';
 
+if (class_exists('ApiMediaUrl') && method_exists('ApiMediaUrl', 'ensureLoaded')) {
+    ApiMediaUrl::ensureLoaded();
+}
+
 if (!function_exists('promotions_page_sections_from_api')) {
     /**
      * @param array<string, mixed> $p Ham promotions.php kaydı (api.md).
