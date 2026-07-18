@@ -87,19 +87,30 @@
         var cards = getCards();
         if (!btns.length || !cards.length) return;
 
+        function applyCategoryFilter(btn) {
+            btns.forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+
+            var cat = normalizeCategory(btn.getAttribute('data-category'));
+            for (var i = 0; i < cards.length; i++) {
+                var card = cards[i];
+                var cardCat = normalizeCategory(card.getAttribute('data-category'));
+                var show = !cat || cat === 'tumu' || cardCat === cat;
+                card.classList.toggle(HIDDEN_CLASS, !show);
+            }
+        }
+
         btns.forEach(function (btn) {
             btn.addEventListener('click', function () {
-                btns.forEach(function (b) { b.classList.remove('active'); });
-                btn.classList.add('active');
-
-                var cat = normalizeCategory(btn.getAttribute('data-category'));
-                for (var i = 0; i < cards.length; i++) {
-                    var card = cards[i];
-                    var cardCat = normalizeCategory(card.getAttribute('data-category'));
-                    var show = !cat || cat === 'tumu' || cardCat === cat;
-                    card.classList.toggle(HIDDEN_CLASS, !show);
-                }
+                applyCategoryFilter(btn);
             });
+
+            btn.addEventListener('touchend', function (e) {
+                if (e && typeof e.preventDefault === 'function') {
+                    e.preventDefault();
+                }
+                applyCategoryFilter(btn);
+            }, { passive: false });
         });
     }
 
