@@ -44,6 +44,15 @@ final class AdminPromotionController extends AdminController
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
             $promotions = $stmt->fetchAll();
+            if (is_array($promotions)) {
+                foreach ($promotions as &$promotionRow) {
+                    if (!is_array($promotionRow)) {
+                        continue;
+                    }
+                    $promotionRow['image_url'] = self::normalizeDisplayImageUrl((string) ($promotionRow['image_url'] ?? ''));
+                }
+                unset($promotionRow);
+            }
         } catch (Throwable) {
             $promotions = [];
             $total = 0;
@@ -134,7 +143,9 @@ final class AdminPromotionController extends AdminController
             'title' => 'Promosyon Düzenle',
             'active' => 'promotions',
             'crumbs' => 'Marketing | Promotions | Düzenle',
-            'promotion' => $promotion,
+            'promotion' => array_merge($promotion, [
+                'image_url' => self::normalizeDisplayImageUrl((string) ($promotion['image_url'] ?? '')),
+            ]),
             'mode' => 'edit',
             'categoryOptions' => self::CATEGORY_OPTIONS,
             'libraryImages' => PromotionMediaGuard::listLibraryImages(),
@@ -307,6 +318,32 @@ final class AdminPromotionController extends AdminController
         }
 
         return '/' . ltrim($linkUrl, '/');
+    }
+
+    private static function normalizeDisplayImageUrl(string $imageUrl): string
+    {
+        $imageUrl = trim($imageUrl);
+        if ($imageUrl === '') {
+            return '';
+        }
+
+        $path = $imageUrl;
+        if (preg_match('#^https?://#i', $path) === 1) {
+            $path = (string) (parse_url($path, PHP_URL_PATH) ?? '');
+        }
+        $path = '/' . ltrim(str_replace('\\', '/', $path), '/');
+
+        if (str_starts_with(strtolower($path), '/uploads/promotions/')) {
+            $file = basename($path);
+            if ($file !== '') {
+                $source = (defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__, 2)) . '/upload/bonuses/' . $file;
+                if (is_file($source)) {
+                    return '/upload/bonuses/' . $file;
+                }
+            }
+        }
+
+        return $imageUrl;
     }
 
     public function delete(): void

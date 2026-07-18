@@ -101,7 +101,23 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
             $promoRows = str_contains($e->getMessage(), '42S02') ? [] : throw $e;
         }
         $promotions = [];
+        $bonusSourceDir = (defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__, 4)) . '/upload/bonuses';
         foreach ($promoRows as $row) {
+            $rawImage = trim((string) ($row['image_url'] ?? ''));
+            if ($rawImage !== '') {
+                $path = $rawImage;
+                if (preg_match('#^https?://#i', $path) === 1) {
+                    $path = (string) (parse_url($path, PHP_URL_PATH) ?? '');
+                }
+                $path = '/' . ltrim(str_replace('\\', '/', $path), '/');
+                if (str_starts_with(strtolower($path), '/uploads/promotions/')) {
+                    $name = basename($path);
+                    if ($name !== '' && is_file($bonusSourceDir . '/' . $name)) {
+                        $rawImage = '/upload/bonuses/' . $name;
+                    }
+                }
+            }
+
             $promotions[] = [
                 'id' => (int) ($row['id'] ?? 0),
                 'title' => (string) ($row['title'] ?? ''),
@@ -110,8 +126,8 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
                 'category' => (string) ($row['type'] ?? ''),
                 'terms' => (string) ($row['terms'] ?? ''),
                 'image_url' => class_exists('ApiMediaUrl', false)
-                    ? ApiMediaUrl::resolve((string) ($row['image_url'] ?? ''))
-                    : (string) ($row['image_url'] ?? ''),
+                    ? ApiMediaUrl::resolve($rawImage)
+                    : $rawImage,
                 'link_url' => (string) ($row['link_url'] ?? ''),
                 'general_rules' => (string) ($row['general_rules'] ?? ''),
             ];
