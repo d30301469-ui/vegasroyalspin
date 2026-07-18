@@ -639,6 +639,33 @@ if (!window.__promoInlineCategoryFilterBound) {
     content: "\e955" !important;
 }
 
+/* Kategori ikonları için sağlam fallback: desktop'ta font/cascade çakışmasında ikon kaybını engeller */
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-icon[class*="bc-i-"]::before {
+    font-family: BetConstruct-Icons !important;
+    font-weight: 400 !important;
+}
+
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-icon.bc-i-all::before,
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-icon.bc-i-all-games1::before {
+    content: "\ebee" !important;
+}
+
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-icon.bc-i-prematch::before {
+    content: "\e965" !important;
+}
+
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-icon.bc-i-livecasino::before {
+    content: "\e945" !important;
+}
+
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-icon.bc-i-circle-dollar::before {
+    content: "\e92c" !important;
+}
+
+.mainWrap.page-promotions .bonus-page-cats .promo-cat-icon.bc-i-star::before {
+    content: "\e979" !important;
+}
+
 @media (max-width: 991px) {
     .mainWrap.page-promotions .bonus-page-cats .promo-cat-btn i,
     .mainWrap.page-promotions .bonus-page-cats .promo-cat-btn .promo-cat-icon {
