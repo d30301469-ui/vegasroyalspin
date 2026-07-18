@@ -9,6 +9,8 @@
     var cachedCards = null;
     var cachedPromoList = null;
     var HIDDEN_CLASS = 'promo-card-hidden';
+    var lastOpenIndex = null;
+    var lastOpenAt = 0;
 
     function getCards() {
         if (!cachedCards) {
@@ -107,6 +109,13 @@
     function openPromoByIndex(index) {
         if (index === null || index === '') return;
 
+        var now = Date.now();
+        if (lastOpenIndex === String(index) && (now - lastOpenAt) < 300) {
+            return;
+        }
+        lastOpenIndex = String(index);
+        lastOpenAt = now;
+
         var list = getPromoList();
         var promo = list[parseInt(index, 10)];
         if (!promo || typeof window.BonusDetailModal === 'undefined') return;
@@ -152,12 +161,37 @@
         }
     }
 
+    function bindGlobalCardOpenDelegation() {
+        if (document.documentElement.getAttribute('data-promo-global-bound') === '1') {
+            return;
+        }
+        document.documentElement.setAttribute('data-promo-global-bound', '1');
+
+        function tryOpenFromEvent(e) {
+            var t = e && e.target;
+            if (!t || !t.closest) return;
+            var card = t.closest('.promo-card[data-promo-index], .bonus-card[data-promo-index]');
+            if (!card) return;
+            var idx = card.getAttribute('data-promo-index');
+            if (idx === null || idx === '') return;
+
+            if (e && typeof e.preventDefault === 'function') {
+                e.preventDefault();
+            }
+            openPromoByIndex(idx);
+        }
+
+        document.addEventListener('click', tryOpenFromEvent, true);
+        document.addEventListener('touchend', tryOpenFromEvent, { capture: true, passive: false });
+    }
+
     function initBonusDetailModal() {
         var promoGrid = document.querySelector('.promo-grid');
         var bonusGrid = document.querySelector('.bonus-grid');
         if (promoGrid) promoGrid.addEventListener('click', handleGridClick);
         if (bonusGrid && bonusGrid !== promoGrid) bonusGrid.addEventListener('click', handleGridClick);
         bindDirectCardOpenListeners();
+        bindGlobalCardOpenDelegation();
     }
 
     function init() {
