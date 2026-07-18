@@ -1,6 +1,13 @@
 <?php
 /** Üye API modülü — index.php tarafından include edilir. */
 
+if (!class_exists('PromotionMediaGuard', false) && defined('ADMIN_APP_PATH')) {
+    $guardFile = rtrim((string) ADMIN_APP_PATH, '/\\') . '/Core/PromotionMediaGuard.php';
+    if (is_file($guardFile)) {
+        require_once $guardFile;
+    }
+}
+
 if (($route === 'call_me_request.php' || $route === 'call-me-request') && in_array($method, ['GET', 'POST'], true)) {
     $pdo = AdminDatabase::pdo();
     $callerUserId = null;
