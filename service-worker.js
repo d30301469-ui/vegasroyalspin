@@ -1,5 +1,5 @@
 /* vegasroyalspin PWA service worker */
-const SW_VERSION = 'v2-turnstile-auth';
+const SW_VERSION = 'v3-modal-header-fix';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -71,6 +71,18 @@ function isAuthAppAsset(requestUrl) {
   );
 }
 
+function isCriticalModalAsset(requestUrl) {
+  if (requestUrl.origin !== self.location.origin) {
+    return false;
+  }
+
+  return (
+    requestUrl.pathname.startsWith('/assets/js/bonus-detail-modal') ||
+    requestUrl.pathname.startsWith('/assets/css/bonus-detail-modal') ||
+    requestUrl.pathname.startsWith('/assets/js/promosyonlar')
+  );
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
@@ -90,6 +102,21 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (!isCacheableStatic(requestUrl)) {
+    return;
+  }
+
+  if (isCriticalModalAsset(requestUrl)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const cloned = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => cache.put(request, cloned));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
     return;
   }
 
