@@ -11,6 +11,9 @@
     var HIDDEN_CLASS = 'promo-card-hidden';
     var lastOpenIndex = null;
     var lastOpenAt = 0;
+    var TOUCH_MOVE_THRESHOLD = 10;
+    var TOUCH_SCROLL_THRESHOLD = 10;
+    var TOUCH_TAP_MAX_DURATION = 700;
 
     function normalizeCategory(raw) {
         var value = (raw || '').toString().toLowerCase().trim();
@@ -171,6 +174,50 @@
         });
     }
 
+    function firstTouchPoint(e) {
+        if (!e) return null;
+        if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0];
+        if (e.touches && e.touches.length) return e.touches[0];
+        return null;
+    }
+
+    function setCardTouchMeta(card, e) {
+        if (!card) return;
+        var point = firstTouchPoint(e);
+        if (!point) return;
+        card.__promoTouchMeta = {
+            x: point.clientX,
+            y: point.clientY,
+            at: Date.now(),
+            scrollY: window.scrollY || window.pageYOffset || 0
+        };
+    }
+
+    function clearCardTouchMeta(card) {
+        if (!card) return;
+        card.__promoTouchMeta = null;
+    }
+
+    function isIntentionalCardTap(card, e) {
+        if (!card || !card.__promoTouchMeta) return false;
+        var meta = card.__promoTouchMeta;
+        clearCardTouchMeta(card);
+
+        var point = firstTouchPoint(e);
+        if (!point) return false;
+
+        var dx = Math.abs(point.clientX - meta.x);
+        var dy = Math.abs(point.clientY - meta.y);
+        var moved = dx > TOUCH_MOVE_THRESHOLD || dy > TOUCH_MOVE_THRESHOLD;
+        var dt = Date.now() - meta.at;
+        var scrollDelta = Math.abs((window.scrollY || window.pageYOffset || 0) - meta.scrollY);
+
+        if (moved) return false;
+        if (scrollDelta > TOUCH_SCROLL_THRESHOLD) return false;
+        if (dt > TOUCH_TAP_MAX_DURATION) return false;
+        return true;
+    }
+
     window.__openPromoModalByIndex = openPromoByIndex;
 
     function bindDirectCardOpenListeners() {
@@ -191,12 +238,20 @@
                 openPromoByIndex(idx);
             });
 
+            card.addEventListener('touchstart', function (e) {
+                setCardTouchMeta(this, e);
+            }, { passive: true });
+
+            card.addEventListener('touchcancel', function () {
+                clearCardTouchMeta(this);
+            }, { passive: true });
+
             card.addEventListener('touchend', function (e) {
                 var idx = this.getAttribute('data-promo-index');
                 if (idx === null || idx === '') return;
-                if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                if (!isIntentionalCardTap(this, e)) return;
                 openPromoByIndex(idx);
-            }, { passive: false });
+            }, { passive: true });
         }
     }
 
@@ -205,6 +260,15 @@
             return;
         }
         document.documentElement.setAttribute('data-promo-global-bound', '1');
+
+        var suppressCardClickUntil = 0;
+        var lastTouchState = {
+            card: null,
+            x: 0,
+            y: 0,
+            scrollY: 0,
+            moved: false
+        };
 
         function tryOpenFromEvent(e) {
             var t = e && e.target;
@@ -220,8 +284,69 @@
             openPromoByIndex(idx);
         }
 
+        function suppressIfNeeded(e) {
+            var t = e && e.target;
+            if (!t || !t.closest) return;
+            var card = t.closest('.promo-card[data-promo-index], .bonus-card[data-promo-index]');
+            if (!card) return;
+            if (Date.now() < suppressCardClickUntil) {
+                if (typeof e.preventDefault === 'function') e.preventDefault();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+            }
+        }
+
+        document.addEventListener('touchstart', function (e) {
+            var t = e && e.target;
+            if (!t || !t.closest) {
+                lastTouchState.card = null;
+                return;
+            }
+            var card = t.closest('.promo-card[data-promo-index], .bonus-card[data-promo-index]');
+            if (!card) {
+                lastTouchState.card = null;
+                return;
+            }
+            var point = firstTouchPoint(e);
+            if (!point) return;
+            lastTouchState.card = card;
+            lastTouchState.x = point.clientX;
+            lastTouchState.y = point.clientY;
+            lastTouchState.scrollY = window.scrollY || window.pageYOffset || 0;
+            lastTouchState.moved = false;
+        }, { capture: true, passive: true });
+
+        document.addEventListener('touchmove', function (e) {
+            if (!lastTouchState.card) return;
+            var point = firstTouchPoint(e);
+            if (!point) return;
+            var dx = Math.abs(point.clientX - lastTouchState.x);
+            var dy = Math.abs(point.clientY - lastTouchState.y);
+            if (dx > TOUCH_MOVE_THRESHOLD || dy > TOUCH_MOVE_THRESHOLD) {
+                lastTouchState.moved = true;
+            }
+        }, { capture: true, passive: true });
+
+        document.addEventListener('touchend', function () {
+            if (!lastTouchState.card) return;
+            var scrollDelta = Math.abs((window.scrollY || window.pageYOffset || 0) - lastTouchState.scrollY);
+            if (lastTouchState.moved || scrollDelta > TOUCH_SCROLL_THRESHOLD) {
+                suppressCardClickUntil = Date.now() + 500;
+            }
+            lastTouchState.card = null;
+        }, { capture: true, passive: true });
+
+        document.addEventListener('click', suppressIfNeeded, true);
+
         document.addEventListener('click', tryOpenFromEvent, true);
-        document.addEventListener('touchend', tryOpenFromEvent, { capture: true, passive: false });
+        document.addEventListener('touchend', function (e) {
+            var t = e && e.target;
+            if (!t || !t.closest) return;
+            var card = t.closest('.promo-card[data-promo-index], .bonus-card[data-promo-index]');
+            if (!card) return;
+            if (!isIntentionalCardTap(card, e)) return;
+            tryOpenFromEvent(e);
+        }, { capture: true, passive: true });
     }
 
     function initBonusDetailModal() {
