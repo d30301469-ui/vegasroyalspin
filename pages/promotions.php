@@ -650,11 +650,10 @@ if (!window.__promoInlineDelegationBound) {
     .bonus-card .bonus-image img,
     .bonus-card:hover .bonus-image img {
         transform: none !important;
-        filter: none !important;
+        filter: contrast(1.06) saturate(1.04) brightness(1.01) !important;
         transition: none !important;
         will-change: auto !important;
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
+        image-rendering: auto !important;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
         width: 100% !important;
