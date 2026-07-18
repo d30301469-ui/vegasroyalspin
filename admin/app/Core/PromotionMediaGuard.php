@@ -37,8 +37,7 @@ final class PromotionMediaGuard
 
         self::ensureSchema($pdo);
 
-        // syncUploadLibrary() bir dizin taraması + dosya kopyalama denemesidir,
-        // bu yüzden ağır sayılıp throttle edilir (en fazla 10 dakikada bir).
+        // Kopyalama adımı daha ağırdır; throttle kapsamında çalışır.
         if (self::shouldRunMaintenance()) {
             try {
                 self::syncUploadLibrary();
@@ -48,10 +47,7 @@ final class PromotionMediaGuard
             self::markMaintenanceRun();
         }
 
-        // repairMissingImages() ucuz bir işlemdir (tek SELECT + gerektiğinde
-        // birkaç UPDATE, düzeltildikten sonra no-op'a yakınsar) — throttle'a
-        // bağlı KALMADAN her istekte çalıştırılır ki tek bir satırda oluşacak
-        // beklenmeyen bir hata/istisna tüm partiyi 10 dakika boyunca kilitlemesin.
+        // Onarım adımı ucuzdur; throttle'a bağlı kalmadan her istekte çalışır.
         try {
             self::repairMissingImages($pdo);
         } catch (Throwable) {
@@ -101,10 +97,7 @@ final class PromotionMediaGuard
     /**
      * admin/upload/bonuses içindeki hazır görselleri /uploads/promotions/ olarak
      * servis edilebilen dizine kopyalar (idempotent — mevcut dosyaların üzerine yazmaz).
-     * Bu adım en iyi çaba (best-effort) niteliğindedir: hedef dizin yazılabilir
-     * değilse (ör. üretimde izin sorunu) sessizce hiçbir şey yapmaz — görsellerin
-     * çalışması buna bağlı DEĞİLDİR, çünkü repairMissingImages() doğrudan git ile
-     * deploy edilen /upload/bonuses/ kaynağını referans alır.
+     * Bu adım best-effort'tur; görsellerin çalışması bu kopyalamaya bağlı değildir.
      */
     public static function syncUploadLibrary(): int
     {
@@ -148,12 +141,9 @@ final class PromotionMediaGuard
 
     /**
      * Diskte bulunmayan yerel image_url kayıtlarını başlığa en yakın kütüphane
-     * görseliyle eşleştirip düzeltir. Yalnızca /uploads/, /storage/uploads/,
-     * /admin/uploads/ veya /upload/bonuses/ ile başlayan (yani backend'de
-     * barındırılan) yollar için çalışır; harici CDN URL'lerine
-     * (icons.casinomilyon*.com vb.) dokunmaz. Onarılan kayıtlar, izin sorunu
-     * olsa bile her zaman çalışan git-deploy edilmiş /upload/bonuses/ kaynağına
-     * yönlendirilir.
+        * görseliyle eşleştirip düzeltir. Yalnızca backend'de barındırılan yollar için
+        * çalışır; harici CDN URL'lerine (icons.casinomilyon*.com vb.) dokunmaz.
+        * Onarılan kayıtlar /upload/bonuses/ altına yönlendirilir.
      */
     public static function repairMissingImages(PDO $pdo): int
     {
@@ -184,8 +174,7 @@ final class PromotionMediaGuard
                     $fixed++;
                 }
             } catch (Throwable) {
-                // Tek bir satırdaki beklenmeyen bir hata diğer satırların
-                // onarılmasını engellememeli.
+                // Bir satırdaki hata kalan satırların onarımını durdurmamalı.
             }
         }
 
@@ -208,13 +197,8 @@ final class PromotionMediaGuard
             return false;
         }
 
-        // Kayıt zaten doğrudan çalışan /upload/bonuses/ kaynağını mı gösteriyor?
         $filename = basename($relative);
-
         if ($filename !== '' && is_file(self::sourceDir() . '/' . $filename)) {
-            // Dosya adı kütüphanede birebir mevcut — kaydı her zaman çalışan
-            // /upload/bonuses/ yoluna sabitle (eski /uploads/promotions/ önekini
-            // senkron kopyanın var olup olmamasına bağlı kalmadan düzelt).
             $canonical = '/upload/bonuses/' . $filename;
             if ($raw === $canonical) {
                 return false;
