@@ -78,6 +78,16 @@ a[href="mailto:destek@casinomilyon724.com"] {
     padding: 0 0 !important;
     margin-top: 35px !important;
 }
+
+/* Login modal icinde sifremi unuttum alani akisi bozmasin */
+body.mobile-site #login2 .sg-n-forgot-password-text,
+body.mobile-site #login2 .login-forgot,
+body.mobile-site #login2 .login-back-row {
+  position: static !important;
+  top: auto !important;
+  width: auto !important;
+  margin-top: 0 !important;
+}
 [class*=is-mobile] .casinoCategoryChooserContainer .horizontalCategoryItemWrp {
     position: relative;
     padding: 0;
