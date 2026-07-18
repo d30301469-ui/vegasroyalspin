@@ -9,6 +9,21 @@ if (!defined('API_PATH')) {
 
 $footerPayload = ApiFooter::fetch();
 
+// Frontend render katmanında API footer verisini source-of-truth kabul et.
+// Split deploy veya local DB/env drift durumlarında admin'deki güncel footer
+// değerleri (özellikle copyright/site_name) doğrudan frontend'e yansısın.
+if (class_exists('ApiCmsRemote', false)) {
+    $remoteEnvelope = ApiCmsRemote::getMainCached('footer_render', ['/content/footer', '/footer.php']);
+    if (is_array($remoteEnvelope)) {
+        $remoteFooter = is_array($remoteEnvelope['footer'] ?? null)
+            ? $remoteEnvelope['footer']
+            : $remoteEnvelope;
+        if (is_array($remoteFooter) && $remoteFooter !== []) {
+            $footerPayload = ApiFooter::normalize(array_replace($footerPayload, $remoteFooter));
+        }
+    }
+}
+
 $footerSocialIcons = is_array($footerPayload['social_icons'] ?? null)
     ? $footerPayload['social_icons']
     : [];
