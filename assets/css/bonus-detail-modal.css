@@ -488,11 +488,7 @@
 
 /* ========== Mobil site (m.) — logo şeridi altından başlar (--mobile-promo-sheet-top), nav satırlarını örter (z-index: 1052 > header 1050) ========== */
 body.mobile-site .bonus-modal-overlay {
-    inset: auto;
-    top: var(--mobile-promo-sheet-top, 65px);
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     padding: 0;
     box-sizing: border-box;
     align-items: stretch;
