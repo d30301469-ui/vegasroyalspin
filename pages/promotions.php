@@ -192,7 +192,7 @@ $kategoriler = [
     <nav class="promo-categories-bar bonus-page-cats" aria-label="Promosyon kategorileri">
         <div class="promo-categories-inner" data-promo-cats-scroll>
             <?php foreach ($kategoriler as $kat): ?>
-            <button type="button" class="promo-cat-btn <?= !empty($kat['active']) ? 'active' : '' ?>" data-category="<?= htmlspecialchars($kat['id']) ?>">
+            <button type="button" class="promo-cat-btn <?= !empty($kat['active']) ? 'active' : '' ?>" data-category="<?= htmlspecialchars($kat['id']) ?>" onclick="if(window.__promoInlineRunFilter){window.__promoInlineRunFilter(this,event);}" ontouchend="if(window.__promoInlineRunFilter){window.__promoInlineRunFilter(this,event);} return false;" onpointerup="if(window.__promoInlineRunFilter){window.__promoInlineRunFilter(this,event);}">
                 <i class="promo-cat-icon <?= $kat['icon'] ?>" aria-hidden="true"></i>
                 <span><?= htmlspecialchars($kat['label']) ?></span>
             </button>
@@ -356,6 +356,14 @@ if (!window.__promoInlineCategoryFilterBound) {
                 card.classList.toggle('promo-card-hidden', !show);
             }
         }
+
+        window.__promoInlineRunFilter = function (btn, event) {
+            if (event && typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
+            runFilter(btn);
+            return false;
+        };
 
         document.addEventListener('click', function (event) {
             var target = event.target;
