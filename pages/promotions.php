@@ -635,6 +635,25 @@ if (!window.__promoInlineDelegationBound) {
     filter: brightness(1.05);
 }
 
+/* Mobil/touch cihazlarda hover state yapışabildiği için görseller bulanık görünür.
+   Bu yüzden kart görsellerinde scale/filter efekti kapatılır. */
+@media (hover: none), (pointer: coarse), (max-width: 991px) {
+    .bonus-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
+    .bonus-card:hover::after {
+        opacity: 0;
+    }
+
+    .bonus-card .bonus-image img,
+    .bonus-card:hover .bonus-image img {
+        transform: none !important;
+        filter: none !important;
+    }
+}
+
 /* Kart başlık çubuğu — orijinal CasinoMilyon: rgba(255,255,255,0.1) arka plan */
 .bonus-card-title {
     margin: 1px 0 0;
