@@ -366,6 +366,15 @@ if (!window.__promoInlineCategoryFilterBound) {
             runFilter(btn);
         }, true);
 
+        document.addEventListener('touchend', function (event) {
+            var target = event.target;
+            if (!target || !target.closest) return;
+            var btn = target.closest('.promo-categories-inner .promo-cat-btn');
+            if (!btn) return;
+            event.preventDefault();
+            runFilter(btn);
+        }, { capture: true, passive: false });
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function () {
                 var initial = document.querySelector('.promo-categories-inner .promo-cat-btn.active') || document.querySelector('.promo-categories-inner .promo-cat-btn');
