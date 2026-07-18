@@ -415,20 +415,20 @@ if (!window.__promoInlineCategoryFilterBound) {
 /* ========== Kategori filtresi (mor tema) ========== */
 /* Üst boşluğu azalt: promosyon sayfası içeriği */
 .bonusRow.ng-star-inserted {
-    padding-top: 10px;
+    padding-top: 8px;
 }
 .bonusRow .promo-categories-scroll-wrap,
 .bonusRow .promo-categories-bar.bonus-page-cats {
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
 .mainWrap.page-promotions .bonusRow {
-    padding-top: 10px !important;
+    padding-top: 8px !important;
 }
 
 .mainWrap.page-promotions .promo-categories-scroll-wrap,
 .mainWrap.page-promotions .promo-categories-bar.bonus-page-cats {
-    margin-top: 8px !important;
+    margin-top: 6px !important;
 }
 
 .promo-categories-scroll-wrap {
