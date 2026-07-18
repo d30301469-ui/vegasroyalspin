@@ -415,11 +415,11 @@ if (!window.__promoInlineCategoryFilterBound) {
 /* ========== Kategori filtresi (mor tema) ========== */
 /* Üst boşluğu azalt: promosyon sayfası içeriği */
 .bonusRow.ng-star-inserted {
-    padding-top: 0;
+    padding-top: 10px;
 }
 .bonusRow .promo-categories-scroll-wrap,
 .bonusRow .promo-categories-bar.bonus-page-cats {
-    margin-top: 0;
+    margin-top: 8px;
 }
 
 .promo-categories-scroll-wrap {
