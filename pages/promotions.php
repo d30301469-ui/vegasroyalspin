@@ -657,7 +657,7 @@ if (!window.__promoInlineDelegationBound) {
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
         width: 100% !important;
-        height: 100% !important;
+        height: auto !important;
         object-fit: contain !important;
         object-position: center center !important;
     }
@@ -670,6 +670,9 @@ if (!window.__promoInlineDelegationBound) {
     }
 
     .bonus-image {
+        aspect-ratio: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
         background: #120424;
     }
 }
