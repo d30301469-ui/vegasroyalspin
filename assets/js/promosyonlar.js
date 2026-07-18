@@ -12,6 +12,17 @@
     var lastOpenIndex = null;
     var lastOpenAt = 0;
 
+    function normalizeCategory(raw) {
+        var value = (raw || '').toString().toLowerCase().trim();
+        if (!value) return '';
+        value = value.replace(/[\s-]+/g, '_');
+        if (value === 'all' || value === 'tumu' || value === 'tum' || value === 'hepsi') return 'tumu';
+        if (value === 'livecasino' || value === 'live_casino') return 'live_casino';
+        if (value === 'sport' || value === 'sportsbook' || value === 'spor' || value === 'sports') return 'sports';
+        if (value === 'lossbonus' || value === 'loss_bonus' || value === 'kayip_bonusu' || value === 'kayipbonusu') return 'loss_bonus';
+        return value;
+    }
+
     function getCards() {
         if (!cachedCards) {
             cachedCards = document.querySelectorAll('.promo-card, .bonus-card');
@@ -81,10 +92,10 @@
                 btns.forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
 
-                var cat = btn.getAttribute('data-category');
+                var cat = normalizeCategory(btn.getAttribute('data-category'));
                 for (var i = 0; i < cards.length; i++) {
                     var card = cards[i];
-                    var cardCat = card.getAttribute('data-category');
+                    var cardCat = normalizeCategory(card.getAttribute('data-category'));
                     var show = !cat || cat === 'tumu' || cardCat === cat;
                     card.classList.toggle(HIDDEN_CLASS, !show);
                 }
