@@ -471,6 +471,11 @@
         if ($jq) {
             $jq(loginModalEl).on('shown.bs.modal', function () {
                 applyMobileAuthLayoutFix('login2');
+                // Bazi acilis akislari showLoginModal() uzerinden gecmeyebilir.
+                // Modal gorunur oldugunda widget'i burada da garanti render et.
+                ensureLoginTurnstileWidget();
+                window.setTimeout(ensureLoginTurnstileWidget, 160);
+                window.setTimeout(ensureLoginTurnstileWidget, 420);
             });
             $jq(loginModalEl).on('hidden.bs.modal', function () {
                 var form = document.getElementById('loginForm');
@@ -478,6 +483,7 @@
                     BetcoInputs.resetFormInputState(form, 'login-error-text');
                 }
                 if (form) form.reset();
+                resetLoginTurnstileWidget();
                 showLoginFormScreen();
                 resetForgotPasswordAlerts();
                 var ff = document.getElementById('forgotPasswordForm');
