@@ -95,6 +95,43 @@ final class PromotionMediaGuard
         return $out;
     }
 
+    public static function resolveDisplayImageUrl(string $imageUrl, string $title = ''): string
+    {
+        $raw = trim($imageUrl);
+        if ($raw === '') {
+            return '';
+        }
+
+        $path = $raw;
+        if (preg_match('#^https?://#i', $path) === 1) {
+            if (!self::isBackendAbsoluteUrl($path)) {
+                return $raw;
+            }
+            $path = (string) (parse_url($path, PHP_URL_PATH) ?? '');
+            if ($path === '') {
+                return $raw;
+            }
+        }
+
+        $relative = self::normalizeToUploadsRelative($path);
+        $filename = basename($relative);
+        if ($filename !== '' && is_file(self::sourceDir() . '/' . $filename)) {
+            return '/upload/bonuses/' . $filename;
+        }
+
+        $libraryFiles = self::libraryFilenames();
+        if ($libraryFiles === []) {
+            return $raw;
+        }
+
+        $best = self::bestMatchingLibraryFile($title, $libraryFiles);
+        if ($best !== null) {
+            return '/upload/bonuses/' . $best;
+        }
+
+        return $raw;
+    }
+
     /**
      * admin/upload/bonuses içindeki hazır görselleri /uploads/promotions/ olarak
      * servis edilebilen dizine kopyalar (idempotent — mevcut dosyaların üzerine yazmaz).
@@ -250,6 +287,50 @@ final class PromotionMediaGuard
         }
 
         return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function libraryFilenames(): array
+    {
+        $files = [];
+        foreach (self::listLibraryImages() as $item) {
+            $name = (string) ($item['filename'] ?? '');
+            if ($name !== '') {
+                $files[] = $name;
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * @param list<string> $libraryFiles
+     */
+    private static function bestMatchingLibraryFile(string $title, array $libraryFiles): ?string
+    {
+        $titleSlug = self::slugify($title);
+        if ($titleSlug === '') {
+            return null;
+        }
+
+        $best = null;
+        $bestPct = 0.0;
+        foreach ($libraryFiles as $file) {
+            $fileSlug = self::slugify(pathinfo($file, PATHINFO_FILENAME));
+            if ($fileSlug === '') {
+                continue;
+            }
+            $pct = 0.0;
+            similar_text($titleSlug, $fileSlug, $pct);
+            if ($pct > $bestPct) {
+                $bestPct = $pct;
+                $best = $file;
+            }
+        }
+
+        return ($best !== null && $bestPct >= 55.0) ? $best : null;
     }
 
     private static function isBackendAbsoluteUrl(string $url): bool

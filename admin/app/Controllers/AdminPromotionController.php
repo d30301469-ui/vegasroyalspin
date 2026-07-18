@@ -49,7 +49,12 @@ final class AdminPromotionController extends AdminController
                     if (!is_array($promotionRow)) {
                         continue;
                     }
-                    $promotionRow['image_url'] = self::normalizeDisplayImageUrl((string) ($promotionRow['image_url'] ?? ''));
+                    $promotionRow['image_url'] = class_exists('PromotionMediaGuard', false)
+                        ? PromotionMediaGuard::resolveDisplayImageUrl(
+                            (string) ($promotionRow['image_url'] ?? ''),
+                            (string) ($promotionRow['title'] ?? '')
+                        )
+                        : self::normalizeDisplayImageUrl((string) ($promotionRow['image_url'] ?? ''));
                 }
                 unset($promotionRow);
             }
@@ -144,7 +149,12 @@ final class AdminPromotionController extends AdminController
             'active' => 'promotions',
             'crumbs' => 'Marketing | Promotions | Düzenle',
             'promotion' => array_merge($promotion, [
-                'image_url' => self::normalizeDisplayImageUrl((string) ($promotion['image_url'] ?? '')),
+                'image_url' => class_exists('PromotionMediaGuard', false)
+                    ? PromotionMediaGuard::resolveDisplayImageUrl(
+                        (string) ($promotion['image_url'] ?? ''),
+                        (string) ($promotion['title'] ?? '')
+                    )
+                    : self::normalizeDisplayImageUrl((string) ($promotion['image_url'] ?? '')),
             ]),
             'mode' => 'edit',
             'categoryOptions' => self::CATEGORY_OPTIONS,
