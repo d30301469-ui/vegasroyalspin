@@ -16,18 +16,22 @@
     var focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
     var onCloseCallback = null;
     var closeOnBackdrop = true;
-    var isBodyLockedBySheet = false;
 
-    function lockBodyForSheet() {
-        if (isBodyLockedBySheet) return;
-        isBodyLockedBySheet = true;
-        document.body.classList.add('mobile-right-sheet-open');
-    }
+    function clearBodySheetLockArtifacts() {
+        var body = document.body;
+        if (!body) return;
+        body.classList.remove('mobile-right-sheet-open');
 
-    function unlockBodyForSheet() {
-        if (!isBodyLockedBySheet) return;
-        isBodyLockedBySheet = false;
-        document.body.classList.remove('mobile-right-sheet-open');
+        // Önceki sürümün fixed-lock izlerini temizle.
+        body.style.position = '';
+        body.style.top = '';
+        body.style.left = '';
+        body.style.right = '';
+        body.style.width = '';
+        body.style.overflow = '';
+        body.style.touchAction = '';
+        body.style.paddingRight = '';
+        body.classList.remove('body-scroll-locked');
     }
 
     function getElements() {
@@ -165,7 +169,7 @@
         overlay.classList.add('is-open');
         overlay.setAttribute('aria-hidden', 'false');
         panel.setAttribute('aria-hidden', 'false');
-        lockBodyForSheet();
+        clearBodySheetLockArtifacts();
         document.addEventListener('keydown', handleKeydown);
 
         requestAnimationFrame(function () {
@@ -183,7 +187,7 @@
         if (panel) {
             panel.setAttribute('aria-hidden', 'true');
         }
-        unlockBodyForSheet();
+        clearBodySheetLockArtifacts();
         document.removeEventListener('keydown', handleKeydown);
         if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
             previousActiveElement.focus();
