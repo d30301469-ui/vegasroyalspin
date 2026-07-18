@@ -479,6 +479,17 @@
                 }
             });
         }
+
+        if (document.body.classList.contains('mobile-site')) {
+            // Conflicting mobile styles can leave overlay at top: --mobile-promo-sheet-top.
+            // Force full-screen coverage so modal always closes over the header area.
+            overlay.style.setProperty('inset', '0', 'important');
+            overlay.style.setProperty('top', '0', 'important');
+            overlay.style.setProperty('right', '0', 'important');
+            overlay.style.setProperty('bottom', '0', 'important');
+            overlay.style.setProperty('left', '0', 'important');
+        }
+
         overlay.classList.add('is-open');
         overlay.setAttribute('aria-hidden', 'false');
         if (modal) {
