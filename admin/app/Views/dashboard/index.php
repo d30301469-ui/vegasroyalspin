@@ -44,6 +44,7 @@ $chartPayload = [
     'casino' => $casinoStats,
     'bonus' => $bonusStats,
 ];
+$showFlashModal = $flash !== '';
 ?>
 <style>
     .bw-dashboard { display:flex; flex-direction:column; gap:12px; }
@@ -109,6 +110,66 @@ $chartPayload = [
     .bw-link { color:var(--primary); font-weight:800; }
     .bw-status-ok { color:var(--success); font-weight:800; }
     .bw-status-bad { color:var(--danger); font-weight:800; }
+    .bw-cache-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 140;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: rgba(15, 23, 42, .44);
+        backdrop-filter: blur(6px);
+    }
+    .bw-cache-modal {
+        width: min(360px, 100%);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--bg-card);
+        box-shadow: 0 24px 70px rgba(0,0,0,.28);
+        overflow: hidden;
+    }
+    .bw-cache-modal-head {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid var(--border-soft);
+    }
+    .bw-cache-modal-title {
+        margin: 0;
+        color: var(--t-base);
+        font-size: 14px;
+        font-weight: 900;
+    }
+    .bw-cache-modal-close {
+        align-items: center;
+        appearance: none;
+        background: var(--bg-muted);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--t-base);
+        cursor: pointer;
+        display: inline-flex;
+        height: 30px;
+        justify-content: center;
+        width: 30px;
+    }
+    .bw-cache-modal-body {
+        padding: 14px 16px 16px;
+        color: var(--t-muted);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.45;
+    }
+    .bw-cache-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 16px 16px;
+    }
+    .bw-cache-modal-actions .bw-filter-submit {
+        min-width: 96px;
+    }
     @media (max-width:1280px) {
         .bw-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
         .bw-chart-grid, .bw-table-grid { grid-template-columns:1fr; }
@@ -123,9 +184,6 @@ $chartPayload = [
 </style>
 
 <section class="bw-dashboard">
-    <?php if ($flash !== ''): ?>
-        <div class="card" style="padding:12px 14px;border-left:4px solid var(--success);background:color-mix(in srgb, var(--success-soft) 36%, var(--bg-card));font-size:12px;font-weight:700;color:var(--t-base)"><?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?></div>
-    <?php endif; ?>
     <div class="bw-head">
         <h1 class="bw-title">Backoffice</h1>
         <div class="bw-filters" aria-label="Dashboard tarih filtreleri">
@@ -146,6 +204,21 @@ $chartPayload = [
             </form>
         </div>
     </div>
+
+    <?php if ($showFlashModal): ?>
+        <div class="bw-cache-modal-backdrop" data-cache-modal-backdrop>
+            <div class="bw-cache-modal" role="dialog" aria-modal="true" aria-labelledby="cacheModalTitle">
+                <div class="bw-cache-modal-head">
+                    <h2 class="bw-cache-modal-title" id="cacheModalTitle">Temizlik tamamlandı</h2>
+                    <button class="bw-cache-modal-close" type="button" data-cache-modal-close aria-label="Kapat">×</button>
+                </div>
+                <div class="bw-cache-modal-body"><?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="bw-cache-modal-actions">
+                    <button class="bw-filter-submit" type="button" data-cache-modal-close>Tamam</button>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <section class="bw-kpi-grid" aria-label="Dashboard metrikleri">
         <?php foreach ($kpiCards as $card): ?>
@@ -286,4 +359,31 @@ $chartPayload = [
 
 <script>
     window.__NH_DASHBOARD_CHARTS__ = <?= json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+    (function () {
+        var backdrop = document.querySelector('[data-cache-modal-backdrop]');
+        if (!backdrop) {
+            return;
+        }
+
+        var closeButtons = backdrop.querySelectorAll('[data-cache-modal-close]');
+        var closeModal = function () {
+            backdrop.remove();
+            document.body.classList.remove('has-admin-modal');
+        };
+
+        document.body.classList.add('has-admin-modal');
+        closeButtons.forEach(function (button) {
+            button.addEventListener('click', closeModal);
+        });
+        backdrop.addEventListener('click', function (event) {
+            if (event.target === backdrop) {
+                closeModal();
+            }
+        });
+        window.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        }, { once: true });
+    })();
 </script>
