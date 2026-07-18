@@ -321,6 +321,62 @@ if (!window.__promoInlineDelegationBound) {
         window.__openPromoModalByIndex(idx);
     }, true);
 }
+
+if (!window.__promoInlineCategoryFilterBound) {
+    window.__promoInlineCategoryFilterBound = true;
+
+    (function bindInlineCategoryFilter() {
+        function normalizeCategory(raw) {
+            var value = (raw || '').toString().toLowerCase().trim();
+            if (!value) return '';
+            value = value.replace(/[\s-]+/g, '_');
+            if (value === 'all' || value === 'tumu' || value === 'tum' || value === 'hepsi') return 'tumu';
+            if (value === 'livecasino' || value === 'live_casino') return 'live_casino';
+            if (value === 'sport' || value === 'sportsbook' || value === 'spor' || value === 'sports') return 'sports';
+            if (value === 'lossbonus' || value === 'loss_bonus' || value === 'kayip_bonusu' || value === 'kayipbonusu') return 'loss_bonus';
+            return value;
+        }
+
+        function runFilter(selectedButton) {
+            if (!selectedButton) return;
+            var bar = selectedButton.closest('.promo-categories-inner');
+            if (!bar) return;
+            var buttons = bar.querySelectorAll('.promo-cat-btn');
+            var cards = document.querySelectorAll('.promo-card, .bonus-card');
+            var category = normalizeCategory(selectedButton.getAttribute('data-category'));
+
+            buttons.forEach(function (b) {
+                b.classList.toggle('active', b === selectedButton);
+            });
+
+            for (var i = 0; i < cards.length; i++) {
+                var card = cards[i];
+                var cardCategory = normalizeCategory(card.getAttribute('data-category'));
+                var show = !category || category === 'tumu' || cardCategory === category;
+                card.classList.toggle('promo-card-hidden', !show);
+            }
+        }
+
+        document.addEventListener('click', function (event) {
+            var target = event.target;
+            if (!target || !target.closest) return;
+            var btn = target.closest('.promo-categories-inner .promo-cat-btn');
+            if (!btn) return;
+            event.preventDefault();
+            runFilter(btn);
+        }, true);
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                var initial = document.querySelector('.promo-categories-inner .promo-cat-btn.active') || document.querySelector('.promo-categories-inner .promo-cat-btn');
+                if (initial) runFilter(initial);
+            });
+        } else {
+            var initial = document.querySelector('.promo-categories-inner .promo-cat-btn.active') || document.querySelector('.promo-categories-inner .promo-cat-btn');
+            if (initial) runFilter(initial);
+        }
+    })();
+}
 </script>
 <script src="/assets/js/bonus-detail-modal.js?v=<?= (string) (file_exists(__DIR__ . '/../assets/js/bonus-detail-modal.js') ? filemtime(__DIR__ . '/../assets/js/bonus-detail-modal.js') : 1) ?>"></script>
 <script src="/assets/js/promosyonlar.js?v=<?= (string) (file_exists(__DIR__ . '/../assets/js/promosyonlar.js') ? filemtime(__DIR__ . '/../assets/js/promosyonlar.js') : 1) ?>"></script>
