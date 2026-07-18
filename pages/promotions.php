@@ -651,7 +651,7 @@ if (!window.__promoInlineCategoryFilterBound) {
 /* Bonus Grid Container */
 .bonus-grid-container {
     width: 100%;
-    padding: 10px 0;
+    padding: 8px 0;
 }
 
 /* Modern Bonus Grid - CasinoMilyon tasarımı: masaüstü 2 sütun, mobil tek sütun */
@@ -958,7 +958,7 @@ if (!window.__promoInlineCategoryFilterBound) {
     }
 
     .bonus-grid-container {
-        padding: 10px 0;
+        padding: 8px 0;
     }
 }
 
