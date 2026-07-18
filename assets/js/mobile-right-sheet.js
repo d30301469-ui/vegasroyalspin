@@ -18,99 +18,14 @@
     var closeOnBackdrop = true;
     var isBodyLockedBySheet = false;
 
-    function getSharedScrollLock() {
-        if (global.__BodyScrollLock && typeof global.__BodyScrollLock.lock === 'function' && typeof global.__BodyScrollLock.unlock === 'function') {
-            return global.__BodyScrollLock;
-        }
-
-        var state = {
-            count: 0,
-            scrollY: 0,
-            prev: null
-        };
-
-        function lock() {
-            state.count += 1;
-            if (state.count > 1) return;
-
-            var body = document.body;
-            var docEl = document.documentElement;
-            state.scrollY = global.scrollY || global.pageYOffset || 0;
-            state.prev = {
-                position: body.style.position,
-                top: body.style.top,
-                left: body.style.left,
-                right: body.style.right,
-                width: body.style.width,
-                overflow: body.style.overflow,
-                touchAction: body.style.touchAction,
-                paddingRight: body.style.paddingRight
-            };
-
-            var scrollbarWidth = Math.max(0, global.innerWidth - docEl.clientWidth);
-            if (scrollbarWidth > 0) {
-                body.style.paddingRight = scrollbarWidth + 'px';
-            }
-
-            body.style.position = 'fixed';
-            body.style.top = -state.scrollY + 'px';
-            body.style.left = '0';
-            body.style.right = '0';
-            body.style.width = '100%';
-            body.style.overflow = 'hidden';
-            body.style.touchAction = 'none';
-            body.classList.add('body-scroll-locked');
-        }
-
-        function unlock() {
-            if (state.count <= 0) return;
-            state.count -= 1;
-            if (state.count > 0) return;
-
-            var body = document.body;
-            var restoreY = state.scrollY;
-            var prev = state.prev || {};
-
-            body.style.position = prev.position || '';
-            body.style.top = prev.top || '';
-            body.style.left = prev.left || '';
-            body.style.right = prev.right || '';
-            body.style.width = prev.width || '';
-            body.style.overflow = prev.overflow || '';
-            body.style.touchAction = prev.touchAction || '';
-            body.style.paddingRight = prev.paddingRight || '';
-            body.classList.remove('body-scroll-locked');
-
-            var html = document.documentElement;
-            var previousBehavior = html.style.scrollBehavior;
-            html.style.scrollBehavior = 'auto';
-            global.scrollTo(0, restoreY);
-            html.style.scrollBehavior = previousBehavior || '';
-        }
-
-        global.__BodyScrollLock = {
-            lock: lock,
-            unlock: unlock
-        };
-
-        return global.__BodyScrollLock;
-    }
-
     function lockBodyForSheet() {
         if (isBodyLockedBySheet) return;
-        var shared = getSharedScrollLock();
-        if (!shared) return;
-        shared.lock();
         isBodyLockedBySheet = true;
         document.body.classList.add('mobile-right-sheet-open');
     }
 
     function unlockBodyForSheet() {
         if (!isBodyLockedBySheet) return;
-        var shared = getSharedScrollLock();
-        if (shared) {
-            shared.unlock();
-        }
         isBodyLockedBySheet = false;
         document.body.classList.remove('mobile-right-sheet-open');
     }
