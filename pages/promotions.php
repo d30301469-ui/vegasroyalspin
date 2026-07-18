@@ -183,7 +183,7 @@ $kategoriler = [
     ['id' => 'tumu', 'label' => 'TÜMÜ', 'icon' => 'bc-i-default-icon bc-i-all', 'active' => true],
     ['id' => 'sports', 'label' => 'SPOR', 'icon' => 'bc-i-prematch'],
     ['id' => 'live_casino', 'label' => 'CANLI CASINO', 'icon' => 'bc-i-livecasino'],
-    ['id' => 'slots', 'label' => 'SLOT', 'icon' => 'bc-i-slots-v1'],
+    ['id' => 'slots', 'label' => 'SLOT', 'icon' => 'bc-i-slots'],
     ['id' => 'loss_bonus', 'label' => 'KAYIP BONUSU', 'icon' => 'bc-i-circle-dollar'],
     ['id' => 'vip', 'label' => 'VIP', 'icon' => 'bc-i-star'],
 ];
