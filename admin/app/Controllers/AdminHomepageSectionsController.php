@@ -87,6 +87,10 @@ final class AdminHomepageSectionsController extends AdminController
         if (function_exists('metropol_notify_frontend_cms_purge')) {
             metropol_notify_frontend_cms_purge('homepage_sections');
         }
+        // HTTP purge başarısız olsa bile aynı host/monorepo kurulumda anında yenileme.
+        if (class_exists('ApiCmsRemote', false)) {
+            ApiCmsRemote::purgeCache('homepage_sections');
+        }
         $this->redirect(AdminAuth::url('/homepage-sections'));
     }
 
