@@ -21,6 +21,7 @@ final class PromotionMediaGuard
     private const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
     private static bool $bootstrapped = false;
+    private static ?string $backendHost = null;
 
     public static function bootstrap(): void
     {
@@ -188,8 +189,18 @@ final class PromotionMediaGuard
     private static function repairSingleRow(array $row, PDOStatement $update, array $libraryFiles): bool
     {
         $raw = trim((string) ($row['image_url'] ?? ''));
-        if ($raw === '' || preg_match('#^https?://#i', $raw) === 1) {
+        if ($raw === '') {
             return false;
+        }
+
+        if (preg_match('#^https?://#i', $raw) === 1) {
+            $parsed = parse_url($raw);
+            $path = (string) ($parsed['path'] ?? '');
+            if ($path === '' || !self::isBackendAbsoluteUrl($raw)) {
+                // Harici CDN/remote URL'lere dokunma.
+                return false;
+            }
+            $raw = $path;
         }
 
         $relative = self::normalizeToUploadsRelative($raw);
@@ -239,6 +250,35 @@ final class PromotionMediaGuard
         }
 
         return false;
+    }
+
+    private static function isBackendAbsoluteUrl(string $url): bool
+    {
+        $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
+        if ($host === '') {
+            return false;
+        }
+
+        if (self::$backendHost === null) {
+            $backend = '';
+            if (defined('BACKEND_URL')) {
+                $backend = (string) BACKEND_URL;
+            }
+            if ($backend === '' && defined('API_BACKEND_MAIN_BASE_URL')) {
+                $backend = (string) API_BACKEND_MAIN_BASE_URL;
+            }
+            if ($backend === '' && getenv('BACKEND_URL')) {
+                $backend = (string) getenv('BACKEND_URL');
+            }
+            self::$backendHost = strtolower((string) (parse_url($backend, PHP_URL_HOST) ?? ''));
+        }
+
+        if (self::$backendHost !== null && self::$backendHost !== '') {
+            return $host === self::$backendHost;
+        }
+
+        // Fallback: admin alt alan adını backend kabul et.
+        return str_starts_with($host, 'admin.');
     }
 
     private static function ensureColumn(PDO $pdo, string $column, string $definitionSql): void
