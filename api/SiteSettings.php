@@ -43,17 +43,24 @@ final class ApiSiteSettings
             }
             $pathTimeout = min($remaining, max(2, (int) ceil($timeout / $pathCount)));
             $res = BackendApiClient::request('GET', BackendApiClient::SVC_MAIN, $path, [], null, $pathTimeout);
-            if (!is_array($res)) {
-                continue;
+            $accepted = self::acceptEnvelopeResponse($res);
+            if ($accepted !== null) {
+                return $accepted;
             }
-            $ok = !empty($res['success']);
-            $code = isset($res['code']) ? (int) $res['code'] : 0;
-            if ($ok || $code === 200) {
-                if (function_exists('metropol_cms_api_mark_success')) {
-                    metropol_cms_api_mark_success();
-                }
+        }
 
-                return $res;
+        foreach (self::fallbackMainBaseUrls() as $base) {
+            foreach ($candidates as $path) {
+                $remaining = (int) max(1, ceil($deadline - microtime(true)));
+                if ($remaining <= 0) {
+                    break 2;
+                }
+                $pathTimeout = min($remaining, max(2, (int) ceil($timeout / $pathCount)));
+                $res = BackendApiClient::requestWithBase('GET', $base, $path, [], null, $pathTimeout);
+                $accepted = self::acceptEnvelopeResponse($res);
+                if ($accepted !== null) {
+                    return $accepted;
+                }
             }
         }
 
@@ -62,6 +69,79 @@ final class ApiSiteSettings
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, mixed>|null $res
+     * @return array<string, mixed>|null
+     */
+    private static function acceptEnvelopeResponse(?array $res): ?array
+    {
+        if (!is_array($res)) {
+            return null;
+        }
+        $ok = !empty($res['success']);
+        $code = isset($res['code']) ? (int) $res['code'] : 0;
+        if (!$ok && $code !== 200) {
+            return null;
+        }
+        if (function_exists('metropol_cms_api_mark_success')) {
+            metropol_cms_api_mark_success();
+        }
+
+        return $res;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function fallbackMainBaseUrls(): array
+    {
+        $mainBase = class_exists('BackendApiClient', false)
+            ? rtrim((string) BackendApiClient::effectiveOutboundMainBaseUrl(), '/')
+            : '';
+
+        $candidates = [];
+        $add = static function (string $url) use (&$candidates, $mainBase): void {
+            $url = rtrim(trim($url), '/');
+            if ($url === '' || $url === $mainBase || in_array($url, $candidates, true)) {
+                return;
+            }
+            $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
+            if ($host === '' || $host === 'localhost' || $host === '127.0.0.1') {
+                return;
+            }
+            $candidates[] = $url;
+        };
+
+        if (function_exists('frontend_env_string')) {
+            $add(frontend_env_string('API_BACKEND_FALLBACK_BASE_URL', ''));
+            $add(frontend_env_string('BACKEND_API_BASE_URL', ''));
+            $backendUrl = rtrim(frontend_env_string('BACKEND_URL', ''), '/');
+            if ($backendUrl !== '') {
+                $add($backendUrl . '/api/v2');
+            }
+        }
+        if (defined('BACKEND_URL')) {
+            $add(rtrim((string) BACKEND_URL, '/') . '/api/v2');
+        }
+        if (function_exists('deploy_domain')) {
+            $backendUrl = rtrim((string) deploy_domain('backend_url'), '/');
+            if ($backendUrl !== '') {
+                $add($backendUrl . '/api/v2');
+            }
+        }
+        if (defined('API_BACKEND_FALLBACK_BASE_URL')) {
+            $add((string) API_BACKEND_FALLBACK_BASE_URL);
+        }
+
+        $mainHost = strtolower((string) (parse_url($mainBase, PHP_URL_HOST) ?: ''));
+        if (str_starts_with($mainHost, 'api.')) {
+            $bareDomain = substr($mainHost, 4);
+            $add('https://admin.' . $bareDomain . '/api/v2');
+        }
+
+        return $candidates;
     }
 
     /**
