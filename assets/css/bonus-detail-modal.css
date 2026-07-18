@@ -586,15 +586,19 @@ body.mobile-site .bonus-modal-left {
 
 body.mobile-site .bonus-image-wrap {
     height: auto;
-    aspect-ratio: 16 / 10;
-    max-height: min(42vh, 240px);
-    min-height: 130px;
+    aspect-ratio: auto;
+    max-height: none;
+    min-height: 0;
     border-radius: 0;
+    overflow: visible;
+    background: #14001f;
 }
 
 body.mobile-site .bonus-image-wrap img {
-    object-fit: cover;
-    object-position: top center;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    object-position: center center;
 }
 
 body.mobile-site .bonus-accordion-trigger {
