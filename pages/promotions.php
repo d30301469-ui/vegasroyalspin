@@ -354,6 +354,8 @@ if (!window.__promoInlineCategoryFilterBound) {
                 var cardCategory = normalizeCategory(card.getAttribute('data-category'));
                 var show = !category || category === 'tumu' || cardCategory === category;
                 card.classList.toggle('promo-card-hidden', !show);
+                card.style.display = show ? '' : 'none';
+                card.setAttribute('aria-hidden', show ? 'false' : 'true');
             }
         }
 
