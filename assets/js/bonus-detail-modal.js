@@ -40,6 +40,20 @@
     var escapeEl = null;
     var isScrollLockedByModal = false;
 
+    function hardUnlockBodyScroll() {
+        var body = document.body;
+        if (!body) return;
+        body.style.position = '';
+        body.style.top = '';
+        body.style.left = '';
+        body.style.right = '';
+        body.style.width = '';
+        body.style.overflow = '';
+        body.style.touchAction = '';
+        body.style.paddingRight = '';
+        body.classList.remove('body-scroll-locked');
+    }
+
     function openLoginModal(nextPath) {
         var targetPath = (typeof nextPath === 'string' && nextPath.trim()) ? nextPath.trim() : '/promotions';
         var nextEl = document.getElementById('loginFormNext');
@@ -136,9 +150,15 @@
             html.style.scrollBehavior = previousBehavior || '';
         }
 
+        function forceReset() {
+            state.count = 0;
+            hardUnlockBodyScroll();
+        }
+
         global.__BodyScrollLock = {
             lock: lock,
-            unlock: unlock
+            unlock: unlock,
+            forceReset: forceReset
         };
 
         return global.__BodyScrollLock;
@@ -556,10 +576,24 @@
         overlay.classList.remove('is-open');
         overlay.setAttribute('aria-hidden', 'true');
         if (modal) modal.setAttribute('aria-hidden', 'true');
+        var lock = getSharedScrollLock();
         if (isScrollLockedByModal) {
-            getSharedScrollLock().unlock();
+            lock.unlock();
             isScrollLockedByModal = false;
         }
+        requestAnimationFrame(function () {
+            var body = document.body;
+            if (!body) return;
+            var style = global.getComputedStyle ? global.getComputedStyle(body) : null;
+            var stillLocked = body.classList.contains('body-scroll-locked') ||
+                (style && (style.position === 'fixed' || style.overflow === 'hidden' || style.touchAction === 'none'));
+            if (!stillLocked) return;
+            if (lock && typeof lock.forceReset === 'function') {
+                lock.forceReset();
+            } else {
+                hardUnlockBodyScroll();
+            }
+        });
         document.removeEventListener('keydown', handleKeydown);
         if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
             previousActiveElement.focus();
