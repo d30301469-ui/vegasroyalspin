@@ -97,6 +97,8 @@
                 var cardCat = normalizeCategory(card.getAttribute('data-category'));
                 var show = !cat || cat === 'tumu' || cardCat === cat;
                 card.classList.toggle(HIDDEN_CLASS, !show);
+                card.style.display = show ? '' : 'none';
+                card.setAttribute('aria-hidden', show ? 'false' : 'true');
             }
         }
 
