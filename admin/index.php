@@ -231,7 +231,7 @@ $router->get('/megapayz/methods', [AdminMegaPayzController::class, 'methods']);
 $router->post('/megapayz/methods', [AdminMegaPayzController::class, 'updateMethods']);
 $router->post('/megapayz/withdraw/approve', [AdminMegaPayzController::class, 'approveWithdraw']);
 $router->post('/megapayz/withdraw/reject', [AdminMegaPayzController::class, 'rejectWithdraw']);
-$router->get('/footer', [AdminFooterController::class, 'edit']);
+$router->get('/footer', [AdminFooterController::class, 'legacyRedirect']);
 $router->post('/footer', [AdminFooterController::class, 'update']);
 $router->get('/site-settings', [AdminSiteSettingsController::class, 'edit']);
 $router->post('/site-settings', [AdminSiteSettingsController::class, 'update']);
