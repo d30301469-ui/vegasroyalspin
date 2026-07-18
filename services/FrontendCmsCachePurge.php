@@ -13,36 +13,65 @@ final class FrontendCmsCachePurge
             return;
         }
 
-        $frontendUrl = rtrim(trim(frontend_env_string('FRONTEND_URL', frontend_env_string('SITE_URL', ''))), '/');
         $secret = trim(frontend_env_string('FRONTEND_CMS_PURGE_SECRET', ''));
-        if ($frontendUrl === '' || $secret === '') {
+        if ($secret === '') {
             return;
-        }
-
-        $url = $frontendUrl . '/api/v2/internal/cms-cache-purge';
-        if ($prefix !== null && trim($prefix) !== '') {
-            $url .= '?' . http_build_query(['prefix' => trim($prefix)]);
         }
 
         if (!function_exists('curl_init')) {
             return;
         }
 
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 8,
-            CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/json',
-                'X-CMS-Purge-Secret: ' . $secret,
-            ],
-        ]);
-        if (defined('CURL_IPRESOLVE_V4')) {
-            curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        $targets = self::targetFrontendUrls();
+        if ($targets === []) {
+            return;
         }
-        curl_exec($ch);
-        curl_close($ch);
+
+        foreach ($targets as $frontendUrl) {
+            $url = $frontendUrl . '/api/v2/internal/cms-cache-purge';
+            if ($prefix !== null && trim($prefix) !== '') {
+                $url .= '?' . http_build_query(['prefix' => trim($prefix)]);
+            }
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 8,
+                CURLOPT_CONNECTTIMEOUT => 4,
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/json',
+                    'X-CMS-Purge-Secret: ' . $secret,
+                ],
+            ]);
+            if (defined('CURL_IPRESOLVE_V4')) {
+                curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+            }
+            curl_exec($ch);
+            curl_close($ch);
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function targetFrontendUrls(): array
+    {
+        $candidates = [
+            frontend_env_string('FRONTEND_URL', ''),
+            frontend_env_string('SITE_URL', ''),
+            frontend_env_string('MOBILE_URL', ''),
+        ];
+
+        $targets = [];
+        foreach ($candidates as $candidate) {
+            $url = rtrim(trim((string) $candidate), '/');
+            if ($url === '' || in_array($url, $targets, true)) {
+                continue;
+            }
+            $targets[] = $url;
+        }
+
+        return $targets;
     }
 }
