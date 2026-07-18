@@ -434,7 +434,7 @@ if (!window.__promoInlineCategoryFilterBound) {
 .promo-categories-scroll-wrap {
     position: relative;
     width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .promo-categories-bar.bonus-page-cats {
