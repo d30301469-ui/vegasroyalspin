@@ -392,6 +392,27 @@
         configureClaimBlock(data);
     }
 
+    function resetModalState() {
+        if (titleEl) {
+            titleEl.textContent = '';
+        }
+        if (imgEl) {
+            imgEl.removeAttribute('src');
+            imgEl.alt = '';
+        }
+        if (accordionList) {
+            accordionList.innerHTML = '';
+        }
+        if (claimStatus) {
+            claimStatus.textContent = '';
+            claimStatus.classList.remove('is-error', 'is-success');
+        }
+        var body = modal ? modal.querySelector('.bonus-modal-body') : null;
+        if (body) {
+            body.scrollTop = 0;
+        }
+    }
+
     function trapFocus(e) {
         if (!modal || e.key !== 'Tab') return;
         var focusable = modal.querySelectorAll(focusableSelector);
@@ -468,15 +489,16 @@
         isScrollLockedByModal = true;
         document.addEventListener('keydown', handleKeydown);
 
+        // Her açılışta önce state'i sıfırla; ikinci+ açılışlarda kalan eski scroll/başlık görünümünü engelle.
+        resetModalState();
+
         if (payload) {
-            requestAnimationFrame(function () {
-                setContent(payload);
-                if (document.body.classList.contains('mobile-site') && backBtn) {
-                    backBtn.focus();
-                } else if (closeBtn) {
-                    closeBtn.focus();
-                }
-            });
+            setContent(payload);
+            if (document.body.classList.contains('mobile-site') && backBtn) {
+                backBtn.focus();
+            } else if (closeBtn) {
+                closeBtn.focus();
+            }
         } else if (document.body.classList.contains('mobile-site') && backBtn) {
             backBtn.focus();
         } else if (closeBtn) {
