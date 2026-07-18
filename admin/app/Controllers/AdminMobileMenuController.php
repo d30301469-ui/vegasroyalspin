@@ -66,6 +66,10 @@ final class AdminMobileMenuController extends AdminController
         if (function_exists('metropol_notify_frontend_cms_purge')) {
             metropol_notify_frontend_cms_purge('mobile_menu');
         }
+        // HTTP purge başarısız olsa bile aynı host/monorepo kurulumda anında yenileme.
+        if (class_exists('ApiCmsRemote', false)) {
+            ApiCmsRemote::purgeCache('mobile_menu');
+        }
         $this->redirect(AdminAuth::url('/mobile-menu'));
     }
 
