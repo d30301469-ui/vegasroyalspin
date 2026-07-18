@@ -422,6 +422,15 @@ if (!window.__promoInlineCategoryFilterBound) {
     margin-top: 8px;
 }
 
+.mainWrap.page-promotions .bonusRow {
+    padding-top: 10px !important;
+}
+
+.mainWrap.page-promotions .promo-categories-scroll-wrap,
+.mainWrap.page-promotions .promo-categories-bar.bonus-page-cats {
+    margin-top: 8px !important;
+}
+
 .promo-categories-scroll-wrap {
     position: relative;
     width: 100%;
