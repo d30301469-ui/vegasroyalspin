@@ -585,20 +585,28 @@ body.mobile-site .bonus-modal-left {
 }
 
 body.mobile-site .bonus-image-wrap {
-    height: auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: clamp(170px, 40vh, 320px);
+    max-height: clamp(170px, 40vh, 320px);
+    min-height: 170px;
     aspect-ratio: auto;
-    max-height: none;
-    min-height: 0;
     border-radius: 0;
-    overflow: visible;
+    overflow: hidden;
     background: #14001f;
 }
 
 body.mobile-site .bonus-image-wrap img {
     width: 100%;
-    height: auto;
+    height: 100%;
     object-fit: contain;
     object-position: center center;
+    transform: none !important;
+    filter: none !important;
+    image-rendering: auto;
 }
 
 body.mobile-site .bonus-accordion-trigger {
