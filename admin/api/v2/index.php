@@ -19,6 +19,15 @@ header('Content-Type: application/json; charset=UTF-8');
 
 require __DIR__ . '/includes/member_api_kernel.php';
 
+// Frontend domain can rewrite /api/v2/* to this backend entrypoint in split deploy.
+// Handle internal CMS purge here as well so admin cache-notify works globally.
+$normalizedRoute = strtolower(trim((string) $route, '/'));
+if (in_array($normalizedRoute, ['internal/cms-cache-purge', 'internal/cms_cache_purge.php'], true)) {
+    require_once BASE_PATH . '/services/PublicApiV2Dispatcher.php';
+    PublicApiV2Dispatcher::dispatch($route);
+    exit;
+}
+
 // Provider callbacks can arrive via /api/v2/sportsbook-wallet aliases.
 // Handle them here before member/admin route module dispatch to avoid 404.
 if ($method === 'POST' && in_array($route, ['sportsbook-wallet', 'sportsbook_wallet', 'sportsbook-wallet.php', 'sportsbook_callback', 'sportsbook-callback'], true)) {
