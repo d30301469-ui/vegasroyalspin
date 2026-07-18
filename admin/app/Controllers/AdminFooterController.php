@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 final class AdminFooterController extends AdminController
 {
+    /**
+     * Legacy GET /footer yolu: sidebar ve eski linkler icin her zaman calisan
+     * /module?key=footer-settings endpoint'ine yonlendir.
+     */
+    public function legacyRedirect(): void
+    {
+        $this->redirect(AdminAuth::url('/module?key=footer-settings'));
+    }
+
     public function edit(): void
     {
         try {
