@@ -215,7 +215,7 @@ if (!empty($rows)) {
     foreach ($rows as $index => $bonus) {
         // Modern bonus kartı (data-category: ileride veritabanından gelebilir)
         $card_category = isset($bonus['category_id']) ? $bonus['category_id'] : 'slots';
-        echo '<article class="bonus-card" data-category="' . htmlspecialchars($card_category) . '" data-promo-index="' . (int) $index . '">';
+        echo '<article class="bonus-card" data-category="' . htmlspecialchars($card_category) . '" data-promo-index="' . (int) $index . '" role="button" tabindex="0" onclick="if(window.__openPromoModalByIndex){window.__openPromoModalByIndex(' . (int) $index . ');}" onkeydown="if((event.key===\'Enter\'||event.key===\' \') && window.__openPromoModalByIndex){event.preventDefault();window.__openPromoModalByIndex(' . (int) $index . ');}">';
         echo '<div class="bonus-card-inner">';
         
         // Görsel URL kontrolü (modal için tam URL)

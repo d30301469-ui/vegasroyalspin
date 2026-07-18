@@ -134,6 +134,8 @@
         });
     }
 
+    window.__openPromoModalByIndex = openPromoByIndex;
+
     function bindDirectCardOpenListeners() {
         var cards = getCards();
         if (!cards || !cards.length) return;
