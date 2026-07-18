@@ -651,6 +651,19 @@ if (!window.__promoInlineDelegationBound) {
     .bonus-card:hover .bonus-image img {
         transform: none !important;
         filter: none !important;
+        transition: none !important;
+        will-change: auto !important;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+
+    .bonus-card,
+    .bonus-card-inner,
+    .bonus-image {
+        transform: none !important;
+        filter: none !important;
     }
 }
 
