@@ -186,6 +186,7 @@ $router->get('/', [AdminDashboardController::class, 'index']);
 $router->get('/dashboard', [AdminDashboardController::class, 'index']);
 $router->get('/backoffice-suite', [AdminBackofficeSuiteController::class, 'index']);
 $router->get('/login', [AdminAuthController::class, 'login']);
+$router->post('/dashboard/cache-purge', [AdminDashboardController::class, 'purgeCaches']);
 $router->post('/login', [AdminAuthController::class, 'authenticate']);
 $router->post('/logout', [AdminAuthController::class, 'logout']);
 $router->get('/tables', [AdminTableController::class, 'index']);

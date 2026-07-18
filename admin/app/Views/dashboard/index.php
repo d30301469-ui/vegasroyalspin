@@ -3,15 +3,16 @@
 $money = static fn ($value): string => '₺' . number_format((float) $value, 2, ',', '.');
 $number = static fn ($value): string => number_format((float) $value, 0, ',', '.');
 $shortMoney = static fn ($value): string => '₺' . number_format((float) $value, 2, ',', '.');
-$kpiCards = is_array($kpiCards ?? null) ? $kpiCards : [];
-$sportStats = is_array($sportStats ?? null) ? $sportStats : [];
-$casinoStats = is_array($casinoStats ?? null) ? $casinoStats : [];
-$bonusStats = is_array($bonusStats ?? null) ? $bonusStats : [];
-$depositRows = is_array($depositRows ?? null) ? $depositRows : [];
-$withdrawRows = is_array($withdrawRows ?? null) ? $withdrawRows : [];
+$kpiCards = isset($kpiCards) && is_array($kpiCards) ? $kpiCards : [];
+$sportStats = isset($sportStats) && is_array($sportStats) ? $sportStats : [];
+$casinoStats = isset($casinoStats) && is_array($casinoStats) ? $casinoStats : [];
+$bonusStats = isset($bonusStats) && is_array($bonusStats) ? $bonusStats : [];
+$depositRows = isset($depositRows) && is_array($depositRows) ? $depositRows : [];
+$withdrawRows = isset($withdrawRows) && is_array($withdrawRows) ? $withdrawRows : [];
 $selectedPeriod = (string) ($selectedPeriod ?? 'prev_month');
 $dateFrom = (string) ($dateFrom ?? date('Y-m-01'));
 $dateTo = (string) ($dateTo ?? date('Y-m-d'));
+$flash = (string) ($flash ?? '');
 $periodUrl = static fn (string $period): string => AdminAuth::url('/dashboard?period=' . rawurlencode($period));
 $formatKpiValue = static function (array $card) use ($money, $number): string {
     return ($card['type'] ?? 'number') === 'money'
@@ -122,6 +123,9 @@ $chartPayload = [
 </style>
 
 <section class="bw-dashboard">
+    <?php if ($flash !== ''): ?>
+        <div class="card" style="padding:12px 14px;border-left:4px solid var(--success);background:color-mix(in srgb, var(--success-soft) 36%, var(--bg-card));font-size:12px;font-weight:700;color:var(--t-base)"><?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?></div>
+    <?php endif; ?>
     <div class="bw-head">
         <h1 class="bw-title">Backoffice</h1>
         <div class="bw-filters" aria-label="Dashboard tarih filtreleri">
@@ -135,6 +139,10 @@ $chartPayload = [
                 <input class="bw-date-input admin-date-input" type="date" name="date_from" value="<?= htmlspecialchars($dateFrom, ENT_QUOTES, 'UTF-8') ?>" aria-label="Başlangıç tarihi">
                 <input class="bw-date-input admin-date-input" type="date" name="date_to" value="<?= htmlspecialchars($dateTo, ENT_QUOTES, 'UTF-8') ?>" aria-label="Bitiş tarihi">
                 <button class="bw-filter-submit <?= $selectedPeriod === 'custom' ? 'is-active' : '' ?>" type="submit">Özel Tarih Belirle</button>
+            </form>
+            <form class="bw-custom-filter" method="post" action="<?= htmlspecialchars(AdminAuth::url('/dashboard/cache-purge'), ENT_QUOTES, 'UTF-8') ?>" onsubmit="return confirm('Tüm CMS/API önbellekleri temizlensin mi?')">
+                <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                <button class="bw-filter-submit" type="submit" style="background:var(--danger);border-color:var(--danger)">Tüm Önbelleği Temizle</button>
             </form>
         </div>
     </div>

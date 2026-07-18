@@ -132,6 +132,7 @@ final class AdminDashboardController extends AdminController
             'topCountries' => $this->topCountries(),
             'recentTransactions' => $this->recentTransactions(),
             'recentLogs' => $this->recentLogs(),
+            'flash' => $this->pullFlash(),
             'quickActions' => $this->quickActions($pendingWithdrawals, $pendingKyc, $pendingDeposits, $bonusClaims),
             'healthItems' => $this->healthItems($activeGames, $activePromotions, $activeSliders, $authSliders, $homepageSections, $tableCount),
             'tasks' => [
@@ -143,6 +144,28 @@ final class AdminDashboardController extends AdminController
                 ['text' => 'Sistem modülleri hazır', 'badge' => $tableCount . ' tablo', 'class' => 'done', 'done' => true],
             ],
         ]);
+    }
+
+    public function purgeCaches(): void
+    {
+        $this->requirePermission('dashboard');
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+
+        try {
+            if (function_exists('metropol_notify_frontend_cms_purge')) {
+                metropol_notify_frontend_cms_purge(null);
+            }
+            $this->flash('Tüm API önbellekleri temizlendi.');
+        } catch (Throwable $throwable) {
+            error_log('[AdminDashboardController] cache purge failed: ' . $throwable->getMessage());
+            $this->flash('Önbellek temizleme başarısız oldu.');
+        }
+
+        $this->redirect(AdminAuth::url('/dashboard'));
     }
 
     private function sportStats(array $dateRange): array
@@ -170,6 +193,19 @@ final class AdminDashboardController extends AdminController
             'module_url' => '/module?key=logs',
             'empty_message' => 'Spor bahis veri kaynağı bağlandığında bu panel canlı veri gösterecek.',
         ];
+    }
+
+    private function flash(string $message): void
+    {
+        $_SESSION['admin_dashboard_flash'] = $message;
+    }
+
+    private function pullFlash(): string
+    {
+        $message = (string) ($_SESSION['admin_dashboard_flash'] ?? '');
+        unset($_SESSION['admin_dashboard_flash']);
+
+        return $message;
     }
 
     private function casinoStats(array $dateRange): array
