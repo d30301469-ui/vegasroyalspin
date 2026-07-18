@@ -200,7 +200,20 @@
     function ensureLoginTurnstileWidget() {
         if (!Shared.hasTurnstile || !Shared.hasTurnstile()) return;
         var container = loginTurnstileContainer();
-        if (!container || container.getAttribute('data-turnstile-widget-id')) return;
+        if (!container) return;
+
+        // Modal gorunur degilken render denemesi widget'i yarim birakabiliyor.
+        if (!container.offsetParent && container.getClientRects().length === 0) {
+            return;
+        }
+
+        var hasWidgetId = !!container.getAttribute('data-turnstile-widget-id');
+        var hasRenderedFrame = !!container.querySelector('iframe');
+        if (hasWidgetId && hasRenderedFrame) return;
+        if (hasWidgetId && !hasRenderedFrame && Shared.resetTurnstileWidget) {
+            Shared.resetTurnstileWidget(container);
+        }
+
         if (!window.turnstile || typeof window.turnstile.render !== 'function') {
             window.setTimeout(ensureLoginTurnstileWidget, 120);
             return;
@@ -795,6 +808,5 @@
         initLoginForm();
         initLoginAjaxSubmit();
         initForgotPasswordForm();
-        ensureLoginTurnstileWidget();
     });
 })();
