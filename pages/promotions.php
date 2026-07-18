@@ -265,6 +265,62 @@ foreach ($rows as $i => $b) {
 ?>
 <script>
 window.__PROMO_LIST__ = <?= json_encode($promoListForModal, JSON_UNESCAPED_UNICODE) ?>;
+
+if (typeof window.__openPromoModalByIndex !== 'function') {
+    window.__openPromoModalByIndex = function (index) {
+        var list = window.__PROMO_LIST__ || [];
+        var promo = list[parseInt(index, 10)];
+        if (!promo) {
+            return;
+        }
+
+        var imageUrl = promo.image_url || '';
+        if (imageUrl && imageUrl.indexOf('http') !== 0 && imageUrl.indexOf('/') !== 0) {
+            imageUrl = '/' + imageUrl;
+        }
+
+        var payload = {
+            title: promo.title || '',
+            imageUrl: imageUrl,
+            linkUrl: promo.link_url || '',
+            sections: promo.sections || [],
+            promotionId: typeof promo.promotionId === 'number' ? promo.promotionId : (parseInt(promo.promotionId, 10) || 0),
+            canClaim: !!promo.canClaim
+        };
+
+        var tryOpen = function () {
+            if (window.BonusDetailModal && typeof window.BonusDetailModal.open === 'function') {
+                window.BonusDetailModal.open(payload);
+                return true;
+            }
+            return false;
+        };
+
+        if (!tryOpen()) {
+            setTimeout(tryOpen, 80);
+            setTimeout(tryOpen, 220);
+        }
+    };
+}
+
+if (!window.__promoInlineDelegationBound) {
+    window.__promoInlineDelegationBound = true;
+    document.addEventListener('click', function (event) {
+        var target = event.target;
+        if (!target || !target.closest) {
+            return;
+        }
+        var card = target.closest('.bonus-card[data-promo-index], .promo-card[data-promo-index]');
+        if (!card) {
+            return;
+        }
+        var idx = card.getAttribute('data-promo-index');
+        if (idx === null || idx === '') {
+            return;
+        }
+        window.__openPromoModalByIndex(idx);
+    }, true);
+}
 </script>
 <script src="/assets/js/bonus-detail-modal.js?v=<?= (string) (file_exists(__DIR__ . '/../assets/js/bonus-detail-modal.js') ? filemtime(__DIR__ . '/../assets/js/bonus-detail-modal.js') : 1) ?>"></script>
 <script src="/assets/js/promosyonlar.js?v=<?= (string) (file_exists(__DIR__ . '/../assets/js/promosyonlar.js') ? filemtime(__DIR__ . '/../assets/js/promosyonlar.js') : 1) ?>"></script>
