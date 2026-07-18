@@ -36,6 +36,7 @@
     }
     var PROMO_CLAIM_URL = apiUrl('/api/v2/bonus-claim');
     var previousActiveElement = null;
+    var previousMobileScrollY = null;
     var escapeEl = null;
     var isScrollLockedByModal = false;
 
@@ -468,6 +469,12 @@
         }
 
         previousActiveElement = document.activeElement;
+        if (document.body.classList.contains('mobile-site')) {
+            previousMobileScrollY = global.scrollY || global.pageYOffset || 0;
+            if (previousMobileScrollY > 0) {
+                global.scrollTo(0, 0);
+            }
+        }
         if (document.body.classList.contains('mobile-site') && typeof window.__closeMobileNavMenu === 'function') {
             window.__closeMobileNavMenu();
         }
@@ -519,6 +526,13 @@
         document.removeEventListener('keydown', handleKeydown);
         if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
             previousActiveElement.focus();
+        }
+        if (document.body.classList.contains('mobile-site') && previousMobileScrollY !== null) {
+            var restoreY = previousMobileScrollY;
+            previousMobileScrollY = null;
+            requestAnimationFrame(function () {
+                global.scrollTo(0, restoreY);
+            });
         }
     }
 
