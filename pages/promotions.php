@@ -666,6 +666,12 @@ if (!window.__promoInlineCategoryFilterBound) {
     display: block;
 }
 
+.bonus-card.promo-card-hidden,
+.promo-card.promo-card-hidden {
+    display: none !important;
+    visibility: hidden !important;
+}
+
 .bonus-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 14px 28px rgba(0, 0, 0, 0.38);
