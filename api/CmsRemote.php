@@ -196,22 +196,39 @@ final class ApiCmsRemote
                     null,
                     min($remaining, self::remoteTimeout())
                 );
-                if (!is_array($res)) {
-                    continue;
-                }
-                $code = (int) ($res['code'] ?? 0);
-                if (empty($res['success']) && $code !== 200) {
-                    continue;
-                }
-                $data = BackendApiClient::unwrap($res);
-                if (is_array($data)) {
-                    if (function_exists('metropol_cms_api_mark_success')) {
-                        metropol_cms_api_mark_success();
-                    }
-
+                $data = self::acceptMainResponse($res);
+                if ($data !== null) {
                     return $data;
                 }
             } catch (Throwable) {
+            }
+        }
+
+        // Ana base host'a ulaşılamıyorsa (ör. api.* DNS kaydı yok / host ölü),
+        // yedek base URL'ler ile aynı path'leri dene. Böylece CMS içerikleri
+        // (footer, site ayarları vb.) süresiz stale cache'e saplanmaz.
+        foreach (self::fallbackMainBaseUrls() as $base) {
+            foreach ($paths as $path) {
+                $remaining = (int) max(1, ceil($deadline - microtime(true)));
+                if ($remaining <= 0) {
+                    break 2;
+                }
+
+                try {
+                    $res = BackendApiClient::requestWithBase(
+                        'GET',
+                        $base,
+                        $path,
+                        $query,
+                        null,
+                        min($remaining, self::remoteTimeout())
+                    );
+                    $data = self::acceptMainResponse($res);
+                    if ($data !== null) {
+                        return $data;
+                    }
+                } catch (Throwable) {
+                }
             }
         }
 
@@ -220,6 +237,95 @@ final class ApiCmsRemote
         }
 
         return null;
+    }
+
+    /**
+     * Başarılı ana API yanıtını çözer; aksi halde null.
+     *
+     * @param array<string, mixed>|null $res
+     * @return array<string, mixed>|null
+     */
+    private static function acceptMainResponse(?array $res): ?array
+    {
+        if (!is_array($res)) {
+            return null;
+        }
+        $code = (int) ($res['code'] ?? 0);
+        if (empty($res['success']) && $code !== 200) {
+            return null;
+        }
+        $data = BackendApiClient::unwrap($res);
+        if (!is_array($data)) {
+            return null;
+        }
+        if (function_exists('metropol_cms_api_mark_success')) {
+            metropol_cms_api_mark_success();
+        }
+
+        return $data;
+    }
+
+    /**
+     * Ana base başarısız olduğunda denenecek yedek API base URL'leri
+     * (etkin ana base hariç, sırayla).
+     *
+     * Not: API_BACKEND_FALLBACK_BASE_URL sabiti metropol_normalize_member_api_public_url()
+     * tarafından api.* host'una normalize edildiği için burada HAM env değerleri
+     * kullanılır (admin.* backend host'u genellikle canlı olan tek host'tur).
+     *
+     * @return list<string>
+     */
+    private static function fallbackMainBaseUrls(): array
+    {
+        $mainBase = '';
+        if (class_exists('BackendApiClient', false)) {
+            $mainBase = rtrim(BackendApiClient::effectiveOutboundMainBaseUrl(), '/');
+        }
+
+        $candidates = [];
+        $add = static function (string $url) use (&$candidates, $mainBase): void {
+            $url = rtrim(trim($url), '/');
+            if ($url === '' || $url === $mainBase || in_array($url, $candidates, true)) {
+                return;
+            }
+            $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
+            if ($host === '' || $host === 'localhost' || $host === '127.0.0.1') {
+                return;
+            }
+            $candidates[] = $url;
+        };
+
+        if (function_exists('frontend_env_string')) {
+            // Ham env değerleri (normalize edilmemiş)
+            $add(frontend_env_string('API_BACKEND_FALLBACK_BASE_URL', ''));
+            $add(frontend_env_string('BACKEND_API_BASE_URL', ''));
+            $backendUrl = rtrim(frontend_env_string('BACKEND_URL', ''), '/');
+            if ($backendUrl !== '') {
+                $add($backendUrl . '/api/v2');
+            }
+        }
+        if (defined('BACKEND_URL')) {
+            $add(rtrim((string) BACKEND_URL, '/') . '/api/v2');
+        }
+        if (function_exists('deploy_domain')) {
+            $backendUrl = rtrim((string) deploy_domain('backend_url'), '/');
+            if ($backendUrl !== '') {
+                $add($backendUrl . '/api/v2');
+            }
+        }
+        if (defined('API_BACKEND_FALLBACK_BASE_URL')) {
+            $add((string) API_BACKEND_FALLBACK_BASE_URL);
+        }
+
+        // Ana host api.* ise ana domain'in backend host'unu da dene
+        // (api.example.com -> admin.example.com kaydı yoksa DNS çözülmez).
+        $mainHost = strtolower((string) (parse_url($mainBase, PHP_URL_HOST) ?: ''));
+        if (str_starts_with($mainHost, 'api.')) {
+            $bareDomain = substr($mainHost, 4);
+            $add('https://admin.' . $bareDomain . '/api/v2');
+        }
+
+        return $candidates;
     }
 
     /**
