@@ -94,7 +94,17 @@
         var card = e.target.closest('.promo-card[data-promo-index], .bonus-card[data-promo-index]');
         if (!card) return;
 
+        if (e && typeof e.preventDefault === 'function') {
+            e.preventDefault();
+        }
+
         var index = card.getAttribute('data-promo-index');
+        if (index === null || index === '') return;
+
+        openPromoByIndex(index);
+    }
+
+    function openPromoByIndex(index) {
         if (index === null || index === '') return;
 
         var list = getPromoList();
@@ -115,11 +125,39 @@
         });
     }
 
+    function bindDirectCardOpenListeners() {
+        var cards = getCards();
+        if (!cards || !cards.length) return;
+
+        for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            if (!card || card.getAttribute('data-promo-direct-bound') === '1') {
+                continue;
+            }
+            card.setAttribute('data-promo-direct-bound', '1');
+
+            card.addEventListener('click', function (e) {
+                var idx = this.getAttribute('data-promo-index');
+                if (idx === null || idx === '') return;
+                if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                openPromoByIndex(idx);
+            });
+
+            card.addEventListener('touchend', function (e) {
+                var idx = this.getAttribute('data-promo-index');
+                if (idx === null || idx === '') return;
+                if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                openPromoByIndex(idx);
+            }, { passive: false });
+        }
+    }
+
     function initBonusDetailModal() {
         var promoGrid = document.querySelector('.promo-grid');
         var bonusGrid = document.querySelector('.bonus-grid');
         if (promoGrid) promoGrid.addEventListener('click', handleGridClick);
         if (bonusGrid && bonusGrid !== promoGrid) bonusGrid.addEventListener('click', handleGridClick);
+        bindDirectCardOpenListeners();
     }
 
     function init() {
