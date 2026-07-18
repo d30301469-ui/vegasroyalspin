@@ -1055,22 +1055,30 @@
      */
     function syncHeaderStickyTopVar() {
         if (document.body.classList.contains("mobile-site")) {
+            var rootStyles = window.getComputedStyle(document.documentElement);
+            var currentHeaderTop = parseFloat(rootStyles.getPropertyValue("--header-sticky-top")) || 0;
+            var fallbackTop = currentHeaderTop > 0 ? currentHeaderTop : 65;
             var mobileHeader = document.querySelector("#root.layout-bc .layout-header-holder-bc, .layout-header-holder-bc");
             if (mobileHeader) {
                 var mb = mobileHeader.getBoundingClientRect().bottom;
-                if (mb > 0) {
-                    document.documentElement.style.setProperty("--header-sticky-top", Math.ceil(mb) + "px");
-                }
+                var headerTop = mb > 0 ? mb : fallbackTop;
+                document.documentElement.style.setProperty("--header-sticky-top", Math.ceil(headerTop) + "px");
                 /* Sağ sheet / bonus modal: logo şeridi altı (hdr-main-content-bc) */
                 var innerBar = mobileHeader.querySelector("[data-mobile-header-main], .hdr-main-content-bc, .mobileHeader-inner");
+                var promoTop = headerTop;
                 if (innerBar) {
                     var logoBottom = innerBar.getBoundingClientRect().bottom;
                     if (logoBottom > 0) {
-                        document.documentElement.style.setProperty("--mobile-promo-sheet-top", Math.ceil(logoBottom) + "px");
+                        promoTop = logoBottom;
                     }
                 }
+                document.documentElement.style.setProperty("--mobile-promo-sheet-top", Math.ceil(promoTop > 0 ? promoTop : fallbackTop) + "px");
                 return;
             }
+
+            // Header bulunamazsa da stale değer bırakma; güvenli bir top değeri yaz.
+            document.documentElement.style.setProperty("--mobile-promo-sheet-top", Math.ceil(fallbackTop) + "px");
+            return;
         }
         var header = document.querySelector("header.headBar");
         if (!header) return;
