@@ -893,17 +893,24 @@
             return;
         }
 
-        var hasWidgetId = !!container.getAttribute('data-turnstile-widget-id');
-        var hasRenderedFrame = !!container.querySelector('iframe');
-        if (hasWidgetId && hasRenderedFrame) return;
-        if (hasWidgetId && !hasRenderedFrame && Shared.resetTurnstileWidget) {
-            Shared.resetTurnstileWidget(container);
-        }
-
         if (!window.turnstile || typeof window.turnstile.render !== 'function') {
             window.setTimeout(ensureRegisterTurnstileWidget, 120);
             return;
         }
+
+        var widgetId = container.getAttribute('data-turnstile-widget-id');
+        if (widgetId) {
+            // Turnstile iframe'i kapali shadow root icinde oldugundan DOM'dan
+            // kontrol edilemez; canlilik testi icin getResponse kullanilir.
+            try {
+                window.turnstile.getResponse(widgetId);
+                return; // Widget saglikli, yeniden render gerekmez.
+            } catch (eStale) {
+                container.removeAttribute('data-turnstile-widget-id');
+                container.innerHTML = '';
+            }
+        }
+
         Shared.renderTurnstileWidget(container, { theme: 'dark', action: 'register' });
     }
 

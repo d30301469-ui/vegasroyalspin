@@ -1,5 +1,5 @@
 /* vegasroyalspin PWA service worker */
-const SW_VERSION = 'v3-modal-header-fix';
+const SW_VERSION = 'v4-turnstile-iframe-fix';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -91,6 +91,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   const requestUrl = new URL(request.url);
+
+  // Never intercept cross-origin requests (e.g. Cloudflare Turnstile iframe
+  // navigations). Serving a fallback into a third-party iframe breaks the
+  // widget (Turnstile error 300030 / postMessage origin mismatch).
+  if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
 
   if (isNavigationRequest(request)) {
     event.respondWith(
