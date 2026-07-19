@@ -23,6 +23,9 @@ $profileActiveTab = 'bonus-casino';
 $bonusSubTab = 'casino';
 $unread_count = 0;
 $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
+$profile_content_title = 'CASİNO BONUSU';
+$profile_content_page_class = 'personal-details-page--loyalty-points personal-details-page--bonus-unified personal-details-page--bonus-casino-unified';
+$profile_close_href_full = '/profile/details';
 ?>
 
 <?php if (!$profile_modal): ?>
@@ -32,16 +35,14 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 <?php endif; ?>
     <?php include __DIR__ . '/../../views/partials/profile-sidebar.php'; ?>
 
-    <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content bonus-casino-main">
-        <div class="bonus-casino-card">
-            <div class="bonus-casino-header">
-                <h1 class="bonus-casino-title">CASİNO BONUSU</h1>
-                <a href="/" class="bonus-casino-close" aria-label="Kapat"><i class="fa-solid fa-times"></i></a>
-            </div>
+    <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content">
+        <?php include __DIR__ . '/../../views/partials/profile-content-shell-open.php'; ?>
+        <div class="bonus-casino-card bonus-unified-card">
             <div class="bonus-casino-content js-profile-active-bonus" data-bonus-kind="casino">
                 <p class="profile-active-bonus-loading">Yükleniyor…</p>
             </div>
         </div>
+        <?php include __DIR__ . '/../../views/partials/profile-content-shell-close.php'; ?>
     </main>
 <?php if (!$profile_modal): ?>
 </div>
