@@ -223,28 +223,24 @@ if (!function_exists('member_profile_spor_detail_render_block')) {
 
             if (is_array($value)) {
                 if ($value === []) {
-                    $rows .= '<tr>'
-                        . '<th scope="row" class="text-white-50 text-uppercase small" style="width:34%;">' . member_profile_html_escape($label) . '</th>'
-                        . '<td class="text-white">—</td>'
-                        . '</tr>';
+                    $rows .= '<tr><th style="width: 30%;">' . member_profile_html_escape($label) . '</th><td>—</td></tr>';
                     continue;
                 }
 
-                $rows .= '<tr>'
-                    . '<th scope="row" class="text-white-50 text-uppercase small" style="width:34%; vertical-align: top;">' . member_profile_html_escape($label) . '</th>'
-                    . '<td class="text-white">' . member_profile_spor_detail_render_value($value, (string) $key, $depth) . '</td>'
-                    . '</tr>';
+                $rows .= '<tr><th colspan="2" class="bg-light">' . member_profile_html_escape($label) . '</th></tr>';
+                $rows .= '<tr><td colspan="2" style="padding: 0;">'
+                    . member_profile_spor_detail_render_value($value, (string) $key, $depth)
+                    . '</td></tr>';
                 continue;
             }
 
-            $rows .= '<tr>'
-                . '<th scope="row" class="text-white-50 text-uppercase small" style="width:34%;">' . member_profile_html_escape($label) . '</th>'
-                . '<td class="text-white fw-semibold">' . member_profile_spor_detail_render_value($value, (string) $key, $depth) . '</td>'
-                . '</tr>';
+            $rows .= '<tr><th style="width: 30%;">' . member_profile_html_escape($label) . '</th><td>'
+                . member_profile_spor_detail_render_value($value, (string) $key, $depth)
+                . '</td></tr>';
         }
 
         return '<div class="table-responsive">'
-            . '<table class="table table-sm table-borderless align-middle mb-0 text-white">'
+            . '<table class="table table-sm table-bordered mb-0">'
             . '<tbody>' . $rows . '</tbody>'
             . '</table>'
             . '</div>';
@@ -594,88 +590,43 @@ if (!function_exists('member_profile_render_spor_bet_detail')) {
 
         ob_start();
         ?>
-<div class="profile-detail-shell game-history-details">
-    <div class="profile-detail-hero">
-        <div class="profile-detail-hero__kicker">Spor Bahis Detayları</div>
-        <div class="profile-detail-hero__title"><?= member_profile_html_escape((string) ($bet['game_code'] ?? 'Spor Bahis')) ?></div>
-        <div class="profile-detail-hero__subtitle">
-            <?= member_profile_html_escape($providerLabel) ?>
-            <span class="profile-detail-hero__dot">•</span>
-            <?= member_profile_html_escape((string) ($bet['round_id'] ?? '—')) ?>
-        </div>
-        <div class="profile-detail-badges">
-            <?= member_profile_detail_badge($gameCodeText, 'info') ?>
-            <?= member_profile_detail_badge($statusLabel, $statusClass) ?>
-            <?= member_profile_detail_badge('İşlem: ' . member_profile_spor_detail_format_scalar((string) ($bet['transaction_id'] ?? '-'), 'transaction_id'), 'primary') ?>
-        </div>
+<div class="row g-3 game-history-details">
+    <div class="col-md-6">
+        <h6 class="border-bottom pb-2">Bahis Bilgileri</h6>
+        <table class="table table-sm table-bordered mb-0">
+            <tr><th style="width: 40%;">Bahis ID:</th><td><strong><?= (int) ($bet['id'] ?? 0) ?></strong></td></tr>
+            <tr><th>Transaction ID:</th><td><code><?= member_profile_html_escape((string) ($bet['transaction_id'] ?? '-')) ?></code></td></tr>
+            <tr><th>Round ID:</th><td><code><?= member_profile_html_escape((string) ($bet['round_id'] ?? '-')) ?></code></td></tr>
+            <tr><th>Oyun Kodu:</th><td><?= member_profile_html_escape((string) ($bet['game_code'] ?? '-')) ?></td></tr>
+            <tr><th>Sağlayıcı:</th><td><?= member_profile_html_escape($providerLabel) ?></td></tr>
+        </table>
     </div>
-
-    <div class="profile-detail-grid">
-        <section class="profile-detail-panel">
-            <div class="profile-detail-panel__title">Bahis Bilgileri</div>
-            <div class="profile-detail-meta-list">
-                <div class="profile-detail-meta-row">
-                    <div class="profile-detail-meta-label">Bahis ID</div>
-                    <div class="profile-detail-meta-value"><strong><?= (int) ($bet['id'] ?? 0) ?></strong></div>
-                </div>
-                <div class="profile-detail-meta-row">
-                    <div class="profile-detail-meta-label">Transaction ID</div>
-                    <div class="profile-detail-meta-value"><code><?= member_profile_html_escape((string) ($bet['transaction_id'] ?? '-')) ?></code></div>
-                </div>
-                <div class="profile-detail-meta-row">
-                    <div class="profile-detail-meta-label">Round ID</div>
-                    <div class="profile-detail-meta-value"><code><?= member_profile_html_escape((string) ($bet['round_id'] ?? '-')) ?></code></div>
-                </div>
-                <div class="profile-detail-meta-row">
-                    <div class="profile-detail-meta-label">Oyun Kodu</div>
-                    <div class="profile-detail-meta-value"><?= member_profile_html_escape((string) ($bet['game_code'] ?? '-')) ?></div>
-                </div>
-                <div class="profile-detail-meta-row">
-                    <div class="profile-detail-meta-label">Sağlayıcı</div>
-                    <div class="profile-detail-meta-value"><?= member_profile_html_escape($providerLabel) ?></div>
-                </div>
-            </div>
-        </section>
-
-        <section class="profile-detail-panel">
-            <div class="profile-detail-panel__title">Finansal Bilgiler</div>
-            <div class="profile-detail-stat-grid profile-detail-stat-grid--four">
-                <?= member_profile_detail_stat('Bahis Miktarı', number_format($betAmount, 2) . ' ₺', 'danger') ?>
-                <?= member_profile_detail_stat('Kazanç Miktarı', number_format($winAmount, 2) . ' ₺', 'success') ?>
-                <?= member_profile_detail_stat('Net', ($netAmount >= 0 ? '+' : '') . number_format($netAmount, 2) . ' ₺', $netTone) ?>
-                <?= member_profile_detail_stat('Son Bakiye', $balanceAfter !== null && $balanceAfter !== '' ? number_format((float) $balanceAfter, 2) . ' ₺' : '—', 'primary') ?>
-            </div>
-            <div class="profile-detail-meta-list" style="margin-top:0.85rem;">
-                <div class="profile-detail-meta-row">
-                    <div class="profile-detail-meta-label">Durum</div>
-                    <div class="profile-detail-meta-value">
-                        <span class="badge bg-<?= member_profile_html_escape($statusClass) ?>"><?= member_profile_html_escape($statusLabel) ?></span>
-                    </div>
-                </div>
-                <div class="profile-detail-meta-row">
-                    <div class="profile-detail-meta-label">Oluşturulma</div>
-                    <div class="profile-detail-meta-value"><?= !empty($bet['created_at']) ? member_profile_html_escape(date('d.m.Y H:i:s', strtotime((string) $bet['created_at']))) : '—' ?></div>
-                </div>
-            </div>
-        </section>
+    <div class="col-md-6">
+        <h6 class="border-bottom pb-2">Finansal Bilgiler</h6>
+        <table class="table table-sm table-bordered mb-0">
+            <tr><th style="width: 40%;">Bahis Miktarı:</th><td class="fw-bold text-danger"><?= number_format($betAmount, 2) ?> ₺</td></tr>
+            <tr><th>Kazanç Miktarı:</th><td class="fw-bold text-success"><?= number_format($winAmount, 2) ?> ₺</td></tr>
+            <tr><th>Net:</th><td class="fw-bold <?= $netTone === 'success' ? 'text-success' : 'text-danger' ?>"><?= ($netAmount >= 0 ? '+' : '') . number_format($netAmount, 2) ?> ₺</td></tr>
+            <tr><th>Durum:</th><td><span class="badge bg-<?= member_profile_html_escape($statusClass) ?>"><?= member_profile_html_escape($statusLabel) ?></span></td></tr>
+            <tr><th>Oluşturulma:</th><td><?= !empty($bet['created_at']) ? member_profile_html_escape(date('d.m.Y H:i:s', strtotime((string) $bet['created_at']))) : '—' ?></td></tr>
+            <tr><th>Son Bakiye:</th><td><?= $balanceAfter !== null && $balanceAfter !== '' ? number_format((float) $balanceAfter, 2) . ' ₺' : '-' ?></td></tr>
+        </table>
     </div>
-
-    <section class="profile-detail-panel">
-        <div class="profile-detail-panel__title"><?= member_profile_html_escape($detailSourceLabel) ?></div>
-        <?php if ($sporDetails !== []): ?>
-            <?= member_profile_spor_detail_render_block($sporDetails) ?>
-        <?php else: ?>
-            <div class="profile-detail-empty-state">Bu bahis için detay bilgisi bulunmuyor.</div>
-        <?php endif; ?>
-    </section>
-
-    <?php if (!empty($bet['spor_results'])): ?>
-    <section class="profile-detail-panel">
-        <div class="profile-detail-panel__title">Sonuç Analizi</div>
-        <div class="profile-detail-notes"><?= nl2br(member_profile_html_escape((string) $bet['spor_results'])) ?></div>
-    </section>
-    <?php endif; ?>
 </div>
+<?php if ($sporDetails !== []): ?>
+<div class="mt-3">
+    <h6 class="border-bottom pb-2">Spor Bahis Detayları</h6>
+    <?= member_profile_spor_detail_render_block($sporDetails) ?>
+</div>
+<?php else: ?>
+<div class="mt-3"><div class="alert alert-info mb-0"><i class="fas fa-info-circle me-2"></i>Bu bahis için detay bilgisi bulunmuyor.</div></div>
+<?php endif; ?>
+<?php if (!empty($bet['spor_results'])): ?>
+<div class="mt-3">
+    <h6 class="border-bottom pb-2">Sonuç Analizi</h6>
+    <div class="alert alert-info mb-0"><?= nl2br(member_profile_html_escape((string) $bet['spor_results'])) ?></div>
+</div>
+<?php endif; ?>
         <?php
         member_profile_emit_html(200, (string) ob_get_clean());
     }
