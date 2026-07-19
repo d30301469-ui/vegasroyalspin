@@ -441,6 +441,13 @@ body.mobile-site #registerModal .register-error-text {
   border-radius: 6px;
 }
 
+body.mobile-site #login2 .login-error-text,
+body.mobile-site #registerModal .register-error-text {
+  left: 7px !important;
+  right: 7px !important;
+  box-sizing: border-box;
+}
+
 body.mobile-site #login2 .login-btn,
 body.mobile-site #registerModal .register-primary-btn {
   width: 100% !important;
