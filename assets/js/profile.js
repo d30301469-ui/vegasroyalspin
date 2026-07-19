@@ -656,6 +656,26 @@
         return u.pathname + u.search + u.hash;
     }
 
+    function ensureFreshProfileCssOnce() {
+        if (window.__profileCssRefreshedOnce) return;
+        var links = document.querySelectorAll('link[rel="stylesheet"][href*="/assets/css/profile.css"]');
+        if (!links || !links.length) return;
+
+        var stamp = String(Date.now());
+        links.forEach(function(link) {
+            try {
+                var rawHref = link.getAttribute('href') || link.href || '';
+                var hrefUrl = new URL(rawHref, window.location.origin);
+                if (hrefUrl.origin !== window.location.origin) return;
+                if (hrefUrl.pathname.indexOf('/assets/css/profile.css') !== 0) return;
+                hrefUrl.searchParams.set('pmcss', stamp);
+                link.setAttribute('href', hrefUrl.pathname + '?' + hrefUrl.searchParams.toString());
+            } catch (eCss) {}
+        });
+
+        window.__profileCssRefreshedOnce = true;
+    }
+
     function hideProfileHeaderFlyouts() {
         var playerNav = document.getElementById('playerNav');
         var depositNav = document.getElementById('depositNav');
@@ -1116,6 +1136,12 @@
         var skipPushState = !!options.skipPushState;
 
         var profileUrl = targetUrl;
+        try {
+            var parsedProfileUrl = new URL(profileUrl, window.location.origin);
+            if (parsedProfileUrl.pathname === '/profile/sadakat-puanlari') {
+                ensureFreshProfileCssOnce();
+            }
+        } catch (eProfileUrl) {}
         window.__profileModalContentUrl = profileUrl;
 
         var mainEl = shellRoot.querySelector('#profilePlayerMain');
