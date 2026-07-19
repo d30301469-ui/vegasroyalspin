@@ -56,7 +56,7 @@ final class ProfileApiHelper
         return BackendApiClient::unwrap($response);
     }
 
-    public static function profileByUsername(string $username): array
+    public static function profileByUsername(string $username, bool $includeBalance = true): array
     {
         unset($username);
 
@@ -71,7 +71,7 @@ final class ProfileApiHelper
                 continue;
             }
 
-            return self::normalizeUserRow($user, $data);
+            return self::normalizeUserRow($user, $data, $includeBalance);
         }
 
         return [];
@@ -103,7 +103,9 @@ final class ProfileApiHelper
             return $cache['data'];
         }
 
-        $data = self::profileByUsername($username);
+        // Sidebar sadece id/first_name/surname gösterir; bakiye JS tarafında ayrı ve
+        // önbellekli fetchBalanceData() ile geldiği için burada balance round-trip'ine gerek yok.
+        $data = self::profileByUsername($username, false);
         if ($data !== []) {
             $_SESSION['__profile_summary_cache'] = [
                 'username' => $username,
@@ -248,7 +250,7 @@ final class ProfileApiHelper
      * @param array<string, mixed> $envelope
      * @return array<string, mixed>
      */
-    private static function normalizeUserRow(array $user, array $envelope = []): array
+    private static function normalizeUserRow(array $user, array $envelope = [], bool $includeBalance = true): array
     {
         if (!isset($user['ana_bakiye'])) {
             if (isset($envelope['balance']['ana_bakiye'])) {
@@ -260,7 +262,7 @@ final class ProfileApiHelper
             }
         }
 
-        if (!isset($user['ana_bakiye']) || (float) $user['ana_bakiye'] <= 0) {
+        if ($includeBalance && (!isset($user['ana_bakiye']) || (float) $user['ana_bakiye'] <= 0)) {
             $balance = self::requestMember('GET', '/account/balance');
             if (isset($balance['ana_bakiye'])) {
                 $user['ana_bakiye'] = $balance['ana_bakiye'];
