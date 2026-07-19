@@ -48,7 +48,7 @@ if ($profileV1 !== null) {
     ];
 }
 if ($user === [] || empty($user['id'])) {
-    $fromApi = ProfileApiHelper::profileByUsername($username);
+    $fromApi = ProfileApiHelper::profileByUsernameCached($username);
     if ($fromApi !== [] && !empty($fromApi['id'])) {
         $user = $fromApi;
     }

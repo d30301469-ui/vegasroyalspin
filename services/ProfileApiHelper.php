@@ -78,6 +78,44 @@ final class ProfileApiHelper
     }
 
     /**
+     * profileByUsername() sonucunu kısa süreliğine (varsayılan 45sn) oturumda önbelleğe alır.
+     * Profil modal sekmeleri arasında (bonus, kyc, mesajlar, işlem geçmişi vb.) hızlı geçiş
+     * yapılırken sadece sidebar'da isim/soyisim göstermek için her sayfa yüklemesinde tekrar
+     * backend'e istek atılmasını önler. Sayfa sadece kimlik doğrulaması (id) gerektiriyorsa
+     * ve güncel veri şart değilse bu metodu tercih edin.
+     *
+     * @return array<string, mixed>
+     */
+    public static function profileByUsernameCached(string $username, int $ttlSeconds = 45): array
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            require_once __DIR__ . '/../config/frontend_session.php';
+            metropol_frontend_session_start();
+        }
+
+        $cache = $_SESSION['__profile_summary_cache'] ?? null;
+        if (
+            is_array($cache)
+            && ($cache['username'] ?? null) === $username
+            && (int) ($cache['expires'] ?? 0) > time()
+            && is_array($cache['data'] ?? null)
+        ) {
+            return $cache['data'];
+        }
+
+        $data = self::profileByUsername($username);
+        if ($data !== []) {
+            $_SESSION['__profile_summary_cache'] = [
+                'username' => $username,
+                'expires' => time() + max(1, $ttlSeconds),
+                'data' => $data,
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
      * @param array<string, mixed> $query
      * @return array<string, mixed>
      */

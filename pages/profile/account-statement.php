@@ -15,7 +15,7 @@ if (!$isLoggedIn) {
     exit();
 }
 
-$prof      = ProfileApiHelper::profileByUsername($username);
+$prof      = ProfileApiHelper::profileByUsernameCached($username);
 $email     = $prof['email'] ?? '';
 $firstName = $prof['first_name'] ?? '';
 $surname   = $prof['surname'] ?? '';
