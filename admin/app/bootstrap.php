@@ -138,3 +138,4 @@ require_once ADMIN_APP_PATH . '/Controllers/AdminReportController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminSystemController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminPromotionController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminPromocodeRequestController.php';
+require_once ADMIN_APP_PATH . '/Controllers/AdminBonusClaimController.php';

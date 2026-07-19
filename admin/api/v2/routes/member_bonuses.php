@@ -122,6 +122,11 @@ if ($method === 'POST' && $route === 'promocode_request.php') {
     if (!is_array($row)) {
         $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'Promocode bulunamadı.']);
     }
+    $existingPromocodeReq = $pdo->prepare("SELECT id FROM promocode_requests WHERE user_id = :user_id AND promocode_id = :promocode_id AND status IN ('pending','approved') LIMIT 1");
+    $existingPromocodeReq->execute(['user_id' => $userId, 'promocode_id' => (int) ($row['id'] ?? 0)]);
+    if ($existingPromocodeReq->fetch(PDO::FETCH_ASSOC)) {
+        $memberEnvelope(409, ['success' => false, 'code' => 409, 'message' => 'Bu promosyon kodu için zaten talebiniz var.']);
+    }
     $insert = $pdo->prepare(
         "INSERT INTO promocode_requests
         (user_id, promocode_id, promocode_code, amount, user_message, status, created_at, updated_at)
@@ -359,6 +364,15 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
     if (!is_array($promo)) {
         $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'Promosyon bulunamadı.']);
     }
+    $claimPromotionId = (int) ($promo['id'] ?? 0);
+    if ($claimPromotionId > 0) {
+        $existingClaim = $pdo->prepare("SELECT id FROM bonus_claim_requests WHERE user_id = :user_id AND promotion_id = :promotion_id AND status = 'pending' LIMIT 1");
+        $existingClaim->execute(['user_id' => $userId, 'promotion_id' => $claimPromotionId]);
+        $existingClaimRow = $existingClaim->fetch(PDO::FETCH_ASSOC);
+        if (is_array($existingClaimRow)) {
+            $pdo->prepare('DELETE FROM bonus_claim_requests WHERE id = :id')->execute(['id' => (int) $existingClaimRow['id']]);
+        }
+    }
     $insert = $pdo->prepare(
         "INSERT INTO bonus_claim_requests
         (user_id, promotion_id, bonus_name, category, promotion_type, requested_amount, wagering_multiplier, user_message, status, created_at)
@@ -367,7 +381,7 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
     );
     $insert->execute([
         'user_id' => $userId,
-        'promotion_id' => (int) ($promo['id'] ?? 0),
+        'promotion_id' => $claimPromotionId,
         'bonus_name' => (string) ($promo['title'] ?? ''),
         'category' => (string) ($promo['type'] ?? ''),
         'promotion_type' => (string) ($promo['bonus_type'] ?? ''),

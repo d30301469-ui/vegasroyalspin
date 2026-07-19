@@ -716,6 +716,18 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                     <button class="admin-tx-action admin-tx-action--reject" aria-label="Reject promo request" title="Reddet" type="submit"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Red</button>
                                 </form>
                             <?php endif; ?>
+                            <?php if ($moduleKey === 'bonus-claims' && (string) ($row['status'] ?? '') === 'pending'): ?>
+                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/bonus-claim/approve'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu bonus talebi onaylansın ve üyeye bonus tanımlansın mı?">
+                                    <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
+                                    <button class="admin-tx-action admin-tx-action--approve" aria-label="Approve bonus claim" title="Onayla" type="submit"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Onayla</button>
+                                </form>
+                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/bonus-claim/reject'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu bonus talebi reddedilsin mi?">
+                                    <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
+                                    <button class="admin-tx-action admin-tx-action--reject" aria-label="Reject bonus claim" title="Reddet" type="submit"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Red</button>
+                                </form>
+                            <?php endif; ?>
                             <?php if (!$isReadOnlyModule && !$isWriteProtectedTable): ?>
                                 <?php $viewUrl = AdminAuth::url($table === 'users' ? '/user?id=' . rawurlencode($id) : '/table/edit?name=' . rawurlencode($table) . '&id=' . rawurlencode($id) . ($moduleKey !== '' ? '&module=' . rawurlencode($moduleKey) : '')); ?>
                                 <?php $editUrl = AdminAuth::url($table === 'users' ? '/user/edit?id=' . rawurlencode($id) : '/table/edit?name=' . rawurlencode($table) . '&id=' . rawurlencode($id) . ($moduleKey !== '' ? '&module=' . rawurlencode($moduleKey) : '')); ?>
