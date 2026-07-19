@@ -255,6 +255,24 @@
         return Shared.turnstileTokenFromContainer(container);
     }
 
+    function alignLoginFieldErrorsToInputs() {
+        var modal = document.getElementById('login2');
+        if (!modal) return;
+
+        var groups = modal.querySelectorAll('.form-group.entrance-f-item-bc');
+        groups.forEach(function (group) {
+            var input = group.querySelector('.form-control-input-bc');
+            var errorEl = group.querySelector('.login-error-text');
+            if (!input || !errorEl) return;
+
+            var leftInset = input.offsetLeft;
+            var rightInset = Math.max(0, group.clientWidth - (input.offsetLeft + input.offsetWidth));
+            errorEl.style.left = leftInset + 'px';
+            errorEl.style.right = rightInset + 'px';
+            errorEl.style.boxSizing = 'border-box';
+        });
+    }
+
     function initPasswordToggle() {
         document.addEventListener('click', function (e) {
             var toggle = e.target && e.target.closest ? e.target.closest('.login-password-toggle') : null;
@@ -486,6 +504,7 @@
         if ($jq) {
             $jq(loginModalEl).on('shown.bs.modal', function () {
                 applyMobileAuthLayoutFix('login2');
+                alignLoginFieldErrorsToInputs();
                 // Bazi acilis akislari showLoginModal() uzerinden gecmeyebilir.
                 // Modal gorunur oldugunda widget'i burada da garanti render et.
                 ensureLoginTurnstileWidget();
@@ -586,6 +605,7 @@
 
         loginForm.addEventListener('submit', function (e) {
             e.preventDefault();
+            alignLoginFieldErrorsToInputs();
             var username = (loginForm.querySelector('[name="username"]') || {}).value || '';
             var password = (loginForm.querySelector('[name="password"]') || {}).value || '';
             var turnstileToken = loginTurnstileToken();
@@ -826,5 +846,7 @@
         initLoginForm();
         initLoginAjaxSubmit();
         initForgotPasswordForm();
+        alignLoginFieldErrorsToInputs();
+        window.addEventListener('resize', alignLoginFieldErrorsToInputs);
     });
 })();
