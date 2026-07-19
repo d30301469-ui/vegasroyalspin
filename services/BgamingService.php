@@ -1196,6 +1196,7 @@ final class BgamingService
 
     private static function walletBalance(PDO $pdo, array $payload): array
     {
+        $payload = self::normalizeWalletPayloadContext($pdo, $payload);
         $user = self::user($pdo, (int) ($payload['user_id'] ?? 0));
         if (!$user) {
             return ['code' => 'INVALID_USER', 'message' => 'User not found'];
@@ -1206,6 +1207,7 @@ final class BgamingService
 
     private static function walletPlay(PDO $pdo, array $payload): array
     {
+        $payload = self::normalizeWalletPayloadContext($pdo, $payload);
         $actions = self::actions($payload);
         if ($actions === []) {
             return self::walletBalance($pdo, $payload);
@@ -1215,6 +1217,7 @@ final class BgamingService
 
     private static function walletRollback(PDO $pdo, array $payload): array
     {
+        $payload = self::normalizeWalletPayloadContext($pdo, $payload);
         return self::applyActions($pdo, $payload, self::actions($payload), 'rollback');
     }
 
@@ -1817,6 +1820,13 @@ final class BgamingService
     }
 
     private static function normalizePromoWalletPayload(PDO $pdo, array $payload): array
+    {
+        $payload = self::normalizeWalletPayloadContext($pdo, $payload);
+
+        return $payload;
+    }
+
+    private static function normalizeWalletPayloadContext(PDO $pdo, array $payload): array
     {
         $userId = self::extractWalletUserId($payload);
         $issueId = self::extractFreespinIssueId($payload);
