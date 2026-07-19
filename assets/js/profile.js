@@ -859,6 +859,52 @@
         });
     }
 
+    /**
+     * Sidebar yalnızca modal kabuğu ilk açıldığında render edilir; sonraki SPA sekme
+     * geçişlerinde (details/bonus/mesajlar vb.) yalnızca #profilePlayerMain değişir ve
+     * mevcut aside DOM'u aynen korunur (flicker/accordion state kaybı olmasın diye).
+     * Ancak bu, ilk render sırasında isim/soyisim verisi (first_name/surname) her ne
+     * sebeple olursa olsun eksik geldiyse — kullanıcı "Kişisel Detaylar" sekmesine gidip
+     * orada doğru veriyi görse bile — sidebar'ın kalıcı olarak eski/boş veriyle takılı
+     * kalmasına yol açar. Bu yüzden her navigasyonda, en son çekilen HTML'in aside'ından
+     * kimlik alanlarını (avatar baş harfi, kullanıcı adı, isim-soyisim, kullanıcı id)
+     * canlı sidebar'a senkronize ediyoruz — yapısal DOM'u (accordion vb.) değiştirmeden.
+     */
+    function syncProfileSidebarIdentityFromParsedAside(existingAside, newAside) {
+        if (!existingAside || !newAside) return;
+        var fields = [
+            ['.avatar-holder', 'text'],
+            ['.user-right .username', 'text'],
+            ['.user-right .user-fullname', 'text']
+        ];
+        fields.forEach(function(pair) {
+            var selector = pair[0];
+            var curEl = existingAside.querySelector(selector);
+            var newEl = newAside.querySelector(selector);
+            if (!curEl || !newEl) return;
+            var newText = newEl.textContent || '';
+            if (curEl.textContent !== newText) curEl.textContent = newText;
+        });
+        var curId = existingAside.querySelector('.user-right .user-id');
+        var newId = newAside.querySelector('.user-right .user-id');
+        if (curId && newId) {
+            var newIdVal = newId.getAttribute('data-user-id') || '';
+            if (curId.getAttribute('data-user-id') !== newIdVal) {
+                curId.setAttribute('data-user-id', newIdVal);
+                var curIdIcon = curId.querySelector('.copy-id-icon');
+                curId.textContent = newIdVal + ' ';
+                if (curIdIcon) {
+                    curId.appendChild(curIdIcon);
+                } else {
+                    var icon = document.createElement('i');
+                    icon.className = 'fa-regular fa-copy copy-id-icon';
+                    icon.setAttribute('aria-hidden', 'true');
+                    curId.appendChild(icon);
+                }
+            }
+        }
+    }
+
     function mergeProfileShellResponse(html, navSyncUrl, shellRoot) {
         if (!shellRoot) return false;
         var doc = new DOMParser().parseFromString(html, 'text/html');
@@ -876,6 +922,7 @@
 
         if (existingAside && existingMain) {
             existingMain.replaceWith(document.importNode(newMain, true));
+            if (newAside) syncProfileSidebarIdentityFromParsedAside(existingAside, newAside);
         } else {
             shellRoot.innerHTML = '';
             if (newAside) {
