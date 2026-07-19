@@ -24,14 +24,16 @@
   background: #111a4a;
   border-left: 0;
   box-shadow: -12px 0 36px rgba(0, 0, 0, 0.48);
-  transform: translateX(100%);
-  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.28s ease, opacity 0.2s ease;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 .mprofile-panel.is-open {
-  transform: translateX(0);
+  transform: translateY(0);
+  opacity: 1;
 }
 
 .mprofile-panel__scroll {
@@ -39,7 +41,7 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(20px + env(safe-area-inset-bottom, 0px));
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 0 calc(18px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Kaydırılabilir ana bakiye ve bonus kartları. */
@@ -49,13 +51,13 @@
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
-  margin: 0 -12px;
-  padding: 0 12px;
+  margin: 0;
+  padding: 0 38px;
 }
 .mprofile-balance-rail::-webkit-scrollbar { display: none; }
 .mprofile-balance-card {
-  flex: 0 0 calc(100% - 30px);
-  min-height: 142px;
+  flex: 0 0 calc(100% - 76px);
+  min-height: 136px;
   scroll-snap-align: start;
   border-radius: 6px;
   padding: 16px;
@@ -123,9 +125,20 @@
   font-size: 23px;
   font-weight: 800;
 }
-.mprofile-balance-card__hint {
+.mprofile-balance-card__detail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 37px;
+  padding: 0 10px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.72);
+}
+.mprofile-balance-card__detail b {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #fff;
 }
 .mprofile-rail-dots {
   display: flex;
@@ -142,18 +155,13 @@
 }
 .mprofile-rail-dots i.is-active { background: #fff; }
 
-/* Panel bölümleri, referanstaki düz satır gruplarını izler. */
-.mprofile-section {
-  margin: 0 0 10px;
-  background: #202862;
-  border-radius: 4px;
-  overflow: hidden;
-}
 .mprofile-loyalty {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 12px;
+  min-height: 48px;
+  padding: 7px 12px;
+  margin: 0 10px;
   border-radius: 0;
   background: rgba(255, 255, 255, 0.035);
   border: 0;
@@ -170,11 +178,6 @@
   font-size: 13px;
   font-weight: 700;
 }
-.mprofile-loyalty__points {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.82);
-}
-
 /* Kullanıcı satırı */
 .mprofile-user {
   display: flex;
@@ -182,7 +185,7 @@
   gap: 10px;
   min-height: 62px;
   padding: 10px 12px;
-  margin: 0;
+  margin: 0 10px;
   border-radius: 0;
   background: transparent;
   border: 0;
@@ -232,7 +235,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-bottom: 10px;
+  margin: 0 10px 10px;
 }
 .mprofile-link {
   display: flex;
@@ -269,14 +272,21 @@
 /* Promo kodu */
 .mprofile-promo {
   display: flex;
+  flex-direction: column;
   gap: 7px;
-  margin: 0;
+  margin: 0 10px 10px;
   padding: 10px;
+  background: rgba(255, 255, 255, 0.045);
+}
+.mprofile-promo__field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
 }
 .mprofile-promo__input {
-  flex: 1;
+  width: 100%;
   min-height: 42px;
-  padding: 0 12px;
+  padding: 13px 12px 0;
   border-radius: 3px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: #151d50;
@@ -285,11 +295,18 @@
   font-weight: 700;
   outline: 0;
 }
-.mprofile-promo__input::placeholder {
+.mprofile-promo__label {
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  pointer-events: none;
   color: rgba(255, 255, 255, 0.5);
+  font-size: 9px;
+  font-weight: 700;
 }
 .mprofile-promo__btn {
-  width: 96px;
+  width: 100%;
+  min-height: 42px;
   border-radius: 3px;
   border: 0;
   background: #6f3c89;
