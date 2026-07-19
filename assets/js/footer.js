@@ -152,7 +152,14 @@
 
     function openGame(gameId) {
         if (!gameId) return;
-        window.location.href = "/play?game_id=" + encodeURIComponent(gameId) + "&mode=real&wallet=main";
+        var url = "/play?game_id=" + encodeURIComponent(gameId) + "&mode=real&wallet=main";
+        if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === "function") {
+            window.MaltabetWalletPicker.launch(url, function (finalUrl) {
+                window.location.href = finalUrl;
+            });
+            return;
+        }
+        window.location.href = url;
     }
 
     function initFooterLanguageDropdown() {

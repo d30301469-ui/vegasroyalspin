@@ -121,6 +121,14 @@
                 play.className = "favorites-game-row__play";
                 play.href = "/play?game_id=" + encodeURIComponent(code) + "&mode=real&wallet=main";
                 play.textContent = "Oyna";
+                play.addEventListener("click", function (e) {
+                    if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === "function") {
+                        e.preventDefault();
+                        window.MaltabetWalletPicker.launch(play.href, function (finalUrl) {
+                            window.location.href = finalUrl;
+                        });
+                    }
+                });
                 actions.appendChild(play);
             }
             if (gid) {

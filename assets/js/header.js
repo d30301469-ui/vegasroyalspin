@@ -357,8 +357,7 @@
     window.bonusKoduKullan = bonusKoduKullan;
 
     // Oyun açma fonksiyonu
-    function openGame(gameId) {
-        var url = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=real&wallet=main';
+    function launchGameUrl(url) {
         var isMobileSite = !!(document.body && document.body.classList.contains('mobile-site'));
         if (!isMobileSite) {
             var hasTouch = (navigator.maxTouchPoints || 0) > 0;
@@ -386,6 +385,14 @@
             }
         }
         window.location.href = url;
+    }
+    function openGame(gameId) {
+        var url = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=real&wallet=main';
+        if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === 'function') {
+            window.MaltabetWalletPicker.launch(url, launchGameUrl);
+            return;
+        }
+        launchGameUrl(url);
     }
     window.openGame = openGame;
 
@@ -429,14 +436,99 @@
         var isMobile = document.body.classList.contains('mobile-site');
         var isScrollLockedBySmartPanel = false;
 
+        function getSharedScrollLock() {
+            if (window.__BodyScrollLock && typeof window.__BodyScrollLock.lock === 'function' && typeof window.__BodyScrollLock.unlock === 'function') {
+                return window.__BodyScrollLock;
+            }
+
+            var state = {
+                count: 0,
+                scrollY: 0,
+                prev: null
+            };
+
+            function lock() {
+                state.count += 1;
+                if (state.count > 1) return;
+
+                var body = document.body;
+                var docEl = document.documentElement;
+                state.scrollY = window.scrollY || window.pageYOffset || 0;
+                state.prev = {
+                    position: body.style.position,
+                    top: body.style.top,
+                    left: body.style.left,
+                    right: body.style.right,
+                    width: body.style.width,
+                    overflow: body.style.overflow,
+                    touchAction: body.style.touchAction,
+                    paddingRight: body.style.paddingRight
+                };
+
+                var scrollbarWidth = Math.max(0, window.innerWidth - docEl.clientWidth);
+                if (scrollbarWidth > 0) {
+                    body.style.paddingRight = scrollbarWidth + 'px';
+                }
+
+                body.style.position = 'fixed';
+                body.style.top = -state.scrollY + 'px';
+                body.style.left = '0';
+                body.style.right = '0';
+                body.style.width = '100%';
+                body.style.overflow = 'hidden';
+                body.style.touchAction = 'none';
+                body.classList.add('body-scroll-locked');
+            }
+
+            function unlock() {
+                if (state.count <= 0) return;
+                state.count -= 1;
+                if (state.count > 0) return;
+
+                var body = document.body;
+                var restoreY = state.scrollY;
+                var prev = state.prev || {};
+
+                body.style.position = prev.position || '';
+                body.style.top = prev.top || '';
+                body.style.left = prev.left || '';
+                body.style.right = prev.right || '';
+                body.style.width = prev.width || '';
+                body.style.overflow = prev.overflow || '';
+                body.style.touchAction = prev.touchAction || '';
+                body.style.paddingRight = prev.paddingRight || '';
+                body.classList.remove('body-scroll-locked');
+
+                var html = document.documentElement;
+                var previousBehavior = html.style.scrollBehavior;
+                html.style.scrollBehavior = 'auto';
+                window.scrollTo(0, restoreY);
+                html.style.scrollBehavior = previousBehavior || '';
+            }
+
+            window.__BodyScrollLock = {
+                lock: lock,
+                unlock: unlock
+            };
+
+            return window.__BodyScrollLock;
+        }
+
         function lockBodyForSmartPanel() {
             if (!isMobile || isScrollLockedBySmartPanel) return;
+            var shared = getSharedScrollLock();
+            if (!shared) return;
+            shared.lock();
             isScrollLockedBySmartPanel = true;
             document.body.classList.add('smart-panel-open');
         }
 
         function unlockBodyForSmartPanel() {
             if (!isMobile || !isScrollLockedBySmartPanel) return;
+            var shared = getSharedScrollLock();
+            if (shared) {
+                shared.unlock();
+            }
             isScrollLockedBySmartPanel = false;
             document.body.classList.remove('smart-panel-open');
         }

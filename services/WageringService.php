@@ -39,6 +39,9 @@ final class WageringService
                 if (!in_array('wagering_progress', $cols, true)) {
                     $pdo->exec('ALTER TABLE users ADD COLUMN wagering_progress DECIMAL(15,2) NOT NULL DEFAULT 0.00 AFTER wagering_required');
                 }
+                if (!in_array('active_wallet_mode', $cols, true)) {
+                    $pdo->exec("ALTER TABLE users ADD COLUMN active_wallet_mode ENUM('main','bonus') NOT NULL DEFAULT 'main' AFTER wagering_progress");
+                }
             }
         } catch (Throwable $e) {
             error_log('[WageringService] ensureSchema (users) failed: ' . $e->getMessage());
@@ -98,7 +101,9 @@ final class WageringService
             error_log('[WageringService] registerBet (account) failed: ' . $e->getMessage());
         }
 
-        self::applyBonusDelta($pdo, $userId, $amount);
+        if (self::activeWalletMode($pdo, $userId) === 'bonus') {
+            self::applyBonusDelta($pdo, $userId, $amount);
+        }
     }
 
     /**
@@ -123,7 +128,9 @@ final class WageringService
             error_log('[WageringService] reverseBet (account) failed: ' . $e->getMessage());
         }
 
-        self::applyBonusDelta($pdo, $userId, -$amount);
+        if (self::activeWalletMode($pdo, $userId) === 'bonus') {
+            self::applyBonusDelta($pdo, $userId, -$amount);
+        }
     }
 
     /**
@@ -157,6 +164,39 @@ final class WageringService
             'isComplete' => $required <= 0 || $progress >= $required,
             'multiplier' => 1,
         ];
+    }
+
+    /**
+     * Oyun başlatılırken kullanıcının seçtiği aktif oynama modunu kaydeder.
+     * 'bonus' seçilirse sonraki bahisler aktif bonusun çevrim hedefine de işlenir;
+     * 'main' seçilirse sadece hesap seviyesindeki 1x ana bakiye çevrimi güncellenir.
+     */
+    public static function setActiveWalletMode(PDO $pdo, int $userId, string $mode): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+        self::ensureSchema($pdo);
+        $mode = $mode === 'bonus' ? 'bonus' : 'main';
+        try {
+            $pdo->prepare('UPDATE users SET active_wallet_mode = :mode WHERE id = :id')
+                ->execute(['mode' => $mode, 'id' => $userId]);
+        } catch (Throwable $e) {
+            error_log('[WageringService] setActiveWalletMode failed: ' . $e->getMessage());
+        }
+    }
+
+    public static function activeWalletMode(PDO $pdo, int $userId): string
+    {
+        self::ensureSchema($pdo);
+        try {
+            $stmt = $pdo->prepare('SELECT active_wallet_mode FROM users WHERE id = :id LIMIT 1');
+            $stmt->execute(['id' => $userId]);
+            $mode = (string) $stmt->fetchColumn();
+            return $mode === 'bonus' ? 'bonus' : 'main';
+        } catch (Throwable) {
+            return 'main';
+        }
     }
 
     private static function applyBonusDelta(PDO $pdo, int $userId, float $delta): void

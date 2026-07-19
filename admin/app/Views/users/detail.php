@@ -10,6 +10,7 @@ $sportsbookCoupons = is_array($sportsbookCoupons ?? null) ? $sportsbookCoupons :
 $bonusClaims = is_array($bonusClaims ?? null) ? $bonusClaims : [];
 $activeBonuses = is_array($activeBonuses ?? null) ? $activeBonuses : [];
 $accountWagering = is_array($accountWagering ?? null) ? $accountWagering : [];
+$activeWalletMode = (string) ($activeWalletMode ?? 'main') === 'bonus' ? 'bonus' : 'main';
 $notes = is_array($notes ?? null) ? $notes : [];
 $sessions = is_array($sessions ?? null) ? $sessions : [];
 $flash = trim((string) ($flash ?? ''));
@@ -154,6 +155,11 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
                 <strong><?= $text($money($accountWagering['progress'] ?? 0)) ?> / <?= $text($money($accountWagering['required'] ?? 0)) ?></strong>
                 <div class="wagering-progress-bar"><div class="wagering-progress-fill" style="width:<?= $text((float) ($accountWagering['percent'] ?? 0)) ?>%"></div></div>
                 <small><?= $text(number_format((float) ($accountWagering['percent'] ?? 0), 1)) ?>% tamamlandı · Kalan: <?= $text($money($accountWagering['remaining'] ?? 0)) ?></small>
+            </div>
+            <div class="user-stat-card">
+                <span>Aktif oynama modu</span>
+                <strong><?= $text($activeWalletMode === 'bonus' ? 'Bonus Bakiye' : 'Ana Bakiye') ?></strong>
+                <small>Kullanıcının son oyun başlatmada seçtiği bakiye — çevrim takibinin hangi bonusa işlendiğini belirler.</small>
             </div>
         </div>
         <form method="post" action="<?= htmlspecialchars(AdminAuth::url('/user/balance-adjust'), ENT_QUOTES, 'UTF-8') ?>" class="user-balance-form">

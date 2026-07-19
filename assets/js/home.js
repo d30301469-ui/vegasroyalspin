@@ -168,6 +168,10 @@ function handlePlay(gameId) {
     }
   }
   var url = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=real&wallet=main';
+  if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === 'function') {
+    window.MaltabetWalletPicker.launch(url, openPlayUrl);
+    return;
+  }
   openPlayUrl(url);
 }
 
