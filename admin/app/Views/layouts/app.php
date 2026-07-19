@@ -9,6 +9,19 @@ $activePage = isset($active) ? (string) $active : '';
 $crumbText = isset($crumbs) ? (string) $crumbs : 'Admin';
 $panelName = (string) ($config['name'] ?? 'Backoffice');
 $currentModuleKey = isset($moduleKey) ? (string) $moduleKey : '';
+$requestPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+$requestPath = is_string($requestPath) && $requestPath !== '' ? $requestPath : '/';
+$adminRootPath = parse_url(AdminAuth::url('/'), PHP_URL_PATH);
+$adminRootPath = is_string($adminRootPath) ? rtrim($adminRootPath, '/') : '';
+$normalizeAdminPath = static function (string $path) use ($adminRootPath): string {
+    $clean = '/' . ltrim($path, '/');
+    if ($adminRootPath !== '' && $adminRootPath !== '/' && str_starts_with($clean, $adminRootPath . '/')) {
+        $clean = substr($clean, strlen($adminRootPath));
+    }
+
+    return '/' . ltrim($clean, '/');
+};
+$currentPath = $normalizeAdminPath($requestPath);
 $rawNavigation = is_array($config['navigation'] ?? null) ? $config['navigation'] : [];
 $currentUser = AdminAuth::user();
 $adminFlashMessage = trim((string) ($flash ?? ''));
@@ -31,7 +44,24 @@ if ($adminFlashMessage !== '') {
         : (str_contains($adminFlashLower, 'uyarı') || str_contains($adminFlashLower, 'bekleyen') ? 'warning' : 'success');
 }
 $flash = '';
-$isNavItemActive = static function (array $item) use ($activePage, $currentModuleKey): bool {
+$isNavItemActive = static function (array $item) use ($activePage, $currentModuleKey, $currentPath, $normalizeAdminPath): bool {
+    $url = trim((string) ($item['url'] ?? ''));
+    if ($url !== '' && $url !== '#') {
+        $itemPath = parse_url($url, PHP_URL_PATH);
+        $itemPath = is_string($itemPath) && $itemPath !== '' ? $normalizeAdminPath($itemPath) : '';
+        if ($itemPath !== '' && $itemPath === $currentPath) {
+            if ($itemPath !== '/module') {
+                return true;
+            }
+
+            parse_str((string) parse_url($url, PHP_URL_QUERY), $itemQuery);
+            $itemModuleKey = trim((string) ($itemQuery['key'] ?? ''));
+            if ($itemModuleKey !== '') {
+                return $currentModuleKey === $itemModuleKey;
+            }
+        }
+    }
+
     $module = (string) ($item['module'] ?? '');
     if ($module !== '') {
         return $currentModuleKey === $module;
