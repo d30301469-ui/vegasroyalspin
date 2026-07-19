@@ -48,14 +48,14 @@
   }
 
   function bindBalanceRail(panel) {
-    var rail = panel.querySelector('.mprofile-balance-rail');
-    var dots = panel.querySelectorAll('.mprofile-rail-dots i');
+    var rail = panel.querySelector('.swiper-wrapper');
+    var dots = panel.querySelectorAll('.swiper-pagination-bullet');
     if (!rail || dots.length < 2) return;
 
     rail.addEventListener('scroll', function () {
       var activeIndex = rail.scrollLeft > (rail.scrollWidth - rail.clientWidth) / 2 ? 1 : 0;
       dots.forEach(function (dot, index) {
-        dot.classList.toggle('is-active', index === activeIndex);
+        dot.classList.toggle('swiper-pagination-bullet-active', index === activeIndex);
       });
     }, { passive: true });
   }
@@ -78,13 +78,6 @@
     var overlay = getOverlay();
     if (overlay) overlay.addEventListener('click', closePanel);
 
-    document.addEventListener('click', function (e) {
-      var closeButton = e.target && e.target.closest ? e.target.closest('.mprofile-close') : null;
-      if (!closeButton) return;
-      e.preventDefault();
-      closePanel();
-    });
-
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && isOpen) closePanel();
     });
@@ -94,13 +87,31 @@
     if (panel) {
       bindBalanceRail(panel);
       panel.addEventListener('click', function (e) {
-        var copy = e.target && e.target.closest ? e.target.closest('.mprofile-user__copy') : null;
-        if (!copy) return;
-        e.preventDefault();
-        e.stopPropagation();
-        var uid = copy.getAttribute('data-user-id') || '';
-        if (uid && navigator.clipboard) {
-          navigator.clipboard.writeText(uid).catch(function () {});
+        var target = e.target && e.target.closest ? e.target : null;
+        if (!target) return;
+
+        var copy = target.closest('.u-i-p-p-u-i-d-user-id-copy-bc');
+        if (copy) {
+          e.preventDefault();
+          e.stopPropagation();
+          var uid = copy.getAttribute('data-user-id') || '';
+          if (uid && navigator.clipboard) {
+            navigator.clipboard.writeText(uid).catch(function () {});
+          }
+          return;
+        }
+
+        var menuItem = target.closest('.u-i-p-l-head-bc[data-href]');
+        if (menuItem) {
+          e.preventDefault();
+          window.location.href = menuItem.getAttribute('data-href');
+          return;
+        }
+
+        var logoutButton = target.closest('.userLogoutBtn');
+        if (logoutButton) {
+          e.preventDefault();
+          window.location.href = '/logout';
         }
       });
     }
