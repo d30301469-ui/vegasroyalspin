@@ -155,6 +155,30 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
     $userId = $memberRequireLogin();
     $input = $memberInput($payload);
     $promotionId = (int) ($input['promotionId'] ?? $input['promotion_id'] ?? 0);
+    $depositRequiredMessage = 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.';
+    $hasConfirmedDeposit = false;
+    try {
+        MegaPayzService::bootstrap($pdo);
+        $depositCheck = $pdo->prepare("SELECT COUNT(*) FROM megapayz_transactions WHERE user_id = :user_id AND type = 'deposit' AND status = 'confirmed'");
+        $depositCheck->execute(['user_id' => $userId]);
+        $hasConfirmedDeposit = (int) $depositCheck->fetchColumn() > 0;
+    } catch (Throwable) {
+        $hasConfirmedDeposit = false;
+    }
+    if (!$hasConfirmedDeposit) {
+        $memberEnvelope(403, [
+            'success' => false,
+            'code' => 403,
+            'message' => $depositRequiredMessage,
+            'data' => [
+                'claimPolicy' => [
+                    'requiresConfirmedDeposit' => true,
+                    'depositRequiredMessage' => $depositRequiredMessage,
+                ],
+                'viewer' => ['hasConfirmedDeposit' => false],
+            ],
+        ]);
+    }
     if ($promotionId <= 0) {
         $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'promotionId zorunludur.']);
     }

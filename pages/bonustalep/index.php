@@ -64,8 +64,30 @@ let selectedBonus = null;
 let selectedPromotionId = 0;
 let activeBonusType = 'yatirim';
 let promotions = [];
+let claimPolicy = {};
+let hasConfirmedDeposit = false;
+
+function depositRequiredMessage() {
+    const message = claimPolicy && typeof claimPolicy.depositRequiredMessage === 'string'
+        ? claimPolicy.depositRequiredMessage.trim()
+        : '';
+    return message || 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.';
+}
+
+function canClaimBonus() {
+    const requiresDeposit = !!(claimPolicy && claimPolicy.requiresConfirmedDeposit);
+    return !requiresDeposit || hasConfirmedDeposit;
+}
+
+function showClaimBlockedWarning() {
+    MaltabetToast.error(depositRequiredMessage(), 'Yatırım Şartı');
+}
 
 function openModal(bonusTuru, promotionId) {
+    if (!canClaimBonus()) {
+        showClaimBlockedWarning();
+        return;
+    }
     selectedBonus = bonusTuru;
     selectedPromotionId = parseInt(promotionId || 0, 10) || 0;
 
@@ -107,6 +129,10 @@ document.getElementById('confirmBonusBtn').addEventListener('click', () => {
 });
 
 function bonusTalep(bonusTuru) {  
+    if (!canClaimBonus()) {
+        showClaimBlockedWarning();
+        return;
+    }
     const body = selectedPromotionId > 0
         ? { promotionId: selectedPromotionId }
         : { bonusTitle: bonusTuru };
@@ -144,12 +170,22 @@ function renderBonuses(type) {
         return;
     }
     bonusList.innerHTML = '';
+    if (!canClaimBonus()) {
+        const warning = document.createElement('p');
+        warning.className = 'claim-warning';
+        warning.textContent = depositRequiredMessage();
+        bonusList.appendChild(warning);
+    }
     filtered.forEach(promo => {
         const title = String(promo.title || 'Bonus');
         const id = parseInt(promo.id || promo.promotionId || 0, 10) || 0;
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = title;
+        button.disabled = !canClaimBonus();
+        if (button.disabled) {
+            button.title = depositRequiredMessage();
+        }
         button.addEventListener('click', () => openModal(title, id));
         bonusList.appendChild(button);
     });
@@ -162,6 +198,10 @@ function loadPromotions() {
     })
     .then(response => response.json())
     .then(data => {
+        claimPolicy = data && data.data && typeof data.data.claimPolicy === 'object' && data.data.claimPolicy
+            ? data.data.claimPolicy
+            : {};
+        hasConfirmedDeposit = !!(data && data.data && data.data.viewer && data.data.viewer.hasConfirmedDeposit);
         promotions = data && data.success && data.data && Array.isArray(data.data.promotions)
             ? data.data.promotions
             : [];
@@ -242,6 +282,22 @@ body {
 
 .bonus-list button:hover {
     opacity: 0.8;
+}
+
+.bonus-list button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.claim-warning {
+    width: 100%;
+    margin: 0 0 0.5rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: rgba(226, 80, 65, 0.2);
+    border: 1px solid rgba(226, 80, 65, 0.6);
+    color: #ffd7d2;
+    font-size: 0.95rem;
 }
 
 .logs {

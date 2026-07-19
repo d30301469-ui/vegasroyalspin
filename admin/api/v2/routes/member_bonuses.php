@@ -300,6 +300,30 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
     $input = $memberInput($payload);
     $promotionId = (int) ($input['promotionId'] ?? $input['promotion_id'] ?? 0);
     $pdo = AdminDatabase::pdo();
+    $depositRequiredMessage = 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.';
+    $hasConfirmedDeposit = false;
+    try {
+        MegaPayzService::bootstrap($pdo);
+        $depositCheck = $pdo->prepare("SELECT COUNT(*) FROM megapayz_transactions WHERE user_id = :user_id AND type = 'deposit' AND status = 'confirmed'");
+        $depositCheck->execute(['user_id' => $userId]);
+        $hasConfirmedDeposit = (int) $depositCheck->fetchColumn() > 0;
+    } catch (Throwable) {
+        $hasConfirmedDeposit = false;
+    }
+    if (!$hasConfirmedDeposit) {
+        $memberEnvelope(403, [
+            'success' => false,
+            'code' => 403,
+            'message' => $depositRequiredMessage,
+            'data' => [
+                'claimPolicy' => [
+                    'requiresConfirmedDeposit' => true,
+                    'depositRequiredMessage' => $depositRequiredMessage,
+                ],
+                'viewer' => ['hasConfirmedDeposit' => false],
+            ],
+        ]);
+    }
     $promo = null;
     if ($promotionId > 0) {
         $promotion = $pdo->prepare("SELECT id, title, type, bonus_type, bonus_amount, wagering_multiplier FROM promotions WHERE id = :id AND status = 'active' LIMIT 1");
