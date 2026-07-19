@@ -294,8 +294,13 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
                         <?php
                         $playHref = $slotPlayTarget($game);
                         $demoHref = $slotDemoHref($game);
+                        $playHrefJson = htmlspecialchars(json_encode($playHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                        // Play navigation is routed through MaltabetWalletPicker (main/bonus wallet choice modal)
+                        // when available, falling back to direct navigation otherwise.
+                        $playNavJs = 'var u=' . $playHrefJson . ';function __navPlay(nu){window.location.href=nu;}if(window.MaltabetWalletPicker&&typeof window.MaltabetWalletPicker.launch===&quot;function&quot;){window.MaltabetWalletPicker.launch(u,__navPlay);}else{__navPlay(u);}';
+                        $openLoginJs = 'if (typeof window.__openLoginModal === &quot;function&quot;) { window.__openLoginModal(); } else { var loginBtn = document.getElementById(&quot;Giris&quot;); if (loginBtn) loginBtn.click(); }';
                         ?>
-                        <div class="casinoGameItemContent " data-favorite-kind="<?= htmlspecialchars($slotFavoriteKind, ENT_QUOTES, 'UTF-8') ?>" data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $loggedIn ? 'window.location.href=' . htmlspecialchars(json_encode($playHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8') : 'if (typeof window.__openLoginModal === &quot;function&quot;) { window.__openLoginModal(); } else { var loginBtn = document.getElementById(&quot;Giris&quot;); if (loginBtn) loginBtn.click(); }' ?>">
+                        <div class="casinoGameItemContent " data-favorite-kind="<?= htmlspecialchars($slotFavoriteKind, ENT_QUOTES, 'UTF-8') ?>" data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $loggedIn ? $playNavJs : $openLoginJs ?>">
                             <span class="providerBadgeBlock " data-badge=""></span>
                             <div class="casinoGameItem ">
                                 <img alt="<?= htmlspecialchars($game['game_name'], ENT_QUOTES); ?>"
@@ -314,7 +319,7 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
                                             <p class="game-title-text"><?= htmlspecialchars((string) ($game['game_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                                         </div>
                                         <div class="game-actions">
-                                            <a class="play-btn" href="<?= htmlspecialchars($playHref, ENT_QUOTES, 'UTF-8') ?>" onclick="event.stopPropagation();<?= $loggedIn ? '' : ' event.preventDefault(); if (typeof window.__openLoginModal === &quot;function&quot;) { window.__openLoginModal(); } else { var loginBtn = document.getElementById(&quot;Giris&quot;); if (loginBtn) loginBtn.click(); }' ?>">OYNA</a>
+                                            <a class="play-btn" href="<?= htmlspecialchars($playHref, ENT_QUOTES, 'UTF-8') ?>" onclick="event.stopPropagation();event.preventDefault();<?= $loggedIn ? $playNavJs : $openLoginJs ?>">OYNA</a>
                                             <a class="demo-btn" href="<?= htmlspecialchars($demoHref, ENT_QUOTES, 'UTF-8') ?>" onclick="event.stopPropagation()">DEMO</a>
                                         </div>
                                     </div>
