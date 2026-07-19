@@ -399,9 +399,17 @@
 
     function realPlayClickJs(gameUrlJs) {
         if (slotLoggedIn) {
-            return "window.__slotOpenPlayUrl&&window.__slotOpenPlayUrl('" + gameUrlJs + "')";
+            return "window.__slotLaunchPlayUrl&&window.__slotLaunchPlayUrl('" + gameUrlJs + "')";
         }
         return "if(event){event.preventDefault();event.stopPropagation();}window.__slotOpenLoginModal&&window.__slotOpenLoginModal()";
+    }
+
+    function launchPlayUrl(url) {
+        if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === 'function') {
+            window.MaltabetWalletPicker.launch(url, openPlayUrl);
+            return;
+        }
+        openPlayUrl(url);
     }
 
     function renderGameItem(game) {
@@ -416,12 +424,13 @@
         const demoUrl = playUrlFun(gameId);
         window.__slotOpenLoginModal = openLoginModal;
         window.__slotOpenPlayUrl = openPlayUrl;
+        window.__slotLaunchPlayUrl = launchPlayUrl;
         const actionsHtml = ACTION_BUTTONS ? (
             '<div class="game-overlay">' +
             '<div class="game-overlay-top"></div>' +
             '<div class="game-title-wrap"><p class="game-title-text">' + name + '</p></div>' +
             '<div class="game-actions">' +
-            '<a class="play-btn" href="' + escapeHtml(gameUrl) + '" onclick="' + (slotLoggedIn ? ('event.preventDefault();event.stopPropagation();window.__slotOpenPlayUrl&&window.__slotOpenPlayUrl(\'' + gameUrlJs + '\')') : 'event.preventDefault();event.stopPropagation();window.__slotOpenLoginModal&&window.__slotOpenLoginModal()') + '">OYNA</a>' +
+            '<a class="play-btn" href="' + escapeHtml(gameUrl) + '" onclick="' + (slotLoggedIn ? ('event.preventDefault();event.stopPropagation();window.__slotLaunchPlayUrl&&window.__slotLaunchPlayUrl(\'' + gameUrlJs + '\')') : 'event.preventDefault();event.stopPropagation();window.__slotOpenLoginModal&&window.__slotOpenLoginModal()') + '">OYNA</a>' +
             '<a class="demo-btn" href="' + escapeHtml(demoUrl) + '" onclick="event.stopPropagation()">DEMO</a>' +
             '</div>' +
             '</div>'

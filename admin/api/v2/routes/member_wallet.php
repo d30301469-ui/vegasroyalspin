@@ -52,6 +52,7 @@ if ($method === 'GET' && ($route === 'balance.php' || $route === 'account/balanc
                 'progress_formatted' => $formatBalance($wagering['progress']),
                 'remaining_formatted' => $formatBalance($wagering['remaining']),
             ],
+            'active_wallet_mode' => WageringService::activeWalletMode($pdo, $userId),
         ],
     ]);
 }
