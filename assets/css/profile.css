@@ -263,27 +263,27 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 11px 12px;
-    border-radius: 10px;
+    padding: 12px 11px;
+    border-radius: 4px;
     color: rgba(255, 255, 255, 0.92);
     text-decoration: none;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    font-size: 12px;
+    background: linear-gradient(90deg, rgba(91, 52, 133, 0.64) 0%, rgba(56, 61, 113, 0.64) 100%);
+    border: 1px solid rgba(132, 116, 189, 0.34);
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    margin-bottom: 8px;
+    letter-spacing: 0.01em;
+    margin-bottom: 7px;
 }
 
 .profile-mobile-nav__item i {
-    width: 14px;
+    width: 16px;
     text-align: center;
     opacity: 0.9;
 }
 
 .profile-mobile-nav__item.is-active {
-    border-color: rgba(240, 180, 41, 0.7);
-    background: rgba(240, 180, 41, 0.12);
+    border-color: rgba(190, 170, 255, 0.52);
+    background: linear-gradient(90deg, rgba(105, 58, 150, 0.75) 0%, rgba(73, 79, 142, 0.75) 100%);
 }
 
 .profile-mobile-nav__badge {
@@ -297,6 +297,46 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     font-weight: 700;
     color: #101720;
     background: #f0b429;
+}
+
+.profile-mobile-nav__chevron {
+    margin-left: auto;
+    opacity: 0.72;
+}
+
+.profile-user-arrow {
+    margin-left: auto;
+    color: rgba(240, 243, 255, 0.65);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.profile-mobile-promo-lite {
+    display: none;
+}
+
+.profile-mobile-promo-lite__input,
+.profile-mobile-promo-lite__btn {
+    border: 1px solid rgba(151, 129, 224, 0.32);
+    border-radius: 4px;
+    min-height: 46px;
+    background: rgba(58, 48, 106, 0.45);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.profile-mobile-promo-lite__input {
+    flex: 1;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+    outline: 0;
+}
+
+.profile-mobile-promo-lite__btn {
+    width: 98px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
 }
 .profile-sidebar-v2 .profile-header.edit-user {
     margin-bottom: 8px;
@@ -2690,7 +2730,13 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
 
     .profile-modal__content .profile-mobile-nav {
         display: block;
-        margin-top: 0.55rem;
+        margin-top: 0.4rem;
+    }
+
+    .profile-modal__content .profile-mobile-promo-lite {
+        display: flex;
+        gap: 7px;
+        margin: 0.5rem 0 0.38rem;
     }
 
     .profile-sidebar-v2 .main-balance-card,
@@ -2749,6 +2795,10 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
         padding: 0.12rem 0.5rem 0.5rem;
     }
 
+    .profile-modal__content .profile-accordion {
+        display: none;
+    }
+
     .profile-modal__content .profile-accordion .accordion-list {
         opacity: 0.94;
     }
@@ -2804,6 +2854,7 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
         font-weight: 700;
         justify-content: center;
         padding: 11px 12px;
+        min-height: 42px;
     }
 
     .profile-modal__content .profile-sidebar-promo {
@@ -2811,6 +2862,10 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
         border-radius: 4px;
         background: rgba(66, 51, 119, 0.44);
         border: 1px solid rgba(148, 121, 224, 0.24);
+    }
+
+    .profile-modal__content .profile-sidebar-promo {
+        display: none;
     }
 
     .profile-modal__content .profile-sidebar-promo .profile-sidebar-promo-input,
