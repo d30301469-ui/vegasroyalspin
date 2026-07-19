@@ -84,6 +84,7 @@ if (is_array($historyPayload['items'] ?? null)) {
 $points = (int) ($account['points'] ?? 0);
 $redeemablePoints = (int) ($account['redeemable_points'] ?? 0);
 $lifetimePoints = (int) ($account['lifetime_points'] ?? $points);
+$canRedeem = $redeemablePoints >= 100;
 $progressPercent = max(0, min(100, (int) ($progress['percent'] ?? 0)));
 $nextLevelName = $nextLevel['name'] ?? null;
 $pointsToNext = max(0, (int) ($progress['points_to_next'] ?? 0));
@@ -168,7 +169,7 @@ $formatDate = static function (string $value): string {
             <section class="lp-redeem-box" aria-labelledby="lpRedeemTitle">
                 <h2 id="lpRedeemTitle">Puan Kullan</h2>
                 <p>Sadakat puanlarınızı bonus bakiyesine dönüştürebilirsiniz.</p>
-                <form method="post" action="<?= htmlspecialchars($buildCurrentUrl(), ENT_QUOTES, 'UTF-8') ?>" class="lp-redeem-form">
+                <form method="post" action="<?= htmlspecialchars($buildCurrentUrl(), ENT_QUOTES, 'UTF-8') ?>" class="lp-redeem-form" data-redeemable-points="<?= (int) $redeemablePoints ?>">
                     <label for="lpRedeemPoints">Kullanılacak puan</label>
                     <div class="lp-redeem-row">
                         <input
@@ -177,13 +178,17 @@ $formatDate = static function (string $value): string {
                             type="number"
                             min="100"
                             step="100"
-                            value="100"
+                            value="<?= $canRedeem ? 100 : 0 ?>"
                             required
                             inputmode="numeric"
+                            <?= $canRedeem ? '' : 'disabled' ?>
                         >
-                        <button type="submit" class="lp-redeem-btn">Puanı Kullan</button>
+                        <button type="submit" class="lp-redeem-btn" <?= $canRedeem ? '' : 'disabled' ?>>Puanı Kullan</button>
                     </div>
                 </form>
+                <?php if (!$canRedeem): ?>
+                <p class="lp-empty" style="margin-top:8px;">Puan kullanımı için en az 100 kullanılabilir puan gerekir.</p>
+                <?php endif; ?>
             </section>
 
             <section class="lp-history" aria-labelledby="lpHistoryTitle">
