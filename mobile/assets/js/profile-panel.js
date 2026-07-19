@@ -78,6 +78,13 @@
     var overlay = getOverlay();
     if (overlay) overlay.addEventListener('click', closePanel);
 
+    document.addEventListener('click', function (e) {
+      var closeButton = e.target && e.target.closest ? e.target.closest('.mprofile-close') : null;
+      if (!closeButton) return;
+      e.preventDefault();
+      closePanel();
+    });
+
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && isOpen) closePanel();
     });

@@ -15,9 +15,19 @@ $panelInitial = strtoupper(mb_substr($panelUsername !== '' ? $panelUsername : 'U
 $panelBadge = isset($headerLoyaltyBadge) && is_array($headerLoyaltyBadge) ? $headerLoyaltyBadge : [];
 $panelLoyaltyName = (string) ($panelBadge['name'] ?? 'Bronze');
 $panelLoyaltyIcon = (string) ($panelBadge['icon_url'] ?? '/assets/images/loyalty/badges/bronze.png');
+$panelLogoUrl = (string) ($mobileHeaderLogoAnimUrl ?? $mobileHeaderLogoUrl ?? $siteBranding['logo_mobile_url'] ?? $siteBranding['logo_url'] ?? '');
+$panelSupportUrl = (string) ($mobileHeaderSupportUrl ?? $siteContactLinks['live_support_url'] ?? '#');
 ?>
 <div class="mprofile-overlay" id="mprofileOverlay" aria-hidden="true"></div>
 <aside class="mprofile-panel" id="mprofilePanel" aria-hidden="true" role="dialog" aria-label="Profil">
+  <div class="mprofile-head">
+    <a class="mprofile-head__logo" href="/" aria-label="Ana sayfa">
+      <?php if ($panelLogoUrl !== ''): ?>
+      <img src="<?= htmlspecialchars($panelLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
+      <?php endif; ?>
+    </a>
+    <button type="button" class="mprofile-close" aria-label="Kapat"><i class="bc-i-close" aria-hidden="true"></i></button>
+  </div>
   <div class="mprofile-panel__scroll">
     <div class="mprofile-balance-rail" aria-label="Bakiyeler">
       <section class="mprofile-balance-card mprofile-balance-card--main">
@@ -99,6 +109,10 @@ $panelLoyaltyIcon = (string) ($panelBadge['icon_url'] ?? '/assets/images/loyalty
 
     <a class="mprofile-logout" href="/logout">
       <i class="bc-i-logout" aria-hidden="true"></i><span>Çıkış Yap</span>
+    </a>
+
+    <a class="mprofile-support" href="<?= htmlspecialchars($panelSupportUrl !== '' ? $panelSupportUrl : '#', ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
+      <span>7/24<br>ONLINE</span><i class="bc-i-call" aria-hidden="true"></i>
     </a>
   </div>
 </aside>
