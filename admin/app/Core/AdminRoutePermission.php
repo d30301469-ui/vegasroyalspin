@@ -59,6 +59,8 @@ final class AdminRoutePermission
         '/bonus/revoke' => 'promotions',
         '/promocode-request/approve' => 'promocode-requests',
         '/promocode-request/reject' => 'promocode-requests',
+        '/bonus-claim/approve' => 'bonus-claims',
+        '/bonus-claim/reject' => 'bonus-claims',
         '/reports/financial' => 'deposits',
         '/compliance/audit-log' => 'logs',
         '/permissions' => 'permissions',

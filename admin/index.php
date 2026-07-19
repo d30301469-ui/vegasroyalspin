@@ -258,6 +258,8 @@ $router->post('/bonus/assign', [AdminPromotionController::class, 'assignBonus'])
 $router->post('/bonus/revoke', [AdminPromotionController::class, 'revokeBonus']);
 $router->post('/promocode-request/approve', [AdminPromocodeRequestController::class, 'approve']);
 $router->post('/promocode-request/reject', [AdminPromocodeRequestController::class, 'reject']);
+$router->post('/bonus-claim/approve', [AdminBonusClaimController::class, 'approve']);
+$router->post('/bonus-claim/reject', [AdminBonusClaimController::class, 'reject']);
 $router->get('/reports/financial', [AdminReportController::class, 'financial']);
 $router->get('/compliance/audit-log', [AdminComplianceController::class, 'auditLog']);
 $router->get('/permissions', [AdminPermissionController::class, 'index']);
