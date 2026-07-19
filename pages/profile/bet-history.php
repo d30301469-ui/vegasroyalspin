@@ -494,14 +494,14 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
                 <div class="bhf-group bhf-period-custom" id="bhPeriodCustomWrap" style="<?= $period !== 'custom' ? 'display:none' : '' ?>">
                     <label class="bhf-label">BAŞLANGIÇ – BİTİŞ</label>
                     <div class="bhf-date-row bhf-date-range-row">
-                        <div class="bhf-date-input-wrap">
+                        <div class="bhf-date-input-wrap" data-placeholder="GG/AA/YYYY">
                             <i class="fa-regular fa-calendar bhf-date-icon" aria-hidden="true"></i>
-                            <input type="date" id="bhPeriodStart" name="period_start" class="bhf-input bhf-input-date" value="<?= htmlspecialchars($period_start) ?>" aria-label="Başlangıç tarihi">
+                            <input type="date" id="bhPeriodStart" name="period_start" class="bhf-input bhf-input-date" value="<?= htmlspecialchars($period_start) ?>" placeholder="GG/AA/YYYY" lang="tr" aria-label="Başlangıç tarihi">
                         </div>
                         <span class="bhf-date-sep">–</span>
-                        <div class="bhf-date-input-wrap">
+                        <div class="bhf-date-input-wrap" data-placeholder="GG/AA/YYYY">
                             <i class="fa-regular fa-calendar bhf-date-icon" aria-hidden="true"></i>
-                            <input type="date" id="bhPeriodEnd" name="period_end" class="bhf-input bhf-input-date" value="<?= htmlspecialchars($period_end) ?>" aria-label="Bitiş tarihi">
+                            <input type="date" id="bhPeriodEnd" name="period_end" class="bhf-input bhf-input-date" value="<?= htmlspecialchars($period_end) ?>" placeholder="GG/AA/YYYY" lang="tr" aria-label="Bitiş tarihi">
                         </div>
                     </div>
                     <div class="bhf-date-presets" id="bhDatePresets" role="group" aria-label="Hızlı tarih aralıkları">

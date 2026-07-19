@@ -4030,6 +4030,7 @@
             bhStart.value = toIso(start);
             bhEnd.value = toIso(end);
             syncDateBounds();
+            syncDateVisualState();
             markPreset(range);
         }
 
@@ -4039,6 +4040,15 @@
             else bhEnd.removeAttribute('min');
             if (bhEnd.value) bhStart.max = bhEnd.value;
             else bhStart.removeAttribute('max');
+        }
+
+        function syncDateVisualState() {
+            [bhStart, bhEnd].forEach(function(inputEl) {
+                if (!inputEl) return;
+                var wrap = inputEl.closest('.bhf-date-input-wrap');
+                if (!wrap) return;
+                wrap.classList.toggle('has-value', !!String(inputEl.value || '').trim());
+            });
         }
 
         function openNativePicker(inputEl) {
@@ -4062,6 +4072,7 @@
             if (bhStart) bhStart.required = !!isCustom;
             if (bhEnd) bhEnd.required = !!isCustom;
             if (isCustom) syncDateBounds();
+            syncDateVisualState();
         }
 
         if (bhPeriod && bhPeriodCustomWrap && $) {
@@ -4073,12 +4084,17 @@
         if (bhStart && bhEnd) {
             bhStart.addEventListener('change', function() {
                 syncDateBounds();
+                syncDateVisualState();
                 markPreset('');
             });
             bhEnd.addEventListener('change', function() {
                 syncDateBounds();
+                syncDateVisualState();
                 markPreset('');
             });
+
+            bhStart.addEventListener('input', syncDateVisualState);
+            bhEnd.addEventListener('input', syncDateVisualState);
 
             var startWrap = bhStart.closest('.bhf-date-input-wrap');
             var endWrap = bhEnd.closest('.bhf-date-input-wrap');
@@ -4124,6 +4140,7 @@
         }
 
         updateCustomState();
+        syncDateVisualState();
     }
 
     // ----- 8. Referanslar (jQuery) -----
