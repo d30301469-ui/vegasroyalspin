@@ -748,7 +748,120 @@ final class BgamingService
             ];
         }
 
+        if ($items !== []) {
+            return $items;
+        }
+
+        return self::memberFreespinsFromRemote($pdo, $userId, $tab);
+    }
+
+    private static function memberFreespinsFromRemote(PDO $pdo, int $userId, string $tab): array
+    {
+        try {
+            $remote = self::listRemoteFreespins($pdo, [
+                'user_id' => $userId,
+                'status' => $tab === 'aktif' ? 'active' : '',
+                'page' => 1,
+            ]);
+        } catch (Throwable) {
+            return [];
+        }
+
+        $rows = is_array($remote['data'] ?? null) ? $remote['data'] : [];
+        if ($rows === []) {
+            return [];
+        }
+
+        $items = [];
+        $seen = [];
+        $gameStmt = null;
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $campaignCode = trim((string) ($row['issue_id'] ?? $row['campaign_code'] ?? ''));
+            if ($campaignCode === '' || isset($seen[$campaignCode])) {
+                continue;
+            }
+
+            $status = self::normalizeFreespinsStatus((string) ($row['status'] ?? 'active'));
+            $isAktifTab = $tab === 'aktif';
+            if ($isAktifTab && $status !== 'active') {
+                continue;
+            }
+            if (!$isAktifTab && !in_array($status, ['new', 'active'], true)) {
+                continue;
+            }
+
+            $seen[$campaignCode] = true;
+
+            $gameIdentifier = self::normalizeGameIdentifier(self::extractRemoteFreespinGameIdentifier($row));
+            $title = trim((string) ($row['title'] ?? ''));
+            $imageUrl = '';
+
+            if ($gameIdentifier !== '') {
+                try {
+                    if (!$gameStmt instanceof PDOStatement) {
+                        $gameStmt = $pdo->prepare(
+                            'SELECT title, COALESCE(thumbnail_url, \"\") AS image_url
+                             FROM bgaming_games
+                             WHERE identifier = :identifier
+                             LIMIT 1'
+                        );
+                    }
+                    $gameStmt->execute(['identifier' => $gameIdentifier]);
+                    $gameRow = $gameStmt->fetch(PDO::FETCH_ASSOC);
+                    if (is_array($gameRow)) {
+                        if ($title === '') {
+                            $title = trim((string) ($gameRow['title'] ?? ''));
+                        }
+                        $imageUrl = trim((string) ($gameRow['image_url'] ?? ''));
+                    }
+                } catch (Throwable) {
+                    $imageUrl = '';
+                }
+            }
+
+            $beginsAt = self::parseUnixTimestamp((string) ($row['issued_at'] ?? $row['created_at'] ?? '')) ?? 0;
+            $expiresAt = self::parseUnixTimestamp((string) ($row['expires_at'] ?? $row['valid_until'] ?? $row['expired_at'] ?? '')) ?? 0;
+
+            $items[] = [
+                'campaign_code' => $campaignCode,
+                'vendor' => 'bgaming',
+                'status' => $status,
+                'freespins_per_player' => max(1, (int) ($row['freespins_quantity'] ?? $row['freespins_count'] ?? 0)),
+                'begins_at' => $beginsAt,
+                'expires_at' => $expiresAt,
+                'currency_code' => self::normalizeCurrency((string) ($row['currency'] ?? self::DEFAULT_CURRENCY)),
+                'game_identifier' => $gameIdentifier,
+                'title' => $title !== '' ? $title : ('BGaming Freespin ' . $campaignCode),
+                'image_url' => $imageUrl,
+            ];
+        }
+
         return $items;
+    }
+
+    private static function extractRemoteFreespinGameIdentifier(array $row): string
+    {
+        $candidate = trim((string) ($row['game_identifier'] ?? $row['game'] ?? ''));
+        if ($candidate !== '') {
+            return $candidate;
+        }
+
+        $games = $row['games'] ?? null;
+        if (!is_array($games) || $games === []) {
+            return '';
+        }
+
+        $first = $games[0] ?? null;
+        if (is_array($first)) {
+            return trim((string) ($first['game_identifier'] ?? $first['identifier'] ?? $first['game'] ?? $first['id'] ?? ''));
+        }
+
+        return trim((string) $first);
     }
 
     public static function syncGames(PDO $pdo): array
