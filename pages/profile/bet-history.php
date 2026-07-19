@@ -248,17 +248,7 @@ $pack = ProfileApiHelper::profileSection('/profile/bet-history-pack', [
     'period_end'   => $period_end,
 ]);
 
-$casinoTransactions = is_array($pack['casino_transactions'] ?? null) ? $pack['casino_transactions'] : [];
 $sporTransactions   = is_array($pack['spor_transactions'] ?? null) ? $pack['spor_transactions'] : [];
-
-// Casino API (txnType) → tablo satırı; ayrı game_history isteği yok (aynı kaynak)
-$processedCasinoTransactions = [];
-foreach ($casinoTransactions as $transaction) {
-    if (!is_array($transaction)) {
-        continue;
-    }
-    $processedCasinoTransactions[] = mapGamesTransactionRowToBetHistoryItem($transaction);
-}
 
 // Spor bahislerini işle
 $processedSporTransactions = [];
@@ -280,11 +270,8 @@ foreach ($sporTransactions as $transaction) {
     $processedSporTransactions[] = $transaction;
 }
 
-// Tüm işlemleri birleştir (casino zaten mapGamesTransactionRowToBetHistoryItem ile normalize)
-$allTransactions = array_merge(
-    $processedCasinoTransactions,
-    $processedSporTransactions
-);
+// Bu panel sadece spor bahis geçmişi gösterir.
+$allTransactions = $processedSporTransactions;
 
 // Tarihe göre sırala
 usort($allTransactions, function($a, $b) {
