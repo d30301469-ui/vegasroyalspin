@@ -3888,6 +3888,99 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     line-height: 1.5;
 }
 
+.profile-bonus-claim-panel {
+    width: 100%;
+    max-width: 62rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.profile-bonus-claim-warning {
+    margin: 0;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 120, 120, 0.45);
+    background: rgba(255, 120, 120, 0.14);
+    color: #ffd2d2;
+    font-size: 0.9rem;
+}
+
+.profile-bonus-claim-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.profile-bonus-claim-card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background: rgba(14, 12, 34, 0.58);
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.profile-bonus-claim-title {
+    margin: 0;
+    color: #fff;
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.profile-bonus-claim-desc {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    min-height: 2.4em;
+}
+
+.profile-bonus-claim-btn {
+    border: 0;
+    border-radius: 8px;
+    padding: 0.58rem 0.72rem;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(90deg, #ef5f39 0%, #f5944f 100%);
+    cursor: pointer;
+    transition: filter 0.2s ease;
+}
+
+.profile-bonus-claim-btn:hover {
+    filter: brightness(1.08);
+}
+
+.profile-bonus-claim-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.profile-bonus-claim-status {
+    margin: 0;
+    min-height: 1.2rem;
+    font-size: 0.86rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.profile-bonus-claim-status.is-success {
+    color: #8af1b5;
+}
+
+.profile-bonus-claim-status.is-error {
+    color: #ffb5b5;
+}
+
+@media (max-width: 900px) {
+    .profile-bonus-claim-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ═══ Para yatır/çek (Vega) — eski _profile-payment-vega-style.inc.php; :root yerine .vega-app, .profile-bilgi-panel ═══ */
 /* Para yatır / çekim — MaltaBet referans mor tema */
     .vega-app, .profile-bilgi-panel {

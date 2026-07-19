@@ -219,47 +219,232 @@
         return card;
     }
 
+    function profileBonusPromotionMatchesKind(promo, kind) {
+        var category = String(promo && promo.category || '').toLowerCase().trim();
+        var text = (String(promo && promo.title || '') + ' ' + String(promo && promo.description || '') + ' ' + String(promo && promo.long_description || '') + ' ' + category)
+            .toLocaleLowerCase('tr-TR');
+        if (kind === 'spor') {
+            return category === 'sports' || category === 'sport' || category === 'spor'
+                || text.indexOf('spor') !== -1
+                || text.indexOf('sport') !== -1
+                || text.indexOf('freebet') !== -1;
+        }
+        if (kind === 'casino') {
+            if (category === 'slots' || category === 'live_casino' || category === 'casino' || category === 'loss_bonus' || category === 'vip') {
+                return true;
+            }
+            return text.indexOf('slot') !== -1
+                || text.indexOf('casino') !== -1
+                || text.indexOf('canli') !== -1
+                || text.indexOf('kayıp') !== -1
+                || text.indexOf('kayip') !== -1
+                || text.indexOf('freespin') !== -1;
+        }
+        return false;
+    }
+
+    function profileBonusClaimNeedsDeposit(claimPolicy) {
+        return !!(claimPolicy && claimPolicy.requiresConfirmedDeposit);
+    }
+
+    function profileBonusDepositWarning(claimPolicy) {
+        var msg = claimPolicy && typeof claimPolicy.depositRequiredMessage === 'string'
+            ? claimPolicy.depositRequiredMessage.trim()
+            : '';
+        return msg || 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.';
+    }
+
+    function submitProfileBonusClaim(promotionId, statusEl, actionBtn) {
+        var id = parseInt(promotionId, 10) || 0;
+        if (id <= 0) {
+            if (statusEl) {
+                statusEl.textContent = 'Geçersiz promosyon seçimi.';
+                statusEl.classList.add('is-error');
+                statusEl.classList.remove('is-success');
+            }
+            return;
+        }
+        if (statusEl) {
+            statusEl.textContent = '';
+            statusEl.classList.remove('is-error', 'is-success');
+        }
+        if (actionBtn) actionBtn.disabled = true;
+
+        fetch(apiUrl('/api/v2/bonus-claim'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+            body: JSON.stringify({ promotionId: id })
+        })
+            .then(function(r) {
+                return r.text().then(function(text) {
+                    var data = {};
+                    try { data = text ? JSON.parse(text) : {}; } catch (ignore) {}
+                    return { res: r, data: data };
+                });
+            })
+            .then(function(result) {
+                var ok = result.res.ok && !!(result.data && result.data.success);
+                var message = (result.data && result.data.message)
+                    ? String(result.data.message)
+                    : (ok ? 'Bonus talebiniz alındı.' : 'Bonus talebi oluşturulamadı.');
+                if (statusEl) {
+                    statusEl.textContent = message;
+                    statusEl.classList.toggle('is-success', ok);
+                    statusEl.classList.toggle('is-error', !ok);
+                }
+                toastNotify(ok ? 'success' : 'error', message, ok ? 'Başarılı' : 'Hata');
+            })
+            .catch(function() {
+                if (statusEl) {
+                    statusEl.textContent = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+                    statusEl.classList.add('is-error');
+                    statusEl.classList.remove('is-success');
+                }
+            })
+            .then(function() {
+                if (actionBtn) actionBtn.disabled = false;
+            });
+    }
+
+    function renderProfileBonusClaimArea(root, kind, activePayload, promoPayload) {
+        var activeData = activePayload || {};
+        var promoData = promoPayload || {};
+        var promoEnvelope = promoData.data || {};
+        var claimPolicy = promoEnvelope.claimPolicy || {};
+        var hasConfirmedDeposit = !!(promoEnvelope.viewer && promoEnvelope.viewer.hasConfirmedDeposit);
+        var requiresDeposit = profileBonusClaimNeedsDeposit(claimPolicy);
+        var depositWarning = profileBonusDepositWarning(claimPolicy);
+        var promotions = Array.isArray(promoEnvelope.promotions) ? promoEnvelope.promotions : [];
+        var filtered = promotions.filter(function(promo) {
+            return promo && typeof promo === 'object' && profileBonusPromotionMatchesKind(promo, kind);
+        });
+
+        root.innerHTML = '';
+
+        var panel = document.createElement('div');
+        panel.className = 'profile-bonus-claim-panel';
+
+        if (activeData.success && activeData.data && activeData.data.hasActiveBonus && activeData.data.bonus && bonusCategoryMatchesPageKind(activeData.data.bonus.category, kind)) {
+            panel.appendChild(buildActiveBonusCard(activeData.data.bonus));
+        }
+
+        if (requiresDeposit && !hasConfirmedDeposit) {
+            var warning = document.createElement('p');
+            warning.className = 'profile-bonus-claim-warning';
+            warning.textContent = depositWarning;
+            panel.appendChild(warning);
+        }
+
+        var claimStatus = document.createElement('p');
+        claimStatus.className = 'profile-bonus-claim-status';
+        claimStatus.setAttribute('role', 'status');
+        claimStatus.setAttribute('aria-live', 'polite');
+
+        if (!filtered.length) {
+            var empty = document.createElement('p');
+            empty.className = 'bonus-casino-empty bonus-spor-empty profile-active-bonus-empty';
+            empty.textContent = 'Seçilen tür için aktif bonus bulunmuyor.';
+            panel.appendChild(empty);
+            panel.appendChild(claimStatus);
+            root.appendChild(panel);
+            return;
+        }
+
+        var grid = document.createElement('div');
+        grid.className = 'profile-bonus-claim-grid';
+        filtered.forEach(function(promo) {
+            var card = document.createElement('article');
+            card.className = 'profile-bonus-claim-card';
+
+            var title = document.createElement('h3');
+            title.className = 'profile-bonus-claim-title';
+            title.textContent = String(promo.title || 'Bonus').trim() || 'Bonus';
+
+            var desc = document.createElement('p');
+            desc.className = 'profile-bonus-claim-desc';
+            var rawDesc = String(promo.description || promo.long_description || 'Bu bonus için talep oluşturabilirsiniz.').trim();
+            desc.textContent = rawDesc.length > 130 ? rawDesc.slice(0, 127) + '...' : rawDesc;
+
+            var action = document.createElement('button');
+            action.type = 'button';
+            action.className = 'profile-bonus-claim-btn';
+            action.textContent = 'Talep Et';
+            action.disabled = requiresDeposit && !hasConfirmedDeposit;
+            if (action.disabled) {
+                action.title = depositWarning;
+            }
+            action.addEventListener('click', function() {
+                submitProfileBonusClaim(promo.id || promo.promotionId || 0, claimStatus, action);
+            });
+
+            card.appendChild(title);
+            card.appendChild(desc);
+            card.appendChild(action);
+            grid.appendChild(card);
+        });
+
+        panel.appendChild(grid);
+        panel.appendChild(claimStatus);
+        root.appendChild(panel);
+    }
+
     function initProfileActiveBonus() {
         document.querySelectorAll('.js-profile-active-bonus:not([data-active-bonus-bound])').forEach(function(root) {
             root.setAttribute('data-active-bonus-bound', '1');
             var kind = (root.getAttribute('data-bonus-kind') || '').trim();
             root.innerHTML = '<p class="profile-active-bonus-loading">Yükleniyor…</p>';
-            fetch(apiUrl('/api/v2/active-bonus'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+            var activeReq = fetch(apiUrl('/api/v2/active-bonus'), {
+                credentials: 'same-origin',
+                headers: memberAuthHeaders({ Accept: 'application/json' })
+            })
                 .then(function(r) {
                     return r.json().then(function(data) {
-                        return { ok: r.ok, status: r.status, data: data };
+                        return { ok: r.ok, status: r.status, data: data || {} };
                     });
                 })
-                .then(function(res) {
-                    var data = res.data || {};
-                    if (!data.success || res.status === 401) {
-                        var msg = (data.message || (res.status === 401 ? 'Oturum gerekli.' : 'Bilgi alınamadı.')).trim();
+                .catch(function() {
+                    return { ok: false, status: 0, data: {} };
+                });
+
+            var promoReq = fetch(apiUrl('/api/v2/content/promotions'), {
+                credentials: 'same-origin',
+                headers: memberAuthHeaders({ Accept: 'application/json' })
+            })
+                .then(function(r) {
+                    return r.json().then(function(data) {
+                        return { ok: r.ok, status: r.status, data: data || {} };
+                    });
+                })
+                .catch(function() {
+                    return { ok: false, status: 0, data: {} };
+                });
+
+            Promise.all([activeReq, promoReq])
+                .then(function(results) {
+                    var activeRes = results[0] || { data: {} };
+                    var promoRes = results[1] || { data: {} };
+                    var promoData = promoRes.data || {};
+
+                    if (promoRes.status === 401 || promoData.code === 401) {
+                        root.innerHTML = '';
+                        var auth = document.createElement('p');
+                        auth.className = 'profile-active-bonus-error';
+                        auth.textContent = (promoData.message || 'Oturum gerekli.').trim();
+                        root.appendChild(auth);
+                        return;
+                    }
+
+                    if (!promoData.success) {
                         root.innerHTML = '';
                         var err = document.createElement('p');
                         err.className = 'profile-active-bonus-error';
-                        err.textContent = msg;
+                        err.textContent = (promoData.message || 'Bonus bilgisi alınamadı.').trim();
                         root.appendChild(err);
                         return;
                     }
-                    var payload = data.data || {};
-                    var has = !!payload.hasActiveBonus;
-                    var bonus = payload.bonus;
-                    root.innerHTML = '';
-                    if (!has || !bonus || typeof bonus !== 'object') {
-                        var empty = document.createElement('p');
-                        empty.className = 'bonus-casino-empty bonus-spor-empty profile-active-bonus-empty';
-                        empty.textContent = 'Seçilen tür için aktif bonus bulunmuyor.';
-                        root.appendChild(empty);
-                        return;
-                    }
-                    if (!bonusCategoryMatchesPageKind(bonus.category, kind)) {
-                        var wrong = document.createElement('p');
-                        wrong.className = 'bonus-casino-empty bonus-spor-empty profile-active-bonus-empty';
-                        wrong.textContent = 'Seçilen tür için aktif bonus bulunmuyor.';
-                        root.appendChild(wrong);
-                        return;
-                    }
-                    root.appendChild(buildActiveBonusCard(bonus));
+
+                    renderProfileBonusClaimArea(root, kind, activeRes.data || {}, promoData);
                 })
                 .catch(function() {
                     root.innerHTML = '';
