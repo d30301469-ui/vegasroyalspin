@@ -1,5 +1,13 @@
 <?php
 /** Üye API modülü — index.php tarafından include edilir. */
+/** @var string $method */
+/** @var string $route */
+/** @var mixed $payload */
+/** @var callable $memberInput */
+/** @var callable $memberEnvelope */
+/** @var callable $memberJwtOptionalUserId */
+/** @var callable $memberUserById */
+/** @var callable $memberRequireLogin */
 
 if (!class_exists('PromotionMediaGuard', false) && defined('ADMIN_APP_PATH')) {
     $guardFile = rtrim((string) ADMIN_APP_PATH, '/\\') . '/Core/PromotionMediaGuard.php';

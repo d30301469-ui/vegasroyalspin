@@ -1,5 +1,12 @@
 <?php
 /** Üye API modülü — index.php tarafından include edilir. */
+/** @var string $method */
+/** @var string $route */
+/** @var mixed $payload */
+/** @var callable $memberRequireLogin */
+/** @var callable $memberInput */
+/** @var callable $memberEnvelope */
+
 if ($method === 'GET' && $route === 'active_bonus.php') {
     $userId = $memberRequireLogin();
     $pdo = AdminDatabase::pdo();
