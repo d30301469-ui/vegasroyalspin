@@ -1640,9 +1640,15 @@ final class BgamingService
 
     private static function walletPromo(PDO $pdo, array $payload, string $type): array
     {
-        if (!self::featureEnabled($pdo, 'promo_enabled')) {
+        $isFreespinPromo = self::isFreespinPromoPayload($pdo, $payload);
+        if (!$isFreespinPromo && !self::featureEnabled($pdo, 'promo_enabled')) {
             return ['code' => 'PROMO_DISABLED', 'message' => 'Promo is disabled'];
         }
+        if ($isFreespinPromo && !self::featureEnabled($pdo, 'freespins_enabled')) {
+            return ['code' => 'FREESPINS_DISABLED', 'message' => 'Freespins are disabled'];
+        }
+
+        $payload = self::normalizePromoWalletPayload($pdo, $payload);
         $actionId = trim((string) ($payload['event_id'] ?? $payload['action_id'] ?? ''));
         if ($actionId === '') {
             return ['code' => 'INVALID_REQUEST', 'message' => 'event_id is required'];
@@ -1659,9 +1665,15 @@ final class BgamingService
 
     private static function walletPromoRollback(PDO $pdo, array $payload): array
     {
-        if (!self::featureEnabled($pdo, 'promo_enabled')) {
+        $isFreespinPromo = self::isFreespinPromoPayload($pdo, $payload);
+        if (!$isFreespinPromo && !self::featureEnabled($pdo, 'promo_enabled')) {
             return ['code' => 'PROMO_DISABLED', 'message' => 'Promo is disabled'];
         }
+        if ($isFreespinPromo && !self::featureEnabled($pdo, 'freespins_enabled')) {
+            return ['code' => 'FREESPINS_DISABLED', 'message' => 'Freespins are disabled'];
+        }
+
+        $payload = self::normalizePromoWalletPayload($pdo, $payload);
         $eventId = trim((string) ($payload['event_id'] ?? ''));
         $originalEventId = trim((string) ($payload['original_event_id'] ?? ''));
         if ($eventId === '' || $originalEventId === '') {
@@ -1736,6 +1748,59 @@ final class BgamingService
         }
 
         return null;
+    }
+
+    private static function isFreespinPromoPayload(PDO $pdo, array $payload): bool
+    {
+        $issueId = self::extractFreespinIssueId($payload);
+        if ($issueId !== '') {
+            return true;
+        }
+
+        if (isset($payload['freespins']) || isset($payload['issue'])) {
+            return true;
+        }
+
+        $sessionId = trim((string) ($payload['session_id'] ?? ''));
+        if ($sessionId === '') {
+            return false;
+        }
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM bgaming_transactions
+                 WHERE session_id = :session_id AND txn_type IN (\'promo_bet\', \'promo_win\', \'freespins_win\')
+                 LIMIT 1'
+            );
+            $stmt->execute(['session_id' => $sessionId]);
+            return $stmt->fetchColumn() !== false;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private static function normalizePromoWalletPayload(PDO $pdo, array $payload): array
+    {
+        $userId = self::extractWalletUserId($payload);
+        $issueId = self::extractFreespinIssueId($payload);
+        if ($issueId !== '') {
+            $payload['issue_id'] = $issueId;
+        }
+
+        if ($userId <= 0 && $issueId !== '') {
+            $userId = self::resolveFreespinUserId($pdo, $payload, $issueId);
+        }
+        if ($userId > 0) {
+            $payload['user_id'] = $userId;
+        }
+
+        if (trim((string) ($payload['currency'] ?? '')) === '') {
+            $config = self::config($pdo);
+            $payload['currency'] = (string) ($config['currency'] ?? self::DEFAULT_CURRENCY);
+        }
+
+        return $payload;
     }
 
     private static function applyActions(PDO $pdo, array $payload, array $actions, ?string $forcedType): array
