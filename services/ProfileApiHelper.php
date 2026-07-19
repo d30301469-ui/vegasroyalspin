@@ -75,6 +75,14 @@ final class ProfileApiHelper
     {
         unset($username);
 
+        // DB'ye doğrudan erişim izinliyse (split-deploy olmayan/backend host) önce onu dene:
+        // dış (outbound) HTTP + JWT round trip'ine göre çok daha güvenilir — details.php'nin
+        // MemberViewDataService::profileForSession() ile aynı isim/soyisim verisini garanti eder.
+        $direct = self::profileViaDatabase($includeBalance);
+        if ($direct !== []) {
+            return $direct;
+        }
+
         foreach (['/profile/detail', '/profile_detail.php', '/account/profile', '/user/profile'] as $path) {
             $data = self::requestMember('GET', $path);
             if ($data === []) {
@@ -90,6 +98,57 @@ final class ProfileApiHelper
         }
 
         return [];
+    }
+
+    /**
+     * Oturumdaki kullanıcıyı, izin verilen ortamlarda (split-deploy olmayan/local backend host)
+     * doğrudan veritabanından okur — MemberViewDataService::profileForSession() ile aynı yaklaşım.
+     * Böylece first_name/surname gösterimi, dış HTTP+JWT çağrısının başarısız olduğu durumlarda
+     * (ör. backend servisine loopback erişimi olmayan ortamlar) bile doğru kalır.
+     *
+     * @return array<string, mixed>
+     */
+    private static function profileViaDatabase(bool $includeBalance): array
+    {
+        if (!function_exists('frontend_database_allowed') || !frontend_database_allowed()) {
+            return [];
+        }
+
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0 || empty($_SESSION['loggedin'])) {
+            return [];
+        }
+
+        try {
+            if (!defined('ADMIN_APP_PATH')) {
+                define('ADMIN_APP_PATH', (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__)) . '/admin/app');
+            }
+            if (!class_exists('AdminDatabase', false)) {
+                require_once ADMIN_APP_PATH . '/Core/AdminDatabase.php';
+            }
+            $stmt = AdminDatabase::pdo()->prepare('SELECT * FROM users WHERE id = :id LIMIT 1');
+            $stmt->execute(['id' => $userId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Throwable) {
+            return [];
+        }
+
+        if (!is_array($row) || ($row['id'] ?? null) === null) {
+            return [];
+        }
+
+        // Hassas/iç alanları çıktıdan ayıkla (member_api_kernel.php::$memberUserById ile aynı liste) —
+        // bu satır, oturumda önbelleklenip görünüm katmanına aktarıldığı için parola/gizli alan sızıntısını önler.
+        foreach ([
+            'password', 'password_hash', 'pass', 'remember_token', 'verify_token',
+            'reset_token', 'reset_password_token', 'email_verify_token',
+            'two_factor_secret', '2fa_secret', 'totp_secret', 'api_token', 'api_key',
+            'security_pin', 'pin_code',
+        ] as $sensitive) {
+            unset($row[$sensitive]);
+        }
+
+        return self::normalizeUserRow($row, [], $includeBalance);
     }
 
     /**
