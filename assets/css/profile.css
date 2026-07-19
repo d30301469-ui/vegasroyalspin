@@ -4326,6 +4326,7 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
 }
 
 .profile-bonus-claim-btn {
+    align-self: flex-start;
     border: 0;
     border-radius: 8px;
     padding: 0.58rem 0.72rem;
@@ -4359,6 +4360,36 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
 
 .profile-bonus-claim-status.is-error {
     color: #ffb5b5;
+}
+
+.profile-modal__content .bonus-spor-main,
+.profile-modal__content .bonus-casino-main {
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: 0;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.75rem;
+}
+
+.profile-modal__content .bonus-spor-card,
+.profile-modal__content .bonus-casino-card {
+    max-width: none;
+    width: 100%;
+    min-height: 0;
+}
+
+.profile-modal__content .bonus-spor-content.js-profile-active-bonus,
+.profile-modal__content .bonus-casino-content.js-profile-active-bonus {
+    padding: 1rem;
+}
+
+@media (min-width: 1200px) {
+    .profile-bonus-claim-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 900px) {
