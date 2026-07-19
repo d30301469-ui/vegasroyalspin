@@ -3460,15 +3460,14 @@
             ? window.__WITHDRAW_HISTORY_ENDPOINT__.trim()
             : '/api/v2/withdraw-history';
         var tbody = scope.querySelector('#transactionTableBody');
+        var typeFilter = scope.querySelector('#depositHistoryTypeFilter');
         var statusFilter = scope.querySelector('#depositHistoryStatusFilter');
         var applyBtn = scope.querySelector('#depositHistoryApplyBtn');
         var emptyEl = scope.querySelector('#txHistoryEmpty');
         var errEl = scope.querySelector('#txHistoryError');
         var tableWrap = scope.querySelector('#txHistoryTableWrap');
         var pagNav = scope.querySelector('#depositHistoryPagination');
-        var tabDeposit = scope.querySelector('#txHistoryTabDeposit');
-        var tabWithdraw = scope.querySelector('#txHistoryTabWithdraw');
-        if (!tbody || !statusFilter) return;
+        if (!tbody || !statusFilter || !typeFilter) return;
         if (tbody.getAttribute('data-tx-history-bound') === '1') return;
         tbody.setAttribute('data-tx-history-bound', '1');
 
@@ -3482,22 +3481,11 @@
             return state.kind === 'withdraw' ? withdrawEp : depositEp;
         }
 
-        function syncTabUi() {
-            if (tabDeposit) {
-                var a = state.kind === 'deposit';
-                tabDeposit.classList.toggle('is-active', a);
-                tabDeposit.setAttribute('aria-selected', a ? 'true' : 'false');
-            }
-            if (tabWithdraw) {
-                var b = state.kind === 'withdraw';
-                tabWithdraw.classList.toggle('is-active', b);
-                tabWithdraw.setAttribute('aria-selected', b ? 'true' : 'false');
-            }
-        }
-
         function setKind(kind) {
             state.kind = kind === 'withdraw' ? 'withdraw' : 'deposit';
-            syncTabUi();
+            if (typeFilter) {
+                typeFilter.value = state.kind;
+            }
             try {
                 var h = state.kind === 'withdraw' ? '#withdraw' : '#deposit';
                 if (window.history && window.history.replaceState) {
@@ -3676,26 +3664,18 @@
                 });
         }
 
-        function bindTab(btn) {
-            if (!btn) return;
-            btn.addEventListener('click', function() {
-                var k = btn.getAttribute('data-tx-kind');
-                if (!k || (k !== 'deposit' && k !== 'withdraw')) return;
-                if (state.kind === k) return;
-                setKind(k);
-                state.page = 1;
-                load();
-            });
-        }
-        bindTab(tabDeposit);
-        bindTab(tabWithdraw);
-
         var ih = (window.location.hash || '').replace(/^#/, '').toLowerCase();
         if (ih === 'withdraw' || ih === 'cekim') {
             setKind('withdraw');
         } else {
-            syncTabUi();
+            setKind(typeFilter.value || 'deposit');
         }
+
+        typeFilter.addEventListener('change', function() {
+            setKind(typeFilter.value || 'deposit');
+            state.page = 1;
+            load();
+        });
 
         if (applyBtn) applyBtn.addEventListener('click', function() {
             state.page = 1;
@@ -3716,7 +3696,7 @@
             });
             return;
         }
-        if (window.__DEPOSIT_HISTORY_API__ || document.getElementById('txHistoryTabWithdraw') || document.getElementById('txHistoryTabDeposit')) {
+        if (window.__DEPOSIT_HISTORY_API__ || document.getElementById('depositHistoryTypeFilter')) {
             initDepositHistoryApi(document);
             return;
         }
