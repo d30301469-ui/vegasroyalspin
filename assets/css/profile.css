@@ -932,9 +932,10 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     to { transform: rotate(360deg); }
 }
 .profile-modal__content {
+    --profile-modal-sidebar-width: calc(275px * 1.21 * 0.9);
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
     background: #060d43;
     /* Fetch ile gelen parçada .centerWrap olmasa bile sidebar + main yan yana */
     display: flex;
@@ -959,8 +960,10 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
 .profile-modal__content .sidebarMain.playersidebarMain.profile-sidebar-v2 {
     position: relative;
     top: 0;
-    flex: 0 0 calc(275px * 1.21 * 0.9);
-    width: calc(275px * 1.21 * 0.9);
+    flex: 0 0 var(--profile-modal-sidebar-width);
+    width: var(--profile-modal-sidebar-width);
+    min-width: var(--profile-modal-sidebar-width);
+    max-width: var(--profile-modal-sidebar-width);
     height: auto;
     min-height: 0;
     max-height: none;
@@ -974,7 +977,9 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
 }
 /* Sağ kolon: üst şerit (başlık + X) sabit; kaydırma yalnızca .profile-section-body içinde */
 .profile-modal__content .profile-main-content {
-    flex: 1;
+    flex: 1 1 auto;
+    width: calc(100% - var(--profile-modal-sidebar-width));
+    max-width: calc(100% - var(--profile-modal-sidebar-width));
     min-width: 0;
     min-height: 0;
     margin: 0;
@@ -1014,6 +1019,23 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+/* Modal parçası centerWrap olmadan gelirse de kolon ayrımı bozulmasın. */
+.profile-modal__content > .sidebarMain.playersidebarMain.profile-sidebar-v2 {
+    flex: 0 0 var(--profile-modal-sidebar-width);
+    width: var(--profile-modal-sidebar-width);
+    min-width: var(--profile-modal-sidebar-width);
+    max-width: var(--profile-modal-sidebar-width);
+}
+.profile-modal__content > .profile-main-content,
+.profile-modal__content > main#profilePlayerMain,
+.profile-modal__content > .container,
+.profile-modal__content > .container-fluid {
+    flex: 1 1 auto;
+    width: calc(100% - var(--profile-modal-sidebar-width));
+    max-width: calc(100% - var(--profile-modal-sidebar-width));
+    min-width: 0;
 }
 
 @media (min-width: 992px) and (max-height: 760px) {
@@ -2543,6 +2565,12 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     border: none;
     border-radius: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.profile-modal__content .personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .personal-details-header,
+.profile-modal__content .personal-details-page--messages-sent .personal-details-header,
+.profile-modal__content .personal-details-page--messages-new .personal-details-header {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
 }
 .personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .profile-section-body {
     padding: 0.35rem 0 0.85rem;
@@ -4532,20 +4560,20 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
 }
 
 /* ═══ Para yatır/çek (Vega) — eski _profile-payment-vega-style.inc.php; :root yerine .vega-app, .profile-bilgi-panel ═══ */
-/* Para yatır / çekim — MaltaBet referans mor tema */
+/* Para yatır / çekim — mobil hesap için koyu grafit + amber tema */
     .vega-app, .profile-bilgi-panel {
-        --bg: #1a1124;
-        --panel: #231830;
-        --panel-dark: #2a1a38;
+        --bg: #12161f;
+        --panel: #1a2130;
+        --panel-dark: #1f2838;
         --text: #ffffff;
-        --muted: #b8aed0;
-        --accent: #c76bff;
-        --accent-glow: rgba(200, 120, 255, 0.55);
-        --primary: #9d4edd;
-        --secondary: #FCAC00;
-        --hover-color: #b565ff;
-        --btn: #2a1f42;
-        --neon-border: rgba(186, 104, 255, 0.65);
+        --muted: #9da8bc;
+        --accent: #f0b429;
+        --accent-glow: rgba(240, 180, 41, 0.35);
+        --primary: #2f3b52;
+        --secondary: #f0b429;
+        --hover-color: #ffd166;
+        --btn: #243048;
+        --neon-border: rgba(240, 180, 41, 0.35);
     }
     .vega-app {
         max-width: 100%;
@@ -4566,9 +4594,9 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         overflow: visible;
     }
     .personal-details-page--withdraw-only .vega-app--in-profile-shell {
-        --bg: #1a0b2e;
-        --panel: #241036;
-        --panel-dark: #1e0d2e;
+        --bg: #101720;
+        --panel: #1b2433;
+        --panel-dark: #1f2838;
     }
     .vega-header {
         display: flex;
@@ -4647,9 +4675,9 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         padding: 0.85rem 1rem;
         flex-shrink: 0;
         border-radius: 10px;
-        background: linear-gradient(90deg, rgba(45, 25, 65, 0.95) 0%, rgba(75, 30, 85, 0.75) 100%);
-        border: 1px solid rgba(180, 100, 255, 0.35);
-        box-shadow: 0 0 20px rgba(100, 40, 140, 0.25);
+        background: linear-gradient(90deg, rgba(26, 34, 50, 0.95) 0%, rgba(32, 42, 62, 0.85) 100%);
+        border: 1px solid rgba(240, 180, 41, 0.28);
+        box-shadow: 0 0 20px rgba(15, 20, 32, 0.35);
     }
     .deposit-promo-brand {
         display: flex;
@@ -4664,7 +4692,7 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         color: #fff;
         text-transform: uppercase;
         white-space: nowrap;
-        text-shadow: 0 0 18px rgba(200, 120, 255, 0.45);
+        text-shadow: 0 0 14px rgba(240, 180, 41, 0.25);
     }
     .deposit-promo-copy { flex: 1; min-width: 200px; }
     .deposit-promo-line {
@@ -4681,7 +4709,7 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.03em;
-        color: #ff7ab8;
+        color: #ffc36b;
         text-transform: uppercase;
         line-height: 1.4;
     }
@@ -4701,13 +4729,13 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         -webkit-overflow-scrolling: touch;
         scroll-snap-type: x proximity;
         scrollbar-width: thin;
-        scrollbar-color: rgba(186, 104, 255, 0.45) rgba(0, 0, 0, 0.2);
+        scrollbar-color: rgba(240, 180, 41, 0.45) rgba(0, 0, 0, 0.2);
     }
     .deposit-tabs::-webkit-scrollbar {
         height: 5px;
     }
     .deposit-tabs::-webkit-scrollbar-thumb {
-        background: rgba(186, 104, 255, 0.5);
+        background: rgba(240, 180, 41, 0.5);
         border-radius: 999px;
     }
     .deposit-tabs::-webkit-scrollbar-track {
@@ -4719,12 +4747,11 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         scroll-snap-align: start;
         padding: 0.55rem 0.95rem;
         border-radius: 12px;
-        border: 1px solid rgba(186, 104, 255, 0.75);
-        background: rgba(22, 14, 34, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(20, 27, 39, 0.96);
         box-shadow:
-            0 0 0 1px rgba(120, 60, 180, 0.15),
-            0 0 14px rgba(160, 80, 255, 0.28),
-            0 0 28px rgba(120, 40, 160, 0.12);
+            0 0 0 1px rgba(255, 255, 255, 0.06),
+            0 8px 16px rgba(0, 0, 0, 0.22);
         color: #fff;
         font-size: 0.65rem;
         font-weight: 700;
@@ -4756,21 +4783,19 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         text-align: center;
     }
     .deposit-tab:hover {
-        border-color: rgba(230, 170, 255, 0.95);
+        border-color: rgba(240, 180, 41, 0.75);
         color: #fff;
         box-shadow:
-            0 0 0 1px rgba(200, 120, 255, 0.35),
-            0 0 20px rgba(200, 120, 255, 0.42),
-            0 0 36px rgba(160, 80, 255, 0.2);
+            0 0 0 1px rgba(240, 180, 41, 0.24),
+            0 10px 18px rgba(0, 0, 0, 0.28);
     }
     .deposit-tab.active {
-        background: linear-gradient(165deg, rgba(72, 38, 98, 0.98) 0%, rgba(42, 24, 62, 0.99) 100%);
-        border-color: rgba(240, 190, 255, 0.95);
+        background: linear-gradient(165deg, rgba(46, 56, 78, 0.98) 0%, rgba(30, 38, 54, 0.99) 100%);
+        border-color: rgba(240, 180, 41, 0.92);
         color: #fff;
         box-shadow:
-            0 0 0 1px rgba(255, 200, 255, 0.2),
-            0 0 22px rgba(210, 130, 255, 0.55),
-            0 0 40px rgba(160, 80, 200, 0.25),
+            0 0 0 1px rgba(240, 180, 41, 0.2),
+            0 0 18px rgba(240, 180, 41, 0.2),
             inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     .deposit-method-select-wrap,
@@ -4903,12 +4928,11 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         scroll-snap-align: start;
         padding: 0.55rem 0.95rem;
         border-radius: 12px;
-        border: 1px solid rgba(186, 104, 255, 0.75);
-        background: rgba(22, 14, 34, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(20, 27, 39, 0.96);
         box-shadow:
-            0 0 0 1px rgba(120, 60, 180, 0.15),
-            0 0 14px rgba(160, 80, 255, 0.28),
-            0 0 28px rgba(120, 40, 160, 0.12);
+            0 0 0 1px rgba(255, 255, 255, 0.06),
+            0 8px 16px rgba(0, 0, 0, 0.22);
         color: #fff;
         font-size: 0.65rem;
         font-weight: 700;
@@ -4928,29 +4952,27 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         flex-shrink: 0;
     }
     .withdraw-tabs.deposit-tabs .withdraw-tab.deposit-tab:hover {
-        border-color: rgba(230, 170, 255, 0.95);
+        border-color: rgba(240, 180, 41, 0.75);
         color: #fff;
         box-shadow:
-            0 0 0 1px rgba(200, 120, 255, 0.35),
-            0 0 20px rgba(200, 120, 255, 0.42),
-            0 0 36px rgba(160, 80, 255, 0.2);
+            0 0 0 1px rgba(240, 180, 41, 0.24),
+            0 10px 18px rgba(0, 0, 0, 0.28);
     }
     .withdraw-tabs.deposit-tabs .withdraw-tab.deposit-tab.active {
-        background: linear-gradient(165deg, rgba(72, 38, 98, 0.98) 0%, rgba(42, 24, 62, 0.99) 100%);
-        border-color: rgba(240, 190, 255, 0.95);
+        background: linear-gradient(165deg, rgba(46, 56, 78, 0.98) 0%, rgba(30, 38, 54, 0.99) 100%);
+        border-color: rgba(240, 180, 41, 0.92);
         color: #fff;
         box-shadow:
-            0 0 0 1px rgba(255, 200, 255, 0.2),
-            0 0 22px rgba(210, 130, 255, 0.55),
-            0 0 40px rgba(160, 80, 200, 0.25),
+            0 0 0 1px rgba(240, 180, 41, 0.2),
+            0 0 18px rgba(240, 180, 41, 0.2),
             inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     .personal-details-page--withdraw-only .vega-app:not(.vega-app--in-profile-shell) {
-        --bg: #1a0b2e;
-        --panel: #241036;
-        --panel-dark: #1e0d2e;
+        --bg: #101720;
+        --panel: #1b2433;
+        --panel-dark: #1f2838;
         background: var(--bg);
-        border-color: rgba(94, 42, 140, 0.45);
+        border-color: rgba(240, 180, 41, 0.3);
     }
 
     /* BİLGİ — personal-details-card içinde, vega-app ile aynı mor tema çerçevesi */

@@ -119,7 +119,7 @@ $loyaltyPointsHref = '/profile/sadakat-puanlari' . (!empty($profile_modal) ? '?m
                 <ul class="accordion-sub">
                     <li><a class="<?php echo $active_tab === 'deposit-withdraw' ? 'active' : ''; ?>" href="<?= htmlspecialchars($depositWithDrawDepositHref) ?>">PARA YATIR</a></li>
                     <li><a class="<?php echo $active_tab === 'withdraw' ? 'active' : ''; ?>" href="<?= htmlspecialchars($depositWithDrawWithdrawHref) ?>">ÇEKİM</a></li>
-                    <li><a class="<?php echo $active_tab === 'deposit-withdraw-history' ? 'active' : ''; ?>" href="<?= htmlspecialchars($depositWithdrawHistoryHref) ?>">YATIRIM GEÇMİŞİ</a></li>
+                    <li><a class="<?php echo $active_tab === 'deposit-withdraw-history' ? 'active' : ''; ?>" href="<?= htmlspecialchars($depositWithdrawHistoryHref) ?>">İŞLEM GEÇMİŞİ</a></li>
                     <li><a class="<?php echo in_array($active_tab, ['deposit-bilgi', 'withdraw-bilgi'], true) ? 'active' : ''; ?>" href="<?= htmlspecialchars($depositInfoHref) ?>">BİLGİ</a></li>
                     <li><a class="<?php echo $active_tab === 'withdrawal-status' ? 'active' : ''; ?>" href="<?= htmlspecialchars($withdrawalStatusHref) ?>">PARA ÇEKME DURUMU</a></li>
                 </ul>

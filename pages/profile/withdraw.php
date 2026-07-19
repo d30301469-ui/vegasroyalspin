@@ -35,7 +35,6 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
             <button type="button" class="withdraw-tab deposit-tab active" role="tab" aria-selected="true" data-wcategory="all"><i class="fa-solid fa-grip" aria-hidden="true"></i> TÜMÜ</button>
             <button type="button" class="withdraw-tab deposit-tab" role="tab" aria-selected="false" data-wcategory="crypto"><i class="fa-brands fa-bitcoin" aria-hidden="true"></i> KRİPTO</button>
             <button type="button" class="withdraw-tab deposit-tab" role="tab" aria-selected="false" data-wcategory="bank"><i class="fa-solid fa-right-left" aria-hidden="true"></i> BANKA TRANSFERİ</button>
-            <button type="button" class="withdraw-tab deposit-tab" role="tab" aria-selected="false" data-wcategory="papara"><span class="deposit-tab-icon-p" aria-hidden="true">P</span> PAPARA</button>
         </div>
         <div class="withdraw-method-select-wrap form-group">
             <div class="deposit-method-grid-label" id="withdrawMethodGridLabel">Ödeme yöntemi</div>
