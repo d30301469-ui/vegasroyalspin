@@ -158,7 +158,7 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                                         <a class="pl-link" href="/profile/bet-history" data-nav-mode="modal" role="menuitem">
                                             <i class="pl-link-icon bc-i-bet-history" aria-hidden="true"></i> BAHİS GEÇMİŞİ
                                         </a>
-                                        <a class="pl-link" href="/promotions" data-nav-mode="page" role="menuitem">
+                                        <a class="pl-link" href="/profile/bonus-spor" data-nav-mode="modal" role="menuitem">
                                             <i class="pl-link-icon bc-i-promotions-3" aria-hidden="true"></i> BONUSLAR
                                         </a>
                                         <a class="pl-link" href="/profile/messages" data-nav-mode="modal" role="menuitem">
