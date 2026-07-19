@@ -14,7 +14,15 @@ $panelInitial = strtoupper(mb_substr($panelUsername !== '' ? $panelUsername : 'U
 
 $panelBadge = isset($headerLoyaltyBadge) && is_array($headerLoyaltyBadge) ? $headerLoyaltyBadge : [];
 $panelLoyaltyName = (string) ($panelBadge['name'] ?? 'Bronze');
-$panelLoyaltyIcon = (string) ($panelBadge['icon_url'] ?? '/assets/images/loyalty/badges/bronze.png');
+$panelLoyaltyCode = strtolower(preg_replace('/[^a-z0-9_-]+/i', '', (string) ($panelBadge['code'] ?? $panelLoyaltyName)) ?: 'bronze');
+$panelLoyaltyIconMap = [
+  'bronze' => '/assets/images/loyalty/badges/bronze.png',
+  'silver' => '/assets/images/loyalty/badges/silver.svg',
+  'gold' => '/assets/images/loyalty/badges/gold.svg',
+  'platinum' => '/assets/images/loyalty/badges/platinum.svg',
+  'diamond' => '/assets/images/loyalty/badges/diamond.svg',
+];
+$panelLoyaltyIcon = $panelLoyaltyIconMap[$panelLoyaltyCode] ?? '/assets/images/loyalty/badges/bronze.png';
 $panelInitialLower = mb_strtolower($panelInitial);
 $panelBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
 $panelSettings = isset($ayar) && is_array($ayar) ? $ayar : [];
