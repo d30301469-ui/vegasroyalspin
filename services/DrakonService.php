@@ -110,6 +110,7 @@ final class DrakonService
                 provider_name VARCHAR(100) NULL,
                 image_url     VARCHAR(500) NULL,
                 txn_type      ENUM('bet','win','refund') NOT NULL,
+                wallet_source ENUM('balance','bonus_balance') NOT NULL DEFAULT 'balance',
                 bet_amount    DECIMAL(14,2) NOT NULL DEFAULT 0.00,
                 win_amount    DECIMAL(14,2) NOT NULL DEFAULT 0.00,
                 amount        DECIMAL(14,2) NOT NULL DEFAULT 0.00,
@@ -189,6 +190,31 @@ final class DrakonService
             $done = true;
         } catch (Throwable $e) {
             error_log('[DrakonService] ensureConfigColumns failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Lazily adds wallet_source to drakon_transactions on existing installs, so
+     * bet/win/refund can record which users column (balance vs bonus_balance)
+     * actually funded the round. Safe in production — only adds a missing column.
+     */
+    private static function ensureTransactionColumns(PDO $pdo): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        try {
+            $cols = self::tableColumns($pdo, 'drakon_transactions');
+            if ($cols === []) {
+                return;
+            }
+            if (!in_array('wallet_source', $cols, true)) {
+                $pdo->exec("ALTER TABLE drakon_transactions ADD COLUMN wallet_source ENUM('balance','bonus_balance') NOT NULL DEFAULT 'balance' AFTER txn_type");
+            }
+            $done = true;
+        } catch (Throwable $e) {
+            error_log('[DrakonService] ensureTransactionColumns failed: ' . $e->getMessage());
         }
     }
 
@@ -1265,18 +1291,19 @@ final class DrakonService
             return ['__http_status' => 200, 'status' => 0, 'error' => 'INVALID_USER'];
         }
 
-        $stmt = $pdo->prepare("SELECT id, balance FROM users WHERE id = :id AND banned = 0 LIMIT 1");
+        $stmt = $pdo->prepare("SELECT id, balance, bonus_balance FROM users WHERE id = :id AND banned = 0 LIMIT 1");
         $stmt->execute([':id' => (int) $userId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!is_array($user)) {
             return ['__http_status' => 200, 'status' => 0, 'error' => 'INVALID_USER'];
         }
 
+        $walletColumn = WageringService::walletSourceColumn($pdo, (int) $user['id']);
         return [
             '__http_status' => 200,
             '__user_id'     => (int) $user['id'],
             'status'        => 1,
-            'balance'       => round((float) ($user['balance'] ?? 0), 2),
+            'balance'       => round((float) ($user[$walletColumn] ?? 0), 2),
         ];
     }
 
@@ -1296,11 +1323,14 @@ final class DrakonService
             return ['__http_status' => 200, 'status' => false, 'error' => 'INVALID_TRANSACTION'];
         }
 
+        self::ensureTransactionColumns($pdo);
+        $walletColumn = WageringService::walletSourceColumn($pdo, $userId);
+
         // Idempotency check
         $existStmt = $pdo->prepare("SELECT id FROM drakon_transactions WHERE transaction_id = :txn LIMIT 1");
         $existStmt->execute([':txn' => $txnId]);
         if ($existStmt->fetch()) {
-            $balStmt = $pdo->prepare("SELECT balance FROM users WHERE id = :id LIMIT 1");
+            $balStmt = $pdo->prepare("SELECT {$walletColumn} FROM users WHERE id = :id LIMIT 1");
             $balStmt->execute([':id' => $userId]);
             return ['__http_status' => 200, '__user_id' => $userId, '__txn_id' => $txnId,
                     'status' => true, 'balance' => round((float) ($balStmt->fetchColumn() ?: 0), 2)];
@@ -1309,7 +1339,7 @@ final class DrakonService
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare(
-                "SELECT id, username, balance FROM users WHERE id = :id AND banned = 0 LIMIT 1 FOR UPDATE"
+                "SELECT id, username, balance, bonus_balance FROM users WHERE id = :id AND banned = 0 LIMIT 1 FOR UPDATE"
             );
             $stmt->execute([':id' => $userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1318,7 +1348,7 @@ final class DrakonService
                 return ['__http_status' => 200, '__txn_id' => $txnId, 'status' => false, 'error' => 'INVALID_USER'];
             }
 
-            $beforeBalance = round((float) $user['balance'], 2);
+            $beforeBalance = round((float) ($user[$walletColumn] ?? 0), 2);
             if ($beforeBalance < $bet) {
                 $pdo->rollBack();
                 return ['__http_status' => 200, '__user_id' => $userId, '__txn_id' => $txnId,
@@ -1326,7 +1356,7 @@ final class DrakonService
             }
 
             $afterBalance = round($beforeBalance - $bet, 2);
-            $pdo->prepare("UPDATE users SET balance = :bal WHERE id = :id")
+            $pdo->prepare("UPDATE users SET {$walletColumn} = :bal WHERE id = :id")
                 ->execute([':bal' => $afterBalance, ':id' => $userId]);
             WageringService::registerBet($pdo, $userId, $bet);
 
@@ -1335,10 +1365,10 @@ final class DrakonService
                 "INSERT INTO drakon_transactions
                     (user_id, username, user_full_name, transaction_id, round_id, session_id,
                      game_id, game_name, provider_name, image_url,
-                     txn_type, bet_amount, win_amount, amount, before_balance, after_balance, status)
+                     txn_type, wallet_source, bet_amount, win_amount, amount, before_balance, after_balance, status)
                  VALUES (:uid, :uname, :ufull, :txn, :round, :sess,
                          :gid, :gname, :pname, :img,
-                         'bet', :bet, 0, :bet2, :before, :after, 'ok')"
+                         'bet', :wallet_source, :bet, 0, :bet2, :before, :after, 'ok')"
             )->execute([
                 ':uid'   => $userId,
                 ':uname' => (string) ($user['username'] ?? ''),
@@ -1350,6 +1380,7 @@ final class DrakonService
                 ':gname' => (string) ($gameRow['game_name'] ?? $gameId),
                 ':pname' => (string) ($gameRow['provider_name'] ?? ''),
                 ':img'   => (string) ($gameRow['banner'] ?? ''),
+                ':wallet_source' => $walletColumn,
                 ':bet'   => $bet,
                 ':bet2'  => $bet,
                 ':before'=> $beforeBalance,
@@ -1365,7 +1396,7 @@ final class DrakonService
             }
             // Race condition: duplicate key → already processed
             if (str_contains($e->getMessage(), '1062') || str_contains($e->getMessage(), 'Duplicate')) {
-                $balStmt = $pdo->prepare("SELECT balance FROM users WHERE id = :id LIMIT 1");
+                $balStmt = $pdo->prepare("SELECT {$walletColumn} FROM users WHERE id = :id LIMIT 1");
                 $balStmt->execute([':id' => $userId]);
                 return ['__http_status' => 200, '__user_id' => $userId, '__txn_id' => $txnId,
                         'status' => true, 'balance' => round((float) ($balStmt->fetchColumn() ?: 0), 2)];
@@ -1391,11 +1422,14 @@ final class DrakonService
             return ['__http_status' => 200, 'status' => false, 'error' => 'INVALID_TRANSACTION'];
         }
 
+        self::ensureTransactionColumns($pdo);
+        $walletColumn = WageringService::walletSourceColumn($pdo, $userId);
+
         // Idempotency
         $existStmt = $pdo->prepare("SELECT id FROM drakon_transactions WHERE transaction_id = :txn LIMIT 1");
         $existStmt->execute([':txn' => $txnId]);
         if ($existStmt->fetch()) {
-            $balStmt = $pdo->prepare("SELECT balance FROM users WHERE id = :id LIMIT 1");
+            $balStmt = $pdo->prepare("SELECT {$walletColumn} FROM users WHERE id = :id LIMIT 1");
             $balStmt->execute([':id' => $userId]);
             return ['__http_status' => 200, '__user_id' => $userId, '__txn_id' => $txnId,
                     'status' => true, 'balance' => round((float) ($balStmt->fetchColumn() ?: 0), 2)];
@@ -1404,7 +1438,7 @@ final class DrakonService
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare(
-                "SELECT id, username, balance FROM users WHERE id = :id AND banned = 0 LIMIT 1 FOR UPDATE"
+                "SELECT id, username, balance, bonus_balance FROM users WHERE id = :id AND banned = 0 LIMIT 1 FOR UPDATE"
             );
             $stmt->execute([':id' => $userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1417,10 +1451,10 @@ final class DrakonService
                 return ['__http_status' => 200, '__txn_id' => $txnId, 'status' => false, 'error' => 'NO_AMOUNT'];
             }
 
-            $beforeBalance = round((float) $user['balance'], 2);
+            $beforeBalance = round((float) ($user[$walletColumn] ?? 0), 2);
             $afterBalance  = round($beforeBalance + $win, 2);
 
-            $pdo->prepare("UPDATE users SET balance = :bal WHERE id = :id")
+            $pdo->prepare("UPDATE users SET {$walletColumn} = :bal WHERE id = :id")
                 ->execute([':bal' => $afterBalance, ':id' => $userId]);
 
             $gameRow = self::findGameRow($pdo, $gameId);
@@ -1428,10 +1462,10 @@ final class DrakonService
                 "INSERT INTO drakon_transactions
                     (user_id, username, user_full_name, transaction_id, round_id, session_id,
                      game_id, game_name, provider_name, image_url,
-                     txn_type, bet_amount, win_amount, amount, before_balance, after_balance, status)
+                     txn_type, wallet_source, bet_amount, win_amount, amount, before_balance, after_balance, status)
                  VALUES (:uid, :uname, :ufull, :txn, :round, :sess,
                          :gid, :gname, :pname, :img,
-                         'win', :bet, :win, :win2, :before, :after, 'ok')"
+                         'win', :wallet_source, :bet, :win, :win2, :before, :after, 'ok')"
             )->execute([
                 ':uid'   => $userId,
                 ':uname' => (string) ($user['username'] ?? ''),
@@ -1443,6 +1477,7 @@ final class DrakonService
                 ':gname' => (string) ($gameRow['game_name'] ?? $gameId),
                 ':pname' => (string) ($gameRow['provider_name'] ?? ''),
                 ':img'   => (string) ($gameRow['banner'] ?? ''),
+                ':wallet_source' => $walletColumn,
                 ':bet'   => $bet,
                 ':win'   => $win,
                 ':win2'  => $win,
@@ -1458,7 +1493,7 @@ final class DrakonService
                 $pdo->rollBack();
             }
             if (str_contains($e->getMessage(), '1062') || str_contains($e->getMessage(), 'Duplicate')) {
-                $balStmt = $pdo->prepare("SELECT balance FROM users WHERE id = :id LIMIT 1");
+                $balStmt = $pdo->prepare("SELECT {$walletColumn} FROM users WHERE id = :id LIMIT 1");
                 $balStmt->execute([':id' => $userId]);
                 return ['__http_status' => 200, '__user_id' => $userId, '__txn_id' => $txnId,
                         'status' => true, 'balance' => round((float) ($balStmt->fetchColumn() ?: 0), 2)];
@@ -1483,30 +1518,38 @@ final class DrakonService
             return ['__http_status' => 200, '__txn_id' => $txnId, 'status' => false, 'error' => 'NO_AMOUNT'];
         }
 
-        // Idempotency: refund transaction_id already exists?
-        $existStmt = $pdo->prepare("SELECT id FROM drakon_transactions WHERE transaction_id = :txn LIMIT 1");
-        $existStmt->execute([':txn' => $txnId]);
-        if ($existStmt->fetch()) {
-            $balStmt = $pdo->prepare("SELECT balance FROM users WHERE id = :id LIMIT 1");
-            $balStmt->execute([':id' => $userId]);
-            return ['__http_status' => 200, '__user_id' => $userId, '__txn_id' => $txnId,
-                    'status' => true, 'balance' => round((float) ($balStmt->fetchColumn() ?: 0), 2)];
-        }
+        self::ensureTransactionColumns($pdo);
 
-        // Determine direction from original transaction type for this round
+        // Determine direction from original transaction type for this round, and
+        // reverse against whichever wallet actually funded that original bet/win
+        // (not necessarily the user's CURRENT wallet mode, in case it changed).
         $origStmt = $pdo->prepare(
-            "SELECT txn_type FROM drakon_transactions
+            "SELECT txn_type, wallet_source FROM drakon_transactions
              WHERE round_id = :round AND user_id = :uid AND txn_type IN ('bet','win')
              ORDER BY id ASC LIMIT 1"
         );
         $origStmt->execute([':round' => $roundId, ':uid' => $userId]);
         $origRow  = $origStmt->fetch(PDO::FETCH_ASSOC);
         $origType = is_array($origRow) ? (string) ($origRow['txn_type'] ?? 'bet') : 'bet';
+        $origWalletSource = is_array($origRow) ? (string) ($origRow['wallet_source'] ?? '') : '';
+        $walletColumn = in_array($origWalletSource, ['balance', 'bonus_balance'], true)
+            ? $origWalletSource
+            : WageringService::walletSourceColumn($pdo, $userId);
+
+        // Idempotency: refund transaction_id already exists?
+        $existStmt = $pdo->prepare("SELECT id FROM drakon_transactions WHERE transaction_id = :txn LIMIT 1");
+        $existStmt->execute([':txn' => $txnId]);
+        if ($existStmt->fetch()) {
+            $balStmt = $pdo->prepare("SELECT {$walletColumn} FROM users WHERE id = :id LIMIT 1");
+            $balStmt->execute([':id' => $userId]);
+            return ['__http_status' => 200, '__user_id' => $userId, '__txn_id' => $txnId,
+                    'status' => true, 'balance' => round((float) ($balStmt->fetchColumn() ?: 0), 2)];
+        }
 
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare(
-                "SELECT id, username, balance FROM users WHERE id = :id AND banned = 0 LIMIT 1 FOR UPDATE"
+                "SELECT id, username, balance, bonus_balance FROM users WHERE id = :id AND banned = 0 LIMIT 1 FOR UPDATE"
             );
             $stmt->execute([':id' => $userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1515,13 +1558,13 @@ final class DrakonService
                 return ['__http_status' => 200, '__txn_id' => $txnId, 'status' => false, 'error' => 'INVALID_USER'];
             }
 
-            $beforeBalance = round((float) $user['balance'], 2);
+            $beforeBalance = round((float) ($user[$walletColumn] ?? 0), 2);
             // Bet refund → add back; Win refund → subtract
             $afterBalance = $origType === 'win'
                 ? round($beforeBalance - $amount, 2)
                 : round($beforeBalance + $amount, 2);
 
-            $pdo->prepare("UPDATE users SET balance = :bal WHERE id = :id")
+            $pdo->prepare("UPDATE users SET {$walletColumn} = :bal WHERE id = :id")
                 ->execute([':bal' => $afterBalance, ':id' => $userId]);
             if ($origType === 'bet') {
                 WageringService::reverseBet($pdo, $userId, $amount);
@@ -1532,10 +1575,10 @@ final class DrakonService
                 "INSERT INTO drakon_transactions
                     (user_id, username, user_full_name, transaction_id, round_id, session_id,
                      game_id, game_name, provider_name, image_url,
-                     txn_type, bet_amount, win_amount, amount, before_balance, after_balance, status)
+                     txn_type, wallet_source, bet_amount, win_amount, amount, before_balance, after_balance, status)
                  VALUES (:uid, :uname, :ufull, :txn, :round, :sess,
                          :gid, :gname, :pname, :img,
-                         'refund', 0, 0, :amt, :before, :after, 'ok')"
+                         'refund', :wallet_source, 0, 0, :amt, :before, :after, 'ok')"
             )->execute([
                 ':uid'   => $userId,
                 ':uname' => (string) ($user['username'] ?? ''),
@@ -1547,6 +1590,7 @@ final class DrakonService
                 ':gname' => (string) ($gameRow['game_name'] ?? $gameId),
                 ':pname' => (string) ($gameRow['provider_name'] ?? ''),
                 ':img'   => (string) ($gameRow['banner'] ?? ''),
+                ':wallet_source' => $walletColumn,
                 ':amt'   => $amount,
                 ':before'=> $beforeBalance,
                 ':after' => $afterBalance,
@@ -1560,7 +1604,7 @@ final class DrakonService
                 $pdo->rollBack();
             }
             if (str_contains($e->getMessage(), '1062') || str_contains($e->getMessage(), 'Duplicate')) {
-                $balStmt = $pdo->prepare("SELECT balance FROM users WHERE id = :id LIMIT 1");
+                $balStmt = $pdo->prepare("SELECT {$walletColumn} FROM users WHERE id = :id LIMIT 1");
                 $balStmt->execute([':id' => $userId]);
                 return ['__http_status' => 200, '__user_id' => $userId, '__txn_id' => $txnId,
                         'status' => true, 'balance' => round((float) ($balStmt->fetchColumn() ?: 0), 2)];

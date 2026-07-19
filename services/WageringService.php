@@ -199,6 +199,18 @@ final class WageringService
         }
     }
 
+    /**
+     * Sağlayıcı entegrasyonlarının (BgamingService/DrakonService) gerçek
+     * bahis/kazanç tutarını hangi `users` kolonundan okuyup/yazacağını
+     * belirler. 'bonus' modundaysa oynanış `bonus_balance` üzerinden yürür
+     * (kullanıcı oyunu bonus bakiyesiyle başlatmayı seçti); aksi halde
+     * `balance` (ana bakiye).
+     */
+    public static function walletSourceColumn(PDO $pdo, int $userId): string
+    {
+        return self::activeWalletMode($pdo, $userId) === 'bonus' ? 'bonus_balance' : 'balance';
+    }
+
     private static function applyBonusDelta(PDO $pdo, int $userId, float $delta): void
     {
         try {
@@ -208,6 +220,7 @@ final class WageringService
             );
             $stmt->execute(['user_id' => $userId]);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $anyStillActive = false;
             foreach ($rows as $row) {
                 $bonusId = (int) ($row['id'] ?? 0);
                 if ($bonusId <= 0) {
@@ -216,6 +229,9 @@ final class WageringService
                 $target = round((float) ($row['wagering_target'] ?? 0), 2);
                 $newTotal = max(0.0, round((float) ($row['total_bet_amount'] ?? 0) + $delta, 2));
                 $isComplete = $target > 0 && $newTotal >= $target;
+                if (!$isComplete) {
+                    $anyStillActive = true;
+                }
 
                 $pdo->prepare(
                     "UPDATE user_active_bonuses
@@ -233,24 +249,25 @@ final class WageringService
                     'is_complete_zero' => $isComplete ? 1 : 0,
                     'id' => $bonusId,
                 ]);
+            }
 
-                // Çevrim şartı tamamlanınca, bonusun kalan tutarı bonus_balance'tan
-                // gerçek (çekilebilir) balance'a aktarılır.
-                if ($isComplete) {
-                    $transferAmount = round((float) ($row['current_bonus_balance'] ?? 0), 2);
-                    if ($transferAmount > 0) {
-                        $pdo->prepare(
-                            'UPDATE users
-                             SET balance = balance + :amount,
-                                 bonus_balance = GREATEST(0, bonus_balance - :amount2)
-                             WHERE id = :id'
-                        )->execute([
-                            'amount' => number_format($transferAmount, 2, '.', ''),
-                            'amount2' => number_format($transferAmount, 2, '.', ''),
-                            'id' => $userId,
-                        ]);
-                    }
-                }
+            // Gerçek oynanış artık (mod='bonus' iken) doğrudan bonus_balance
+            // üzerinden yürüdüğü için (bkz. walletSourceColumn + BgamingService/
+            // DrakonService applyActions/webhookBet), tamamlanma anındaki tutar
+            // artık kazanç/kayıplarla değişmiş olabilir — bu yüzden STATİK
+            // current_bonus_balance yerine CANLI bonus_balance aktarılır.
+            // Kullanıcının TÜM aktif bonusları tamamlandıysa (bu bonus da dahil),
+            // kalan bonus_balance çekilebilir balance'a taşınır, bonus_balance
+            // sıfırlanır ve kullanıcı otomatik ana bakiye moduna döner (artık
+            // işlenecek aktif bir bonus hedefi yok).
+            if ($rows !== [] && !$anyStillActive) {
+                $pdo->prepare(
+                    'UPDATE users
+                     SET balance = balance + bonus_balance,
+                         bonus_balance = 0,
+                         active_wallet_mode = "main"
+                     WHERE id = :id'
+                )->execute(['id' => $userId]);
             }
         } catch (Throwable $e) {
             error_log('[WageringService] applyBonusDelta failed: ' . $e->getMessage());
