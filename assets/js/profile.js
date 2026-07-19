@@ -3846,8 +3846,13 @@
             var tbody = root.querySelector('[data-casino-history-body]');
             var emptyEl = root.querySelector('[data-casino-history-empty]');
             var tableWrap = root.querySelector('[data-casino-history-table-wrap]');
-            var filters = root.querySelectorAll('[data-casino-history-filter]');
+            var sourceFilter = root.querySelector('#casinoHistorySourceFilter');
+            var txnFilter = root.querySelector('#casinoHistoryTxnFilter');
+            var providerFilter = root.querySelector('#casinoHistoryProviderFilter');
+            var applyBtn = root.querySelector('#casinoHistoryApplyBtn');
             if (!tbody) return;
+
+            var lastLoadedRows = [];
 
             function normalizeSource(source) {
                 source = String(source || 'all').toLowerCase();
@@ -3875,6 +3880,14 @@
                 if (txn === 'refund' || txn === 'cancel') return 'text-warning';
                 if (txn === 'adjustment') return 'text-info';
                 return 'text-danger';
+            }
+
+            function normalizeTxnFilter(value) {
+                var v = String(value || 'all').toLowerCase().trim();
+                if (v === 'all' || v === '') return 'all';
+                if (v === 'refund' || v === 'cancel') return 'refund';
+                if (v === 'win' || v === 'bet' || v === 'adjustment') return v;
+                return 'all';
             }
 
             function money(value) {
@@ -3926,17 +3939,46 @@
                 }).join('');
             }
 
-            function setActive(source) {
-                filters.forEach(function(a) {
-                    var on = normalizeSource(a.getAttribute('data-source')) === source;
-                    a.classList.toggle('active', on);
+            function applyLocalFilters() {
+                var source = normalizeSource(sourceFilter ? sourceFilter.value : (root.getAttribute('data-source') || 'all'));
+                var txn = normalizeTxnFilter(txnFilter ? txnFilter.value : 'all');
+                var providerNeedle = String(providerFilter && providerFilter.value ? providerFilter.value : '').toLowerCase().trim();
+
+                var rows = (Array.isArray(lastLoadedRows) ? lastLoadedRows : []).filter(function(row) {
+                    row = row || {};
+                    var rowSource = normalizeSource(row.source || row.category || '');
+                    if (source !== 'all' && rowSource !== source) {
+                        return false;
+                    }
+
+                    var rowTxn = String(row.txnType || row.txn_type || 'bet').toLowerCase();
+                    if (txn !== 'all') {
+                        if (txn === 'refund') {
+                            if (rowTxn !== 'refund' && rowTxn !== 'cancel') return false;
+                        } else if (rowTxn !== txn) {
+                            return false;
+                        }
+                    }
+
+                    if (providerNeedle !== '') {
+                        var providerText = String(row.providerName || row.provider_name || '').toLowerCase();
+                        if (providerText.indexOf(providerNeedle) === -1) {
+                            return false;
+                        }
+                    }
+
+                    return true;
                 });
-                root.setAttribute('data-source', source);
+
+                render(rows);
             }
 
             function load(source) {
                 source = normalizeSource(source);
-                setActive(source);
+                if (sourceFilter) {
+                    sourceFilter.value = source;
+                }
+                root.setAttribute('data-source', source);
                 setLoading();
                 var qs = new URLSearchParams();
                 qs.set('per_page', '100');
@@ -3964,21 +4006,31 @@
                             render([]);
                             return;
                         }
-                        render(rows);
+                        lastLoadedRows = rows;
+                        applyLocalFilters();
                     })
                     .catch(function() {
                         toastNotify('error', 'Bağlantı hatası.', 'Casino geçmişi');
+                        lastLoadedRows = [];
                         render([]);
                     });
             }
 
-            filters.forEach(function(a) {
-                a.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    load(a.getAttribute('data-source') || 'all');
+            if (applyBtn) {
+                applyBtn.addEventListener('click', function() {
+                    var selectedSource = normalizeSource(sourceFilter ? sourceFilter.value : root.getAttribute('data-source'));
+                    load(selectedSource);
                 });
-            });
+            }
+
+            if (providerFilter) {
+                providerFilter.addEventListener('keydown', function(e) {
+                    if (e.key !== 'Enter') return;
+                    e.preventDefault();
+                    var selectedSource = normalizeSource(sourceFilter ? sourceFilter.value : root.getAttribute('data-source'));
+                    load(selectedSource);
+                });
+            }
 
             load(root.getAttribute('data-source') || 'all');
         });

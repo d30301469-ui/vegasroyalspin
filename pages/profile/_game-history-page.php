@@ -34,17 +34,6 @@ $user_info = [
     'surname' => $_SESSION['surname'] ?? '',
 ];
 
-$filterHref = static function (string $source) use ($profile_modal): string {
-    $params = [];
-    if ($profile_modal) {
-        $params['modal'] = '1';
-    }
-    if ($source !== 'all') {
-        $params['source'] = $source;
-    }
-    $query = $params !== [] ? ('?' . http_build_query($params)) : '';
-    return '/profile/casino-history' . $query;
-};
 $filterLabels = [
     'all' => 'TÜMÜ',
     'slot' => 'SLOT',
@@ -71,15 +60,34 @@ $filterLabels = [
              data-casino-history-root
              data-source="<?= htmlspecialchars($gameHistorySource, ENT_QUOTES, 'UTF-8') ?>"
              data-api="/api/v2/profile/casino-game-history">
-            <div class="bet-history-filters casino-history-filter-tabs" aria-label="Casino oyun geçmişi filtresi">
-                <?php foreach ($filterLabels as $sourceKey => $sourceLabel): ?>
-                    <a class="bhf-btn-show <?= $gameHistorySource === $sourceKey ? 'active' : '' ?>"
-                       data-casino-history-filter
-                       data-source="<?= htmlspecialchars($sourceKey, ENT_QUOTES, 'UTF-8') ?>"
-                       href="<?= htmlspecialchars($filterHref($sourceKey), ENT_QUOTES, 'UTF-8') ?>">
-                        <?= htmlspecialchars($sourceLabel, ENT_QUOTES, 'UTF-8') ?>
-                    </a>
-                <?php endforeach; ?>
+            <div class="bet-history-filters casino-history-filters" aria-label="Casino oyun geçmişi filtresi">
+                <div class="bhf-group">
+                    <label class="bhf-label" for="casinoHistorySourceFilter">Kategori</label>
+                    <select id="casinoHistorySourceFilter" class="bhf-input bhf-input-select">
+                        <?php foreach ($filterLabels as $sourceKey => $sourceLabel): ?>
+                            <option value="<?= htmlspecialchars($sourceKey, ENT_QUOTES, 'UTF-8') ?>" <?= $gameHistorySource === $sourceKey ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($sourceLabel, ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="bhf-group">
+                    <label class="bhf-label" for="casinoHistoryTxnFilter">İşlem</label>
+                    <select id="casinoHistoryTxnFilter" class="bhf-input bhf-input-select">
+                        <option value="all" selected>TÜMÜ</option>
+                        <option value="bet">BAHİS</option>
+                        <option value="win">KAZANÇ</option>
+                        <option value="refund">İADE</option>
+                        <option value="adjustment">DÜZELTME</option>
+                    </select>
+                </div>
+                <div class="bhf-group bhf-grow">
+                    <label class="bhf-label" for="casinoHistoryProviderFilter">Sağlayıcı</label>
+                    <input id="casinoHistoryProviderFilter" class="bhf-input" type="text" placeholder="örn. pragmatic" autocomplete="off">
+                </div>
+                <div class="bghf-group bghf-actions">
+                    <button type="button" id="casinoHistoryApplyBtn" class="bghf-btn-show">GÖSTER</button>
+                </div>
             </div>
             <p class="bet-history-empty" data-casino-history-empty hidden>Gösterilecek oyun geçmişi yok</p>
             <div class="table-responsive" data-casino-history-table-wrap>
