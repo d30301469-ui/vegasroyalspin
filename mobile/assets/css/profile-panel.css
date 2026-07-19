@@ -18,12 +18,12 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(380px, 88vw);
-  max-width: 88vw;
+  width: min(420px, 100vw);
+  max-width: 100vw;
   z-index: 100001;
-  background: linear-gradient(158deg, #5b1156 0%, #221a5c 36%, #0a1147 100%);
-  border-left: 1px solid rgba(183, 150, 255, 0.22);
-  box-shadow: -18px 0 46px rgba(0, 0, 0, 0.5);
+  background: #111a4a;
+  border-left: 0;
+  box-shadow: -12px 0 36px rgba(0, 0, 0, 0.48);
   transform: translateX(100%);
   transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   display: flex;
@@ -39,22 +39,42 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 14px 12px calc(20px + env(safe-area-inset-bottom, 0px));
-  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(20px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Bakiye kartı */
-.mprofile-amount {
-  background: #2fa244;
+/* Kaydırılabilir ana bakiye ve bonus kartları. */
+.mprofile-balance-rail {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  margin: 0 -12px;
+  padding: 0 12px;
+}
+.mprofile-balance-rail::-webkit-scrollbar { display: none; }
+.mprofile-balance-card {
+  flex: 0 0 calc(100% - 30px);
+  min-height: 142px;
+  scroll-snap-align: start;
   border-radius: 6px;
-  padding: 12px 14px 14px;
-  margin-bottom: 12px;
+  padding: 16px;
+  color: #fff;
+}
+.mprofile-balance-card--main {
+  background: linear-gradient(123deg, #8e224c 0%, #49226e 100%);
+}
+.mprofile-balance-card--bonus {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(123deg, #2d3f94 0%, #31215e 100%);
 }
 .mprofile-amount__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 18px;
 }
 .mprofile-amount__balance {
   display: flex;
@@ -62,13 +82,13 @@
   gap: 4px;
 }
 .mprofile-amount__title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: rgba(255, 255, 255, 0.82);
 }
 .mprofile-amount__value {
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 800;
   color: #fff;
 }
@@ -78,7 +98,7 @@
 }
 .mprofile-amount__buttons {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 .mprofile-amount__deposit,
 .mprofile-amount__withdraw {
@@ -87,9 +107,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 40px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.22);
+  min-height: 38px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.16);
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -99,17 +119,44 @@
 .mprofile-amount__withdraw i {
   font-size: 14px;
 }
+.mprofile-balance-card__empty {
+  font-size: 23px;
+  font-weight: 800;
+}
+.mprofile-balance-card__hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.mprofile-rail-dots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  height: 19px;
+  align-items: center;
+}
+.mprofile-rail-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+}
+.mprofile-rail-dots i.is-active { background: #fff; }
 
-/* Sadakat şeridi */
+/* Panel bölümleri, referanstaki düz satır gruplarını izler. */
+.mprofile-section {
+  margin: 0 0 10px;
+  background: #202862;
+  border-radius: 4px;
+  overflow: hidden;
+}
 .mprofile-loyalty {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
-  border-radius: 6px;
-  background: #9d7619;
-  border: 1px solid rgba(255, 230, 171, 0.28);
+  padding: 11px 12px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.035);
+  border: 0;
   color: #fff;
   text-decoration: none;
 }
@@ -133,11 +180,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 10px;
-  margin-bottom: 12px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 62px;
+  padding: 10px 12px;
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
   color: #fff;
   text-decoration: none;
 }
@@ -183,22 +231,24 @@
 .mprofile-links {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 0;
+  margin-bottom: 10px;
 }
 .mprofile-link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 12px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, rgba(93, 49, 130, 0.7) 0%, rgba(56, 61, 113, 0.7) 100%);
-  border: 1px solid rgba(132, 116, 189, 0.34);
+  min-height: 52px;
+  padding: 0 12px;
+  border-radius: 0;
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
   color: #fff;
   text-decoration: none;
   font-size: 13px;
   font-weight: 700;
 }
+.mprofile-link:last-child { border-bottom: 0; }
 .mprofile-link__icon {
   width: 18px;
   text-align: center;
@@ -219,16 +269,17 @@
 /* Promo kodu */
 .mprofile-promo {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 7px;
+  margin: 0;
+  padding: 10px;
 }
 .mprofile-promo__input {
   flex: 1;
-  min-height: 46px;
+  min-height: 42px;
   padding: 0 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(151, 129, 224, 0.32);
-  background: rgba(58, 48, 106, 0.45);
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #151d50;
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -239,9 +290,9 @@
 }
 .mprofile-promo__btn {
   width: 96px;
-  border-radius: 6px;
-  border: 1px solid rgba(151, 129, 224, 0.32);
-  background: rgba(94, 57, 141, 0.5);
+  border-radius: 3px;
+  border: 0;
+  background: #6f3c89;
   color: rgba(255, 255, 255, 0.9);
   font-size: 12px;
   font-weight: 700;
@@ -256,10 +307,10 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 46px;
-  border-radius: 6px;
-  background: rgba(94, 57, 141, 0.46);
-  border: 1px solid rgba(160, 141, 221, 0.34);
+  min-height: 44px;
+  border-radius: 3px;
+  background: #202862;
+  border: 0;
   color: #fff;
   text-decoration: none;
   font-size: 13px;
