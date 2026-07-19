@@ -3720,7 +3720,9 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     display: grid;
     gap: 14px;
     width: 100%;
-    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 320px));
+    justify-content: flex-start;
+    align-items: stretch;
 }
 .freespin-item {
     align-items: stretch;
@@ -3730,7 +3732,7 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     color: #fff;
     display: grid;
     gap: 12px;
-    grid-template-columns: 88px minmax(0, 1fr) minmax(74px, auto);
+    grid-template-columns: 72px minmax(0, 1fr);
     padding: 14px;
 }
 .freespin-item-game {
@@ -3754,9 +3756,10 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     min-width: 0;
 }
 .freespin-spins {
-    align-items: center;
-    justify-content: center;
-    min-width: 74px;
+    align-items: flex-start;
+    grid-column: 2;
+    justify-content: flex-start;
+    min-width: 0;
 }
 .freespin-status-col {
     align-items: flex-start;
@@ -3824,10 +3827,10 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
 }
 @media (max-width: 1200px) {
     .freespin-list {
-        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     }
     .freespin-item {
-        grid-template-columns: 84px minmax(0, 1fr) minmax(70px, auto);
+        grid-template-columns: 72px minmax(0, 1fr);
     }
 }
 @media (max-width: 992px) {
@@ -3841,7 +3844,7 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         grid-column: 1 / -1;
     }
     .freespin-spins {
-        align-items: center;
+        align-items: flex-start;
     }
 }
 @media (max-width: 768px) {
