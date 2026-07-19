@@ -69,8 +69,13 @@
                 window.__closeMobileNavMenu();
             }
 
-            // Mobilde avatar girişi, mobile dizinindeki bağımsız profil sayfasını açar.
-            window.location.href = '/mobile/profile';
+            // Öncelik: aynı ekranda profil modalını aç.
+            if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/details')) {
+                return;
+            }
+
+            // Fallback: modal hazır değilse mobil profile sayfasına geç.
+            window.location.href = '/mobile/profile?profile=open&account=profile&page=details';
         }
 
         btn.addEventListener('click', function (e) {
