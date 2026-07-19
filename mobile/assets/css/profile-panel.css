@@ -209,7 +209,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   transform: translateZ(0);
   gap: 14px;
   overflow-x: auto;
-  padding: 0 38px;
+  padding: 0;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
 }
