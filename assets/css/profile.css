@@ -2649,6 +2649,13 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     overflow-y: auto;
     padding: 0.15rem 0 0.5rem;
 }
+.profile-modal__content .personal-details-page--messages .inbox-list-wrap {
+    flex: 0 1 auto;
+    max-height: min(38vh, 320px);
+}
+.personal-details-page--messages .inbox-list-wrap.is-empty {
+    min-height: 48px;
+}
 .personal-details-page--messages .inbox-list {
     list-style: none;
     margin: 0;
@@ -2758,6 +2765,9 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     margin: 0.75rem 0 0;
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.5);
+}
+.profile-modal__content .personal-details-page--messages .inbox-empty-hint {
+    margin-top: 0.45rem;
 }
 .personal-details-page--messages .inbox-footer {
     padding: 0.85rem 0 0;
@@ -2968,6 +2978,27 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
 .personal-details-page--messages .new-msg-btn-send:hover {
     background: rgba(176, 184, 206, 0.36);
     color: rgba(255, 255, 255, 0.95);
+}
+.personal-details-page--messages .pm-alert {
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.82rem;
+    border: 1px solid transparent;
+}
+.personal-details-page--messages .pm-alert--success {
+    border-color: rgba(113, 222, 154, 0.38);
+    background: rgba(44, 115, 75, 0.32);
+    color: #c9ffdc;
+}
+.personal-details-page--messages .pm-alert--error {
+    border-color: rgba(255, 141, 141, 0.42);
+    background: rgba(120, 38, 38, 0.35);
+    color: #ffd6d6;
+}
+.personal-details-page--messages .pm-alert--info {
+    border-color: rgba(143, 174, 255, 0.35);
+    background: rgba(36, 62, 122, 0.35);
+    color: rgba(229, 238, 255, 0.92);
 }
 
 @media (max-width: 576px) {
