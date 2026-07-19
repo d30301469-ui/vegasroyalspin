@@ -15,7 +15,6 @@ $panelInitial = strtoupper(mb_substr($panelUsername !== '' ? $panelUsername : 'U
 $panelBadge = isset($headerLoyaltyBadge) && is_array($headerLoyaltyBadge) ? $headerLoyaltyBadge : [];
 $panelLoyaltyName = (string) ($panelBadge['name'] ?? 'Bronze');
 $panelLoyaltyIcon = (string) ($panelBadge['icon_url'] ?? '/assets/images/loyalty/badges/bronze.png');
-$panelLoyaltyPoints = (int) ($panelBadge['points'] ?? 0);
 ?>
 <div class="mprofile-overlay" id="mprofileOverlay" aria-hidden="true"></div>
 <aside class="mprofile-panel" id="mprofilePanel" aria-hidden="true" role="dialog" aria-label="Profil">
@@ -39,23 +38,18 @@ $panelLoyaltyPoints = (int) ($panelBadge['points'] ?? 0);
         </div>
       </section>
       <section class="mprofile-balance-card mprofile-balance-card--bonus" aria-label="Bonus bakiyesi">
-        <span class="mprofile-amount__title">BONUS BAKİYESİ</span>
+        <span class="mprofile-amount__title">TOPLAM BONUS PARA</span>
         <b class="mprofile-balance-card__empty">0 ₺</b>
-        <span class="mprofile-balance-card__hint">Kullanılabilir bonusunuz bulunmuyor.</span>
+        <span class="mprofile-balance-card__detail"><span>TOPLAM BONUS PARA</span><b>0.00 ₺</b></span>
       </section>
     </div>
     <div class="mprofile-rail-dots" aria-hidden="true"><i class="is-active"></i><i></i></div>
 
-    <section class="mprofile-section mprofile-section--loyalty">
     <a class="mprofile-loyalty" href="/profile/sadakat-puanlari">
       <img class="mprofile-loyalty__img" src="<?= htmlspecialchars($panelLoyaltyIcon, ENT_QUOTES, 'UTF-8') ?>" alt="" onerror="this.style.display='none'">
       <span class="mprofile-loyalty__text">Sadakat Puanları</span>
-      <span class="mprofile-loyalty__points"><?= htmlspecialchars((string) $panelLoyaltyPoints, ENT_QUOTES, 'UTF-8') ?> puan</span>
-      <i class="mprofile-link__arrow bc-i-small-arrow-right" aria-hidden="true"></i>
     </a>
-    </section>
 
-    <section class="mprofile-section">
     <a class="mprofile-user" href="/profile/details">
       <span class="mprofile-user__avatar"><?= htmlspecialchars($panelInitial, ENT_QUOTES, 'UTF-8') ?></span>
       <span class="mprofile-user__id">
@@ -66,9 +60,8 @@ $panelLoyaltyPoints = (int) ($panelBadge['points'] ?? 0);
       </span>
       <i class="mprofile-user__arrow bc-i-small-arrow-right" aria-hidden="true"></i>
     </a>
-    </section>
 
-    <nav class="mprofile-section mprofile-links" aria-label="Profil menüsü">
+    <nav class="mprofile-links" aria-label="Profil menüsü">
       <a class="mprofile-link" href="/profile/details">
         <i class="mprofile-link__icon bc-i-user" aria-hidden="true"></i>
         <span class="mprofile-link__title">PROFİLİM</span>
@@ -96,12 +89,13 @@ $panelLoyaltyPoints = (int) ($panelBadge['points'] ?? 0);
       </a>
     </nav>
 
-    <section class="mprofile-section mprofile-section--promo">
     <form class="mprofile-promo" onsubmit="return false;">
-      <input type="text" class="mprofile-promo__input" name="promoCode" placeholder="PROMOSYON KODU" autocomplete="off" maxlength="64">
+      <label class="mprofile-promo__field">
+        <input type="text" class="mprofile-promo__input" name="promoCode" autocomplete="off" maxlength="64">
+        <span class="mprofile-promo__label">PROMOSYON KODU</span>
+      </label>
       <button type="submit" class="mprofile-promo__btn" disabled>UYGULA</button>
     </form>
-    </section>
 
     <a class="mprofile-logout" href="/logout">
       <i class="bc-i-logout" aria-hidden="true"></i><span>Çıkış Yap</span>

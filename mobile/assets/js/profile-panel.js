@@ -47,6 +47,19 @@
     }
   }
 
+  function bindBalanceRail(panel) {
+    var rail = panel.querySelector('.mprofile-balance-rail');
+    var dots = panel.querySelectorAll('.mprofile-rail-dots i');
+    if (!rail || dots.length < 2) return;
+
+    rail.addEventListener('scroll', function () {
+      var activeIndex = rail.scrollLeft > (rail.scrollWidth - rail.clientWidth) / 2 ? 1 : 0;
+      dots.forEach(function (dot, index) {
+        dot.classList.toggle('is-active', index === activeIndex);
+      });
+    }, { passive: true });
+  }
+
   window.__openMobileProfilePanel = openPanel;
   window.__closeMobileProfilePanel = closePanel;
 
@@ -72,6 +85,7 @@
     // Kullanıcı ID kopyalama
     var panel = getPanel();
     if (panel) {
+      bindBalanceRail(panel);
       panel.addEventListener('click', function (e) {
         var copy = e.target && e.target.closest ? e.target.closest('.mprofile-user__copy') : null;
         if (!copy) return;
