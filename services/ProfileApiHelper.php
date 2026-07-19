@@ -26,6 +26,21 @@ final class ProfileApiHelper
             }
         }
 
+        // Oturum açık olduğu halde member_jwt hiç üretilmemiş/kaybolmuş olabilir (eski login akışı,
+        // süresi dolmuş token vb.) — bu durumda profil verisi backend'den hiç gelmez (first_name/surname
+        // boş kalır). Internal-trust ile taze bir token alıp oturuma yazarak kendiliğinden onar.
+        if (!empty($_SESSION['loggedin']) && (int) ($_SESSION['user_id'] ?? 0) > 0) {
+            if (is_file(__DIR__ . '/BackendMemberApiProxy.php')) {
+                require_once __DIR__ . '/BackendMemberApiProxy.php';
+                if (class_exists('BackendMemberApiProxy', false)) {
+                    $fresh = BackendMemberApiProxy::ensureFreshMemberJwt();
+                    if ($fresh !== '') {
+                        return $fresh;
+                    }
+                }
+            }
+        }
+
         return '';
     }
 

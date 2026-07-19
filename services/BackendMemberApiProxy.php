@@ -18,6 +18,37 @@ final class BackendMemberApiProxy
         }
     }
 
+    /**
+     * Oturumdaki üye JWT'sini garanti eder: mevcut token geçerliyse onu döner; yoksa (veya
+     * imzası geçersizse) internal-trust ile taze bir token alıp $_SESSION['member_jwt'] içine
+     * yazar. Kullanıcı oturum açmamışsa boş döner. PHP-tarafı servisler (ör. ProfileApiHelper)
+     * backend'e Bearer JWT ile istek atmadan önce bunu çağırarak "token hiç yok" durumunu
+     * (örn. eski/legacy login akışları) kendiliğinden onarır.
+     */
+    public static function ensureFreshMemberJwt(): string
+    {
+        self::ensureFrontendSession();
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        $loggedIn = !empty($_SESSION['loggedin']) && $userId > 0;
+        if (!$loggedIn) {
+            return '';
+        }
+
+        $jwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
+        if ($jwt !== '' && self::memberJwtSignatureValid($jwt)) {
+            return $jwt;
+        }
+
+        $fresh = self::issueMemberJwtViaInternalTrust($userId);
+        if ($fresh !== '') {
+            $_SESSION['member_jwt'] = $fresh;
+
+            return $fresh;
+        }
+
+        return '';
+    }
+
     public static function forward(string $route): void
     {
         self::ensureFrontendSession();
