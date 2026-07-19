@@ -741,9 +741,14 @@ final class BgamingService
 
         $items = [];
         $now = time();
+        $promotedAssignedRows = false;
         foreach ($rows as $row) {
             $playerStatus = strtolower(trim((string) ($row['player_status'] ?? '')));
-            if (in_array($playerStatus, ['assigned', 'issued_remote', 'bonus_assigned'], true)) {
+            if ($playerStatus === 'assigned') {
+                $promotedAssignedRows = self::promoteAssignedFreespinCampaign($pdo, $row, $userId) || $promotedAssignedRows;
+                continue;
+            }
+            if (in_array($playerStatus, ['issued_remote', 'bonus_assigned'], true)) {
                 continue;
             }
 
@@ -779,6 +784,10 @@ final class BgamingService
                 'title' => (string) ($row['title'] ?? ''),
                 'image_url' => (string) ($row['image_url'] ?? ''),
             ];
+        }
+
+        if ($promotedAssignedRows) {
+            return self::memberFreespins($pdo, $userId, $tab);
         }
 
         if ($items !== []) {
@@ -2344,6 +2353,55 @@ final class BgamingService
     private static function assignedFreespinIssueId(string $campaignCode, int $userId): string
     {
         return 'fs_assign_' . $userId . '_' . substr(sha1($campaignCode), 0, 12);
+    }
+
+    private static function promoteAssignedFreespinCampaign(PDO $pdo, array $row, int $userId): bool
+    {
+        $campaignCode = trim((string) ($row['campaign_code'] ?? ''));
+        $gameIdentifier = trim((string) ($row['game_identifier'] ?? ''));
+        if ($campaignCode === '' || $gameIdentifier === '' || $userId <= 0) {
+            return false;
+        }
+
+        $issueId = self::assignedFreespinIssueId($campaignCode, $userId);
+        $issueExists = $pdo->prepare('SELECT 1 FROM bgaming_campaign_players WHERE campaign_code = :campaign_code AND user_id = :user_id LIMIT 1');
+        $issueExists->execute(['campaign_code' => $issueId, 'user_id' => $userId]);
+
+        if ($issueExists->fetchColumn() === false) {
+            try {
+                self::issueRemoteFreespins($pdo, [
+                    'user_id' => $userId,
+                    'issue_id' => $issueId,
+                    'games' => $gameIdentifier,
+                    'currency' => (string) ($row['currency_code'] ?? self::DEFAULT_CURRENCY),
+                    'freespins_quantity' => max(1, (int) ($row['freespins_per_player'] ?? 0)),
+                    'valid_since' => (int) ($row['begins_at'] ?? 0) > 0 ? date('Y-m-d H:i:s', (int) $row['begins_at']) : '',
+                    'valid_until' => (int) ($row['expires_at'] ?? 0) > 0 ? date('Y-m-d H:i:s', (int) $row['expires_at']) : '',
+                ]);
+            } catch (Throwable) {
+                return false;
+            }
+        }
+
+        $payload = json_encode([
+            'campaign_title' => (string) ($row['title'] ?? ''),
+            'campaign_type' => 'freespin',
+            'remote_issue_id' => $issueId,
+            'migrated_from_assigned' => true,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $stmt = $pdo->prepare(
+            'UPDATE bgaming_campaign_players
+             SET status = :status, payload = :payload, updated_at = CURRENT_TIMESTAMP
+             WHERE campaign_code = :campaign_code AND user_id = :user_id'
+        );
+        $stmt->execute([
+            'status' => 'issued_remote',
+            'payload' => is_string($payload) ? $payload : null,
+            'campaign_code' => $campaignCode,
+            'user_id' => $userId,
+        ]);
+
+        return true;
     }
 
     private static function parseUnixTimestamp(string $value): ?int
