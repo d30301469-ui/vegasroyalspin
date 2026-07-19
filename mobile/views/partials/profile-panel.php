@@ -15,99 +15,64 @@ $panelInitial = strtoupper(mb_substr($panelUsername !== '' ? $panelUsername : 'U
 $panelBadge = isset($headerLoyaltyBadge) && is_array($headerLoyaltyBadge) ? $headerLoyaltyBadge : [];
 $panelLoyaltyName = (string) ($panelBadge['name'] ?? 'Bronze');
 $panelLoyaltyIcon = (string) ($panelBadge['icon_url'] ?? '/assets/images/loyalty/badges/bronze.png');
-$panelLogoUrl = (string) ($mobileHeaderLogoAnimUrl ?? $mobileHeaderLogoUrl ?? $siteBranding['logo_mobile_url'] ?? $siteBranding['logo_url'] ?? '');
+$panelInitialLower = mb_strtolower($panelInitial);
 ?>
 <div class="mprofile-overlay" id="mprofileOverlay" aria-hidden="true"></div>
-<aside class="mprofile-panel" id="mprofilePanel" aria-hidden="true" role="dialog" aria-label="Profil">
-  <div class="mprofile-head">
-    <a class="mprofile-head__logo" href="/" aria-label="Ana sayfa">
-      <?php if ($panelLogoUrl !== ''): ?>
-      <img src="<?= htmlspecialchars($panelLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
-      <?php endif; ?>
-    </a>
-    <button type="button" class="mprofile-close" aria-label="Kapat"><i class="bc-i-close" aria-hidden="true"></i></button>
-  </div>
-  <div class="mprofile-panel__scroll">
-    <div class="mprofile-balance-rail" aria-label="Bakiyeler">
-      <section class="mprofile-balance-card mprofile-balance-card--main">
-        <div class="mprofile-amount__row">
-          <div class="mprofile-amount__balance">
-            <span class="mprofile-amount__title">ANA BAKİYE</span>
-            <b class="mprofile-amount__value"><span data-balance-target="mprofileMain">0</span> ₺</b>
+<aside class="overlay-sliding-wrapper-bc user-profile-container mprofile-panel" id="mprofilePanel" aria-hidden="true" role="dialog" aria-label="Profil">
+  <div class="overlay-sliding-w-c-content-slider-bc" data-scroll-lock-scrollable>
+    <div class="u-i-p-c-body-bc">
+      <div class="u-i-profile-page-bc">
+        <div class="u-i-p-amount-holder-bc">
+          <div class="carouselWrapper carousel carouselArrowsDisabled">
+            <div class="swiper swiper-initialized swiper-horizontal" dir="ltr">
+              <div class="swiper-wrapper">
+                <div class="swiper-slide swiper-slide-active">
+                  <div class="u-i-p-amounts-bc withdrawable">
+                    <div class="u-i-p-a-content-bc">
+                      <div class="total-balance-r-bc">
+                        <div class="u-i-p-a-user-balance">
+                          <span class="u-i-p-a-title-bc ellipsis">ANA BAKİYE</span>
+                          <b class="u-i-p-a-amount-bc"><span data-balance-target="mprofileMain">0</span> ₺</b>
+                        </div>
+                        <i class="u-i-p-a-c-icon-bc bc-i-eye" aria-hidden="true"></i>
+                      </div>
+                      <div class="u-i-p-a-buttons-bc">
+                        <a class="u-i-p-a-deposit-bc ellipsis" href="/?profile=open&amp;account=balance&amp;page=deposit"><i class="bc-i-wallet" aria-hidden="true"></i><span class="ellipsis" title="PARA YATIR">PARA YATIR</span></a>
+                        <a class="u-i-p-a-withdraw-bc ellipsis" href="/?profile=open&amp;account=balance&amp;page=withdraw"><i class="bc-i-withdraw" aria-hidden="true"></i><span class="ellipsis" title="ÇEKİM">ÇEKİM</span></a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="swiper-slide swiper-slide-next">
+                  <div class="u-i-p-amounts-bc bonuses">
+                    <div class="u-i-p-a-content-bc">
+                      <span class="u-i-p-a-title-bc ellipsis">TOPLAM BONUS PARA</span>
+                      <span class="u-i-p-a-amount-bc">0 ₺</span>
+                      <div class="bonus-info-section"><div><span class="ellipsis">TOPLAM BONUS PARA</span><b>0.00 ₺</b></div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="swiper-pagination"><span class="swiper-pagination-bullet swiper-pagination-bullet-active"></span><span class="swiper-pagination-bullet"></span></div>
+            </div>
           </div>
-          <i class="mprofile-amount__eye bc-i-eye" aria-hidden="true"></i>
         </div>
-        <div class="mprofile-amount__buttons">
-          <a class="mprofile-amount__deposit" href="/profile/deposit-withdraw">
-            <i class="bc-i-wallet" aria-hidden="true"></i><span>PARA YATIR</span>
-          </a>
-          <a class="mprofile-amount__withdraw" href="/profile/withdraw">
-            <i class="bc-i-withdraw" aria-hidden="true"></i><span>ÇEKİM</span>
-          </a>
+        <a class="u-i-p-a-loyaltyPoint-bc" href="/?profile=open&amp;account=bonuses&amp;page=loyalty-points"><div class="loyaltyBonusHeader"><img class="loyaltyBonusImg" src="<?= htmlspecialchars($panelLoyaltyIcon, ENT_QUOTES, 'UTF-8') ?>" alt="" onerror="this.style.display='none'"></div><p class="u-i-p-a-loyaltyPointText-bc ellipsis">Sadakat Puanları</p></a>
+        <div class="u-i-p-p-u-i-edit-button-bc">
+          <p class="u-i-p-p-u-i-avatar-holder-bc"><?= htmlspecialchars($panelInitialLower, ENT_QUOTES, 'UTF-8') ?></p>
+          <p class="u-i-p-p-u-i-identifiers-bc"><span class="u-i-p-p-u-i-d-username-bc ellipsis"><?= htmlspecialchars($panelUsername, ENT_QUOTES, 'UTF-8') ?></span><?php if ($panelUserId !== ''): ?><span class="u-i-p-p-u-i-d-user-id-bc ellipsis"><?= htmlspecialchars($panelUserId, ENT_QUOTES, 'UTF-8') ?><i class="u-i-p-p-u-i-d-user-id-copy-bc bc-i-copy" data-user-id="<?= htmlspecialchars($panelUserId, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i></span><?php endif; ?></p>
+          <a class="u-i-p-l-h-icon-bc right bc-i-small-arrow-right" aria-label="Profile Details" href="/?profile=open&amp;account=profile&amp;page=details"></a>
         </div>
-      </section>
-      <section class="mprofile-balance-card mprofile-balance-card--bonus" aria-label="Bonus bakiyesi">
-        <span class="mprofile-amount__title">TOPLAM BONUS PARA</span>
-        <b class="mprofile-balance-card__empty">0 ₺</b>
-        <span class="mprofile-balance-card__detail"><span>TOPLAM BONUS PARA</span><b>0.00 ₺</b></span>
-      </section>
+        <div class="u-i-p-links-lists-holder-bc">
+          <div class="u-i-p-l-head-bc" data-href="/profile/details"><i class="user-nav-icon bc-i-user" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">PROFİLİM</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
+          <div class="u-i-p-l-head-bc" data-href="/profile/deposit-withdraw"><i class="user-nav-icon bc-i-balance-management" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">BAKİYE YÖNETİMİ</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
+          <div class="u-i-p-l-head-bc" data-href="/profile/bet-history"><i class="user-nav-icon bc-i-history" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">BAHİS GEÇMİŞİ</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
+          <div class="u-i-p-l-head-bc" data-href="/profile/bonus-spor"><i class="user-nav-icon bc-i-promotion" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">BONUSLAR</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
+          <div class="u-i-p-l-head-bc" data-href="/profile/messages"><i class="user-nav-icon bc-i-message" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">MESAJLAR</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
+        </div>
+        <div class="promoCodeWrapper-bc profile-panel-promo-code"><form onsubmit="return false;"><div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="promoCode" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">PROMOSYON KODU</span></label></div></div><div class="u-i-p-c-footer-bc"><button class="btn a-color big-btn" type="submit" title="UYGULA " disabled><span>UYGULA </span></button></div></form></div>
+        <button class="userLogoutBtn btn" type="button"><i class="userLogoutIcon bc-i-logout" aria-hidden="true"></i><span>Çıkış Yap</span></button>
+      </div>
     </div>
-    <div class="mprofile-rail-dots" aria-hidden="true"><i class="is-active"></i><i></i></div>
-
-    <a class="mprofile-loyalty" href="/profile/sadakat-puanlari">
-      <img class="mprofile-loyalty__img" src="<?= htmlspecialchars($panelLoyaltyIcon, ENT_QUOTES, 'UTF-8') ?>" alt="" onerror="this.style.display='none'">
-      <span class="mprofile-loyalty__text">Sadakat Puanları</span>
-    </a>
-
-    <a class="mprofile-user" href="/profile/details">
-      <span class="mprofile-user__avatar"><?= htmlspecialchars($panelInitial, ENT_QUOTES, 'UTF-8') ?></span>
-      <span class="mprofile-user__id">
-        <span class="mprofile-user__name"><?= htmlspecialchars($panelUsername, ENT_QUOTES, 'UTF-8') ?></span>
-        <?php if ($panelUserId !== ''): ?>
-        <span class="mprofile-user__uid"><?= htmlspecialchars($panelUserId, ENT_QUOTES, 'UTF-8') ?><i class="bc-i-copy mprofile-user__copy" data-user-id="<?= htmlspecialchars($panelUserId, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i></span>
-        <?php endif; ?>
-      </span>
-      <i class="mprofile-user__arrow bc-i-small-arrow-right" aria-hidden="true"></i>
-    </a>
-
-    <nav class="mprofile-links" aria-label="Profil menüsü">
-      <a class="mprofile-link" href="/profile/details">
-        <i class="mprofile-link__icon bc-i-user" aria-hidden="true"></i>
-        <span class="mprofile-link__title">PROFİLİM</span>
-        <i class="mprofile-link__arrow bc-i-small-arrow-right" aria-hidden="true"></i>
-      </a>
-      <a class="mprofile-link" href="/profile/deposit-withdraw">
-        <i class="mprofile-link__icon bc-i-balance-management" aria-hidden="true"></i>
-        <span class="mprofile-link__title">BAKİYE YÖNETİMİ</span>
-        <i class="mprofile-link__arrow bc-i-small-arrow-right" aria-hidden="true"></i>
-      </a>
-      <a class="mprofile-link" href="/profile/bet-history">
-        <i class="mprofile-link__icon bc-i-history" aria-hidden="true"></i>
-        <span class="mprofile-link__title">BAHİS GEÇMİŞİ</span>
-        <i class="mprofile-link__arrow bc-i-small-arrow-right" aria-hidden="true"></i>
-      </a>
-      <a class="mprofile-link" href="/profile/bonus-spor">
-        <i class="mprofile-link__icon bc-i-promotion" aria-hidden="true"></i>
-        <span class="mprofile-link__title">BONUSLAR</span>
-        <i class="mprofile-link__arrow bc-i-small-arrow-right" aria-hidden="true"></i>
-      </a>
-      <a class="mprofile-link" href="/profile/messages">
-        <i class="mprofile-link__icon bc-i-message" aria-hidden="true"></i>
-        <span class="mprofile-link__title">MESAJLAR</span>
-        <i class="mprofile-link__arrow bc-i-small-arrow-right" aria-hidden="true"></i>
-      </a>
-    </nav>
-
-    <form class="mprofile-promo" onsubmit="return false;">
-      <label class="mprofile-promo__field">
-        <input type="text" class="mprofile-promo__input" name="promoCode" autocomplete="off" maxlength="64">
-        <span class="mprofile-promo__label">PROMOSYON KODU</span>
-      </label>
-      <button type="submit" class="mprofile-promo__btn" disabled>UYGULA</button>
-    </form>
-
-    <a class="mprofile-logout" href="/logout">
-      <i class="bc-i-logout" aria-hidden="true"></i><span>Çıkış Yap</span>
-    </a>
   </div>
 </aside>
