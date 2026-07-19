@@ -4381,6 +4381,10 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     gap: 0.85rem;
 }
 
+.profile-modal__content .personal-details-page--bonus-unified .profile-section-body {
+    overflow: hidden;
+}
+
 .personal-details-page--bonus-unified .bonus-unified-card {
     width: 100%;
     max-width: none;
@@ -4388,6 +4392,16 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     border-radius: 8px;
     background: rgba(8, 18, 62, 0.62);
     overflow: hidden;
+}
+
+.profile-modal__content .personal-details-page--bonus-unified .bonus-unified-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .personal-details-page--bonus-unified .bonus-spor-content,
@@ -4399,6 +4413,7 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
 .personal-details-page--bonus-unified .bonus-spor-content.js-profile-active-bonus,
 .personal-details-page--bonus-unified .bonus-casino-content.js-profile-active-bonus {
     padding: 0.95rem;
+    padding-bottom: 1.15rem;
 }
 
 .personal-details-page--bonus-unified .profile-bonus-claim-panel {
