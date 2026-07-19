@@ -1473,7 +1473,43 @@ final class BgamingService
 
         $stmt = $pdo->prepare('SELECT user_id FROM bgaming_campaign_players WHERE campaign_code = :campaign_code ORDER BY id DESC LIMIT 1');
         $stmt->execute(['campaign_code' => $issueId]);
-        return max(0, (int) $stmt->fetchColumn());
+        $resolved = max(0, (int) $stmt->fetchColumn());
+        if ($resolved > 0) {
+            return $resolved;
+        }
+
+        $session = self::sessionContext($pdo, (string) ($payload['session_id'] ?? ''));
+        return max(0, (int) ($session['user_id'] ?? 0));
+    }
+
+    /**
+     * @return array{user_id:int,game_identifier:string,currency:string}|null
+     */
+    private static function sessionContext(PDO $pdo, string $sessionId): ?array
+    {
+        $sessionId = trim($sessionId);
+        if ($sessionId === '') {
+            return null;
+        }
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT user_id, game_identifier, currency
+                 FROM bgaming_game_sessions
+                 WHERE session_id = :session_id
+                 ORDER BY id DESC
+                 LIMIT 1'
+            );
+            $stmt->execute(['session_id' => $sessionId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return is_array($row) ? [
+                'user_id' => max(0, (int) ($row['user_id'] ?? 0)),
+                'game_identifier' => trim((string) ($row['game_identifier'] ?? '')),
+                'currency' => trim((string) ($row['currency'] ?? '')),
+            ] : null;
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     public static function issueRemoteFreespins(PDO $pdo, array $input): array
@@ -1784,6 +1820,7 @@ final class BgamingService
     {
         $userId = self::extractWalletUserId($payload);
         $issueId = self::extractFreespinIssueId($payload);
+        $session = self::sessionContext($pdo, (string) ($payload['session_id'] ?? ''));
         if ($issueId !== '') {
             $payload['issue_id'] = $issueId;
         }
@@ -1791,13 +1828,24 @@ final class BgamingService
         if ($userId <= 0 && $issueId !== '') {
             $userId = self::resolveFreespinUserId($pdo, $payload, $issueId);
         }
+        if ($userId <= 0 && is_array($session)) {
+            $userId = max(0, (int) ($session['user_id'] ?? 0));
+        }
         if ($userId > 0) {
             $payload['user_id'] = $userId;
         }
 
+        if (trim((string) ($payload['game'] ?? '')) === '' && is_array($session) && ($session['game_identifier'] ?? '') !== '') {
+            $payload['game'] = (string) $session['game_identifier'];
+        }
+
         if (trim((string) ($payload['currency'] ?? '')) === '') {
-            $config = self::config($pdo);
-            $payload['currency'] = (string) ($config['currency'] ?? self::DEFAULT_CURRENCY);
+            if (is_array($session) && ($session['currency'] ?? '') !== '') {
+                $payload['currency'] = (string) $session['currency'];
+            } else {
+                $config = self::config($pdo);
+                $payload['currency'] = (string) ($config['currency'] ?? self::DEFAULT_CURRENCY);
+            }
         }
 
         return $payload;
