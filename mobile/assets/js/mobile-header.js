@@ -61,6 +61,9 @@
         var btn = document.getElementById('toggleButton');
         if (!btn) return;
 
+        // Mobile-native profil paneli varsa (profile-panel.js) avatar davranışını o yönetir.
+        if (document.getElementById('mprofilePanel')) return;
+
         function openProfileFromAvatar() {
             if (typeof window.__closeSmartPanel === 'function') {
                 window.__closeSmartPanel();

@@ -43,3 +43,4 @@ $mobileRegisterJsVer = (string) ((is_file($mobileRegisterJsPath) ? filemtime($mo
 <script src="<?= htmlspecialchars(asset_url('mobile/assets/js/betslip-mobile.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('mobile/assets/js/navigation.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('mobile/assets/js/mobile-header.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars(asset_url('mobile/assets/js/profile-panel.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
