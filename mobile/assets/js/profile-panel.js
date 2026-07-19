@@ -23,6 +23,7 @@
     document.body.classList.add('overlay-sliding-is-visible', 'overlaySlidingIsVisible');
     isOpen = true;
     syncBalance();
+    syncBalanceRail(panel);
     return true;
   }
 
@@ -51,15 +52,42 @@
 
   function bindBalanceRail(panel) {
     var rail = panel.querySelector('.swiper-wrapper');
+    var slides = panel.querySelectorAll('.swiper-slide');
     var dots = panel.querySelectorAll('.swiper-pagination-bullet');
-    if (!rail || dots.length < 2) return;
+    if (!rail || !slides.length || dots.length < 2) return;
 
-    rail.addEventListener('scroll', function () {
-      var activeIndex = rail.scrollLeft > (rail.scrollWidth - rail.clientWidth) / 2 ? 1 : 0;
+    function update() {
+      var railCenter = rail.scrollLeft + (rail.clientWidth / 2);
+      var activeIndex = 0;
+      var activeDistance = Infinity;
+
+      slides.forEach(function (slide, index) {
+        var slideCenter = slide.offsetLeft + (slide.offsetWidth / 2);
+        var distance = Math.abs(railCenter - slideCenter);
+        if (distance < activeDistance) {
+          activeDistance = distance;
+          activeIndex = index;
+        }
+      });
+
+      slides.forEach(function (slide, index) {
+        slide.classList.toggle('swiper-slide-active', index === activeIndex);
+        slide.classList.toggle('swiper-slide-prev', index === activeIndex - 1);
+        slide.classList.toggle('swiper-slide-next', index === activeIndex + 1);
+      });
       dots.forEach(function (dot, index) {
         dot.classList.toggle('swiper-pagination-bullet-active', index === activeIndex);
       });
-    }, { passive: true });
+    }
+
+    rail.addEventListener('scroll', update, { passive: true });
+    update();
+  }
+
+  function syncBalanceRail(panel) {
+    if (!panel) return;
+    var rail = panel.querySelector('.swiper-wrapper');
+    if (rail) rail.dispatchEvent(new Event('scroll'));
   }
 
   window.__openMobileProfilePanel = openPanel;
