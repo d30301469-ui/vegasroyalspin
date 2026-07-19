@@ -1457,6 +1457,109 @@
         }, false);
     }
 
+    /** Sadakat puanı kullanımı: form submit'i SPA içinde API'ye gönder, sayfa navigasyonunu engelle. */
+    function initLoyaltyRedeemFormSpaOnce() {
+        if (window.__profileLoyaltyRedeemFormSpaBound) return;
+        window.__profileLoyaltyRedeemFormSpaBound = true;
+
+        document.addEventListener('submit', function(e) {
+            var form = e.target;
+            if (!form || !form.classList || !form.classList.contains('lp-redeem-form')) return;
+            if (!form.closest('.personal-details-page--loyalty-points')) return;
+
+            e.preventDefault();
+
+            var input = form.querySelector('input[name="redeem_points"]');
+            var submitBtn = form.querySelector('.lp-redeem-btn');
+            var points = parseInt((input && input.value) ? input.value : '0', 10);
+            var redeemable = parseInt(form.getAttribute('data-redeemable-points') || '0', 10);
+            if (isNaN(points)) points = 0;
+            if (isNaN(redeemable)) redeemable = 0;
+
+            if (points <= 0) {
+                toastNotify('warning', 'Geçerli bir puan miktarı giriniz.');
+                return;
+            }
+            if (points < 100) {
+                toastNotify('warning', 'Minimum 100 puan kullanabilirsiniz.');
+                return;
+            }
+            if (points % 100 !== 0) {
+                toastNotify('warning', 'Puanlar 100 ve katları şeklinde kullanılabilir.');
+                return;
+            }
+            if (redeemable > 0 && points > redeemable) {
+                toastNotify('warning', 'Yetersiz puan. Kullanılabilir puanınız: ' + redeemable + '.');
+                return;
+            }
+
+            if (submitBtn) submitBtn.disabled = true;
+
+            fetch(apiUrl('/api/v2/loyalty/redeem'), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: memberAuthHeaders({
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json'
+                }),
+                body: JSON.stringify({ points: points })
+            })
+                .then(function(r) {
+                    return r.text().then(function(text) {
+                        var data = null;
+                        try { data = text ? JSON.parse(text) : null; } catch (eJson) {}
+                        var ok = !!(r.ok && data && data.success);
+                        var message = (data && data.message) ? data.message : (ok ? 'Puanlar başarıyla kullanıldı.' : 'Puan kullanımı başarısız.');
+                        return { ok: ok, message: message };
+                    });
+                })
+                .then(function(result) {
+                    if (!result.ok) {
+                        toastNotify('error', result.message || 'Puan kullanımı başarısız.');
+                        return;
+                    }
+
+                    toastNotify('success', result.message || 'Puanlar başarıyla kullanıldı.');
+
+                    var modalContent = form.closest('#profileModalContent');
+                    var wrap = form.closest('.centerWrap.porfileWrap');
+                    var shellRoot = modalContent || wrap;
+                    if (!shellRoot) {
+                        window.location.reload();
+                        return;
+                    }
+
+                    var refreshUrl = window.__profileModalContentUrl || '/profile/sadakat-puanlari';
+                    try {
+                        var parsed = new URL(refreshUrl, window.location.origin);
+                        if (parsed.pathname.indexOf('/profile/') !== 0) {
+                            refreshUrl = '/profile/sadakat-puanlari';
+                        }
+                    } catch (eUrl) {
+                        refreshUrl = '/profile/sadakat-puanlari';
+                    }
+
+                    if (refreshUrl.indexOf('modal=1') === -1) {
+                        refreshUrl = toModalUrl(refreshUrl);
+                    }
+                    refreshUrl = appendQuery(refreshUrl, 'refresh=' + Date.now());
+
+                    loadProfileShellContent(refreshUrl, {
+                        shellRoot: shellRoot,
+                        isFullPage: !modalContent,
+                        loadingOverlay: modalContent ? document.getElementById('profileModalLoading') : null,
+                        skipPushState: !!modalContent
+                    });
+                })
+                .catch(function() {
+                    toastNotify('error', 'Bağlantı hatası. Lütfen tekrar deneyin.');
+                })
+                .finally(function() {
+                    if (submitBtn) submitBtn.disabled = false;
+                });
+        }, false);
+    }
+
     // ----- 0. Header profil modalı (iframe yok, HTML fetch ile) -----
     function initProfileModal() {
         var overlay = document.getElementById('profileModalOverlay');
@@ -4474,6 +4577,7 @@
         initProfileBetHistoryFormSpaOnce();
         initProfileMessagesSubmenuPrefetchOnce();
         initProfileMessagesInboxFilterFormSpaOnce();
+        initLoyaltyRedeemFormSpaOnce();
         initMemberInboxExpandOnce();
         if (document.querySelector('.js-inbox-item') && window.MemberInboxBadges) {
             window.MemberInboxBadges.applyUnreadToDom(document);
