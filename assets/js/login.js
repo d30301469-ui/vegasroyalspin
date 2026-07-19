@@ -200,6 +200,14 @@
         return document.getElementById('loginTurnstile');
     }
 
+    function syncLoginTurnstileWrapState(container) {
+        var widgetContainer = container || loginTurnstileContainer();
+        var wrap = widgetContainer && widgetContainer.closest ? widgetContainer.closest('.login-turnstile-wrap') : null;
+        if (!wrap) return;
+        var widgetId = widgetContainer.getAttribute('data-turnstile-widget-id') || '';
+        wrap.classList.toggle('has-turnstile-widget', widgetId !== '');
+    }
+
     function ensureLoginTurnstileWidget() {
         if (!Shared.hasTurnstile || !Shared.hasTurnstile()) return;
         var container = loginTurnstileContainer();
@@ -221,20 +229,24 @@
             // kontrol edilemez; canlilik testi icin getResponse kullanilir.
             try {
                 window.turnstile.getResponse(widgetId);
+                syncLoginTurnstileWrapState(container);
                 return; // Widget saglikli, yeniden render gerekmez.
             } catch (eStale) {
                 container.removeAttribute('data-turnstile-widget-id');
                 container.innerHTML = '';
+                syncLoginTurnstileWrapState(container);
             }
         }
 
         Shared.renderTurnstileWidget(container, { theme: 'dark', action: 'login' });
+        syncLoginTurnstileWrapState(container);
     }
 
     function resetLoginTurnstileWidget() {
         var container = loginTurnstileContainer();
         if (!container) return;
         Shared.resetTurnstileWidget(container);
+        syncLoginTurnstileWrapState(container);
     }
 
     function loginTurnstileToken() {
