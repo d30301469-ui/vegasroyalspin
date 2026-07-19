@@ -12,6 +12,14 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit;
 }
 
+$csrfKey = 'vegasroyalspin_csrf_token';
+if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
+    $_SESSION[$csrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
+        ? $_SESSION['csrf_token']
+        : bin2hex(random_bytes(32));
+}
+$_SESSION['csrf_token'] = $_SESSION[$csrfKey];
+
 $username = $_SESSION['username'];
 
 $user = ProfileApiHelper::profileByUsernameCached($username);
@@ -32,6 +40,82 @@ $initial = strtoupper(substr($username, 0, 2));
 $profileActiveTab = 'messages';
 $messages_box = $box;
 $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
+
+$currentPageUrl = '/profile/messages?box=new' . ($profile_modal ? '&modal=1' : '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $box === 'new') {
+    $isAjaxRequest = ((string) ($_POST['ajax'] ?? '') === '1')
+        || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+    $subject = trim((string) ($_POST['subject'] ?? ''));
+    $body = trim((string) ($_POST['body'] ?? ''));
+    $csrf = (string) ($_POST['csrf_token'] ?? '');
+
+    $flashType = 'error';
+    $flashMessage = 'Mesaj gönderilemedi.';
+    $textLength = static function (string $value): int {
+        if (function_exists('mb_strlen')) {
+            return (int) mb_strlen($value, 'UTF-8');
+        }
+
+        return strlen($value);
+    };
+    $fieldValues = [
+        'subject' => $subject,
+        'body' => $body,
+    ];
+
+    if ($csrf === '' || !hash_equals((string) $_SESSION['csrf_token'], $csrf)) {
+        $flashMessage = 'Güvenlik doğrulaması başarısız. Lütfen sayfayı yenileyip tekrar deneyin.';
+    } elseif ($subject === '' || $body === '') {
+        $flashMessage = 'Konu ve mesaj alanları zorunludur.';
+    } elseif ($textLength($subject) > 190) {
+        $flashMessage = 'Konu en fazla 190 karakter olabilir.';
+    } elseif ($textLength($body) > 5000) {
+        $flashMessage = 'Mesaj en fazla 5000 karakter olabilir.';
+    } else {
+        try {
+            $apiResponse = ProfileApiHelper::postProfile('/support/tickets', [
+                'subject' => $subject,
+                'body' => $body,
+                'category' => 'profile_messages',
+                'priority' => 'normal',
+            ]);
+            $isSuccess = is_array($apiResponse) && !empty($apiResponse['success']);
+            if ($isSuccess) {
+                $flashType = 'success';
+                $flashMessage = (string) ($apiResponse['message'] ?? 'Mesajınız admine iletildi.');
+                $fieldValues = ['subject' => '', 'body' => ''];
+            } else {
+                $flashMessage = (string) ($apiResponse['message'] ?? 'Mesaj gönderilemedi. Lütfen tekrar deneyin.');
+            }
+        } catch (Throwable) {
+            $flashMessage = 'Mesaj gönderimi sırasında beklenmeyen bir hata oluştu.';
+        }
+    }
+
+    if ($isAjaxRequest) {
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'success' => $flashType === 'success',
+            'message' => $flashMessage,
+            'values' => $fieldValues,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    $_SESSION['profile_messages_flash'] = [
+        'type' => $flashType,
+        'message' => $flashMessage,
+    ];
+    $_SESSION['profile_messages_form'] = $fieldValues;
+
+    header('Location: ' . $currentPageUrl, true, 303);
+    exit;
+}
+
+$messagesFlash = $_SESSION['profile_messages_flash'] ?? null;
+unset($_SESSION['profile_messages_flash']);
+$messagesForm = $_SESSION['profile_messages_form'] ?? ['subject' => '', 'body' => ''];
+unset($_SESSION['profile_messages_form']);
 
 $profile_titles = [
     'inbox' => 'GELEN KUTUSU',
@@ -82,7 +166,7 @@ if ($box === 'inbox') {
     }
 }
 
-$new_msg_action = '/profile/messages?box=new' . ($profile_modal ? '&modal=1' : '');
+$new_msg_action = $currentPageUrl;
 ?>
 
 <?php if (!$profile_modal): ?>
@@ -100,12 +184,19 @@ $new_msg_action = '/profile/messages?box=new' . ($profile_modal ? '&modal=1' : '
         <div class="profile-messages-body">
             <?php if ($box === 'new'): ?>
             <form method="post" action="<?= htmlspecialchars($new_msg_action, ENT_QUOTES, 'UTF-8') ?>" class="new-msg-form" id="newMessageForm">
+                <?php if (is_array($messagesFlash) && !empty($messagesFlash['message'])): ?>
+                <div class="pm-alert pm-alert--<?= htmlspecialchars((string) ($messagesFlash['type'] ?? 'info'), ENT_QUOTES, 'UTF-8') ?>" role="status" aria-live="polite">
+                    <?= htmlspecialchars((string) $messagesFlash['message'], ENT_QUOTES, 'UTF-8') ?>
+                </div>
+                <?php endif; ?>
+                <div class="pm-alert pm-alert--info js-new-message-feedback" role="status" aria-live="polite" hidden></div>
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars((string) $_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
                 <div class="new-msg-field">
-                    <input type="text" name="subject" class="new-msg-input new-msg-subject" placeholder="Konu *" required maxlength="200">
+                    <input type="text" name="subject" class="new-msg-input new-msg-subject" placeholder="Konu *" required maxlength="190" value="<?= htmlspecialchars((string) ($messagesForm['subject'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                 </div>
                 <div class="new-msg-field">
                     <label class="new-msg-label" for="newMessageBody">MESAJ *</label>
-                    <textarea id="newMessageBody" name="body" class="new-msg-textarea" placeholder="Buraya metin giriniz" required rows="10"></textarea>
+                    <textarea id="newMessageBody" name="body" class="new-msg-textarea" placeholder="Buraya metin giriniz" required rows="10" maxlength="5000"><?= htmlspecialchars((string) ($messagesForm['body'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
                 </div>
                 <div class="new-msg-footer">
                     <button type="submit" class="new-msg-btn-send">GÖNDER</button>
@@ -136,7 +227,7 @@ $new_msg_action = '/profile/messages?box=new' . ($profile_modal ? '&modal=1' : '
             <?php endif; ?>
 
             <?php if ($box !== 'new'): ?>
-            <div class="inbox-list-wrap">
+            <div class="inbox-list-wrap<?= $box === 'inbox' && $inbox_messages === [] ? ' is-empty' : '' ?>">
                 <?php if ($box === 'sent'): ?>
                 <ul class="inbox-list inbox-list--sent">
                     <?php foreach ($sent_messages as $msg): ?>

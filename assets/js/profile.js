@@ -1416,6 +1416,71 @@
         }, false);
     }
 
+    /** Yeni mesaj formu: modal içinde tam sayfa navigasyonu engelle, AJAX ile gönder. */
+    function initProfileMessagesNewFormSpaOnce() {
+        if (window.__profileMessagesNewFormSpaBound) return;
+        window.__profileMessagesNewFormSpaBound = true;
+
+        function renderInlineFeedback(form, ok, message) {
+            var box = form ? form.querySelector('.js-new-message-feedback') : null;
+            if (!box) return;
+            box.className = 'pm-alert js-new-message-feedback ' + (ok ? 'pm-alert--success' : 'pm-alert--error');
+            box.textContent = message || (ok ? 'Mesaj gönderildi.' : 'Mesaj gönderilemedi.');
+            box.hidden = false;
+        }
+
+        document.addEventListener('submit', function(e) {
+            var form = e.target;
+            if (!form || form.id !== 'newMessageForm') return;
+            if (!form.closest('.personal-details-page--messages-new')) return;
+
+            e.preventDefault();
+
+            var submitBtn = form.querySelector('.new-msg-btn-send');
+            if (submitBtn) submitBtn.disabled = true;
+
+            var formData = new FormData(form);
+            formData.set('ajax', '1');
+
+            fetch(form.getAttribute('action') || '/profile/messages?box=new', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+                .then(function(r) {
+                    return r.text().then(function(text) {
+                        var data = null;
+                        try { data = text ? JSON.parse(text) : null; } catch (eJson) {}
+                        var ok = !!(r.ok && data && data.success);
+                        var message = (data && data.message) ? data.message : (ok ? 'Mesajınız admine iletildi.' : 'Mesaj gönderilemedi.');
+                        return { ok: ok, message: message, data: data };
+                    });
+                })
+                .then(function(result) {
+                    renderInlineFeedback(form, result.ok, result.message);
+                    if (window.MaltabetToast) {
+                        toastNotify(result.ok ? 'success' : 'error', result.message);
+                    }
+                    if (!result.ok) return;
+                    form.reset();
+                })
+                .catch(function() {
+                    var message = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+                    renderInlineFeedback(form, false, message);
+                    if (window.MaltabetToast) {
+                        toastNotify('error', message);
+                    }
+                })
+                .finally(function() {
+                    if (submitBtn) submitBtn.disabled = false;
+                });
+        }, false);
+    }
+
     /** Sadakat puanı kullanımı: form submit'i SPA içinde API'ye gönder, sayfa navigasyonunu engelle. */
     function initLoyaltyRedeemFormSpaOnce() {
         if (window.__profileLoyaltyRedeemFormSpaBound) return;
@@ -4568,6 +4633,7 @@
         initProfileBetHistoryFormSpaOnce();
         initProfileMessagesSubmenuPrefetchOnce();
         initProfileMessagesInboxFilterFormSpaOnce();
+        initProfileMessagesNewFormSpaOnce();
         initLoyaltyRedeemFormSpaOnce();
         initMemberInboxExpandOnce();
         if (document.querySelector('.js-inbox-item') && window.MemberInboxBadges) {
