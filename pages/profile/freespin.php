@@ -46,7 +46,9 @@ $unread_count = 0;
 $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 $tabYeniUrl = '/profile/freespin' . ($profile_modal ? '?modal=1' : '');
 $tabAktifUrl = '/profile/freespin?tab=aktif' . ($profile_modal ? '&modal=1' : '');
-$closeUrl = $profile_modal ? '#' : '/';
+$profile_content_title = 'CASİNO FREESPİNLERİ';
+$profile_content_page_class = 'personal-details-page--loyalty-points personal-details-page--bonus-unified personal-details-page--freespin-unified';
+$profile_close_href_full = '/profile/details';
 $freespinFallbackImages = [
     '/assets/games-img/sweet-bonanza-1000.svg',
     '/assets/games-img/40-super-hot.gif',
@@ -66,12 +68,9 @@ $freespinFallbackImages = [
 <?php endif; ?>
     <?php include __DIR__ . '/../../views/partials/profile-sidebar.php'; ?>
 
-    <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content freespin-main">
-        <div class="freespin-card">
-            <div class="freespin-header">
-                <h1 class="freespin-title">CASİNO FREESPİNLERİ</h1>
-                <a href="<?= htmlspecialchars($closeUrl, ENT_QUOTES, 'UTF-8') ?>" class="freespin-close" aria-label="Kapat"<?= $profile_modal ? ' data-profile-modal-close="1"' : '' ?>><i class="fa-solid fa-times"></i></a>
-            </div>
+    <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content">
+        <?php include __DIR__ . '/../../views/partials/profile-content-shell-open.php'; ?>
+        <div class="freespin-card bonus-unified-card">
             <div class="freespin-tabs">
                 <a href="<?= htmlspecialchars($tabYeniUrl, ENT_QUOTES, 'UTF-8') ?>" class="freespin-tab <?= $tab === 'yeni' ? 'active' : '' ?>">YENİ FREE SPİNLER</a>
                 <a href="<?= htmlspecialchars($tabAktifUrl, ENT_QUOTES, 'UTF-8') ?>" class="freespin-tab <?= $tab === 'aktif' ? 'active' : '' ?>">AKTİF</a>
@@ -160,6 +159,7 @@ $freespinFallbackImages = [
                 <?php endif; ?>
             </div>
         </div>
+        <?php include __DIR__ . '/../../views/partials/profile-content-shell-close.php'; ?>
     </main>
 <?php if (!$profile_modal): ?>
 </div>

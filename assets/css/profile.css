@@ -4362,6 +4362,77 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     color: #ffb5b5;
 }
 
+.personal-details-page--bonus-unified .profile-section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.personal-details-page--bonus-unified .bonus-unified-card {
+    width: 100%;
+    max-width: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(8, 18, 62, 0.62);
+    overflow: hidden;
+}
+
+.personal-details-page--bonus-unified .bonus-spor-content,
+.personal-details-page--bonus-unified .bonus-casino-content {
+    min-height: 0;
+    padding: 0.95rem;
+}
+
+.personal-details-page--bonus-unified .bonus-spor-content.js-profile-active-bonus,
+.personal-details-page--bonus-unified .bonus-casino-content.js-profile-active-bonus {
+    padding: 0.95rem;
+}
+
+.personal-details-page--bonus-unified .profile-bonus-claim-panel {
+    max-width: none;
+}
+
+.personal-details-page--bonus-unified .bonus-history-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+}
+
+.personal-details-page--bonus-unified .bonus-history-filters {
+    padding-top: 0.8rem;
+    padding-left: 0.95rem;
+    padding-right: 0.95rem;
+}
+
+.personal-details-page--bonus-unified .bonus-claims-lead,
+.personal-details-page--bonus-unified .bonus-claims-status {
+    padding-left: 0.95rem;
+    padding-right: 0.95rem;
+}
+
+.personal-details-page--bonus-unified .bonus-history-content {
+    padding: 0.95rem;
+}
+
+.personal-details-page--freespin-unified .freespin-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+}
+
+.personal-details-page--freespin-unified .freespin-tabs {
+    padding: 0;
+    background: transparent;
+    border-bottom: none;
+    margin-bottom: 0.8rem;
+}
+
+.personal-details-page--freespin-unified .freespin-content {
+    min-height: 0;
+    padding: 0;
+}
+
 .profile-modal__content .bonus-spor-main,
 .profile-modal__content .bonus-casino-main {
     align-items: stretch;
