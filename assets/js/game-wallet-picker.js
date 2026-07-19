@@ -73,7 +73,7 @@
 
     function formatBonusSummary(bonus) {
         if (!bonus) {
-            return 'Aktif bir bonusunuz var. Seçiminiz çevrim takibini etkiler.';
+            return 'Bonus bakiyeyi seçerseniz, ileride kazanacağınız bir bonusun çevrim şartına bahisleriniz işlenir. Aktif bonusunuz yoksa bu seçim bahsinizi etkilemez.';
         }
         var name = bonus.name || bonus.displayName || 'Aktif bonus';
         var remaining = typeof bonus.remainingBet === 'number' ? bonus.remainingBet : null;
@@ -150,15 +150,17 @@
     }
 
     /**
-     * Aktif bonus varsa kullanıcıya sorar, yoksa doğrudan 'main' döner.
-     * Kullanıcı iptal ederse null döner (çağıran taraf oyunu başlatmamalı).
+     * Giriş yapılmışsa her gerçek para başlatmasında kullanıcıya ana/bonus
+     * bakiye seçimini sorar (aktif bir bonusu olup olmadığına bakılmaksızın).
+     * Giriş yapılmamışsa doğrudan 'main' döner. Kullanıcı iptal ederse null
+     * döner (çağıran taraf oyunu başlatmamalı).
      * @returns {Promise<'main'|'bonus'|null>}
      */
     function resolveWalletChoice() {
+        if (!isLoggedIn()) {
+            return Promise.resolve('main');
+        }
         return fetchActiveBonus().then(function (bonus) {
-            if (!bonus) {
-                return 'main';
-            }
             return showPicker(bonus);
         });
     }
