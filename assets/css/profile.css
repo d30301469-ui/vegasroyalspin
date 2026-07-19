@@ -2762,12 +2762,6 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
         display: none;
     }
 
-    /* Details hub açılışı: referanstaki gibi yalnızca menü paneli görünür, form gizlenir. */
-    .profile-modal__content:has(.profile-sidebar--hub) .profile-main-content,
-    .profile-modal__content:has(.profile-sidebar--hub) > main#profilePlayerMain {
-        display: none !important;
-    }
-
     .profile-modal__content:has(.profile-sidebar--hub) .profile-sidebar-v2 {
         width: 100% !important;
         max-width: 100% !important;
