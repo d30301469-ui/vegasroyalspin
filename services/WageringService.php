@@ -163,7 +163,7 @@ final class WageringService
     {
         try {
             $stmt = $pdo->prepare(
-                "SELECT id, wagering_target, total_bet_amount FROM user_active_bonuses
+                "SELECT id, wagering_target, total_bet_amount, current_bonus_balance FROM user_active_bonuses
                  WHERE user_id = :user_id AND status = 'active'"
             );
             $stmt->execute(['user_id' => $userId]);
@@ -182,15 +182,35 @@ final class WageringService
                      SET total_bet_amount = :total,
                          is_complete = :is_complete,
                          status = CASE WHEN :is_complete_status = 1 THEN 'completed' ELSE status END,
-                         completed_at = CASE WHEN :is_complete_at = 1 THEN NOW() ELSE completed_at END
+                         completed_at = CASE WHEN :is_complete_at = 1 THEN NOW() ELSE completed_at END,
+                         current_bonus_balance = CASE WHEN :is_complete_zero = 1 THEN 0 ELSE current_bonus_balance END
                      WHERE id = :id"
                 )->execute([
                     'total' => number_format($newTotal, 2, '.', ''),
                     'is_complete' => $isComplete ? 1 : 0,
                     'is_complete_status' => $isComplete ? 1 : 0,
                     'is_complete_at' => $isComplete ? 1 : 0,
+                    'is_complete_zero' => $isComplete ? 1 : 0,
                     'id' => $bonusId,
                 ]);
+
+                // Çevrim şartı tamamlanınca, bonusun kalan tutarı bonus_balance'tan
+                // gerçek (çekilebilir) balance'a aktarılır.
+                if ($isComplete) {
+                    $transferAmount = round((float) ($row['current_bonus_balance'] ?? 0), 2);
+                    if ($transferAmount > 0) {
+                        $pdo->prepare(
+                            'UPDATE users
+                             SET balance = balance + :amount,
+                                 bonus_balance = GREATEST(0, bonus_balance - :amount2)
+                             WHERE id = :id'
+                        )->execute([
+                            'amount' => number_format($transferAmount, 2, '.', ''),
+                            'amount2' => number_format($transferAmount, 2, '.', ''),
+                            'id' => $userId,
+                        ]);
+                    }
+                }
             }
         } catch (Throwable $e) {
             error_log('[WageringService] applyBonusDelta failed: ' . $e->getMessage());
