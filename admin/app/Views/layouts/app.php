@@ -49,16 +49,18 @@ $isNavItemActive = static function (array $item) use ($activePage, $currentModul
     if ($url !== '' && $url !== '#') {
         $itemPath = parse_url($url, PHP_URL_PATH);
         $itemPath = is_string($itemPath) && $itemPath !== '' ? $normalizeAdminPath($itemPath) : '';
-        if ($itemPath !== '' && $itemPath === $currentPath) {
-            if ($itemPath !== '/module') {
-                return true;
-            }
+        if ($itemPath !== '' && $itemPath !== '/module') {
+            return $itemPath === $currentPath;
+        }
 
+        if ($itemPath === '/module' && $itemPath === $currentPath) {
             parse_str((string) parse_url($url, PHP_URL_QUERY), $itemQuery);
             $itemModuleKey = trim((string) ($itemQuery['key'] ?? ''));
             if ($itemModuleKey !== '') {
                 return $currentModuleKey === $itemModuleKey;
             }
+
+            return false;
         }
     }
 
