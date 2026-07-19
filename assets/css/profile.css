@@ -254,6 +254,50 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     padding: 8px;
     background: #1a2246;
 }
+
+.profile-mobile-nav {
+    display: none;
+}
+
+.profile-mobile-nav__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.92);
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+}
+
+.profile-mobile-nav__item i {
+    width: 14px;
+    text-align: center;
+    opacity: 0.9;
+}
+
+.profile-mobile-nav__item.is-active {
+    border-color: rgba(240, 180, 41, 0.7);
+    background: rgba(240, 180, 41, 0.12);
+}
+
+.profile-mobile-nav__badge {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    border-radius: 999px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #101720;
+    background: #f0b429;
+}
 .profile-sidebar-v2 .profile-header.edit-user {
     margin-bottom: 8px;
     min-height: 56px;
@@ -2643,6 +2687,11 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
         padding: 0.75rem 0.85rem 0.6rem;
     }
 
+    .profile-modal__content .profile-mobile-nav {
+        display: block;
+        margin-top: 0.55rem;
+    }
+
     .profile-sidebar-v2 .main-balance-card,
     .profile-sidebar-v2 .bonus-balance-card,
     .profile-sidebar-v2 .loyalty-bar,
@@ -2652,6 +2701,10 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
 
     .profile-sidebar-v2 .profile-accordion {
         padding: 0.35rem 0.65rem 0.75rem;
+    }
+
+    .profile-modal__content .profile-accordion .accordion-list {
+        opacity: 0.94;
     }
 
     .profile-sidebar-v2 .profile-accordion .accordion-item {
@@ -2683,6 +2736,12 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
 
     .profile-sidebar-v2 .sidebar-footer {
         padding: 0.25rem 0.8rem 0.9rem;
+    }
+
+    .profile-modal__content .profile-sidebar-promo {
+        margin: 0.45rem 0 0;
+        background: rgba(10, 15, 24, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.08);
     }
 }
 }
