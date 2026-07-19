@@ -284,6 +284,38 @@ final class AdminCommunicationController extends AdminController
             $this->redirect(AdminAuth::url('/compose'));
         }
 
+        // Admin compose mesajını üye gelen kutusuna da yaz.
+        // E-posta ile kullanıcı bulunursa user_id eşlenir; bulunamazsa global mesaj olarak bırakılır.
+        try {
+            $pdo = AdminDatabase::pdo();
+            $userId = null;
+            try {
+                $userStmt = $pdo->prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1');
+                $userStmt->execute(['email' => $email]);
+                $resolvedUserId = (int) $userStmt->fetchColumn();
+                if ($resolvedUserId > 0) {
+                    $userId = $resolvedUserId;
+                }
+            } catch (Throwable) {
+                $userId = null;
+            }
+
+            $inboxStmt = $pdo->prepare(
+                'INSERT INTO member_inbox_messages (user_id, title, body, link_url, priority, is_active, starts_at, ends_at, created_at, updated_at)
+                 VALUES (:user_id, :title, :body, :link_url, :priority, :is_active, NULL, NULL, NOW(), NOW())'
+            );
+            $inboxStmt->execute([
+                'user_id' => $userId,
+                'title' => $subject !== '' ? $subject : 'Yeni mesaj',
+                'body' => $body,
+                'link_url' => null,
+                'priority' => 0,
+                'is_active' => 1,
+            ]);
+        } catch (Throwable) {
+            // Inbox insert başarısız olsa da mail akışı devam etsin.
+        }
+
         $settings = $this->mailSettingsRow();
         $enabled = (int) ($settings['enabled'] ?? $settings['mail_enabled'] ?? 0) === 1;
         $from = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));

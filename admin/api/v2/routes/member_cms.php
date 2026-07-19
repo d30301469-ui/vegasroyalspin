@@ -77,15 +77,26 @@ if ($method === 'GET' && ($route === 'announcements.php' || $route === 'announce
 if ($method === 'GET' && $route === 'member_inbox_messages.php') {
     $pdo = AdminDatabase::pdo();
     $now = date('Y-m-d H:i:s');
+    $viewerUserId = (isset($memberJwtOptionalUserId) && is_callable($memberJwtOptionalUserId))
+        ? (int) $memberJwtOptionalUserId($pdo)
+        : 0;
     try {
-        $stmt = $pdo->prepare("SELECT id, title, body, link_url, priority, created_at, created_at AS updated_at
-                               FROM member_inbox_messages
-                               WHERE is_active = 1
-                                 AND (starts_at IS NULL OR starts_at <= :now_start)
-                                 AND (ends_at IS NULL OR ends_at >= :now_end)
-                               ORDER BY priority DESC, id DESC
-                               LIMIT 100");
-        $stmt->execute(['now_start' => $now, 'now_end' => $now]);
+        $sql = "SELECT id, title, body, link_url, priority, created_at, created_at AS updated_at
+                FROM member_inbox_messages
+                WHERE is_active = 1
+                  AND (starts_at IS NULL OR starts_at <= :now_start)
+                  AND (ends_at IS NULL OR ends_at >= :now_end)";
+        $params = ['now_start' => $now, 'now_end' => $now];
+        if ($viewerUserId > 0) {
+            $sql .= " AND (user_id IS NULL OR user_id = :viewer_user_id)";
+            $params['viewer_user_id'] = $viewerUserId;
+        } else {
+            $sql .= " AND user_id IS NULL";
+        }
+        $sql .= " ORDER BY priority DESC, id DESC LIMIT 100";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         $rows = str_contains($e->getMessage(), '42S02') ? [] : throw $e;
