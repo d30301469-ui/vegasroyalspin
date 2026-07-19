@@ -27,13 +27,31 @@ function metropol_public_api_route_from_path(string $path): string
         return trim(substr($path, strlen('/api/member/')), '/');
     }
     if (str_starts_with($path, '/api/content/')) {
-        return 'content/' . trim(substr($path, strlen('/api/content/')), '/');
+        $contentRoute = trim(substr($path, strlen('/api/content/')), '/');
+        $contentAliases = [
+            'footer_pages' => 'footer-pages',
+            'footer-pages.php' => 'footer-pages',
+            'footer_pages.php' => 'footer-pages',
+            'mobile_menu' => 'mobile-menu',
+            'mobile-menu.php' => 'mobile-menu',
+            'mobile_menu.php' => 'mobile-menu',
+            'homepage_sections' => 'homepage-sections',
+            'homepage-sections.php' => 'homepage-sections',
+            'homepage_sections.php' => 'homepage-sections',
+            'auth_sliders' => 'auth-sliders',
+            'auth-sliders.php' => 'auth-sliders',
+            'auth_sliders.php' => 'auth-sliders',
+        ];
+
+        return 'content/' . ($contentAliases[$contentRoute] ?? $contentRoute);
     }
 
     $legacy = [
         '/api/sliders' => 'content/sliders',
         '/api/sliders.php' => 'content/sliders',
         '/api/auth-sliders' => 'content/auth-sliders',
+        '/api/auth-sliders.php' => 'content/auth-sliders',
+        '/api/auth_sliders' => 'content/auth-sliders',
         '/api/auth_sliders.php' => 'content/auth-sliders',
         '/api/site_settings' => 'site_settings.php',
         '/api/site_settings.php' => 'site_settings.php',
@@ -53,14 +71,18 @@ function metropol_public_api_route_from_path(string $path): string
         '/api/footer' => 'content/footer',
         '/api/footer.php' => 'content/footer',
         '/api/mobile-menu' => 'content/mobile-menu',
+        '/api/mobile_menu' => 'content/mobile-menu',
         '/api/mobile_menu.php' => 'content/mobile-menu',
         '/api/mobile-menu.php' => 'content/mobile-menu',
         '/api/homepage-sections' => 'content/homepage-sections',
+        '/api/homepage_sections' => 'content/homepage-sections',
         '/api/homepage_sections.php' => 'content/homepage-sections',
         '/api/homepage-sections.php' => 'content/homepage-sections',
         '/api/promotions' => 'content/promotions',
         '/api/promotions.php' => 'content/promotions',
         '/api/footer-pages' => 'content/footer-pages',
+        '/api/footer-pages.php' => 'content/footer-pages',
+        '/api/footer_pages' => 'content/footer-pages',
         '/api/footer_pages.php' => 'content/footer-pages',
     ];
 

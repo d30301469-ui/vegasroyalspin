@@ -2154,12 +2154,12 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     align-items: center;
     gap: 0.25rem;
 }
-/* Profil modalında (transform) iç içe modal + backdrop üstte kalsın */
+/* Profil modalında açılan detay modalı ana shell'in üstünde kalmalı */
 .profile-modal__content .modal {
-    z-index: 200;
+    z-index: 100100;
 }
 .profile-modal__content .modal-backdrop {
-    z-index: 199;
+    z-index: 100099;
 }
 .profile-detail-modal-content {
     border: 1px solid rgba(255, 255, 255, 0.1);
