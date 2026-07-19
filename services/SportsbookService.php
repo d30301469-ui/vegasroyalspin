@@ -712,8 +712,21 @@ final class SportsbookService
         if ($wagerId === '') {
             return ['status' => 18, 'msg' => 'INVALID_WAGER'];
         }
-        $stmt = $pdo->prepare("UPDATE sportsbook_transactions SET detail = :d WHERE wager_id = :w");
-        $stmt->execute([':d' => $detail, ':w' => $wagerId]);
+
+        // A LOST coupon never triggers ChangeBalance (no money moves), so UpdateDetail is the
+        // only signal that settles it. Persist isFinished=1 when the provider reports it so the
+        // original 'bet' row stops looking permanently "Aktif"/open in member bet history. Never
+        // write it back to 0 — normalizeWalletPayload() always fills the key (default 0), so a
+        // falsy value here just means "not reported", not "un-finish this wager".
+        $sql    = "UPDATE sportsbook_transactions SET detail = :d";
+        $params = [':d' => $detail, ':w' => $wagerId];
+        if (!empty($payload['isFinished'] ?? $payload['is_finished'] ?? 0)) {
+            $sql .= ", is_finished = 1";
+        }
+        $sql .= " WHERE wager_id = :w";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         if ($stmt->rowCount() === 0) {
             return ['status' => 18, 'msg' => 'INVALID_WAGER'];
         }
@@ -797,8 +810,8 @@ final class SportsbookService
         $offset = max(0, $offset);
         try {
             $stmt = $pdo->prepare(
-                "SELECT txn_code, wager_id, round_id, txn_type, amount, before_balance, after_balance,
-                        currency, is_finished, created_at
+                "SELECT id, txn_code, wager_id, round_id, vendor_code, game_code, txn_type, amount,
+                        before_balance, after_balance, currency, is_finished, created_at
                  FROM sportsbook_transactions
                  WHERE user_id = :uid
                  ORDER BY id DESC

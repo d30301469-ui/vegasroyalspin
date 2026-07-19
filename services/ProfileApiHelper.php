@@ -298,6 +298,16 @@ final class ProfileApiHelper
             }
             $txnType = strtolower(trim((string) ($row['txn_type'] ?? 'bet')));
             $amount  = abs((float) ($row['amount'] ?? 0));
+            // status: 3 = İptal Edildi/İade (cancel/void txn), 2 = Tamamlandı (finished bet/win),
+            // 1 = Aktif (still open). Cancel must win over is_finished so İADE filters (which key
+            // off status===3) actually match refunded/voided sportsbook coupons.
+            if ($txnType === 'cancel') {
+                $status = 3;
+            } elseif (!empty($row['is_finished'])) {
+                $status = 2;
+            } else {
+                $status = 1;
+            }
             $sportsTransactions[] = [
                 'id'             => (string) ($row['id'] ?? ''),
                 'transaction_id' => (string) ($row['txn_code'] ?? ''),
@@ -305,7 +315,7 @@ final class ProfileApiHelper
                 'game_provider'  => (string) ($row['vendor_code'] ?? 'sports-betby'),
                 'game_code'      => (string) ($row['game_code'] ?? 'sports'),
                 'txn_type'       => $txnType,
-                'status'         => (int) (($row['is_finished'] ?? 0) ? 2 : 1),
+                'status'         => $status,
                 'bet_amount'     => $txnType === 'bet' ? $amount : 0,
                 'get_amount'     => in_array($txnType, ['win', 'cancel'], true) ? $amount : 0,
                 'amount'         => $amount,

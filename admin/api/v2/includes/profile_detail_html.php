@@ -200,6 +200,25 @@ if (!function_exists('member_profile_fetch_spor_bet_row')) {
             return null;
         }
 
+        // Current provider (BetBy/Sportsbook) — legacy candidates below are no longer written to
+        // since the sports migration, but are kept for any pre-migration rows still on file.
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT id, txn_code, wager_id, round_id, vendor_code, game_code, txn_type, amount,
+                        after_balance, is_finished, detail, raw_payload, created_at
+                 FROM sportsbook_transactions WHERE id = :id AND user_id = :user_id LIMIT 1"
+            );
+            $stmt->execute(['id' => $betId, 'user_id' => $userId]);
+            $sbRow = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($sbRow)) {
+                return member_profile_normalize_sportsbook_row($sbRow);
+            }
+        } catch (PDOException $e) {
+            if (!str_contains($e->getMessage(), '42S02')) {
+                throw $e;
+            }
+        }
+
         $candidates = ['spor_bets', 'sports_bets', 'sport_bets', 'okko_bets'];
         foreach ($candidates as $table) {
             try {
@@ -218,6 +237,53 @@ if (!function_exists('member_profile_fetch_spor_bet_row')) {
         }
 
         return null;
+    }
+}
+
+if (!function_exists('member_profile_normalize_sportsbook_row')) {
+    /**
+     * Maps a `sportsbook_transactions` row (BetBy wallet ledger) onto the field shape the
+     * spor bet detail renderer expects (legacy spor_bets-style columns).
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    function member_profile_normalize_sportsbook_row(array $row): array
+    {
+        $txnType = strtolower(trim((string) ($row['txn_type'] ?? 'bet')));
+        $amount  = abs((float) ($row['amount'] ?? 0));
+        if ($txnType === 'cancel') {
+            $status = 3;
+        } elseif (!empty($row['is_finished'])) {
+            $status = 2;
+        } else {
+            $status = 1;
+        }
+
+        $rawPayload = (string) ($row['raw_payload'] ?? '');
+        $decodedPayload = [];
+        if ($rawPayload !== '' && $rawPayload !== 'null') {
+            $decoded = json_decode($rawPayload, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $decodedPayload = $decoded;
+            }
+        }
+
+        return [
+            'id'             => (int) ($row['id'] ?? 0),
+            'transaction_id' => (string) ($row['txn_code'] ?? ''),
+            'round_id'       => (string) ($row['round_id'] ?? ''),
+            'game_code'      => (string) ($row['game_code'] ?? 'sports'),
+            'provider_name'  => (string) ($row['vendor_code'] ?? 'sports-betby'),
+            'bet_amount'     => $txnType === 'bet' ? $amount : 0,
+            'get_amount'     => in_array($txnType, ['win', 'cancel'], true) ? $amount : 0,
+            'status'         => $status,
+            'created_at'     => (string) ($row['created_at'] ?? ''),
+            'balance_after'  => $row['after_balance'] ?? null,
+            'spor_details'   => json_encode(array_merge($decodedPayload, [
+                'detail' => (string) ($row['detail'] ?? ''),
+            ]), JSON_UNESCAPED_UNICODE),
+        ];
     }
 }
 
@@ -248,6 +314,9 @@ if (!function_exists('member_profile_render_spor_bet_detail')) {
 
         $statusClass = $statusColors[(int) ($bet['status'] ?? 0)] ?? 'secondary';
         $providerCode = (int) ($bet['game_provider'] ?? 0);
+        $providerLabel = is_string($bet['provider_name'] ?? null) && $bet['provider_name'] !== ''
+            ? (string) $bet['provider_name']
+            : ($providers[$providerCode] ?? 'Bilinmiyor');
         $statusCode = (int) ($bet['status'] ?? 0);
 
         ob_start();
@@ -260,7 +329,7 @@ if (!function_exists('member_profile_render_spor_bet_detail')) {
             <tr><th>Transaction ID:</th><td><code><?= member_profile_html_escape((string) ($bet['transaction_id'] ?? '')) ?></code></td></tr>
             <tr><th>Round ID:</th><td><code><?= member_profile_html_escape((string) ($bet['round_id'] ?? '')) ?></code></td></tr>
             <tr><th>Oyun Kodu:</th><td><?= member_profile_html_escape((string) ($bet['game_code'] ?? '')) ?></td></tr>
-            <tr><th>Sağlayıcı:</th><td><?= member_profile_html_escape($providers[$providerCode] ?? 'Bilinmiyor') ?></td></tr>
+            <tr><th>Sağlayıcı:</th><td><?= member_profile_html_escape($providerLabel) ?></td></tr>
         </table>
     </div>
     <div class="col-md-6">
