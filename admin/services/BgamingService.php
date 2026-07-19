@@ -1223,10 +1223,11 @@ final class BgamingService
 
     private static function walletFreespinsFinish(PDO $pdo, array $payload): array
     {
-        if (!self::featureEnabled($pdo, 'freespins_enabled')) {
-            return ['code' => 'FREESPINS_DISABLED', 'message' => 'Freespins are disabled'];
-        }
-
+        // NOTE: do not gate this callback behind the admin 'freespins_enabled' toggle.
+        // By the time BGaming calls /freespins/finish, the freespin round already
+        // happened game-side; rejecting the payout callback here only orphans the
+        // player's win and surfaces a blocking error in the BGaming game client
+        // (per spec, only a 403 signature mismatch is a valid rejection here).
         $payload = self::normalizeWalletPayloadContext($pdo, $payload);
 
         $issueId = self::extractFreespinIssueId($payload);
@@ -1694,9 +1695,8 @@ final class BgamingService
         if (!$isFreespinPromo && !self::featureEnabled($pdo, 'promo_enabled')) {
             return ['code' => 'PROMO_DISABLED', 'message' => 'Promo is disabled'];
         }
-        if ($isFreespinPromo && !self::featureEnabled($pdo, 'freespins_enabled')) {
-            return ['code' => 'FREESPINS_DISABLED', 'message' => 'Freespins are disabled'];
-        }
+        // Freespin-driven promo actions are never gated behind 'freespins_enabled'
+        // here either — same reasoning as walletFreespinsFinish() above.
 
         $payload = self::normalizePromoWalletPayload($pdo, $payload);
         $actionId = trim((string) ($payload['event_id'] ?? $payload['action_id'] ?? ''));
@@ -1719,9 +1719,8 @@ final class BgamingService
         if (!$isFreespinPromo && !self::featureEnabled($pdo, 'promo_enabled')) {
             return ['code' => 'PROMO_DISABLED', 'message' => 'Promo is disabled'];
         }
-        if ($isFreespinPromo && !self::featureEnabled($pdo, 'freespins_enabled')) {
-            return ['code' => 'FREESPINS_DISABLED', 'message' => 'Freespins are disabled'];
-        }
+        // Freespin-driven promo actions are never gated behind 'freespins_enabled'
+        // here either — same reasoning as walletFreespinsFinish() above.
 
         $payload = self::normalizePromoWalletPayload($pdo, $payload);
         $eventId = trim((string) ($payload['event_id'] ?? ''));
