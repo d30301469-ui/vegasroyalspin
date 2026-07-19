@@ -607,16 +607,42 @@ final class BgamingService
         }
 
         $campaignCode = (string) ($campaign['campaign_code'] ?? '');
+        $campaignType = (string) ($campaign['campaign_type'] ?? '');
         $existing = $pdo->prepare('SELECT id FROM bgaming_campaign_players WHERE campaign_code = :campaign_code AND user_id = :user_id LIMIT 1');
         $existing->execute(['campaign_code' => $campaignCode, 'user_id' => $userId]);
         if ($existing->fetchColumn()) {
             throw new RuntimeException('Kampanya bu kullanıcıya zaten atanmış.');
         }
 
+        $remoteIssueId = null;
+        if ($campaignType === 'freespin') {
+            $gameIdentifier = trim((string) ($campaign['game_identifier'] ?? ''));
+            if ($gameIdentifier === '') {
+                throw new RuntimeException('Freespin kampanyası için game_identifier zorunludur.');
+            }
+
+            $freespinsPerPlayer = max(1, (int) ($campaign['freespins_per_player'] ?? 0));
+            $expiresAtTs = (int) ($campaign['expires_at'] ?? 0);
+            if ($expiresAtTs > 0 && $expiresAtTs <= time()) {
+                throw new RuntimeException('Süresi dolmuş freespin kampanyası atanamaz.');
+            }
+
+            $remoteIssueId = self::assignedFreespinIssueId($campaignCode, $userId);
+            self::issueRemoteFreespins($pdo, [
+                'user_id' => $userId,
+                'issue_id' => $remoteIssueId,
+                'games' => $gameIdentifier,
+                'currency' => (string) ($campaign['currency_code'] ?? self::config($pdo)['currency'] ?? self::DEFAULT_CURRENCY),
+                'freespins_quantity' => $freespinsPerPlayer,
+                'valid_since' => (int) ($campaign['begins_at'] ?? 0) > 0 ? date('Y-m-d H:i:s', (int) $campaign['begins_at']) : '',
+                'valid_until' => $expiresAtTs > 0 ? date('Y-m-d H:i:s', $expiresAtTs) : '',
+            ]);
+        }
+
         $bonusId = null;
         $pdo->beginTransaction();
         try {
-            if ((string) ($campaign['campaign_type'] ?? '') === 'promo') {
+            if ($campaignType === 'promo') {
                 $promoAmount = round((float) ($campaign['promo_amount'] ?? 0), 2);
                 $wageringMultiplier = max(0, (float) ($campaign['wagering_multiplier'] ?? 0));
                 $wageringTarget = $promoAmount * max(1, $wageringMultiplier);
@@ -652,10 +678,11 @@ final class BgamingService
                 'campaign_code' => $campaignCode,
                 'user_id' => $userId,
                 'bonus_id' => $bonusId,
-                'status' => (string) ($campaign['campaign_type'] ?? '') === 'promo' ? 'bonus_assigned' : 'assigned',
+                'status' => $campaignType === 'promo' ? 'bonus_assigned' : ($remoteIssueId !== null ? 'issued_remote' : 'assigned'),
                 'payload' => json_encode([
                     'campaign_title' => (string) ($campaign['title'] ?? ''),
-                    'campaign_type' => (string) ($campaign['campaign_type'] ?? ''),
+                    'campaign_type' => $campaignType,
+                    'remote_issue_id' => $remoteIssueId,
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
 
@@ -671,6 +698,7 @@ final class BgamingService
             'campaign_code' => $campaignCode,
             'user_id' => $userId,
             'bonus_id' => $bonusId,
+            'issue_id' => $remoteIssueId,
         ];
     }
 
@@ -714,11 +742,16 @@ final class BgamingService
         $items = [];
         $now = time();
         foreach ($rows as $row) {
+            $playerStatus = strtolower(trim((string) ($row['player_status'] ?? '')));
+            if (in_array($playerStatus, ['assigned', 'issued_remote', 'bonus_assigned'], true)) {
+                continue;
+            }
+
             $beginsAt = isset($row['begins_at']) ? (int) $row['begins_at'] : 0;
             $expiresAt = isset($row['expires_at']) ? (int) $row['expires_at'] : 0;
             $status = 'new';
 
-            if (in_array((string) ($row['player_status'] ?? ''), ['played', 'completed'], true)) {
+            if (in_array($playerStatus, ['played', 'completed'], true)) {
                 $status = 'played';
             } elseif ($expiresAt > 0 && $expiresAt < $now) {
                 $status = 'expired';
@@ -2306,6 +2339,11 @@ final class BgamingService
     private static function generateCampaignCode(string $campaignType): string
     {
         return 'bg_' . $campaignType . '_' . bin2hex(random_bytes(6));
+    }
+
+    private static function assignedFreespinIssueId(string $campaignCode, int $userId): string
+    {
+        return 'fs_assign_' . $userId . '_' . substr(sha1($campaignCode), 0, 12);
     }
 
     private static function parseUnixTimestamp(string $value): ?int
