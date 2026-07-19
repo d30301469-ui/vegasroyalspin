@@ -867,15 +867,14 @@
      * sebeple olursa olsun eksik geldiyse — kullanıcı "Kişisel Detaylar" sekmesine gidip
      * orada doğru veriyi görse bile — sidebar'ın kalıcı olarak eski/boş veriyle takılı
      * kalmasına yol açar. Bu yüzden her navigasyonda, en son çekilen HTML'in aside'ından
-     * kimlik alanlarını (avatar baş harfi, kullanıcı adı, isim-soyisim, kullanıcı id)
+     * kimlik alanlarını (avatar baş harfi, kullanıcı adı, kullanıcı id)
      * canlı sidebar'a senkronize ediyoruz — yapısal DOM'u (accordion vb.) değiştirmeden.
      */
     function syncProfileSidebarIdentityFromParsedAside(existingAside, newAside) {
         if (!existingAside || !newAside) return;
         var fields = [
             ['.avatar-holder', 'text'],
-            ['.user-right .username', 'text'],
-            ['.user-right .user-fullname', 'text']
+            ['.user-right .username', 'text']
         ];
         fields.forEach(function(pair) {
             var selector = pair[0];
@@ -892,7 +891,7 @@
             if (curId.getAttribute('data-user-id') !== newIdVal) {
                 curId.setAttribute('data-user-id', newIdVal);
                 var curIdIcon = curId.querySelector('.copy-id-icon');
-                curId.textContent = newIdVal + ' ';
+                curId.textContent = 'ID: ' + newIdVal + ' ';
                 if (curIdIcon) {
                     curId.appendChild(curIdIcon);
                 } else {
