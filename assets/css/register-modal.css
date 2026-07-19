@@ -261,8 +261,6 @@
 
 @media (max-width: 380px) {
     .register-turnstile-wrap .turnstile-widget {
-        transform: scale(0.92);
-        transform-origin: center top;
         min-height: 60px;
     }
 }
