@@ -656,6 +656,12 @@ final class DrakonService
                 'mode'           => $mode,
                 'home_url'       => trim((string) ($cfg['home_url'] ?? '')),
                 'launch_options' => ['game_url' => $gameUrl],
+                // Drakon'un (launch.timelesstech.org) oyun başlatma sayfası kendi
+                // X-Frame-Options/CSP frame-ancestors politikası nedeniyle iframe
+                // içine gömülmeyi reddediyor; masaüstünde sessizce boş kalan bir
+                // iframe yerine tam sayfa yönlendirme (redirect) kullanılmalı —
+                // tıpkı mobilde zaten yapıldığı gibi.
+                'open_mode'      => 'redirect',
             ],
             'game_url' => $gameUrl,
         ];
