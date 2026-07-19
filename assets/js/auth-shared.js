@@ -556,6 +556,7 @@
             var widgetId = w.turnstile.render(el, {
                 sitekey: this.turnstileSiteKey(),
                 theme: cfg.theme || 'dark',
+                size: cfg.size || 'flexible',
                 action: cfg.action || '',
                 callback: typeof cfg.callback === 'function' ? cfg.callback : undefined,
                 'error-callback': typeof cfg.errorCallback === 'function' ? cfg.errorCallback : undefined,
