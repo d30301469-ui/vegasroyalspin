@@ -1840,6 +1840,11 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
 }
+.bet-history-filters.is-custom-period {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    overflow-x: visible;
+}
 .bhf-group {
     display: flex;
     flex-direction: row;
@@ -1998,6 +2003,13 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     flex-wrap: wrap;
     row-gap: 0.35rem;
     max-width: 100%;
+}
+.bet-history-filters.is-custom-period .bhf-period-custom {
+    flex: 1 1 100%;
+    min-width: 100%;
+}
+.bet-history-filters.is-custom-period .bhf-actions {
+    margin-left: auto;
 }
 .bhf-period-custom .bhf-input {
     min-width: 7.5rem;

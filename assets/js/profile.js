@@ -4056,6 +4056,9 @@
             if (bhPeriodCustomWrap) {
                 $(bhPeriodCustomWrap).toggle(!!isCustom);
             }
+            if (bhForm) {
+                bhForm.classList.toggle('is-custom-period', !!isCustom);
+            }
             if (bhStart) bhStart.required = !!isCustom;
             if (bhEnd) bhEnd.required = !!isCustom;
             if (isCustom) syncDateBounds();
