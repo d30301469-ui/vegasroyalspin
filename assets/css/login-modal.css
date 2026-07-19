@@ -626,9 +626,13 @@
     align-items: flex-start;
     width: 100%;
     max-width: 100%;
-    min-height: 65px;
+    min-height: 0;
     overflow: visible;
     margin: 2px 0 10px;
+}
+
+.login-turnstile-wrap.has-turnstile-widget {
+    min-height: 65px;
 }
 
 .turnstile-widget {
@@ -643,6 +647,10 @@
     .login-turnstile-wrap .turnstile-widget {
         transform: scale(0.92);
         transform-origin: center top;
+        min-height: 60px;
+    }
+
+    .login-turnstile-wrap.has-turnstile-widget {
         min-height: 60px;
     }
 }
