@@ -167,6 +167,9 @@
         document.body.classList.remove('login-modal-open');
         applyMobileAuthLayoutFix('registerModal');
     }
+    window.__openRegisterModal = showRegisterModal;
+    window.MaltabetAuth = window.MaltabetAuth || {};
+    window.MaltabetAuth.showRegisterModal = showRegisterModal;
 
     function hideRegisterModal() {
         var el = document.getElementById('registerModal');

@@ -909,6 +909,10 @@
                     loginTrigger.click();
                     return;
                 }
+                if (window.MaltabetAuth && typeof window.MaltabetAuth.showLoginModal === "function") {
+                    window.MaltabetAuth.showLoginModal();
+                    return;
+                }
                 if (typeof window.showModalById === "function") {
                     window.showModalById("login2");
                 }
@@ -921,6 +925,10 @@
                 var regTrigger = document.getElementById("openRegister");
                 if (regTrigger) {
                     regTrigger.click();
+                    return;
+                }
+                if (window.MaltabetAuth && typeof window.MaltabetAuth.showRegisterModal === "function") {
+                    window.MaltabetAuth.showRegisterModal();
                     return;
                 }
                 if (typeof window.showModalById === "function") {

@@ -32,6 +32,9 @@
     backdrop.className = 'modal-backdrop fade show';
     backdrop.setAttribute('data-modal-backdrop', '');
     modalEl.parentNode.insertBefore(backdrop, modalEl);
+    if (typeof window.jQuery !== 'undefined') {
+      window.jQuery(modalEl).trigger('shown.bs.modal');
+    }
   }
 
   function hideModal(modalEl) {
