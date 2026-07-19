@@ -52,7 +52,7 @@ $messagesSentHref = '/profile/messages?box=sent' . (!empty($profile_modal) ? '&m
 $messagesNewHref = '/profile/messages?box=new' . (!empty($profile_modal) ? '&modal=1' : '');
 $loyaltyPointsHref = '/profile/sadakat-puanlari' . (!empty($profile_modal) ? '?modal=1' : '');
 ?>
-<aside id="profilePlayerSidebar" name="profilePlayerSidebar" class="sidebarMain playersidebarMain profile-sidebar-v2">
+<aside id="profilePlayerSidebar" name="profilePlayerSidebar" class="sidebarMain playersidebarMain profile-sidebar-v2<?php echo $active_tab === 'details' ? ' profile-sidebar--hub' : ''; ?>">
     <div class="profile-content">
         <div class="profile-header edit-user">
             <span class="avatar-holder"><?php echo htmlspecialchars($sidebar_initial); ?></span>

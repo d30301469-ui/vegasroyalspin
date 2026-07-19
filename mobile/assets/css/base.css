@@ -454,6 +454,12 @@ body.mobile-site .mainContentWrap .home-hero-slider {
     display: none !important;
   }
 
+  /* Profil modalı içinde hub menüsü (sidebar) mobilde görünür kalmalı. */
+  .profile-modal__content .playersidebarMain,
+  .profile-modal__content .sidebarMain.playersidebarMain.profile-sidebar-v2 {
+    display: block !important;
+  }
+
   .deposit-listing i.fa.h5 {
     font-size: 17px;
   }
