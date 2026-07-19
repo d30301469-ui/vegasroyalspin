@@ -16,10 +16,26 @@ $panelBadge = isset($headerLoyaltyBadge) && is_array($headerLoyaltyBadge) ? $hea
 $panelLoyaltyName = (string) ($panelBadge['name'] ?? 'Bronze');
 $panelLoyaltyIcon = (string) ($panelBadge['icon_url'] ?? '/assets/images/loyalty/badges/bronze.png');
 $panelInitialLower = mb_strtolower($panelInitial);
+$panelBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
+$panelSettings = isset($ayar) && is_array($ayar) ? $ayar : [];
+$panelSiteName = (string) ($panelBranding['site_name'] ?? $panelSettings['site_adi'] ?? 'VegasRoyalSpin');
+$panelLogoUrl = (string) ($panelBranding['logo_animated_url'] ?? $panelSettings['logo_animated_url'] ?? $panelBranding['logo_mobile_url'] ?? $panelBranding['logo_url'] ?? $panelSettings['logo_mobile_url'] ?? $panelSettings['logo_url'] ?? '');
+if (class_exists('ApiMediaUrl', false)) {
+    $panelLogoUrl = ApiMediaUrl::resolve($panelLogoUrl);
+}
 ?>
 <div class="mprofile-overlay" id="mprofileOverlay" aria-hidden="true"></div>
 <aside class="overlay-sliding-wrapper-bc user-profile-container mprofile-panel" id="mprofilePanel" aria-hidden="true" role="dialog" aria-label="Profil">
   <div class="overlay-sliding-w-c-content-slider-bc" data-scroll-lock-scrollable>
+    <div class="hdr-main-content-bc">
+      <div class="logo-container">
+        <a class="logo" href="/tr/">
+          <?php if ($panelLogoUrl !== ''): ?><img class="hdr-logo-bc" src="<?= htmlspecialchars($panelLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Header Logo"><?php endif; ?>
+        </a>
+        <a href="https://affiliates.my/" target="_blank" class=" header-icon"><img alt="Header Icon" loading="lazy" decoding="async" src="https://cms.casinomilyon615.com/storage/medias/casinomilyon-18755179/media_18755179_1617883267cb571ec980e925adbb0427.gif"></a>
+      </div>
+      <i class="hdr-user-close bc-i-close-remove"></i>
+    </div>
     <div class="u-i-p-c-body-bc">
       <div class="u-i-profile-page-bc">
         <div class="u-i-p-amount-holder-bc">

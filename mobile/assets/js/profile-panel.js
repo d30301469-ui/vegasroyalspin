@@ -92,6 +92,14 @@
         var target = e.target && e.target.closest ? e.target : null;
         if (!target) return;
 
+        var close = target.closest('.hdr-user-close');
+        if (close) {
+          e.preventDefault();
+          e.stopPropagation();
+          closePanel();
+          return;
+        }
+
         var copy = target.closest('.u-i-p-p-u-i-d-user-id-copy-bc');
         if (copy) {
           e.preventDefault();
