@@ -232,6 +232,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   transition: transform var(--default-transition-duration, 0.24s);
 }
 #mprofilePanel .u-i-p-amount-holder-bc .swiper-slide:not(.swiper-slide-active) { transform: scale(0.9); }
+#mprofilePanel .u-i-p-amount-holder-bc .swiper-slide:has(.u-i-p-amounts-bc.bonuses) { transform: none; }
 #mprofilePanel .u-i-p-amounts-bc {
   min-height: 120px;
   height: 100%;
