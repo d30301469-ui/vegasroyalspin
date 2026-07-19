@@ -5,6 +5,7 @@
  */
 $assetCssDir = defined('BASE_PATH') ? BASE_PATH . '/assets/css' : (__DIR__ . '/../../assets/css');
 $assetVer = (string)(file_exists($assetCssDir . '/global.css') ? filemtime($assetCssDir . '/global.css') : 0) ?: '1';
+$profileCssVer = (string)(file_exists($assetCssDir . '/profile.css') ? filemtime($assetCssDir . '/profile.css') : $assetVer);
 ?>
 <!doctype html>
 <html lang="tr">
@@ -16,7 +17,7 @@ $assetVer = (string)(file_exists($assetCssDir . '/global.css') ? filemtime($asse
   <link href="/assets/css/bootstrap-utils.css?v=<?= $assetVer ?>" rel="stylesheet">
   <link href="/assets/css/global.css?v=<?= $assetVer ?>" rel="stylesheet">
   <link href="/assets/css/components.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/profile.css?v=<?= $assetVer ?>" rel="stylesheet">
+  <link href="/assets/css/profile.css?v=<?= $profileCssVer ?>" rel="stylesheet">
   <link href="/assets/css/sidebar.css?v=<?= $assetVer ?>" rel="stylesheet">
   <link href="/assets/css/responsive.css?v=<?= $assetVer ?>" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
