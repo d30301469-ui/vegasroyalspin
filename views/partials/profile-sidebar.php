@@ -9,17 +9,7 @@ $sidebar_initial    = $initial ?? (isset($user_info['username']) ? strtoupper(su
 if (strlen($sidebar_initial) < 2) {
     $sidebar_initial = strtoupper(substr($sidebar_username, 0, 2));
 }
-$sidebar_full_name = '';
-if (!empty($user_info['first_name']) || !empty($user_info['surname'])) {
-    $sidebar_full_name = trim(($user_info['first_name'] ?? '') . ' ' . ($user_info['surname'] ?? ''));
-}
-if ($sidebar_full_name === '' && !empty($firstName) && isset($surname)) {
-    $sidebar_full_name = trim(($firstName ?? '') . ' ' . ($surname ?? ''));
-}
-if ($sidebar_full_name === '') {
-    $sidebar_full_name = 'Belirtilmemiş';
-}
-// Kullanıcı adı her zaman gösterilir; isim-soyisim bilgisi zorunlu olarak ayrı bir satırda gösterilir.
+// Üst profil bloğunda yalnızca kullanıcı adı + ID gösterilir.
 $sidebar_display_name = $sidebar_username;
 $sidebar_user_id = $user_id ?? $_SESSION['user_id'] ?? (isset($user_info, $user_info['id']) ? $user_info['id'] : '');
 $sidebar_loyalty = [
@@ -67,10 +57,9 @@ $messagesNewHref = '/profile/messages?box=new' . (!empty($profile_modal) ? '&mod
             <span class="avatar-holder"><?php echo htmlspecialchars($sidebar_initial); ?></span>
             <div class="user-right">
                 <span class="username"><?php echo htmlspecialchars($sidebar_display_name); ?></span>
-                <span class="user-fullname"><?php echo htmlspecialchars($sidebar_full_name); ?></span>
                 <?php if ($sidebar_user_id !== ''): ?>
                 <span class="user-id" title="Kopyala" data-user-id="<?php echo htmlspecialchars((string)$sidebar_user_id); ?>">
-                    <?php echo htmlspecialchars((string)$sidebar_user_id); ?>
+                    ID: <?php echo htmlspecialchars((string)$sidebar_user_id); ?>
                     <i class="fa-regular fa-copy copy-id-icon" aria-hidden="true"></i>
                 </span>
                 <?php endif; ?>
