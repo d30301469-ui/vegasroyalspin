@@ -1627,11 +1627,12 @@ final class BgamingService
                 // it (BGaming rollback tombstone rule) instead of undoing the rollback.
                 $tombstoned = $type !== 'rollback' && self::rollbackTombstoneExists($pdo, $actionId);
 
+                $rollbackOriginalType = null;
                 if ($tombstoned) {
                     $amountSubunits = 0;
                     $amount = 0.0;
                 } elseif ($type === 'rollback') {
-                    [$amountSubunits, $amount, $balance] = self::applyRollbackBalance($pdo, $originalActionId, $balance);
+                    [$amountSubunits, $amount, $balance, $rollbackOriginalType] = self::applyRollbackBalance($pdo, $originalActionId, $balance);
                 } elseif ($type === 'bet' || $type === 'promo_bet') {
                     if ($amount < 0 || $balance < $amount) {
                         throw new BgamingWalletException([
@@ -1648,6 +1649,12 @@ final class BgamingService
                     'balance' => number_format($balance, 2, '.', ''),
                     'id' => $userId,
                 ]);
+
+                if (($type === 'bet' || $type === 'promo_bet') && !$tombstoned && $amount > 0) {
+                    WageringService::registerBet($pdo, $userId, $amount);
+                } elseif ($type === 'rollback' && $amount > 0 && in_array($rollbackOriginalType, ['bet', 'promo_bet'], true)) {
+                    WageringService::reverseBet($pdo, $userId, $amount);
+                }
 
                 $casinoTxId = self::newCasinoTxId();
                 $processedAt = gmdate('Y-m-d H:i:s');
@@ -1702,21 +1709,21 @@ final class BgamingService
     private static function applyRollbackBalance(PDO $pdo, string $originalActionId, float $balance): array
     {
         if ($originalActionId === '') {
-            return [0, 0.0, $balance];
+            return [0, 0.0, $balance, null];
         }
         $original = self::existingTransaction($pdo, $originalActionId);
         if ($original === null) {
-            return [0, 0.0, $balance];
+            return [0, 0.0, $balance, null];
         }
         $amount = round((float) $original['amount'], 2);
         $amountSubunits = (int) $original['amount_subunits'];
         $type = (string) $original['txn_type'];
         if (in_array($type, ['bet', 'promo_bet'], true)) {
-            return [$amountSubunits, $amount, round($balance + $amount, 2)];
+            return [$amountSubunits, $amount, round($balance + $amount, 2), $type];
         }
         // Rollback of a win must be processed even if the player no longer has the
         // funds (BGaming rollback rule); the response balance is clamped to zero.
-        return [$amountSubunits, $amount, round(max(0.0, $balance - $amount), 2)];
+        return [$amountSubunits, $amount, round(max(0.0, $balance - $amount), 2), $type];
     }
 
     private static function rollbackTombstoneExists(PDO $pdo, string $actionId): bool

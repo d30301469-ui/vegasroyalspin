@@ -1,6 +1,8 @@
 <?php
 /** Üye API modülü — index.php tarafından include edilir. */
 
+admin_require_project_file('services/WageringService.php');
+
 if ($method === 'GET' && ($route === 'balance.php' || $route === 'account/balance')) {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Pragma: no-cache');
@@ -17,6 +19,7 @@ if ($method === 'GET' && ($route === 'balance.php' || $route === 'account/balanc
     $formatBalance = static function (float $amount): string {
         return number_format($amount, 2, ',', '.') . ' ₺';
     };
+    $wagering = WageringService::accountProgress($pdo, $userId);
     $memberEnvelope(200, [
         'success' => true,
         'code' => 200,
@@ -38,6 +41,17 @@ if ($method === 'GET' && ($route === 'balance.php' || $route === 'account/balanc
             'ana_bakiye' => $mainBalance,
             'bonus_bakiye' => $bonusBalance,
             'toplam_bonus' => $bonusBalance,
+            'wagering' => [
+                'required' => $wagering['required'],
+                'progress' => $wagering['progress'],
+                'remaining' => $wagering['remaining'],
+                'percent' => $wagering['percent'],
+                'is_complete' => $wagering['isComplete'],
+                'multiplier' => $wagering['multiplier'],
+                'required_formatted' => $formatBalance($wagering['required']),
+                'progress_formatted' => $formatBalance($wagering['progress']),
+                'remaining_formatted' => $formatBalance($wagering['remaining']),
+            ],
         ],
     ]);
 }
