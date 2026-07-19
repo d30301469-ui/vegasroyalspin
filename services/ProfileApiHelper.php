@@ -232,6 +232,43 @@ final class ProfileApiHelper
 
         $mapped = self::mapLegacyPath($path);
 
+        if (preg_match('#^/support/tickets(?:/|$)#', $mapped) === 1) {
+            $candidateBases = [];
+            $appendCandidate = static function (string $base) use (&$candidateBases): void {
+                $base = rtrim(trim($base), '/');
+                if ($base === '' || in_array($base, $candidateBases, true)) {
+                    return;
+                }
+                $candidateBases[] = $base;
+            };
+
+            if (function_exists('deploy_domain')) {
+                $backendUrl = rtrim(trim((string) deploy_domain('backend_url')), '/');
+                if ($backendUrl !== '') {
+                    $appendCandidate($backendUrl . '/api/v2');
+                }
+            }
+
+            foreach (BackendApiClient::memberApiOutboundBaseCandidates() as $base) {
+                $appendCandidate((string) $base);
+            }
+            $appendCandidate(BackendApiClient::effectiveMemberApiOutboundBaseUrl());
+
+            foreach ($candidateBases as $base) {
+                $response = BackendApiClient::requestWithBaseAndMemberBearer(
+                    'POST',
+                    $base,
+                    $mapped,
+                    $jwt,
+                    [],
+                    $body
+                );
+                if (is_array($response) && !empty($response['success'])) {
+                    return $response;
+                }
+            }
+        }
+
         return BackendApiClient::requestWithMemberBearer(
             'POST',
             BackendApiClient::SVC_MAIN,
