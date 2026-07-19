@@ -147,6 +147,7 @@ final class BgamingService
                 casino_round_id VARCHAR(190) NOT NULL,
                 game_identifier VARCHAR(120) NULL,
                 txn_type ENUM('bet','win','rollback','promo_bet','promo_win','freespins_win') NOT NULL,
+                wallet_source ENUM('balance','bonus_balance') NOT NULL DEFAULT 'balance',
                 amount_subunits BIGINT NOT NULL DEFAULT 0,
                 amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
                 before_balance DECIMAL(14,2) NOT NULL DEFAULT 0.00,
@@ -249,6 +250,7 @@ final class BgamingService
             'bgaming_games.bet_levels' => "ALTER TABLE bgaming_games ADD COLUMN bet_levels JSON NULL AFTER lines_count",
             'bgaming_games.default_bet_cents' => "ALTER TABLE bgaming_games ADD COLUMN default_bet_cents INT NULL AFTER bet_levels",
             'bgaming_games.max_multiplier' => "ALTER TABLE bgaming_games ADD COLUMN max_multiplier INT NULL AFTER default_bet_cents",
+            'bgaming_transactions.wallet_source' => "ALTER TABLE bgaming_transactions ADD COLUMN wallet_source ENUM('balance','bonus_balance') NOT NULL DEFAULT 'balance' AFTER txn_type",
         ];
         foreach ($columns as $key => $sql) {
             [$table, $column] = explode('.', $key, 2);
@@ -1043,7 +1045,8 @@ final class BgamingService
         if (!$user) {
             return ['code' => 'INVALID_USER', 'message' => 'User not found'];
         }
-        return ['balance' => self::toSubunits((float) ($user['balance'] ?? 0), (string) ($payload['currency'] ?? self::DEFAULT_CURRENCY))];
+        $column = WageringService::walletSourceColumn($pdo, (int) ($user['id'] ?? 0));
+        return ['balance' => self::toSubunits((float) ($user[$column] ?? 0), (string) ($payload['currency'] ?? self::DEFAULT_CURRENCY))];
     }
 
     private static function walletPlay(PDO $pdo, array $payload): array
@@ -1108,7 +1111,8 @@ final class BgamingService
             ]], 'freespins_win');
         }
         $fresh = self::user($pdo, (int) ($payload['user_id'] ?? 0));
-        return ['balance' => self::toSubunits((float) ($fresh['balance'] ?? 0), $currency)];
+        $column = WageringService::walletSourceColumn($pdo, (int) ($payload['user_id'] ?? 0));
+        return ['balance' => self::toSubunits((float) ($fresh[$column] ?? 0), $currency)];
     }
 
     private static function normalizeFreespinsStatus(string $rawStatus): string
@@ -1596,7 +1600,10 @@ final class BgamingService
                 $pdo->rollBack();
                 return ['code' => 'INVALID_USER', 'message' => 'User not found'];
             }
-            $balance = round((float) ($user['balance'] ?? 0), 2);
+            // Kullanıcı /play sırasında "bonus" cüzdanını seçtiyse (active_wallet_mode),
+            // gerçek bahis/kazanç bonus_balance üzerinden yürür; aksi halde ana bakiye.
+            $walletColumn = WageringService::walletSourceColumn($pdo, $userId);
+            $balance = round((float) ($user[$walletColumn] ?? 0), 2);
 
             foreach ($actions as $action) {
                 $actionId = trim((string) ($action['action_id'] ?? ''));
@@ -1645,7 +1652,7 @@ final class BgamingService
                     $balance = round($balance + $amount, 2);
                 }
 
-                $pdo->prepare('UPDATE users SET balance = :balance WHERE id = :id')->execute([
+                $pdo->prepare("UPDATE users SET {$walletColumn} = :balance WHERE id = :id")->execute([
                     'balance' => number_format($balance, 2, '.', ''),
                     'id' => $userId,
                 ]);
@@ -1661,10 +1668,10 @@ final class BgamingService
                 $stmt = $pdo->prepare(
                     'INSERT INTO bgaming_transactions
                         (user_id, action_id, original_action_id, casino_tx_id, session_id, round_id, casino_round_id,
-                         game_identifier, txn_type, amount_subunits, amount, before_balance, after_balance, raw_payload, processed_at)
+                         game_identifier, txn_type, wallet_source, amount_subunits, amount, before_balance, after_balance, raw_payload, processed_at)
                      VALUES
                         (:user_id, :action_id, :original_action_id, :casino_tx_id, :session_id, :round_id, :casino_round_id,
-                         :game_identifier, :txn_type, :amount_subunits, :amount, :before_balance, :after_balance, :raw_payload, :processed_at)'
+                         :game_identifier, :txn_type, :wallet_source, :amount_subunits, :amount, :before_balance, :after_balance, :raw_payload, :processed_at)'
                 );
                 $stmt->execute([
                     'user_id' => $userId,
@@ -1676,6 +1683,7 @@ final class BgamingService
                     'casino_round_id' => $casinoRoundId,
                     'game_identifier' => (string) ($payload['game'] ?? $action['game_id'] ?? ''),
                     'txn_type' => $type,
+                    'wallet_source' => $walletColumn,
                     'amount_subunits' => $amountSubunits,
                     'amount' => number_format($amount, 2, '.', ''),
                     'before_balance' => number_format($before, 2, '.', ''),
