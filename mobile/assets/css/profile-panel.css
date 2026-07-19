@@ -34,6 +34,7 @@
 .bc-i-balance-management::before { content: "\e918"; }
 .bc-i-copy::before { content: "\e3e0"; }
 .bc-i-eye::before { content: "\e926"; }
+.bc-i-close-remove::before { content: "\e5cd"; }
 
 /* Mobile profile panel styled on the original user-profile class hierarchy. */
 .mprofile-overlay {
@@ -108,6 +109,60 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 [dir="rtl"] #mprofilePanel.is-open .overlay-sliding-w-c-content-slider-bc {
   animation-name: overlay-sliding-right;
 }
+#mprofilePanel .hdr-main-content-bc {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: var(--mobile-header-main-section-height, 46px);
+  padding-inline-start: var(--padding-page-aside, 10px);
+  padding-inline-end: calc(var(--padding-page-aside, 10px) + 7px);
+  background: rgba(var(--header, 0, 11, 36), 1);
+  border-bottom: 1px solid rgba(var(--header-sc, 255, 255, 255), 0.05);
+}
+#mprofilePanel .logo-container {
+  display: flex;
+  align-items: center;
+  flex: auto;
+  margin-inline-end: 5px;
+  min-width: 0;
+}
+#mprofilePanel .logo {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: var(--mobile-header-main-section-height, 46px);
+}
+#mprofilePanel .hdr-logo-bc {
+  display: flex;
+  height: 100%;
+  max-width: 100px;
+  object-fit: contain;
+}
+#mprofilePanel .header-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-inline-start: 4px;
+}
+#mprofilePanel .header-icon > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: var(--border-radius, 3px);
+}
+#mprofilePanel .hdr-user-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  color: rgba(var(--header-sc, 255, 255, 255), 0.6);
+  font-size: 14px;
+  line-height: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: color var(--default-transition-duration, 0.24s);
+}
+#mprofilePanel .hdr-user-close:hover { color: rgba(var(--header-sc, 255, 255, 255), 0.9); }
 #mprofilePanel .u-i-profile-page-bc {
   padding: 10px var(--padding-page-aside, 10px);
 }
