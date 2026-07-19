@@ -65,6 +65,7 @@ $loyaltyPointsHref = '/profile/sadakat-puanlari' . (!empty($profile_modal) ? '?m
                 </span>
                 <?php endif; ?>
             </div>
+            <a class="profile-user-arrow bc-i-small-arrow-right" href="/profile/details<?= !empty($profile_modal) ? '?modal=1' : '' ?>" aria-label="Profile Details"></a>
         </div>
         <div class="main-balance main-balance-card">
             <span class="balance-label">ANA BAKİYE</span>
@@ -99,31 +100,37 @@ $loyaltyPointsHref = '/profile/sadakat-puanlari' . (!empty($profile_modal) ? '?m
 
         <nav class="profile-mobile-nav" aria-label="Mobil profil menüsü">
             <a class="profile-mobile-nav__item <?php echo $profile_open ? 'is-active' : ''; ?>" href="/profile/details<?= !empty($profile_modal) ? '?modal=1' : '' ?>">
-                <i class="fa-solid fa-user" aria-hidden="true"></i>
+                <i class="user-nav-icon bc-i-user" aria-hidden="true"></i>
                 <span>PROFİLİM</span>
+                <i class="profile-mobile-nav__chevron bc-i-small-arrow-right" aria-hidden="true"></i>
             </a>
             <a class="profile-mobile-nav__item <?php echo $balance_open ? 'is-active' : ''; ?>" href="<?= htmlspecialchars($depositWithDrawDepositHref, ENT_QUOTES, 'UTF-8') ?>">
-                <i class="fa-solid fa-wallet" aria-hidden="true"></i>
+                <i class="user-nav-icon bc-i-balance-management" aria-hidden="true"></i>
                 <span>BAKİYE YÖNETİMİ</span>
+                <i class="profile-mobile-nav__chevron bc-i-small-arrow-right" aria-hidden="true"></i>
             </a>
             <a class="profile-mobile-nav__item <?php echo $bet_open ? 'is-active' : ''; ?>" href="/profile/bet-history<?= !empty($profile_modal) ? '?modal=1' : '' ?>">
-                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                <i class="user-nav-icon bc-i-history" aria-hidden="true"></i>
                 <span>BAHİS GEÇMİŞİ</span>
+                <i class="profile-mobile-nav__chevron bc-i-small-arrow-right" aria-hidden="true"></i>
             </a>
             <a class="profile-mobile-nav__item <?php echo $promotions_open ? 'is-active' : ''; ?>" href="/profile/bonus-spor<?= !empty($profile_modal) ? '?modal=1' : '' ?>">
-                <i class="fa-solid fa-gift" aria-hidden="true"></i>
+                <i class="user-nav-icon bc-i-promotion" aria-hidden="true"></i>
                 <span>BONUSLAR</span>
+                <i class="profile-mobile-nav__chevron bc-i-small-arrow-right" aria-hidden="true"></i>
             </a>
             <a class="profile-mobile-nav__item <?php echo $messages_open ? 'is-active' : ''; ?>" href="<?= htmlspecialchars($messagesInboxHref, ENT_QUOTES, 'UTF-8') ?>">
-                <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                <i class="user-nav-icon bc-i-message" aria-hidden="true"></i>
                 <span>MESAJLAR</span>
                 <?php if ($unread_count > 0): ?><b class="profile-mobile-nav__badge"><?php echo (int) $unread_count; ?></b><?php endif; ?>
-            </a>
-            <a class="profile-mobile-nav__item" href="/logout" data-nav-mode="page">
-                <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
-                <span>ÇIKIŞ YAP</span>
+                <i class="profile-mobile-nav__chevron bc-i-small-arrow-right" aria-hidden="true"></i>
             </a>
         </nav>
+
+        <div class="profile-mobile-promo-lite" aria-label="Promo kodu">
+            <input type="text" class="profile-mobile-promo-lite__input" placeholder="PROMOSYON KODU" autocomplete="off" maxlength="64">
+            <button type="button" class="profile-mobile-promo-lite__btn" disabled>UYGULA</button>
+        </div>
     </div>
     <div class="sideSports profile-accordion">
         <ul class="accordion-list">
@@ -214,7 +221,7 @@ $loyaltyPointsHref = '/profile/sadakat-puanlari' . (!empty($profile_modal) ? '?m
         </div>
         <?php endif; ?>
         <div class="sidebar-footer">
-            <a class="sidebar-logout" href="/logout"><i class="fa-solid fa-right-from-bracket"></i> ÇIKIŞ YAP</a>
+            <a class="sidebar-logout" href="/logout" data-nav-mode="page"><i class="bc-i-logout"></i> ÇIKIŞ YAP</a>
         </div>
     </div>
 </aside>
