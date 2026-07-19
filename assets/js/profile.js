@@ -3518,6 +3518,7 @@
 
     function initDepositHistoryApi(root) {
         var scope = root && root.querySelector ? root : document;
+        var inProfileModal = !!(scope && scope.closest && scope.closest('#profileModalContent'));
         var depositEp = (typeof window.__DEPOSIT_HISTORY_ENDPOINT__ === 'string' && window.__DEPOSIT_HISTORY_ENDPOINT__.trim())
             ? window.__DEPOSIT_HISTORY_ENDPOINT__.trim()
             : '/api/v2/deposit-history';
@@ -3551,6 +3552,7 @@
             if (typeFilter) {
                 typeFilter.value = state.kind;
             }
+            if (inProfileModal) return;
             try {
                 var h = state.kind === 'withdraw' ? '#withdraw' : '#deposit';
                 if (window.history && window.history.replaceState) {
@@ -3730,6 +3732,15 @@
         }
 
         var ih = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+        if (inProfileModal && (ih === 'deposit' || ih === 'withdraw' || ih === 'cekim')) {
+            try {
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, '', window.location.pathname + window.location.search.split('#')[0]);
+                } else {
+                    window.location.hash = '';
+                }
+            } catch (eCleanHash) {}
+        }
         if (ih === 'withdraw' || ih === 'cekim') {
             setKind('withdraw');
         } else {
