@@ -70,12 +70,12 @@
             }
 
             // Öncelik: aynı ekranda profil modalını aç.
-            if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/deposit-withdraw')) {
+            if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/details')) {
                 return;
             }
 
             // Fallback: modal hazır değilse mobil profile sayfasına geç.
-            window.location.href = '/mobile/profile?profile=open&account=balance&page=deposit';
+            window.location.href = '/mobile/profile?profile=open&account=profile&page=details';
         }
 
         btn.addEventListener('click', function (e) {
