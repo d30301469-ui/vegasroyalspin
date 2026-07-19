@@ -74,22 +74,29 @@
 #mprofilePanel .u-i-profile-page-bc {
   min-height: 100%;
 }
+#mprofilePanel .u-i-p-c-body-bc {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 #mprofilePanel .overlay-sliding-w-c-content-slider-bc {
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-color: rgba(255, 255, 255, 0.55) transparent;
   scrollbar-width: thin;
-  background:
-    radial-gradient(circle at 0 100%, rgba(135, 19, 112, 0.8), transparent 35%),
-    linear-gradient(155deg, #2b0f42 0%, #050837 37%, #00024c 100%);
 }
 #mprofilePanel .u-i-profile-page-bc {
-  padding: 10px 7px 18px;
+  padding: 10px var(--padding-page-aside, 10px);
 }
 
 #mprofilePanel .u-i-p-amount-holder-bc {
-  margin: 0 0 7px;
+  display: flex;
+  margin: 0 0 10px;
+}
+#mprofilePanel .u-i-p-amount-holder-bc > div {
+  width: 100%;
 }
 #mprofilePanel .carouselWrapper,
 #mprofilePanel .swiper {
@@ -124,99 +131,146 @@
   scroll-snap-align: center;
 }
 #mprofilePanel .u-i-p-amounts-bc {
-  min-height: 114px;
-  border-radius: 4px;
+  min-height: 120px;
+  height: 100%;
+  width: 100%;
+  flex-direction: column;
+  overflow: hidden;
   color: #fff;
 }
-#mprofilePanel .u-i-p-amounts-bc.withdrawable { background: #35a844; }
-#mprofilePanel .u-i-p-amounts-bc.bonuses { background: #b58a25; }
 #mprofilePanel .u-i-p-a-content-bc {
-  height: 100%;
-  min-height: 114px;
-  padding: 13px 14px;
+  position: relative;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 120px;
+  padding: 10px 15px;
+  border-radius: var(--border-radius, 3px);
+  box-shadow: 0 1px 4px rgba(var(--b, 0, 0, 0), 0.5);
+  overflow: hidden;
+  color: #fff;
   justify-content: space-between;
 }
+#mprofilePanel .u-i-p-a-content-bc > * {
+  position: relative;
+  z-index: 1;
+}
+#mprofilePanel .u-i-p-a-content-bc::before,
+#mprofilePanel .u-i-p-a-content-bc::after {
+  position: absolute;
+}
+#mprofilePanel .u-i-p-a-content-bc::before {
+  content: "";
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+  background: radial-gradient(circle at -14% 113%, #ffffff4d, #fff0 135%);
+}
+#mprofilePanel .u-i-p-a-content-bc::after {
+  top: -10px;
+  right: -10px;
+  opacity: 0.1;
+  font-size: 64px;
+  font-family: BetConstruct-Icons;
+}
+#mprofilePanel .u-i-p-amounts-bc.withdrawable .u-i-p-a-content-bc { background: #109121; }
+#mprofilePanel .u-i-p-amounts-bc.withdrawable .u-i-p-a-content-bc::after { content: "\eaac"; }
+#mprofilePanel .u-i-p-amounts-bc.bonuses .u-i-p-a-content-bc { background: #aa7f00; }
+#mprofilePanel .u-i-p-amounts-bc.bonuses .u-i-p-a-content-bc::after { content: "\e94f"; }
 #mprofilePanel .total-balance-r-bc {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  margin-bottom: 2px;
 }
 #mprofilePanel .u-i-p-a-user-balance {
-  min-width: 0;
+  flex: auto;
+  display: flex;
+  flex-direction: column;
+  margin-inline-end: 10px;
+  overflow: hidden;
 }
 #mprofilePanel .u-i-p-a-title-bc {
   display: block;
-  color: rgba(255, 255, 255, 0.84);
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.1;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  opacity: 0.9;
 }
 #mprofilePanel .u-i-p-a-amount-bc {
   display: block;
-  margin-top: 2px;
-  color: #fff;
+  direction: ltr;
+  margin-bottom: 6px;
   font-size: 20px;
-  font-weight: 900;
-  line-height: 1.1;
+  line-height: 22px;
+  font-weight: 700;
 }
 #mprofilePanel .u-i-p-a-c-icon-bc {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 19px;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--border-radius, 3px);
+  text-align: center;
+  color: #fff9;
+  background: #ffffff1a;
+  font-size: 20px;
+  line-height: 34px;
 }
 #mprofilePanel .u-i-p-a-buttons-bc {
   display: flex;
-  gap: 9px;
 }
 #mprofilePanel .u-i-p-a-deposit-bc,
 #mprofilePanel .u-i-p-a-withdraw-bc {
-  flex: 1;
-  min-height: 32px;
-  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  background: rgba(255, 255, 255, 0.28);
+  width: 100%;
+  height: 34px;
+  border-radius: var(--border-radius, 3px);
+  background: #ffffff40;
+  text-transform: uppercase;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 5px;
+  transition: background var(--default-transition-duration, 0.3s);
   color: #fff;
-  font-size: 13px;
-  font-weight: 800;
   text-decoration: none;
+}
+#mprofilePanel .u-i-p-a-withdraw-bc,
+#mprofilePanel .u-i-p-a-deposit-bc {
+  color: #fff;
+}
+#mprofilePanel .u-i-p-a-deposit-bc + .u-i-p-a-withdraw-bc {
+  margin-inline-start: 10px;
 }
 #mprofilePanel .u-i-p-a-deposit-bc i,
 #mprofilePanel .u-i-p-a-withdraw-bc i {
   font-size: 18px;
+  margin-inline-end: 10px;
 }
 #mprofilePanel .bonus-info-section {
-  min-height: 37px;
-  border-radius: 3px;
-  padding: 0 10px;
-  background: rgba(0, 0, 0, 0.17);
-  display: flex;
-  align-items: center;
+  min-height: 0;
+  border-radius: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  display: block;
 }
 #mprofilePanel .bonus-info-section > div {
   width: 100%;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 9px;
-  font-weight: 700;
-}
-#mprofilePanel .bonus-info-section b {
+  gap: 7px;
   color: #fff;
   font-size: 12px;
+}
+#mprofilePanel .bonus-info-section > div span {
+  margin-inline-end: 5px;
+  opacity: 0.8;
+  font-weight: 500;
+}
+#mprofilePanel .bonus-info-section > div b {
+  flex-shrink: 0;
 }
 #mprofilePanel .swiper-pagination {
   position: relative;
@@ -237,137 +291,172 @@
 #mprofilePanel .swiper-pagination-bullet-active { background: #fff; }
 
 #mprofilePanel .u-i-p-a-loyaltyPoint-bc {
-  min-height: 46px;
-  margin: 0 0 9px;
-  padding: 7px 13px;
-  border-radius: 4px;
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 11px;
-  background: #a67710;
-  color: #fff;
+  min-height: 47px;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+  border-radius: var(--border-radius, 3px);
+  overflow: hidden;
+  border: 1px solid #886e39;
+  background-image: radial-gradient(circle at -14% 113%, #624811, #b07d10);
+  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  font-size: 14px;
   text-decoration: none;
 }
+#mprofilePanel .u-i-p-a-loyaltyPoint-bc p,
+#mprofilePanel .u-i-p-a-loyaltyPoint-bc span {
+  position: relative;
+}
+#mprofilePanel .u-i-p-a-loyaltyPoint-bc p {
+  flex: auto;
+}
+#mprofilePanel .u-i-p-a-loyaltyPoint-bc span {
+  flex-shrink: 0;
+  margin-inline-start: 5px;
+  font-style: normal;
+}
 #mprofilePanel .u-i-p-a-loyaltyPoint-bc .loyaltyBonusHeader {
-  width: 31px;
-  height: 31px;
-  flex: 0 0 31px;
+  width: 36px;
+  height: 36px;
+  z-index: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.52);
+  flex-shrink: 0;
 }
 #mprofilePanel .u-i-p-a-loyaltyPoint-bc .loyaltyBonusImg {
-  max-width: 26px;
-  max-height: 26px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 #mprofilePanel .u-i-p-a-loyaltyPointText-bc {
-  margin: 0;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 800;
+  margin: 0 0 0 8px;
 }
 
 #mprofilePanel .u-i-p-p-u-i-edit-button-bc {
-  min-height: 45px;
-  margin: 0 0 4px;
-  padding: 7px 0;
   display: flex;
   align-items: center;
-  gap: 9px;
-  color: #fff;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.8);
+  padding-inline-end: 10px;
+  margin-bottom: 15px;
 }
 #mprofilePanel .u-i-p-p-u-i-avatar-holder-bc {
-  width: 31px;
-  height: 31px;
+  width: 32px;
+  height: 32px;
   margin: 0;
+  flex-shrink: 0;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.28);
-  color: rgba(0, 0, 0, 0.55);
-  font-size: 11px;
-  font-weight: 700;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.4);
+  color: rgba(var(--b, 0, 0, 0), 1);
+  font-size: 12px;
+  line-height: 32px;
+  text-align: center;
   text-transform: uppercase;
 }
 #mprofilePanel .u-i-p-p-u-i-identifiers-bc {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
+  flex: auto;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  justify-content: center;
+  margin: 0;
+  margin-inline-start: 10px;
+  overflow: hidden;
 }
 #mprofilePanel .u-i-p-p-u-i-d-username-bc {
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  font-size: 12px;
 }
 #mprofilePanel .u-i-p-p-u-i-d-user-id-bc {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 10px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.5);
 }
-#mprofilePanel .u-i-p-p-u-i-d-user-id-copy-bc { margin-left: 5px; }
+#mprofilePanel .u-i-p-p-u-i-d-user-id-copy-bc { margin-inline-start: 6px; }
 #mprofilePanel .u-i-p-l-h-icon-bc.right {
-  flex: 0 0 28px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(var(--b-sc, 255, 255, 255), 0.5);
+  font-size: 12px;
   text-decoration: none;
 }
 
 #mprofilePanel .u-i-p-links-lists-holder-bc {
-  margin: 0 0 14px;
+  width: 100%;
+  border-radius: var(--border-radius, 3px);
+  margin-bottom: 15px;
+  overflow: hidden;
 }
 #mprofilePanel .u-i-p-l-head-bc {
-  min-height: 40px;
-  padding: 0 9px;
-  border-radius: 4px;
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: linear-gradient(90deg, rgba(129, 58, 142, 0.72) 0%, rgba(47, 55, 98, 0.82) 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.22);
-  color: #fff;
+  height: 42px;
+  padding-inline-start: 10px;
+  padding-inline-end: 15px;
+  border-radius: var(--border-radius, 3px);
+  background: rgba(var(--b-sc, 255, 255, 255), 0.15);
   cursor: pointer;
 }
-#mprofilePanel .u-i-p-l-head-bc + .u-i-p-l-head-bc { margin-top: 2px; }
+#mprofilePanel .u-i-p-l-head-bc + .u-i-p-l-head-bc { margin-top: 1px; }
 #mprofilePanel .u-i-p-l-head-bc .user-nav-icon {
-  width: 22px;
-  color: #fff;
-  font-size: 19px;
+  position: relative;
+  width: 24px;
+  flex-shrink: 0;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  font-size: 18px;
+  line-height: 24px;
   text-align: center;
 }
+#mprofilePanel .u-i-p-links-lists-holder-bc .user-nav-icon::before {
+  position: relative;
+  z-index: 1;
+}
+#mprofilePanel .u-i-p-links-lists-holder-bc .user-nav-icon::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--border-radius, 3px);
+  background-image: radial-gradient(circle at -14% 113%, #000000a6, #0000 120%);
+}
 #mprofilePanel .u-i-p-l-h-title-bc {
-  flex: 1;
+  flex: auto;
   min-width: 0;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 800;
+  margin: 0 10px;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  font-size: 15px;
 }
 #mprofilePanel .u-i-p-l-head-bc .count-blink-even {
   display: none;
 }
 #mprofilePanel .u-i-p-l-head-bc .u-i-p-l-h-icon-bc {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 18px;
+  flex-shrink: 0;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.5);
+  font-size: 12px;
 }
 
 #mprofilePanel .profile-panel-promo-code {
-  margin: 0 0 10px;
+  padding: 0 0 10px;
+  margin: 0;
 }
 #mprofilePanel .profile-panel-promo-code form {
   display: flex;
-  gap: 9px;
 }
 #mprofilePanel .u-i-p-control-item-holder-bc {
   flex: 1;
   min-width: 0;
+  position: relative;
+  padding: 0 10px;
+  margin: 0;
 }
 #mprofilePanel .form-control-bc,
 #mprofilePanel .form-control-label-bc {
@@ -414,7 +503,11 @@
   pointer-events: none;
 }
 #mprofilePanel .u-i-p-c-footer-bc {
-  flex: 0 0 95px;
+  width: auto;
+  min-width: 100px;
+  flex: 0 0 auto;
+  margin-top: 0;
+  margin-inline-start: 10px;
 }
 #mprofilePanel .btn {
   appearance: none;
@@ -440,9 +533,9 @@
 }
 #mprofilePanel .u-i-p-c-footer-bc .btn {
   width: 100%;
-  height: 50px;
+  height: 52px;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--border-radius, 3px);
   background: rgba(51, 45, 111, 0.88);
   color: rgba(255, 255, 255, 0.42);
   font-size: 12px;
@@ -451,17 +544,24 @@
 
 #mprofilePanel .userLogoutBtn.btn {
   width: 100%;
-  min-height: 39px;
+  height: 42px;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--border-radius, 3px);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: linear-gradient(90deg, rgba(131, 56, 129, 0.85) 0%, rgba(45, 47, 101, 0.9) 100%);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 800;
+  justify-content: flex-start;
+  padding-inline-start: 10px;
+  padding-inline-end: 10px;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.15);
+  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  letter-spacing: 0.64px;
+}
+#mprofilePanel .userLogoutBtn span {
+  font-size: 12px;
+}
+#mprofilePanel .userLogoutIcon {
+  width: 24px;
+  font-size: 16px;
 }
 
 #mprofilePanel .ellipsis {
