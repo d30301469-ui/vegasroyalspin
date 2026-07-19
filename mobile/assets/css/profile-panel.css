@@ -65,6 +65,12 @@
   transition: transform 0.28s ease, opacity 0.2s ease;
   overflow: hidden;
 }
+html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofile-panel { left: 0; }
+[dir="ltr"] .overlay-sliding-wrapper-bc.user-profile-container.mprofile-panel { left: 0; }
+[dir="rtl"] .overlay-sliding-wrapper-bc.user-profile-container.mprofile-panel {
+  right: 0;
+  left: auto;
+}
 .overlay-sliding-wrapper-bc.user-profile-container.mprofile-panel.is-open {
   transform: translateY(0);
   opacity: 1;
@@ -82,15 +88,25 @@
   background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%);
 }
 #mprofilePanel .overlay-sliding-w-c-content-slider-bc {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   height: 100%;
+  will-change: scroll-position;
+  transform: translate3d(100%, 0, 0);
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-color: rgba(255, 255, 255, 0.55) transparent;
   scrollbar-width: thin;
   background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%);
 }
+[dir="rtl"] #mprofilePanel .overlay-sliding-w-c-content-slider-bc { transform: translate3d(-100%, 0, 0); }
 #mprofilePanel.is-open .overlay-sliding-w-c-content-slider-bc {
   animation: overlay-sliding-left var(--default-transition-duration, 0.3s) var(--default-transition-delay, 0s) ease forwards;
+}
+[dir="rtl"] #mprofilePanel.is-open .overlay-sliding-w-c-content-slider-bc {
+  animation-name: overlay-sliding-right;
 }
 #mprofilePanel .u-i-profile-page-bc {
   padding: 10px var(--padding-page-aside, 10px);
@@ -113,12 +129,23 @@
   margin: 0;
   touch-action: pan-y;
 }
+#mprofilePanel .carousel {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+#mprofilePanel .u-i-p-amount-holder-bc .carousel { height: auto; }
+#mprofilePanel .swiper { height: 100%; }
 #mprofilePanel .swiper-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
   z-index: 1;
   display: flex;
+  box-sizing: content-box;
+  transition-property: transform;
+  transition-timing-function: var(--swiper-wrapper-transition-timing-function, initial);
+  transform: translateZ(0);
   gap: 14px;
   overflow-x: auto;
   padding: 0 38px;
@@ -132,9 +159,18 @@
   width: 100%;
   height: 100%;
   flex-shrink: 0;
+  border-radius: var(--border-radius, 3px);
+  overflow: hidden;
+  transition-property: transform;
   flex: 0 0 calc(100% - 76px);
   scroll-snap-align: center;
 }
+#mprofilePanel .u-i-p-amount-holder-bc .swiper-slide {
+  will-change: transform;
+  width: 80%;
+  transition: transform var(--default-transition-duration, 0.24s);
+}
+#mprofilePanel .u-i-p-amount-holder-bc .swiper-slide:not(.swiper-slide-active) { transform: scale(0.9); }
 #mprofilePanel .u-i-p-amounts-bc {
   min-height: 120px;
   height: 100%;
@@ -468,7 +504,6 @@
 #mprofilePanel .form-control-bc,
 #mprofilePanel .form-control-label-bc {
   display: block;
-  height: 50px;
 }
 #mprofilePanel .form-control-bc {
   position: relative;
@@ -476,23 +511,31 @@
   margin: 0;
 }
 #mprofilePanel .form-control-label-bc {
+  display: flex;
+  align-items: center;
   position: relative;
   width: 100%;
+  height: 52px;
   margin: 0;
+  caret-color: rgba(var(--b-sc, 255, 255, 255), 0.9);
 }
 #mprofilePanel .form-control-input-bc {
   appearance: none;
   -webkit-appearance: none;
   width: 100%;
-  height: 50px;
+  height: 100%;
   border: 0;
-  border-radius: 4px;
-  padding: 15px 13px 0;
-  background: rgba(75, 78, 117, 0.78);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
+  border-radius: var(--border-radius, 4px);
+  padding: 20px 15px 4px;
+  padding-inline-end: 44px;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.15);
+  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
   outline: 0;
+  box-sizing: border-box;
+  transition: background var(--default-transition-duration, 0.24s), color var(--default-transition-duration, 0.24s);
 }
 #mprofilePanel .form-control-input-stroke-bc {
   position: absolute;
@@ -501,13 +544,23 @@
   pointer-events: none;
 }
 #mprofilePanel .form-control-title-bc {
+  width: calc(100% - 48px);
   position: absolute;
-  left: 13px;
-  top: 17px;
-  color: rgba(255, 255, 255, 0.42);
+  top: 20px;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.4);
   font-size: 12px;
-  font-weight: 800;
+  line-height: 14px;
+  font-weight: 400;
+  text-align: start;
   pointer-events: none;
+  transition-property: top, font-size, line-height, color;
+  transition-duration: var(--default-transition-duration, 0.24s);
+}
+[dir="ltr"] #mprofilePanel .form-control-title-bc { left: 15px; }
+[dir="rtl"] #mprofilePanel .form-control-title-bc { right: 15px; }
+#mprofilePanel .form-control-input-bc:focus + .form-control-input-stroke-bc + .form-control-title-bc,
+#mprofilePanel .form-control-input-bc:not(:placeholder-shown) + .form-control-input-stroke-bc + .form-control-title-bc {
+  top: 10px;
 }
 #mprofilePanel .u-i-p-c-footer-bc {
   width: auto;
@@ -528,13 +581,24 @@
   border: 0;
   padding: 0 12px;
   font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
   text-align: center;
   text-decoration: none;
   user-select: none;
   cursor: pointer;
+  transition: color var(--default-transition-duration, 0.24s), background var(--default-transition-duration, 0.24s), border-color var(--default-transition-duration, 0.24s);
+}
+#mprofilePanel .btn > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 #mprofilePanel .btn:disabled,
 #mprofilePanel .btn.disabled {
+  color: rgba(var(--b-sc, 255, 255, 255), 0.3);
+  background: rgba(var(--b-sc, 255, 255, 255), 0.1);
   cursor: default;
   pointer-events: none;
 }
@@ -543,10 +607,15 @@
   height: 52px;
   border: 0;
   border-radius: var(--border-radius, 3px);
-  background: rgba(51, 45, 111, 0.88);
-  color: rgba(255, 255, 255, 0.42);
+  background: rgba(var(--oc-1, 156, 77, 177), 1);
+  color: rgba(var(--oc-1-sc, 255, 255, 255), 1);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
+}
+#mprofilePanel .u-i-p-c-footer-bc .btn:disabled,
+#mprofilePanel .u-i-p-c-footer-bc .btn.disabled {
+  color: rgba(var(--b-sc, 255, 255, 255), 0.3);
+  background: rgba(var(--b-sc, 255, 255, 255), 0.1);
 }
 
 #mprofilePanel .userLogoutBtn.btn {
@@ -583,9 +652,22 @@ body.mprofile-open {
 
 @keyframes overlay-sliding-left {
   0% {
+    display: none;
     transform: translate3d(100%, 0, 0);
   }
   100% {
+    display: flex;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes overlay-sliding-right {
+  0% {
+    display: none;
+    transform: translate3d(-100%, 0, 0);
+  }
+  100% {
+    display: flex;
     transform: translate3d(0, 0, 0);
   }
 }
