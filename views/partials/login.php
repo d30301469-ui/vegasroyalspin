@@ -357,7 +357,6 @@ if (class_exists('ApiMediaUrl', false)) {
                                         <?php if ($login_password_updated_notice): ?>
                                             <div class="login-success-box" role="status">Şifreniz güncellendi. Yeni şifrenizle giriş yapabilirsiniz.</div>
                                         <?php endif; ?>
-                                        <div class="login-error-box login-ajax-alert d-none" id="loginAjaxAlert" role="alert"></div>
 
                                         <div class="login-turnstile-wrap">
                                             <div id="loginTurnstile" class="turnstile-widget" data-turnstile-widget="login"></div>

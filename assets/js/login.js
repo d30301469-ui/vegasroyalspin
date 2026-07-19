@@ -536,7 +536,6 @@
         var loginModalEl = document.getElementById('login2');
         if (!loginForm || !loginModalEl) return;
 
-        var alertContainer = loginForm.querySelector('.login-ajax-alert');
         var submitBtn = loginForm.querySelector('.login-btn');
         var btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
         var btnLoading = submitBtn ? submitBtn.querySelector('.loading') : null;
@@ -560,17 +559,9 @@
 
         function showError(msg) {
             notify('error', msg || 'Bir hata oluştu.', 'Giriş');
-            if (!alertContainer) return;
-            alertContainer.textContent = msg || 'Bir hata oluştu.';
-            alertContainer.classList.remove('d-none');
         }
 
-        function hideError() {
-            if (alertContainer) {
-                alertContainer.innerHTML = '';
-                alertContainer.classList.add('d-none');
-            }
-        }
+        function hideError() {}
 
         function setLoading(loading) {
             if (Shared.setSubmitButtonLoading) {
@@ -599,7 +590,6 @@
             var password = (loginForm.querySelector('[name="password"]') || {}).value || '';
             var turnstileToken = loginTurnstileToken();
             if (!username.trim() || !password) {
-                showError('Kullanıcı adı ve şifre gerekli.');
                 return;
             }
             if (Shared.hasTurnstile && Shared.hasTurnstile() && !turnstileToken) {
