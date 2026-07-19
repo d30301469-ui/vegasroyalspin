@@ -5,6 +5,7 @@
 
 /* ── Profile form / satır (profil sayfası form alanları) ── */
 .profileRow {
+    overflow: auto;
     background: var(--darkBG);
     padding: 2rem;
     width: 75%;
@@ -2165,6 +2166,200 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: linear-gradient(180deg, #282536 0%, #1e1b2b 100%);
     box-shadow: 0 18px 44px rgba(0, 0, 0, 0.46);
+    overflow: auto;
+}
+.profile-detail-modal-content .modal-header {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.profile-detail-modal-content .modal-body {
+    padding: 1.05rem 1.1rem 1.15rem;
+    background:
+        radial-gradient(circle at top right, rgba(155, 89, 182, 0.12), transparent 40%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 36%);
+}
+.profile-detail-modal-content .modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+}
+.profile-detail-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: #f5f3ff;
+}
+.profile-detail-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.2rem 0.1rem 0.1rem;
+}
+.profile-detail-hero__kicker {
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.profile-detail-hero__title {
+    color: #fff;
+    font-size: 1.36rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+.profile-detail-hero__subtitle {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.92rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+.profile-detail-hero__dot {
+    color: rgba(255, 255, 255, 0.35);
+}
+.profile-detail-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.profile-detail-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0.28rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+.profile-detail-badge--info {
+    background: rgba(13, 202, 240, 0.16);
+    border-color: rgba(13, 202, 240, 0.28);
+    color: #8de8ff;
+}
+.profile-detail-badge--success {
+    background: rgba(32, 201, 151, 0.16);
+    border-color: rgba(32, 201, 151, 0.28);
+    color: #78f0c2;
+}
+.profile-detail-badge--warning {
+    background: rgba(255, 193, 7, 0.15);
+    border-color: rgba(255, 193, 7, 0.28);
+    color: #ffe18b;
+}
+.profile-detail-badge--danger {
+    background: rgba(220, 53, 69, 0.16);
+    border-color: rgba(220, 53, 69, 0.28);
+    color: #ff9c9c;
+}
+.profile-detail-badge--primary {
+    background: rgba(13, 110, 253, 0.16);
+    border-color: rgba(13, 110, 253, 0.28);
+    color: #9dc5ff;
+}
+.profile-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+.profile-detail-panel {
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+}
+.profile-detail-panel__title {
+    margin-bottom: 0.8rem;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.profile-detail-meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+.profile-detail-meta-row {
+    display: grid;
+    grid-template-columns: minmax(110px, 0.9fr) minmax(0, 1.1fr);
+    gap: 0.75rem;
+    align-items: start;
+    padding: 0.66rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+}
+.profile-detail-meta-label {
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.profile-detail-meta-value {
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    word-break: break-word;
+}
+.profile-detail-meta-value code {
+    display: inline-block;
+    padding: 0.12rem 0.38rem;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.22);
+    color: #d9d3ff;
+}
+.profile-detail-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+.profile-detail-stat-grid--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.profile-detail-stat {
+    border-radius: 14px;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+}
+.profile-detail-stat__label {
+    color: rgba(255, 255, 255, 0.58);
+    margin-bottom: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.profile-detail-stat__value {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 800;
+    word-break: break-word;
+}
+.profile-detail-stat--danger .profile-detail-stat__value {
+    color: #ff8e8e;
+}
+.profile-detail-stat--success .profile-detail-stat__value {
+    color: #78f0c2;
+}
+.profile-detail-stat--primary .profile-detail-stat__value {
+    color: #9dc5ff;
+}
+.profile-detail-stat--warning .profile-detail-stat__value {
+    color: #ffe18b;
+}
+.profile-detail-time {
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.98rem;
+    font-weight: 600;
 }
 #sporDetailsContent,
 #gameHistoryContent {
@@ -2203,6 +2398,21 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     .bhf-group {
         flex: 1 1 calc(50% - 0.35rem);
         min-width: min(100%, 9.5rem);
+    }
+    .profile-detail-grid,
+    .profile-detail-stat-grid,
+    .profile-detail-stat-grid--four {
+        grid-template-columns: 1fr;
+    }
+    .profile-detail-meta-row {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+    .profile-detail-hero__title {
+        font-size: 1.14rem;
+    }
+    .profile-detail-modal-content .modal-body {
+        padding: 0.95rem;
     }
     .bhf-group > .bhf-input-wrap {
         flex: 1;
