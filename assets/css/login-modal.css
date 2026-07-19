@@ -626,7 +626,8 @@
     align-items: flex-start;
     width: 100%;
     max-width: 100%;
-    overflow: hidden;
+    min-height: 65px;
+    overflow: visible;
     margin: 2px 0 10px;
 }
 
