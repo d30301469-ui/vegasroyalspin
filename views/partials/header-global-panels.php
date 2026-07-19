@@ -18,7 +18,7 @@
             <i class="sp-button-icon-bc bc-i-favorite"></i>
             <span class="sp-tooltip">Favoriler</span>
         </button>
-        <a class="sp-button-bc" href="/promotions" data-nav-mode="page" title="Bonuslar" aria-label="Bonuslar">
+        <a class="sp-button-bc" href="<?= !empty($loggedIn) ? '/profile/bonus-spor' : '/promotions' ?>" data-nav-mode="<?= !empty($loggedIn) ? 'modal' : 'page' ?>" title="Bonuslar" aria-label="Bonuslar">
             <i class="sp-button-icon-bc bc-i-promotions-3"></i>
             <span class="sp-tooltip">Bonuslar</span>
         </a>
