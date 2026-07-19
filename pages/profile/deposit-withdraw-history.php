@@ -9,7 +9,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 $username = $_SESSION['username'];
 
-$prof      = ProfileApiHelper::profileByUsername($username);
+$prof      = ProfileApiHelper::profileByUsernameCached($username);
 $user_info = array_merge(
     ['username' => $username],
     [

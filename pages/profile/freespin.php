@@ -12,7 +12,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 $username = $_SESSION['username'];
 
-$user = ProfileApiHelper::profileByUsername($username);
+$user = ProfileApiHelper::profileByUsernameCached($username);
 if ($user === []) {
     $user = ['id' => null, 'first_name' => '', 'surname' => ''];
 }

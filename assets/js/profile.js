@@ -436,38 +436,66 @@
         root.appendChild(panel);
     }
 
+    var activeBonusPromoCache = { pending: null, data: null, fetchedAt: 0 };
+    var ACTIVE_BONUS_PROMO_CACHE_TTL_MS = 8000;
+
+    /** /api/v2/active-bonus + /api/v2/content/promotions sonucunu kısa süreliğine önbelleğe alır.
+     * Bonus modal sekmeleri (spor/casino) hızlıca değiştirildiğinde her seferinde yeniden istek atmayı önler. */
+    function fetchActiveBonusAndPromotions(forceRefresh) {
+        var now = Date.now();
+        if (!forceRefresh && activeBonusPromoCache.data && (now - activeBonusPromoCache.fetchedAt) < ACTIVE_BONUS_PROMO_CACHE_TTL_MS) {
+            return Promise.resolve(activeBonusPromoCache.data);
+        }
+        if (activeBonusPromoCache.pending) return activeBonusPromoCache.pending;
+
+        var activeReq = fetch(apiUrl('/api/v2/active-bonus'), {
+            credentials: 'same-origin',
+            headers: memberAuthHeaders({ Accept: 'application/json' })
+        })
+            .then(function(r) {
+                return r.json().then(function(data) {
+                    return { ok: r.ok, status: r.status, data: data || {} };
+                });
+            })
+            .catch(function() {
+                return { ok: false, status: 0, data: {} };
+            });
+
+        var promoReq = fetch(apiUrl('/api/v2/content/promotions'), {
+            credentials: 'same-origin',
+            headers: memberAuthHeaders({ Accept: 'application/json' })
+        })
+            .then(function(r) {
+                return r.json().then(function(data) {
+                    return { ok: r.ok, status: r.status, data: data || {} };
+                });
+            })
+            .catch(function() {
+                return { ok: false, status: 0, data: {} };
+            });
+
+        activeBonusPromoCache.pending = Promise.all([activeReq, promoReq])
+            .then(function(results) {
+                var promoData = (results[1] || {}).data || {};
+                if (promoData.success) {
+                    activeBonusPromoCache.data = results;
+                    activeBonusPromoCache.fetchedAt = Date.now();
+                }
+                return results;
+            })
+            .finally(function() {
+                activeBonusPromoCache.pending = null;
+            });
+        return activeBonusPromoCache.pending;
+    }
+
     function initProfileActiveBonus() {
         document.querySelectorAll('.js-profile-active-bonus:not([data-active-bonus-bound])').forEach(function(root) {
             root.setAttribute('data-active-bonus-bound', '1');
             var kind = (root.getAttribute('data-bonus-kind') || '').trim();
             root.innerHTML = '<p class="profile-active-bonus-loading">Yükleniyor…</p>';
-            var activeReq = fetch(apiUrl('/api/v2/active-bonus'), {
-                credentials: 'same-origin',
-                headers: memberAuthHeaders({ Accept: 'application/json' })
-            })
-                .then(function(r) {
-                    return r.json().then(function(data) {
-                        return { ok: r.ok, status: r.status, data: data || {} };
-                    });
-                })
-                .catch(function() {
-                    return { ok: false, status: 0, data: {} };
-                });
 
-            var promoReq = fetch(apiUrl('/api/v2/content/promotions'), {
-                credentials: 'same-origin',
-                headers: memberAuthHeaders({ Accept: 'application/json' })
-            })
-                .then(function(r) {
-                    return r.json().then(function(data) {
-                        return { ok: r.ok, status: r.status, data: data || {} };
-                    });
-                })
-                .catch(function() {
-                    return { ok: false, status: 0, data: {} };
-                });
-
-            Promise.all([activeReq, promoReq])
+            fetchActiveBonusAndPromotions()
                 .then(function(results) {
                     var activeRes = results[0] || { data: {} };
                     var promoRes = results[1] || { data: {} };

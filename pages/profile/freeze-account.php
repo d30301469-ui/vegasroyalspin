@@ -15,7 +15,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 $username = $_SESSION['username'];
 $user_id = $_SESSION['user_id'] ?? null;
 
-$userRow   = ProfileApiHelper::profileByUsername($username);
+$userRow   = ProfileApiHelper::profileByUsernameCached($username);
 $firstName = $userRow['first_name'] ?? '';
 $surname   = $userRow['surname'] ?? '';
 $initial = strtoupper(substr($username, 0, 2));

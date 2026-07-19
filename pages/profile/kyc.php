@@ -29,7 +29,7 @@ $user_id = (int) $_SESSION['user_id'];
 $msg     = '';
 $success = '';
 
-$user_info = ProfileApiHelper::profileByUsername((string) ($_SESSION['username'] ?? ''));
+$user_info = ProfileApiHelper::profileByUsernameCached((string) ($_SESSION['username'] ?? ''));
 if ($user_info === []) {
     header('Location: /login');
     exit;
