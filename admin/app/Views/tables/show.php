@@ -13,6 +13,7 @@ $tableError = trim((string) ($tableError ?? ''));
 $totalPages = max(1, (int) ceil($total / $perPage));
 $module = is_array($module ?? null) ? $module : [];
 $moduleKey = isset($moduleKey) ? (string) $moduleKey : '';
+$showActiveBonusProgress = $moduleKey === 'active-bonuses';
 $isReadOnlyModule = in_array($moduleKey, ['deposits', 'withdrawals', 'promocode-requests'], true);
 $isWriteProtectedTable = in_array($table, [
     'users',
@@ -136,6 +137,41 @@ $recordUrl = static function (string $path) use ($moduleKey, $table): string {
         border: 1px dashed var(--border);
         font-size: 11px;
         font-weight: 700;
+    }
+    .bonus-progress-cell {
+        min-width: 180px;
+    }
+    .bonus-progress-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 5px;
+        font-size: 11px;
+        color: var(--t-muted);
+    }
+    .bonus-progress-meta strong {
+        color: var(--t);
+        font-weight: 700;
+    }
+    .bonus-progress-track {
+        width: 100%;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+    .bonus-progress-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+    }
+    .bonus-progress-fill.is-complete {
+        background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+    }
+    .bonus-progress-fill.is-low {
+        background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
     }
 </style>
 <?php if ($moduleKey === 'users'): ?>
@@ -612,6 +648,9 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                     <?php $scaledWidth = max(5, (int) floor(($preferredWidths[$columnIndex] ?? 10) * $scale)); ?>
                     <col style="width:<?= htmlspecialchars((string) $scaledWidth . '%', ENT_QUOTES, 'UTF-8') ?>">
                 <?php endforeach; ?>
+                <?php if ($showActiveBonusProgress): ?>
+                    <col style="width:14%">
+                <?php endif; ?>
                 <col style="width:<?= htmlspecialchars($actionColumnWidth, ENT_QUOTES, 'UTF-8') ?>">
             </colgroup>
             <thead>
@@ -620,6 +659,9 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                 <?php foreach ($visibleColumns as $column): ?>
                     <th><?= htmlspecialchars($columnLabel((string) $column['name']), ENT_QUOTES, 'UTF-8') ?></th>
                 <?php endforeach; ?>
+                <?php if ($showActiveBonusProgress): ?>
+                    <th>Çevrim İlerleme</th>
+                <?php endif; ?>
                 <th>İşlem</th>
             </tr>
             <tr class="admin-filter-row">
@@ -634,12 +676,15 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                     ?>
                     <th><input class="admin-filter-input" type="<?= $filterInputType ?>" aria-label="<?= htmlspecialchars($columnLabel($filterColumnName), ENT_QUOTES, 'UTF-8') ?>" data-admin-compact-column-filter="<?= $filterIndex + 1 ?>"></th>
                 <?php endforeach; ?>
+                <?php if ($showActiveBonusProgress): ?>
+                    <th></th>
+                <?php endif; ?>
                 <th></th>
             </tr>
             </thead>
             <tbody>
             <?php if ($rows === []): ?>
-                <tr><td colspan="<?= count($visibleColumns) + 2 ?>">Kayıt bulunamadı.</td></tr>
+                <tr><td colspan="<?= count($visibleColumns) + ($showActiveBonusProgress ? 3 : 2) ?>">Kayıt bulunamadı.</td></tr>
             <?php endif; ?>
             <?php foreach ($rows as $index => $row): ?>
                 <tr data-admin-compact-row>
@@ -688,6 +733,30 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                             <?php endif; ?>
                         </td>
                     <?php endforeach; ?>
+                    <?php if ($showActiveBonusProgress): ?>
+                        <?php
+                        $wageringTarget = (float) ($row['wagering_target'] ?? 0);
+                        $totalBetAmount = (float) ($row['total_bet_amount'] ?? 0);
+                        $isCompleted = ((int) ($row['is_complete'] ?? 0) === 1) || strtolower((string) ($row['status'] ?? '')) === 'completed';
+                        $progressRatio = $wageringTarget > 0 ? ($totalBetAmount / $wageringTarget) : 0.0;
+                        if ($isCompleted) {
+                            $progressRatio = max($progressRatio, 1.0);
+                        }
+                        $progressRatio = min(1.0, max(0.0, $progressRatio));
+                        $progressPercent = (int) round($progressRatio * 100);
+                        $progressClass = $isCompleted ? ' is-complete' : ($progressPercent < 35 ? ' is-low' : '');
+                        $progressLabel = number_format($totalBetAmount, 2, ',', '.') . ' / ' . number_format($wageringTarget, 2, ',', '.');
+                        ?>
+                        <td class="bonus-progress-cell" data-filter-value="<?= htmlspecialchars((string) $progressPercent, ENT_QUOTES, 'UTF-8') ?>" data-export-value="<?= htmlspecialchars((string) $progressPercent . '% (' . $progressLabel . ')', ENT_QUOTES, 'UTF-8') ?>">
+                            <div class="bonus-progress-meta">
+                                <span><?= htmlspecialchars($progressLabel, ENT_QUOTES, 'UTF-8') ?></span>
+                                <strong><?= htmlspecialchars((string) $progressPercent, ENT_QUOTES, 'UTF-8') ?>%</strong>
+                            </div>
+                            <div class="bonus-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= htmlspecialchars((string) $progressPercent, ENT_QUOTES, 'UTF-8') ?>" aria-label="Çevrim ilerleme">
+                                <div class="bonus-progress-fill<?= htmlspecialchars($progressClass, ENT_QUOTES, 'UTF-8') ?>" style="width:<?= htmlspecialchars((string) $progressPercent, ENT_QUOTES, 'UTF-8') ?>%"></div>
+                            </div>
+                        </td>
+                    <?php endif; ?>
                     <td>
                         <div class="data-cell-actions">
                         <?php if ($primaryKey !== '' && isset($row[$primaryKey])): ?>
