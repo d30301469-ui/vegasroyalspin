@@ -69,12 +69,8 @@
                 window.__closeMobileNavMenu();
             }
 
-            if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/details')) {
-                return;
-            }
-
-            // Fallback: modal altyapısı henüz hazır değilse aynı hedefe sayfa geçişi yap.
-            window.location.href = '/profile/details?modal=1';
+            // Mobilde avatar girişi, mobile dizinindeki bağımsız profil sayfasını açar.
+            window.location.href = '/mobile/profile';
         }
 
         btn.addEventListener('click', function (e) {
