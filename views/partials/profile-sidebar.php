@@ -2,7 +2,7 @@
 /**
  * Profil sayfaları için ortak sidebar partial (görsel tasarıma uygun).
  * Kullanım: $username, $initial ve isteğe bağlı $profileActiveTab ile include edin.
- * $profileActiveTab: 'details' | 'deposit-withdraw-history' | 'bet-history' | 'casino-history' | 'bonus-spor' | 'bonus-casino' | 'bonus-history' | 'freespin' | 'deposit-withdraw' | 'deposit-bilgi' | 'withdraw' | 'withdraw-bilgi' | 'kyc' | 'references' | 'messages'
+ * $profileActiveTab: 'details' | 'deposit-withdraw-history' | 'bet-history' | 'casino-history' | 'bonus-spor' | 'bonus-casino' | 'bonus-history' | 'freespin' | 'loyalty-points' | 'deposit-withdraw' | 'deposit-bilgi' | 'withdraw' | 'withdraw-bilgi' | 'kyc' | 'references' | 'messages'
  */
 $sidebar_username   = $username ?? $user_info['username'] ?? '';
 $sidebar_initial    = $initial ?? (isset($user_info['username']) ? strtoupper(substr($user_info['username'], 0, 2)) : '');
@@ -33,7 +33,7 @@ $is_logged_in   = $isLoggedIn ?? (isset($_SESSION['loggedin']) && $_SESSION['log
 $profile_open    = in_array($active_tab, ['details', 'change-password', 'two-factor', 'freeze-account'], true);
 $balance_open    = in_array($active_tab, ['deposit-withdraw', 'deposit-bilgi', 'withdraw', 'withdraw-bilgi', 'deposit-withdraw-history', 'withdrawal-status'], true);
 $bet_open        = in_array($active_tab, ['bet-history', 'casino-history'], true);
-$promotions_open = in_array($active_tab, ['bonus-spor', 'bonus-casino', 'bonus-history', 'freespin'], true);
+$promotions_open = in_array($active_tab, ['bonus-spor', 'bonus-casino', 'bonus-history', 'freespin', 'loyalty-points'], true);
 $bonus_sub_tab = $bonusSubTab ?? null;
 $messages_open   = $active_tab === 'messages';
 $unread_count    = isset($message_unread_count) ? (int) $message_unread_count : 0;
@@ -50,6 +50,7 @@ $withdrawalStatusHref = '/profile/withdrawal-status' . (!empty($profile_modal) ?
 $messagesInboxHref = '/profile/messages' . (!empty($profile_modal) ? '?modal=1' : '');
 $messagesSentHref = '/profile/messages?box=sent' . (!empty($profile_modal) ? '&modal=1' : '');
 $messagesNewHref = '/profile/messages?box=new' . (!empty($profile_modal) ? '&modal=1' : '');
+$loyaltyPointsHref = '/profile/sadakat-puanlari' . (!empty($profile_modal) ? '?modal=1' : '');
 ?>
 <aside id="profilePlayerSidebar" name="profilePlayerSidebar" class="sidebarMain playersidebarMain profile-sidebar-v2">
     <div class="profile-content">
@@ -150,7 +151,7 @@ $messagesNewHref = '/profile/messages?box=new' . (!empty($profile_modal) ? '&mod
                     <li><a class="<?php echo $bonus_sub_tab === 'casino' ? 'active' : ''; ?>" href="/profile/bonus-casino">CASİNO BONUSU</a></li>
                     <li><a class="<?php echo $active_tab === 'bonus-history' ? 'active' : ''; ?>" href="/profile/bonus-history">BONUS GEÇMİŞİ</a></li>
                     <li><a class="<?php echo $active_tab === 'freespin' ? 'active' : ''; ?>" href="/profile/freespin">CASİNO FREESPİNLERİ</a></li>
-                    <li><a href="/promotions">Sadakat Puanları</a></li>
+                    <li><a class="<?php echo $active_tab === 'loyalty-points' ? 'active' : ''; ?>" href="<?= htmlspecialchars($loyaltyPointsHref, ENT_QUOTES, 'UTF-8') ?>">Sadakat Puanları</a></li>
                 </ul>
             </li>
             <li class="accordion-item <?php echo $messages_open ? 'open' : ''; ?>">
