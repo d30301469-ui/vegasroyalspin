@@ -3946,8 +3946,23 @@
             }
             return msg;
         }
-        function showSporModal() { if (window.showModalById) window.showModalById('sporDetailsModal'); }
-        function showGameHistoryModalEl() { if (window.showModalById) window.showModalById('gameHistoryModal'); }
+        function openDetailModal(modalId) {
+            var modalEl = document.getElementById(modalId);
+            if (!modalEl) return;
+            if (modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            modalEl.style.zIndex = '100200';
+            if (window.showModalById) {
+                window.showModalById(modalId);
+            }
+            var backdrop = document.querySelector('.modal-backdrop[data-modal-backdrop]');
+            if (backdrop) {
+                backdrop.style.zIndex = '100199';
+            }
+        }
+        function showSporModal() { openDetailModal('sporDetailsModal'); }
+        function showGameHistoryModalEl() { openDetailModal('gameHistoryModal'); }
         function showSporDetails(betId) {
             renderDetailLoading('sporDetailsContent');
             showSporModal();
