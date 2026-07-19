@@ -13,6 +13,7 @@ $assetVer = (string) (file_exists($assetCssDir . '/global.css') ? filemtime($ass
 $pwaRegisterPath = BASE_PATH . '/assets/js/pwa-register.js';
 $pwaRegisterVer = (string) (is_file($pwaRegisterPath) ? filemtime($pwaRegisterPath) : $assetVer);
 $headerCssVer = (string) (file_exists($assetCssDir . '/header.css') ? filemtime($assetCssDir . '/header.css') : $assetVer);
+$profileCssVer = (string) (file_exists($assetCssDir . '/profile.css') ? filemtime($assetCssDir . '/profile.css') : $assetVer);
 $modalCssVer = (string) (file_exists($assetCssDir . '/modal.css') ? filemtime($assetCssDir . '/modal.css') : $assetVer);
 $registerCssVer = (string) (file_exists($assetCssDir . '/register.css') ? filemtime($assetCssDir . '/register.css') : $assetVer);
 $loginCssVer = (string) (file_exists($assetCssDir . '/login.css') ? filemtime($assetCssDir . '/login.css') : $assetVer);
@@ -89,7 +90,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/header.css?v=<?= $headerCssVer ?>" rel="stylesheet">
   <link href="/assets/css/sidebar.css?v=<?= $assetVer ?>" rel="stylesheet">
   <link href="/assets/css/components.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/profile.css?v=<?= $assetVer ?>" rel="stylesheet">
+    <link href="/assets/css/profile.css?v=<?= $profileCssVer ?>" rel="stylesheet">
   <link href="/assets/css/modal.css?v=<?= $modalCssVer ?>" rel="stylesheet">
   <link href="/assets/css/responsive.css?v=<?= $assetVer ?>" rel="stylesheet">
   <link href="/assets/css/footer-bc.css?v=<?= $footerBcCssVer ?>" rel="stylesheet">
