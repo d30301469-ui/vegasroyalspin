@@ -2015,6 +2015,29 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     min-width: 7.5rem;
     width: auto;
 }
+@media (min-width: 768px) {
+    .personal-details-page--bet-history .bet-history-filters.is-custom-period {
+        flex-wrap: wrap;
+        align-items: center;
+        row-gap: 0.45rem;
+    }
+    .personal-details-page--bet-history .bet-history-filters.is-custom-period .bhf-actions {
+        order: 10;
+        margin-left: auto;
+    }
+    .personal-details-page--bet-history .bet-history-filters.is-custom-period .bhf-period-custom {
+        order: 20;
+        flex: 1 1 100%;
+        min-width: 100%;
+        align-items: center;
+        column-gap: 0.5rem;
+    }
+    .personal-details-page--bet-history .bet-history-filters.is-custom-period .bhf-date-presets {
+        width: auto;
+        margin-left: auto;
+        justify-content: flex-end;
+    }
+}
 .personal-details-page--bet-history .bet-history-filters label {
     color: #fff;
 }
