@@ -371,6 +371,50 @@
         };
     }
 
+    var newTabFallbackTimer = null;
+
+    function clearNewTabFallback() {
+        if (newTabFallbackTimer) {
+            window.clearTimeout(newTabFallbackTimer);
+            newTabFallbackTimer = null;
+        }
+        var el = document.getElementById('playNewTabFallback');
+        if (el) {
+            el.hidden = true;
+        }
+    }
+
+    function scheduleNewTabFallback(url) {
+        clearNewTabFallback();
+        newTabFallbackTimer = window.setTimeout(function () {
+            showNewTabFallback(url);
+        }, 8000);
+    }
+
+    // Bazı sağlayıcıların oyun sayfası kendi güvenlik/uyum politikası
+    // (X-Frame-Options / CSP frame-ancestors veya bölge kısıtlaması) nedeniyle
+    // iframe içinde sessizce boş kalabilir. Bu durumda kullanıcıya elle
+    // kurtarma imkanı vermek için, oyun bir süre içinde onaylanmazsa küçük bir
+    // "yeni sekmede aç" düğmesi gösterilir — normal çalışan oyunları etkilemez.
+    function showNewTabFallback(url) {
+        var el = document.getElementById('playNewTabFallback');
+        if (!el) {
+            el = document.createElement('button');
+            el.id = 'playNewTabFallback';
+            el.type = 'button';
+            el.textContent = 'Oyun açılmadı mı? Yeni sekmede aç';
+            el.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:5;padding:10px 16px;border-radius:10px;border:1px solid rgba(252,172,0,.5);background:rgba(15,5,34,.92);color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.35);';
+            var stage = document.querySelector('.play-stage');
+            if (stage) {
+                stage.appendChild(el);
+            }
+        }
+        el.onclick = function () {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        };
+        el.hidden = false;
+    }
+
     function openLaunchUrl(url, openMode) {
         var mode = String(openMode || 'iframe').toLowerCase();
         if (mode === 'redirect' || !document.getElementById('playFrame')) {
@@ -378,12 +422,15 @@
             return;
         }
         var frame = document.getElementById('playFrame');
+        clearNewTabFallback();
         frame.src = url;
+        scheduleNewTabFallback(url);
     }
 
     function launchGame(payload) {
         var loader = document.getElementById('playLoader');
         var frame = document.getElementById('playFrame');
+        clearNewTabFallback();
         if (loader) {
             loader.hidden = false;
         }

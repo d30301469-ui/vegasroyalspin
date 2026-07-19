@@ -950,13 +950,20 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
 
         // Kullanıcının oyun başlatırken seçtiği bakiye modu (ana/bonus) — çevrim
         // takibinin hangi bonusa işleneceğini belirler (bkz. WageringService).
-        admin_require_project_file('services/WageringService.php');
-        $walletChoice = strtolower(trim((string) ($input['wallet'] ?? 'main')));
-        WageringService::setActiveWalletMode(
-            AdminDatabase::pdo(),
-            (int) ($user['id'] ?? 0),
-            $walletChoice === 'bonus' ? 'bonus' : 'main'
-        );
+        // Best-effort: bu adım asla oyun başlatmayı engellememeli, bu yüzden
+        // kendi try/catch'i içinde (aşağıdaki launch try/catch'inin dışında
+        // olsa bile hiçbir Throwable dışarı sızmaz).
+        try {
+            admin_require_project_file('services/WageringService.php');
+            $walletChoice = strtolower(trim((string) ($input['wallet'] ?? 'main')));
+            WageringService::setActiveWalletMode(
+                AdminDatabase::pdo(),
+                (int) ($user['id'] ?? 0),
+                $walletChoice === 'bonus' ? 'bonus' : 'main'
+            );
+        } catch (Throwable $walletModeException) {
+            error_log('[game-launch] setActiveWalletMode failed: ' . $walletModeException->getMessage());
+        }
     }
     try {
         $gameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
