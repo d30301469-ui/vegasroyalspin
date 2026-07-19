@@ -374,42 +374,6 @@
   font-size: 13px;
   font-weight: 700;
 }
-.mprofile-support {
-  position: absolute;
-  right: 13px;
-  bottom: 41px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 150px;
-  height: 58px;
-  padding: 0 7px 0 21px;
-  border-radius: 19px 28px 28px 19px;
-  background: rgba(63, 9, 99, 0.92);
-  border: 2px solid #c930ff;
-  box-shadow: 0 0 18px rgba(224, 45, 255, 0.85), inset 0 0 16px rgba(255, 255, 255, 0.08);
-  color: #ff2dff;
-  text-decoration: none;
-  font-size: 18px;
-  font-style: italic;
-  font-weight: 900;
-  line-height: 0.9;
-  text-align: center;
-}
-.mprofile-support i {
-  width: 62px;
-  height: 62px;
-  margin-right: -12px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle, #8a2088 0%, #3e075e 72%);
-  border: 2px solid #c930ff;
-  color: #fff;
-  font-size: 31px;
-}
-
 body.mprofile-open {
   overflow: hidden;
 }
