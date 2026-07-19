@@ -37,8 +37,6 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
             <button type="button" class="deposit-tab" role="tab" aria-selected="false" data-category="crypto"><i class="fa-brands fa-bitcoin" aria-hidden="true"></i> KRİPTO</button>
             <button type="button" class="deposit-tab" role="tab" aria-selected="false" data-category="bank"><i class="fa-solid fa-right-left" aria-hidden="true"></i> BANKA TRANSFERİ</button>
             <button type="button" class="deposit-tab" role="tab" aria-selected="false" data-category="qr"><i class="fa-solid fa-qrcode" aria-hidden="true"></i> QR</button>
-            <button type="button" class="deposit-tab" role="tab" aria-selected="false" data-category="mobile"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i> MOBİL</button>
-            <button type="button" class="deposit-tab" role="tab" aria-selected="false" data-category="papara"><span class="deposit-tab-icon-p" aria-hidden="true">P</span> PAPARA</button>
         </div>
         <div class="deposit-promo-banner">
             <div class="deposit-promo-brand">
