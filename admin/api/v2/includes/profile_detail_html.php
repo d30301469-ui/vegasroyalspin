@@ -190,18 +190,20 @@ if (!function_exists('member_profile_spor_detail_render_value')) {
                             }
                         }
 
-                        $items[] = '<div class="profile-detail-spor-subcard">'
-                            . '<div class="profile-detail-spor-subcard__title">'
+                        $items[] = '<div class="card bg-transparent border-secondary flex-grow-1" style="min-width: 220px;">'
+                            . '<div class="card-body py-2 px-3">'
+                            . '<div class="fw-semibold text-white mb-2">'
                             . member_profile_html_escape($titleSource !== '' ? $titleSource : 'Öğe ' . ($index + 1))
                             . '</div>'
                             . member_profile_spor_detail_render_block($item, $depth + 1)
+                            . '</div>'
                             . '</div>';
                     } else {
-                        $items[] = '<span class="profile-detail-spor-pill">' . member_profile_html_escape(member_profile_spor_detail_format_scalar($item, $key)) . '</span>';
+                        $items[] = '<span class="badge rounded-pill text-bg-secondary">' . member_profile_html_escape(member_profile_spor_detail_format_scalar($item, $key)) . '</span>';
                     }
                 }
 
-                return '<div class="profile-detail-spor-pill-list">' . implode('', $items) . '</div>';
+                return '<div class="d-flex flex-wrap gap-2">' . implode('', $items) . '</div>';
             }
 
             return member_profile_spor_detail_render_block($value, $depth + 1);
@@ -214,34 +216,38 @@ if (!function_exists('member_profile_spor_detail_render_value')) {
 if (!function_exists('member_profile_spor_detail_render_block')) {
     function member_profile_spor_detail_render_block(array $data, int $depth = 0): string
     {
-        $html = '<div class="profile-detail-spor-block profile-detail-spor-block--depth-' . (int) $depth . '">';
+        $rows = '';
 
         foreach ($data as $key => $value) {
             $label = member_profile_spor_detail_humanize_key((string) $key);
 
             if (is_array($value)) {
                 if ($value === []) {
-                    $html .= '<div class="profile-detail-spor-row">'
-                        . '<div class="profile-detail-spor-key">' . member_profile_html_escape($label) . '</div>'
-                        . '<div class="profile-detail-spor-value">—</div>'
-                        . '</div>';
+                    $rows .= '<tr>'
+                        . '<th scope="row" class="text-white-50 text-uppercase small" style="width:34%;">' . member_profile_html_escape($label) . '</th>'
+                        . '<td class="text-white">—</td>'
+                        . '</tr>';
                     continue;
                 }
 
-                $html .= '<section class="profile-detail-spor-section">'
-                    . '<div class="profile-detail-spor-section__title">' . member_profile_html_escape($label) . '</div>'
-                    . member_profile_spor_detail_render_value($value, (string) $key, $depth)
-                    . '</section>';
+                $rows .= '<tr>'
+                    . '<th scope="row" class="text-white-50 text-uppercase small" style="width:34%; vertical-align: top;">' . member_profile_html_escape($label) . '</th>'
+                    . '<td class="text-white">' . member_profile_spor_detail_render_value($value, (string) $key, $depth) . '</td>'
+                    . '</tr>';
                 continue;
             }
 
-            $html .= '<div class="profile-detail-spor-row">'
-                . '<div class="profile-detail-spor-key">' . member_profile_html_escape($label) . '</div>'
-                . '<div class="profile-detail-spor-value">' . member_profile_spor_detail_render_value($value, (string) $key, $depth) . '</div>'
-                . '</div>';
+            $rows .= '<tr>'
+                . '<th scope="row" class="text-white-50 text-uppercase small" style="width:34%;">' . member_profile_html_escape($label) . '</th>'
+                . '<td class="text-white fw-semibold">' . member_profile_spor_detail_render_value($value, (string) $key, $depth) . '</td>'
+                . '</tr>';
         }
 
-        return $html . '</div>';
+        return '<div class="table-responsive">'
+            . '<table class="table table-sm table-borderless align-middle mb-0 text-white">'
+            . '<tbody>' . $rows . '</tbody>'
+            . '</table>'
+            . '</div>';
     }
 }
 
