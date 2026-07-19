@@ -153,6 +153,14 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     font-size: 14px;
     color: rgba(255, 255, 255, 0.9);
 }
+.profile-content .user-fullname {
+    margin-bottom: 2px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .profile-content .user-id {
     display: flex;
     align-items: center;
@@ -271,6 +279,16 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     display: block;
     line-height: 1.1;
     margin-bottom: 4px;
+}
+.profile-sidebar-v2 .profile-content .user-fullname {
+    font-size: 11px;
+    color: rgba(214, 220, 242, 0.7);
+    display: block;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .profile-sidebar-v2 .profile-content .user-id {
     font-size: 11px;
