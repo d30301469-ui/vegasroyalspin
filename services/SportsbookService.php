@@ -654,6 +654,13 @@ final class SportsbookService
             $pdo->prepare("UPDATE users SET balance = :bal WHERE id = :id")
                 ->execute([':bal' => $after, ':id' => $userId]);
 
+            if ($type === 'bet' && $amount < 0) {
+                WageringService::registerBet($pdo, $userId, abs($amount));
+            } elseif ($type === 'cancel' && $amount > 0) {
+                // A positive delta on cancel means funds were returned, i.e. a bet was voided.
+                WageringService::reverseBet($pdo, $userId, abs($amount));
+            }
+
             $pdo->prepare(
                 "INSERT INTO sportsbook_transactions
                     (user_id, username, user_full_name, txn_code, pair_code, wager_id, round_id,

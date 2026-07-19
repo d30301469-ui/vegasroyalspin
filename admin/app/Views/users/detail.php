@@ -9,6 +9,7 @@ $games = is_array($games ?? null) ? $games : [];
 $sportsbookCoupons = is_array($sportsbookCoupons ?? null) ? $sportsbookCoupons : [];
 $bonusClaims = is_array($bonusClaims ?? null) ? $bonusClaims : [];
 $activeBonuses = is_array($activeBonuses ?? null) ? $activeBonuses : [];
+$accountWagering = is_array($accountWagering ?? null) ? $accountWagering : [];
 $notes = is_array($notes ?? null) ? $notes : [];
 $sessions = is_array($sessions ?? null) ? $sessions : [];
 $flash = trim((string) ($flash ?? ''));
@@ -106,6 +107,9 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
         .user-stat-grid, .user-balance-form { grid-template-columns:1fr; }
         .user-profile-row { grid-template-columns:1fr; gap:4px; }
     }
+    .wagering-progress-bar { margin-top:8px; height:8px; border-radius:999px; background:var(--border-soft); overflow:hidden; }
+    .wagering-progress-fill { height:100%; border-radius:999px; background:var(--accent, #6c5ce7); }
+    .user-stat-card small { display:block; margin-top:6px; color:var(--t-light); font-size:11px; font-weight:600; }
 </style>
 
 <div class="user-detail-page">
@@ -145,6 +149,12 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
             <div class="user-stat-card"><span>Bonus bakiye</span><strong><?= $text($money($user['bonus_balance'] ?? 0)) ?></strong></div>
             <div class="user-stat-card"><span>Manuel eklenen</span><strong><?= $text($money($summary['manual_add'] ?? 0)) ?></strong></div>
             <div class="user-stat-card"><span>Manuel çıkarılan</span><strong><?= $text($money($summary['manual_subtract'] ?? 0)) ?></strong></div>
+            <div class="user-stat-card">
+                <span>Ana bakiye çevrim (1x)</span>
+                <strong><?= $text($money($accountWagering['progress'] ?? 0)) ?> / <?= $text($money($accountWagering['required'] ?? 0)) ?></strong>
+                <div class="wagering-progress-bar"><div class="wagering-progress-fill" style="width:<?= $text((float) ($accountWagering['percent'] ?? 0)) ?>%"></div></div>
+                <small><?= $text(number_format((float) ($accountWagering['percent'] ?? 0), 1)) ?>% tamamlandı · Kalan: <?= $text($money($accountWagering['remaining'] ?? 0)) ?></small>
+            </div>
         </div>
         <form method="post" action="<?= htmlspecialchars(AdminAuth::url('/user/balance-adjust'), ENT_QUOTES, 'UTF-8') ?>" class="user-balance-form">
             <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
@@ -191,6 +201,16 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
     </section>
 
     <?php
+    $activeBonuses = array_map(static function (array $row) use ($money): array {
+        $target = (float) ($row['wagering_target'] ?? 0);
+        $bet = (float) ($row['total_bet_amount'] ?? 0);
+        $percent = $target > 0 ? min(100.0, round(($bet / $target) * 100, 1)) : 100.0;
+        $row['cevrim_hedef'] = $target > 0 ? $money($target) : '-';
+        $row['cevrim_ilerleme'] = $money($bet) . ' (' . number_format($percent, 1) . '%)';
+        $row['cevrim_durumu'] = ((int) ($row['is_complete'] ?? 0) === 1) ? 'Tamamlandı' : 'Devam ediyor';
+        return $row;
+    }, $activeBonuses);
+
     $sections = [
         ['title' => 'Yatırımlar', 'rows' => $deposits, 'columns' => ['id' => 'ID', 'method' => 'Metot', 'provider' => 'Provider', 'amount' => 'Tutar', 'status' => 'Durum', 'trx' => 'TRX', 'created_at' => 'Tarih']],
         ['title' => 'Çekimler', 'rows' => $withdrawals, 'columns' => ['id' => 'ID', 'method' => 'Metot', 'provider' => 'Provider', 'amount' => 'Tutar', 'status' => 'Durum', 'admin_status' => 'Admin', 'created_at' => 'Tarih']],
@@ -198,7 +218,7 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
         ['title' => 'Oyun işlemleri', 'type' => 'games', 'rows' => $games, 'columns' => ['id' => 'ID', 'game_name' => 'Oyun', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'txn_type' => 'Tip', 'bet_amount' => 'Bet', 'win_amount' => 'Win', 'balance_after' => 'Bakiye', 'created_at' => 'Tarih']],
         ['title' => 'Spor kuponları', 'rows' => $sportsbookCoupons, 'columns' => ['id' => 'ID', 'coupon_id' => 'Kupon', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'vendor_code' => 'Vendor', 'game_code' => 'Sport', 'txn_type' => 'Kazanç/Kayıp', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'currency' => 'Para', 'match_result' => 'Maç Sonucu', 'processed_coupon' => 'İşlenmiş Kupon', 'status' => 'Durum', 'created_at' => 'Tarih']],
         ['title' => 'Bonus talepleri', 'rows' => $bonusClaims, 'columns' => ['id' => 'ID', 'bonus_name' => 'Bonus', 'requested_amount' => 'Tutar', 'status' => 'Durum', 'processed_by' => 'İşleyen', 'processed_at' => 'İşlem tarihi', 'created_at' => 'Tarih']],
-        ['title' => 'Aktif bonuslar', 'rows' => $activeBonuses, 'columns' => ['id' => 'ID', 'name' => 'Bonus', 'initial_amount' => 'İlk tutar', 'current_bonus_balance' => 'Mevcut', 'status' => 'Durum', 'deadline' => 'Deadline', 'created_at' => 'Tarih']],
+        ['title' => 'Aktif bonuslar', 'rows' => $activeBonuses, 'columns' => ['id' => 'ID', 'name' => 'Bonus', 'initial_amount' => 'İlk tutar', 'current_bonus_balance' => 'Mevcut', 'cevrim_hedef' => 'Çevrim hedefi', 'cevrim_ilerleme' => 'Çevrim ilerleme', 'cevrim_durumu' => 'Çevrim durumu', 'status' => 'Durum', 'deadline' => 'Deadline', 'created_at' => 'Tarih']],
     ];
     ?>
     <?php foreach ($sections as $section): ?>

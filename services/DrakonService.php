@@ -1328,6 +1328,7 @@ final class DrakonService
             $afterBalance = round($beforeBalance - $bet, 2);
             $pdo->prepare("UPDATE users SET balance = :bal WHERE id = :id")
                 ->execute([':bal' => $afterBalance, ':id' => $userId]);
+            WageringService::registerBet($pdo, $userId, $bet);
 
             $gameRow = self::findGameRow($pdo, $gameId);
             $pdo->prepare(
@@ -1522,6 +1523,9 @@ final class DrakonService
 
             $pdo->prepare("UPDATE users SET balance = :bal WHERE id = :id")
                 ->execute([':bal' => $afterBalance, ':id' => $userId]);
+            if ($origType === 'bet') {
+                WageringService::reverseBet($pdo, $userId, $amount);
+            }
 
             $gameRow = self::findGameRow($pdo, $gameId);
             $pdo->prepare(

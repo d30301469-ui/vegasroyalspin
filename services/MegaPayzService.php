@@ -638,6 +638,7 @@ final class MegaPayzService
             if ($type === 'deposit' && $status === 'confirmed' && $oldStatus !== 'confirmed') {
                 $pdo->prepare('UPDATE users SET balance = balance + :amount WHERE id = :id')
                     ->execute(['amount' => number_format($amount, 2, '.', ''), 'id' => $userId]);
+                WageringService::registerDeposit($pdo, $userId, $amount);
             }
             // Çekim talebinde bakiye, talep anında düşülür. Sağlayıcı işlemi
             // reddederse VEYA başarısız (failed) olursa kullanıcıya iade edilmeli.
