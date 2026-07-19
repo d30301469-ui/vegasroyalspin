@@ -1,0 +1,271 @@
+/* Mobile-native profil paneli — masaüstü .profile-modal sisteminden bağımsız */
+.mprofile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 100000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.mprofile-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mprofile-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(380px, 88vw);
+  max-width: 88vw;
+  z-index: 100001;
+  background: linear-gradient(158deg, #5b1156 0%, #221a5c 36%, #0a1147 100%);
+  border-left: 1px solid rgba(183, 150, 255, 0.22);
+  box-shadow: -18px 0 46px rgba(0, 0, 0, 0.5);
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.mprofile-panel.is-open {
+  transform: translateX(0);
+}
+
+.mprofile-panel__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 12px calc(20px + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+}
+
+/* Bakiye kartı */
+.mprofile-amount {
+  background: #2fa244;
+  border-radius: 6px;
+  padding: 12px 14px 14px;
+  margin-bottom: 12px;
+}
+.mprofile-amount__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.mprofile-amount__balance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mprofile-amount__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.82);
+}
+.mprofile-amount__value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+}
+.mprofile-amount__eye {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 18px;
+}
+.mprofile-amount__buttons {
+  display: flex;
+  gap: 8px;
+}
+.mprofile-amount__deposit,
+.mprofile-amount__withdraw {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.mprofile-amount__deposit i,
+.mprofile-amount__withdraw i {
+  font-size: 14px;
+}
+
+/* Sadakat şeridi */
+.mprofile-loyalty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: #9d7619;
+  border: 1px solid rgba(255, 230, 171, 0.28);
+  color: #fff;
+  text-decoration: none;
+}
+.mprofile-loyalty__img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+.mprofile-loyalty__text {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+}
+.mprofile-loyalty__points {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* Kullanıcı satırı */
+.mprofile-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+  text-decoration: none;
+}
+.mprofile-user__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.mprofile-user__id {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.mprofile-user__name {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mprofile-user__uid {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.62);
+}
+.mprofile-user__arrow {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 15px;
+}
+
+/* Menü listesi */
+.mprofile-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.mprofile-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(93, 49, 130, 0.7) 0%, rgba(56, 61, 113, 0.7) 100%);
+  border: 1px solid rgba(132, 116, 189, 0.34);
+  color: #fff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+.mprofile-link__icon {
+  width: 18px;
+  text-align: center;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+}
+.mprofile-link__title {
+  flex: 1;
+}
+.mprofile-link__arrow {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 15px;
+}
+.mprofile-link:active {
+  filter: brightness(1.1);
+}
+
+/* Promo kodu */
+.mprofile-promo {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.mprofile-promo__input {
+  flex: 1;
+  min-height: 46px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(151, 129, 224, 0.32);
+  background: rgba(58, 48, 106, 0.45);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  outline: 0;
+}
+.mprofile-promo__input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+.mprofile-promo__btn {
+  width: 96px;
+  border-radius: 6px;
+  border: 1px solid rgba(151, 129, 224, 0.32);
+  background: rgba(94, 57, 141, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-weight: 700;
+}
+.mprofile-promo__btn:disabled {
+  opacity: 0.6;
+}
+
+/* Çıkış */
+.mprofile-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border-radius: 6px;
+  background: rgba(94, 57, 141, 0.46);
+  border: 1px solid rgba(160, 141, 221, 0.34);
+  color: #fff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+body.mprofile-open {
+  overflow: hidden;
+}

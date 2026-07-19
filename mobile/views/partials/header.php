@@ -182,4 +182,6 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
   </div>
 </div>
 
+<?php include MOBILE_PATH . '/views/partials/profile-panel.php'; ?>
+
 <?php include MOBILE_PATH . '/views/partials/layout-after-header.php'; ?>

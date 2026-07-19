@@ -124,6 +124,7 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="stylesheet" href="/mobile/assets/css/bottom-bar.css?v=<?= $ver($mobileCssDir . '/bottom-bar.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/footer.css?v=<?= $ver($mobileCssDir . '/footer.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/auth-modals.css?v=<?= $ver($mobileCssDir . '/auth-modals.css') ?>">
+  <link rel="stylesheet" href="/mobile/assets/css/profile-panel.css?v=<?= $ver($mobileCssDir . '/profile-panel.css') ?>">
   <link rel="stylesheet" href="/assets/css/login-modal.css?v=<?= $ver($assetCssDir . '/login-modal.css') ?>">
   <link rel="stylesheet" href="/assets/css/register-modal.css?v=<?= $ver($assetCssDir . '/register-modal.css') ?>">
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
