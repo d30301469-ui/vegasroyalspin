@@ -108,6 +108,10 @@
                 return;
             }
             var m = document.getElementById("login2");
+            if (window.MaltabetAuth && typeof window.MaltabetAuth.showLoginModal === "function") {
+                window.MaltabetAuth.showLoginModal();
+                return;
+            }
             if (m && typeof window.jQuery !== "undefined") {
                 window.jQuery(m).modal("show");
             }
@@ -121,6 +125,10 @@
                 return;
             }
             var m = document.getElementById("registerModal");
+            if (window.MaltabetAuth && typeof window.MaltabetAuth.showRegisterModal === "function") {
+                window.MaltabetAuth.showRegisterModal();
+                return;
+            }
             if (m && typeof window.jQuery !== "undefined") {
                 window.jQuery(m).modal("show");
             }

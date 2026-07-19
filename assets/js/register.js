@@ -344,6 +344,11 @@
             jq(registerModal).on('shown.bs.modal', function () {
                 applyMobileRegisterLayoutFix(registerModal);
                 applyMobileRegisterHeaderFix(registerModal);
+                // Bazi acilis akislari showModalByElement() disindan modal aciyor.
+                // Modal gorunur oldugunda widget'i burada da garanti render et.
+                ensureRegisterTurnstileWidget();
+                window.setTimeout(ensureRegisterTurnstileWidget, 160);
+                window.setTimeout(ensureRegisterTurnstileWidget, 420);
             });
             jq(registerModal).on('hidden.bs.modal', resetRegisterForm);
         } else {
