@@ -1226,10 +1226,8 @@ final class BgamingService
         if (!self::featureEnabled($pdo, 'freespins_enabled')) {
             return ['code' => 'FREESPINS_DISABLED', 'message' => 'Freespins are disabled'];
         }
-        $userId = self::extractWalletUserId($payload);
-        if ($userId > 0) {
-            $payload['user_id'] = $userId;
-        }
+
+        $payload = self::normalizeWalletPayloadContext($pdo, $payload);
 
         $issueId = self::extractFreespinIssueId($payload);
         if ($issueId !== '') {
@@ -1361,6 +1359,19 @@ final class BgamingService
             }
             if (is_numeric($raw)) {
                 return max(0, (int) $raw);
+            }
+        }
+
+        $roundsInfo = $payload['rounds_info'] ?? null;
+        if (is_array($roundsInfo)) {
+            $sum = 0;
+            foreach ($roundsInfo as $round) {
+                if (is_array($round) && isset($round['win']) && is_numeric($round['win'])) {
+                    $sum += (int) $round['win'];
+                }
+            }
+            if ($sum > 0) {
+                return $sum;
             }
         }
 
