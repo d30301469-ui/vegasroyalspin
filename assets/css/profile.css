@@ -2972,6 +2972,226 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
         width: 100%;
     }
 }
+
+.personal-details-page--loyalty-points .profile-section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+.personal-details-page--loyalty-points .lp-alert {
+    border-radius: 6px;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.82rem;
+    border: 1px solid transparent;
+}
+.personal-details-page--loyalty-points .lp-alert--success {
+    border-color: rgba(113, 222, 154, 0.38);
+    background: rgba(44, 115, 75, 0.32);
+    color: #c9ffdc;
+}
+.personal-details-page--loyalty-points .lp-alert--error {
+    border-color: rgba(255, 141, 141, 0.42);
+    background: rgba(120, 38, 38, 0.35);
+    color: #ffd6d6;
+}
+.personal-details-page--loyalty-points .lp-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+.personal-details-page--loyalty-points .lp-stat-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(8, 18, 62, 0.62);
+    padding: 0.65rem 0.75rem;
+    min-height: 84px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+}
+.personal-details-page--loyalty-points .lp-stat-label {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.62);
+    text-transform: uppercase;
+}
+.personal-details-page--loyalty-points .lp-stat-value {
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+.personal-details-page--loyalty-points .lp-stat-sub {
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.72rem;
+}
+.personal-details-page--loyalty-points .lp-progress-wrap {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(9, 20, 67, 0.6);
+    padding: 0.65rem 0.75rem;
+}
+.personal-details-page--loyalty-points .lp-progress-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    font-size: 0.82rem;
+    margin-bottom: 0.45rem;
+}
+.personal-details-page--loyalty-points .lp-progress-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    overflow: hidden;
+}
+.personal-details-page--loyalty-points .lp-progress-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #54d8ff 0%, #84a9ff 100%);
+}
+.personal-details-page--loyalty-points .lp-progress-note {
+    margin: 0.45rem 0 0;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.78rem;
+}
+.personal-details-page--loyalty-points .lp-redeem-box,
+.personal-details-page--loyalty-points .lp-history,
+.personal-details-page--loyalty-points .lp-levels {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(8, 18, 62, 0.62);
+    padding: 0.75rem;
+}
+.personal-details-page--loyalty-points .lp-redeem-box h2,
+.personal-details-page--loyalty-points .lp-history h2,
+.personal-details-page--loyalty-points .lp-levels h2 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #fff;
+}
+.personal-details-page--loyalty-points .lp-redeem-box p {
+    margin: 0.35rem 0 0.65rem;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.65);
+}
+.personal-details-page--loyalty-points .lp-redeem-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.personal-details-page--loyalty-points .lp-redeem-form label {
+    font-size: 0.74rem;
+    color: rgba(255, 255, 255, 0.68);
+}
+.personal-details-page--loyalty-points .lp-redeem-row {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+}
+.personal-details-page--loyalty-points .lp-redeem-row input {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(16, 26, 76, 0.72);
+    color: #fff;
+    font-size: 0.9rem;
+    padding: 0 0.65rem;
+}
+.personal-details-page--loyalty-points .lp-redeem-btn {
+    border: 1px solid rgba(170, 205, 255, 0.38);
+    background: rgba(102, 163, 255, 0.28);
+    color: #fff;
+    border-radius: 5px;
+    padding: 0 0.85rem;
+    height: 36px;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.personal-details-page--loyalty-points .lp-history-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+}
+.personal-details-page--loyalty-points .lp-history-head span {
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.72rem;
+}
+.personal-details-page--loyalty-points .lp-table-wrap {
+    overflow-x: auto;
+}
+.personal-details-page--loyalty-points .lp-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #fff;
+    font-size: 0.79rem;
+}
+.personal-details-page--loyalty-points .lp-table th,
+.personal-details-page--loyalty-points .lp-table td {
+    padding: 0.5rem 0.4rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.personal-details-page--loyalty-points .lp-table th {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+}
+.personal-details-page--loyalty-points .lp-table td.is-positive {
+    color: #9cf3bb;
+    font-weight: 600;
+}
+.personal-details-page--loyalty-points .lp-table td.is-negative {
+    color: #ffb6b6;
+    font-weight: 600;
+}
+.personal-details-page--loyalty-points .lp-empty {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.82rem;
+}
+.personal-details-page--loyalty-points .lp-level-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.55rem;
+}
+.personal-details-page--loyalty-points .lp-level-item {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 0.5rem 0.58rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.74);
+    font-size: 0.74rem;
+}
+.personal-details-page--loyalty-points .lp-level-item strong {
+    color: #fff;
+    font-size: 0.8rem;
+}
+.personal-details-page--loyalty-points .lp-level-item.is-current {
+    border-color: rgba(129, 200, 255, 0.66);
+    background: rgba(82, 154, 255, 0.12);
+}
+
+@media (max-width: 768px) {
+    .personal-details-page--loyalty-points .lp-stats-grid,
+    .personal-details-page--loyalty-points .lp-level-list {
+        grid-template-columns: 1fr;
+    }
+    .personal-details-page--loyalty-points .lp-redeem-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
 /* ── Profil PHP dosyalarından taşınan <style> blokları (profile.css’e birleştirilir) ── */
 
 /* views/layouts/profile_modal_head.php — profil iframe gövdesi */
