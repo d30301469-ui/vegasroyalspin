@@ -96,6 +96,34 @@ $loyaltyPointsHref = '/profile/sadakat-puanlari' . (!empty($profile_modal) ? '?m
                 <small data-loyalty-points><?php echo htmlspecialchars((string) ((int) ($sidebar_loyalty['points'] ?? 0))); ?> puan</small>
             </span>
         </div>
+
+        <nav class="profile-mobile-nav" aria-label="Mobil profil menüsü">
+            <a class="profile-mobile-nav__item <?php echo $profile_open ? 'is-active' : ''; ?>" href="/profile/details<?= !empty($profile_modal) ? '?modal=1' : '' ?>">
+                <i class="fa-solid fa-user" aria-hidden="true"></i>
+                <span>PROFİLİM</span>
+            </a>
+            <a class="profile-mobile-nav__item <?php echo $balance_open ? 'is-active' : ''; ?>" href="<?= htmlspecialchars($depositWithDrawDepositHref, ENT_QUOTES, 'UTF-8') ?>">
+                <i class="fa-solid fa-wallet" aria-hidden="true"></i>
+                <span>BAKİYE YÖNETİMİ</span>
+            </a>
+            <a class="profile-mobile-nav__item <?php echo $bet_open ? 'is-active' : ''; ?>" href="/profile/bet-history<?= !empty($profile_modal) ? '?modal=1' : '' ?>">
+                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                <span>BAHİS GEÇMİŞİ</span>
+            </a>
+            <a class="profile-mobile-nav__item <?php echo $promotions_open ? 'is-active' : ''; ?>" href="/profile/bonus-spor<?= !empty($profile_modal) ? '?modal=1' : '' ?>">
+                <i class="fa-solid fa-gift" aria-hidden="true"></i>
+                <span>BONUSLAR</span>
+            </a>
+            <a class="profile-mobile-nav__item <?php echo $messages_open ? 'is-active' : ''; ?>" href="<?= htmlspecialchars($messagesInboxHref, ENT_QUOTES, 'UTF-8') ?>">
+                <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                <span>MESAJLAR</span>
+                <?php if ($unread_count > 0): ?><b class="profile-mobile-nav__badge"><?php echo (int) $unread_count; ?></b><?php endif; ?>
+            </a>
+            <a class="profile-mobile-nav__item" href="/logout" data-nav-mode="page">
+                <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                <span>ÇIKIŞ YAP</span>
+            </a>
+        </nav>
     </div>
     <div class="sideSports profile-accordion">
         <ul class="accordion-list">
