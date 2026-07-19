@@ -47,13 +47,15 @@ window.__WITHDRAW_HISTORY_ENDPOINT__ = '/api/v2/withdraw-history';
         include __DIR__ . '/../../views/partials/profile-content-shell-open.php';
         ?>
 
-            <div class="tx-history-kind-tabs" role="tablist" aria-label="İşlem türü">
-                <button type="button" class="tx-history-kind-tab is-active" role="tab" aria-selected="true" id="txHistoryTabDeposit" data-tx-kind="deposit">Yatırım</button>
-                <button type="button" class="tx-history-kind-tab" role="tab" aria-selected="false" id="txHistoryTabWithdraw" data-tx-kind="withdraw">Çekim</button>
-            </div>
-
             <div class="tx-history-filters" role="search" aria-label="İşlem geçmişi filtreleri">
                 <div class="tx-filter-toolbar">
+                    <div class="tx-filter-field">
+                        <label class="tx-filter-label" for="depositHistoryTypeFilter">İşlem Türü</label>
+                        <select class="tx-filter-select" id="depositHistoryTypeFilter">
+                            <option value="deposit" selected>Yatırım</option>
+                            <option value="withdraw">Çekim</option>
+                        </select>
+                    </div>
                     <div class="tx-filter-field">
                         <label class="tx-filter-label" for="depositHistoryStatusFilter">Durum</label>
                         <select class="tx-filter-select" id="depositHistoryStatusFilter">
