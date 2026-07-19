@@ -20,6 +20,7 @@
     overlay.setAttribute('aria-hidden', 'false');
     panel.setAttribute('aria-hidden', 'false');
     document.body.classList.add('mprofile-open');
+    document.body.classList.add('overlay-sliding-is-visible', 'overlaySlidingIsVisible');
     isOpen = true;
     syncBalance();
     return true;
@@ -34,6 +35,7 @@
     overlay.setAttribute('aria-hidden', 'true');
     panel.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('mprofile-open');
+    document.body.classList.remove('overlay-sliding-is-visible', 'overlaySlidingIsVisible');
     isOpen = false;
   }
 

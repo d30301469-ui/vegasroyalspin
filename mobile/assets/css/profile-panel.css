@@ -40,7 +40,7 @@
   position: fixed;
   inset: 0;
   top: var(--mobile-header-main-section-height, 46px);
-  z-index: 969;
+  z-index: 1069;
   background: rgba(0, 0, 0, 0.42);
   opacity: 0;
   visibility: hidden;
@@ -57,7 +57,7 @@
   width: 100%;
   height: calc(100% - var(--mobile-header-main-section-height, 46px));
   bottom: 0;
-  z-index: 970;
+  z-index: 1070;
   background: rgba(var(--b, 0, 0, 0), 0.7);
   color: #fff;
   transform: translateY(100%);
