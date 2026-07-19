@@ -43,7 +43,7 @@
             if (modalId === 'login2') {
                 var loginSpacer = modalEl.querySelector('.sg-n-text-row-2-bc');
                 if (loginSpacer) {
-                    loginSpacer.style.flex = '0 0 clamp(120px, 24vh, 190px)';
+                    loginSpacer.style.flex = '0 0 clamp(78px, 15vh, 126px)';
                     loginSpacer.style.minHeight = '0';
                 }
 
