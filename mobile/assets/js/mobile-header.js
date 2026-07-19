@@ -57,6 +57,40 @@
         btn.style.color = 'inherit';
     }
 
+    function initMobileAvatarProfileModal() {
+        var btn = document.getElementById('toggleButton');
+        if (!btn) return;
+
+        function openProfileFromAvatar() {
+            if (typeof window.__closeSmartPanel === 'function') {
+                window.__closeSmartPanel();
+            }
+            if (typeof window.__closeMobileNavMenu === 'function') {
+                window.__closeMobileNavMenu();
+            }
+
+            if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/details')) {
+                return;
+            }
+
+            // Fallback: modal altyapısı henüz hazır değilse aynı hedefe sayfa geçişi yap.
+            window.location.href = '/profile/details?modal=1';
+        }
+
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openProfileFromAvatar();
+        });
+
+        btn.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            e.stopPropagation();
+            openProfileFromAvatar();
+        });
+    }
+
     function initNavScrollStart() {
         var nav = document.querySelector(
             '.hdr-navigation-scrollable-bc-holder[data-mobile-nav-strip] .hdr-navigation-scrollable-content'
@@ -99,6 +133,7 @@
     function boot() {
         initAdditionalToggle();
         initProfileButton();
+        initMobileAvatarProfileModal();
         initNavScrollStart();
         initBackToTopLayout();
         observeHeaderHeight();
