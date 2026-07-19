@@ -324,6 +324,12 @@
 
         var panel = document.createElement('div');
         panel.className = 'profile-bonus-claim-panel';
+        panel.style.width = '100%';
+        panel.style.maxWidth = '1000px';
+        panel.style.margin = '0 auto';
+        panel.style.display = 'flex';
+        panel.style.flexDirection = 'column';
+        panel.style.gap = '12px';
 
         if (activeData.success && activeData.data && activeData.data.hasActiveBonus && activeData.data.bonus && bonusCategoryMatchesPageKind(activeData.data.bonus.category, kind)) {
             panel.appendChild(buildActiveBonusCard(activeData.data.bonus));
@@ -353,26 +359,63 @@
 
         var grid = document.createElement('div');
         grid.className = 'profile-bonus-claim-grid';
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
+        grid.style.gap = '12px';
         filtered.forEach(function(promo) {
             var card = document.createElement('article');
             card.className = 'profile-bonus-claim-card';
+            card.style.border = '1px solid rgba(255,255,255,0.1)';
+            card.style.borderRadius = '10px';
+            card.style.background = 'rgba(14, 12, 34, 0.62)';
+            card.style.padding = '14px';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.gap = '10px';
 
             var title = document.createElement('h3');
             title.className = 'profile-bonus-claim-title';
             title.textContent = String(promo.title || 'Bonus').trim() || 'Bonus';
+            title.style.margin = '0';
+            title.style.fontSize = '18px';
+            title.style.lineHeight = '1.2';
+            title.style.fontWeight = '700';
+            title.style.color = '#ffffff';
 
             var desc = document.createElement('p');
             desc.className = 'profile-bonus-claim-desc';
             var rawDesc = String(promo.description || promo.long_description || 'Bu bonus için talep oluşturabilirsiniz.').trim();
-            desc.textContent = rawDesc.length > 130 ? rawDesc.slice(0, 127) + '...' : rawDesc;
+            var normalizedTitle = title.textContent.toLocaleLowerCase('tr-TR');
+            var normalizedDesc = rawDesc.toLocaleLowerCase('tr-TR');
+            var finalDesc = rawDesc;
+            if (!finalDesc || normalizedDesc === normalizedTitle) {
+                finalDesc = 'Bu bonus için talep oluşturabilirsiniz.';
+            }
+            desc.textContent = finalDesc.length > 130 ? finalDesc.slice(0, 127) + '...' : finalDesc;
+            desc.style.margin = '0';
+            desc.style.fontSize = '14px';
+            desc.style.lineHeight = '1.35';
+            desc.style.color = 'rgba(255,255,255,0.82)';
 
             var action = document.createElement('button');
             action.type = 'button';
             action.className = 'profile-bonus-claim-btn';
             action.textContent = 'Talep Et';
+            action.style.alignSelf = 'flex-start';
+            action.style.border = '0';
+            action.style.borderRadius = '8px';
+            action.style.padding = '8px 14px';
+            action.style.fontSize = '14px';
+            action.style.fontWeight = '700';
+            action.style.color = '#ffffff';
+            action.style.background = 'linear-gradient(90deg, #ef5f39 0%, #f5944f 100%)';
+            action.style.cursor = 'pointer';
             action.disabled = requiresDeposit && !hasConfirmedDeposit;
             if (action.disabled) {
                 action.title = depositWarning;
+                action.style.background = '#5f5f5f';
+                action.style.opacity = '0.72';
+                action.style.cursor = 'not-allowed';
             }
             action.addEventListener('click', function() {
                 submitProfileBonusClaim(promo.id || promo.promotionId || 0, claimStatus, action);
@@ -386,6 +429,10 @@
 
         panel.appendChild(grid);
         panel.appendChild(claimStatus);
+        claimStatus.style.margin = '0';
+        claimStatus.style.minHeight = '18px';
+        claimStatus.style.fontSize = '14px';
+        claimStatus.style.color = 'rgba(255,255,255,0.76)';
         root.appendChild(panel);
     }
 
