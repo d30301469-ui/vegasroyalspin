@@ -491,6 +491,7 @@ final class AdminPromotionController extends AdminController
         $deadline = date('Y-m-d H:i:s', strtotime('+30 days'));
 
         try {
+            $pdo->beginTransaction();
             $pdo->prepare(
                 "INSERT INTO user_active_bonuses
                  (user_id, promotion_id, name, category, initial_amount, current_bonus_balance,
@@ -507,9 +508,19 @@ final class AdminPromotionController extends AdminController
                 'wagering_target' => number_format($wageringTarget, 2, '.', ''),
                 'deadline' => $deadline,
             ]);
+            // Bonus tutarı kullanıcının gerçek bonus_balance alanına da işlenir; oyun
+            // sağlayıcıları bahisleri ana bakiyeden düştüğü için bu alan sadece
+            // görüntüleme/izleme amaçlıdır ama profil ve panelde gösterilen tutarla
+            // (users.bonus_balance) tutarlı olmalıdır.
+            $pdo->prepare('UPDATE users SET bonus_balance = bonus_balance + :amount WHERE id = :id')
+                ->execute(['amount' => number_format($bonusAmount, 2, '.', ''), 'id' => $userId]);
+            $pdo->commit();
             AdminAuth::writeLog(AdminAuth::userName(), 'bonus_assign', 'users', 'success', (string) $userId);
             $this->flash("Bonus başarıyla atandı: $finalName ($bonusAmount TRY)");
         } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             $this->flash('Bonus ataması başarısız: ' . $exception->getMessage());
         }
 
@@ -535,13 +546,30 @@ final class AdminPromotionController extends AdminController
         }
 
         $pdo = AdminDatabase::pdo();
-        $where = $bonusId > 0 ? 'id = :id' : "user_id = :user_id AND status = 'active'";
+        $where = $bonusId > 0 ? "id = :id AND status = 'active'" : "user_id = :user_id AND status = 'active'";
         $bind = $bonusId > 0 ? ['id' => $bonusId] : ['user_id' => $userId];
 
         try {
-            $stmt = $pdo->prepare("UPDATE user_active_bonuses SET status = 'revoked' WHERE $where");
+            $pdo->beginTransaction();
+            $affected = $pdo->prepare("SELECT id, user_id, current_bonus_balance FROM user_active_bonuses WHERE $where");
+            $affected->execute($bind);
+            $bonusRows = $affected->fetchAll(PDO::FETCH_ASSOC);
+
+            $stmt = $pdo->prepare("UPDATE user_active_bonuses SET status = 'revoked', current_bonus_balance = 0 WHERE $where");
             $stmt->execute($bind);
             $count = $stmt->rowCount();
+
+            // İptal edilen bonusun henüz kullanılmamış tutarını kullanıcının
+            // bonus_balance alanından geri düşer (0'ın altına inmez).
+            foreach ($bonusRows as $row) {
+                $refund = round((float) ($row['current_bonus_balance'] ?? 0), 2);
+                if ($refund > 0) {
+                    $pdo->prepare('UPDATE users SET bonus_balance = GREATEST(0, bonus_balance - :amount) WHERE id = :id')
+                        ->execute(['amount' => number_format($refund, 2, '.', ''), 'id' => (int) $row['user_id']]);
+                }
+            }
+            $pdo->commit();
+
             if ($count === 0) {
                 $this->flash('Aktif bonus bulunamadı.');
             } else {
@@ -549,6 +577,9 @@ final class AdminPromotionController extends AdminController
                 $this->flash("$count bonus iptal edildi.");
             }
         } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             $this->flash('Bonus iptal edilemedi: ' . $exception->getMessage());
         }
 
