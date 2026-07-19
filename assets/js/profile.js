@@ -1397,6 +1397,26 @@
 
         bindProfileShellNav(contentEl);
 
+        /** Modal hiç açılmadan önce (kullanıcı profil ikonuna tıklamadan) varsayılan
+         * profil sekmesini arka planda ısıtır, böylece ilk açılış da önbellekten gelir. */
+        function prefetchInitialProfileShellOnce() {
+            if (window.__profileModalInitialPrefetched) return;
+            var isLoggedIn = !!document.querySelector('.hdr-auth-user, .hdr-auth-user *');
+            if (!isLoggedIn) return;
+            window.__profileModalInitialPrefetched = true;
+            var runner = function() {
+                var currentPath = window.location.pathname || '';
+                var candidate = canLoadInProfileModal(currentPath) ? (currentPath + (window.location.search || '')) : '/profile/details';
+                prefetchProfileShellUrl(toModalUrl(candidate));
+            };
+            if (typeof window.requestIdleCallback === 'function') {
+                window.requestIdleCallback(runner, { timeout: 1500 });
+            } else {
+                setTimeout(runner, 400);
+            }
+        }
+        prefetchInitialProfileShellOnce();
+
         contentEl.addEventListener('click', function (e) {
             var t = e.target;
             var shellClose = t && t.closest ? t.closest('.personal-details-page--deposit-withdraw .personal-details-close') : null;
