@@ -154,8 +154,8 @@
 
 #registerModal .register-error-text {
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 7px;
+    right: 7px;
     bottom: 0;
     margin-top: 0;
 }
