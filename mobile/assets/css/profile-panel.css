@@ -1615,6 +1615,18 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   overflow: visible !important;
   text-align: right !important;
 }
+#mprofilePanel .mprofile-payment-modal #screenArea {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+#mprofilePanel .mprofile-payment-modal #screenArea > .u-i-p-control-item-holder-bc {
+  width: 100% !important;
+  margin: 0 !important;
+}
+#mprofilePanel .mprofile-payment-modal #screenArea > .u-i-p-c-footer-bc {
+  margin-top: 18px !important;
+}
 #mprofilePanel .userProfile-content {
   flex: 1;
   min-height: 0;
