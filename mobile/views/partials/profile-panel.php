@@ -276,5 +276,12 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
         </div>
       </div>
     </div>
+    <div class="mprofile-payment-modal" id="mprofilePaymentModal" aria-hidden="true">
+      <div class="mprofile-payment-modal__overlay" data-mprofile-payment-close></div>
+      <section class="mprofile-payment-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="mprofilePaymentModalTitle">
+        <div class="mprofile-payment-modal__head"><button type="button" class="mprofile-payment-modal__back" data-mprofile-payment-close aria-label="Geri"><i class="bc-i-round-arrow-left" aria-hidden="true"></i></button><h3 id="mprofilePaymentModalTitle">Ödeme</h3><button type="button" class="mprofile-payment-modal__close" data-mprofile-payment-close aria-label="Kapat"><i class="bc-i-close-remove" aria-hidden="true"></i></button></div>
+        <div class="mprofile-payment-modal__content" id="mprofilePaymentModalContent"></div>
+      </section>
+    </div>
   </div>
 </aside>

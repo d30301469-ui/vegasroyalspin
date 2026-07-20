@@ -12,6 +12,9 @@
   var transactionHistoryLoaded = false;
   var withdrawStatusLoaded = false;
   var transactionHistoryRows = [];
+  var balanceMethodStore = { deposit: [], withdraw: [] };
+  var activePaymentModal = null;
+  var paymentModalSubmitting = false;
 
   function apiUrl(path) {
     return Shared.apiUrl ? Shared.apiUrl(path) : path;
@@ -234,19 +237,20 @@
   function renderBalanceMethods(gridId, methods, kind) {
     var grid = document.getElementById(gridId);
     if (!grid) return;
+    balanceMethodStore[kind] = Array.isArray(methods) ? methods.slice() : [];
     if (!methods || !methods.length) {
       grid.innerHTML = '<p class="dw-methods-empty" role="status">Şu an ' + (kind === 'withdraw' ? 'çekim' : 'para yatırma') + ' için listelenen yöntem bulunmuyor.</p>';
       return;
     }
-    grid.innerHTML = methods.map(function (method) {
+    grid.innerHTML = methods.map(function (method, index) {
       var logo = method.logo_url && String(method.logo_url).trim() ? String(method.logo_url).trim() : '';
       var methodId = String(method.method_id || method.id || '').trim();
       var category = balanceCategory(method);
       var cls = (kind === 'withdraw' ? 'withdraw_' : 'deposit_') + (methodId || 'method').toLowerCase().replace(/[^a-z0-9_-]+/g, '');
       var attr = kind === 'withdraw' ? 'data-mbalance-withdraw-method' : 'data-mbalance-method';
-      return '<div class="m-nav-items-list-item-bc ' + escapeHtml(cls) + '" ' + attr + ' data-category="' + escapeHtml(category) + '"><div class="nav-ico-w-row-bc">' +
+      return '<button type="button" class="m-nav-items-list-item-bc ' + escapeHtml(cls) + '" ' + attr + ' data-category="' + escapeHtml(category) + '" data-mbalance-payment-kind="' + escapeHtml(kind) + '" data-mbalance-payment-index="' + escapeHtml(index) + '"><div class="nav-ico-w-row-bc">' +
         (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(method.name || methodId || 'Ödeme') + '</span>') +
-        '</div></div>';
+        '</div></button>';
     }).join('');
   }
 
@@ -455,6 +459,162 @@
       .catch(function () {
         withdrawMethodsLoaded = false;
         grid.innerHTML = '<p class="dw-methods-empty" role="status">Çekim yöntemleri yüklenemedi.</p>';
+      });
+  }
+
+  function methodProvider(method) {
+    if (method && method.provider && method.provider.code) return String(method.provider.code);
+    return 'megapayz';
+  }
+
+  function methodId(method) {
+    return String((method && (method.method_id || method.id)) || '').trim();
+  }
+
+  function methodName(method) {
+    return String((method && (method.name || method.method_id || method.id)) || 'Ödeme').trim();
+  }
+
+  function methodLimit(method, key, fallback) {
+    var value = method && method[key] != null ? Number(method[key]) : NaN;
+    return isFinite(value) ? value : fallback;
+  }
+
+  function setPaymentModalMessage(type, text) {
+    var message = document.querySelector('#mprofilePaymentModal [data-mprofile-payment-message]');
+    if (!message) return;
+    message.textContent = text || '';
+    message.classList.toggle('is-error', type === 'error');
+    message.classList.toggle('is-success', type === 'success');
+  }
+
+  function closePaymentModal() {
+    var modal = document.getElementById('mprofilePaymentModal');
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    activePaymentModal = null;
+    paymentModalSubmitting = false;
+  }
+
+  function withdrawExtraFieldsHtml(method) {
+    var id = methodId(method).toLowerCase();
+    if (id.indexOf('bank') !== -1) {
+      return '<div class="mprofile-payment-field"><input type="text" id="mprofilePaymentAccount" name="account_number" placeholder="IBAN" maxlength="26" autocomplete="off"></div>';
+    }
+    if (id.indexOf('crypto') !== -1) {
+      return '<input type="hidden" id="mprofilePaymentNetwork" value="TRON"><div class="mprofile-payment-field"><input type="text" id="mprofilePaymentAccount" name="account_number" placeholder="address" autocomplete="off"></div>';
+    }
+    return '<div class="mprofile-payment-field"><input type="text" id="mprofilePaymentAccount" name="account_number" placeholder="address" autocomplete="off"></div>';
+  }
+
+  function paymentModalHtml(kind, method) {
+    var min = methodLimit(method, 'min_amount', 0);
+    var max = methodLimit(method, 'max_amount', 999999);
+    var name = methodName(method);
+    var submitText = kind === 'withdraw' ? 'ÇEKİM YAP' : 'PARA YATIR';
+    return '<form id="mprofilePaymentForm" class="mprofile-payment-form" onsubmit="return false;">' +
+      '<div class="mprofile-payment-summary"><div><strong>Ödeme Yöntemi</strong><span>' + escapeHtml(name) + '</span></div><div><strong>Ücret</strong><span>Ücretsiz</span></div><div><strong>İşlem Süresi</strong><span>' + escapeHtml(method.processing_time || 'Anlık') + '</span></div><div><strong>Min.</strong><span>' + escapeHtml(limitText(min)) + '</span></div><div><strong>Maks.</strong><span>' + escapeHtml(limitText(max)) + '</span></div></div>' +
+      (kind === 'withdraw' ? withdrawExtraFieldsHtml(method) : '') +
+      '<div class="mprofile-payment-field"><input type="number" id="mprofilePaymentAmount" name="amount" placeholder="Tutar *" min="' + escapeHtml(min) + '" max="' + escapeHtml(max) + '" step="1" inputmode="decimal" autocomplete="off"></div>' +
+      '<div class="mprofile-form-message" data-mprofile-payment-message role="status" aria-live="polite"></div>' +
+      '<button type="submit" class="btn a-color mprofile-payment-submit"><span>' + escapeHtml(submitText) + '</span></button>' +
+      '</form>';
+  }
+
+  function openPaymentModal(kind, method) {
+    var modal = document.getElementById('mprofilePaymentModal');
+    var title = document.getElementById('mprofilePaymentModalTitle');
+    var content = document.getElementById('mprofilePaymentModalContent');
+    if (!modal || !content || !method) return;
+    kind = kind === 'withdraw' ? 'withdraw' : 'deposit';
+    activePaymentModal = { kind: kind, method: method };
+    if (title) title.textContent = kind === 'withdraw' ? 'ÇEKİM' : 'PARA YATIR';
+    content.innerHTML = paymentModalHtml(kind, method);
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    var amount = document.getElementById('mprofilePaymentAmount');
+    if (amount) amount.focus({ preventScroll: true });
+  }
+
+  function submitPaymentModal() {
+    if (paymentModalSubmitting || !activePaymentModal) return;
+    var method = activePaymentModal.method;
+    var kind = activePaymentModal.kind;
+    var amountInput = document.getElementById('mprofilePaymentAmount');
+    var amount = amountInput ? Number(amountInput.value) : NaN;
+    var min = methodLimit(method, 'min_amount', 0);
+    var max = methodLimit(method, 'max_amount', 999999);
+    if (!isFinite(amount) || amount <= 0) {
+      setPaymentModalMessage('error', 'Lütfen geçerli bir tutar girin.');
+      return;
+    }
+    if (amount < min) {
+      setPaymentModalMessage('error', 'Minimum tutar ' + limitText(min) + '.');
+      return;
+    }
+    if (amount > max) {
+      setPaymentModalMessage('error', 'Maksimum tutar ' + limitText(max) + '.');
+      return;
+    }
+    var payload = { amount: amount };
+    var paymentMethodId = method.id != null ? String(method.id) : '';
+    if (paymentMethodId) {
+      payload.payment_method_id = paymentMethodId;
+    } else {
+      payload.method = methodId(method);
+      payload.provider = methodProvider(method);
+    }
+    if (kind === 'withdraw') {
+      var account = document.getElementById('mprofilePaymentAccount');
+      var accountNumber = account ? String(account.value || '').trim() : '';
+      if (!accountNumber) {
+        setPaymentModalMessage('error', 'Lütfen hesap bilgisini girin.');
+        return;
+      }
+      payload.payment_method_id = paymentMethodId || methodId(method);
+      payload.account_number = accountNumber.replace(/\s/g, '');
+      payload.lang = 'tr';
+      var network = document.getElementById('mprofilePaymentNetwork');
+      if (network && network.value) payload.input_fields = { crypto_network: network.value, bank_id: network.value };
+    }
+    paymentModalSubmitting = true;
+    var submit = document.querySelector('#mprofilePaymentModal .mprofile-payment-submit');
+    if (submit) {
+      submit.disabled = true;
+      submit.setAttribute('aria-busy', 'true');
+      submit.textContent = 'İşleniyor...';
+    }
+    setPaymentModalMessage('', '');
+    fetch(apiUrl(kind === 'withdraw' ? '/api/v2/withdraw-payment' : '/api/v2/deposit-payment'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+      body: JSON.stringify(payload)
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (env) {
+        if (env && env.success && env.data && env.data.payment_url) {
+          window.location.href = String(env.data.payment_url);
+          return;
+        }
+        if (env && env.success) {
+          setPaymentModalMessage('success', env.message || (kind === 'withdraw' ? 'Çekim talebiniz alındı.' : 'İşlem başlatıldı.'));
+          setTimeout(closePaymentModal, 900);
+          return;
+        }
+        setPaymentModalMessage('error', (env && env.message) ? env.message : 'İşlem tamamlanamadı.');
+      })
+      .catch(function () {
+        setPaymentModalMessage('error', 'Sunucu hatası. Lütfen tekrar deneyin.');
+      })
+      .then(function () {
+        paymentModalSubmitting = false;
+        if (submit) {
+          submit.disabled = false;
+          submit.removeAttribute('aria-busy');
+          submit.textContent = kind === 'withdraw' ? 'ÇEKİM YAP' : 'PARA YATIR';
+        }
       });
   }
 
@@ -768,6 +928,30 @@
           return;
         }
 
+        var paymentMethodItem = target.closest('[data-mbalance-payment-kind][data-mbalance-payment-index]');
+        if (paymentMethodItem) {
+          e.preventDefault();
+          var kind = paymentMethodItem.getAttribute('data-mbalance-payment-kind') === 'withdraw' ? 'withdraw' : 'deposit';
+          var index = parseInt(paymentMethodItem.getAttribute('data-mbalance-payment-index') || '-1', 10);
+          var method = balanceMethodStore[kind] && balanceMethodStore[kind][index];
+          openPaymentModal(kind, method);
+          return;
+        }
+
+        var paymentClose = target.closest('[data-mprofile-payment-close]');
+        if (paymentClose) {
+          e.preventDefault();
+          closePaymentModal();
+          return;
+        }
+
+        var paymentSubmit = target.closest('#mprofilePaymentModal .mprofile-payment-submit');
+        if (paymentSubmit) {
+          e.preventDefault();
+          submitPaymentModal();
+          return;
+        }
+
         var historyFilter = target.closest('[data-mbalance-history-filter]');
         if (historyFilter) {
           e.preventDefault();
@@ -850,6 +1034,11 @@
         if (e.target && e.target.closest && e.target.closest('#mprofileFreezeForm')) {
           e.preventDefault();
           submitFreezeForm(panel);
+          return;
+        }
+        if (e.target && e.target.closest && e.target.closest('#mprofilePaymentForm')) {
+          e.preventDefault();
+          submitPaymentModal();
         }
       });
 
