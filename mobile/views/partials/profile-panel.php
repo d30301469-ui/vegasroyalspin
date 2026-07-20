@@ -297,6 +297,17 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
         </div>
         <iframe class="iframe-widget" data-mbonus-iframe title="https://jjbonusmilyon.com/?username={username}" src="<?= htmlspecialchars($panelBonusIframeUrl, ENT_QUOTES, 'UTF-8') ?>" allow="clipboard-write" style="height: 100%; width: 100%;" hidden></iframe>
       </div>
+      <div class="mprofile-messages-view" data-mprofile-view="messages" aria-hidden="true">
+        <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">MESAJLAR</span></div>
+        <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
+          <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=messages&amp;page=inbox" data-mmessages-tab="inbox"><span class="nav-menu-title">Gelen kutusu<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=messages&amp;page=sent" data-mmessages-tab="sent"><span class="nav-menu-title">Gönderildi<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=messages&amp;page=new" data-mmessages-tab="new"><span class="nav-menu-title">YENİ<i class="count-blink-even" data-badge=""></i></span></a>
+        </div></div>
+        <div class="messageBoxWrapper-bc" data-messages-content data-scroll-lock-scrollable>
+          <p class="empty-b-text-v-bc" role="status">Mesajlar yükleniyor...</p>
+        </div>
+      </div>
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
         <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>
         <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
