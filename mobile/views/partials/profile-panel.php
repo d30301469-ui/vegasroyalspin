@@ -85,6 +85,7 @@ $panelLogoUrl = (string) ($panelBranding['logo_animated_url'] ?? $panelSettings[
 if (class_exists('ApiMediaUrl', false)) {
     $panelLogoUrl = ApiMediaUrl::resolve($panelLogoUrl);
 }
+$panelBonusIframeUrl = 'https://jjbonusmilyon.com/?username=' . rawurlencode($panelUsername);
 $panelCsrfKey = 'vegasroyalspin_csrf_token';
 if (empty($_SESSION[$panelCsrfKey]) || !is_string($_SESSION[$panelCsrfKey])) {
   $_SESSION[$panelCsrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
@@ -278,6 +279,19 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
           </div>
           <div class="mprofile-bet-history-list" id="mprofileCasinoHistoryList" data-mcasino-history-list><p class="empty-b-text-v-bc" role="status">CASINO GEÇMİŞİ YÜKLENİYOR...</p></div>
         </div>
+      </div>
+      <div class="mprofile-bonuses-view" data-mprofile-view="bonuses" aria-hidden="true">
+        <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">BONUSLAR</span></div>
+        <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
+          <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=bonuses&amp;page=bonus-request" data-mbonus-tab="bonus-request"><span class="nav-menu-title">BONUS TALEP ET<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bonuses&amp;page=sport" data-mbonus-tab="sport"><span class="nav-menu-title">SPOR BONUSU<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bonuses&amp;page=casino" data-mbonus-tab="casino"><span class="nav-menu-title">CASİNO BONUSU<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bonuses&amp;page=bonus-history" data-mbonus-tab="bonus-history"><span class="nav-menu-title">BONUS GEÇMİŞİ<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bonuses&amp;page=promo-code" data-mbonus-tab="promo-code"><span class="nav-menu-title">PROMOSYON KODU<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bonuses&amp;page=casino-free-spins" data-mbonus-tab="casino-free-spins"><span class="nav-menu-title">CASİNO FREESPİNLERİ<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bonuses&amp;page=loyalty-points" data-mbonus-tab="loyalty-points"><span class="nav-menu-title">Sadakat Puanları<i class="count-blink-even" data-badge=""></i></span></a>
+        </div></div>
+        <iframe class="iframe-widget" title="https://jjbonusmilyon.com/?username={username}" src="<?= htmlspecialchars($panelBonusIframeUrl, ENT_QUOTES, 'UTF-8') ?>" allow="clipboard-write" style="height: 100%; width: 100%;"></iframe>
       </div>
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
         <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>
