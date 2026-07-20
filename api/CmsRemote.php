@@ -528,14 +528,23 @@ final class ApiCmsRemote
             $prefixVariants[] = $prefixRaw;
             $prefixVariants[] = str_replace('-', '_', $prefixRaw);
             $prefixVariants[] = str_replace('_', '-', $prefixRaw);
+            $normalizedPrefix = str_replace('-', '_', $prefixRaw);
+            if ($normalizedPrefix === 'footer_pages') {
+                $prefixVariants[] = 'footer_page';
+            } elseif ($normalizedPrefix === 'footer_page') {
+                $prefixVariants[] = 'footer_pages';
+            }
             $prefixVariants = array_values(array_unique(array_filter($prefixVariants, static fn ($v): bool => $v !== '')));
         }
-        foreach (glob($dir . '/*.json') ?: [] as $file) {
+        foreach (glob($dir . '/*') ?: [] as $file) {
             if (!is_string($file) || !is_file($file)) {
                 continue;
             }
+            $basename = basename($file);
+            if (!str_ends_with($basename, '.json') && !str_ends_with($basename, '.json.refresh.lock')) {
+                continue;
+            }
             if ($prefixVariants !== []) {
-                $basename = basename($file);
                 $matched = false;
                 foreach ($prefixVariants as $prefix) {
                     if (str_starts_with($basename, $prefix)) {

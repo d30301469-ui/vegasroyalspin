@@ -402,14 +402,21 @@ final class AdminTableController extends AdminController
 
     private function purgeFrontendCmsCacheForTable(string $table): void
     {
-        $prefix = match ($table) {
-            'sliders' => 'sliders',
-            'auth_sliders' => 'auth_sliders',
-            default => null,
+        $prefixes = match ($table) {
+            'sliders' => ['sliders'],
+            'auth_sliders' => ['auth_sliders', 'auth-sliders'],
+            'promotions' => ['promotions'],
+            'footer_settings' => ['footer'],
+            'footer_pages' => ['footer_page', 'footer-pages', 'footer_pages'],
+            'homepage_sections' => ['homepage_sections', 'homepage-sections'],
+            'mobile_menu_settings' => ['mobile_menu', 'mobile-menu'],
+            default => [],
         };
 
-        if ($prefix !== null && function_exists('metropol_notify_frontend_cms_purge')) {
-            metropol_notify_frontend_cms_purge($prefix);
+        if ($prefixes !== [] && function_exists('metropol_notify_frontend_cms_purge')) {
+            foreach ($prefixes as $prefix) {
+                metropol_notify_frontend_cms_purge($prefix);
+            }
         }
     }
 }
