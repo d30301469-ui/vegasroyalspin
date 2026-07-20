@@ -25,6 +25,9 @@
   var bonusClaimsRows = [];
   var promocodesLoaded = false;
   var promocodesRows = [];
+  var freespinsLoaded = { yeni: false, aktif: false };
+  var freespinsRows = { yeni: [], aktif: [] };
+  var activeFreespinTab = 'yeni';
   var transactionHistoryRows = [];
   var balanceMethodStore = { deposit: [], withdraw: [] };
   var activePaymentModal = null;
@@ -242,7 +245,7 @@
   }
 
   function bonusPageUsesNativeList(pageName) {
-    return pageName === 'bonus-request' || pageName === 'sport' || pageName === 'casino' || pageName === 'bonus-history' || pageName === 'promo-code';
+    return pageName === 'bonus-request' || pageName === 'sport' || pageName === 'casino' || pageName === 'bonus-history' || pageName === 'promo-code' || pageName === 'casino-free-spins';
   }
 
   function bonusPageUsesPromotions(pageName) {
@@ -276,6 +279,33 @@
     var key = String(category || '').toLowerCase();
     var map = { spor: 'Spor', sport: 'Spor', sports: 'Spor', casino: 'Casino', slots: 'Slot', slot: 'Slot', loss_bonus: 'Kayıp Bonusu' };
     return map[key] || category || '—';
+  }
+
+  function freespinStatusLabel(status) {
+    status = String(status || '').toLowerCase();
+    if (status === 'active') return 'Aktif';
+    if (status === 'new') return 'Yeni';
+    if (status === 'played') return 'Kullanıldı';
+    if (status === 'expired') return 'Süresi Doldu';
+    if (status === 'canceled') return 'İptal';
+    return status || '—';
+  }
+
+  function freespinDate(value) {
+    var num = Number(value || 0);
+    if (num > 0) return formatDateTime(new Date(num * 1000).toISOString());
+    return '—';
+  }
+
+  function freespinImage(row) {
+    var image = String(row && row.image_url || '').trim();
+    if (image && image.indexOf('assets/') === 0) image = '/' + image.replace(/^\/+/, '');
+    if (image) return image;
+    var fallback = ['/assets/games-img/sweet-bonanza-1000.svg', '/assets/games-img/40-super-hot.gif', '/assets/games-img/game-img3.jpg', '/assets/games-img/game-img4.svg', '/assets/games-img/game-img5.svg', '/assets/games-img/game-img6.jpeg'];
+    var seed = String(row && (row.game_identifier || row.campaign_code) || 'freespin');
+    var hash = 0;
+    for (var i = 0; i < seed.length; i++) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+    return fallback[Math.abs(hash) % fallback.length];
   }
 
   function normalizeHistoryRow(row, source) {
@@ -1081,6 +1111,9 @@
     } else if (pageName === 'promo-code') {
       renderPromoCodePage(panel);
       if (!promocodesLoaded) loadPromocodes(panel);
+    } else if (pageName === 'casino-free-spins') {
+      renderFreespins(panel);
+      if (!freespinsLoaded[activeFreespinTab]) loadFreespins(panel, activeFreespinTab);
     }
   }
 
@@ -1337,6 +1370,60 @@
       })
       .catch(function () { setBonusStatus(panel, 'error', 'Bağlantı hatası.'); })
       .then(function () { if (button) button.disabled = false; });
+  }
+
+  function loadFreespins(panel, tab) {
+    panel = panel || getPanel();
+    tab = tab === 'aktif' ? 'aktif' : 'yeni';
+    activeFreespinTab = tab;
+    var list = panel && panel.querySelector('[data-mbonus-promotions-list]');
+    if (list) list.innerHTML = '<p class="profile-active-bonus-loading" role="status">Casino freespinleri yükleniyor...</p>';
+    fetch(appendQuery(apiUrl('/api/v2/freespins.php'), 'tab=' + encodeURIComponent(tab)), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        var data = envelope && envelope.data ? envelope.data : {};
+        freespinsRows[tab] = Array.isArray(data.items) ? data.items : [];
+        freespinsLoaded[tab] = true;
+        renderFreespins(panel);
+      })
+      .catch(function () {
+        freespinsRows[tab] = [];
+        freespinsLoaded[tab] = true;
+        if (list) list.innerHTML = '<p class="profile-active-bonus-error" role="status">Casino freespinleri yüklenemedi.</p>';
+      });
+  }
+
+  function renderFreespins(panel) {
+    panel = panel || getPanel();
+    var list = panel && panel.querySelector('[data-mbonus-promotions-list]');
+    var status = panel && panel.querySelector('[data-mbonus-claim-status]');
+    if (!list) return;
+    if (status) {
+      status.textContent = '';
+      status.classList.remove('is-success', 'is-error');
+    }
+    var tabs = '<div class="mprofile-freespin-tabs"><button type="button" class="' + (activeFreespinTab === 'yeni' ? 'active' : '') + '" data-mbonus-freespin-tab="yeni">YENİ FREE SPİNLER</button><button type="button" class="' + (activeFreespinTab === 'aktif' ? 'active' : '') + '" data-mbonus-freespin-tab="aktif">AKTİF</button></div>';
+    if (!freespinsLoaded[activeFreespinTab]) {
+      list.innerHTML = tabs + '<p class="profile-active-bonus-loading" role="status">Casino freespinleri yükleniyor...</p>';
+      return;
+    }
+    var rows = freespinsRows[activeFreespinTab] || [];
+    if (!rows.length) {
+      list.innerHTML = tabs + '<p class="profile-active-bonus-empty" role="status">Seçilen tür için bonus yok</p>';
+      return;
+    }
+    list.innerHTML = tabs + '<div class="mprofile-freespin-list">' + rows.map(function (row) {
+      var gameIdentifier = String(row.game_identifier || '').trim();
+      var launchGameId = gameIdentifier && gameIdentifier.indexOf('bgaming:') !== 0 ? 'bgaming:' + gameIdentifier : gameIdentifier;
+      var launchUrl = launchGameId ? '/play?game_id=' + encodeURIComponent(launchGameId) + '&mode=real&wallet=main' : '';
+      var rowStatus = String(row.status || '').toLowerCase();
+      var playable = launchUrl && (rowStatus === 'active' || rowStatus === 'new');
+      return '<article class="mprofile-freespin-card">'
+        + '<div class="mprofile-freespin-image"><img src="' + escapeHtml(freespinImage(row)) + '" alt="' + escapeHtml(row.title || gameIdentifier || 'Casino oyunu') + '" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'/assets/games-img/game-img3.jpg\';"></div>'
+        + '<div class="mprofile-freespin-main"><strong>' + escapeHtml(row.campaign_code || 'Freespin') + '</strong><span>' + escapeHtml(row.vendor || 'bgaming') + '</span>' + (row.title ? '<small>Başlık: ' + escapeHtml(row.title) + '</small>' : '') + (gameIdentifier ? '<small>Oyun: ' + escapeHtml(gameIdentifier) + '</small>' : '') + '</div>'
+        + '<div class="mprofile-freespin-meta"><b>' + escapeHtml(row.freespins_per_player || 0) + '</b><span>Free Spin</span><em class="mprofile-bonus-status mprofile-bonus-status--' + escapeHtml(rowStatus) + '">' + escapeHtml(freespinStatusLabel(row.status)) + '</em><small>Başlangıç: ' + escapeHtml(freespinDate(row.begins_at)) + '</small><small>Bitiş: ' + escapeHtml(freespinDate(row.expires_at)) + '</small>' + (playable ? '<a class="profile-bonus-claim-btn" href="' + escapeHtml(launchUrl) + '">Oyuna Git</a>' : '') + '</div>'
+        + '</article>';
+    }).join('') + '</div>';
   }
 
   function rowMatchesBetHistoryPage(row, pageName) {
@@ -1825,6 +1912,13 @@
         if (promocodeUse) {
           e.preventDefault();
           submitPromocodeUse(panel, promocodeUse);
+          return;
+        }
+
+        var freespinTab = target.closest('[data-mbonus-freespin-tab]');
+        if (freespinTab) {
+          e.preventDefault();
+          loadFreespins(panel, freespinTab.getAttribute('data-mbonus-freespin-tab') || 'yeni');
           return;
         }
 
