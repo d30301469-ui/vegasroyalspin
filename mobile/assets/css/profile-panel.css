@@ -403,6 +403,266 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .profile-bonus-claim-status.is-success { color: #8af1b5; }
 #mprofilePanel .profile-bonus-claim-status.is-error,
 #mprofilePanel .profile-active-bonus-error { color: #ffb5b5; }
+#mprofilePanel .loyaltyWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #fff;
+}
+#mprofilePanel .loyaltyProgramSection {
+  border-radius: 5px;
+  padding: 12px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(14, 12, 34, 0.7);
+}
+#mprofilePanel .loyaltyProgramInfo {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+#mprofilePanel .loyaltyProgramInfoLeft,
+#mprofilePanel .loyaltyProgramInfoRight,
+#mprofilePanel .loyaltyPointsLevel,
+#mprofilePanel .loyaltyLevelCardsUser,
+#mprofilePanel .loyaltyProgramWrapper,
+#mprofilePanel .loyaltyProgramItems,
+#mprofilePanel .loyaltyLevelCards,
+#mprofilePanel .loyaltyLevelBonus {
+  min-width: 0;
+}
+#mprofilePanel .loyaltyProgramInfoLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#mprofilePanel .loyaltyProgramImg {
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  margin: 0;
+}
+#mprofilePanel .loyaltyProgramImg img,
+#mprofilePanel .loyaltySliderCardImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+#mprofilePanel .loyaltyPointsLevel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+}
+#mprofilePanel .loyaltyPointsLevelValue {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+#mprofilePanel .loyaltyPointsLevelInfo,
+#mprofilePanel .loyaltyPointsNumbers,
+#mprofilePanel .loyaltyPointsLevelPoints {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 10px;
+}
+#mprofilePanel .loyaltyPointsNumbers,
+#mprofilePanel .loyaltyPointsLevelPoints {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0 0 6px;
+}
+#mprofilePanel .loyaltyPointsNumbers p,
+#mprofilePanel .loyaltyPointsLevelPoints span {
+  margin: 0;
+  white-space: nowrap;
+}
+#mprofilePanel .loyaltyPointsNumbers span {
+  margin-inline-start: 2px;
+  opacity: 0.7;
+}
+#mprofilePanel .loyaltyProgressBar {
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+#mprofilePanel .loyalProgressBarStick {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  border-radius: inherit;
+}
+#mprofilePanel .loyaltyLevelCardsUser,
+#mprofilePanel .loyaltyProgramWrapper {
+  margin-top: 12px;
+}
+#mprofilePanel .loyaltyLevelCardsUserSelect {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+#mprofilePanel .loyaltyLevelInfoTitle {
+  margin: 0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+#mprofilePanel .loyaltyLevelCardSelect {
+  width: 128px;
+}
+#mprofilePanel .loyaltyLevelCardSelect select {
+  height: 30px;
+  padding: 0 28px 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 10px;
+}
+#mprofilePanel .loyaltyLevelCardsItem {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 42px;
+}
+#mprofilePanel .loyaltyLevelCardsError {
+  padding: 11px 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+#mprofilePanel .loyaltyRewardCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+}
+#mprofilePanel .loyaltyRewardCard.active {
+  border-color: rgba(138, 241, 181, 0.3);
+  background: rgba(34, 118, 75, 0.24);
+}
+#mprofilePanel .loyaltyRewardCard strong,
+#mprofilePanel .loyaltyRewardCard span {
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.25;
+}
+#mprofilePanel .loyaltyRewardCard span {
+  color: rgba(255, 255, 255, 0.66);
+  text-align: right;
+}
+#mprofilePanel .horizontalSliderWrapper {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#mprofilePanel .horizontalSliderWrapper::-webkit-scrollbar { display: none; }
+#mprofilePanel .loyaltyHorizontalList {
+  display: flex;
+  gap: 8px;
+  min-width: max-content;
+}
+#mprofilePanel .horizontalCategoryItemWrp {
+  flex: 0 0 78px;
+}
+#mprofilePanel .loyaltySliderCard {
+  width: 78px;
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  padding: 8px 6px;
+}
+#mprofilePanel .loyaltySliderCard.active {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+#mprofilePanel .loyaltySliderCardImg {
+  width: 42px;
+  height: 42px;
+}
+#mprofilePanel .loyaltySliderCardTitle {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+#mprofilePanel .loyaltySliderCardInfo {
+  min-width: 28px;
+  margin: 0;
+  padding: 3px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 10px;
+  text-align: center;
+}
+#mprofilePanel .loyaltyProgramItems {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+#mprofilePanel .loyaltyLevelTable {
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+#mprofilePanel .loyaltyLevelTableHeader,
+#mprofilePanel .loyaltyLevelTableRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1.2fr;
+  align-items: center;
+}
+#mprofilePanel .loyaltyLevelTableHeader {
+  min-height: 34px;
+  background: rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 10px;
+  font-weight: 700;
+}
+#mprofilePanel .loyaltyLevelTableRow {
+  min-height: 34px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 11px;
+}
+#mprofilePanel .loyaltyLevelTableCell {
+  min-width: 0;
+  padding: 0 8px;
+}
+#mprofilePanel .loyaltyLevelTableCell p {
+  margin: 0;
+}
+#mprofilePanel .loyaltyCurrentRow {
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 700;
+}
+#mprofilePanel .loyaltyCurrentRowBorder {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
 #mprofilePanel .mprofile-bonus-toolbar {
   display: flex;
   align-items: center;
