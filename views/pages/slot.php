@@ -18,6 +18,7 @@ $showLoadMore = !empty($showLoadMore);
 $slotGameType = isset($slotGameType) ? (int) $slotGameType : 0;
 $slotShowActionButtons = !empty($slotShowActionButtons);
 $slotHideProviders = !empty($slotHideProviders);
+$slotMobileOriginalNav = !empty($slotMobileOriginalNav);
 $apiError = !empty($apiError ?? false);
 $slotJsPath = BASE_PATH . '/assets/js/slot.js';
 $slotJsVer = (string) ((is_file($slotJsPath) ? filemtime($slotJsPath) : time()) . '-' . (is_file($slotJsPath) ? filesize($slotJsPath) : '0'));
@@ -181,6 +182,73 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
 
 <div class="casino-container">
     <div class="casinoProviderContent slots-filter-and-games" id="slotsFilterAndGames">
+        <?php if ($slotMobileOriginalNav): ?>
+        <div class="casinoNavigationAndFilters casinoNavigationAndFilters--mobile-original">
+            <div class="horizontal-scroll horizontal-scroll--left casinoCategories">
+                <div class="horizontal-scroll__inner horizontal-scroll__inner--gap-xs category-tabs-scroll" id="categoryTabsScroll" style="transform: translateX(0px);">
+                    <div>
+                        <a href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>"
+                           class="casino-category-chip cat-tab<?= $currentSort === '' ? ' active' : '' ?>"
+                           data-id="lobby"
+                           data-sort="">
+                            <div class="ds-chip ds-chip-size--sm ds-chip-color--primary<?= $currentSort === '' ? ' ds-chip--selected' : '' ?>" aria-disabled="false">
+                                <span class="ds-label ds-label--small-regular chip__label">Lobby</span>
+                            </div>
+                        </a>
+                    </div>
+                    <?php foreach ($slotCategoryItems as $category): ?>
+                        <?php $isActive = $currentSort !== '' && $category['sort'] === $currentSort; ?>
+                        <div class="category-<?= htmlspecialchars($category['slug'], ENT_QUOTES, 'UTF-8') ?>">
+                            <a href="<?= htmlspecialchars($category['href'], ENT_QUOTES, 'UTF-8') ?>"
+                               class="casino-category-chip cat-tab<?= $isActive ? ' active' : '' ?>"
+                               data-id="<?= htmlspecialchars($category['id'], ENT_QUOTES, 'UTF-8') ?>"
+                               data-sort="<?= htmlspecialchars($category['sort'], ENT_QUOTES, 'UTF-8') ?>">
+                                <div class="ds-chip ds-chip-size--sm ds-chip-color--primary<?= $isActive ? ' ds-chip--selected' : '' ?>" aria-disabled="false">
+                                    <?php if ($category['sort'] !== ''): ?>
+                                    <span class="CMSIconSVGWrapper chip__icon chip__icon--left"><i class="bc-i-default-icon <?= htmlspecialchars($category['icon'], ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i></span>
+                                    <?php endif; ?>
+                                    <span class="ds-label ds-label--small-regular chip__label"><?= htmlspecialchars($category['title'], ENT_QUOTES, 'UTF-8') ?></span>
+                                </div>
+                            </a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <div class="casinoGameProviderFilters casinoGameProviderFilters--withRandomGame<?= $slotHideProviders ? ' casinoGameProviderFilters--noProviders' : '' ?>">
+                <div class="casinoSearchWrapper">
+                    <div class="ds-textfield ds-textfield-size--md ds-textfield-layout--fill">
+                        <div class="ds-textfield__field">
+                            <div class="ds-textfield__text">
+                                <span class="ds-textfield__label">Oyun Ara</span>
+                                <input type="text"
+                                       class="ds-textfield__input searchInput games-search-input"
+                                       id="searchModalInput"
+                                       value="<?= htmlspecialchars($searchTerm, ENT_QUOTES); ?>"
+                                       autocomplete="off">
+                            </div>
+                            <div class="ds-textfield__right">
+                                <span class="CMSIconSVGWrapper ds-textfield__icon ds-textfield__icon--right searchInputIcon bc-i-search games-search-icon-btn" id="searchClearBtn" title="Aramayı temizle" aria-label="Aramayı temizle"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php if (!$slotHideProviders): ?>
+                <button type="button" class="ds-select ds-select-size--md ds-select-layout--fill mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç">
+                    <span class="ds-select__field" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-disabled="false" tabindex="0">
+                        <span class="ds-select__text"><span class="ds-select__label mobile-sidebar-toggle__pill-text">Sağlayıcılar</span><span class="ds-select__value ds-select__value--placeholder"></span></span>
+                        <span class="ds-select__right"><span class="CMSIconSVGWrapper ds-select__icon ds-select__icon--right"><i class="fas fa-filter" aria-hidden="true"></i></span></span>
+                    </span>
+                    <span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span>
+                </button>
+                <?php endif; ?>
+                <div class="casinoRandomGameButtonWrapper">
+                    <button type="button" class="ds-btn ds-btn-variant--transparent ds-btn-size--md ds-btn-radius--full ds-btn-appearance--filled random-game-btn" id="randomGameBtn" aria-disabled="false" aria-busy="false" title="Rastgele Oyun Oyna" aria-label="Rastgele Oyun Oyna">
+                        <span class="ds-label ds-label--medium-regular btn__label">Rastgele Oyun Oyna</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <?php else: ?>
         <div class="casinoCategoryChooserContainer slots-category-filters category-tabs-wrapper" id="slotsCategoryFilters">
         <div tabindex="0" class="horizontalSliderWrapper horizontalItemsExpanded scroll-start">
         <i class="horizontalSliderNav bc-i-small-arrow-left cat-tab-arrow cat-tab-arrow-left" id="catArrowLeft"></i>
@@ -212,6 +280,7 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
             <p class="casinoGameListTitle"><?= htmlspecialchars($slotGameType === 1 ? 'CANLI CASINO OYUNLARI' : 'CASINO OYUNLARI', ENT_QUOTES, 'UTF-8') ?></p>
             <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">TÜMÜ</a>
         </div>
+        <?php endif; ?>
 
         <div class="casinoProviderAndGame slots-layout<?= $slotHideProviders ? ' slots-layout--full-games' : '' ?>" id="slotsLayout">
             <?php if (!$slotHideProviders): ?>
@@ -249,6 +318,7 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
         <?php endif; ?>
 
             <div class="casinoGameListBlock games-main" id="gamesScrollContainer">
+                <?php if (!$slotMobileOriginalNav): ?>
                 <div class="casinoGameListBlockHeader">
                     <div class="casinoTitleSearch ">
                         <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç">
@@ -280,11 +350,14 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
                         <div id="active-filters-box" class="active-filters-box" style="display:none;"></div>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if ($slotMobileOriginalNav): ?>
                 <div class="casinoProviderRow casinoProviderRow--mobile-inline<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>">
                     <p class="casinoGameListTitle"><?= htmlspecialchars($slotGameType === 1 ? 'CANLI CASINO OYUNLARI' : 'CASINO OYUNLARI', ENT_QUOTES, 'UTF-8') ?></p>
                     <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">TÜMÜ</a>
                 </div>
+                <?php endif; ?>
 
                 <div class="casinoGameItemWrp slot-oyun-listesi slots-games-container" id="casino_games_container" aria-label="Oyun listesi">
                     <div class="casinoCategoryGames">
