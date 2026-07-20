@@ -14,7 +14,20 @@ final class ApiMobileMenu
         $default = self::defaultPayload();
 
         if (!ApiCmsRemote::canUseLocalDatabase()) {
-            $remote = ApiCmsRemote::getMainCached('mobile_menu', ['/content/mobile-menu', '/mobile-menu.php']);
+            $remote = null;
+            if (!(function_exists('metropol_should_skip_remote_backend') && metropol_should_skip_remote_backend())) {
+                $remote = ApiCmsRemote::getMain(['/content/mobile-menu', '/mobile-menu.php']);
+                if ($remote !== null) {
+                    ApiCmsRemote::writePayloadCache('mobile_menu', $remote);
+                    ApiCmsRemote::recordFetch('mobile_menu', 'remote');
+                }
+            }
+            if ($remote === null) {
+                $remote = ApiCmsRemote::readPayloadCache('mobile_menu', ApiCmsRemote::cacheStaleMaxAge(), true);
+                if ($remote !== null) {
+                    ApiCmsRemote::recordFetch('mobile_menu', 'stale');
+                }
+            }
             if ($remote !== null) {
                 $menu = is_array($remote['menu'] ?? null)
                     ? $remote['menu']

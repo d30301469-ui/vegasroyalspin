@@ -22,11 +22,20 @@ final class ApiHomepageSections
                 $remoteQuery['section_key'] = $sectionKey;
             }
             $cacheKey = ApiCmsRemote::cacheKey('homepage_sections', $remoteQuery);
-            $remote = ApiCmsRemote::getMainCached(
-                $cacheKey,
-                ['/content/homepage-sections', '/homepage_sections.php'],
-                $remoteQuery
-            );
+            $remote = null;
+            if (!(function_exists('metropol_should_skip_remote_backend') && metropol_should_skip_remote_backend())) {
+                $remote = ApiCmsRemote::getMain(['/content/homepage-sections', '/homepage_sections.php'], $remoteQuery);
+                if ($remote !== null) {
+                    ApiCmsRemote::writePayloadCache($cacheKey, $remote, $remoteQuery);
+                    ApiCmsRemote::recordFetch($cacheKey, 'remote');
+                }
+            }
+            if ($remote === null) {
+                $remote = ApiCmsRemote::readPayloadCache($cacheKey, ApiCmsRemote::cacheStaleMaxAge(), true);
+                if ($remote !== null) {
+                    ApiCmsRemote::recordFetch($cacheKey, 'stale');
+                }
+            }
             if ($remote !== null) {
                 $sections = is_array($remote['sections'] ?? null) ? $remote['sections'] : [];
 
