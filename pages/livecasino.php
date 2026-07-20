@@ -47,4 +47,10 @@ $sliderApiCategory = 'live_casino';
 $slotShowActionButtons = true;
 $slotHideProviders = false;
 
+$mobileLiveCasinoView = defined('MOBILE_PATH') ? MOBILE_PATH . '/views/pages/livecasino.php' : '';
+if (defined('SURFACE') && SURFACE === 'mobile' && $mobileLiveCasinoView !== '' && is_file($mobileLiveCasinoView)) {
+    require $mobileLiveCasinoView;
+    return;
+}
+
 require VIEW_PATH . '/pages/slot.php';
