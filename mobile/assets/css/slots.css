@@ -1629,25 +1629,54 @@ body.mobile-site .sidebar-overlay.active {
 
 /* Original CasinoNavigationAndFilters component on mobile slot */
 @media (max-width: 768px) {
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original {
+  html.mobile-root,
+  body.mobile-site,
+  body.mobile-site .slot-page-root.slot-page-root--unified {
+    --fds-ref-spacing-3xsmall: 4px;
+    --fds-ref-spacing-xsmall: 8px;
+    --fds-ref-spacing-small: 12px;
+    --fds-ref-spacing-medium: 16px;
+    --fds-ref-spacing-large: 20px;
+    --fds-ref-spacing-2xlarge: 24px;
+    --fds-ref-spacing-4xlarge: 40px;
+    --fds-ref-alpha-4: .04;
+    --fds-ref-alpha-8: .08;
+    --fds-ref-alpha-16: .16;
+    --fds-ref-alpha-64: .64;
+    --fds-ref-alpha-80: .80;
+    --fds-ref-alpha-90: .90;
+    --fds-ref-alpha-100: 1;
+    --fds-ref-border-width-thin: 1px;
+    --fds-ref-radius-xsmall: 8px;
+    --fds-ref-radius-medium: 14px;
+    --fds-sem-dimension-xsmall: 20px;
+    --fds-sem-dimension-medium: 38px;
+    --fds-sem-dimension-large: 48px;
+    --default-transition-duration: 160ms;
+    --b: 8, 10, 20;
+    --b-sc: 255, 255, 255;
+    --hero: 47, 58, 153;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin: 12px 0 16px;
+    gap: var(--fds-ref-spacing-3xsmall);
+    margin: var(--fds-ref-spacing-large) 0 var(--fds-ref-spacing-2xlarge) 0;
     background: #080a14;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .casinoCategories {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .casinoCategories {
     width: 100%;
-    padding: 4px 8px;
+    padding: var(--fds-ref-spacing-xsmall);
     overflow: hidden;
     box-sizing: border-box;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .horizontal-scroll__inner {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .horizontal-scroll__inner {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--fds-ref-spacing-xsmall);
     width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -1655,18 +1684,17 @@ body.mobile-site .sidebar-overlay.active {
     scrollbar-width: none;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .horizontal-scroll__inner::-webkit-scrollbar {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .horizontal-scroll__inner::-webkit-scrollbar {
     display: none;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .casino-category-chip {
-    display: block;
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .cat-tab {
     flex: 0 0 auto;
-    color: inherit;
-    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-chip {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-chip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1682,13 +1710,14 @@ body.mobile-site .sidebar-overlay.active {
     white-space: nowrap;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-chip--selected {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-chip--selected {
     background: #252953 !important;
     color: #fff;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .chip__icon,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .chip__icon i {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .chip__icon,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .chip__icon i,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .chip__icon svg {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1700,8 +1729,8 @@ body.mobile-site .sidebar-overlay.active {
     line-height: 1;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .chip__label,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-label {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .chip__label,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-label {
     color: inherit;
     font-size: 11px;
     font-weight: 700;
@@ -1709,30 +1738,30 @@ body.mobile-site .sidebar-overlay.active {
     letter-spacing: 0;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .casinoGameProviderFilters {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .casinoGameProviderFilters {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 8px;
-    row-gap: 12px;
-    padding: 0 8px;
+    gap: var(--fds-ref-spacing-xsmall);
+    row-gap: var(--fds-ref-spacing-medium);
+    padding: 0 var(--fds-ref-spacing-xsmall);
     box-sizing: border-box;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .casinoGameProviderFilters--noProviders {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .casinoGameProviderFilters--noProviders {
     grid-template-columns: 1fr;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .casinoSearchWrapper,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-textfield,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-select,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .casinoRandomGameButtonWrapper,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-btn {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .casinoSearchWrapper,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-textfield,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-select,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .casinoRandomGameButtonWrapper,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-btn {
     min-width: 0;
     width: 100%;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-textfield__field,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-select__field {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-textfield__field,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-select__field {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1748,16 +1777,16 @@ body.mobile-site .sidebar-overlay.active {
     box-sizing: border-box;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-textfield__text,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-select__text {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-textfield__text,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-select__text {
     display: flex;
     align-items: center;
     flex: 1 1 auto;
     min-width: 0;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-textfield__label,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-select__label {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-textfield__label,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-select__label {
     color: #aeb5cd;
     font-size: 12px;
     font-weight: 700;
@@ -1765,7 +1794,7 @@ body.mobile-site .sidebar-overlay.active {
     white-space: nowrap;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-textfield__input {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-textfield__input {
     flex: 1 1 auto;
     min-width: 0;
     width: 100%;
@@ -1780,12 +1809,12 @@ body.mobile-site .sidebar-overlay.active {
     font-weight: 600;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-textfield__input:not(:placeholder-shown) + .ds-textfield__label {
-    display: none;
-  }
-
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-textfield__right,
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-select__right {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-textfield__right,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-select__right,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-textfield__icon,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-select__icon,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-textfield__icon svg,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-select__icon svg {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1795,7 +1824,7 @@ body.mobile-site .sidebar-overlay.active {
     color: #aeb5cd;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .mobile-sidebar-toggle {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .mobile-sidebar-toggle {
     display: block;
     height: auto;
     min-height: 0;
@@ -1809,15 +1838,15 @@ body.mobile-site .sidebar-overlay.active {
     appearance: none;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .mobile-sidebar-toggle__count {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .mobile-sidebar-toggle__count {
     display: none;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .casinoRandomGameButtonWrapper {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .casinoRandomGameButtonWrapper {
     grid-column: 1 / -1;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .ds-btn {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1831,7 +1860,7 @@ body.mobile-site .sidebar-overlay.active {
     box-shadow: none;
   }
 
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters--mobile-original .btn__label {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .btn__label {
     color: inherit;
     font-size: 12px;
     font-weight: 700;

@@ -588,6 +588,17 @@
             }
         }
         if (!mobileSidebarToggle) return;
+        if (mobileSidebarToggle.classList.contains('ds-select')) {
+            var originalCountNode = mobileSidebarToggle.querySelector('.mobile-sidebar-toggle__count');
+            var originalProviderCount = state.providers.length;
+            if (originalCountNode) {
+                originalCountNode.textContent = originalProviderCount > 0 ? ('+' + originalProviderCount) : '';
+                originalCountNode.style.display = originalProviderCount > 0 ? 'inline-flex' : 'none';
+            }
+            mobileSidebarToggle.setAttribute('title', originalProviderCount > 0 ? ('Sağlayıcılar +' + originalProviderCount) : 'Sağlayıcılar');
+            mobileSidebarToggle.setAttribute('aria-label', originalProviderCount > 0 ? ('Sağlayıcılar +' + originalProviderCount) : 'Sağlayıcılar');
+            return;
+        }
         if (!mobileSidebarToggle.querySelector('.mobile-sidebar-toggle__pill')) {
             mobileSidebarToggle.innerHTML = '';
             var pill = document.createElement('span');
@@ -990,7 +1001,7 @@
 
     /* Orijinal slider hissi: kategori satırını sürükleyerek yatay kaydır. */
     if (catScroll) {
-        catScroll.querySelectorAll('a.cat-tab').forEach(function(tab) {
+        catScroll.querySelectorAll('.cat-tab').forEach(function(tab) {
             tab.setAttribute('draggable', 'false');
             tab.addEventListener('dragstart', function(e) {
                 e.preventDefault();
@@ -1048,7 +1059,7 @@
     /* Aktif kategori sekmesini görünür yap (scroll alanında ortalanmış) */
     function scrollActiveCategoryIntoView() {
         if (!catScroll) return;
-        var activeTab = catScroll.querySelector('a.cat-tab.active');
+        var activeTab = catScroll.querySelector('.cat-tab.active');
         if (!activeTab) return;
         requestAnimationFrame(function() {
             var tabLeft = activeTab.offsetLeft;
@@ -1240,11 +1251,32 @@
 
     /* ── Category tabs: normal link navigation; drag-scroll click guard handles real drags. ── */
 
+    if (catScroll) {
+        catScroll.addEventListener('click', function(e) {
+            var tab = e.target.closest('.cat-tab[data-href]');
+            if (!tab || !catScroll.contains(tab) || tab.tagName === 'A') return;
+            var href = tab.getAttribute('data-href');
+            if (!href) return;
+            e.preventDefault();
+            window.location.href = href;
+        });
+
+        catScroll.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            var tab = e.target.closest('.cat-tab[data-href]');
+            if (!tab || !catScroll.contains(tab) || tab.tagName === 'A') return;
+            e.preventDefault();
+            var href = tab.getAttribute('data-href');
+            if (href) window.location.href = href;
+        });
+    }
+
     function setActiveCategoryTab() {
         if (!catScroll) return;
-        catScroll.querySelectorAll('a.cat-tab[data-sort]').forEach(function(t) {
+        catScroll.querySelectorAll('.cat-tab[data-sort]').forEach(function(t) {
             const tabSort = t.getAttribute('data-sort') || '';
             t.classList.toggle('active', tabSort === state.sort);
+            t.classList.toggle('ds-chip--selected', tabSort === state.sort);
         });
     }
 
