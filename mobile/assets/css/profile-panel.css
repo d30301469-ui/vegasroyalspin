@@ -933,17 +933,17 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .twofa-activate-row {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) 48px;
-  align-items: center !important;
+  align-items: start !important;
   column-gap: 12px;
   width: 100% !important;
-  min-height: 38px;
+  min-height: 66px;
 }
 #mprofilePanel .twofa-left-col {
   display: flex !important;
   flex: 1 1 auto;
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 10px;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 8px;
   min-width: 0 !important;
 }
 #mprofilePanel .twofa-icon-wrap {
@@ -989,7 +989,8 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   flex: 0 0 auto;
   width: 48px;
   height: 26px;
-  align-self: center;
+  align-self: start;
+  margin-top: 4px;
   cursor: pointer;
 }
 #mprofilePanel .twofa-toggle-input {
