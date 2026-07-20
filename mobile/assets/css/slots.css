@@ -409,7 +409,7 @@ body.mobile-site .providers-drawer-wrapper.mobile-open {
 
 /* Scroll kilidi */
 body.mobile-site.provider-sheet-open {
-  overflow: hidden;
+  overflow: clip;
 }
 
 /* Spring: flex sütun, full genişlik, en alta yasla */
