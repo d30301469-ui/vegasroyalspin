@@ -38,6 +38,7 @@
     document.body.classList.remove('mprofile-open');
     document.body.classList.remove('overlay-sliding-is-visible', 'overlaySlidingIsVisible');
     isOpen = false;
+    showProfileMenu(panel);
   }
 
   /** Header'daki ana bakiyeyi panele yansıt. */
@@ -88,6 +89,22 @@
     if (!panel) return;
     var rail = panel.querySelector('.swiper-wrapper');
     if (rail) rail.dispatchEvent(new Event('scroll'));
+  }
+
+  function showProfileMenu(panel) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    panel.classList.remove('mprofile-detail-active');
+    var detail = panel.querySelector('[data-mprofile-view="details"]');
+    if (detail) detail.setAttribute('aria-hidden', 'true');
+  }
+
+  function showProfileDetails(panel) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    panel.classList.add('mprofile-detail-active');
+    var detail = panel.querySelector('[data-mprofile-view="details"]');
+    if (detail) detail.setAttribute('aria-hidden', 'false');
   }
 
   window.__openMobileProfilePanel = openPanel;
@@ -142,7 +159,25 @@
         var menuItem = target.closest('.u-i-p-l-head-bc[data-href]');
         if (menuItem) {
           e.preventDefault();
+          if (menuItem.getAttribute('data-href') === '/profile/details') {
+            showProfileDetails(panel);
+            return;
+          }
           window.location.href = menuItem.getAttribute('data-href');
+          return;
+        }
+
+        var detailsLink = target.closest('a[href*="account=profile"][href*="page=details"]');
+        if (detailsLink) {
+          e.preventDefault();
+          showProfileDetails(panel);
+          return;
+        }
+
+        var back = target.closest('.back-nav-bc');
+        if (back) {
+          e.preventDefault();
+          showProfileMenu(panel);
           return;
         }
 

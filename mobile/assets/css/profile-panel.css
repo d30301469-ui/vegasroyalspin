@@ -35,6 +35,8 @@
 .bc-i-copy::before { content: "\e3e0"; }
 .bc-i-eye::before { content: "\e926"; }
 .bc-i-close-remove::before { content: "\e5cd"; }
+.bc-i-round-arrow-left::before { content: "\e956"; }
+.bc-i-datepicker::before { content: "\e93e"; }
 
 /* Mobile profile panel styled on the original user-profile class hierarchy. */
 .mprofile-overlay {
@@ -172,6 +174,79 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   overflow: hidden;
   padding: 10px var(--padding-page-aside, 10px);
 }
+#mprofilePanel.mprofile-detail-active .u-i-profile-page-bc { display: none; }
+#mprofilePanel .mprofile-detail-view {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+#mprofilePanel.mprofile-detail-active .mprofile-detail-view { display: flex; }
+#mprofilePanel .back-nav-bc {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 var(--padding-page-aside, 10px);
+  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%);
+  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+#mprofilePanel .back-nav-icon-bc {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-inline-end: 6px;
+  border-radius: 50%;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.85);
+  color: rgba(var(--b, 0, 0, 0), 0.8);
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+}
+#mprofilePanel .back-nav-title-bc {
+  font-size: 14px;
+  font-weight: 700;
+}
+#mprofilePanel .user-tab-navigation {
+  flex-shrink: 0;
+  height: 40px;
+  overflow: hidden;
+  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%);
+  box-shadow: 0 0 7px 2px #850f83;
+}
+#mprofilePanel .hdr-navigation-scrollable-content {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+#mprofilePanel .hdr-navigation-scrollable-content::-webkit-scrollbar { display: none; }
+#mprofilePanel .hdr-navigation-link-bc {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 118px;
+  height: 100%;
+  padding: 0 12px;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.72);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+#mprofilePanel .hdr-navigation-link-bc.active {
+  color: rgba(var(--b-sc, 255, 255, 255), 1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-top: 0;
+  border-radius: 0 0 18px 0;
+  box-shadow: inset 0 -1px 0 #b800ff;
+}
+#mprofilePanel .nav-menu-title { white-space: nowrap; }
 
 #mprofilePanel .u-i-p-amount-holder-bc {
   display: flex;
@@ -686,6 +761,121 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .u-i-p-c-footer-bc .btn.disabled {
   color: rgba(var(--b-sc, 255, 255, 255), 0.3);
   background: rgba(var(--b-sc, 255, 255, 255), 0.1);
+}
+
+#mprofilePanel .u-i-e-p-p-content-bc.user-profile {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 18px var(--padding-page-aside, 10px) 14px;
+  scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
+  scrollbar-width: thin;
+}
+#mprofilePanel .u-i-e-p-p-content-bc.user-profile form {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+#mprofilePanel .userProfile-content {
+  flex: 1;
+  min-height: 0;
+}
+#mprofilePanel .userProfileWrapper-bc {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#mprofilePanel .userProfileSection-1 {
+  margin-top: 18px;
+}
+#mprofilePanel .mprofile-detail-view .u-i-p-control-item-holder-bc {
+  width: 100%;
+}
+#mprofilePanel .mprofile-detail-view .form-control-input-bc {
+  min-height: 49px;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.15);
+  font-weight: 600;
+}
+#mprofilePanel .mprofile-detail-view .form-control-bc.filled .form-control-title-bc,
+#mprofilePanel .mprofile-detail-view .form-control-bc.focused .form-control-title-bc,
+#mprofilePanel .mprofile-detail-view .form-control-label-bc.has-value .form-control-title-bc,
+#mprofilePanel .mprofile-detail-view .form-control-label-bc.focused .form-control-title-bc {
+  top: 9px;
+  line-height: 14px;
+}
+#mprofilePanel .mprofile-detail-view .form-control-bc.filled .form-control-input-bc,
+#mprofilePanel .mprofile-detail-view .form-control-bc.focused .form-control-input-bc {
+  padding-top: 22px;
+}
+#mprofilePanel .dropdownIcon-bc {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  z-index: 2;
+  transform: translateY(-50%);
+  color: rgba(var(--b-sc, 255, 255, 255), 0.5);
+  font-size: 18px;
+  pointer-events: none;
+}
+#mprofilePanel .form-controls-field-bc.country-code .form-control-select-bc {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 52px;
+  border-radius: var(--border-radius, 4px);
+  padding: 22px 15px 4px;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.15);
+  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  font-size: 14px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+#mprofilePanel .form-controls-field-bc.country-code .form-control-title-bc {
+  top: 9px;
+  left: 15px;
+  transform: none;
+}
+#mprofilePanel .ftr-lang-bar-flag-bc.flag-bc.turkey {
+  flex-shrink: 0;
+  width: 19px;
+  height: 13px;
+  margin-inline-end: 8px;
+  border-radius: 2px;
+  background: #e30a17;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+#mprofilePanel .ftr-lang-bar-flag-bc.flag-bc.turkey::before {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  margin: 3px 0 0 5px;
+  border-radius: 50%;
+  box-shadow: -2px 0 0 1px #fff;
+}
+#mprofilePanel .passwordAboveSeparator {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.12);
+}
+#mprofilePanel .entrance-f-error-message-bc {
+  padding: 8px 0 6px;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+#mprofilePanel .mprofile-detail-view .u-i-p-c-footer-bc {
+  width: 100%;
+  min-width: 0;
+  margin: 16px 0 0;
+}
+#mprofilePanel .mprofile-detail-view .u-i-p-c-footer-bc .btn {
+  width: 100%;
+  height: 34px;
 }
 
 #mprofilePanel .userLogoutBtn.btn {
