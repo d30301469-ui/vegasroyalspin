@@ -38,4 +38,10 @@ $sliderApiCategory = 'bgaming';
 $slotShowActionButtons = true;
 $slotHideProviders = true;
 
+$mobileBgamingView = defined('MOBILE_PATH') ? MOBILE_PATH . '/views/pages/bgaming.php' : '';
+if (defined('SURFACE') && SURFACE === 'mobile' && $mobileBgamingView !== '' && is_file($mobileBgamingView)) {
+    require $mobileBgamingView;
+    return;
+}
+
 require VIEW_PATH . '/pages/slot.php';
