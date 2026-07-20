@@ -154,12 +154,12 @@ if (class_exists('ApiMediaUrl', false)) {
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
         <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left" aria-hidden="true"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>
         <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
-          <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=profile&amp;page=details"><span class="nav-menu-title">KİŞİSEL DETAYLAR<i class="count-blink-even" data-badge=""></i></span></a>
-          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=change-password"><span class="nav-menu-title">ŞİFRE DEĞİŞTİR<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=profile&amp;page=details" data-mprofile-tab="details"><span class="nav-menu-title">KİŞİSEL DETAYLAR<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=change-password" data-mprofile-tab="change-password"><span class="nav-menu-title">ŞİFRE DEĞİŞTİR<i class="count-blink-even" data-badge=""></i></span></a>
           <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=two-factor-authentication"><span class="nav-menu-title">İKİ AŞAMALI KORUMA (2FA)<i class="count-blink-even" data-badge=""></i></span></a>
           <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=timeout-limits"><span class="nav-menu-title">HESABI DONDUR<i class="count-blink-even" data-badge=""></i></span></a>
         </div></div>
-        <div class="u-i-e-p-p-content-bc u-i-common-content user-profile" data-scroll-lock-scrollable>
+        <div class="u-i-e-p-p-content-bc u-i-common-content user-profile" data-mprofile-section="details" data-scroll-lock-scrollable>
           <form onsubmit="return false;">
             <div class="userProfile-content" data-scroll-lock-scrollable>
               <div class="userProfileWrapper-bc userProfileSection-0">
@@ -180,6 +180,17 @@ if (class_exists('ApiMediaUrl', false)) {
             </div>
             <div class="u-i-p-c-footer-bc"><button class="btn a-color right-aligned" type="submit" title="DEĞİŞİKLİKLERİ KAYDET" disabled><span>DEĞİŞİKLİKLERİ KAYDET</span></button></div>
           </form>
+        </div>
+        <div class="u-i-e-p-p-content-bc u-i-common-content user-profile mprofile-password-section" data-mprofile-section="change-password" data-scroll-lock-scrollable hidden>
+          <div class="profile-security-single profile-security-single--password" id="mprofileChangePassword">
+            <form id="mprofileChangePasswordForm" class="password-change-form" onsubmit="return false;">
+              <div class="password-change-field"><div class="form-control-bc default has-icon"><label class="form-control-label-bc inputs"><input type="password" class="form-control-input-bc" id="mprofileOldPwd" name="current_password" required step="0" value="" autocomplete="current-password"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Geçerli Şifre *</span></label></div></div>
+              <div class="password-change-field"><div class="form-control-bc default has-icon"><label class="form-control-label-bc inputs"><input type="password" class="form-control-input-bc" id="mprofileNewPwd" name="password" required step="0" value="" autocomplete="new-password"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Yeni Şifre *</span></label></div></div>
+              <div class="password-change-field"><div class="form-control-bc default has-icon"><label class="form-control-label-bc inputs"><input type="password" class="form-control-input-bc" id="mprofileConfirmPass" name="password_confirmation" required step="0" value="" autocomplete="new-password"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Yeni şifreyi onayla *</span></label></div></div>
+              <div class="mprofile-form-message" data-mprofile-password-message role="status" aria-live="polite"></div>
+              <div class="u-i-p-c-footer-bc password-change-footer"><button class="btn a-color right-aligned" type="submit" id="mprofileChangePwdBtn" title="ŞİFRE DEĞİŞTİR"><span>ŞİFRE DEĞİŞTİR</span></button></div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
