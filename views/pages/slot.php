@@ -6,8 +6,8 @@ $nextPage = $nextPage ?? ($currentPage + 1);
 $perPage = $perPage ?? $limit ?? 30;
 $slotPageBaseUrl = isset($slotPageBaseUrl) ? (string) $slotPageBaseUrl : '/slot';
 $slotPageTitle = isset($slotPageTitle) ? (string) $slotPageTitle : 'OYUNLAR';
-$slotEmptyTitle = isset($slotEmptyTitle) ? (string) $slotEmptyTitle : 'Slot oyunu bulunamadÄ±';
-$slotEmptyText = isset($slotEmptyText) ? (string) $slotEmptyText : 'Arama teriminizi deÄŸiÅŸtirmeyi veya filtreleri temizlemeyi deneyin';
+$slotEmptyTitle = isset($slotEmptyTitle) ? (string) $slotEmptyTitle : 'Slot oyunu bulunamadı';
+$slotEmptyText = isset($slotEmptyText) ? (string) $slotEmptyText : 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin';
 $slotApiParams = isset($slotApiParams) && is_array($slotApiParams) ? $slotApiParams : [];
 $searchTerm = isset($searchTerm) ? (string) $searchTerm : '';
 $selectedProviders = isset($selectedProviders) && is_array($selectedProviders) ? $selectedProviders : [];
@@ -38,10 +38,10 @@ $slotDemoHref = static function (array $game): string {
     return '/play?game_id=' . rawurlencode($gid) . '&mode=fun';
 };
 
-/** @return string BEM modifier sÄ±nÄ±fÄ± (provider-badge--jackpot vb.) */
+/** @return string BEM modifier sınıfı (provider-badge--jackpot vb.) */
 $providerBadgeModifierClass = static function (string $badge): string {
     $n = strtoupper(preg_replace('/\s+/u', ' ', trim($badge)));
-    $n = str_replace(['Ä°', 'Ä±'], ['I', 'I'], $n);
+    $n = str_replace(['İ', 'ı'], ['I', 'I'], $n);
     if (strpos($n, 'EN') !== false && strpos($n, 'IYI') !== false) {
         return 'provider-badge--best';
     }
@@ -54,10 +54,10 @@ $providerBadgeModifierClass = static function (string $badge): string {
     if ($n === 'PROMOSYON') {
         return 'provider-badge--promo';
     }
-    if ($n === 'OZEL' || $n === 'Ã–ZEL') {
+    if ($n === 'OZEL' || $n === 'ÖZEL') {
         return 'provider-badge--special';
     }
-    if ($n === 'YENI' || $n === 'YENÄ°') {
+    if ($n === 'YENI' || $n === 'YENİ') {
         return 'provider-badge-new';
     }
     return 'provider-badge--default';
@@ -65,7 +65,7 @@ $providerBadgeModifierClass = static function (string $badge): string {
 
 $providerBadgeBlockClass = static function (string $badge): string {
     $n = strtoupper(preg_replace('/\s+/u', ' ', trim($badge)));
-    $n = str_replace(['Ä°', 'Ä±'], ['I', 'I'], $n);
+    $n = str_replace(['İ', 'ı'], ['I', 'I'], $n);
     if (strpos($n, 'EN') !== false && strpos($n, 'IYI') !== false) {
         return 'badge-top';
     }
@@ -78,7 +78,7 @@ $providerBadgeBlockClass = static function (string $badge): string {
     if ($n === 'PROMOSYON') {
         return 'badge-promo';
     }
-    if ($n === 'OZEL' || $n === 'Ã–ZEL') {
+    if ($n === 'OZEL' || $n === 'ÖZEL') {
         return 'badge-exclusive';
     }
     if ($n === 'ORTAK') {
@@ -88,18 +88,18 @@ $providerBadgeBlockClass = static function (string $badge): string {
 };
 
 $slotCategoryItems = [
-    ['sort' => '', 'slug' => 'all-games1', 'id' => '-1', 'title' => 'TÃ¼m Oyunlar', 'icon' => 'bc-i-all-games1', 'href' => $slotPageBaseUrl],
-    ['sort' => 'liked', 'slug' => 'topslots', 'id' => '93', 'title' => 'En BeÄŸenilen Oyunlar', 'icon' => 'bc-i-topslots', 'href' => $slotPageBaseUrl . '?sort=liked'],
-    ['sort' => 'popular', 'slug' => 'populargames', 'id' => '95', 'title' => 'PopÃ¼ler Oyunlar', 'icon' => 'bc-i-populargames', 'href' => $slotPageBaseUrl . '?sort=popular'],
+    ['sort' => '', 'slug' => 'all-games1', 'id' => '-1', 'title' => 'Tüm Oyunlar', 'icon' => 'bc-i-all-games1', 'href' => $slotPageBaseUrl],
+    ['sort' => 'liked', 'slug' => 'topslots', 'id' => '93', 'title' => 'En Beğenilen Oyunlar', 'icon' => 'bc-i-topslots', 'href' => $slotPageBaseUrl . '?sort=liked'],
+    ['sort' => 'popular', 'slug' => 'populargames', 'id' => '95', 'title' => 'Popüler Oyunlar', 'icon' => 'bc-i-populargames', 'href' => $slotPageBaseUrl . '?sort=popular'],
     ['sort' => 'new', 'slug' => 'new', 'id' => '65', 'title' => 'Yeni Oyunlar', 'icon' => 'bc-i-new', 'href' => $slotPageBaseUrl . '?sort=new'],
     ['sort' => 'jackpots', 'slug' => 'jackpots', 'id' => '59', 'title' => 'Jackpotlar', 'icon' => 'bc-i-jackpots', 'href' => $slotPageBaseUrl . '?sort=jackpots'],
-    ['sort' => 'bonus-buy', 'slug' => 'buybonus', 'id' => '247', 'title' => 'Bonus SatÄ±n Alma OyunlarÄ±', 'icon' => 'bc-i-buybonus', 'href' => $slotPageBaseUrl . '?sort=bonus-buy'],
-    ['sort' => 'video', 'slug' => 'videoslots', 'id' => '51', 'title' => 'Video SlotlarÄ±', 'icon' => 'bc-i-videoslots', 'href' => $slotPageBaseUrl . '?sort=video'],
-    ['sort' => 'special', 'slug' => 'newyear', 'id' => '619', 'title' => 'YÄ±lbaÅŸÄ± Ã–zel', 'icon' => 'bc-i-newyear', 'href' => $slotPageBaseUrl . '?sort=special'],
-    ['sort' => 'crash', 'slug' => 'crashgames', 'id' => '406', 'title' => 'UÃ§ak OyunlarÄ±', 'icon' => 'bc-i-crashgames', 'href' => $slotPageBaseUrl . '?sort=crash'],
-    ['sort' => 'freespin', 'slug' => 'buyfeature', 'id' => '274', 'title' => 'Free Spin SatÄ±n Alma OyunlarÄ±', 'icon' => 'bc-i-buyfeature', 'href' => $slotPageBaseUrl . '?sort=freespin'],
-    ['sort' => 'instant', 'slug' => 'instantwin', 'id' => '46', 'title' => 'AnÄ±nda KazanÃ§', 'icon' => 'bc-i-instantwin', 'href' => $slotPageBaseUrl . '?sort=instant'],
-    ['sort' => 'table', 'slug' => 'tablegames', 'id' => '94', 'title' => 'Masa OyunlarÄ±', 'icon' => 'bc-i-tablegames', 'href' => $slotPageBaseUrl . '?sort=table'],
+    ['sort' => 'bonus-buy', 'slug' => 'buybonus', 'id' => '247', 'title' => 'Bonus Satın Alma Oyunları', 'icon' => 'bc-i-buybonus', 'href' => $slotPageBaseUrl . '?sort=bonus-buy'],
+    ['sort' => 'video', 'slug' => 'videoslots', 'id' => '51', 'title' => 'Video Slotları', 'icon' => 'bc-i-videoslots', 'href' => $slotPageBaseUrl . '?sort=video'],
+    ['sort' => 'special', 'slug' => 'newyear', 'id' => '619', 'title' => 'Yılbaşı Özel', 'icon' => 'bc-i-newyear', 'href' => $slotPageBaseUrl . '?sort=special'],
+    ['sort' => 'crash', 'slug' => 'crashgames', 'id' => '406', 'title' => 'Uçak Oyunları', 'icon' => 'bc-i-crashgames', 'href' => $slotPageBaseUrl . '?sort=crash'],
+    ['sort' => 'freespin', 'slug' => 'buyfeature', 'id' => '274', 'title' => 'Free Spin Satın Alma Oyunları', 'icon' => 'bc-i-buyfeature', 'href' => $slotPageBaseUrl . '?sort=freespin'],
+    ['sort' => 'instant', 'slug' => 'instantwin', 'id' => '46', 'title' => 'Anında Kazanç', 'icon' => 'bc-i-instantwin', 'href' => $slotPageBaseUrl . '?sort=instant'],
+    ['sort' => 'table', 'slug' => 'tablegames', 'id' => '94', 'title' => 'Masa Oyunları', 'icon' => 'bc-i-tablegames', 'href' => $slotPageBaseUrl . '?sort=table'],
     ['sort' => 'slots', 'slug' => 'slots', 'id' => '57', 'title' => 'Slots', 'icon' => 'bc-i-slots', 'href' => $slotPageBaseUrl . '?sort=slots'],
 ];
 $slotOriginalCategoryClassBySort = [
@@ -221,8 +221,8 @@ $slotOriginalCategorySvgBySort = [
 ];
 if (($slotGameType ?? 0) === 1) {
     $slotCategoryItems = [
-        ['sort' => '', 'slug' => 'all-games1', 'id' => '-1', 'title' => 'TÃ¼m Oyunlar', 'icon' => 'bc-i-all-games1', 'href' => $slotPageBaseUrl],
-        ['sort' => 'popular', 'slug' => 'populargames', 'id' => '95', 'title' => 'PopÃ¼ler Oyunlar', 'icon' => 'bc-i-populargames', 'href' => $slotPageBaseUrl . '?sort=popular'],
+        ['sort' => '', 'slug' => 'all-games1', 'id' => '-1', 'title' => 'Tüm Oyunlar', 'icon' => 'bc-i-all-games1', 'href' => $slotPageBaseUrl],
+        ['sort' => 'popular', 'slug' => 'populargames', 'id' => '95', 'title' => 'Popüler Oyunlar', 'icon' => 'bc-i-populargames', 'href' => $slotPageBaseUrl . '?sort=popular'],
         ['sort' => 'roulette', 'slug' => 'roulette', 'id' => '201', 'title' => 'Rulet', 'icon' => 'bc-i-tablegames', 'href' => $slotPageBaseUrl . '?sort=roulette'],
         ['sort' => 'blackjack', 'slug' => 'blackjack', 'id' => '202', 'title' => 'Blackjack', 'icon' => 'bc-i-tablegames', 'href' => $slotPageBaseUrl . '?sort=blackjack'],
         ['sort' => 'baccarat', 'slug' => 'baccarat', 'id' => '203', 'title' => 'Baccarat', 'icon' => 'bc-i-tablegames', 'href' => $slotPageBaseUrl . '?sort=baccarat'],
@@ -261,7 +261,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 
 <div class="slot-page-root slot-page-root--unified" data-slot-game-type="<?= (int) $slotGameType ?>">
-<section class="slot-top-section" aria-label="Slot sayfasÄ± Ã¼st alan">
+<section class="slot-top-section" aria-label="Slot sayfası üst alan">
     <?php $sliderApiCategory = isset($sliderApiCategory) ? (string) $sliderApiCategory : 'slots'; include VIEW_PATH . '/partials/slider.php'; ?>
     <div class="slot-below-hero">
         <div class="slot-hero-tabs" data-slot-hero-tabs>
@@ -308,7 +308,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
 
 <?php if ($apiError): ?>
 <div class="alert alert-warning mx-3 my-2" role="alert">
-    Oyun listesi ÅŸu an yÃ¼klenemedi. Backend baÄŸlantÄ±sÄ±nÄ± kontrol edin (<code>API_BACKEND_MAIN_BASE_URL</code>).
+    Oyun listesi şu an yüklenemedi. Backend bağlantısını kontrol edin (<code>API_BACKEND_MAIN_BASE_URL</code>).
 </div>
 <?php endif; ?>
 
@@ -357,15 +357,15 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                                        autocomplete="off">
                             </div>
                             <div class="ds-textfield__right">
-                                <span class="CMSIconSVGWrapper ds-textfield__icon ds-textfield__icon--right searchInputIcon games-search-icon-btn" id="searchClearBtn" title="AramayÄ± temizle" aria-label="AramayÄ± temizle" role="button" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M15.0001 9.1665C15.0001 5.94484 12.3884 3.33317 9.16675 3.33317C5.94509 3.33317 3.33341 5.94484 3.33341 9.1665C3.33341 12.3882 5.94509 14.9998 9.16675 14.9998C10.7418 14.9998 12.1699 14.3745 13.2195 13.36C13.2398 13.3342 13.2624 13.3098 13.2862 13.286C13.31 13.2622 13.3344 13.2396 13.3603 13.2192C14.3748 12.1697 15.0001 10.7415 15.0001 9.1665ZM16.6667 9.1665C16.6667 10.9373 16.0516 12.5636 15.0253 13.8467L18.0893 16.9106L18.1462 16.9741C18.4132 17.3014 18.3944 17.7839 18.0893 18.089C17.7842 18.3941 17.3017 18.413 16.9744 18.146L16.9109 18.089L13.8469 15.0251C12.5639 16.0514 10.9376 16.6665 9.16675 16.6665C5.02461 16.6665 1.66675 13.3086 1.66675 9.1665C1.66675 5.02437 5.02461 1.6665 9.16675 1.6665C13.3089 1.6665 16.6667 5.02437 16.6667 9.1665Z"></path></svg></span>
+                                <span class="CMSIconSVGWrapper ds-textfield__icon ds-textfield__icon--right searchInputIcon games-search-icon-btn" id="searchClearBtn" title="Aramayı temizle" aria-label="Aramayı temizle" role="button" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M15.0001 9.1665C15.0001 5.94484 12.3884 3.33317 9.16675 3.33317C5.94509 3.33317 3.33341 5.94484 3.33341 9.1665C3.33341 12.3882 5.94509 14.9998 9.16675 14.9998C10.7418 14.9998 12.1699 14.3745 13.2195 13.36C13.2398 13.3342 13.2624 13.3098 13.2862 13.286C13.31 13.2622 13.3344 13.2396 13.3603 13.2192C14.3748 12.1697 15.0001 10.7415 15.0001 9.1665ZM16.6667 9.1665C16.6667 10.9373 16.0516 12.5636 15.0253 13.8467L18.0893 16.9106L18.1462 16.9741C18.4132 17.3014 18.3944 17.7839 18.0893 18.089C17.7842 18.3941 17.3017 18.413 16.9744 18.146L16.9109 18.089L13.8469 15.0251C12.5639 16.0514 10.9376 16.6665 9.16675 16.6665C5.02461 16.6665 1.66675 13.3086 1.66675 9.1665C1.66675 5.02437 5.02461 1.6665 9.16675 1.6665C13.3089 1.6665 16.6667 5.02437 16.6667 9.1665Z"></path></svg></span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <?php if (!$slotHideProviders): ?>
-                <div class="ds-select ds-select-size--md ds-select-layout--fill mobile-sidebar-toggle" id="mobileSidebarToggle" title="TÃ¼m SaÄŸlayÄ±cÄ±lar" aria-label="TÃ¼m saÄŸlayÄ±cÄ±larÄ± aÃ§">
+                <div class="ds-select ds-select-size--md ds-select-layout--fill mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç">
                     <div class="ds-select__field" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-disabled="false" tabindex="0">
-                        <div class="ds-select__text"><span class="ds-select__label mobile-sidebar-toggle__pill-text">SaÄŸlayÄ±cÄ±lar</span><span class="ds-select__value ds-select__value--placeholder"></span></div>
+                        <div class="ds-select__text"><span class="ds-select__label mobile-sidebar-toggle__pill-text">Sağlayıcılar</span><span class="ds-select__value ds-select__value--placeholder"></span></div>
                         <div class="ds-select__right"><span class="CMSIconSVGWrapper ds-select__icon ds-select__icon--right"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M12.5001 14.1665C12.9603 14.1665 13.3334 14.5396 13.3334 14.9998C13.3334 15.4601 12.9603 15.8332 12.5001 15.8332H7.50008C7.03984 15.8332 6.66675 15.4601 6.66675 14.9998C6.66675 14.5396 7.03984 14.1665 7.50008 14.1665H12.5001ZM15.0001 9.1665C15.4603 9.1665 15.8334 9.5396 15.8334 9.99984C15.8334 10.4601 15.4603 10.8332 15.0001 10.8332H5.00008C4.53984 10.8332 4.16675 10.4601 4.16675 9.99984C4.16675 9.5396 4.53984 9.1665 5.00008 9.1665H15.0001ZM17.5001 4.1665C17.9603 4.1665 18.3334 4.5396 18.3334 4.99984C18.3334 5.46007 17.9603 5.83317 17.5001 5.83317H2.50008C2.03984 5.83317 1.66675 5.46007 1.66675 4.99984C1.66675 4.5396 2.03984 4.1665 2.50008 4.1665H17.5001Z"></path></svg></span></div>
                     </div>
                     <span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span>
@@ -405,10 +405,10 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
 
         <div class="casinoProviderRow<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>">
             <?php if (!$slotHideProviders): ?>
-            <p class="casinoProviderBlockTitle" id="lineSidebarToggle" title="SaÄŸlayÄ±cÄ±larÄ± aÃ§/kapat"><i class="casinoProviderBlockIcon bc-i-small-arrow-left" id="lineSidebarToggleIcon"></i><span id="lineSidebarToggleLabel">SaÄŸlayÄ±cÄ±lar</span></p>
+            <p class="casinoProviderBlockTitle" id="lineSidebarToggle" title="Sağlayıcıları aç/kapat"><i class="casinoProviderBlockIcon bc-i-small-arrow-left" id="lineSidebarToggleIcon"></i><span id="lineSidebarToggleLabel">Sağlayıcılar</span></p>
             <?php endif; ?>
             <p class="casinoGameListTitle"><?= htmlspecialchars($slotGameType === 1 ? 'CANLI CASINO OYUNLARI' : 'CASINO OYUNLARI', ENT_QUOTES, 'UTF-8') ?></p>
-            <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">TÃœMÃœ</a>
+            <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">TÜMÜ</a>
         </div>
         <?php endif; ?>
 
@@ -418,21 +418,21 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
             <div class="casinoProviderBlockHolder provider-sheet">
                 <div class="provider-sheet-header">
                     <button type="button" class="provider-sheet-back" id="providerSheetBackBtn" aria-label="Geri">
-                        <i class="fas fa-chevron-left" aria-hidden="true"></i> GERÄ°
+                        <i class="fas fa-chevron-left" aria-hidden="true"></i> GERİ
                     </button>
                 </div>
                 <div class="providerSearchAndReset provider-sheet-tools">
                     <div class="providerSearchRow sidebar-search provider-search-bar provider-sheet-search">
                         <div class="searchInputWrp active">
-                        <input type="text" placeholder="SaÄŸlayÄ±cÄ± Ara" id="providerSearchInput" class="searchInput provider-search-input" autocomplete="off">
-                        <p class="searchInputIcon bc-i-search provider-search-btn" id="providerSearchClearBtn" title="SaÄŸlayÄ±cÄ± ara" aria-label="SaÄŸlayÄ±cÄ± ara"><i id="providerSearchClearBtnIcon" aria-hidden="true"></i></p>
+                        <input type="text" placeholder="Sağlayıcı Ara" id="providerSearchInput" class="searchInput provider-search-input" autocomplete="off">
+                        <p class="searchInputIcon bc-i-search provider-search-btn" id="providerSearchClearBtn" title="Sağlayıcı ara" aria-label="Sağlayıcı ara"><i id="providerSearchClearBtnIcon" aria-hidden="true"></i></p>
                         </div>
                     </div>
-                    <div class="providerResetRow"><p class="providerCountTxt" title=""></p><div class="providerTypeIconWrp"><div class="tooltipIconWrapper"><i class="bc-i-view-list provider-sheet-grid-btn" id="providerSheetGridBtn" title="ModÃ¼l gÃ¶rÃ¼nÃ¼mÃ¼" aria-label="ModÃ¼l gÃ¶rÃ¼nÃ¼mÃ¼"></i></div></div></div>
+                    <div class="providerResetRow"><p class="providerCountTxt" title=""></p><div class="providerTypeIconWrp"><div class="tooltipIconWrapper"><i class="bc-i-view-list provider-sheet-grid-btn" id="providerSheetGridBtn" title="Modül görünümü" aria-label="Modül görünümü"></i></div></div></div>
                 </div>
                 <div class="providerItemsContainer sidebar-providers-list" id="sidebarProvidersList" data-scroll-lock-scrollable="">
                     <div class="providerItemsHolder module">
-                    <div title="TÃ¼mÃ¼" class="providerItemsInner sidebar-provider-item <?= empty($selectedProviders) && empty($searchTerm) ? 'active' : '' ?>" role="button" tabindex="0" data-provider-all="1"><span class="providerBadgeBlock " data-badge=""></span><div class="providerItemsBtn">TÃœMÃœ</div></div>
+                    <div title="Tümü" class="providerItemsInner sidebar-provider-item <?= empty($selectedProviders) && empty($searchTerm) ? 'active' : '' ?>" role="button" tabindex="0" data-provider-all="1"><span class="providerBadgeBlock " data-badge=""></span><div class="providerItemsBtn">TÜMÜ</div></div>
                     <?php
                     foreach ($allUniqueProviders as $provider) {
                         echo $renderProviderBtn($provider);
@@ -451,10 +451,10 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                 <?php if (!$slotMobileOriginalNav): ?>
                 <div class="casinoGameListBlockHeader">
                     <div class="casinoTitleSearch ">
-                        <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" title="TÃ¼m SaÄŸlayÄ±cÄ±lar" aria-label="TÃ¼m saÄŸlayÄ±cÄ±larÄ± aÃ§">
+                        <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç">
                             <span class="mobile-sidebar-toggle__pill">
                                 <i class="fas fa-filter" aria-hidden="true"></i>
-                                <span class="mobile-sidebar-toggle__pill-text">SaÄŸlayÄ±cÄ±lar</span>
+                                <span class="mobile-sidebar-toggle__pill-text">Sağlayıcılar</span>
                             </span>
                             <span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span>
                         </button>
@@ -467,13 +467,13 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                                            placeholder="Oyun Ara"
                                            id="searchModalInput"
                                            value="<?= htmlspecialchars($searchTerm, ENT_QUOTES); ?>">
-                                    <p class="searchInputIcon bc-i-search games-search-icon-btn" id="searchClearBtn" title="AramayÄ± temizle" aria-label="AramayÄ± temizle"></p>
+                                    <p class="searchInputIcon bc-i-search games-search-icon-btn" id="searchClearBtn" title="Aramayı temizle" aria-label="Aramayı temizle"></p>
                                 </div>
                             </div>
                         </div>
                         <button type="button" class="random-game-btn" id="randomGameBtn" title="Rastgele Oyun Oyna" aria-label="Rastgele Oyun Oyna">Rastgele Oyun Oyna</button>
                         <div class="tooltipIconWrapper">
-                            <button class="bc-i-sort iconButtonBlock" type="button" id="sortToggleBtn" title="SÄ±ralama" aria-label="SÄ±ralama"></button>
+                            <button class="bc-i-sort iconButtonBlock" type="button" id="sortToggleBtn" title="Sıralama" aria-label="Sıralama"></button>
                         </div>
                     </div>
                     <div class="active-filters-row" style="display:none;">
@@ -485,7 +485,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                 <?php if ($slotMobileOriginalNav): ?>
                 <div class="casinoProviderRow casinoProviderRow--mobile-inline<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>">
                     <p class="casinoGameListTitle"><?= htmlspecialchars($slotGameType === 1 ? 'CANLI CASINO OYUNLARI' : 'CASINO OYUNLARI', ENT_QUOTES, 'UTF-8') ?></p>
-                    <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">TÃœMÃœ</a>
+                    <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">TÜMÜ</a>
                 </div>
                 <?php endif; ?>
 
