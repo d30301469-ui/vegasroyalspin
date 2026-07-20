@@ -1095,9 +1095,9 @@
           var wrapper = betFilterToggle.closest('[data-mbet-filter-wrapper]');
           var body = wrapper && wrapper.querySelector('.componentFilterBody-bc');
           if (wrapper && body) {
-            var isOpenFilter = body.hidden;
+            var isOpenFilter = body.hasAttribute('hidden');
             body.hidden = !isOpenFilter;
-            wrapper.classList.toggle('is-open', isOpenFilter);
+            betFilterToggle.classList.toggle('active', isOpenFilter);
           }
           return;
         }
@@ -1256,6 +1256,10 @@
         if (e.target && e.target.closest && e.target.closest('#mprofilePaymentForm')) {
           e.preventDefault();
           submitPaymentModal();
+          return;
+        }
+        if (e.target && e.target.closest && e.target.closest('[data-mbet-filter-wrapper] .filter-form-w-bc')) {
+          e.preventDefault();
         }
       });
 
