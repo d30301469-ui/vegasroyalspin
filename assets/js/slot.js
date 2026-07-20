@@ -901,6 +901,7 @@
         ensureSidebarOverlay().classList.add('active');
         document.body.classList.add('provider-sheet-open');
         syncProviderSidebarAria();
+        updateDrawerButtonStates();
     }
 
     function closeProviderSheet() {
@@ -910,6 +911,19 @@
         if (overlay) overlay.classList.remove('active');
         document.body.classList.remove('provider-sheet-open');
         syncProviderSidebarAria();
+    }
+
+    /* ── Drawer footer butonlarını provider seçimine göre aktif/pasif yap ── */
+    function updateDrawerButtonStates() {
+        var resetBtn = document.getElementById('providerSheetResetBtn');
+        var applyBtn = document.getElementById('providerSheetApplyBtn');
+        var hasSelection = state.providers.length > 0;
+        if (resetBtn) {
+            resetBtn.classList.toggle('active-reset', hasSelection);
+        }
+        if (applyBtn) {
+            applyBtn.classList.toggle('active-apply', hasSelection);
+        }
     }
 
     /* ── Sidebar toggle: üst satırdaki ok ve SAĞLAYICILAR metni ── */
