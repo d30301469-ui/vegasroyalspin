@@ -916,15 +916,15 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .mprofile-form-message.is-error { color: rgba(var(--oc-3, 255, 76, 76), 1); }
 #mprofilePanel .mprofile-form-message.is-success { color: #7bffb2; }
 #mprofilePanel .mprofile-twofa-section {
-  padding-top: 18px;
+  padding-top: 14px;
 }
 #mprofilePanel .profile-security-single--twofa {
   width: 100%;
 }
 #mprofilePanel .twofa-status {
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   color: rgba(var(--b-sc, 255, 255, 255), 0.72);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.45;
 }
@@ -933,13 +933,15 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
 }
 #mprofilePanel .twofa-left-col {
   display: flex;
   flex: 1 1 auto;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
   gap: 10px;
   min-width: 0;
 }
@@ -950,22 +952,29 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 #mprofilePanel .twofa-icon-ga {
   display: block;
+  width: 24px;
+  height: 24px;
 }
+#mprofilePanel .twofa-icon-ga path:nth-of-type(1) { fill: #4285F4 !important; }
+#mprofilePanel .twofa-icon-ga path:nth-of-type(2) { fill: #EA4335 !important; }
+#mprofilePanel .twofa-icon-ga path:nth-of-type(3) { fill: #FBBC04 !important; }
+#mprofilePanel .twofa-icon-ga path:nth-of-type(4) { fill: #34A853 !important; }
+#mprofilePanel .twofa-icon-ga circle { fill: #fff !important; }
 #mprofilePanel .twofa-activate-label {
-  align-self: flex-start;
+  flex: 1 1 auto;
   color: #fff;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  line-height: 1.35;
+  letter-spacing: 0;
+  line-height: 16px;
   text-align: left;
   text-transform: uppercase;
   white-space: normal;
@@ -1018,11 +1027,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 @media (max-width: 480px) {
   #mprofilePanel .twofa-activate-row {
-    flex-wrap: wrap;
-  }
-  #mprofilePanel .twofa-toggle {
-    align-self: flex-end;
-    margin-left: auto;
+    flex-wrap: nowrap;
   }
 }
 
