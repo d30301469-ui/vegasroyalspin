@@ -594,10 +594,18 @@ body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__grid {
   background: transparent !important;
 }
 
+body.mobile-site .providers-drawer-wrapper .providerItemsContainer.sidebar-providers-list,
+body.mobile-site .providers-drawer-wrapper #sidebarProvidersList {
+  display: block !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+}
+
 body.mobile-site .providers-drawer-wrapper .providerItemsHolder,
 body.mobile-site .providers-drawer-wrapper .providerItemsHolder.module {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
   gap: 4px;
   background: transparent !important;
 }
