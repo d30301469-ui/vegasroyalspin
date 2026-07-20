@@ -1035,13 +1035,13 @@ body.mobile-site .sidebar-overlay.active {
     padding: 0 10px;
     border-radius: 999px;
     border: 0;
-    background: #1a1e2a;
+    background: #1a1e2a !important;
     color: #c8cedc;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   }
 
   body.mobile-site .slot-page-root.slot-page-root--unified .slots-category-filters .cat-tab.active {
-    background: #3340ff;
+    background: #3340ff !important;
     color: #fff;
     box-shadow: none;
   }
