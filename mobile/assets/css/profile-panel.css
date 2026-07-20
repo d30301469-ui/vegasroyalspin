@@ -1126,6 +1126,10 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .description-card-info .description-c-r-c-t-column-bc:last-child {
   align-items: flex-end;
 }
+#mprofilePanel .description-container-bc .second-tabs-bc {
+  column-gap: 2px;
+  background-color: rgba(0, 0, 0, 0.28);
+}
 #mprofilePanel .userProfile-content {
   flex: 1;
   min-height: 0;
