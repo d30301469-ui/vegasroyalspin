@@ -396,9 +396,10 @@ body.mobile-site .providers-drawer-wrapper {
   justify-content: center;
   touch-action: none;
   overscroll-behavior: none;
-  background: rgba(0, 2, 5, 0.48);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  padding-bottom: var(--tab-navigation-height, 48px);
+  background: rgba(0, 2, 5, 0.54);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 /* Açık halde: wrapper görünür + içerik pointer-events alır */
@@ -424,9 +425,9 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-height: 80dvh;
+  max-height: min(68dvh, 560px);
   background: #202022;
-  border-radius: 12px 12px 0 0;
+  border-radius: 10px 10px 0 0;
   overflow: hidden;
   transform: translate3d(0, 100%, 0);
   animation: none;
@@ -451,7 +452,7 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer__drag-handle {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 16px 0 8px;
+  padding: 12px 0 8px;
   cursor: grab;
   flex-shrink: 0;
   user-select: none;
@@ -470,7 +471,7 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer__title-bar {
   display: flex;
   align-items: center;
   width: 100%;
-  padding-bottom: 16px;
+  padding-bottom: 10px;
   flex-shrink: 0;
 }
 
@@ -484,7 +485,7 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer__title-content {
 body.mobile-site .providers-drawer-wrapper .ds-drawer__title-text {
   flex: 1 0 0;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.01em;
@@ -589,6 +590,7 @@ body.mobile-site .providers-drawer-wrapper .providerItemsHolder {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
+  background: transparent !important;
 }
 
 /* ── Provider item (CasinoMilyon gibi) ── */
@@ -598,10 +600,10 @@ body.mobile-site .providers-drawer-wrapper .providerItemsInner {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08) !important;
   border: 0.8px solid rgba(0, 0, 0, 0);
   border-radius: 4px;
-  height: 56px;
+  height: 48px;
   padding: 0;
   cursor: pointer;
   overflow: hidden;
@@ -610,7 +612,7 @@ body.mobile-site .providers-drawer-wrapper .providerItemsInner {
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsInner.active {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.16) !important;
   border-color: rgba(255, 255, 255, 0.32);
 }
 
