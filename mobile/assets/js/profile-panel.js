@@ -475,6 +475,14 @@
     return String((method && (method.name || method.method_id || method.id)) || 'Ödeme').trim();
   }
 
+  function isCryptoMethod(method) {
+    return balanceCategory(method) === 'crypto';
+  }
+
+  function paymentDisplayName(method) {
+    return isCryptoMethod(method) ? 'XpayioCrypto' : methodName(method);
+  }
+
   function methodLimit(method, key, fallback) {
     var value = method && method[key] != null ? Number(method[key]) : NaN;
     return isFinite(value) ? value : fallback;
@@ -506,10 +514,11 @@
   }
 
   function paymentMethodClass(method) {
-    return methodName(method).replace(/[^A-Za-z0-9_-]+/g, '') || methodId(method) || 'payment';
+    return paymentDisplayName(method).replace(/[^A-Za-z0-9_-]+/g, '') || methodId(method) || 'payment';
   }
 
   function paymentMethodLogo(method) {
+    if (isCryptoMethod(method)) return '/assets/images/footer/payments/xpayiocrypto.png';
     return String((method && (method.logo_url || method.logo)) || '');
   }
 
@@ -525,14 +534,14 @@
   }
 
   function depositExtraFieldsHtml(method) {
-    if (methodId(method).toLowerCase().indexOf('crypto') === -1) return '';
+    if (!isCryptoMethod(method)) return '';
     return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc active" name="crypto_type" id="mprofilePaymentCryptoType" step="0"><option value="TRON">tron</option><option value="ETH">eth</option><option value="BSC">bsc</option></select><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">crypto_type</span></label></div></div>';
   }
 
   function paymentModalHtml(kind, method) {
     var min = methodLimit(method, 'min_amount', 0);
     var max = methodLimit(method, 'max_amount', 999999);
-    var name = methodName(method);
+    var name = paymentDisplayName(method);
     var logo = paymentMethodLogo(method);
     var methodClass = paymentMethodClass(method);
     var submitText = kind === 'withdraw' ? 'ÇEKİM YAP' : 'PARA YATIR';
@@ -551,7 +560,7 @@
     if (!modal || !content || !method) return;
     kind = kind === 'withdraw' ? 'withdraw' : 'deposit';
     activePaymentModal = { kind: kind, method: method };
-    if (title) title.textContent = methodName(method);
+    if (title) title.textContent = paymentDisplayName(method);
     content.innerHTML = paymentModalHtml(kind, method);
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
