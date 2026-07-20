@@ -962,6 +962,26 @@
         providerSheetApplyBtn.addEventListener('click', closeProviderSheet);
     }
 
+    /* ── Provider sheet reset button ── */
+    var providerSheetResetBtn = document.getElementById('providerSheetResetBtn');
+    if (providerSheetResetBtn) {
+        providerSheetResetBtn.addEventListener('click', function() {
+            /* Clear all selected providers and reload */
+            state.providers = [];
+            state.nextPage = 2;
+            if (sidebarProvidersList) {
+                sidebarProvidersList.querySelectorAll('.sidebar-provider-item').forEach(function(item) {
+                    item.classList.remove('active');
+                });
+                var allItem = sidebarProvidersList.querySelector('[data-provider-all]');
+                if (allItem) allItem.classList.add('active');
+            }
+            updateMobileSidebarToggle();
+            closeProviderSheet();
+            loadGames(false);
+        });
+    }
+
     function syncViewModulePressed() {
         if (!gameGrid || !viewModuleBtn) return;
         viewModuleBtn.setAttribute('aria-pressed', gameGrid.classList.contains('view-module-active') ? 'true' : 'false');
