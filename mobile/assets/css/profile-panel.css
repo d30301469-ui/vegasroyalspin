@@ -550,17 +550,19 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 
 #mprofilePanel .profile-panel-promo-code {
+  width: 100%;
   padding: 0 0 10px;
   margin: 0;
 }
 #mprofilePanel .profile-panel-promo-code form {
   display: flex;
+  width: 100%;
 }
 #mprofilePanel .u-i-p-control-item-holder-bc {
   flex: 1;
   min-width: 0;
   position: relative;
-  padding: 0 10px;
+  padding: 0;
   margin: 0;
 }
 #mprofilePanel .form-control-bc,
