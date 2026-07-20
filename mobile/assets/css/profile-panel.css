@@ -352,8 +352,8 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 #mprofilePanel .profile-bonus-claim-image {
   width: 100%;
-  aspect-ratio: 16 / 7;
-  object-fit: cover;
+  aspect-ratio: 57 / 40;
+  object-fit: contain;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.06);
 }
