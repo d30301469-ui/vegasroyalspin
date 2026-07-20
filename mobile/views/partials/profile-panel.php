@@ -297,6 +297,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
 (function(){
   if (window.__mprofilePaymentModalFallbackBound) return;
   window.__mprofilePaymentModalFallbackBound = true;
+  window.__mprofileSiteName = <?= json_encode($panelSiteName, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
   var methodCache = null, active = null, submitting = false;
   function api(path){return window.BetcoAuthShared&&window.BetcoAuthShared.apiUrl?window.BetcoAuthShared.apiUrl(path):path;}
   function headers(extra){return window.BetcoAuthShared&&window.BetcoAuthShared.memberAuthHeaders?window.BetcoAuthShared.memberAuthHeaders(extra):(extra||{});}
@@ -304,7 +305,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
   function limit(v){var n=Number(v);return isFinite(n)?new Intl.NumberFormat('tr-TR',{maximumFractionDigits:0}).format(n)+' ₺':'—';}
   function mid(m){return String(m&&(m.method_id||m.id||m.payment_method_id)||'').trim();}
   function mname(m){return String(m&&(m.name||m.label||m.title||m.method_id||m.id)||'Ödeme').trim();}
-  function siteName(){var panel=document.getElementById('mprofilePanel');return String((panel&&panel.getAttribute('data-site-name'))||document.documentElement.getAttribute('data-site-name')||'VegasRoyalSpin').trim()||'VegasRoyalSpin';}
+  function siteName(){var panel=document.getElementById('mprofilePanel');return String(window.__mprofileSiteName||(panel&&panel.getAttribute('data-site-name'))||document.documentElement.getAttribute('data-site-name')||'VegasRoyalSpin').trim()||'VegasRoyalSpin';}
   function isCrypto(m){var id=mid(m).toLowerCase(),type=String(m&&m.type||'').toLowerCase(),name=mname(m).toLowerCase();return type==='crypto'||id.indexOf('crypto')!==-1||name.indexOf('crypto')!==-1||name.indexOf('kripto')!==-1||name.indexOf('bitcoin')!==-1||name.indexOf('tether')!==-1||name.indexOf('tron')!==-1;}
   function displayName(m){return mname(m);}
   function provider(m){return m&&m.provider&&m.provider.code?String(m.provider.code):'megapayz';}

@@ -490,7 +490,7 @@
 
   function paymentSiteName() {
     var panel = getPanel();
-    return String((panel && panel.getAttribute('data-site-name')) || document.documentElement.getAttribute('data-site-name') || 'VegasRoyalSpin').trim() || 'VegasRoyalSpin';
+    return String(window.__mprofileSiteName || (panel && panel.getAttribute('data-site-name')) || document.documentElement.getAttribute('data-site-name') || 'VegasRoyalSpin').trim() || 'VegasRoyalSpin';
   }
 
   function setPaymentModalMessage(type, text) {
