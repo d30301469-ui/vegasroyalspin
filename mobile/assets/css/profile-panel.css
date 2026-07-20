@@ -781,7 +781,75 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .mprofile-promocode-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+}
+#mprofilePanel .mprofile-promocode-panel .u-i-p-control-item-holder-bc {
+  width: 100%;
+  margin: 0;
+}
+#mprofilePanel .mprofile-promocode-panel .form-control-bc,
+#mprofilePanel .mprofile-promocode-panel .form-control-label-bc.inputs {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 58px;
+}
+#mprofilePanel .mprofile-promocode-panel .form-control-input-bc,
+#mprofilePanel .mprofile-promocode-panel .form-control-select-bc {
+  width: 100%;
+  height: 58px;
+  border: 0;
+  border-radius: 5px;
+  padding: 24px 42px 8px 15px;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 20px;
+  outline: 0;
+  box-sizing: border-box;
+}
+#mprofilePanel .mprofile-promocode-panel .form-control-select-bc {
+  appearance: none;
+  -webkit-appearance: none;
+}
+#mprofilePanel .mprofile-promocode-panel .form-control-title-bc {
+  top: 8px;
+  left: 15px;
+  right: 42px;
+  width: auto;
+  color: rgba(255, 255, 255, 0.44);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 15px;
+  text-transform: uppercase;
+}
+#mprofilePanel .mprofile-promocode-panel .form-control-bc.filled .form-control-title-bc,
+#mprofilePanel .mprofile-promocode-panel .form-control-bc.focused .form-control-title-bc,
+#mprofilePanel .mprofile-promocode-panel .form-control-label-bc.has-value .form-control-title-bc,
+#mprofilePanel .mprofile-promocode-panel .form-control-label-bc.focused .form-control-title-bc {
+  top: 8px;
+  font-size: 12px;
+  line-height: 15px;
+}
+#mprofilePanel .mprofile-promocode-panel .form-control-icon-bc {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 16px;
+  line-height: 16px;
+  text-align: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+#mprofilePanel .mprofile-promocode-panel .form-control-input-stroke-bc {
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 #mprofilePanel .mprofile-promocode-actions {
   display: flex;
@@ -789,7 +857,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 #mprofilePanel .mprofile-promocode-divider {
   height: 1px;
-  margin: 4px 0;
+  margin: 8px 0 2px;
   background: rgba(255, 255, 255, 0.08);
 }
 #mprofilePanel .mprofile-freespin-tabs {
