@@ -1772,6 +1772,7 @@ body.mobile-site .sidebar-overlay.active {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex: 1 1 100%;
     width: 100%;
     height: var(--fds-sem-dimension-medium);
     min-height: var(--fds-sem-dimension-medium);
