@@ -476,7 +476,13 @@
   }
 
   function isCryptoMethod(method) {
-    return balanceCategory(method) === 'crypto';
+    var text = [
+      balanceCategory(method),
+      method && method.type,
+      methodId(method),
+      methodName(method)
+    ].join(' ').toLowerCase();
+    return text.indexOf('crypto') !== -1 || text.indexOf('kripto') !== -1 || text.indexOf('bitcoin') !== -1 || text.indexOf('tether') !== -1 || text.indexOf('tron') !== -1 || text.indexOf('usdt') !== -1 || text.indexOf('btc') !== -1;
   }
 
   function paymentDisplayName(method) {
@@ -526,13 +532,21 @@
     return String((method && (method.logo_url || method.logo)) || '');
   }
 
+  function withdrawCryptoNetworkId(displayName) {
+    var name = String(displayName || '').toUpperCase();
+    if (name.indexOf('TRC20') !== -1 || name.indexOf('TRC-20') !== -1 || name.indexOf('TRON') !== -1 || name.indexOf('TRX') !== -1) return '65bd7be5964700005d002ae5';
+    if (name.indexOf('BİTCO') !== -1 || name.indexOf('BITCO') !== -1 || name.indexOf('BTC') !== -1) return '65bd7bba964700005d002ae1';
+    if (name.indexOf('LTC') !== -1 || name.indexOf('LITE') !== -1) return '65bd7bc1964700005d002ae2';
+    return '65bd7bd5964700005d002ae4';
+  }
+
   function withdrawExtraFieldsHtml(method) {
     var id = methodId(method).toLowerCase();
     if (id.indexOf('bank') !== -1) {
       return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" maxlength="26" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">IBAN</span></label></div></div>';
     }
-    if (id.indexOf('crypto') !== -1) {
-      return '<input type="hidden" id="mprofilePaymentNetwork" value="TRON"><div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">address</span></label></div></div>';
+    if (isCryptoMethod(method)) {
+      return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled mprofile-crypto-select" data-mprofile-crypto-open><label class="form-control-label-bc inputs"><input type="hidden" name="crypto_network" id="mprofilePaymentNetwork" value="' + withdrawCryptoNetworkId('TRON') + '"><button type="button" class="form-control-select-bc active mprofile-crypto-select-button"><span id="mprofilePaymentCryptoLabel">tron</span></button><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Ağ</span></label></div></div><div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">address</span></label></div></div>';
     }
     return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">address</span></label></div></div>';
   }
@@ -573,7 +587,7 @@
     return '<div class="payment-info-bc" tabindex="-1"><div class="payment-info-content">' +
       '<div class="description-c-row-bc ' + escapeHtml(methodClass) + '"><div class="description-c-row-column-bc pay-logo">' + (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(name) + '</span>') + '</div><div class="description-c-row-column-bc texts"><div class="description-c-row-c-title-bc description_payment-title"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis">Ücret: Ücretsiz</span></div><div class="description-c-r-c-t-column-bc"><span class="description-instant ellipsis">' + escapeHtml(method.processing_time || 'Anlık') + '</span></div></div><div class="description-card-info"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Min.">Min.</span><span class="description-value ellipsis" title="' + escapeHtml(limitText(min)) + '">' + escapeHtml(limitText(min)) + '</span></div><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Maks.">Maks.</span><span class="description-value ellipsis" title="' + escapeHtml(limitText(max)) + '">' + escapeHtml(limitText(max)) + '</span></div></div></div></div>' +
       '<div class="expandableContentWrapper"><div class="expandableContentData ' + escapeHtml(methodClass) + ' payment-content not-expandable" data-scroll-lock-scrollable><div class="container"><p>' + escapeHtml(paymentSiteName()) + ' Ailesine hoş geldiniz. İyi eğlenceler, bol şanslar dileriz. ' + (kind === 'withdraw' ? 'Para çekmek' : 'Para yatırmak') + ' için lütfen aşağıdaki tüm gerekli alanları doldurun. Minimum tutar altı yatırımlar &quot;İADE EDİLMEZ&quot; lütfen kurallara uygun yatırım yapınız.</p></div></div></div>' +
-        '<div class="withdraw-form-l-bc"><form id="mprofilePaymentForm"><div id="screenArea">' + extraFields + '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" id="mprofilePaymentAmount" name="amount" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Tutar</span></label></div></div><div class="mprofile-form-message" data-mprofile-payment-message role="status" aria-live="polite"></div><div class="u-i-p-c-footer-bc"><button class="btn a-color ' + (kind === 'withdraw' ? 'withdraw' : 'deposit') + ' mprofile-payment-submit" type="submit" title="' + escapeHtml(submitText) + '" disabled><span>' + escapeHtml(submitText) + '</span></button></div></div></form></div>' + (kind === 'deposit' && isCryptoMethod(method) ? cryptoPopupHtml() : '') +
+        '<div class="withdraw-form-l-bc"><form id="mprofilePaymentForm"><div id="screenArea">' + extraFields + '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" id="mprofilePaymentAmount" name="amount" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Tutar</span></label></div></div><div class="mprofile-form-message" data-mprofile-payment-message role="status" aria-live="polite"></div><div class="u-i-p-c-footer-bc"><button class="btn a-color ' + (kind === 'withdraw' ? 'withdraw' : 'deposit') + ' mprofile-payment-submit" type="submit" title="' + escapeHtml(submitText) + '" disabled><span>' + escapeHtml(submitText) + '</span></button></div></div></form></div>' + (isCryptoMethod(method) ? cryptoPopupHtml() : '') +
       '</div></div>';
   }
 
@@ -615,8 +629,10 @@
     var value = option.getAttribute('data-option-value') || '';
     var label = option.getAttribute('data-option-label') || option.textContent.trim();
     var input = document.getElementById('mprofilePaymentCryptoType');
+    var networkInput = document.getElementById('mprofilePaymentNetwork');
     var labelEl = document.getElementById('mprofilePaymentCryptoLabel');
     if (input) input.value = value;
+    if (networkInput) networkInput.value = withdrawCryptoNetworkId(label || value);
     if (labelEl) labelEl.textContent = label.toLowerCase() === 'tron' ? 'tron' : label;
     document.querySelectorAll('#mprofileCryptoPopup .checkbox-control-content-bc').forEach(function (item) {
       item.classList.toggle('active', item === option);
