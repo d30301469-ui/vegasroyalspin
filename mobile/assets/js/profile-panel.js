@@ -568,15 +568,9 @@
 
   function depositCryptoOptions() {
     return [
-      ['FTN', 'FTN ERC-20'],
-      ['BTC', 'BTC'],
-      ['USDT_T', 'USDT(TRC20)'],
-      ['USDT', 'USDT(ERC20)'],
-      ['USDC', 'USDC(ERC20)'],
-      ['TRX', 'TRON'],
-      ['ETH', 'ETH'],
-      ['USDB', 'BSC-USD'],
-      ['BNBB', 'BSC']
+      ['BTC', 'Bitcoin'],
+      ['LTC', 'Litecoin'],
+      ['USDT_T', 'USDT TRC20']
     ];
   }
 
@@ -589,7 +583,7 @@
 
   function depositExtraFieldsHtml(method) {
     if (!isCryptoMethod(method)) return '';
-    return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled mprofile-crypto-select" data-mprofile-crypto-open><label class="form-control-label-bc inputs"><input type="hidden" name="crypto_type" id="mprofilePaymentCryptoType" value="FTN"><button type="button" class="form-control-select-bc active mprofile-crypto-select-button"><span id="mprofilePaymentCryptoLabel">FTN ERC-20</span></button><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">crypto_type</span></label></div></div>';
+    return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled mprofile-crypto-select" data-mprofile-crypto-open><label class="form-control-label-bc inputs"><input type="hidden" name="crypto_type" id="mprofilePaymentCryptoType" value="BTC"><button type="button" class="form-control-select-bc active mprofile-crypto-select-button"><span id="mprofilePaymentCryptoLabel">Bitcoin</span></button><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">crypto_type</span></label></div></div>';
   }
 
   function paymentModalHtml(kind, method) {
