@@ -168,6 +168,41 @@
     return row && row.is_finished ? 'TAMAMLANDI' : 'AÇIK';
   }
 
+  function casinoStatusText(status) {
+    status = String(status || '').toLowerCase();
+    if (status === 'pending') return 'AÇIK';
+    if (status === 'cancel' || status === 'cancelled' || status === 'refund') return 'İADE EDİLDİ';
+    if (status === 'failed' || status === 'error') return 'BAŞARISIZ';
+    return 'TAMAMLANDI';
+  }
+
+  function normalizeHistoryRow(row, source) {
+    row = row && typeof row === 'object' ? row : {};
+    source = source || 'sports';
+    var type = String(row.txn_type || row.txnType || row.type || 'bet').toLowerCase();
+    var amount = Math.abs(Number(row.amount != null ? row.amount : 0));
+    if (source === 'casino') {
+      var betAmount = Math.abs(Number(row.bet_amount != null ? row.bet_amount : row.betAmount || 0));
+      var winAmount = Math.abs(Number(row.win_amount != null ? row.win_amount : row.winAmount || 0));
+      amount = type === 'win' ? winAmount : (type === 'cancel' || type === 'refund' ? (winAmount || betAmount) : betAmount);
+    }
+    return Object.assign({}, row, {
+      __history_source: source,
+      __type: type,
+      __amount: amount,
+      __id: row.wager_id || row.txn_code || row.transaction_id || row.transactionId || row.provider_txn_id || row.providerTxnId || row.history_id || row.id || '',
+      __round: row.round_id || row.roundId || '',
+      __title: source === 'casino'
+        ? (row.game_name || row.gameName || row.game_id || row.gameId || 'Casino Oyunu')
+        : (row.sport_name || row.game_name || row.game_code || 'Spor Kuponu'),
+      __provider: source === 'casino'
+        ? (row.provider_name || row.providerName || row.provider_code || row.providerCode || 'casino')
+        : (row.vendor_code || row.provider_name || 'sports-betby'),
+      __created_at: row.created_at || row.createdAt || '',
+      __is_finished: source === 'casino' ? String(row.status || '').toLowerCase() !== 'pending' : !!row.is_finished
+    });
+  }
+
   function limitText(value) {
     var num = Number(value);
     if (!isFinite(num)) return '—';
@@ -858,9 +893,9 @@
   }
 
   function rowMatchesBetHistoryPage(row, pageName) {
-    var type = String(row && row.txn_type || '').toLowerCase();
-    var amount = Math.abs(Number(row && row.amount || 0));
-    var isFinished = !!(row && row.is_finished);
+    var type = String(row && row.__type || row && row.txn_type || '').toLowerCase();
+    var amount = Math.abs(Number(row && row.__amount || row && row.amount || 0));
+    var isFinished = !!(row && row.__is_finished);
     if (pageName === 'open-bets') return !isFinished && type === 'bet';
     if (pageName === 'cashed-out') return isFinished && (type === 'win' || type === 'cancel' || type === 'refund') && amount > 0;
     if (pageName === 'won') return type === 'win' && amount > 0;
@@ -878,21 +913,21 @@
     var betType = String((form.elements.bet_type && form.elements.bet_type.value) || '').trim();
     var period = String((form.elements.period && form.elements.period.value) || '24').trim();
     if (betId) {
-      var idText = [row.id, row.txn_code, row.wager_id, row.round_id].map(function (value) { return String(value || '').toLowerCase(); }).join(' ');
+      var idText = [row.__id, row.id, row.history_id, row.txn_code, row.wager_id, row.round_id, row.transaction_id, row.provider_txn_id].map(function (value) { return String(value || '').toLowerCase(); }).join(' ');
       if (idText.indexOf(betId) === -1) return false;
     }
     if (sportName) {
-      var nameText = [row.sport_name, row.game_name, row.game_code, row.vendor_code].map(function (value) { return String(value || '').toLowerCase(); }).join(' ');
+      var nameText = [row.__title, row.sport_name, row.game_name, row.gameName, row.game_code, row.game_id, row.vendor_code, row.provider_name, row.providerName].map(function (value) { return String(value || '').toLowerCase(); }).join(' ');
       if (nameText.indexOf(sportName) === -1) return false;
     }
     if (betType && betType !== 'ALL') {
-      var typeText = String(row.bet_type || row.selection_type || row.type || '').toLowerCase();
-      if (typeText && typeText !== betType.toLowerCase()) return false;
+      var explicitBetType = String(row.bet_type_id || row.betTypeId || row.bet_type || row.betType || row.selection_type || row.selectionType || '').toLowerCase();
+      if (explicitBetType && explicitBetType !== betType.toLowerCase()) return false;
     }
     if (period) {
       var hours = { '24': 24, '72': 72, '168': 168, '720': 720 }[period];
       if (hours) {
-        var ts = new Date(String(row.created_at || '').replace(' ', 'T')).getTime();
+        var ts = new Date(String(row.__created_at || row.created_at || row.createdAt || '').replace(' ', 'T')).getTime();
         if (!isNaN(ts) && ts < Date.now() - hours * 3600000) return false;
       }
     }
@@ -912,21 +947,32 @@
       return;
     }
     list.innerHTML = rows.map(function (row) {
-      var type = String(row.txn_type || 'bet').toLowerCase();
-      var amount = Math.abs(Number(row.amount || 0));
+      var source = row.__history_source === 'casino' ? 'casino' : 'sports';
+      var type = String(row.__type || row.txn_type || 'bet').toLowerCase();
+      var amount = Math.abs(Number(row.__amount || row.amount || 0));
       var amountClass = type === 'bet' ? 'is-bet' : 'is-win';
-      var title = row.sport_name || row.game_name || row.game_code || 'Spor Kuponu';
-      var provider = row.vendor_code || 'sports-betby';
+      var title = row.__title || 'Bahis';
+      var provider = row.__provider || '—';
+      var itemLabel = source === 'casino' ? 'Oyun Adı' : 'Spor Adı';
       return '<article class="mprofile-bet-history-card">'
-        + '<div class="mprofile-bet-history-card-head"><strong>' + escapeHtml(sportsbookTypeText(type)) + '</strong><span class="mprofile-status-badge ' + (row.is_finished ? 'mprofile-status-approved' : 'mprofile-status-pending') + '">' + escapeHtml(sportsbookStatusText(row)) + '</span></div>'
+        + '<div class="mprofile-bet-history-card-head"><strong>' + escapeHtml((source === 'casino' ? 'CASINO ' : '') + sportsbookTypeText(type)) + '</strong><span class="mprofile-status-badge ' + (row.__is_finished ? 'mprofile-status-approved' : 'mprofile-status-pending') + '">' + escapeHtml(source === 'casino' ? casinoStatusText(row.status) : sportsbookStatusText(row)) + '</span></div>'
         + '<dl>'
-        + '<div><dt>Bahis Kimliği</dt><dd>' + escapeHtml(row.wager_id || row.txn_code || row.id || '—') + '</dd></div>'
-        + '<div><dt>Spor Adı</dt><dd>' + escapeHtml(title) + '</dd></div>'
+        + '<div><dt>Bahis Kimliği</dt><dd>' + escapeHtml(row.__id || '—') + '</dd></div>'
+        + '<div><dt>' + itemLabel + '</dt><dd>' + escapeHtml(title) + '</dd></div>'
         + '<div><dt>Sağlayıcı</dt><dd>' + escapeHtml(provider) + '</dd></div>'
         + '<div><dt>Tutar</dt><dd class="' + amountClass + '">' + escapeHtml(moneyText(amount)) + '</dd></div>'
-        + '<div><dt>Tarih</dt><dd>' + escapeHtml(formatDateTime(row.created_at)) + '</dd></div>'
+        + '<div><dt>Tarih</dt><dd>' + escapeHtml(formatDateTime(row.__created_at)) + '</dd></div>'
         + '</dl></article>';
     }).join('');
+  }
+
+  function historyItemsFromEnvelope(envelope) {
+    var data = envelope && envelope.data ? envelope.data : envelope;
+    if (Array.isArray(data && data.items)) return data.items;
+    if (Array.isArray(data && data.transactions)) return data.transactions;
+    if (Array.isArray(envelope && envelope.items)) return envelope.items;
+    if (Array.isArray(envelope && envelope.transactions)) return envelope.transactions;
+    return [];
   }
 
   function loadBetHistory(panel, force) {
@@ -938,11 +984,15 @@
       renderBetHistory(panel);
       return;
     }
-    fetch(apiUrl('/api/v2/sportsbook/history?limit=200&offset=0'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
-      .then(function (response) { return response.json(); })
-      .then(function (envelope) {
-        var data = envelope && envelope.data ? envelope.data : envelope;
-        betHistoryRows = Array.isArray(data && data.items) ? data.items : (Array.isArray(envelope && envelope.items) ? envelope.items : []);
+    var requestOptions = { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) };
+    Promise.all([
+      fetch(apiUrl('/api/v2/sportsbook/history?limit=200&offset=0'), requestOptions).then(function (response) { return response.json(); }).catch(function () { return null; }),
+      fetch(apiUrl('/api/v2/profile/casino-game-history?limit=200&offset=0'), requestOptions).then(function (response) { return response.json(); }).catch(function () { return null; })
+    ])
+      .then(function (results) {
+        var sportsRows = historyItemsFromEnvelope(results[0]).map(function (row) { return normalizeHistoryRow(row, 'sports'); });
+        var casinoRows = historyItemsFromEnvelope(results[1]).map(function (row) { return normalizeHistoryRow(row, 'casino'); });
+        betHistoryRows = sportsRows.concat(casinoRows);
         betHistoryLoaded = true;
         renderBetHistory(panel);
       })
