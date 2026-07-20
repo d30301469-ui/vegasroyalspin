@@ -193,6 +193,9 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   position: relative;
   cursor: pointer;
 }
+#mprofilePanel.mprofile-detail-active .back-nav-bc {
+  opacity: 1;
+}
 #mprofilePanel .back-nav-icon-bc {
   flex-shrink: 0;
   width: 20px;
