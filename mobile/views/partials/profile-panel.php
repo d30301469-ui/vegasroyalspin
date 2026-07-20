@@ -186,9 +186,17 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
           </div></div></div>
           <div class="m-block-nav-items-bc" id="mprofileWithdrawMethods"><p class="dw-methods-empty" role="status">Çekim yöntemleri yükleniyor...</p></div>
         </div>
-        <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="history" data-scroll-lock-scrollable hidden><p>İşlem geçmişi hazırlanıyor.</p></div>
-        <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="info" data-scroll-lock-scrollable hidden><p>Bilgi sayfası hazırlanıyor.</p></div>
-        <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="withdraws" data-scroll-lock-scrollable hidden><p>Para çekme durumu hazırlanıyor.</p></div>
+        <div class="dep-w-info-bc mprofile-history-page" data-mbalance-section="history" data-scroll-lock-scrollable hidden>
+          <div class="mprofile-history-filters" role="tablist" aria-label="İşlem geçmişi filtreleri"><button class="active" type="button" data-mbalance-history-filter="all">TÜMÜ</button><button type="button" data-mbalance-history-filter="deposit">YATIRIM</button><button type="button" data-mbalance-history-filter="withdraw">ÇEKİM</button></div>
+          <div class="mprofile-history-list" id="mprofileTransactionHistory"><p class="dw-methods-empty" role="status">İşlem geçmişi yükleniyor...</p></div>
+        </div>
+        <div class="dep-w-info-bc mprofile-info-page" data-mbalance-section="info" data-scroll-lock-scrollable hidden>
+          <div class="mprofile-info-group"><h3>PARA YATIR</h3><div class="mprofile-info-list" id="mprofileDepositInfo"><p class="dw-methods-empty" role="status">Yatırım bilgileri yükleniyor...</p></div></div>
+          <div class="mprofile-info-group"><h3>ÇEKİM</h3><div class="mprofile-info-list" id="mprofileWithdrawInfo"><p class="dw-methods-empty" role="status">Çekim bilgileri yükleniyor...</p></div></div>
+        </div>
+        <div class="dep-w-info-bc mprofile-withdraw-status-page" data-mbalance-section="withdraws" data-scroll-lock-scrollable hidden>
+          <div class="mprofile-history-list" id="mprofileWithdrawStatus"><p class="dw-methods-empty" role="status">Para çekme durumu yükleniyor...</p></div>
+        </div>
       </div>
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
         <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>

@@ -8,6 +8,10 @@
   var isOpen = false;
   var balanceMethodsLoaded = false;
   var withdrawMethodsLoaded = false;
+  var balanceInfoLoaded = false;
+  var transactionHistoryLoaded = false;
+  var withdrawStatusLoaded = false;
+  var transactionHistoryRows = [];
 
   function apiUrl(path) {
     return Shared.apiUrl ? Shared.apiUrl(path) : path;
@@ -94,6 +98,37 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function appendQuery(path, query) {
+    return path + (path.indexOf('?') === -1 ? '?' : '&') + query;
+  }
+
+  function moneyText(value) {
+    var num = Number(value);
+    if (!isFinite(num)) return '—';
+    try {
+      return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + ' ₺';
+    } catch (e) {
+      return num.toFixed(2) + ' ₺';
+    }
+  }
+
+  function dateText(value) {
+    if (!value) return '—';
+    var date = new Date(String(value).replace(' ', 'T'));
+    if (isNaN(date.getTime())) return String(value);
+    try {
+      return new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+    } catch (e) {
+      return String(value);
+    }
+  }
+
+  function statusText(status) {
+    var key = String(status || '').toLowerCase();
+    var map = { pending: 'Beklemede', processing: 'İşleniyor', approved: 'Onaylandı', confirmed: 'Onaylandı', completed: 'Tamamlandı', rejected: 'Reddedildi', failed: 'Başarısız', cancelled: 'İptal' };
+    return map[key] || status || '—';
   }
 
   /** Header'daki ana bakiyeyi panele yansıt. */
@@ -221,6 +256,135 @@
     return [];
   }
 
+  function extractHistoryRows(env, kind) {
+    var data = env && env.data != null ? env.data : env;
+    if (Array.isArray(data)) return data;
+    if (!data || typeof data !== 'object') return [];
+    var keys = kind === 'withdraw'
+      ? ['withdrawals', 'withdraws', 'items', 'rows', 'history', 'transactions', 'data']
+      : ['deposits', 'items', 'rows', 'history', 'transactions', 'data'];
+    for (var i = 0; i < keys.length; i++) {
+      if (Array.isArray(data[keys[i]])) return data[keys[i]];
+    }
+    return [];
+  }
+
+  function normalizeHistoryRow(row, kind) {
+    row = row && typeof row === 'object' ? row : {};
+    return {
+      kind: kind,
+      id: row.id || row.transaction_id || row.transactionId || row.trx || row.referenceCode || '',
+      method: row.method || row.method_name || row.payment_method || row.system || '—',
+      provider: row.provider || row.provider_name || '',
+      reference: row.referenceCode || row.reference_code || row.trx || row.transaction_id || '—',
+      amount: row.amount,
+      fee: row.fee,
+      status: row.status || '',
+      createdAt: row.createdAt || row.created_at || row.date || row.created || ''
+    };
+  }
+
+  function buildHistoryCard(row, showKind) {
+    var kindLabel = row.kind === 'withdraw' ? 'ÇEKİM' : 'YATIRIM';
+    var status = String(row.status || '').toLowerCase();
+    return '<article class="mprofile-history-card" data-history-kind="' + escapeHtml(row.kind) + '">' +
+      '<div class="mprofile-history-card-head"><strong>' + escapeHtml(showKind ? kindLabel : (row.method || kindLabel)) + '</strong><span class="mprofile-status-badge mprofile-status-' + escapeHtml(status) + '">' + escapeHtml(statusText(status)) + '</span></div>' +
+      '<dl><div><dt>Tarih Ve İD</dt><dd>' + escapeHtml(dateText(row.createdAt)) + (row.id ? ' #' + escapeHtml(row.id) : '') + '</dd></div>' +
+      '<div><dt>Sistem</dt><dd>' + escapeHtml(row.provider || row.method || '—') + '</dd></div>' +
+      '<div><dt>Referans</dt><dd>' + escapeHtml(row.reference || '—') + '</dd></div>' +
+      '<div><dt>Tutar</dt><dd>' + escapeHtml(moneyText(row.amount)) + '</dd></div>' +
+      (row.fee != null ? '<div><dt>Ücret</dt><dd>' + escapeHtml(moneyText(row.fee)) + '</dd></div>' : '') + '</dl></article>';
+  }
+
+  function renderTransactionHistory(filter) {
+    var list = document.getElementById('mprofileTransactionHistory');
+    if (!list) return;
+    filter = filter || 'all';
+    var rows = transactionHistoryRows.filter(function (row) { return filter === 'all' || row.kind === filter; });
+    if (!rows.length) {
+      list.innerHTML = '<p class="dw-methods-empty" role="status">Kayıt bulunamadı.</p>';
+      return;
+    }
+    list.innerHTML = rows.map(function (row) { return buildHistoryCard(row, true); }).join('');
+  }
+
+  function loadTransactionHistory() {
+    if (transactionHistoryLoaded) return;
+    var list = document.getElementById('mprofileTransactionHistory');
+    if (!list) return;
+    transactionHistoryLoaded = true;
+    var query = 'page=1&per_page=20';
+    Promise.all([
+      fetch(appendQuery(apiUrl('/api/v2/deposit-history'), query), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) }).then(function (res) { return res.json(); }),
+      fetch(appendQuery(apiUrl('/api/v2/withdraw-history'), query), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) }).then(function (res) { return res.json(); })
+    ]).then(function (packs) {
+      var deposits = extractHistoryRows(packs[0], 'deposit').map(function (row) { return normalizeHistoryRow(row, 'deposit'); });
+      var withdraws = extractHistoryRows(packs[1], 'withdraw').map(function (row) { return normalizeHistoryRow(row, 'withdraw'); });
+      transactionHistoryRows = deposits.concat(withdraws).sort(function (a, b) { return new Date(String(b.createdAt).replace(' ', 'T')).getTime() - new Date(String(a.createdAt).replace(' ', 'T')).getTime(); });
+      renderTransactionHistory('all');
+    }).catch(function () {
+      transactionHistoryLoaded = false;
+      list.innerHTML = '<p class="dw-methods-empty" role="status">İşlem geçmişi yüklenemedi.</p>';
+    });
+  }
+
+  function renderInfoRows(gridId, methods, emptyText) {
+    var grid = document.getElementById(gridId);
+    if (!grid) return;
+    if (!methods || !methods.length) {
+      grid.innerHTML = '<p class="dw-methods-empty" role="status">' + escapeHtml(emptyText) + '</p>';
+      return;
+    }
+    grid.innerHTML = methods.map(function (method) {
+      return '<div class="mprofile-info-row"><strong>' + escapeHtml(method.name || method.method_id || 'Ödeme') + '</strong><span>Ücret: Ücretsiz</span><span>İşlem Süresi: ' + escapeHtml(method.processing_time || 'Anlık') + '</span><span>Min: ' + escapeHtml(method.min_amount != null ? moneyText(method.min_amount) : '—') + '</span><span>Maks: ' + escapeHtml(method.max_amount != null ? moneyText(method.max_amount) : '—') + '</span></div>';
+    }).join('');
+  }
+
+  function loadBalanceInfo() {
+    if (balanceInfoLoaded) return;
+    balanceInfoLoaded = true;
+    fetch(apiUrl('/api/v2/payment-methods'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (res) { return res.json(); })
+      .then(function (env) {
+        var methods = env && env.success && env.data && Array.isArray(env.data.payment_methods) ? env.data.payment_methods : [];
+        renderInfoRows('mprofileDepositInfo', methods.filter(function (method) { return method && method.deposit_enabled; }), 'Listelenecek yatırım bilgisi bulunmuyor.');
+        var withdrawMethods = methods.filter(function (method) { return method && method.withdrawal_enabled; });
+        if (withdrawMethods.length) {
+          renderInfoRows('mprofileWithdrawInfo', withdrawMethods, 'Listelenecek çekim bilgisi bulunmuyor.');
+          return null;
+        }
+        return fetch(apiUrl('/api/v2/withdraw-payment'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+          .then(function (withdrawRes) { return withdrawRes.json(); })
+          .then(function (withdrawEnv) { renderInfoRows('mprofileWithdrawInfo', withdrawEnv && withdrawEnv.success && withdrawEnv.data ? extractWithdrawPaymentMethods(withdrawEnv.data) : [], 'Listelenecek çekim bilgisi bulunmuyor.'); });
+      })
+      .catch(function () {
+        balanceInfoLoaded = false;
+        renderInfoRows('mprofileDepositInfo', [], 'Yatırım bilgileri yüklenemedi.');
+        renderInfoRows('mprofileWithdrawInfo', [], 'Çekim bilgileri yüklenemedi.');
+      });
+  }
+
+  function loadWithdrawStatus() {
+    if (withdrawStatusLoaded) return;
+    var list = document.getElementById('mprofileWithdrawStatus');
+    if (!list) return;
+    withdrawStatusLoaded = true;
+    fetch(appendQuery(apiUrl('/api/v2/withdraw-history'), 'page=1&per_page=20'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (res) { return res.json(); })
+      .then(function (env) {
+        var rows = extractHistoryRows(env, 'withdraw').map(function (row) { return normalizeHistoryRow(row, 'withdraw'); });
+        if (!rows.length) {
+          list.innerHTML = '<p class="dw-methods-empty" role="status">Para Çekme Bilgisi Yok</p>';
+          return;
+        }
+        list.innerHTML = rows.map(function (row) { return buildHistoryCard(row, false); }).join('');
+      })
+      .catch(function () {
+        withdrawStatusLoaded = false;
+        list.innerHTML = '<p class="dw-methods-empty" role="status">Para çekme durumu yüklenemedi.</p>';
+      });
+  }
+
   function loadBalanceMethods() {
     if (balanceMethodsLoaded) return;
     var grid = document.getElementById('mprofileDepositMethods');
@@ -303,6 +467,9 @@
     });
     if (sectionName === 'deposit') loadBalanceMethods();
     if (sectionName === 'withdraw') loadWithdrawMethods();
+    if (sectionName === 'history') loadTransactionHistory();
+    if (sectionName === 'info') loadBalanceInfo();
+    if (sectionName === 'withdraws') loadWithdrawStatus();
   }
 
   function setPasswordMessage(panel, type, text) {
@@ -569,6 +736,16 @@
         if (withdrawCategoryItem) {
           e.preventDefault();
           filterWithdrawMethods(panel, withdrawCategoryItem.getAttribute('data-mbalance-withdraw-category') || 'all');
+          return;
+        }
+
+        var historyFilter = target.closest('[data-mbalance-history-filter]');
+        if (historyFilter) {
+          e.preventDefault();
+          panel.querySelectorAll('[data-mbalance-history-filter]').forEach(function (item) {
+            item.classList.toggle('active', item === historyFilter);
+          });
+          renderTransactionHistory(historyFilter.getAttribute('data-mbalance-history-filter') || 'all');
           return;
         }
 
