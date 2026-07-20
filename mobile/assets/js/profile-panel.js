@@ -37,7 +37,9 @@
     isOpen = true;
     syncBalance();
     syncBalanceRail(panel);
-    if (window.location.search.indexOf('page=two-factor-authentication') !== -1) {
+    if (window.location.search.indexOf('page=timeout-limits') !== -1) {
+      showProfileDetails(panel, 'timeout-limits');
+    } else if (window.location.search.indexOf('page=two-factor-authentication') !== -1) {
       showProfileDetails(panel, 'two-factor-authentication');
     } else if (window.location.search.indexOf('page=change-password') !== -1) {
       showProfileDetails(panel, 'change-password');
@@ -137,6 +139,14 @@
 
   function setPasswordMessage(panel, type, text) {
     var message = panel && panel.querySelector('[data-mprofile-password-message]');
+    if (!message) return;
+    message.textContent = text || '';
+    message.classList.toggle('is-error', type === 'error');
+    message.classList.toggle('is-success', type === 'success');
+  }
+
+  function setFreezeMessage(panel, type, text) {
+    var message = panel && panel.querySelector('[data-mprofile-freeze-message]');
     if (!message) return;
     message.textContent = text || '';
     message.classList.toggle('is-error', type === 'error');
@@ -243,6 +253,62 @@
       });
   }
 
+  function submitFreezeForm(panel) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    var form = panel.querySelector('#mprofileFreezeForm');
+    if (!form) return;
+    var input = form.querySelector('[name="password"]');
+    var password = input && input.value ? String(input.value) : '';
+    if (!password.trim()) {
+      setFreezeMessage(panel, 'error', 'Şifrenizi girin.');
+      return;
+    }
+
+    var button = panel.querySelector('#mprofileFreezeSaveBtn');
+    if (button) button.disabled = true;
+    setFreezeMessage(panel, '', '');
+
+    fetch(apiUrl('/api/v2/account-freeze'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: memberAuthHeaders({ 'Content-Type': 'application/json', 'Accept': 'application/json' }),
+      body: JSON.stringify({ password: password })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (env) {
+        if (env && env.success) {
+          var data = env.data || {};
+          var redirect = typeof data.redirect === 'string' && data.redirect.indexOf('/') === 0 ? data.redirect : '/login?account_frozen=1';
+          window.location.href = redirect;
+          return;
+        }
+        var message = (env && env.message) ? env.message : 'İşlem yapılamadı.';
+        var errors = env && env.data && env.data.errors;
+        if (errors && typeof errors === 'object') {
+          Object.keys(errors).some(function (key) {
+            var value = errors[key];
+            if (Array.isArray(value) && value.length) {
+              message = String(value[0]);
+              return true;
+            }
+            if (typeof value === 'string' && value) {
+              message = value;
+              return true;
+            }
+            return false;
+          });
+        }
+        setFreezeMessage(panel, 'error', message);
+      })
+      .catch(function () {
+        setFreezeMessage(panel, 'error', 'Sunucu hatası. Lütfen tekrar deneyin.');
+      })
+      .then(function () {
+        if (button) button.disabled = false;
+      });
+  }
+
   window.__openMobileProfilePanel = openPanel;
   window.__closeMobileProfilePanel = closePanel;
 
@@ -324,6 +390,13 @@
           return;
         }
 
+        var freezeLink = target.closest('a[href*="account=profile"][href*="page=timeout-limits"]');
+        if (freezeLink) {
+          e.preventDefault();
+          showProfileDetails(panel, 'timeout-limits');
+          return;
+        }
+
         var back = target.closest('.back-nav-bc');
         if (back) {
           e.preventDefault();
@@ -342,6 +415,13 @@
         if (passwordSubmit) {
           e.preventDefault();
           submitPasswordForm(panel);
+          return;
+        }
+
+        var freezeSubmit = target.closest('#mprofileFreezeSaveBtn');
+        if (freezeSubmit) {
+          e.preventDefault();
+          submitFreezeForm(panel);
         }
       });
 
@@ -349,6 +429,11 @@
         if (e.target && e.target.closest && e.target.closest('#mprofileChangePasswordForm')) {
           e.preventDefault();
           submitPasswordForm(panel);
+          return;
+        }
+        if (e.target && e.target.closest && e.target.closest('#mprofileFreezeForm')) {
+          e.preventDefault();
+          submitFreezeForm(panel);
         }
       });
 
