@@ -1014,7 +1014,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   width: 100%;
   position: relative;
   z-index: 10;
-  margin: 0 0 92px;
+  margin: 0 0 10px;
   padding: 0;
   background: transparent;
 }
@@ -1196,6 +1196,68 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   line-height: 18px;
   text-align: center;
   text-transform: uppercase;
+}
+#mprofilePanel .mprofile-bet-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#mprofilePanel .mprofile-bet-history-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  background: rgba(24, 22, 40, 0.72);
+  padding: 10px;
+  color: #fff;
+}
+#mprofilePanel .mprofile-bet-history-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+#mprofilePanel .mprofile-bet-history-card-head strong {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+#mprofilePanel .mprofile-bet-history-card dl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+#mprofilePanel .mprofile-bet-history-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+#mprofilePanel .mprofile-bet-history-card dt,
+#mprofilePanel .mprofile-bet-history-card dd {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+}
+#mprofilePanel .mprofile-bet-history-card dt {
+  flex: 0 0 38%;
+  color: rgba(255, 255, 255, 0.56);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+#mprofilePanel .mprofile-bet-history-card dd {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.92);
+  text-align: right;
+  word-break: break-word;
+}
+#mprofilePanel .mprofile-bet-history-card dd.is-bet {
+  color: #ff8f8f;
+}
+#mprofilePanel .mprofile-bet-history-card dd.is-win {
+  color: #7bffb2;
 }
 #mprofilePanel .mprofile-status-badge {
   flex-shrink: 0;

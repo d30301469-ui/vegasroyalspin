@@ -247,7 +247,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
               </form></div>
             </div>
           </div>
-          <p class="empty-b-text-v-bc">GÖSTERİLECEK BAHİS YOK</p>
+          <div class="mprofile-bet-history-list" id="mprofileBetHistoryList" data-mbet-history-list><p class="empty-b-text-v-bc" role="status">BAHİS GEÇMİŞİ YÜKLENİYOR...</p></div>
         </div>
       </div>
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
