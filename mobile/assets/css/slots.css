@@ -943,16 +943,17 @@ body.mobile-site .sidebar-overlay.active {
 
   /* Live hotfix: arama çubuğu daralıp ikona sıkışmasın */
   body.mobile-site .slot-page-root.slot-page-root--unified .casinoTitleSearch {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     width: 100%;
   }
 
   body.mobile-site .slot-page-root.slot-page-root--unified .games-search-expand {
-    display: block;
-    width: 100%;
+    order: 1;
+    display: flex;
+    flex: 1 1 150px;
     min-width: 0;
     margin-left: 0;
   }
@@ -976,5 +977,247 @@ body.mobile-site .sidebar-overlay.active {
     min-width: 0;
     opacity: 1 !important;
     pointer-events: auto !important;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle {
+    order: 2;
+    flex: 0 0 auto;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .random-game-btn {
+    order: 3;
+    flex: 0 0 auto;
+  }
+}
+
+/* CasinoMilyon-style mobile slot lobby surface */
+@media (max-width: 768px) {
+  body.mobile-site .slot-page-root.slot-page-root--unified {
+    background: #080a14;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .slot-top-section {
+    display: none;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casino-container {
+    padding-top: 2px;
+    background: #080a14;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .slots-filter-and-games {
+    background: #080a14;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .slots-category-filters.category-tabs-wrapper {
+    margin: 0;
+    width: 100%;
+    border: 0;
+    background: #080a14;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .slots-category-filters .category-tabs-scroll {
+    gap: 6px;
+    padding: 8px 8px 6px;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .slots-category-filters .cat-tab {
+    display: inline-flex;
+    width: auto;
+    max-width: none;
+    min-width: max-content;
+    min-height: 30px;
+    height: 30px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 0;
+    background: #1a1e2a;
+    color: #c8cedc;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .slots-category-filters .cat-tab.active {
+    background: #3340ff;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .slots-category-filters .cat-tab i {
+    font-size: 13px;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .slots-category-filters .horCatItemTitle {
+    max-width: 154px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoProviderRow {
+    display: none;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoGameListBlockHeader {
+    padding: 6px 8px 8px;
+    background: #080a14;
+    border: 0;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoTitleSearch {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(118px, auto);
+    gap: 7px;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoTitleSearch > .selectedProviderBlock,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoTitleSearch > .tooltipIconWrapper {
+    display: none !important;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .games-search-expand {
+    grid-column: 1;
+    grid-row: 1;
+    order: initial;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .games-search-expand .games-search-bar,
+  body.mobile-site .slot-page-root.slot-page-root--unified .games-search-expand.is-expanded .games-search-bar {
+    height: 42px;
+    border: 0;
+    border-radius: 5px;
+    background: #171b25;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .games-search-expand .games-search-input,
+  body.mobile-site .slot-page-root.slot-page-root--unified .games-search-expand.is-expanded .games-search-input {
+    padding: 13px 8px 5px 10px;
+    color: #fff;
+    font-size: 12px;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .games-search-expand .games-search-input::placeholder {
+    color: #9fa6b7;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .games-search-expand .games-search-icon-btn,
+  body.mobile-site .slot-page-root.slot-page-root--unified .games-search-expand:not(.is-expanded) .games-search-icon-btn {
+    width: 36px;
+    min-width: 36px;
+    height: 42px;
+    border-radius: 0 5px 5px 0;
+    color: #aeb6c7;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle {
+    grid-column: 2;
+    grid-row: 1;
+    order: initial;
+    width: 100%;
+    height: 42px;
+    min-height: 42px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 5px;
+    background: #171b25;
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle__pill {
+    gap: 7px;
+    justify-content: space-between;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle__pill .fa-filter {
+    order: 2;
+    font-size: 15px;
+    color: #cdd5e5;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle__pill-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: #cdd5e5;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle__count {
+    display: none;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .random-game-btn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    order: initial;
+    display: inline-flex !important;
+    width: 100%;
+    height: 36px;
+    min-height: 36px;
+    border: 0;
+    border-radius: 999px;
+    background: #1b2030;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .slots-games-container {
+    padding: 0 8px calc(12px + var(--tab-navigation-height, 48px) + env(safe-area-inset-bottom, 0px));
+    background: #080a14;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoCategoryGames {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding: 0 0 12px;
+    background: #080a14;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoGameItemContent {
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoGameItem,
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoGameItemImage {
+    border-radius: 6px;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoGameItemImage {
+    display: block;
+    width: 100%;
+    aspect-ratio: 44 / 31;
+    object-fit: cover;
+    background: #171b25;
+  }
+}
+
+@media (max-width: 380px) {
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoTitleSearch {
+    grid-template-columns: minmax(0, 1fr) 42px;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle {
+    padding: 0;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle__pill {
+    justify-content: center;
+  }
+
+  body.mobile-site .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle__pill-text {
+    display: none;
   }
 }
