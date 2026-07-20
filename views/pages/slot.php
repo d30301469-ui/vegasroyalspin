@@ -324,6 +324,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                         </div>
                     </div>
                     <?php foreach ($slotCategoryItems as $category): ?>
+                        <?php if ($slotMobileOriginalNav && ($category['sort'] ?? '') === 'special') { continue; } ?>
                         <?php $isActive = $currentSort !== '' && $category['sort'] === $currentSort; ?>
                         <?php $originalCategoryClass = $slotOriginalCategoryClassBySort[$category['sort']] ?? preg_replace('/[^A-Za-z0-9]/', '', ucwords((string) $category['slug'], '-_')); ?>
                         <div<?= $originalCategoryClass !== '' ? ' class="category-' . htmlspecialchars($originalCategoryClass, ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
