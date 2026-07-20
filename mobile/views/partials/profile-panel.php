@@ -12,6 +12,53 @@ $panelUsername = trim((string) ($_SESSION['username'] ?? ''));
 $panelUserId = (string) ($_SESSION['user_id'] ?? '');
 $panelInitial = strtoupper(mb_substr($panelUsername !== '' ? $panelUsername : 'U', 0, 2));
 
+$panelNormalizeDateInput = static function (string $value): string {
+  $value = trim($value);
+  if ($value === '') {
+    return '';
+  }
+  if (preg_match('/^\d{4}-\d{2}-\d{2}/', $value, $match) === 1) {
+    return (string) ($match[0] ?? '');
+  }
+  $timestamp = strtotime($value);
+  return $timestamp !== false ? date('Y-m-d', $timestamp) : '';
+};
+$panelNormalizeGenderLabel = static function (string $value): string {
+  $gender = strtolower(trim($value));
+  return match ($gender) {
+    'male', 'm', 'erkek' => 'Erkek',
+    'female', 'f', 'kadın', 'kadin' => 'Kadın',
+    'other', 'o', 'diğer', 'diger' => 'Diğer',
+    default => trim($value),
+  };
+};
+$panelNormalizeCountryLabel = static function (string $value): string {
+  $country = strtoupper(trim($value));
+  if ($country === 'TR' || $country === 'TUR' || $country === 'TURKEY') {
+    return 'Türkiye';
+  }
+  return trim($value);
+};
+$panelProfile = [];
+if (!class_exists('MemberViewDataService', false) && defined('BASE_PATH') && is_readable(BASE_PATH . '/services/MemberViewDataService.php')) {
+  require_once BASE_PATH . '/services/MemberViewDataService.php';
+}
+if (class_exists('MemberViewDataService')) {
+  $panelProfile = MemberViewDataService::profileForSession();
+}
+$panelProfileUsername = trim((string) ($panelProfile['username'] ?? $panelUsername));
+if ($panelProfileUsername === '') {
+  $panelProfileUsername = $panelUsername;
+}
+$panelFirstName = trim((string) ($panelProfile['name'] ?? $panelProfile['first_name'] ?? ''));
+$panelSurname = trim((string) ($panelProfile['surname'] ?? $panelProfile['last_name'] ?? ''));
+$panelDob = $panelNormalizeDateInput((string) ($panelProfile['dob'] ?? $panelProfile['birth_date'] ?? ''));
+$panelGender = $panelNormalizeGenderLabel((string) ($panelProfile['gender'] ?? ''));
+$panelCountry = $panelNormalizeCountryLabel((string) ($panelProfile['country'] ?? ''));
+$panelCountry = $panelCountry !== '' ? $panelCountry : 'Türkiye';
+$panelCity = trim((string) ($panelProfile['city'] ?? ''));
+$panelAddress = trim((string) ($panelProfile['address'] ?? ''));
+
 $panelBadge = isset($headerLoyaltyBadge) && is_array($headerLoyaltyBadge) ? $headerLoyaltyBadge : [];
 $panelLoyaltyName = (string) ($panelBadge['name'] ?? 'Bronze');
 $panelLoyaltyIconMap = [
@@ -103,6 +150,37 @@ if (class_exists('ApiMediaUrl', false)) {
         </div>
         <div class="promoCodeWrapper-bc profile-panel-promo-code"><form onsubmit="return false;"><div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="promoCode" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">PROMOSYON KODU</span></label></div></div><div class="u-i-p-c-footer-bc"><button class="btn a-color big-btn" type="submit" title="UYGULA " disabled><span>UYGULA </span></button></div></form></div>
         <button class="userLogoutBtn btn" type="button"><i class="userLogoutIcon bc-i-logout" aria-hidden="true"></i><span>Çıkış Yap</span></button>
+      </div>
+      <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
+        <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left" aria-hidden="true"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>
+        <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
+          <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=profile&amp;page=details"><span class="nav-menu-title">KİŞİSEL DETAYLAR<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=change-password"><span class="nav-menu-title">ŞİFRE DEĞİŞTİR<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=two-factor-authentication"><span class="nav-menu-title">İKİ AŞAMALI KORUMA (2FA)<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=timeout-limits"><span class="nav-menu-title">HESABI DONDUR<i class="count-blink-even" data-badge=""></i></span></a>
+        </div></div>
+        <div class="u-i-e-p-p-content-bc u-i-common-content user-profile" data-scroll-lock-scrollable>
+          <form onsubmit="return false;">
+            <div class="userProfile-content" data-scroll-lock-scrollable>
+              <div class="userProfileWrapper-bc userProfileSection-0">
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="username" readonly step="0" value="<?= htmlspecialchars($panelProfileUsername, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Kullanıcı adı *</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="first_name" readonly step="0" value="<?= htmlspecialchars($panelFirstName, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Adı *</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="last_name" readonly step="0" value="<?= htmlspecialchars($panelSurname, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Soyadı *</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="birth_date" readonly step="0" value="<?= htmlspecialchars($panelDob, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Doğum tarihi *</span></label></div><i class="dropdownIcon-bc bc-i-datepicker disabled" aria-hidden="true"></i></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon focused valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="gender" readonly step="0" value="<?= htmlspecialchars($panelGender, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Cinsiyet *</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc dropdownArrowParent-bc"><div class="form-controls-field-bc country-code"><label class="form-control-label-bc form-control-select-bc inputs"><i class="ftr-lang-bar-flag-bc flag-bc turkey" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Ülke</span><?= htmlspecialchars($panelCountry, ENT_QUOTES, 'UTF-8') ?></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="city" step="0" value="<?= htmlspecialchars($panelCity, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Şehir</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="address" step="0" value="<?= htmlspecialchars($panelAddress, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Adres</span></label></div></div>
+              </div>
+              <div class="userProfileWrapper-bc userProfileSection-1">
+                <div class="u-i-p-control-item-holder-bc"><hr class="passwordAboveSeparator"></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="entrance-f-item-bc"><div class="entrance-f-error-message-bc">Değişiklikleri kaydetmek için şifrenizi girin.</div></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default has-icon"><label class="form-control-label-bc inputs"><input type="password" class="form-control-input-bc" name="password" step="1" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Geçerli Şifre *</span></label></div></div>
+              </div>
+            </div>
+            <div class="u-i-p-c-footer-bc"><button class="btn a-color right-aligned" type="submit" title="DEĞİŞİKLİKLERİ KAYDET" disabled><span>DEĞİŞİKLİKLERİ KAYDET</span></button></div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
