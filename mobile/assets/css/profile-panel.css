@@ -1639,28 +1639,31 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   line-height: 16px;
 }
 #mprofilePanel .mprofile-crypto-popup {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  top: 12px;
+  position: fixed !important;
+  left: 20px !important;
+  right: 33px !important;
+  top: 18px !important;
   z-index: 30;
-  min-height: 482px;
-  padding: 60px 12px 12px;
-  background: #56135f;
+  height: 517px !important;
+  min-height: 0 !important;
+  max-height: calc(100vh - 38px) !important;
+  padding: 61px 13px 34px !important;
+  background: #56135f !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
-  border-radius: 2px;
+  border-radius: 0 !important;
   color: #cfc8d8;
+  overflow: hidden !important;
 }
 #mprofilePanel .mprofile-crypto-popup[hidden] {
   display: none !important;
 }
 #mprofilePanel .mprofile-crypto-popup .e-p-close-icon-bc {
   position: absolute;
-  top: 12px;
-  right: 14px;
+  top: 11px !important;
+  right: 12px !important;
   color: #cfc8d8;
-  font-size: 20px;
-  line-height: 20px;
+  font-size: 17px !important;
+  line-height: 17px !important;
 }
 #mprofilePanel .mprofile-crypto-popup .status-popup-content-w-bc,
 #mprofilePanel .mprofile-crypto-popup .multi-select-bc,
@@ -1669,53 +1672,74 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 #mprofilePanel .mprofile-crypto-popup .form-control-bc {
   position: relative;
-  background: transparent;
-  border-radius: 0;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
 }
 #mprofilePanel .mprofile-crypto-popup .form-control-input-bc {
-  width: 100%;
-  height: 40px;
-  border: 0;
-  background: #6b3972;
-  color: #fff;
-  padding: 0 38px 0 14px;
-  font-size: 12px;
-  outline: 0;
+  width: 100% !important;
+  height: 38px !important;
+  border: 0 !important;
+  background: #6b3972 !important;
+  color: #d1c8d8 !important;
+  padding: 0 37px 0 15px !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  outline: 0 !important;
+  line-height: 38px !important;
 }
 #mprofilePanel .mprofile-crypto-popup .form-control-input-bc::placeholder {
   color: rgba(255, 255, 255, .45);
 }
 #mprofilePanel .mprofile-crypto-popup .ss-icon-bc {
   position: absolute;
-  right: 14px;
-  top: 11px;
+  left: auto !important;
+  right: 17px !important;
+  top: 10px !important;
+  width: 16px !important;
+  height: 16px !important;
   color: rgba(255, 255, 255, .55);
-  font-size: 18px;
+  font-size: 14px !important;
+  line-height: 16px !important;
+  pointer-events: none !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+#mprofilePanel .mprofile-crypto-popup .ss-icon-bc::before {
+  position: static !important;
+  display: block !important;
 }
 #mprofilePanel .mprofile-crypto-popup .multi-select-label-bc {
-  max-height: 384px;
-  overflow-y: auto;
-  background: #2f2f31;
+  max-height: 384px !important;
+  overflow-y: auto !important;
+  background: #2f2f31 !important;
   box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
 }
 #mprofilePanel .mprofile-crypto-popup .checkbox-control-content-bc {
   display: flex;
   align-items: center;
-  height: 43px;
-  padding: 0 14px;
+  height: 43px !important;
+  min-height: 43px !important;
+  padding: 0 15px !important;
   border-bottom: 1px solid rgba(255, 255, 255, .055);
-  background: #303032;
-  color: #cfcfcf;
-  font-size: 11px;
-  font-weight: 700;
+  background: #303032 !important;
+  color: #cfcfcf !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 43px !important;
 }
 #mprofilePanel .mprofile-crypto-popup .checkbox-control-content-bc.active {
-  background: #3a3a3d;
-  color: #fff;
+  background: #3a3a3d !important;
+  color: #fff !important;
 }
 #mprofilePanel .mprofile-crypto-popup .checkbox-control-text-bc {
-  margin: 0;
-  max-width: 100%;
+  margin: 0 !important;
+  max-width: 100% !important;
+  font-size: 11px !important;
+  line-height: 43px !important;
 }
 #mprofilePanel .userProfile-content {
   flex: 1;
