@@ -191,13 +191,35 @@
     }
 
     function showFatal(msg) {
+        var message = String(msg || 'Oyun baslatilamadi.').trim();
         var ov = document.getElementById('playErrorOverlay');
         var t = document.getElementById('playErrorText');
         if (t) {
-            t.textContent = msg;
+            t.textContent = message;
         }
         if (ov) {
             ov.hidden = false;
+            return;
+        }
+
+        var fallback = document.getElementById('playFatalFallback');
+        if (!fallback) {
+            fallback = document.createElement('div');
+            fallback.id = 'playFatalFallback';
+            fallback.setAttribute('role', 'alert');
+            fallback.style.cssText = 'position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px;background:#0f0522;color:#fff;font-family:Segoe UI,system-ui,-apple-system,sans-serif;text-align:center;';
+            fallback.innerHTML = '<div style="max-width:420px"><div id="playFatalFallbackText" style="font-size:15px;font-weight:700;line-height:1.45;margin-bottom:14px"></div><button type="button" id="playFatalFallbackBack" style="border:0;border-radius:10px;background:#FCAC00;color:#16061f;font-weight:800;padding:10px 16px;cursor:pointer">Oyunlara Don</button></div>';
+            document.body.appendChild(fallback);
+            var back = document.getElementById('playFatalFallbackBack');
+            if (back) {
+                back.onclick = function () {
+                    window.location.href = playHomeUrl();
+                };
+            }
+        }
+        var fallbackText = document.getElementById('playFatalFallbackText');
+        if (fallbackText) {
+            fallbackText.textContent = message;
         }
     }
 
