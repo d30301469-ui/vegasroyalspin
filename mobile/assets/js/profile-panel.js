@@ -91,6 +91,28 @@
     return '';
   }
 
+  function requestedBonusSection() {
+    var pathname = (window.location.pathname || '').replace(/\/+$/, '');
+    var pathMap = {
+      '/profile/bonus-spor': 'sport',
+      '/profile/bonus-casino': 'casino',
+      '/profile/bonus-history': 'bonus-history',
+      '/profile/freespin': 'casino-free-spins',
+      '/profile/sadakat-puanlari': 'loyalty-points'
+    };
+    if (pathname === '/profile/bonuses') return 'bonus-request';
+    if (pathMap[pathname]) return pathMap[pathname];
+    var params;
+    try {
+      params = new URLSearchParams(window.location.search || '');
+    } catch (e) {
+      return '';
+    }
+    if (params.get('profile') !== 'open' || params.get('account') !== 'bonuses') return '';
+    var page = params.get('page') || 'bonus-request';
+    return ['bonus-request', 'sport', 'sports', 'casino', 'bonus-history', 'history', 'promo-code', 'casino-free-spins', 'freespins', 'loyalty-points'].indexOf(page) !== -1 ? normalizeBonusPage(page) : 'bonus-request';
+  }
+
   function openPanel() {
     var panel = getPanel();
     var overlay = getOverlay();
@@ -109,20 +131,25 @@
     isOpen = true;
     syncBalance();
     syncBalanceRail(panel);
-    var casinoHistorySection = requestedCasinoHistorySection();
-    if (casinoHistorySection) {
-      showCasinoHistoryPage(panel, casinoHistorySection);
+    var bonusSection = requestedBonusSection();
+    if (bonusSection) {
+      showBonusesPage(panel, bonusSection);
     } else {
-      var betHistorySection = requestedBetHistorySection();
-      if (betHistorySection) {
-        showBetHistoryPage(panel, betHistorySection);
+      var casinoHistorySection = requestedCasinoHistorySection();
+      if (casinoHistorySection) {
+        showCasinoHistoryPage(panel, casinoHistorySection);
       } else {
-        var balanceSection = requestedBalanceSection();
-        if (balanceSection) {
-          showBalancePage(panel, balanceSection);
+        var betHistorySection = requestedBetHistorySection();
+        if (betHistorySection) {
+          showBetHistoryPage(panel, betHistorySection);
         } else {
-          var section = requestedProfileSection();
-          if (section) showProfileDetails(panel, section);
+          var balanceSection = requestedBalanceSection();
+          if (balanceSection) {
+            showBalancePage(panel, balanceSection);
+          } else {
+            var section = requestedProfileSection();
+            if (section) showProfileDetails(panel, section);
+          }
         }
       }
     }
@@ -198,6 +225,14 @@
     if (status === 'cancel' || status === 'cancelled' || status === 'refund') return 'İADE EDİLDİ';
     if (status === 'failed' || status === 'error') return 'BAŞARISIZ';
     return 'TAMAMLANDI';
+  }
+
+  function normalizeBonusPage(pageName) {
+    pageName = String(pageName || '').toLowerCase();
+    if (pageName === 'sports') return 'sport';
+    if (pageName === 'history') return 'bonus-history';
+    if (pageName === 'freespins') return 'casino-free-spins';
+    return ['bonus-request', 'sport', 'casino', 'bonus-history', 'promo-code', 'casino-free-spins', 'loyalty-points'].indexOf(pageName) !== -1 ? pageName : 'bonus-request';
   }
 
   function normalizeHistoryRow(row, source) {
@@ -314,6 +349,7 @@
     panel.classList.remove('mprofile-balance-active');
     panel.classList.remove('mprofile-bet-history-active');
     panel.classList.remove('mprofile-casino-history-active');
+    panel.classList.remove('mprofile-bonuses-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
     var balance = panel.querySelector('[data-mprofile-view="balance"]');
@@ -322,6 +358,8 @@
     if (betHistory) betHistory.setAttribute('aria-hidden', 'true');
     var casinoHistory = panel.querySelector('[data-mprofile-view="casino-history"]');
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
+    var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
+    if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
   }
 
   function showProfileDetails(panel, sectionName) {
@@ -332,6 +370,7 @@
     panel.classList.remove('mprofile-balance-active');
     panel.classList.remove('mprofile-bet-history-active');
     panel.classList.remove('mprofile-casino-history-active');
+    panel.classList.remove('mprofile-bonuses-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'false');
     var balance = panel.querySelector('[data-mprofile-view="balance"]');
@@ -340,6 +379,8 @@
     if (betHistory) betHistory.setAttribute('aria-hidden', 'true');
     var casinoHistory = panel.querySelector('[data-mprofile-view="casino-history"]');
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
+    var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
+    if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
     panel.querySelectorAll('[data-mprofile-section]').forEach(function (section) {
       var isActive = section.getAttribute('data-mprofile-section') === sectionName;
       section.hidden = !isActive;
@@ -882,6 +923,7 @@
     panel.classList.remove('mprofile-detail-active');
     panel.classList.remove('mprofile-bet-history-active');
     panel.classList.remove('mprofile-casino-history-active');
+    panel.classList.remove('mprofile-bonuses-active');
     panel.classList.add('mprofile-balance-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
@@ -889,6 +931,8 @@
     if (betHistory) betHistory.setAttribute('aria-hidden', 'true');
     var casinoHistory = panel.querySelector('[data-mprofile-view="casino-history"]');
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
+    var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
+    if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
     var balance = panel.querySelector('[data-mprofile-view="balance"]');
     if (balance) balance.setAttribute('aria-hidden', 'false');
     panel.querySelectorAll('[data-mbalance-section]').forEach(function (section) {
@@ -911,6 +955,7 @@
     panel.classList.remove('mprofile-detail-active');
     panel.classList.remove('mprofile-balance-active');
     panel.classList.remove('mprofile-casino-history-active');
+    panel.classList.remove('mprofile-bonuses-active');
     panel.classList.add('mprofile-bet-history-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
@@ -920,6 +965,8 @@
     if (betHistory) betHistory.setAttribute('aria-hidden', 'false');
     var casinoHistory = panel.querySelector('[data-mprofile-view="casino-history"]');
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
+    var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
+    if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
     panel.querySelectorAll('[data-mbet-history-tab]').forEach(function (tab) {
       tab.classList.toggle('active', tab.getAttribute('data-mbet-history-tab') === pageName);
     });
@@ -935,6 +982,7 @@
     panel.classList.remove('mprofile-detail-active');
     panel.classList.remove('mprofile-balance-active');
     panel.classList.remove('mprofile-bet-history-active');
+    panel.classList.remove('mprofile-bonuses-active');
     panel.classList.add('mprofile-casino-history-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
@@ -944,12 +992,38 @@
     if (betHistory) betHistory.setAttribute('aria-hidden', 'true');
     var casinoHistory = panel.querySelector('[data-mprofile-view="casino-history"]');
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'false');
+    var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
+    if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
     panel.querySelectorAll('[data-mcasino-history-tab]').forEach(function (tab) {
       tab.classList.toggle('active', tab.getAttribute('data-mcasino-history-tab') === pageName);
     });
     activeCasinoHistoryPage = pageName;
     if (casinoHistoryLoaded) renderCasinoHistory(panel);
     else loadCasinoHistory(panel);
+  }
+
+  function showBonusesPage(panel, pageName) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    pageName = normalizeBonusPage(pageName);
+    panel.classList.remove('mprofile-detail-active');
+    panel.classList.remove('mprofile-balance-active');
+    panel.classList.remove('mprofile-bet-history-active');
+    panel.classList.remove('mprofile-casino-history-active');
+    panel.classList.add('mprofile-bonuses-active');
+    var detail = panel.querySelector('[data-mprofile-view="details"]');
+    if (detail) detail.setAttribute('aria-hidden', 'true');
+    var balance = panel.querySelector('[data-mprofile-view="balance"]');
+    if (balance) balance.setAttribute('aria-hidden', 'true');
+    var betHistory = panel.querySelector('[data-mprofile-view="bet-history"]');
+    if (betHistory) betHistory.setAttribute('aria-hidden', 'true');
+    var casinoHistory = panel.querySelector('[data-mprofile-view="casino-history"]');
+    if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
+    var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
+    if (bonuses) bonuses.setAttribute('aria-hidden', 'false');
+    panel.querySelectorAll('[data-mbonus-tab]').forEach(function (tab) {
+      tab.classList.toggle('active', tab.getAttribute('data-mbonus-tab') === pageName);
+    });
   }
 
   function rowMatchesBetHistoryPage(row, pageName) {
@@ -1373,7 +1447,11 @@
       var initialBalanceSection = requestedBalanceSection();
       var initialBetHistorySection = requestedBetHistorySection();
       var initialCasinoHistorySection = requestedCasinoHistorySection();
-      if (initialCasinoHistorySection) {
+      var initialBonusSection = requestedBonusSection();
+      if (initialBonusSection) {
+        openPanel();
+        showBonusesPage(panel, initialBonusSection);
+      } else if (initialCasinoHistorySection) {
         openPanel();
         showCasinoHistoryPage(panel, initialCasinoHistorySection);
       } else if (initialBetHistorySection) {
@@ -1428,7 +1506,26 @@
             showCasinoHistoryPage(panel, 'bets');
             return;
           }
+          if (menuItem.getAttribute('data-href') === '/profile/bonus-spor') {
+            showBonusesPage(panel, 'bonus-request');
+            return;
+          }
           window.location.href = menuItem.getAttribute('data-href');
+          return;
+        }
+
+        var bonusLink = target.closest('a[href*="account=bonuses"], [data-mbonus-tab]');
+        if (bonusLink) {
+          e.preventDefault();
+          var bonusPage = bonusLink.getAttribute('data-mbonus-tab') || '';
+          if (!bonusPage) {
+            try {
+              bonusPage = new URL(bonusLink.getAttribute('href') || '', window.location.origin).searchParams.get('page') || 'bonus-request';
+            } catch (err) {
+              bonusPage = 'bonus-request';
+            }
+          }
+          showBonusesPage(panel, bonusPage);
           return;
         }
 
