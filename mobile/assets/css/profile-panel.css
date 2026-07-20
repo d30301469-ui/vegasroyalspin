@@ -918,6 +918,44 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .mprofile-twofa-section {
   padding-top: 14px;
 }
+#mprofilePanel .mprofile-freeze-section {
+  padding-top: 18px;
+}
+#mprofilePanel .profile-security-single--freeze {
+  width: 100%;
+}
+#mprofilePanel .freeze-text {
+  margin: 0 0 18px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+#mprofilePanel .freeze-hint {
+  margin: 0 0 12px;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.72);
+  font-size: 12px;
+  line-height: 18px;
+}
+#mprofilePanel .freeze-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+#mprofilePanel .freeze-password-field {
+  width: 100%;
+  margin-bottom: 10px;
+}
+#mprofilePanel .mprofile-freeze-section .form-control-input-bc {
+  min-height: 52px;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.15);
+}
+#mprofilePanel .mprofile-freeze-section .u-i-p-c-footer-bc {
+  margin-top: 14px;
+}
+#mprofilePanel .mprofile-freeze-section .u-i-p-c-footer-bc .btn {
+  height: 42px;
+}
 #mprofilePanel .profile-security-single--twofa {
   width: 100%;
 }

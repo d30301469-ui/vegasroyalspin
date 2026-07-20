@@ -165,7 +165,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
           <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=profile&amp;page=details" data-mprofile-tab="details"><span class="nav-menu-title">KİŞİSEL DETAYLAR<i class="count-blink-even" data-badge=""></i></span></a>
           <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=change-password" data-mprofile-tab="change-password"><span class="nav-menu-title">ŞİFRE DEĞİŞTİR<i class="count-blink-even" data-badge=""></i></span></a>
           <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=two-factor-authentication" data-mprofile-tab="two-factor-authentication"><span class="nav-menu-title">İKİ AŞAMALI KORUMA (2FA)<i class="count-blink-even" data-badge=""></i></span></a>
-          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=timeout-limits"><span class="nav-menu-title">HESABI DONDUR<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=timeout-limits" data-mprofile-tab="timeout-limits"><span class="nav-menu-title">HESABI DONDUR<i class="count-blink-even" data-badge=""></i></span></a>
         </div></div>
         <div class="u-i-e-p-p-content-bc u-i-common-content user-profile" data-mprofile-section="details" data-scroll-lock-scrollable>
           <form onsubmit="return false;">
@@ -213,6 +213,17 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
                 <span class="twofa-toggle-slider"></span>
               </label>
             </div>
+          </div>
+        </div>
+        <div class="u-i-e-p-p-content-bc u-i-common-content user-profile mprofile-freeze-section" data-mprofile-section="timeout-limits" data-scroll-lock-scrollable hidden>
+          <div class="profile-security-single profile-security-single--freeze" id="mprofileFreezeAccount">
+            <p class="freeze-text">Hesabınızı dondurduğunuzda oturumunuz sonlanır ve mevcut giriş anahtarınız geçersiz olur. Tekrar siteyi kullanmak için hesap dondurmayı kaldırmanız gerekir.</p>
+            <p class="personal-details-hint freeze-hint">Onaylamak için hesap şifrenizi girin.</p>
+            <form id="mprofileFreezeForm" class="freeze-form" action="#" autocomplete="off" onsubmit="return false;">
+              <div class="u-i-p-control-item-holder-bc freeze-password-field"><div class="form-control-bc default has-icon"><label class="form-control-label-bc inputs"><input type="password" class="form-control-input-bc" id="mprofileFreezePassword" name="password" required step="0" value="" autocomplete="current-password"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Hesap şifresi *</span></label></div></div>
+              <div class="mprofile-form-message" data-mprofile-freeze-message role="status" aria-live="polite"></div>
+              <div class="u-i-p-c-footer-bc freeze-footer"><button class="btn a-color right-aligned" type="submit" id="mprofileFreezeSaveBtn" title="HESABI DONDUR"><span>HESABI DONDUR</span></button></div>
+            </form>
           </div>
         </div>
       </div>
