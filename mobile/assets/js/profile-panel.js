@@ -488,6 +488,11 @@
     return isFinite(value) ? value : fallback;
   }
 
+  function paymentSiteName() {
+    var panel = getPanel();
+    return String((panel && panel.getAttribute('data-site-name')) || document.documentElement.getAttribute('data-site-name') || 'VegasRoyalSpin').trim() || 'VegasRoyalSpin';
+  }
+
   function setPaymentModalMessage(type, text) {
     var message = document.querySelector('#mprofilePaymentModal [data-mprofile-payment-message]');
     if (!message) return;
@@ -547,7 +552,7 @@
     var extraFields = kind === 'withdraw' ? withdrawExtraFieldsHtml(method) : depositExtraFieldsHtml(method);
     return '<div class="payment-info-bc" tabindex="-1"><div class="payment-info-content">' +
       '<div class="description-c-row-bc ' + escapeHtml(methodClass) + '"><div class="description-c-row-column-bc pay-logo">' + (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(name) + '</span>') + '</div><div class="description-c-row-column-bc texts"><div class="description-c-row-c-title-bc description_payment-title"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis">Ücret: Ücretsiz</span></div><div class="description-c-r-c-t-column-bc"><span class="description-instant ellipsis">' + escapeHtml(method.processing_time || 'Anlık') + '</span></div></div><div class="description-card-info"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Min.">Min.</span><span class="description-value ellipsis" title="' + escapeHtml(limitText(min)) + '">' + escapeHtml(limitText(min)) + '</span></div><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Maks.">Maks.</span><span class="description-value ellipsis" title="' + escapeHtml(limitText(max)) + '">' + escapeHtml(limitText(max)) + '</span></div></div></div></div>' +
-      '<div class="expandableContentWrapper"><div class="expandableContentData ' + escapeHtml(methodClass) + ' payment-content not-expandable" data-scroll-lock-scrollable><div class="container"><p>CasinoMilyon Ailesine hoş geldiniz. İyi eğlenceler, bol şanslar dileriz. ' + (kind === 'withdraw' ? 'Para çekmek' : 'Para yatırmak') + ' için lütfen aşağıdaki tüm gerekli alanları doldurun. Minimum tutar altı yatırımlar &quot;İADE EDİLMEZ&quot; lütfen kurallara uygun yatırım yapınız.</p></div></div></div>' +
+      '<div class="expandableContentWrapper"><div class="expandableContentData ' + escapeHtml(methodClass) + ' payment-content not-expandable" data-scroll-lock-scrollable><div class="container"><p>' + escapeHtml(paymentSiteName()) + ' Ailesine hoş geldiniz. İyi eğlenceler, bol şanslar dileriz. ' + (kind === 'withdraw' ? 'Para çekmek' : 'Para yatırmak') + ' için lütfen aşağıdaki tüm gerekli alanları doldurun. Minimum tutar altı yatırımlar &quot;İADE EDİLMEZ&quot; lütfen kurallara uygun yatırım yapınız.</p></div></div></div>' +
       '<div class="withdraw-form-l-bc"><form id="mprofilePaymentForm"><div id="screenArea">' + extraFields + '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" id="mprofilePaymentAmount" name="amount" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Tutar</span></label></div></div><div class="mprofile-form-message" data-mprofile-payment-message role="status" aria-live="polite"></div><div class="u-i-p-c-footer-bc"><button class="btn a-color ' + (kind === 'withdraw' ? 'withdraw' : 'deposit') + ' mprofile-payment-submit" type="submit" title="' + escapeHtml(submitText) + '" disabled><span>' + escapeHtml(submitText) + '</span></button></div></div></form></div>' +
       '</div></div>';
   }
