@@ -1517,6 +1517,43 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   height: 35px !important;
   min-height: 35px !important;
 }
+#mprofilePanel .mprofile-payment-modal .description-c-row-bc {
+  height: 73px !important;
+  min-height: 73px !important;
+}
+#mprofilePanel .mprofile-payment-modal .description-c-row-column-bc.pay-logo {
+  width: 178px !important;
+  height: 58px !important;
+}
+#mprofilePanel .mprofile-payment-modal .description-c-row-column-bc.texts {
+  left: 205px !important;
+  right: 0 !important;
+  width: auto !important;
+  height: 73px !important;
+}
+#mprofilePanel .mprofile-payment-modal .description_payment-title,
+#mprofilePanel .mprofile-payment-modal .description-card-info {
+  display: block !important;
+  min-height: 0 !important;
+}
+#mprofilePanel .mprofile-payment-modal .description-c-r-c-t-column-bc {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-height: 22px !important;
+}
+#mprofilePanel .mprofile-payment-modal .description-title,
+#mprofilePanel .mprofile-payment-modal .description-instant,
+#mprofilePanel .mprofile-payment-modal .description-value {
+  line-height: 22px !important;
+  white-space: nowrap !important;
+}
+#mprofilePanel .mprofile-payment-modal .description-instant,
+#mprofilePanel .mprofile-payment-modal .description-value {
+  max-width: 92px !important;
+  text-align: right !important;
+}
 #mprofilePanel .userProfile-content {
   flex: 1;
   min-height: 0;
