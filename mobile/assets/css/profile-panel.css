@@ -1441,6 +1441,76 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   background: rgba(156, 77, 177, 0.95) !important;
   color: #fff !important;
 }
+#mprofilePanel .payment-details-scrollable-container {
+  padding: 13px 7px 18px !important;
+}
+#mprofilePanel .description-c-row-bc {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  height: 58px !important;
+  min-height: 58px !important;
+}
+#mprofilePanel .description-c-row-column-bc.pay-logo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 142px !important;
+  height: 45px !important;
+  padding: 0 !important;
+}
+#mprofilePanel .description-c-row-column-bc.texts {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 134px !important;
+  height: 58px !important;
+  display: block !important;
+  padding: 0 !important;
+}
+#mprofilePanel .description_payment-title,
+#mprofilePanel .description-card-info {
+  display: grid !important;
+  grid-template-columns: 1fr 64px !important;
+  gap: 8px !important;
+  min-height: 20px !important;
+}
+#mprofilePanel .description-c-r-c-t-column-bc {
+  min-width: 0 !important;
+}
+#mprofilePanel .description-title,
+#mprofilePanel .description-instant,
+#mprofilePanel .description-value {
+  line-height: 18px !important;
+}
+#mprofilePanel .expandableContentWrapper {
+  margin-top: 0 !important;
+  min-height: 92px !important;
+  padding: 15px 0 22px !important;
+}
+#mprofilePanel .withdraw-form-l-bc .u-i-p-control-item-holder-bc {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#mprofilePanel .withdraw-form-l-bc .form-control-bc {
+  width: 100% !important;
+  height: 50px !important;
+  min-height: 50px !important;
+}
+#mprofilePanel .withdraw-form-l-bc .form-control-label-bc {
+  height: 50px !important;
+  padding: 8px 12px !important;
+}
+#mprofilePanel .withdraw-form-l-bc .u-i-p-c-footer-bc {
+  width: 100% !important;
+  margin: 18px 0 0 !important;
+  padding-bottom: 10px !important;
+}
+#mprofilePanel .withdraw-form-l-bc .btn {
+  width: 100% !important;
+  height: 35px !important;
+  min-height: 35px !important;
+}
 #mprofilePanel .userProfile-content {
   flex: 1;
   min-height: 0;
