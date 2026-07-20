@@ -291,7 +291,11 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
           <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bonuses&amp;page=casino-free-spins" data-mbonus-tab="casino-free-spins"><span class="nav-menu-title">CASİNO FREESPİNLERİ<i class="count-blink-even" data-badge=""></i></span></a>
           <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bonuses&amp;page=loyalty-points" data-mbonus-tab="loyalty-points"><span class="nav-menu-title">Sadakat Puanları<i class="count-blink-even" data-badge=""></i></span></a>
         </div></div>
-        <iframe class="iframe-widget" title="https://jjbonusmilyon.com/?username={username}" src="<?= htmlspecialchars($panelBonusIframeUrl, ENT_QUOTES, 'UTF-8') ?>" allow="clipboard-write" style="height: 100%; width: 100%;"></iframe>
+        <div class="mprofile-bonuses-content" data-mbonus-native-content data-scroll-lock-scrollable>
+          <div class="mprofile-bonus-request-list" data-mbonus-promotions-list><p class="profile-active-bonus-loading" role="status">Bonuslar yükleniyor...</p></div>
+          <p class="profile-bonus-claim-status" data-mbonus-claim-status role="status" aria-live="polite"></p>
+        </div>
+        <iframe class="iframe-widget" data-mbonus-iframe title="https://jjbonusmilyon.com/?username={username}" src="<?= htmlspecialchars($panelBonusIframeUrl, ENT_QUOTES, 'UTF-8') ?>" allow="clipboard-write" style="height: 100%; width: 100%;" hidden></iframe>
       </div>
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
         <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>
