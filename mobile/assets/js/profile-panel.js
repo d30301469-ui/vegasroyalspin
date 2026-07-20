@@ -114,6 +114,16 @@
     }
   }
 
+  function limitText(value) {
+    var num = Number(value);
+    if (!isFinite(num)) return '—';
+    try {
+      return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(num) + ' ₺';
+    } catch (e) {
+      return String(Math.round(num)) + ' ₺';
+    }
+  }
+
   function dateText(value) {
     if (!value) return '—';
     var date = new Date(String(value).replace(' ', 'T'));
@@ -336,8 +346,27 @@
       return;
     }
     grid.innerHTML = methods.map(function (method) {
-      return '<div class="mprofile-info-row"><strong>' + escapeHtml(method.name || method.method_id || 'Ödeme') + '</strong><span>Ücret: Ücretsiz</span><span>İşlem Süresi: ' + escapeHtml(method.processing_time || 'Anlık') + '</span><span>Min: ' + escapeHtml(method.min_amount != null ? moneyText(method.min_amount) : '—') + '</span><span>Maks: ' + escapeHtml(method.max_amount != null ? moneyText(method.max_amount) : '—') + '</span></div>';
+      var methodId = String(method.method_id || method.id || method.name || 'method').replace(/[^A-Za-z0-9_-]+/g, '');
+      var logo = method.logo_url && String(method.logo_url).trim() ? String(method.logo_url).trim() : '';
+      var processing = method.processing_time != null && String(method.processing_time).trim() ? String(method.processing_time).trim() : 'Anlık';
+      var min = method.min_amount != null ? limitText(method.min_amount) : '—';
+      var max = method.max_amount != null ? limitText(method.max_amount) : '—';
+      return '<div class="description-c-row-bc ' + escapeHtml(methodId || 'method') + '"><div class="description-c-row-column-bc pay-logo">' +
+        (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(method.name || method.method_id || 'Ödeme') + '</span>') +
+        '</div><div class="description-c-row-column-bc texts"><div class="description-c-row-c-title-bc description_payment-title"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis">Ücret: Ücretsiz</span></div><div class="description-c-r-c-t-column-bc"><span class="description-instant ellipsis">' + escapeHtml(processing) + '</span></div></div><div class="description-card-info"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Min.">Min.</span><span class="description-value ellipsis" title="' + escapeHtml(min) + '">' + escapeHtml(min) + '</span></div><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Maks.">Maks.</span><span class="description-value ellipsis" title="' + escapeHtml(max) + '">' + escapeHtml(max) + '</span></div></div></div></div>';
     }).join('');
+  }
+
+  function showBalanceInfoTab(panel, tabName) {
+    panel = panel || getPanel();
+    tabName = tabName === 'withdraw' ? 'withdraw' : 'deposit';
+    if (!panel) return;
+    panel.querySelectorAll('[data-mbalance-info-tab]').forEach(function (item) {
+      item.classList.toggle('active', item.getAttribute('data-mbalance-info-tab') === tabName);
+    });
+    panel.querySelectorAll('[data-mbalance-info-list]').forEach(function (item) {
+      item.hidden = item.getAttribute('data-mbalance-info-list') !== tabName;
+    });
   }
 
   function loadBalanceInfo() {
@@ -746,6 +775,13 @@
             item.classList.toggle('active', item === historyFilter);
           });
           renderTransactionHistory(historyFilter.getAttribute('data-mbalance-history-filter') || 'all');
+          return;
+        }
+
+        var infoTab = target.closest('[data-mbalance-info-tab]');
+        if (infoTab) {
+          e.preventDefault();
+          showBalanceInfoTab(panel, infoTab.getAttribute('data-mbalance-info-tab') || 'deposit');
           return;
         }
 
