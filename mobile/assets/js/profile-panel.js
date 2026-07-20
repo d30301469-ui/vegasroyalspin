@@ -19,6 +19,8 @@
   var casinoHistoryRows = [];
   var activeCasinoHistoryPage = 'bets';
   var casinoHistoryFormFilterActive = false;
+  var bonusPromotionsLoaded = false;
+  var bonusPromotionsPayload = null;
   var transactionHistoryRows = [];
   var balanceMethodStore = { deposit: [], withdraw: [] };
   var activePaymentModal = null;
@@ -233,6 +235,25 @@
     if (pageName === 'history') return 'bonus-history';
     if (pageName === 'freespins') return 'casino-free-spins';
     return ['bonus-request', 'sport', 'casino', 'bonus-history', 'promo-code', 'casino-free-spins', 'loyalty-points'].indexOf(pageName) !== -1 ? pageName : 'bonus-request';
+  }
+
+  function bonusPageUsesNativeList(pageName) {
+    return pageName === 'bonus-request' || pageName === 'sport' || pageName === 'casino';
+  }
+
+  function promotionMatchesBonusPage(promo, pageName) {
+    if (pageName === 'bonus-request') return true;
+    var haystack = [promo.category, promo.type, promo.bonus_type, promo.title, promo.description]
+      .map(function (value) { return String(value || '').toLocaleLowerCase('tr-TR'); })
+      .join(' ');
+    if (pageName === 'sport') return haystack.indexOf('spor') !== -1 || haystack.indexOf('sport') !== -1;
+    if (pageName === 'casino') return haystack.indexOf('casino') !== -1 || haystack.indexOf('slot') !== -1 || haystack.indexOf('slots') !== -1;
+    return true;
+  }
+
+  function bonusDepositWarning(policy) {
+    var message = policy && typeof policy.depositRequiredMessage === 'string' ? policy.depositRequiredMessage.trim() : '';
+    return message || 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.';
   }
 
   function normalizeHistoryRow(row, source) {
@@ -1024,6 +1045,117 @@
     panel.querySelectorAll('[data-mbonus-tab]').forEach(function (tab) {
       tab.classList.toggle('active', tab.getAttribute('data-mbonus-tab') === pageName);
     });
+    var nativeContent = panel.querySelector('[data-mbonus-native-content]');
+    var iframe = panel.querySelector('[data-mbonus-iframe]');
+    var useNative = bonusPageUsesNativeList(pageName);
+    if (nativeContent) nativeContent.hidden = !useNative;
+    if (iframe) iframe.hidden = useNative;
+    if (useNative) {
+      renderBonusPromotions(panel, pageName);
+      if (!bonusPromotionsLoaded) loadBonusPromotions(panel, pageName);
+    }
+  }
+
+  function loadBonusPromotions(panel, pageName) {
+    panel = panel || getPanel();
+    var list = panel && panel.querySelector('[data-mbonus-promotions-list]');
+    if (list) list.innerHTML = '<p class="profile-active-bonus-loading" role="status">Bonuslar yükleniyor...</p>';
+    fetch(apiUrl('/api/v2/content/promotions'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        bonusPromotionsPayload = envelope && envelope.data ? envelope.data : {};
+        bonusPromotionsLoaded = !!(envelope && envelope.success);
+        renderBonusPromotions(panel, pageName);
+      })
+      .catch(function () {
+        bonusPromotionsPayload = null;
+        bonusPromotionsLoaded = true;
+        if (list) list.innerHTML = '<p class="profile-active-bonus-error" role="status">Bonuslar yüklenemedi.</p>';
+      });
+  }
+
+  function renderBonusPromotions(panel, pageName) {
+    panel = panel || getPanel();
+    if (!panel || !bonusPageUsesNativeList(pageName)) return;
+    var list = panel.querySelector('[data-mbonus-promotions-list]');
+    var status = panel.querySelector('[data-mbonus-claim-status]');
+    if (!list) return;
+    if (status) {
+      status.textContent = '';
+      status.classList.remove('is-success', 'is-error');
+    }
+    if (!bonusPromotionsPayload) {
+      list.innerHTML = '<p class="profile-active-bonus-loading" role="status">Bonuslar yükleniyor...</p>';
+      return;
+    }
+    var promotions = Array.isArray(bonusPromotionsPayload.promotions) ? bonusPromotionsPayload.promotions : [];
+    var filtered = promotions.filter(function (promo) { return promo && typeof promo === 'object' && promotionMatchesBonusPage(promo, pageName); });
+    var claimPolicy = bonusPromotionsPayload.claimPolicy || {};
+    var requiresDeposit = !!claimPolicy.requiresConfirmedDeposit;
+    var hasConfirmedDeposit = !!(bonusPromotionsPayload.viewer && bonusPromotionsPayload.viewer.hasConfirmedDeposit);
+    var disabled = requiresDeposit && !hasConfirmedDeposit;
+    var warning = disabled ? '<p class="profile-bonus-claim-warning">' + escapeHtml(bonusDepositWarning(claimPolicy)) + '</p>' : '';
+    if (!filtered.length) {
+      list.innerHTML = warning + '<p class="profile-active-bonus-empty" role="status">Bu alanda listelenecek aktif bonus bulunmuyor.</p>';
+      return;
+    }
+    list.innerHTML = '<div class="profile-bonus-claim-panel">' + warning + '<div class="profile-bonus-claim-grid">' + filtered.map(function (promo) {
+      var title = String(promo.title || 'Bonus').trim() || 'Bonus';
+      var description = String(promo.description || promo.long_description || 'Bu bonus için talep oluşturabilirsiniz.').trim();
+      if (!description || description.toLocaleLowerCase('tr-TR') === title.toLocaleLowerCase('tr-TR')) description = 'Bu bonus için talep oluşturabilirsiniz.';
+      if (description.length > 132) description = description.slice(0, 129) + '...';
+      var image = String(promo.image_url || '').trim();
+      return '<article class="profile-bonus-claim-card">'
+        + (image ? '<img class="profile-bonus-claim-image" src="' + escapeHtml(image) + '" alt="" loading="lazy" decoding="async">' : '')
+        + '<h3 class="profile-bonus-claim-title">' + escapeHtml(title) + '</h3>'
+        + '<p class="profile-bonus-claim-desc">' + escapeHtml(description) + '</p>'
+        + '<button class="profile-bonus-claim-btn" type="button" data-mbonus-claim-id="' + escapeHtml(promo.id || promo.promotionId || '') + '"' + (disabled ? ' disabled title="' + escapeHtml(bonusDepositWarning(claimPolicy)) + '"' : '') + '>Talep Et</button>'
+        + '</article>';
+    }).join('') + '</div></div>';
+  }
+
+  function submitBonusClaim(panel, button) {
+    var id = parseInt(button && button.getAttribute('data-mbonus-claim-id') || '0', 10) || 0;
+    var status = panel && panel.querySelector('[data-mbonus-claim-status]');
+    if (id <= 0) {
+      if (status) {
+        status.textContent = 'Geçersiz bonus seçimi.';
+        status.classList.add('is-error');
+        status.classList.remove('is-success');
+      }
+      return;
+    }
+    if (button) button.disabled = true;
+    if (status) {
+      status.textContent = '';
+      status.classList.remove('is-error', 'is-success');
+    }
+    fetch(apiUrl('/api/v2/bonus-claim'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+      body: JSON.stringify({ promotionId: id })
+    })
+      .then(function (response) { return response.json().then(function (data) { return { response: response, data: data || {} }; }); })
+      .then(function (result) {
+        var ok = result.response.ok && !!result.data.success;
+        var message = result.data.message || (ok ? 'Bonus talebiniz alındı.' : 'Bonus talebi oluşturulamadı.');
+        if (status) {
+          status.textContent = message;
+          status.classList.toggle('is-success', ok);
+          status.classList.toggle('is-error', !ok);
+        }
+      })
+      .catch(function () {
+        if (status) {
+          status.textContent = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+          status.classList.add('is-error');
+          status.classList.remove('is-success');
+        }
+      })
+      .then(function () {
+        if (button) button.disabled = false;
+      });
   }
 
   function rowMatchesBetHistoryPage(row, pageName) {
@@ -1484,6 +1616,13 @@
           if (uid && navigator.clipboard) {
             navigator.clipboard.writeText(uid).catch(function () {});
           }
+          return;
+        }
+
+        var bonusClaimButton = target.closest('[data-mbonus-claim-id]');
+        if (bonusClaimButton) {
+          e.preventDefault();
+          submitBonusClaim(panel, bonusClaimButton);
           return;
         }
 
