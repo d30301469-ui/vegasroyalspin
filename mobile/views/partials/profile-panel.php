@@ -170,6 +170,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
           <div class="u-i-p-l-head-bc" data-href="/profile/details"><i class="user-nav-icon bc-i-user" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">PROFİLİM</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
           <div class="u-i-p-l-head-bc" data-href="/profile/deposit-withdraw"><i class="user-nav-icon bc-i-balance-management" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">BAKİYE YÖNETİMİ</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
           <div class="u-i-p-l-head-bc" data-href="/profile/bet-history"><i class="user-nav-icon bc-i-history" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">BAHİS GEÇMİŞİ</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
+          <div class="u-i-p-l-head-bc" data-href="/profile/casino-history"><i class="user-nav-icon bc-i-history" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">CASINO GEÇMİŞİ</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
           <div class="u-i-p-l-head-bc" data-href="/profile/bonus-spor"><i class="user-nav-icon bc-i-promotion" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">BONUSLAR</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
           <div class="u-i-p-l-head-bc" data-href="/profile/messages"><i class="user-nav-icon bc-i-message" aria-hidden="true"></i><span class="u-i-p-l-h-title-bc ellipsis">MESAJLAR</span><i class="count-blink-even" data-badge=""></i><i class="u-i-p-l-h-icon-bc bc-i-small-arrow-right" aria-hidden="true"></i></div>
         </div>
@@ -248,6 +249,34 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
             </div>
           </div>
           <div class="mprofile-bet-history-list" id="mprofileBetHistoryList" data-mbet-history-list><p class="empty-b-text-v-bc" role="status">BAHİS GEÇMİŞİ YÜKLENİYOR...</p></div>
+        </div>
+      </div>
+      <div class="mprofile-casino-history-view" data-mprofile-view="casino-history" aria-hidden="true">
+        <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">CASINO GEÇMİŞİ</span></div>
+        <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
+          <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=bet&amp;page=casino-history" data-mcasino-history-tab="bets"><span class="nav-menu-title">TÜMÜ<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bet&amp;page=casino-history&amp;filter=won" data-mcasino-history-tab="won"><span class="nav-menu-title">KAZANÇ<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bet&amp;page=casino-history&amp;filter=lost" data-mcasino-history-tab="lost"><span class="nav-menu-title">KAYIP<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=bet&amp;page=casino-history&amp;filter=returned" data-mcasino-history-tab="returned"><span class="nav-menu-title">İADE EDİLDİ<i class="count-blink-even" data-badge=""></i></span></a>
+        </div></div>
+        <div class="u-i-e-p-p-content-bc u-i-common-content mprofile-bet-history-content mprofile-casino-history-content" data-scroll-lock-scrollable>
+          <div class="componentFilterWrapper-bc" data-mcasino-filter-wrapper>
+            <div class="componentFilterLabel-bc active" data-mcasino-filter-toggle>
+              <i class="componentFilterLabel-filter-i-bc bc-i-filter"></i>
+              <div class="componentFilterLabel-filter-bc"><p class="ellipsis">FİLTRE</p></div>
+              <i class="componentFilterChevron-bc bc-i-small-arrow-down"></i>
+            </div>
+            <div class="componentFilterBody-bc">
+              <div class="componentFilterElsWrapper-bc"><form class="filter-form-w-bc">
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default "><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" name="bet_id" step="0" value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">OYUN KİMLİĞİ</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default "><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="name" step="0" value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Oyun Adı</span></label></div><i class="sport-search-icon bc-i-search"></i></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc active" name="bet_type" step="0"><option value="">TÜMÜ</option><option value="bet">Bahis</option><option value="win">Kazanç</option><option value="cancel">İade</option></select><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">İŞLEM TÜRÜ</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc active" name="period" step="0"><option value="24">24 saat</option><option value="72">72 saat</option><option value="168">Bir hafta</option><option value="720">30 Gün</option><option value="">Özel</option></select><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">PERİYOT</span></label></div></div>
+                <div class="u-i-p-c-footer-bc"><button class="btn a-color " type="submit" title="Göster"><span>Göster</span></button></div>
+              </form></div>
+            </div>
+          </div>
+          <div class="mprofile-bet-history-list" id="mprofileCasinoHistoryList" data-mcasino-history-list><p class="empty-b-text-v-bc" role="status">CASINO GEÇMİŞİ YÜKLENİYOR...</p></div>
         </div>
       </div>
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
