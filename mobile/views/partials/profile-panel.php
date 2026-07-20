@@ -94,6 +94,12 @@ if (empty($_SESSION[$panelCsrfKey]) || !is_string($_SESSION[$panelCsrfKey])) {
 $_SESSION['csrf_token'] = $_SESSION[$panelCsrfKey];
 $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
 ?>
+<style id="mprofileInfoTabsStyle">
+  #mprofilePanel .description-container-bc .second-tabs-bc{height:33px;min-height:33px;padding:0!important;gap:2px!important;column-gap:2px!important;background:rgba(5,7,38,.9)!important;border-radius:2px!important;overflow:hidden}
+  #mprofilePanel .description-container-bc .tab-bc.selected-underline{height:33px;border:0!important;border-bottom:0!important;border-radius:2px;background:rgba(31,35,74,.92)!important;color:rgba(255,255,255,.52)!important}
+  #mprofilePanel .description-container-bc .tab-bc.selected-underline.active{border:0!important;border-bottom:0!important;background:rgba(123,75,130,.94)!important;color:#fff!important}
+  #mprofilePanel .description-container-bc .tab-bc.selected-underline:before,#mprofilePanel .description-container-bc .tab-bc.selected-underline:after{display:none!important;content:none!important}
+</style>
 <div class="mprofile-overlay" id="mprofileOverlay" aria-hidden="true"></div>
 <aside class="overlay-sliding-wrapper-bc user-profile-container mprofile-panel" id="mprofilePanel" aria-hidden="true" role="dialog" aria-label="Profil">
   <div class="overlay-sliding-w-c-content-slider-bc" data-scroll-lock-scrollable>
