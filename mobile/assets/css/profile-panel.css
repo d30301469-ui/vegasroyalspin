@@ -188,14 +188,10 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   display: flex;
   align-items: center;
   width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  background: #1b1b20;
-  color: #fff;
-  border-bottom: 1px solid rgba(214, 35, 205, 0.75);
-  box-shadow: 0 2px 7px rgba(214, 35, 205, 0.55);
+  height: 38px;
+  padding: 0 var(--padding-page-aside, 10px);
+  position: relative;
   cursor: pointer;
-  z-index: 2;
 }
 #mprofilePanel .back-nav-icon-bc {
   flex-shrink: 0;

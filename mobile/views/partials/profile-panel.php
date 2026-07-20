@@ -160,7 +160,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
         <button class="userLogoutBtn btn" type="button"><i class="userLogoutIcon bc-i-logout" aria-hidden="true"></i><span>Çıkış Yap</span></button>
       </div>
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
-        <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left" aria-hidden="true"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>
+        <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>
         <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
           <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=profile&amp;page=details" data-mprofile-tab="details"><span class="nav-menu-title">KİŞİSEL DETAYLAR<i class="count-blink-even" data-badge=""></i></span></a>
           <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=change-password" data-mprofile-tab="change-password"><span class="nav-menu-title">ŞİFRE DEĞİŞTİR<i class="count-blink-even" data-badge=""></i></span></a>
