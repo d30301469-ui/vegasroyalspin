@@ -423,8 +423,10 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer-spring {
 /* Drawer paneli: KATI koyu arka plan, blur yok, yuvarlatılmış üst köşeler */
 body.mobile-site .providers-drawer-wrapper .ds-drawer {
   display: flex;
+  flex: 0 0 80dvh;
   flex-direction: column;
   width: 100%;
+  height: 80dvh;
   max-height: 80dvh;
   background: rgb(32, 32, 34) !important;
   border-radius: 10px 10px 0 0;
