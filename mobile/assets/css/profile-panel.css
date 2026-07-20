@@ -772,6 +772,9 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
   scrollbar-width: thin;
 }
+#mprofilePanel [data-mprofile-section][hidden] {
+  display: none !important;
+}
 #mprofilePanel .u-i-e-p-p-content-bc.user-profile form {
   display: flex;
   flex-direction: column;
@@ -919,79 +922,108 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   width: 100%;
 }
 #mprofilePanel .twofa-status {
-  margin: 0 0 14px;
+  margin: 0 0 18px;
   color: rgba(var(--b-sc, 255, 255, 255), 0.72);
   font-size: 13px;
-  line-height: 18px;
+  font-weight: 400;
+  line-height: 1.45;
 }
 #mprofilePanel .twofa-activate-row {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  min-height: 64px;
-  padding: 12px 14px;
-  border-radius: 4px;
-  background: rgba(var(--b-sc, 255, 255, 255), 0.08);
+  gap: 16px;
 }
 #mprofilePanel .twofa-left-col {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
   min-width: 0;
 }
-#mprofilePanel .twofa-icon-wrap,
+#mprofilePanel .twofa-icon-wrap {
+  flex: 0 0 auto;
+}
 #mprofilePanel .twofa-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+#mprofilePanel .twofa-icon-ga {
+  display: block;
 }
 #mprofilePanel .twofa-activate-label {
-  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
+  align-self: flex-start;
+  color: #fff;
   font-size: 12px;
-  font-weight: 600;
-  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: normal;
 }
 #mprofilePanel .twofa-toggle {
   position: relative;
-  display: inline-flex;
+  display: inline-block;
   flex: 0 0 auto;
-  width: 44px;
-  height: 24px;
+  width: 48px;
+  height: 26px;
+  align-self: center;
+  cursor: pointer;
 }
 #mprofilePanel .twofa-toggle-input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
   opacity: 0;
+  width: 0;
+  height: 0;
 }
 #mprofilePanel .twofa-toggle-slider {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
-  background: rgba(var(--b-sc, 255, 255, 255), 0.18);
-  transition: background 0.2s ease;
+  border-radius: 26px;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.28);
+  transition: background 0.25s;
 }
 #mprofilePanel .twofa-toggle-slider::before {
   content: "";
   position: absolute;
-  top: 3px;
+  top: 50%;
   left: 3px;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: #fff;
-  transition: transform 0.2s ease;
+  background: rgba(245, 245, 248, 0.95);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transform: translateY(-50%);
+  transition: transform 0.25s;
 }
 #mprofilePanel .twofa-toggle-input:checked + .twofa-toggle-slider {
-  background: rgba(var(--hero, 255, 193, 7), 1);
+  background: rgba(120, 90, 180, 0.95);
 }
 #mprofilePanel .twofa-toggle-input:checked + .twofa-toggle-slider::before {
-  transform: translateX(20px);
+  transform: translateY(-50%) translateX(22px);
+}
+#mprofilePanel .twofa-toggle-input:focus-visible + .twofa-toggle-slider {
+  box-shadow: 0 0 0 2px rgba(var(--b-sc, 255, 255, 255), 0.35);
 }
 #mprofilePanel .twofa-toggle-input:disabled + .twofa-toggle-slider {
   opacity: 0.6;
+}
+@media (max-width: 480px) {
+  #mprofilePanel .twofa-activate-row {
+    flex-wrap: wrap;
+  }
+  #mprofilePanel .twofa-toggle {
+    align-self: flex-end;
+    margin-left: auto;
+  }
 }
 
 #mprofilePanel .userLogoutBtn.btn {
