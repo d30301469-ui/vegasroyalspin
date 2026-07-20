@@ -1252,37 +1252,46 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .withdraw-form-l-bc .btn:disabled {
   opacity: 0.55;
 }
-#mprofilePanel .mprofile-payment-brandbar {
+#mprofilePanel .mprofile-payment-header {
+  display: flex;
+  align-items: center;
+  position: relative;
   height: 46px;
   min-height: 46px;
   padding: 0 12px;
   background: #050b39;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
-#mprofilePanel .mprofile-payment-brandbar .logo-container {
+#mprofilePanel .mprofile-payment-header .logo-container {
   height: 100%;
   display: flex;
   align-items: center;
+  flex: auto;
+  min-width: 0;
+  margin-right: 5px;
 }
-#mprofilePanel .mprofile-payment-brandbar .logo {
+#mprofilePanel .mprofile-payment-header .logo {
   display: flex;
   align-items: center;
+  height: 46px;
+  flex-shrink: 0;
 }
-#mprofilePanel .mprofile-payment-brandbar .hdr-logo-bc {
+#mprofilePanel .mprofile-payment-header .hdr-logo-bc {
   max-width: 150px;
   max-height: 30px;
   object-fit: contain;
 }
-#mprofilePanel .mprofile-payment-brandbar .header-icon {
+#mprofilePanel .mprofile-payment-header .header-icon {
   display: flex;
   align-items: center;
   margin-left: 7px;
 }
-#mprofilePanel .mprofile-payment-brandbar .header-icon img {
+#mprofilePanel .mprofile-payment-header .header-icon img {
   max-width: 28px;
   max-height: 28px;
   object-fit: contain;
 }
-#mprofilePanel .mprofile-payment-brandbar .hdr-user-close {
+#mprofilePanel .mprofile-payment-header .hdr-user-close {
   margin-left: auto;
   color: #c7bbe5;
   font-size: 24px;
