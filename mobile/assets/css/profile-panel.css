@@ -1640,32 +1640,27 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 #mprofilePanel .mprofile-crypto-popup {
   position: fixed !important;
-  left: 20px !important;
-  right: 20px !important;
-  top: -28px !important;
+  left: 46px !important;
+  right: 35px !important;
+  top: 77px !important;
   width: auto !important;
   z-index: 30;
-  height: 517px !important;
+  height: auto !important;
   min-height: 0 !important;
-  max-height: calc(100vh - 38px) !important;
-  padding: 61px 13px 34px !important;
-  background: #56135f !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  max-height: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   border-radius: 0 !important;
   color: #cfc8d8;
-  overflow: hidden !important;
+  overflow: visible !important;
   margin: 0 !important;
 }
 #mprofilePanel .mprofile-crypto-popup[hidden] {
   display: none !important;
 }
 #mprofilePanel .mprofile-crypto-popup .e-p-close-icon-bc {
-  position: absolute;
-  top: 11px !important;
-  right: 12px !important;
-  color: #cfc8d8;
-  font-size: 17px !important;
-  line-height: 17px !important;
+  display: none !important;
 }
 #mprofilePanel .mprofile-crypto-popup .status-popup-content-w-bc,
 #mprofilePanel .mprofile-crypto-popup .multi-select-bc,
@@ -1715,7 +1710,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   display: block !important;
 }
 #mprofilePanel .mprofile-crypto-popup .multi-select-label-bc {
-  max-height: 384px !important;
+  max-height: 468px !important;
   overflow-y: auto !important;
   background: #2f2f31 !important;
   box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
