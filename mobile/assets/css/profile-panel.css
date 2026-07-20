@@ -1641,8 +1641,9 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .mprofile-crypto-popup {
   position: fixed !important;
   left: 20px !important;
-  right: 33px !important;
-  top: 18px !important;
+  right: 20px !important;
+  top: -28px !important;
+  width: auto !important;
   z-index: 30;
   height: 517px !important;
   min-height: 0 !important;
@@ -1653,6 +1654,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   border-radius: 0 !important;
   color: #cfc8d8;
   overflow: hidden !important;
+  margin: 0 !important;
 }
 #mprofilePanel .mprofile-crypto-popup[hidden] {
   display: none !important;
