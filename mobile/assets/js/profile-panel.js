@@ -7,6 +7,7 @@
 
   var isOpen = false;
   var balanceMethodsLoaded = false;
+  var withdrawMethodsLoaded = false;
 
   function apiUrl(path) {
     return Shared.apiUrl ? Shared.apiUrl(path) : path;
@@ -185,22 +186,39 @@
     return 'bank';
   }
 
-  function renderDepositMethods(methods) {
-    var grid = document.getElementById('mprofileDepositMethods');
+  function renderBalanceMethods(gridId, methods, kind) {
+    var grid = document.getElementById(gridId);
     if (!grid) return;
     if (!methods || !methods.length) {
-      grid.innerHTML = '<p class="dw-methods-empty" role="status">Şu an para yatırma için listelenen yöntem bulunmuyor.</p>';
+      grid.innerHTML = '<p class="dw-methods-empty" role="status">Şu an ' + (kind === 'withdraw' ? 'çekim' : 'para yatırma') + ' için listelenen yöntem bulunmuyor.</p>';
       return;
     }
     grid.innerHTML = methods.map(function (method) {
       var logo = method.logo_url && String(method.logo_url).trim() ? String(method.logo_url).trim() : '';
       var methodId = String(method.method_id || method.id || '').trim();
       var category = balanceCategory(method);
-      var cls = 'deposit_' + (methodId || 'method').toLowerCase().replace(/[^a-z0-9_-]+/g, '');
-      return '<div class="m-nav-items-list-item-bc ' + escapeHtml(cls) + '" data-mbalance-method data-category="' + escapeHtml(category) + '"><div class="nav-ico-w-row-bc">' +
+      var cls = (kind === 'withdraw' ? 'withdraw_' : 'deposit_') + (methodId || 'method').toLowerCase().replace(/[^a-z0-9_-]+/g, '');
+      var attr = kind === 'withdraw' ? 'data-mbalance-withdraw-method' : 'data-mbalance-method';
+      return '<div class="m-nav-items-list-item-bc ' + escapeHtml(cls) + '" ' + attr + ' data-category="' + escapeHtml(category) + '"><div class="nav-ico-w-row-bc">' +
         (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(method.name || methodId || 'Ödeme') + '</span>') +
         '</div></div>';
     }).join('');
+  }
+
+  function renderDepositMethods(methods) {
+    renderBalanceMethods('mprofileDepositMethods', methods, 'deposit');
+  }
+
+  function renderWithdrawMethods(methods) {
+    renderBalanceMethods('mprofileWithdrawMethods', methods, 'withdraw');
+  }
+
+  function extractWithdrawPaymentMethods(data) {
+    if (!data || typeof data !== 'object') return [];
+    if (Array.isArray(data.methods)) return data.methods;
+    if (data.megapayz_withdraw_form && Array.isArray(data.megapayz_withdraw_form.methods)) return data.megapayz_withdraw_form.methods;
+    if (data.create_withdraw && Array.isArray(data.create_withdraw.methods)) return data.create_withdraw.methods;
+    return [];
   }
 
   function loadBalanceMethods() {
@@ -220,11 +238,48 @@
       });
   }
 
+  function loadWithdrawMethods() {
+    if (withdrawMethodsLoaded) return;
+    var grid = document.getElementById('mprofileWithdrawMethods');
+    if (!grid) return;
+    withdrawMethodsLoaded = true;
+    fetch(apiUrl('/api/v2/payment-methods'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (res) { return res.json(); })
+      .then(function (env) {
+        var methods = env && env.success && env.data && Array.isArray(env.data.payment_methods) ? env.data.payment_methods : [];
+        var withdrawMethods = methods.filter(function (method) { return method && method.withdrawal_enabled; });
+        if (withdrawMethods.length) {
+          renderWithdrawMethods(withdrawMethods);
+          return null;
+        }
+        return fetch(apiUrl('/api/v2/withdraw-payment'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+          .then(function (withdrawRes) { return withdrawRes.json(); })
+          .then(function (withdrawEnv) {
+            var fallback = withdrawEnv && withdrawEnv.success && withdrawEnv.data ? extractWithdrawPaymentMethods(withdrawEnv.data) : [];
+            renderWithdrawMethods(fallback);
+          });
+      })
+      .catch(function () {
+        withdrawMethodsLoaded = false;
+        grid.innerHTML = '<p class="dw-methods-empty" role="status">Çekim yöntemleri yüklenemedi.</p>';
+      });
+  }
+
   function filterBalanceMethods(panel, category) {
     panel.querySelectorAll('[data-mbalance-category]').forEach(function (item) {
       item.classList.toggle('active', item.getAttribute('data-mbalance-category') === category);
     });
     panel.querySelectorAll('[data-mbalance-method]').forEach(function (item) {
+      var show = category === 'all' || item.getAttribute('data-category') === category;
+      item.hidden = !show;
+    });
+  }
+
+  function filterWithdrawMethods(panel, category) {
+    panel.querySelectorAll('[data-mbalance-withdraw-category]').forEach(function (item) {
+      item.classList.toggle('active', item.getAttribute('data-mbalance-withdraw-category') === category);
+    });
+    panel.querySelectorAll('[data-mbalance-withdraw-method]').forEach(function (item) {
       var show = category === 'all' || item.getAttribute('data-category') === category;
       item.hidden = !show;
     });
@@ -247,6 +302,7 @@
       tab.classList.toggle('active', tab.getAttribute('data-mbalance-tab') === sectionName);
     });
     if (sectionName === 'deposit') loadBalanceMethods();
+    if (sectionName === 'withdraw') loadWithdrawMethods();
   }
 
   function setPasswordMessage(panel, type, text) {
@@ -506,6 +562,13 @@
         if (balanceCategoryItem) {
           e.preventDefault();
           filterBalanceMethods(panel, balanceCategoryItem.getAttribute('data-mbalance-category') || 'all');
+          return;
+        }
+
+        var withdrawCategoryItem = target.closest('[data-mbalance-withdraw-category]');
+        if (withdrawCategoryItem) {
+          e.preventDefault();
+          filterWithdrawMethods(panel, withdrawCategoryItem.getAttribute('data-mbalance-withdraw-category') || 'all');
           return;
         }
 

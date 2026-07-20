@@ -178,7 +178,14 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
           </div></div></div>
           <div class="m-block-nav-items-bc" id="mprofileDepositMethods"><p class="dw-methods-empty" role="status">Ödeme yöntemleri yükleniyor...</p></div>
         </div>
-        <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="withdraw" data-scroll-lock-scrollable hidden><p>Çekim yöntemleri hazırlanıyor.</p></div>
+        <div class="dep-w-info-bc withdraw-page" data-mbalance-section="withdraw" data-scroll-lock-scrollable hidden>
+          <div class="horizontalList scroll-start"><div class="horizontal-sl-list-container" data-scroll-lock-scrollable><div class="horizontal-sl-list">
+            <div data-id="-1" title="TÜMÜ" data-badge="" class="horizontal-sl-item-bc accordion-button all active" data-mbalance-withdraw-category="all"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-all"></i><p class="horizontal-sl-title-bc">TÜMÜ</p></div>
+            <div data-id="4" title="Kripto" data-badge="" class="horizontal-sl-item-bc accordion-button crypto" data-mbalance-withdraw-category="crypto"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-crypto"></i><p class="horizontal-sl-title-bc">Kripto</p></div>
+            <div data-id="5" title="Banka transferi" data-badge="" class="horizontal-sl-item-bc accordion-button transfer" data-mbalance-withdraw-category="bank"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-transfer"></i><p class="horizontal-sl-title-bc">Banka transferi</p></div>
+          </div></div></div>
+          <div class="m-block-nav-items-bc" id="mprofileWithdrawMethods"><p class="dw-methods-empty" role="status">Çekim yöntemleri yükleniyor...</p></div>
+        </div>
         <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="history" data-scroll-lock-scrollable hidden><p>İşlem geçmişi hazırlanıyor.</p></div>
         <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="info" data-scroll-lock-scrollable hidden><p>Bilgi sayfası hazırlanıyor.</p></div>
         <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="withdraws" data-scroll-lock-scrollable hidden><p>Para çekme durumu hazırlanıyor.</p></div>

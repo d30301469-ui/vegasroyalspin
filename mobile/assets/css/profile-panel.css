@@ -793,7 +793,8 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   display: none !important;
 }
 #mprofilePanel [data-mbalance-section][hidden],
-#mprofilePanel [data-mbalance-method][hidden] {
+#mprofilePanel [data-mbalance-method][hidden],
+#mprofilePanel [data-mbalance-withdraw-method][hidden] {
   display: none !important;
 }
 #mprofilePanel .u-i-e-p-p-content-bc.user-profile form {
