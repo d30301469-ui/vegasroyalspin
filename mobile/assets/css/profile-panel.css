@@ -1006,21 +1006,25 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px var(--padding-page-aside, 10px) 18px;
+  padding: 7px 6px 18px;
   scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
   scrollbar-width: thin;
 }
 #mprofilePanel .mprofile-bet-history-content .componentFilterWrapper-bc {
+  border-radius: 2px;
+  padding: 0 9px 10px;
+  background: linear-gradient(105deg, rgba(132, 37, 129, 0.94) 0%, rgba(34, 33, 91, 0.96) 100%);
   margin: 0 0 92px;
 }
 #mprofilePanel .componentFilterLabel-bc {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 42px;
-  border-radius: 3px;
-  padding: 0 10px;
-  background: rgba(255, 255, 255, 0.18);
+  min-height: 47px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
 }
@@ -1070,13 +1074,85 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   flex-direction: column;
   gap: 10px;
 }
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .u-i-p-control-item-holder-bc {
+  width: 100%;
+  flex: 0 0 auto;
+}
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .form-control-label-bc {
+  height: 49px;
+}
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .form-control-input-bc,
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .form-control-select-bc {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 49px;
+  border: 0;
+  border-radius: 3px;
+  padding: 20px 34px 5px 14px;
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  outline: 0;
+}
+#mprofilePanel .mprofile-bet-history-content .componentFilterWrapper-bc .filter-form-w-bc .form-control-bc.default .form-control-label-bc.inputs .form-control-input-bc,
+#mprofilePanel .mprofile-bet-history-content .componentFilterWrapper-bc .filter-form-w-bc .form-control-bc.select .form-control-label-bc.inputs .form-control-select-bc {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .form-control-title-bc {
+  top: 18px;
+  left: 14px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 13px;
+  text-transform: none;
+}
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .form-control-bc.filled .form-control-title-bc,
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .form-control-bc.focused .form-control-title-bc,
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .form-control-label-bc.has-value .form-control-title-bc,
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .form-control-label-bc.focused .form-control-title-bc {
+  top: 8px;
+  font-size: 11px;
+  line-height: 13px;
+}
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .form-control-icon-bc {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 17px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
 #mprofilePanel .sport-search-icon {
   position: absolute;
   right: 12px;
-  top: 16px;
-  color: rgba(255, 255, 255, 0.55);
+  top: 50%;
+  color: rgba(255, 255, 255, 0.82);
   font-size: 16px;
+  transform: translateY(-50%);
   pointer-events: none;
+}
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .u-i-p-c-footer-bc {
+  width: 100%;
+  min-width: 0;
+  margin: 29px 0 0;
+}
+#mprofilePanel .mprofile-bet-history-content .filter-form-w-bc .u-i-p-c-footer-bc .btn {
+  width: 100%;
+  height: 34px;
+  border-radius: 2px;
+  background: #595959 !important;
+  color: #fff !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+#mprofilePanel .mprofile-bet-history-content .componentFilterWrapper-bc .filter-form-w-bc .u-i-p-c-footer-bc .btn.a-color {
+  background: #595959 !important;
+  color: #fff !important;
 }
 #mprofilePanel .empty-b-text-v-bc {
   margin: 0;
@@ -2152,6 +2228,18 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .userLogoutIcon {
   width: 24px;
   font-size: 16px;
+}
+
+#mprofilePanel .mprofile-bet-history-content .componentFilterWrapper-bc .filter-form-w-bc .form-control-input-bc,
+#mprofilePanel .mprofile-bet-history-content .componentFilterWrapper-bc .filter-form-w-bc .form-control-select-bc {
+  min-height: 49px !important;
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  background-image: none !important;
+}
+#mprofilePanel .mprofile-bet-history-content .componentFilterWrapper-bc .filter-form-w-bc .btn.a-color,
+#mprofilePanel .mprofile-bet-history-content .componentFilterWrapper-bc .filter-form-w-bc button.btn.a-color {
+  background-color: #595959 !important;
+  background-image: none !important;
 }
 
 #mprofilePanel .ellipsis {
