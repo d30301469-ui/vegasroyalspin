@@ -6,6 +6,7 @@
   var Shared = window.BetcoAuthShared || {};
 
   var isOpen = false;
+  var balanceMethodsLoaded = false;
 
   function apiUrl(path) {
     return Shared.apiUrl ? Shared.apiUrl(path) : path;
@@ -31,6 +32,18 @@
     return ['details', 'change-password', 'two-factor-authentication', 'timeout-limits'].indexOf(page) !== -1 ? page : '';
   }
 
+  function requestedBalanceSection() {
+    var params;
+    try {
+      params = new URLSearchParams(window.location.search || '');
+    } catch (e) {
+      return '';
+    }
+    if (params.get('profile') !== 'open' || params.get('account') !== 'balance') return '';
+    var page = params.get('page') || 'deposit';
+    return ['deposit', 'withdraw', 'history', 'info', 'withdraws'].indexOf(page) !== -1 ? page : 'deposit';
+  }
+
   function openPanel() {
     var panel = getPanel();
     var overlay = getOverlay();
@@ -49,8 +62,13 @@
     isOpen = true;
     syncBalance();
     syncBalanceRail(panel);
-    var section = requestedProfileSection();
-    if (section) showProfileDetails(panel, section);
+    var balanceSection = requestedBalanceSection();
+    if (balanceSection) {
+      showBalancePage(panel, balanceSection);
+    } else {
+      var section = requestedProfileSection();
+      if (section) showProfileDetails(panel, section);
+    }
     return true;
   }
 
@@ -66,6 +84,15 @@
     document.body.classList.remove('overlay-sliding-is-visible', 'overlaySlidingIsVisible');
     isOpen = false;
     showProfileMenu(panel);
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /** Header'daki ana bakiyeyi panele yansıt. */
@@ -122,8 +149,11 @@
     panel = panel || getPanel();
     if (!panel) return;
     panel.classList.remove('mprofile-detail-active');
+    panel.classList.remove('mprofile-balance-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
+    var balance = panel.querySelector('[data-mprofile-view="balance"]');
+    if (balance) balance.setAttribute('aria-hidden', 'true');
   }
 
   function showProfileDetails(panel, sectionName) {
@@ -131,8 +161,11 @@
     if (!panel) return;
     sectionName = sectionName || 'details';
     panel.classList.add('mprofile-detail-active');
+    panel.classList.remove('mprofile-balance-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'false');
+    var balance = panel.querySelector('[data-mprofile-view="balance"]');
+    if (balance) balance.setAttribute('aria-hidden', 'true');
     panel.querySelectorAll('[data-mprofile-section]').forEach(function (section) {
       var isActive = section.getAttribute('data-mprofile-section') === sectionName;
       section.hidden = !isActive;
@@ -140,6 +173,80 @@
     panel.querySelectorAll('[data-mprofile-tab]').forEach(function (tab) {
       tab.classList.toggle('active', tab.getAttribute('data-mprofile-tab') === sectionName);
     });
+  }
+
+  function balanceCategory(method) {
+    var methodId = String((method && method.method_id) || '').toLowerCase();
+    var type = String((method && method.type) || '').toLowerCase();
+    var name = String((method && method.name) || '').toLowerCase();
+    if (methodId.indexOf('qr') !== -1 || name.indexOf('qr') !== -1) return 'qr';
+    if (type === 'crypto' || methodId.indexOf('crypto') !== -1 || name.indexOf('kripto') !== -1 || name.indexOf('bitcoin') !== -1 || name.indexOf('tether') !== -1 || name.indexOf('tron') !== -1) return 'crypto';
+    if (type === 'card' || methodId.indexOf('card') !== -1 || name.indexOf('kredi') !== -1) return 'card';
+    return 'bank';
+  }
+
+  function renderDepositMethods(methods) {
+    var grid = document.getElementById('mprofileDepositMethods');
+    if (!grid) return;
+    if (!methods || !methods.length) {
+      grid.innerHTML = '<p class="dw-methods-empty" role="status">Şu an para yatırma için listelenen yöntem bulunmuyor.</p>';
+      return;
+    }
+    grid.innerHTML = methods.map(function (method) {
+      var logo = method.logo_url && String(method.logo_url).trim() ? String(method.logo_url).trim() : '';
+      var methodId = String(method.method_id || method.id || '').trim();
+      var category = balanceCategory(method);
+      var cls = 'deposit_' + (methodId || 'method').toLowerCase().replace(/[^a-z0-9_-]+/g, '');
+      return '<div class="m-nav-items-list-item-bc ' + escapeHtml(cls) + '" data-mbalance-method data-category="' + escapeHtml(category) + '"><div class="nav-ico-w-row-bc">' +
+        (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(method.name || methodId || 'Ödeme') + '</span>') +
+        '</div></div>';
+    }).join('');
+  }
+
+  function loadBalanceMethods() {
+    if (balanceMethodsLoaded) return;
+    var grid = document.getElementById('mprofileDepositMethods');
+    if (!grid) return;
+    balanceMethodsLoaded = true;
+    fetch(apiUrl('/api/v2/payment-methods'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (res) { return res.json(); })
+      .then(function (env) {
+        var methods = env && env.success && env.data && Array.isArray(env.data.payment_methods) ? env.data.payment_methods : [];
+        renderDepositMethods(methods.filter(function (method) { return method && method.deposit_enabled; }));
+      })
+      .catch(function () {
+        balanceMethodsLoaded = false;
+        grid.innerHTML = '<p class="dw-methods-empty" role="status">Ödeme yöntemleri yüklenemedi.</p>';
+      });
+  }
+
+  function filterBalanceMethods(panel, category) {
+    panel.querySelectorAll('[data-mbalance-category]').forEach(function (item) {
+      item.classList.toggle('active', item.getAttribute('data-mbalance-category') === category);
+    });
+    panel.querySelectorAll('[data-mbalance-method]').forEach(function (item) {
+      var show = category === 'all' || item.getAttribute('data-category') === category;
+      item.hidden = !show;
+    });
+  }
+
+  function showBalancePage(panel, sectionName) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    sectionName = sectionName || 'deposit';
+    panel.classList.remove('mprofile-detail-active');
+    panel.classList.add('mprofile-balance-active');
+    var detail = panel.querySelector('[data-mprofile-view="details"]');
+    if (detail) detail.setAttribute('aria-hidden', 'true');
+    var balance = panel.querySelector('[data-mprofile-view="balance"]');
+    if (balance) balance.setAttribute('aria-hidden', 'false');
+    panel.querySelectorAll('[data-mbalance-section]').forEach(function (section) {
+      section.hidden = section.getAttribute('data-mbalance-section') !== sectionName;
+    });
+    panel.querySelectorAll('[data-mbalance-tab]').forEach(function (tab) {
+      tab.classList.toggle('active', tab.getAttribute('data-mbalance-tab') === sectionName);
+    });
+    if (sectionName === 'deposit') loadBalanceMethods();
   }
 
   function setPasswordMessage(panel, type, text) {
@@ -341,7 +448,11 @@
     if (panel) {
       bindBalanceRail(panel);
       var initialSection = requestedProfileSection();
-      if (initialSection) {
+      var initialBalanceSection = requestedBalanceSection();
+      if (initialBalanceSection) {
+        openPanel();
+        showBalancePage(panel, initialBalanceSection);
+      } else if (initialSection) {
         openPanel();
         showProfileDetails(panel, initialSection);
       }
@@ -375,7 +486,26 @@
             showProfileDetails(panel);
             return;
           }
+          if (menuItem.getAttribute('data-href') === '/profile/deposit-withdraw') {
+            showBalancePage(panel, 'deposit');
+            return;
+          }
           window.location.href = menuItem.getAttribute('data-href');
+          return;
+        }
+
+        var balanceLink = target.closest('a[href*="account=balance"][href*="page="]');
+        if (balanceLink) {
+          e.preventDefault();
+          var match = (balanceLink.getAttribute('href') || '').match(/[?&]page=([^&]+)/);
+          showBalancePage(panel, match ? decodeURIComponent(match[1]) : 'deposit');
+          return;
+        }
+
+        var balanceCategoryItem = target.closest('[data-mbalance-category]');
+        if (balanceCategoryItem) {
+          e.preventDefault();
+          filterBalanceMethods(panel, balanceCategoryItem.getAttribute('data-mbalance-category') || 'all');
           return;
         }
 
