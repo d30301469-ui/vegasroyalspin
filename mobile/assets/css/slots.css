@@ -1851,6 +1851,11 @@ body.mobile-site .sidebar-overlay.active {
     appearance: none;
   }
 
+  body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .mobile-sidebar-toggle::before {
+    content: none;
+    display: none;
+  }
+
   body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .mobile-sidebar-toggle__count {
     display: none;
   }
