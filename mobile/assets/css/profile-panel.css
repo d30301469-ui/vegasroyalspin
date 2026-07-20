@@ -37,6 +37,7 @@
 .bc-i-close-remove::before { content: "\e5cd"; }
 .bc-i-round-arrow-left::before { content: "\e956"; }
 .bc-i-small-arrow-down::before { content: "\e5cf"; }
+.bc-i-double-arrow-top::before { content: "\ea61"; }
 .bc-i-datepicker::before { content: "\e93e"; }
 .bc-i-filter::before { content: "\e9d9"; }
 .bc-i-search::before { content: "\e91e"; }
@@ -182,6 +183,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel.mprofile-bet-history-active .u-i-profile-page-bc { display: none; }
 #mprofilePanel.mprofile-casino-history-active .u-i-profile-page-bc { display: none; }
 #mprofilePanel.mprofile-bonuses-active .u-i-profile-page-bc { display: none; }
+#mprofilePanel.mprofile-messages-active .u-i-profile-page-bc { display: none; }
 #mprofilePanel .mprofile-detail-view {
   display: none;
   flex: 1;
@@ -217,11 +219,19 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   flex-direction: column;
   overflow: hidden;
 }
+#mprofilePanel .mprofile-messages-view {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
 #mprofilePanel.mprofile-detail-active .mprofile-detail-view { display: flex; }
 #mprofilePanel.mprofile-balance-active .mprofile-balance-view { display: flex; }
 #mprofilePanel.mprofile-bet-history-active .mprofile-bet-history-view { display: flex; }
 #mprofilePanel.mprofile-casino-history-active .mprofile-casino-history-view { display: flex; }
 #mprofilePanel.mprofile-bonuses-active .mprofile-bonuses-view { display: flex; }
+#mprofilePanel.mprofile-messages-active .mprofile-messages-view { display: flex; }
 #mprofilePanel .back-nav-bc {
   flex-shrink: 0;
   display: flex;
@@ -245,6 +255,9 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   opacity: 1;
 }
 #mprofilePanel.mprofile-bonuses-active .back-nav-bc {
+  opacity: 1;
+}
+#mprofilePanel.mprofile-messages-active .back-nav-bc {
   opacity: 1;
 }
 #mprofilePanel .back-nav-icon-bc {
@@ -860,6 +873,260 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   margin: 8px 0 2px;
   background: rgba(255, 255, 255, 0.08);
 }
+#mprofilePanel .messageBoxWrapper-bc {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 7px 14px;
+}
+#mprofilePanel .messageBoxWrapper-bc .componentFilterWrapper-bc { margin: 0 0 10px; }
+#mprofilePanel .messageBoxWrapper-bc .componentFilterLabel-bc {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.17);
+  color: #fff;
+  cursor: pointer;
+}
+#mprofilePanel .messageBoxWrapper-bc .componentFilterLabel-filter-i-bc {
+  flex: 0 0 20px;
+  font-size: 18px;
+  line-height: 20px;
+}
+#mprofilePanel .messageBoxWrapper-bc .componentFilterLabel-filter-bc {
+  flex: 1;
+  min-width: 0;
+  margin-inline-start: 8px;
+}
+#mprofilePanel .messageBoxWrapper-bc .componentFilterLabel-filter-bc p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+#mprofilePanel .messageBoxWrapper-bc .componentFilterChevron-bc {
+  flex: 0 0 16px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 16px;
+  line-height: 16px;
+  text-align: center;
+}
+#mprofilePanel .messageBoxWrapper-bc .componentFilterLabel-bc.active .componentFilterChevron-bc { transform: rotate(180deg); }
+#mprofilePanel .messageBoxWrapper-bc .componentFilterBody-bc[hidden] { display: none !important; }
+#mprofilePanel .messageBoxWrapper-bc .componentFilterBody-bc {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+#mprofilePanel .messageBoxWrapper-bc .filter-form-w-bc {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+#mprofilePanel .messageBoxWrapper-bc .filter-form-w-bc .u-i-p-control-item-holder-bc,
+#mprofilePanel .messageBoxWrapper-bc .react-datepicker-wrapper,
+#mprofilePanel .messageBoxWrapper-bc .react-datepicker__input-container {
+  width: 100%;
+  min-width: 0;
+}
+#mprofilePanel .messageBoxWrapper-bc .filter-form-w-bc .form-control-bc,
+#mprofilePanel .messageBoxWrapper-bc .filter-form-w-bc .form-control-label-bc.inputs {
+  position: relative;
+  display: block;
+  height: 50px;
+}
+#mprofilePanel .messageBoxWrapper-bc .filter-form-w-bc .form-control-input-bc {
+  width: 100%;
+  height: 50px;
+  border: 0;
+  border-radius: 4px;
+  padding: 22px 34px 5px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  outline: 0;
+}
+#mprofilePanel .messageBoxWrapper-bc .filter-form-w-bc .form-control-title-bc {
+  top: 7px;
+  left: 12px;
+  right: 30px;
+  width: auto;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 10px;
+  line-height: 13px;
+  text-transform: none;
+}
+#mprofilePanel .messageBoxWrapper-bc .filter-form-w-bc .dropdownIcon-bc {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 15px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+#mprofilePanel .messageBoxWrapper-bc .filter-form-w-bc .u-i-p-c-footer-bc {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+}
+#mprofilePanel .messageBoxWrapper-bc .filter-form-w-bc .btn,
+#mprofilePanel .messageBoxWrapper-bc > .btn.a-color,
+#mprofilePanel .new-msg-btn-send {
+  min-width: 112px;
+  height: 38px;
+  border: 0;
+  border-radius: 4px;
+  padding: 0 14px;
+  background: rgba(156, 77, 177, 0.86);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+#mprofilePanel .messageBoxList-bc {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#mprofilePanel .message-block-bc {
+  position: relative;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(100, 85, 158, 0.68);
+  color: #fff;
+}
+#mprofilePanel .message-block-bc::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #132a26;
+}
+#mprofilePanel .message-block-bc[data-status="read"]::after { opacity: 0.28; }
+#mprofilePanel .message-title-block {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+#mprofilePanel .message-title-bc {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 18px;
+}
+#mprofilePanel .message-more-time-bc {
+  min-height: 36px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr);
+  align-items: center;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.07);
+}
+#mprofilePanel .message-time-bc {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+#mprofilePanel .message-more-icon {
+  grid-column: 2;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.24);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 15px;
+  line-height: 28px;
+  text-align: center;
+}
+#mprofilePanel .message-more-icon.is-open { transform: rotate(180deg); }
+#mprofilePanel .message-body-bc {
+  padding: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+  line-height: 1.45;
+  background: rgba(0, 0, 0, 0.16);
+}
+#mprofilePanel .message-body-bc[hidden] { display: none !important; }
+#mprofilePanel .message-body-bc p { margin: 0 0 6px; }
+#mprofilePanel .message-body-bc a {
+  color: #fff;
+  font-weight: 700;
+}
+#mprofilePanel .message-empty-bc {
+  padding: 12px 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+}
+#mprofilePanel .messageBoxWrapper-bc > .btn.a-color {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+#mprofilePanel .new-msg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#mprofilePanel .new-msg-input,
+#mprofilePanel .new-msg-textarea {
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 13px;
+  outline: 0;
+}
+#mprofilePanel .new-msg-input {
+  height: 46px;
+  padding: 0 12px;
+}
+#mprofilePanel .new-msg-textarea {
+  min-height: 160px;
+  resize: vertical;
+  padding: 12px;
+}
+#mprofilePanel .new-msg-label {
+  display: block;
+  margin: 0 0 6px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 11px;
+  font-weight: 700;
+}
+#mprofilePanel .pm-alert {
+  padding: 9px 10px;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  line-height: 1.35;
+  background: rgba(255, 255, 255, 0.1);
+}
+#mprofilePanel .pm-alert--success { color: #8af1b5; }
+#mprofilePanel .pm-alert--error { color: #ffb5b5; }
 #mprofilePanel .mprofile-freespin-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

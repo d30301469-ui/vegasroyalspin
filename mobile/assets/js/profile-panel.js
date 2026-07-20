@@ -32,6 +32,11 @@
   var loyaltyPayload = null;
   var activeLoyaltyLevelCode = '';
   var activeLoyaltyRewardFilter = 'all';
+  var activeMessagesPage = 'inbox';
+  var messagesLoaded = false;
+  var messagesRows = [];
+  var sentMessagesLoaded = false;
+  var sentMessagesRows = [];
   var transactionHistoryRows = [];
   var balanceMethodStore = { deposit: [], withdraw: [] };
   var activePaymentModal = null;
@@ -126,6 +131,26 @@
     return ['bonus-request', 'sport', 'sports', 'casino', 'bonus-history', 'history', 'promo-code', 'casino-free-spins', 'freespins', 'loyalty-points'].indexOf(page) !== -1 ? normalizeBonusPage(page) : 'bonus-request';
   }
 
+  function requestedMessagesSection() {
+    var pathname = (window.location.pathname || '').replace(/\/+$/, '');
+    if (pathname === '/profile/messages') {
+      try {
+        var pathParams = new URLSearchParams(window.location.search || '');
+        return normalizeMessagesPage(pathParams.get('box') || 'inbox');
+      } catch (e) {
+        return 'inbox';
+      }
+    }
+    var params;
+    try {
+      params = new URLSearchParams(window.location.search || '');
+    } catch (e2) {
+      return '';
+    }
+    if (params.get('profile') !== 'open' || params.get('account') !== 'messages') return '';
+    return normalizeMessagesPage(params.get('page') || params.get('box') || 'inbox');
+  }
+
   function openPanel() {
     var panel = getPanel();
     var overlay = getOverlay();
@@ -144,8 +169,12 @@
     isOpen = true;
     syncBalance();
     syncBalanceRail(panel);
-    var bonusSection = requestedBonusSection();
-    if (bonusSection) {
+    var messagesSection = requestedMessagesSection();
+    if (messagesSection) {
+      showMessagesPage(panel, messagesSection);
+    } else {
+      var bonusSection = requestedBonusSection();
+      if (bonusSection) {
       showBonusesPage(panel, bonusSection);
     } else {
       var casinoHistorySection = requestedCasinoHistorySection();
@@ -165,6 +194,7 @@
           }
         }
       }
+    }
     }
     return true;
   }
@@ -236,6 +266,32 @@
       } catch (e) {}
     }
     return raw;
+  }
+
+  function formatDateInput(date) {
+    try {
+      var d = date instanceof Date ? date : new Date(date);
+      if (isNaN(d.getTime())) return '';
+      return new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function parseDateInput(value, endOfDay) {
+    var raw = String(value || '').trim();
+    if (!raw) return null;
+    var match = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    var date = match ? new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1])) : new Date(raw.replace(' ', 'T'));
+    if (isNaN(date.getTime())) return null;
+    if (endOfDay) date.setHours(23, 59, 59, 999);
+    else date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  function normalizeMessagesPage(pageName) {
+    pageName = String(pageName || 'inbox').toLowerCase();
+    return ['inbox', 'sent', 'new'].indexOf(pageName) !== -1 ? pageName : 'inbox';
   }
 
   function sportsbookTypeText(type) {
@@ -487,6 +543,7 @@
     panel.classList.remove('mprofile-bet-history-active');
     panel.classList.remove('mprofile-casino-history-active');
     panel.classList.remove('mprofile-bonuses-active');
+    panel.classList.remove('mprofile-messages-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
     var balance = panel.querySelector('[data-mprofile-view="balance"]');
@@ -497,6 +554,8 @@
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
     var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
     if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
+    var messages = panel.querySelector('[data-mprofile-view="messages"]');
+    if (messages) messages.setAttribute('aria-hidden', 'true');
   }
 
   function showProfileDetails(panel, sectionName) {
@@ -508,6 +567,7 @@
     panel.classList.remove('mprofile-bet-history-active');
     panel.classList.remove('mprofile-casino-history-active');
     panel.classList.remove('mprofile-bonuses-active');
+    panel.classList.remove('mprofile-messages-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'false');
     var balance = panel.querySelector('[data-mprofile-view="balance"]');
@@ -518,6 +578,8 @@
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
     var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
     if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
+    var messages = panel.querySelector('[data-mprofile-view="messages"]');
+    if (messages) messages.setAttribute('aria-hidden', 'true');
     panel.querySelectorAll('[data-mprofile-section]').forEach(function (section) {
       var isActive = section.getAttribute('data-mprofile-section') === sectionName;
       section.hidden = !isActive;
@@ -1061,6 +1123,7 @@
     panel.classList.remove('mprofile-bet-history-active');
     panel.classList.remove('mprofile-casino-history-active');
     panel.classList.remove('mprofile-bonuses-active');
+    panel.classList.remove('mprofile-messages-active');
     panel.classList.add('mprofile-balance-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
@@ -1070,6 +1133,8 @@
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
     var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
     if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
+    var messages = panel.querySelector('[data-mprofile-view="messages"]');
+    if (messages) messages.setAttribute('aria-hidden', 'true');
     var balance = panel.querySelector('[data-mprofile-view="balance"]');
     if (balance) balance.setAttribute('aria-hidden', 'false');
     panel.querySelectorAll('[data-mbalance-section]').forEach(function (section) {
@@ -1093,6 +1158,7 @@
     panel.classList.remove('mprofile-balance-active');
     panel.classList.remove('mprofile-casino-history-active');
     panel.classList.remove('mprofile-bonuses-active');
+    panel.classList.remove('mprofile-messages-active');
     panel.classList.add('mprofile-bet-history-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
@@ -1104,6 +1170,8 @@
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
     var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
     if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
+    var messages = panel.querySelector('[data-mprofile-view="messages"]');
+    if (messages) messages.setAttribute('aria-hidden', 'true');
     panel.querySelectorAll('[data-mbet-history-tab]').forEach(function (tab) {
       tab.classList.toggle('active', tab.getAttribute('data-mbet-history-tab') === pageName);
     });
@@ -1120,6 +1188,7 @@
     panel.classList.remove('mprofile-balance-active');
     panel.classList.remove('mprofile-bet-history-active');
     panel.classList.remove('mprofile-bonuses-active');
+    panel.classList.remove('mprofile-messages-active');
     panel.classList.add('mprofile-casino-history-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
@@ -1131,6 +1200,8 @@
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'false');
     var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
     if (bonuses) bonuses.setAttribute('aria-hidden', 'true');
+    var messages = panel.querySelector('[data-mprofile-view="messages"]');
+    if (messages) messages.setAttribute('aria-hidden', 'true');
     panel.querySelectorAll('[data-mcasino-history-tab]').forEach(function (tab) {
       tab.classList.toggle('active', tab.getAttribute('data-mcasino-history-tab') === pageName);
     });
@@ -1147,6 +1218,7 @@
     panel.classList.remove('mprofile-balance-active');
     panel.classList.remove('mprofile-bet-history-active');
     panel.classList.remove('mprofile-casino-history-active');
+    panel.classList.remove('mprofile-messages-active');
     panel.classList.add('mprofile-bonuses-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
@@ -1158,6 +1230,8 @@
     if (casinoHistory) casinoHistory.setAttribute('aria-hidden', 'true');
     var bonuses = panel.querySelector('[data-mprofile-view="bonuses"]');
     if (bonuses) bonuses.setAttribute('aria-hidden', 'false');
+    var messages = panel.querySelector('[data-mprofile-view="messages"]');
+    if (messages) messages.setAttribute('aria-hidden', 'true');
     panel.querySelectorAll('[data-mbonus-tab]').forEach(function (tab) {
       tab.classList.toggle('active', tab.getAttribute('data-mbonus-tab') === pageName);
     });
@@ -1182,6 +1256,181 @@
       renderLoyaltyPoints(panel);
       if (!loyaltyLoaded) loadLoyaltyPoints(panel);
     }
+  }
+
+  function showMessagesPage(panel, pageName) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    pageName = normalizeMessagesPage(pageName);
+    activeMessagesPage = pageName;
+    panel.classList.remove('mprofile-detail-active');
+    panel.classList.remove('mprofile-balance-active');
+    panel.classList.remove('mprofile-bet-history-active');
+    panel.classList.remove('mprofile-casino-history-active');
+    panel.classList.remove('mprofile-bonuses-active');
+    panel.classList.add('mprofile-messages-active');
+    ['details', 'balance', 'bet-history', 'casino-history', 'bonuses'].forEach(function (view) {
+      var node = panel.querySelector('[data-mprofile-view="' + view + '"]');
+      if (node) node.setAttribute('aria-hidden', 'true');
+    });
+    var messages = panel.querySelector('[data-mprofile-view="messages"]');
+    if (messages) messages.setAttribute('aria-hidden', 'false');
+    panel.querySelectorAll('[data-mmessages-tab]').forEach(function (tab) {
+      tab.classList.toggle('active', tab.getAttribute('data-mmessages-tab') === pageName);
+    });
+    if (pageName === 'new') {
+      renderNewMessage(panel);
+    } else if (pageName === 'sent') {
+      if (sentMessagesLoaded) renderSentMessages(panel);
+      else loadSentMessages(panel);
+    } else if (messagesLoaded) {
+      renderInboxMessages(panel);
+    } else {
+      loadInboxMessages(panel);
+    }
+  }
+
+  function messagesContent(panel) {
+    return panel && panel.querySelector('[data-messages-content]');
+  }
+
+  function loadInboxMessages(panel) {
+    panel = panel || getPanel();
+    var content = messagesContent(panel);
+    if (content) content.innerHTML = '<p class="empty-b-text-v-bc" role="status">Mesajlar yükleniyor...</p>';
+    fetch(apiUrl('/api/v2/member-inbox-messages'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        var data = envelope && envelope.data ? envelope.data : {};
+        messagesRows = Array.isArray(data.messages) ? data.messages : [];
+        messagesLoaded = true;
+        renderInboxMessages(panel);
+      })
+      .catch(function () {
+        messagesRows = [];
+        messagesLoaded = true;
+        if (content) content.innerHTML = '<p class="empty-b-text-v-bc" role="status">Mesajlar yüklenemedi.</p>';
+      });
+  }
+
+  function loadSentMessages(panel) {
+    panel = panel || getPanel();
+    var content = messagesContent(panel);
+    if (content) content.innerHTML = '<p class="empty-b-text-v-bc" role="status">Gönderilen mesajlar yükleniyor...</p>';
+    fetch(apiUrl('/api/v2/support/tickets'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        var data = envelope && envelope.data ? envelope.data : {};
+        sentMessagesRows = Array.isArray(data.items) ? data.items : [];
+        sentMessagesLoaded = true;
+        renderSentMessages(panel);
+      })
+      .catch(function () {
+        sentMessagesRows = [];
+        sentMessagesLoaded = true;
+        if (content) content.innerHTML = '<p class="empty-b-text-v-bc" role="status">Gönderilen mesajlar yüklenemedi.</p>';
+      });
+  }
+
+  function renderInboxMessages(panel) {
+    panel = panel || getPanel();
+    var content = messagesContent(panel);
+    if (!content) return;
+    var now = new Date();
+    var weekAgo = new Date(now.getTime() - 7 * 86400000);
+    var fromValue = content.querySelector('[data-mmessages-date-from]') ? content.querySelector('[data-mmessages-date-from]').value : formatDateInput(weekAgo);
+    var toValue = content.querySelector('[data-mmessages-date-to]') ? content.querySelector('[data-mmessages-date-to]').value : formatDateInput(now);
+    var fromDate = parseDateInput(fromValue, false);
+    var toDate = parseDateInput(toValue, true);
+    var filtered = messagesRows.filter(function (row) {
+      var date = new Date(String(row.created_at || '').replace(' ', 'T'));
+      if (isNaN(date.getTime())) return false;
+      if (fromDate && date < fromDate) return false;
+      if (toDate && date > toDate) return false;
+      return true;
+    });
+    var bodyHidden = content.querySelector('[data-mmessages-filter-body]') ? content.querySelector('[data-mmessages-filter-body]').hidden : true;
+    content.innerHTML = '<div class="componentFilterWrapper-bc" data-mmessages-filter-wrapper><div class="componentFilterLabel-bc ' + (!bodyHidden ? 'active' : '') + '" data-mmessages-filter-toggle><i class="componentFilterLabel-filter-i-bc bc-i-filter"></i><div class="componentFilterLabel-filter-bc"><p class="ellipsis">FİLTRE</p></div><i class="componentFilterChevron-bc bc-i-small-arrow-down"></i></div><div class="componentFilterBody-bc" data-mmessages-filter-body' + (bodyHidden ? ' hidden' : '') + '><div class="componentFilterElsWrapper-bc"><form class="filter-form-w-bc" data-mmessages-filter-form><div class="u-i-p-control-item-holder-bc halfPartFilterSection"><div class="react-datepicker-wrapper"><div class="react-datepicker__input-container"><div class="form-control-bc default filled valid filled"><label class="form-control-label-bc inputs"><input class="form-control-input-bc" type="text" placeholder="...dan/den" readonly value="' + escapeHtml(fromValue) + '" data-mmessages-date-from><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Tarihinden *</span><i class="dropdownIcon-bc bc-i-datepicker"></i></label></div></div></div></div><div class="u-i-p-control-item-holder-bc halfPartFilterSection"><div class="react-datepicker-wrapper"><div class="react-datepicker__input-container"><div class="form-control-bc default filled valid filled"><label class="form-control-label-bc inputs"><input class="form-control-input-bc" type="text" placeholder="...a/e" readonly value="' + escapeHtml(toValue) + '" data-mmessages-date-to><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Tarihine *</span><i class="dropdownIcon-bc bc-i-datepicker"></i></label></div></div></div></div><div class="u-i-p-c-footer-bc"><button class="btn a-color" type="submit" title="Göster"><span>Göster</span></button></div></form></div></div></div>'
+      + '<ul class="messageBoxList-bc">' + (filtered.length ? filtered.map(function (row) { return renderMessageBlock(row); }).join('') : '<li class="message-empty-bc">Bu tarih aralığında mesaj yok.</li>') + '</ul><a class="btn a-color" href="/?profile=open&account=messages&page=new" data-mmessages-tab="new">YENİ MESAJ</a>';
+  }
+
+  function renderMessageBlock(row) {
+    var id = String(row.id || '');
+    var updated = String(row.updated_at || row.created_at || '');
+    var unread = window.MemberInboxBadges && window.MemberInboxBadges.isUnread ? window.MemberInboxBadges.isUnread(id, updated) : true;
+    var title = row.title || 'Mesaj';
+    var body = row.body || '';
+    return '<div class="message-block-bc" data-status="' + (unread ? 'unread' : 'read') + '" data-mmessages-id="' + escapeHtml(id) + '" data-mmessages-updated="' + escapeHtml(updated) + '"><div class="message-title-block"><h3 class="message-title-bc">' + escapeHtml(title) + '</h3></div><div class="message-more-time-bc"><time class="message-time-bc">' + escapeHtml(formatDateTime(row.created_at || '')) + '</time><button type="button" class="message-more-icon bc-i-double-arrow-top" data-mmessages-expand aria-label="Mesajı aç"></button></div><div class="message-body-bc" hidden>' + body + (row.link_url ? '<p><a href="' + escapeHtml(row.link_url) + '" target="_blank" rel="noopener noreferrer">Bağlantıya git</a></p>' : '') + '</div></div>';
+  }
+
+  function renderSentMessages(panel) {
+    panel = panel || getPanel();
+    var content = messagesContent(panel);
+    if (!content) return;
+    content.innerHTML = '<ul class="messageBoxList-bc messageBoxList-bc--sent">' + (sentMessagesRows.length ? sentMessagesRows.map(function (row) {
+      return '<div class="message-block-bc" data-status="read"><div class="message-title-block"><h3 class="message-title-bc">' + escapeHtml(row.subject || row.title || 'Mesaj') + '</h3></div><div class="message-more-time-bc"><time class="message-time-bc">' + escapeHtml(formatDateTime(row.created_at || row.createdAt || '')) + '</time><button type="button" class="message-more-icon bc-i-double-arrow-top" data-mmessages-expand aria-label="Mesajı aç"></button></div><div class="message-body-bc" hidden>' + escapeHtml(row.body || row.message || row.status || '—') + '</div></div>';
+    }).join('') : '<li class="message-empty-bc">Gönderilmiş mesaj bulunmuyor.</li>') + '</ul><a class="btn a-color" href="/?profile=open&account=messages&page=new" data-mmessages-tab="new">YENİ MESAJ</a>';
+  }
+
+  function renderNewMessage(panel) {
+    var content = messagesContent(panel);
+    if (!content) return;
+    content.innerHTML = '<form class="new-msg-form" data-mmessages-new-form><div class="pm-alert js-new-message-feedback" data-mmessages-new-status role="status" aria-live="polite" hidden></div><div class="new-msg-field"><input type="text" name="subject" class="new-msg-input new-msg-subject" placeholder="Konu *" required maxlength="190"></div><div class="new-msg-field"><label class="new-msg-label">MESAJ *</label><textarea name="body" class="new-msg-textarea" placeholder="Buraya metin giriniz" required rows="10" maxlength="5000"></textarea></div><div class="new-msg-footer"><button type="submit" class="new-msg-btn-send">GÖNDER</button></div></form>';
+  }
+
+  function submitNewMessage(panel, form) {
+    var subject = form && form.querySelector('[name="subject"]');
+    var body = form && form.querySelector('[name="body"]');
+    var status = form && form.querySelector('[data-mmessages-new-status]');
+    var button = form && form.querySelector('.new-msg-btn-send');
+    var subjectValue = subject ? subject.value.trim() : '';
+    var bodyValue = body ? body.value.trim() : '';
+    if (status) {
+      status.hidden = false;
+      status.classList.remove('pm-alert--success', 'pm-alert--error');
+    }
+    if (!subjectValue || !bodyValue) {
+      if (status) {
+        status.textContent = 'Konu ve mesaj alanları zorunludur.';
+        status.classList.add('pm-alert--error');
+      }
+      return;
+    }
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'GÖNDERİLİYOR...';
+    }
+    fetch(apiUrl('/api/v2/support/tickets'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+      body: JSON.stringify({ subject: subjectValue, body: bodyValue, category: 'profile_messages', priority: 'normal' })
+    })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        var ok = !!(envelope && envelope.success);
+        if (status) {
+          status.textContent = envelope && envelope.message ? envelope.message : (ok ? 'Mesajınız admine iletildi.' : 'Mesaj gönderilemedi.');
+          status.classList.toggle('pm-alert--success', ok);
+          status.classList.toggle('pm-alert--error', !ok);
+        }
+        if (ok) {
+          form.reset();
+          sentMessagesLoaded = false;
+        }
+      })
+      .catch(function () {
+        if (status) {
+          status.textContent = 'Mesaj gönderimi sırasında beklenmeyen bir hata oluştu.';
+          status.classList.add('pm-alert--error');
+        }
+      })
+      .then(function () {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'GÖNDER';
+        }
+      });
   }
 
   function loadBonusPromotions(panel, pageName) {
@@ -1981,7 +2230,11 @@
       var initialBetHistorySection = requestedBetHistorySection();
       var initialCasinoHistorySection = requestedCasinoHistorySection();
       var initialBonusSection = requestedBonusSection();
-      if (initialBonusSection) {
+      var initialMessagesSection = requestedMessagesSection();
+      if (initialMessagesSection) {
+        openPanel();
+        showMessagesPage(panel, initialMessagesSection);
+      } else if (initialBonusSection) {
         openPanel();
         showBonusesPage(panel, initialBonusSection);
       } else if (initialCasinoHistorySection) {
@@ -2086,7 +2339,58 @@
             showBonusesPage(panel, 'bonus-request');
             return;
           }
+          if (menuItem.getAttribute('data-href') === '/profile/messages') {
+            showMessagesPage(panel, 'inbox');
+            return;
+          }
           window.location.href = menuItem.getAttribute('data-href');
+          return;
+        }
+
+        var messageLink = target.closest('a[href*="account=messages"], [data-mmessages-tab]');
+        if (messageLink) {
+          e.preventDefault();
+          var messagePage = messageLink.getAttribute('data-mmessages-tab') || '';
+          if (!messagePage) {
+            try {
+              messagePage = new URL(messageLink.getAttribute('href') || '', window.location.origin).searchParams.get('page') || 'inbox';
+            } catch (msgErr) {
+              messagePage = 'inbox';
+            }
+          }
+          showMessagesPage(panel, messagePage);
+          return;
+        }
+
+        var messagesFilterToggle = target.closest('[data-mmessages-filter-toggle]');
+        if (messagesFilterToggle) {
+          e.preventDefault();
+          var messagesWrapper = messagesFilterToggle.closest('[data-mmessages-filter-wrapper]');
+          var messagesBody = messagesWrapper && messagesWrapper.querySelector('[data-mmessages-filter-body]');
+          if (messagesBody) {
+            var shouldOpen = messagesBody.hidden;
+            messagesBody.hidden = !shouldOpen;
+            messagesFilterToggle.classList.toggle('active', shouldOpen);
+          }
+          return;
+        }
+
+        var messageExpand = target.closest('[data-mmessages-expand]');
+        if (messageExpand) {
+          e.preventDefault();
+          var block = messageExpand.closest('.message-block-bc');
+          var body = block && block.querySelector('.message-body-bc');
+          if (body) {
+            var open = body.hidden;
+            body.hidden = !open;
+            messageExpand.classList.toggle('is-open', open);
+            if (open && block) {
+              block.setAttribute('data-status', 'read');
+              if (window.MemberInboxBadges && window.MemberInboxBadges.markRead) {
+                window.MemberInboxBadges.markRead(block.getAttribute('data-mmessages-id') || '', block.getAttribute('data-mmessages-updated') || '');
+              }
+            }
+          }
           return;
         }
 
@@ -2321,6 +2625,17 @@
           e.preventDefault();
           casinoHistoryFormFilterActive = true;
           renderCasinoHistory(panel);
+          return;
+        }
+        if (e.target && e.target.closest && e.target.closest('[data-mmessages-filter-form]')) {
+          e.preventDefault();
+          renderInboxMessages(panel);
+          return;
+        }
+        var newMessageForm = e.target && e.target.closest && e.target.closest('[data-mmessages-new-form]');
+        if (newMessageForm) {
+          e.preventDefault();
+          submitNewMessage(panel, newMessageForm);
         }
       });
 

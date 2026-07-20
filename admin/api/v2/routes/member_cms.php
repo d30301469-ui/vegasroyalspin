@@ -81,25 +81,52 @@ if ($method === 'GET' && $route === 'member_inbox_messages.php') {
         ? (int) $memberJwtOptionalUserId($pdo)
         : 0;
     try {
-        $sql = "SELECT id, title, body, link_url, priority, created_at, created_at AS updated_at
-                FROM member_inbox_messages
-                WHERE is_active = 1
-                  AND (starts_at IS NULL OR starts_at <= :now_start)
-                  AND (ends_at IS NULL OR ends_at >= :now_end)";
-        $params = ['now_start' => $now, 'now_end' => $now];
-        if ($viewerUserId > 0) {
-            $sql .= " AND (user_id IS NULL OR user_id = :viewer_user_id)";
-            $params['viewer_user_id'] = $viewerUserId;
-        } else {
-            $sql .= " AND user_id IS NULL";
+        $columnStmt = $pdo->query('SHOW COLUMNS FROM member_inbox_messages');
+        $columns = $columnStmt !== false ? array_map(static fn (array $row): string => (string) ($row['Field'] ?? ''), $columnStmt->fetchAll(PDO::FETCH_ASSOC)) : [];
+        $hasColumn = static fn (string $column): bool => in_array($column, $columns, true);
+        $select = [
+            $hasColumn('id') ? 'id' : '0 AS id',
+            $hasColumn('title') ? 'title' : "'' AS title",
+            $hasColumn('body') ? 'body' : "'' AS body",
+            $hasColumn('link_url') ? 'link_url' : 'NULL AS link_url',
+            $hasColumn('priority') ? 'priority' : '0 AS priority',
+            $hasColumn('created_at') ? 'created_at' : 'NOW() AS created_at',
+            $hasColumn('updated_at') ? 'updated_at' : ($hasColumn('created_at') ? 'created_at AS updated_at' : 'NOW() AS updated_at'),
+        ];
+        $where = [];
+        $params = [];
+        if ($hasColumn('is_active')) {
+            $where[] = 'is_active = 1';
         }
-        $sql .= " ORDER BY priority DESC, id DESC LIMIT 100";
+        if ($hasColumn('starts_at')) {
+            $where[] = '(starts_at IS NULL OR starts_at <= :now_start)';
+            $params['now_start'] = $now;
+        }
+        if ($hasColumn('ends_at')) {
+            $where[] = '(ends_at IS NULL OR ends_at >= :now_end)';
+            $params['now_end'] = $now;
+        }
+        if ($viewerUserId > 0 && $hasColumn('user_id')) {
+            $where[] = '(user_id IS NULL OR user_id = :viewer_user_id)';
+            $params['viewer_user_id'] = $viewerUserId;
+        } elseif ($hasColumn('user_id')) {
+            $where[] = 'user_id IS NULL';
+        }
+        $sql = 'SELECT ' . implode(', ', $select) . ' FROM member_inbox_messages';
+        if ($where !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $order = [];
+        if ($hasColumn('priority')) $order[] = 'priority DESC';
+        if ($hasColumn('id')) $order[] = 'id DESC';
+        if ($order !== []) $sql .= ' ORDER BY ' . implode(', ', $order);
+        $sql .= ' LIMIT 100';
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        $rows = str_contains($e->getMessage(), '42S02') ? [] : throw $e;
+        $rows = [];
     }
     $memberEnvelope(200, [
         'success' => true,
