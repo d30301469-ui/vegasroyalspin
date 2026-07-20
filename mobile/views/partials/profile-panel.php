@@ -213,7 +213,6 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
                 <span class="twofa-toggle-slider"></span>
               </label>
             </div>
-            <div class="mprofile-form-message" data-mprofile-twofa-message role="status" aria-live="polite"></div>
           </div>
         </div>
       </div>

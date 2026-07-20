@@ -928,22 +928,23 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   font-weight: 400;
   line-height: 1.45;
 }
+#mprofilePanel .twofa-status.is-error { color: rgba(var(--oc-3, 255, 76, 76), 1); }
+#mprofilePanel .twofa-status.is-success { color: rgba(var(--b-sc, 255, 255, 255), 0.72); }
 #mprofilePanel .twofa-activate-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  min-height: 48px;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: center !important;
+  column-gap: 12px;
+  width: 100% !important;
+  min-height: 38px;
 }
 #mprofilePanel .twofa-left-col {
-  display: flex;
+  display: flex !important;
   flex: 1 1 auto;
-  flex-direction: row;
-  align-items: center;
+  flex-direction: row !important;
+  align-items: center !important;
   gap: 10px;
-  min-width: 0;
+  min-width: 0 !important;
 }
 #mprofilePanel .twofa-icon-wrap {
   flex: 0 0 auto;
@@ -969,6 +970,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .twofa-icon-ga path:nth-of-type(4) { fill: #34A853 !important; }
 #mprofilePanel .twofa-icon-ga circle { fill: #fff !important; }
 #mprofilePanel .twofa-activate-label {
+  display: block !important;
   flex: 1 1 auto;
   color: #fff;
   font-size: 12px;
@@ -978,6 +980,8 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   text-align: left;
   text-transform: uppercase;
   white-space: normal;
+  margin: 0 !important;
+  transform: none !important;
 }
 #mprofilePanel .twofa-toggle {
   position: relative;
@@ -1027,7 +1031,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 @media (max-width: 480px) {
   #mprofilePanel .twofa-activate-row {
-    flex-wrap: nowrap;
+    grid-template-columns: minmax(0, 1fr) 48px;
   }
 }
 

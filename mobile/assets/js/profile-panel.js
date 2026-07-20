@@ -144,11 +144,11 @@
   }
 
   function setTwofaMessage(panel, type, text) {
-    var message = panel && panel.querySelector('[data-mprofile-twofa-message]');
-    if (!message) return;
-    message.textContent = text || '';
-    message.classList.toggle('is-error', type === 'error');
-    message.classList.toggle('is-success', type === 'success');
+    var statusEl = panel && panel.querySelector('#mprofile-twofa-status');
+    if (!statusEl || !text) return;
+    statusEl.textContent = text;
+    statusEl.classList.toggle('is-error', type === 'error');
+    statusEl.classList.toggle('is-success', type === 'success');
   }
 
   function submitTwofaToggle(panel, toggle) {
@@ -176,8 +176,7 @@
         if (env && env.success) {
           var enabled = typeof env.enabled !== 'undefined' ? !!env.enabled : !!(env.data && env.data.enabled);
           toggle.checked = enabled;
-          if (statusEl) statusEl.textContent = enabled ? 'İki faktörlü kimlik doğrulama etkin.' : 'İki faktörlü kimlik doğrulama kapatıldı';
-          setTwofaMessage(panel, 'success', (env.message && String(env.message).trim()) || (enabled ? 'İki aşamalı doğrulama etkinleştirildi.' : 'İki aşamalı doğrulama kapatıldı.'));
+          setTwofaMessage(panel, 'success', enabled ? 'İki faktörlü kimlik doğrulama etkin.' : 'İki faktörlü kimlik doğrulama kapatıldı');
           return;
         }
         toggle.checked = previous;
