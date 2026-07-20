@@ -11,6 +11,10 @@
   var balanceInfoLoaded = false;
   var transactionHistoryLoaded = false;
   var withdrawStatusLoaded = false;
+  var betHistoryLoaded = false;
+  var betHistoryRows = [];
+  var activeBetHistoryPage = 'bets';
+  var betHistoryFormFilterActive = false;
   var transactionHistoryRows = [];
   var balanceMethodStore = { deposit: [], withdraw: [] };
   var activePaymentModal = null;
@@ -136,6 +140,32 @@
     } catch (e) {
       return num.toFixed(2) + ' ₺';
     }
+  }
+
+  function formatDateTime(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '—';
+    var date = new Date(raw.replace(' ', 'T'));
+    if (!isNaN(date.getTime())) {
+      try {
+        return new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+      } catch (e) {}
+    }
+    return raw;
+  }
+
+  function sportsbookTypeText(type) {
+    type = String(type || '').toLowerCase();
+    if (type === 'win') return 'KAZANÇ';
+    if (type === 'cancel' || type === 'refund') return 'İADE';
+    if (type === 'adjustment') return 'DÜZELTME';
+    return 'BAHİS';
+  }
+
+  function sportsbookStatusText(row) {
+    var type = String(row && row.txn_type || '').toLowerCase();
+    if (type === 'cancel' || type === 'refund') return 'İADE EDİLDİ';
+    return row && row.is_finished ? 'TAMAMLANDI' : 'AÇIK';
   }
 
   function limitText(value) {
@@ -822,6 +852,105 @@
     panel.querySelectorAll('[data-mbet-history-tab]').forEach(function (tab) {
       tab.classList.toggle('active', tab.getAttribute('data-mbet-history-tab') === pageName);
     });
+    activeBetHistoryPage = pageName;
+    if (betHistoryLoaded) renderBetHistory(panel);
+    else loadBetHistory(panel);
+  }
+
+  function rowMatchesBetHistoryPage(row, pageName) {
+    var type = String(row && row.txn_type || '').toLowerCase();
+    var amount = Math.abs(Number(row && row.amount || 0));
+    var isFinished = !!(row && row.is_finished);
+    if (pageName === 'open-bets') return !isFinished && type === 'bet';
+    if (pageName === 'cashed-out') return isFinished && (type === 'win' || type === 'cancel' || type === 'refund') && amount > 0;
+    if (pageName === 'won') return type === 'win' && amount > 0;
+    if (pageName === 'lost') return isFinished && type === 'bet';
+    if (pageName === 'returned' || pageName === 'won-return' || pageName === 'lost-return') return type === 'cancel' || type === 'refund';
+    return true;
+  }
+
+  function rowMatchesBetHistoryForm(panel, row) {
+    if (!betHistoryFormFilterActive) return true;
+    var form = panel && panel.querySelector('[data-mbet-filter-wrapper] .filter-form-w-bc');
+    if (!form) return true;
+    var betId = String((form.elements.bet_id && form.elements.bet_id.value) || '').trim().toLowerCase();
+    var sportName = String((form.elements.name && form.elements.name.value) || '').trim().toLowerCase();
+    var betType = String((form.elements.bet_type && form.elements.bet_type.value) || '').trim();
+    var period = String((form.elements.period && form.elements.period.value) || '24').trim();
+    if (betId) {
+      var idText = [row.id, row.txn_code, row.wager_id, row.round_id].map(function (value) { return String(value || '').toLowerCase(); }).join(' ');
+      if (idText.indexOf(betId) === -1) return false;
+    }
+    if (sportName) {
+      var nameText = [row.sport_name, row.game_name, row.game_code, row.vendor_code].map(function (value) { return String(value || '').toLowerCase(); }).join(' ');
+      if (nameText.indexOf(sportName) === -1) return false;
+    }
+    if (betType && betType !== 'ALL') {
+      var typeText = String(row.bet_type || row.selection_type || row.type || '').toLowerCase();
+      if (typeText && typeText !== betType.toLowerCase()) return false;
+    }
+    if (period) {
+      var hours = { '24': 24, '72': 72, '168': 168, '720': 720 }[period];
+      if (hours) {
+        var ts = new Date(String(row.created_at || '').replace(' ', 'T')).getTime();
+        if (!isNaN(ts) && ts < Date.now() - hours * 3600000) return false;
+      }
+    }
+    return true;
+  }
+
+  function renderBetHistory(panel) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    var list = panel.querySelector('[data-mbet-history-list]');
+    if (!list) return;
+    var rows = betHistoryRows.filter(function (row) {
+      return rowMatchesBetHistoryPage(row, activeBetHistoryPage) && rowMatchesBetHistoryForm(panel, row);
+    }).slice(0, 50);
+    if (!rows.length) {
+      list.innerHTML = '<p class="empty-b-text-v-bc" role="status">GÖSTERİLECEK BAHİS YOK</p>';
+      return;
+    }
+    list.innerHTML = rows.map(function (row) {
+      var type = String(row.txn_type || 'bet').toLowerCase();
+      var amount = Math.abs(Number(row.amount || 0));
+      var amountClass = type === 'bet' ? 'is-bet' : 'is-win';
+      var title = row.sport_name || row.game_name || row.game_code || 'Spor Kuponu';
+      var provider = row.vendor_code || 'sports-betby';
+      return '<article class="mprofile-bet-history-card">'
+        + '<div class="mprofile-bet-history-card-head"><strong>' + escapeHtml(sportsbookTypeText(type)) + '</strong><span class="mprofile-status-badge ' + (row.is_finished ? 'mprofile-status-approved' : 'mprofile-status-pending') + '">' + escapeHtml(sportsbookStatusText(row)) + '</span></div>'
+        + '<dl>'
+        + '<div><dt>Bahis Kimliği</dt><dd>' + escapeHtml(row.wager_id || row.txn_code || row.id || '—') + '</dd></div>'
+        + '<div><dt>Spor Adı</dt><dd>' + escapeHtml(title) + '</dd></div>'
+        + '<div><dt>Sağlayıcı</dt><dd>' + escapeHtml(provider) + '</dd></div>'
+        + '<div><dt>Tutar</dt><dd class="' + amountClass + '">' + escapeHtml(moneyText(amount)) + '</dd></div>'
+        + '<div><dt>Tarih</dt><dd>' + escapeHtml(formatDateTime(row.created_at)) + '</dd></div>'
+        + '</dl></article>';
+    }).join('');
+  }
+
+  function loadBetHistory(panel, force) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    var list = panel.querySelector('[data-mbet-history-list]');
+    if (list) list.innerHTML = '<p class="empty-b-text-v-bc" role="status">BAHİS GEÇMİŞİ YÜKLENİYOR...</p>';
+    if (betHistoryLoaded && !force) {
+      renderBetHistory(panel);
+      return;
+    }
+    fetch(apiUrl('/api/v2/sportsbook/history?limit=200&offset=0'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        var data = envelope && envelope.data ? envelope.data : envelope;
+        betHistoryRows = Array.isArray(data && data.items) ? data.items : (Array.isArray(envelope && envelope.items) ? envelope.items : []);
+        betHistoryLoaded = true;
+        renderBetHistory(panel);
+      })
+      .catch(function () {
+        betHistoryRows = [];
+        betHistoryLoaded = true;
+        if (list) list.innerHTML = '<p class="empty-b-text-v-bc" role="status">BAHİS GEÇMİŞİ YÜKLENEMEDİ</p>';
+      });
   }
 
   function setPasswordMessage(panel, type, text) {
@@ -1260,6 +1389,8 @@
         }
         if (e.target && e.target.closest && e.target.closest('[data-mbet-filter-wrapper] .filter-form-w-bc')) {
           e.preventDefault();
+          betHistoryFormFilterActive = true;
+          renderBetHistory(panel);
         }
       });
 
