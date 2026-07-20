@@ -218,6 +218,38 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
           <div class="mprofile-history-list" id="mprofileWithdrawStatus"><p class="dw-methods-empty" role="status">Para çekme durumu yükleniyor...</p></div>
         </div>
       </div>
+      <div class="mprofile-bet-history-view" data-mprofile-view="bet-history" aria-hidden="true">
+        <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">BAHİS GEÇMİŞİ</span></div>
+        <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
+          <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=history&amp;page=bets" data-mbet-history-tab="bets"><span class="nav-menu-title">TÜMÜ<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=history&amp;page=open-bets" data-mbet-history-tab="open-bets"><span class="nav-menu-title">AÇIK BAHİSLER<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=history&amp;page=cashed-out" data-mbet-history-tab="cashed-out"><span class="nav-menu-title">NAKDE ÇEVRİLDİ<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=history&amp;page=won" data-mbet-history-tab="won"><span class="nav-menu-title">KAZANÇ<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=history&amp;page=lost" data-mbet-history-tab="lost"><span class="nav-menu-title">KAYIP<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=history&amp;page=returned" data-mbet-history-tab="returned"><span class="nav-menu-title">İADE EDİLDİ<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=history&amp;page=won-return" data-mbet-history-tab="won-return"><span class="nav-menu-title">KAZANAN İADE<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=history&amp;page=lost-return" data-mbet-history-tab="lost-return"><span class="nav-menu-title">KAYIP-IADE<i class="count-blink-even" data-badge=""></i></span></a>
+        </div></div>
+        <div class="u-i-e-p-p-content-bc u-i-common-content mprofile-bet-history-content" data-scroll-lock-scrollable>
+          <div class="componentFilterWrapper-bc" data-mbet-filter-wrapper>
+            <div class="componentFilterLabel-bc" data-mbet-filter-toggle>
+              <i class="componentFilterLabel-filter-i-bc bc-i-filter"></i>
+              <div class="componentFilterLabel-filter-bc"><p class="ellipsis">FİLTRE</p><p class="componentFilterLabel-filter-description ellipsis">TÜMÜ, 24 saat</p></div>
+              <i class="componentFilterChevron-bc bc-i-small-arrow-down"></i>
+            </div>
+            <div class="componentFilterBody-bc" hidden>
+              <div class="componentFilterElsWrapper-bc"><form class="filter-form-w-bc" onsubmit="return false;">
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" name="bet_id" step="0" value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">BAHİS KİMLİĞİ</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="name" step="0" value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Spor Adı</span></label></div><i class="sport-search-icon bc-i-search"></i></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc active" name="bet_type" step="0"><option value="">TÜMÜ</option><option value="1">Tekli</option><option value="2">Kombine</option><option value="3">Sistem</option><option value="50">Bahis Oluşturucu</option></select><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">BAHİS TÜRÜ</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc active" name="period" step="0"><option value="24">24 saat</option><option value="72">72 saat</option><option value="168">Bir hafta</option><option value="720">30 Gün</option><option value="">Özel</option></select><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">PERİYOT</span></label></div></div>
+                <div class="u-i-p-c-footer-bc"><button class="btn a-color" type="submit" title="Göster"><span>Göster</span></button></div>
+              </form></div>
+            </div>
+          </div>
+          <p class="empty-b-text-v-bc">GÖSTERİLECEK BAHİS YOK</p>
+        </div>
+      </div>
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
         <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>
         <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
