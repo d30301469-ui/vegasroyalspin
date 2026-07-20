@@ -281,6 +281,11 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
                     </div>
                 </div>
 
+                <div class="casinoProviderRow casinoProviderRow--mobile-inline<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>">
+                    <p class="casinoGameListTitle"><?= htmlspecialchars($slotGameType === 1 ? 'CANLI CASINO OYUNLARI' : 'CASINO OYUNLARI', ENT_QUOTES, 'UTF-8') ?></p>
+                    <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">TÜMÜ</a>
+                </div>
+
                 <div class="casinoGameItemWrp slot-oyun-listesi slots-games-container" id="casino_games_container" aria-label="Oyun listesi">
                     <div class="casinoCategoryGames">
                 <?php if (empty($games)): ?>
