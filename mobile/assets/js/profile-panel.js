@@ -37,7 +37,9 @@
     isOpen = true;
     syncBalance();
     syncBalanceRail(panel);
-    if (window.location.search.indexOf('page=change-password') !== -1) {
+    if (window.location.search.indexOf('page=two-factor-authentication') !== -1) {
+      showProfileDetails(panel, 'two-factor-authentication');
+    } else if (window.location.search.indexOf('page=change-password') !== -1) {
       showProfileDetails(panel, 'change-password');
     } else if (window.location.search.indexOf('page=details') !== -1) {
       showProfileDetails(panel, 'details');
@@ -139,6 +141,55 @@
     message.textContent = text || '';
     message.classList.toggle('is-error', type === 'error');
     message.classList.toggle('is-success', type === 'success');
+  }
+
+  function setTwofaMessage(panel, type, text) {
+    var message = panel && panel.querySelector('[data-mprofile-twofa-message]');
+    if (!message) return;
+    message.textContent = text || '';
+    message.classList.toggle('is-error', type === 'error');
+    message.classList.toggle('is-success', type === 'success');
+  }
+
+  function submitTwofaToggle(panel, toggle) {
+    panel = panel || getPanel();
+    if (!panel || !toggle) return;
+    var statusEl = panel.querySelector('#mprofile-twofa-status');
+    var wantOn = toggle.checked;
+    var previous = !wantOn;
+    var formData = new FormData();
+    formData.append('ajax', '1');
+    formData.append('action', 'twofa_toggle');
+    formData.append('enabled', wantOn ? '1' : '0');
+    formData.append('csrf_token', toggle.getAttribute('data-csrf-token') || '');
+    toggle.disabled = true;
+    setTwofaMessage(panel, '', '');
+
+    fetch(apiUrl('/api/v2/two-factor'), {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin',
+      headers: memberAuthHeaders({ Accept: 'application/json' })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (env) {
+        if (env && env.success) {
+          var enabled = typeof env.enabled !== 'undefined' ? !!env.enabled : !!(env.data && env.data.enabled);
+          toggle.checked = enabled;
+          if (statusEl) statusEl.textContent = enabled ? 'İki faktörlü kimlik doğrulama etkin.' : 'İki faktörlü kimlik doğrulama kapatıldı';
+          setTwofaMessage(panel, 'success', (env.message && String(env.message).trim()) || (enabled ? 'İki aşamalı doğrulama etkinleştirildi.' : 'İki aşamalı doğrulama kapatıldı.'));
+          return;
+        }
+        toggle.checked = previous;
+        setTwofaMessage(panel, 'error', (env && env.message) ? env.message : 'İki aşamalı doğrulama güncellenemedi.');
+      })
+      .catch(function () {
+        toggle.checked = previous;
+        setTwofaMessage(panel, 'error', 'Sunucu hatası. Lütfen tekrar deneyin.');
+      })
+      .then(function () {
+        toggle.disabled = false;
+      });
   }
 
   function submitPasswordForm(panel) {
@@ -267,6 +318,13 @@
           return;
         }
 
+        var twoFactorLink = target.closest('a[href*="account=profile"][href*="page=two-factor-authentication"]');
+        if (twoFactorLink) {
+          e.preventDefault();
+          showProfileDetails(panel, 'two-factor-authentication');
+          return;
+        }
+
         var back = target.closest('.back-nav-bc');
         if (back) {
           e.preventDefault();
@@ -293,6 +351,12 @@
           e.preventDefault();
           submitPasswordForm(panel);
         }
+      });
+
+      panel.addEventListener('change', function (e) {
+        var target = e.target && e.target.closest ? e.target : null;
+        var twofaToggle = target && target.closest('#mprofileTwofaToggle');
+        if (twofaToggle) submitTwofaToggle(panel, twofaToggle);
       });
     }
   }
