@@ -408,7 +408,7 @@
     return [];
   }
 
-  function normalizeHistoryRow(row, kind) {
+  function normalizeTransactionHistoryRow(row, kind) {
     row = row && typeof row === 'object' ? row : {};
     return {
       kind: kind,
@@ -457,8 +457,8 @@
       fetch(appendQuery(apiUrl('/api/v2/deposit-history'), query), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) }).then(function (res) { return res.json(); }),
       fetch(appendQuery(apiUrl('/api/v2/withdraw-history'), query), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) }).then(function (res) { return res.json(); })
     ]).then(function (packs) {
-      var deposits = extractHistoryRows(packs[0], 'deposit').map(function (row) { return normalizeHistoryRow(row, 'deposit'); });
-      var withdraws = extractHistoryRows(packs[1], 'withdraw').map(function (row) { return normalizeHistoryRow(row, 'withdraw'); });
+      var deposits = extractHistoryRows(packs[0], 'deposit').map(function (row) { return normalizeTransactionHistoryRow(row, 'deposit'); });
+      var withdraws = extractHistoryRows(packs[1], 'withdraw').map(function (row) { return normalizeTransactionHistoryRow(row, 'withdraw'); });
       transactionHistoryRows = deposits.concat(withdraws).sort(function (a, b) { return new Date(String(b.createdAt).replace(' ', 'T')).getTime() - new Date(String(a.createdAt).replace(' ', 'T')).getTime(); });
       renderTransactionHistory('all');
     }).catch(function () {
@@ -530,7 +530,7 @@
     fetch(appendQuery(apiUrl('/api/v2/withdraw-history'), 'page=1&per_page=20'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
       .then(function (res) { return res.json(); })
       .then(function (env) {
-        var rows = extractHistoryRows(env, 'withdraw').map(function (row) { return normalizeHistoryRow(row, 'withdraw'); });
+        var rows = extractHistoryRows(env, 'withdraw').map(function (row) { return normalizeTransactionHistoryRow(row, 'withdraw'); });
         if (!rows.length) {
           list.innerHTML = '<p class="dw-methods-empty" role="status">Para Çekme Bilgisi Yok</p>';
           return;
@@ -1039,6 +1039,56 @@
     renderHistoryRows(panel, '[data-mcasino-history-list]', rows, 'GÖSTERİLECEK CASINO GEÇMİŞİ YOK');
   }
 
+  function sportsbookGroupKey(row, index) {
+    var key = String(row.wager_id || row.__id || row.round_id || row.__round || '').trim();
+    return key !== '' ? key : 'sports-row-' + index;
+  }
+
+  function reconcileSportsbookRows(rows) {
+    var groups = [];
+    var byKey = Object.create(null);
+    rows.forEach(function (row, index) {
+      var key = sportsbookGroupKey(row, index);
+      if (!byKey[key]) {
+        byKey[key] = [];
+        groups.push(byKey[key]);
+      }
+      byKey[key].push(row);
+    });
+    return groups.map(function (group) {
+      var betRows = group.filter(function (row) { return row.__type === 'bet'; });
+      var settlementRows = group.filter(function (row) { return row.__type === 'win' || row.__type === 'cancel' || row.__type === 'refund'; });
+      if (!settlementRows.length) {
+        return betRows[0] || group[0];
+      }
+      var betRow = betRows[0] || group[group.length - 1] || settlementRows[0];
+      var settlementRow = settlementRows[0];
+      var cancelRows = settlementRows.filter(function (row) { return row.__type === 'cancel' || row.__type === 'refund'; });
+      var winRows = settlementRows.filter(function (row) { return row.__type === 'win'; });
+      var winAmount = winRows.reduce(function (sum, row) { return sum + Math.abs(Number(row.__amount || 0)); }, 0);
+      var cancelAmount = cancelRows.reduce(function (sum, row) { return sum + Math.abs(Number(row.__amount || 0)); }, 0);
+      var displayType = cancelRows.length ? 'cancel' : (winAmount > 0 ? 'win' : 'bet');
+      var displayAmount = displayType === 'win'
+        ? winAmount
+        : (displayType === 'cancel' ? (cancelAmount || betRow.__amount || settlementRow.__amount) : (betRow.__amount || 0));
+      return Object.assign({}, betRow, settlementRow, {
+        txn_type: displayType,
+        type: displayType,
+        amount: displayAmount,
+        is_finished: 1,
+        __history_source: 'sports',
+        __type: displayType,
+        __amount: displayAmount,
+        __id: betRow.__id || settlementRow.__id || '',
+        __round: betRow.__round || settlementRow.__round || '',
+        __title: betRow.__title || settlementRow.__title || 'Spor Kuponu',
+        __provider: betRow.__provider || settlementRow.__provider || 'sports-betby',
+        __created_at: settlementRow.__created_at || betRow.__created_at || '',
+        __is_finished: true
+      });
+    });
+  }
+
   function historyItemsFromEnvelope(envelope) {
     var data = envelope && envelope.data ? envelope.data : envelope;
     if (Array.isArray(data && data.items)) return data.items;
@@ -1087,7 +1137,7 @@
     fetch(apiUrl('/api/v2/sportsbook/history?limit=200&offset=0'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
       .then(function (response) { return response.json(); })
       .then(function (envelope) {
-        betHistoryRows = historyItemsFromEnvelope(envelope).map(function (row) { return normalizeHistoryRow(row, 'sports'); });
+        betHistoryRows = reconcileSportsbookRows(historyItemsFromEnvelope(envelope).map(function (row) { return normalizeHistoryRow(row, 'sports'); }));
         betHistoryLoaded = true;
         renderBetHistory(panel);
       })
