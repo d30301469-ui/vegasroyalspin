@@ -396,7 +396,7 @@ body.mobile-site .providers-drawer-wrapper {
   justify-content: center;
   touch-action: none;
   overscroll-behavior: none;
-  padding-bottom: var(--tab-navigation-height, 48px);
+  padding-bottom: 0;
   background: rgba(0, 2, 5, 0.48);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -425,7 +425,7 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-height: min(68dvh, 560px);
+  max-height: 80dvh;
   background: rgb(32, 32, 34) !important;
   border-radius: 10px 10px 0 0;
   overflow: hidden;
@@ -2097,7 +2097,6 @@ body.mobile-site .sidebar-overlay {
 }
 
 /* Provider sheet open: keep only the opened provider panel on the original gray surface. */
-body.mobile-site.provider-sheet-open .providers-drawer-wrapper,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .ds-drawer,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .ds-drawer__header,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .ds-drawer__content,
