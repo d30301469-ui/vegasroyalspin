@@ -36,6 +36,7 @@
 .bc-i-eye::before { content: "\e926"; }
 .bc-i-close-remove::before { content: "\e5cd"; }
 .bc-i-round-arrow-left::before { content: "\e956"; }
+.bc-i-small-arrow-down::before { content: "\e5cf"; }
 .bc-i-datepicker::before { content: "\e93e"; }
 .bc-i-filter::before { content: "\e9d9"; }
 .bc-i-search::before { content: "\e91e"; }
@@ -515,7 +516,14 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .loyaltyLevelCardSelect {
   width: 128px;
 }
+#mprofilePanel .loyaltyLevelCardSelect .form-control-label-bc.inputs {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 30px;
+}
 #mprofilePanel .loyaltyLevelCardSelect select {
+  width: 100%;
   height: 30px;
   padding: 0 28px 0 8px;
   border: 0;
@@ -523,6 +531,22 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
   font-size: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+#mprofilePanel .loyaltyLevelCardSelect .form-control-icon-bc {
+  position: absolute;
+  inset-inline-end: 8px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 11px;
+  line-height: 12px;
+  text-align: center;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 #mprofilePanel .loyaltyLevelCardsItem {
   display: flex;
