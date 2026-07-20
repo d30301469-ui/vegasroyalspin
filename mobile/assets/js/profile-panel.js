@@ -1299,10 +1299,39 @@
     var content = messagesContent(panel);
     if (content) content.innerHTML = '<p class="empty-b-text-v-bc" role="status">Mesajlar yükleniyor...</p>';
     fetch(apiUrl('/api/v2/member-inbox-messages'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
-      .then(function (response) { return response.json(); })
+      .then(function (response) {
+        if (!response.ok) throw new Error('inbox_failed');
+        return response.json();
+      })
       .then(function (envelope) {
         var data = envelope && envelope.data ? envelope.data : {};
         messagesRows = Array.isArray(data.messages) ? data.messages : [];
+        messagesLoaded = true;
+        renderInboxMessages(panel);
+      })
+      .catch(function () {
+        loadInboxMessagesFallback(panel);
+      });
+  }
+
+  function loadInboxMessagesFallback(panel) {
+    var content = messagesContent(panel);
+    fetch(apiUrl('/api/v2/announcements'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        var data = envelope && envelope.data ? envelope.data : {};
+        var rows = Array.isArray(data.announcements) ? data.announcements : [];
+        messagesRows = rows.map(function (row) {
+          return {
+            id: row.id || row.announcement_id || row.title || '',
+            title: row.title || row.subject || 'Mesaj',
+            body: row.body || row.description || row.content || '',
+            link_url: row.link_url || row.url || null,
+            priority: row.priority || row.sort_order || 0,
+            created_at: row.created_at || row.starts_at || new Date().toISOString(),
+            updated_at: row.updated_at || row.created_at || row.starts_at || ''
+          };
+        });
         messagesLoaded = true;
         renderInboxMessages(panel);
       })
