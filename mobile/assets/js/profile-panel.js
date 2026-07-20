@@ -52,6 +52,22 @@
     return ['deposit', 'withdraw', 'history', 'info', 'withdraws'].indexOf(page) !== -1 ? page : 'deposit';
   }
 
+  function requestedBetHistorySection() {
+    var pathname = window.location.pathname || '';
+    if (pathname.replace(/\/+$/, '') === '/profile/bet-history') return 'bets';
+    var params;
+    try {
+      params = new URLSearchParams(window.location.search || '');
+    } catch (e) {
+      return '';
+    }
+    if (params.get('profile') !== 'open') return '';
+    if (params.get('account') === 'bet' && params.get('page') === 'history') return 'bets';
+    if (params.get('account') !== 'history') return '';
+    var page = params.get('page') || 'bets';
+    return ['bets', 'open-bets', 'cashed-out', 'won', 'lost', 'returned', 'won-return', 'lost-return'].indexOf(page) !== -1 ? page : 'bets';
+  }
+
   function openPanel() {
     var panel = getPanel();
     var overlay = getOverlay();
@@ -70,12 +86,17 @@
     isOpen = true;
     syncBalance();
     syncBalanceRail(panel);
-    var balanceSection = requestedBalanceSection();
-    if (balanceSection) {
-      showBalancePage(panel, balanceSection);
+    var betHistorySection = requestedBetHistorySection();
+    if (betHistorySection) {
+      showBetHistoryPage(panel, betHistorySection);
     } else {
-      var section = requestedProfileSection();
-      if (section) showProfileDetails(panel, section);
+      var balanceSection = requestedBalanceSection();
+      if (balanceSection) {
+        showBalancePage(panel, balanceSection);
+      } else {
+        var section = requestedProfileSection();
+        if (section) showProfileDetails(panel, section);
+      }
     }
     return true;
   }
@@ -202,10 +223,13 @@
     if (!panel) return;
     panel.classList.remove('mprofile-detail-active');
     panel.classList.remove('mprofile-balance-active');
+    panel.classList.remove('mprofile-bet-history-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
     var balance = panel.querySelector('[data-mprofile-view="balance"]');
     if (balance) balance.setAttribute('aria-hidden', 'true');
+    var betHistory = panel.querySelector('[data-mprofile-view="bet-history"]');
+    if (betHistory) betHistory.setAttribute('aria-hidden', 'true');
   }
 
   function showProfileDetails(panel, sectionName) {
@@ -214,10 +238,13 @@
     sectionName = sectionName || 'details';
     panel.classList.add('mprofile-detail-active');
     panel.classList.remove('mprofile-balance-active');
+    panel.classList.remove('mprofile-bet-history-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'false');
     var balance = panel.querySelector('[data-mprofile-view="balance"]');
     if (balance) balance.setAttribute('aria-hidden', 'true');
+    var betHistory = panel.querySelector('[data-mprofile-view="bet-history"]');
+    if (betHistory) betHistory.setAttribute('aria-hidden', 'true');
     panel.querySelectorAll('[data-mprofile-section]').forEach(function (section) {
       var isActive = section.getAttribute('data-mprofile-section') === sectionName;
       section.hidden = !isActive;
@@ -758,9 +785,12 @@
     if (!panel) return;
     sectionName = sectionName || 'deposit';
     panel.classList.remove('mprofile-detail-active');
+    panel.classList.remove('mprofile-bet-history-active');
     panel.classList.add('mprofile-balance-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'true');
+    var betHistory = panel.querySelector('[data-mprofile-view="bet-history"]');
+    if (betHistory) betHistory.setAttribute('aria-hidden', 'true');
     var balance = panel.querySelector('[data-mprofile-view="balance"]');
     if (balance) balance.setAttribute('aria-hidden', 'false');
     panel.querySelectorAll('[data-mbalance-section]').forEach(function (section) {
@@ -774,6 +804,24 @@
     if (sectionName === 'history') loadTransactionHistory();
     if (sectionName === 'info') loadBalanceInfo();
     if (sectionName === 'withdraws') loadWithdrawStatus();
+  }
+
+  function showBetHistoryPage(panel, pageName) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    pageName = pageName || 'bets';
+    panel.classList.remove('mprofile-detail-active');
+    panel.classList.remove('mprofile-balance-active');
+    panel.classList.add('mprofile-bet-history-active');
+    var detail = panel.querySelector('[data-mprofile-view="details"]');
+    if (detail) detail.setAttribute('aria-hidden', 'true');
+    var balance = panel.querySelector('[data-mprofile-view="balance"]');
+    if (balance) balance.setAttribute('aria-hidden', 'true');
+    var betHistory = panel.querySelector('[data-mprofile-view="bet-history"]');
+    if (betHistory) betHistory.setAttribute('aria-hidden', 'false');
+    panel.querySelectorAll('[data-mbet-history-tab]').forEach(function (tab) {
+      tab.classList.toggle('active', tab.getAttribute('data-mbet-history-tab') === pageName);
+    });
   }
 
   function setPasswordMessage(panel, type, text) {
@@ -976,7 +1024,11 @@
       bindBalanceRail(panel);
       var initialSection = requestedProfileSection();
       var initialBalanceSection = requestedBalanceSection();
-      if (initialBalanceSection) {
+      var initialBetHistorySection = requestedBetHistorySection();
+      if (initialBetHistorySection) {
+        openPanel();
+        showBetHistoryPage(panel, initialBetHistorySection);
+      } else if (initialBalanceSection) {
         openPanel();
         showBalancePage(panel, initialBalanceSection);
       } else if (initialSection) {
@@ -1017,7 +1069,36 @@
             showBalancePage(panel, 'deposit');
             return;
           }
+          if (menuItem.getAttribute('data-href') === '/profile/bet-history') {
+            showBetHistoryPage(panel, 'bets');
+            return;
+          }
           window.location.href = menuItem.getAttribute('data-href');
+          return;
+        }
+
+        var betHistoryLink = target.closest('a[href*="account=history"][href*="page="], [data-mbet-history-tab]');
+        if (betHistoryLink) {
+          e.preventDefault();
+          var page = betHistoryLink.getAttribute('data-mbet-history-tab') || '';
+          if (!page) {
+            var pageMatch = (betHistoryLink.getAttribute('href') || '').match(/[?&]page=([^&]+)/);
+            page = pageMatch ? decodeURIComponent(pageMatch[1]) : 'bets';
+          }
+          showBetHistoryPage(panel, page);
+          return;
+        }
+
+        var betFilterToggle = target.closest('[data-mbet-filter-toggle]');
+        if (betFilterToggle) {
+          e.preventDefault();
+          var wrapper = betFilterToggle.closest('[data-mbet-filter-wrapper]');
+          var body = wrapper && wrapper.querySelector('.componentFilterBody-bc');
+          if (wrapper && body) {
+            var isOpenFilter = body.hidden;
+            body.hidden = !isOpenFilter;
+            wrapper.classList.toggle('is-open', isOpenFilter);
+          }
           return;
         }
 
