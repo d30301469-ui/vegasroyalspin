@@ -1720,6 +1720,12 @@
             }
             if (parsed.origin !== window.location.origin) return;
             if (!shouldOpenProfileModalForHeaderLink(link, parsed.pathname)) return;
+            if (parsed.pathname === '/profile/bonus-spor' && typeof window.__openMobileBonusesPage === 'function' && window.__openMobileBonusesPage('bonus-request')) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return;
+            }
             if (!openProfileModalUrl(raw)) return;
 
             e.preventDefault();
