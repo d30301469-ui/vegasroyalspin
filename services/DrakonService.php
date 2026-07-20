@@ -292,21 +292,37 @@ final class DrakonService
 
         $url = self::apiBase($cfg) . '/auth/authentication';
         $attempts = [
-            [[], ['Authorization: Bearer ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
-            [[], ['Authorization: Basic ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
+            ['bearer_token_secret', [], ['Authorization: Bearer ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
+            ['basic_token_secret', [], ['Authorization: Basic ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
+            ['bearer_raw_token', [], ['Authorization: Bearer ' . $agentToken, 'Accept: application/json']],
         ];
         if ($agentCode !== '') {
-            $attempts[] = [[], ['Authorization: Bearer ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
-            $attempts[] = [[], ['Authorization: Basic ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
-            $attempts[] = [[
+            $attempts[] = ['bearer_code_token', [], ['Authorization: Bearer ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
+            $attempts[] = ['basic_code_token', [], ['Authorization: Basic ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
+            $attempts[] = ['bearer_raw_token_with_code', [], ['Authorization: Bearer ' . $agentToken, 'X-Agent-Code: ' . $agentCode, 'Accept: application/json']];
+            $attempts[] = ['json_code_token', [
+                'agent_code' => $agentCode,
+                'agent_token' => $agentToken,
+            ], ['Accept: application/json']];
+            $attempts[] = ['json_code_token_secret', [
                 'agent_code' => $agentCode,
                 'agent_token' => $agentToken,
                 'agent_secret' => $agentSecret,
             ], ['Accept: application/json']];
+            $attempts[] = ['form_code_token', [
+                'agent_code' => $agentCode,
+                'agent_token' => $agentToken,
+            ], ['Content-Type: application/x-www-form-urlencoded', 'Accept: application/json']];
+            $attempts[] = ['form_code_token_secret', [
+                'agent_code' => $agentCode,
+                'agent_token' => $agentToken,
+                'agent_secret' => $agentSecret,
+            ], ['Content-Type: application/x-www-form-urlencoded', 'Accept: application/json']];
         }
 
         $lastResponse = [];
-        foreach ($attempts as [$payload, $headers]) {
+        $attemptSummary = [];
+        foreach ($attempts as [$label, $payload, $headers]) {
             $response = self::httpRequest('POST', $url, $payload, $headers);
             $token = self::extractAccessToken($response);
             if ($token !== '') {
@@ -323,9 +339,16 @@ final class DrakonService
                 return $token;
             }
             $lastResponse = $response;
+            $attemptSummary[] = [
+                'attempt' => $label,
+                'response' => self::redactWebhookPayload($response),
+            ];
         }
 
-        throw new RuntimeException('Drakon kimlik doğrulama başarısız: ' . json_encode(self::redactWebhookPayload($lastResponse), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        throw new RuntimeException('Drakon kimlik doğrulama başarısız: ' . json_encode([
+            'last_response' => self::redactWebhookPayload($lastResponse),
+            'attempts' => $attemptSummary,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
     private static function extractAccessToken(array $response): string
@@ -1807,6 +1830,19 @@ final class DrakonService
 
     // ─── HTTP ─────────────────────────────────────────────────────────────────
 
+    private static function requestContentType(array $headers): string
+    {
+        $contentType = 'application/json';
+        foreach ($headers as $headerLine) {
+            $headerLine = trim((string) $headerLine);
+            if (stripos($headerLine, 'Content-Type:') === 0) {
+                $contentType = strtolower(trim(substr($headerLine, strlen('Content-Type:'))));
+            }
+        }
+
+        return $contentType;
+    }
+
     private static function httpRequest(string $method, string $url, array $params = [], array $headers = [], int $timeout = 15): array
     {
         if ($method === 'GET' && !empty($params)) {
@@ -1827,7 +1863,10 @@ final class DrakonService
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
             if (!empty($params)) {
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+                $contentType = self::requestContentType($headers);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, str_contains($contentType, 'application/x-www-form-urlencoded')
+                    ? http_build_query($params)
+                    : json_encode($params));
             }
         }
 
