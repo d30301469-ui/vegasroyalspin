@@ -480,8 +480,8 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer__title-content {
 body.mobile-site .providers-drawer-wrapper .ds-drawer__title-text {
   flex: 1 0 0;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.01em;
 }
@@ -505,11 +505,11 @@ body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__search 
 body.mobile-site .providers-drawer-wrapper .sidebar-search {
   display: flex;
   align-items: center;
-  height: 44px;
-  min-height: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.06);
+  height: 40px;
+  min-height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
   padding: 0 14px;
   margin: 0 !important;
 }
@@ -530,7 +530,7 @@ body.mobile-site .providers-drawer-wrapper .provider-search-input {
   font-size: 14px;
   font-weight: 500;
   min-width: 0;
-  height: 44px;
+  height: 40px;
 }
 
 body.mobile-site .providers-drawer-wrapper .provider-search-input::placeholder {
@@ -559,9 +559,9 @@ body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__titleTo
 }
 
 body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__sectionTitle {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 13px;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 400;
   line-height: 1;
 }
 
@@ -595,19 +595,19 @@ body.mobile-site .providers-drawer-wrapper .providerItemsInner {
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid transparent;
+  border: 0.8px solid rgba(0, 0, 0, 0);
   border-radius: 4px;
-  min-height: 52px;
-  padding: 10px 6px;
+  height: 56px;
+  padding: 0;
   cursor: pointer;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s;
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsInner.active {
-  background: rgba(168, 85, 247, 0.2);
-  border-color: rgba(168, 85, 247, 0.55);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.32);
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsInner:active {
@@ -619,24 +619,32 @@ body.mobile-site .providers-drawer-wrapper .providerItemsBtn {
   align-items: center;
   justify-content: center;
   width: 100%;
+  height: 100%;
   overflow: hidden;
+  padding: 6px;
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn svg,
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn img {
-  max-width: 100%;
+  max-width: calc(100% - 4px);
   max-height: 28px;
   object-fit: contain;
+  display: block;
 }
 
-body.mobile-site .providers-drawer-wrapper .providerItemsBtn .CMSIconSVGWrapper,
+body.mobile-site .providers-drawer-wrapper .providerItemsBtn .CMSIconSVGWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn .CMSIconSVGWrapper svg {
   display: block;
   max-width: 100%;
   height: auto;
   max-height: 28px;
   color: rgba(255, 255, 255, 0.85);
-  fill: rgba(255, 255, 255, 0.85);
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn .provider-list-row {
@@ -649,6 +657,7 @@ body.mobile-site .providers-drawer-wrapper .providerItemsBtn .provider-list-row 
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  padding: 0 2px;
 }
 
 /* Badge konumlandırma */
@@ -664,11 +673,10 @@ body.mobile-site .providers-drawer-wrapper .providerBadgeBlock {
 body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__footer {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   padding: 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   background: #202022;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
 
@@ -677,18 +685,23 @@ body.mobile-site .providers-drawer-wrapper .provider-sheet-reset {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 46px;
+  height: 40px;
   padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: none;
   border-radius: 9999px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.24);
+  font-size: 16px;
+  font-weight: 400;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   appearance: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+body.mobile-site .providers-drawer-wrapper .provider-sheet-reset.active-reset {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 body.mobile-site .providers-drawer-wrapper .provider-sheet-reset .btn__label {
@@ -702,18 +715,24 @@ body.mobile-site .providers-drawer-wrapper .provider-sheet-apply {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 46px;
+  height: 40px;
   padding: 0 16px;
   border: none;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.24);
+  font-size: 16px;
+  font-weight: 400;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   appearance: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+body.mobile-site .providers-drawer-wrapper .provider-sheet-apply.active-apply {
+  background: rgba(255, 255, 255, 0.9);
+  color: #202022;
+  font-weight: 700;
 }
 
 body.mobile-site .providers-drawer-wrapper .provider-sheet-apply .btn__label {
