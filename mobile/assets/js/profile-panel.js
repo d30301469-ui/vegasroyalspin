@@ -532,12 +532,25 @@
     return String((method && (method.logo_url || method.logo)) || '');
   }
 
-  function withdrawCryptoNetworkId(displayName) {
-    var name = String(displayName || '').toUpperCase();
-    if (name.indexOf('TRC20') !== -1 || name.indexOf('TRC-20') !== -1 || name.indexOf('TRON') !== -1 || name.indexOf('TRX') !== -1) return '65bd7be5964700005d002ae5';
-    if (name.indexOf('BİTCO') !== -1 || name.indexOf('BITCO') !== -1 || name.indexOf('BTC') !== -1) return '65bd7bba964700005d002ae1';
-    if (name.indexOf('LTC') !== -1 || name.indexOf('LITE') !== -1) return '65bd7bc1964700005d002ae2';
-    return '65bd7bd5964700005d002ae4';
+  function withdrawNetworkField(method) {
+    var fields = method && Array.isArray(method.input_fields) ? method.input_fields : [];
+    return fields.find(function (field) { return field && field.field === 'select' && (field.name === 'bank_id' || field.name === 'crypto_network'); }) || null;
+  }
+
+  function withdrawNetworkOptions(method) {
+    var field = withdrawNetworkField(method);
+    var options = field && Array.isArray(field.options) ? field.options : [];
+    options = options.map(function (option) { return [String(option.value || ''), String(option.label || option.value || '')]; }).filter(function (option) { return option[0] !== '' && option[1] !== ''; });
+    return options.length ? options : [
+      ['65bd7bba964700005d002ae1', 'Bitcoin'],
+      ['65bd7bc1964700005d002ae2', 'Litecoin'],
+      ['65bd7bd5964700005d002ae4', 'USDT TRC20']
+    ];
+  }
+
+  function withdrawNetworkLabel(method) {
+    var field = withdrawNetworkField(method);
+    return String((field && field.label) || 'Banka');
   }
 
   function withdrawExtraFieldsHtml(method) {
@@ -546,12 +559,14 @@
       return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" maxlength="26" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">IBAN</span></label></div></div>';
     }
     if (isCryptoMethod(method)) {
-      return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled mprofile-crypto-select" data-mprofile-crypto-open><label class="form-control-label-bc inputs"><input type="hidden" name="crypto_network" id="mprofilePaymentNetwork" value="' + withdrawCryptoNetworkId('TRON') + '"><button type="button" class="form-control-select-bc active mprofile-crypto-select-button"><span id="mprofilePaymentCryptoLabel">tron</span></button><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Ağ</span></label></div></div><div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">address</span></label></div></div>';
+      var networkOptions = withdrawNetworkOptions(method);
+      var firstNetwork = networkOptions[0];
+      return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled mprofile-crypto-select" data-mprofile-crypto-open><label class="form-control-label-bc inputs"><input type="hidden" name="bank_id" id="mprofilePaymentNetwork" value="' + escapeHtml(firstNetwork[0]) + '"><button type="button" class="form-control-select-bc active mprofile-crypto-select-button"><span id="mprofilePaymentCryptoLabel">' + escapeHtml(firstNetwork[1]) + '</span></button><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">' + escapeHtml(withdrawNetworkLabel(method)) + '</span></label></div></div><div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">address</span></label></div></div>';
     }
     return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">address</span></label></div></div>';
   }
 
-  function cryptoOptions() {
+  function depositCryptoOptions() {
     return [
       ['FTN', 'FTN ERC-20'],
       ['BTC', 'BTC'],
@@ -565,15 +580,16 @@
     ];
   }
 
-  function cryptoPopupHtml() {
+  function cryptoPopupHtml(options) {
+    options = Array.isArray(options) && options.length ? options : depositCryptoOptions();
     return '<div id="mprofileCryptoPopup" class="popup-inner-bc mprofile-crypto-popup" aria-hidden="true" hidden><div class="status-popup-content-w-bc"><div><div class="multi-select-bc multi-select-popup"><div class="form-control-bc"><input class="form-control-input-bc" type="text" placeholder="Arama Kripto" value="" id="mprofileCryptoSearch"><i class="ss-icon-bc bc-i-search"></i><div class="multi-select-label-bc" data-scroll-lock-scrollable>' +
-      cryptoOptions().map(function (option, index) { return '<label class="checkbox-control-content-bc ' + (index === 5 ? 'active ' : '') + '" data-option-value="' + escapeHtml(option[0]) + '" data-option-label="' + escapeHtml(option[1]) + '"><p class="checkbox-control-text-bc ellipsis" style="pointer-events: none;">' + escapeHtml(option[1]) + '</p></label>'; }).join('') +
+      options.map(function (option, index) { return '<label class="checkbox-control-content-bc ' + (index === 0 ? 'active ' : '') + '" data-option-value="' + escapeHtml(option[0]) + '" data-option-label="' + escapeHtml(option[1]) + '"><p class="checkbox-control-text-bc ellipsis" style="pointer-events: none;">' + escapeHtml(option[1]) + '</p></label>'; }).join('') +
       '</div></div></div></div></div></div>';
   }
 
   function depositExtraFieldsHtml(method) {
     if (!isCryptoMethod(method)) return '';
-    return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled mprofile-crypto-select" data-mprofile-crypto-open><label class="form-control-label-bc inputs"><input type="hidden" name="crypto_type" id="mprofilePaymentCryptoType" value="TRX"><button type="button" class="form-control-select-bc active mprofile-crypto-select-button"><span id="mprofilePaymentCryptoLabel">tron</span></button><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">crypto_type</span></label></div></div>';
+    return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled mprofile-crypto-select" data-mprofile-crypto-open><label class="form-control-label-bc inputs"><input type="hidden" name="crypto_type" id="mprofilePaymentCryptoType" value="FTN"><button type="button" class="form-control-select-bc active mprofile-crypto-select-button"><span id="mprofilePaymentCryptoLabel">FTN ERC-20</span></button><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">crypto_type</span></label></div></div>';
   }
 
   function paymentModalHtml(kind, method) {
@@ -587,7 +603,7 @@
     return '<div class="payment-info-bc" tabindex="-1"><div class="payment-info-content">' +
       '<div class="description-c-row-bc ' + escapeHtml(methodClass) + '"><div class="description-c-row-column-bc pay-logo">' + (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(name) + '</span>') + '</div><div class="description-c-row-column-bc texts"><div class="description-c-row-c-title-bc description_payment-title"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis">Ücret: Ücretsiz</span></div><div class="description-c-r-c-t-column-bc"><span class="description-instant ellipsis">' + escapeHtml(method.processing_time || 'Anlık') + '</span></div></div><div class="description-card-info"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Min.">Min.</span><span class="description-value ellipsis" title="' + escapeHtml(limitText(min)) + '">' + escapeHtml(limitText(min)) + '</span></div><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Maks.">Maks.</span><span class="description-value ellipsis" title="' + escapeHtml(limitText(max)) + '">' + escapeHtml(limitText(max)) + '</span></div></div></div></div>' +
       '<div class="expandableContentWrapper"><div class="expandableContentData ' + escapeHtml(methodClass) + ' payment-content not-expandable" data-scroll-lock-scrollable><div class="container"><p>' + escapeHtml(paymentSiteName()) + ' Ailesine hoş geldiniz. İyi eğlenceler, bol şanslar dileriz. ' + (kind === 'withdraw' ? 'Para çekmek' : 'Para yatırmak') + ' için lütfen aşağıdaki tüm gerekli alanları doldurun. Minimum tutar altı yatırımlar &quot;İADE EDİLMEZ&quot; lütfen kurallara uygun yatırım yapınız.</p></div></div></div>' +
-        '<div class="withdraw-form-l-bc"><form id="mprofilePaymentForm"><div id="screenArea">' + extraFields + '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" id="mprofilePaymentAmount" name="amount" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Tutar</span></label></div></div><div class="mprofile-form-message" data-mprofile-payment-message role="status" aria-live="polite"></div><div class="u-i-p-c-footer-bc"><button class="btn a-color ' + (kind === 'withdraw' ? 'withdraw' : 'deposit') + ' mprofile-payment-submit" type="submit" title="' + escapeHtml(submitText) + '" disabled><span>' + escapeHtml(submitText) + '</span></button></div></div></form></div>' + (isCryptoMethod(method) ? cryptoPopupHtml() : '') +
+        '<div class="withdraw-form-l-bc"><form id="mprofilePaymentForm"><div id="screenArea">' + extraFields + '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" id="mprofilePaymentAmount" name="amount" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Tutar</span></label></div></div><div class="mprofile-form-message" data-mprofile-payment-message role="status" aria-live="polite"></div><div class="u-i-p-c-footer-bc"><button class="btn a-color ' + (kind === 'withdraw' ? 'withdraw' : 'deposit') + ' mprofile-payment-submit" type="submit" title="' + escapeHtml(submitText) + '" disabled><span>' + escapeHtml(submitText) + '</span></button></div></div></form></div>' + (isCryptoMethod(method) ? cryptoPopupHtml(kind === 'withdraw' ? withdrawNetworkOptions(method) : depositCryptoOptions()) : '') +
       '</div></div>';
   }
 
@@ -632,7 +648,7 @@
     var networkInput = document.getElementById('mprofilePaymentNetwork');
     var labelEl = document.getElementById('mprofilePaymentCryptoLabel');
     if (input) input.value = value;
-    if (networkInput) networkInput.value = withdrawCryptoNetworkId(label || value);
+    if (networkInput) networkInput.value = value;
     if (labelEl) labelEl.textContent = label.toLowerCase() === 'tron' ? 'tron' : label;
     document.querySelectorAll('#mprofileCryptoPopup .checkbox-control-content-bc').forEach(function (item) {
       item.classList.toggle('active', item === option);
@@ -691,7 +707,7 @@
       payload.account_number = accountNumber.replace(/\s/g, '');
       payload.lang = 'tr';
       var network = document.getElementById('mprofilePaymentNetwork');
-      if (network && network.value) payload.input_fields = { crypto_network: network.value, bank_id: network.value };
+      if (network && network.value) payload.input_fields = { bank_id: network.value };
     }
     paymentModalSubmitting = true;
     var submit = document.querySelector('#mprofilePaymentModal .mprofile-payment-submit');
