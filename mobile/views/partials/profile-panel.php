@@ -159,6 +159,30 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
         <div class="promoCodeWrapper-bc profile-panel-promo-code"><form onsubmit="return false;"><div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="promoCode" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">PROMOSYON KODU</span></label></div></div><div class="u-i-p-c-footer-bc"><button class="btn a-color big-btn" type="submit" title="UYGULA " disabled><span>UYGULA </span></button></div></form></div>
         <button class="userLogoutBtn btn" type="button"><i class="userLogoutIcon bc-i-logout" aria-hidden="true"></i><span>Çıkış Yap</span></button>
       </div>
+      <div class="mprofile-balance-view" data-mprofile-view="balance" aria-hidden="true">
+        <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">BAKİYE YÖNETİMİ</span></div>
+        <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>
+          <a class="hdr-navigation-link-bc active" href="/?profile=open&amp;account=balance&amp;page=deposit" data-mbalance-tab="deposit"><span class="nav-menu-title">PARA YATIR<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=balance&amp;page=withdraw" data-mbalance-tab="withdraw"><span class="nav-menu-title">ÇEKİM<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=balance&amp;page=history" data-mbalance-tab="history"><span class="nav-menu-title">İŞLEM GEÇMİŞİ<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=balance&amp;page=info" data-mbalance-tab="info"><span class="nav-menu-title">Bilgi<i class="count-blink-even" data-badge=""></i></span></a>
+          <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=balance&amp;page=withdraws" data-mbalance-tab="withdraws"><span class="nav-menu-title">PARA ÇEKME DURUMU<i class="count-blink-even" data-badge=""></i></span></a>
+        </div></div>
+        <div class="dep-w-info-bc deposit-page" data-mbalance-section="deposit" data-scroll-lock-scrollable>
+          <div class="horizontalList scroll-start"><div class="horizontal-sl-list-container" data-scroll-lock-scrollable><div class="horizontal-sl-list">
+            <div data-id="-1" title="TÜMÜ" data-badge="" class="horizontal-sl-item-bc accordion-button all active" data-mbalance-category="all"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-all"></i><p class="horizontal-sl-title-bc">TÜMÜ</p></div>
+            <div data-id="1" title="KREDİ KARTI" data-badge="" class="horizontal-sl-item-bc accordion-button bank-card" data-mbalance-category="card"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-bank-card"></i><p class="horizontal-sl-title-bc">KREDİ KARTI</p></div>
+            <div data-id="4" title="Kripto" data-badge="" class="horizontal-sl-item-bc accordion-button crypto" data-mbalance-category="crypto"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-crypto"></i><p class="horizontal-sl-title-bc">Kripto</p></div>
+            <div data-id="5" title="Banka transferi" data-badge="" class="horizontal-sl-item-bc accordion-button transfer" data-mbalance-category="bank"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-transfer"></i><p class="horizontal-sl-title-bc">Banka transferi</p></div>
+            <div data-id="7" title="QR" data-badge="" class="horizontal-sl-item-bc accordion-button qr" data-mbalance-category="qr"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-qr"></i><p class="horizontal-sl-title-bc">QR</p></div>
+          </div></div></div>
+          <div class="m-block-nav-items-bc" id="mprofileDepositMethods"><p class="dw-methods-empty" role="status">Ödeme yöntemleri yükleniyor...</p></div>
+        </div>
+        <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="withdraw" data-scroll-lock-scrollable hidden><p>Çekim yöntemleri hazırlanıyor.</p></div>
+        <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="history" data-scroll-lock-scrollable hidden><p>İşlem geçmişi hazırlanıyor.</p></div>
+        <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="info" data-scroll-lock-scrollable hidden><p>Bilgi sayfası hazırlanıyor.</p></div>
+        <div class="dep-w-info-bc mprofile-balance-placeholder" data-mbalance-section="withdraws" data-scroll-lock-scrollable hidden><p>Para çekme durumu hazırlanıyor.</p></div>
+      </div>
       <div class="mprofile-detail-view" data-mprofile-view="details" aria-hidden="true">
         <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">PROFİLİM</span></div>
         <div class="hdr-navigation-scrollable-bc user-tab-navigation"><div class="hdr-navigation-scrollable-content" data-scroll-lock-scrollable>

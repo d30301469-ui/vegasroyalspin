@@ -175,6 +175,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   padding: 10px var(--padding-page-aside, 10px);
 }
 #mprofilePanel.mprofile-detail-active .u-i-profile-page-bc { display: none; }
+#mprofilePanel.mprofile-balance-active .u-i-profile-page-bc { display: none; }
 #mprofilePanel .mprofile-detail-view {
   display: none;
   flex: 1;
@@ -182,7 +183,15 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   flex-direction: column;
   overflow: hidden;
 }
+#mprofilePanel .mprofile-balance-view {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
 #mprofilePanel.mprofile-detail-active .mprofile-detail-view { display: flex; }
+#mprofilePanel.mprofile-balance-active .mprofile-balance-view { display: flex; }
 #mprofilePanel .back-nav-bc {
   flex-shrink: 0;
   display: flex;
@@ -194,6 +203,9 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   cursor: pointer;
 }
 #mprofilePanel.mprofile-detail-active .back-nav-bc {
+  opacity: 1;
+}
+#mprofilePanel.mprofile-balance-active .back-nav-bc {
   opacity: 1;
 }
 #mprofilePanel .back-nav-icon-bc {
@@ -780,10 +792,114 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel [data-mprofile-section][hidden] {
   display: none !important;
 }
+#mprofilePanel [data-mbalance-section][hidden],
+#mprofilePanel [data-mbalance-method][hidden] {
+  display: none !important;
+}
 #mprofilePanel .u-i-e-p-p-content-bc.user-profile form {
   display: flex;
   flex-direction: column;
   min-height: 100%;
+}
+#mprofilePanel .dep-w-info-bc {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px var(--padding-page-aside, 10px) 14px;
+  scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
+  scrollbar-width: thin;
+}
+#mprofilePanel .horizontalList {
+  width: 100%;
+  margin: 0 0 12px;
+}
+#mprofilePanel .horizontal-sl-list-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+#mprofilePanel .horizontal-sl-list-container::-webkit-scrollbar { display: none; }
+#mprofilePanel .horizontal-sl-list {
+  display: flex;
+  gap: 4px;
+  min-width: max-content;
+}
+#mprofilePanel .horizontal-sl-item-bc {
+  flex: 0 0 76px;
+  height: 56px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.13);
+  color: rgba(var(--b-sc, 255, 255, 255), 0.72);
+  cursor: pointer;
+}
+#mprofilePanel .horizontal-sl-item-bc.active {
+  background: rgba(var(--b-sc, 255, 255, 255), 0.24);
+  color: #fff;
+}
+#mprofilePanel .horizontal-sl-icon-bc {
+  font-size: 22px;
+  line-height: 22px;
+}
+#mprofilePanel .horizontal-sl-title-bc {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 13px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#mprofilePanel .m-block-nav-items-bc {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+#mprofilePanel .m-nav-items-list-item-bc {
+  min-width: 0;
+  height: 54px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.12);
+  cursor: pointer;
+}
+#mprofilePanel .nav-ico-w-row-bc {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
+#mprofilePanel .m-nav-items-list-item-bc .payment-logo {
+  display: block;
+  max-width: 82px;
+  max-height: 30px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+#mprofilePanel .payment-logo--text {
+  padding: 0 6px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  text-align: center;
+}
+#mprofilePanel .mprofile-balance-placeholder {
+  color: rgba(var(--b-sc, 255, 255, 255), 0.72);
+  font-size: 13px;
 }
 #mprofilePanel .userProfile-content {
   flex: 1;
