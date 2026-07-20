@@ -141,6 +141,8 @@
         var main = formatMoney(row.balance);
         var bonus = formatMoney(row.bonus_balance);
         setText('headerBalanceMain', main);
+        setText('mprofileMain', main);
+        setText('mprofileBonus', bonus);
         setText('playBalanceMain', main);
         setText('playBalanceBonus', bonus);
         syncProfileSidebarFromFormatted(main, bonus);
@@ -245,6 +247,8 @@
             formatMoney(lastBalanceRow.balance),
             formatMoney(lastBalanceRow.bonus_balance)
         );
+        setText('mprofileMain', formatMoney(lastBalanceRow.balance));
+        setText('mprofileBonus', formatMoney(lastBalanceRow.bonus_balance));
         return true;
     };
 

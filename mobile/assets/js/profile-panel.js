@@ -152,6 +152,9 @@
     if (target && source) {
       target.textContent = source.textContent.trim() || '0';
     }
+    if (typeof window.__syncProfileSidebarBalancesFromHeaderDom === 'function') {
+      window.__syncProfileSidebarBalancesFromHeaderDom();
+    }
   }
 
   function bindBalanceRail(panel) {
