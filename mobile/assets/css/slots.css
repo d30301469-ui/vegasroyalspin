@@ -397,9 +397,9 @@ body.mobile-site .providers-drawer-wrapper {
   touch-action: none;
   overscroll-behavior: none;
   padding-bottom: var(--tab-navigation-height, 48px);
-  background: rgba(0, 2, 5, 0.54);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: rgba(0, 2, 5, 0.48);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 /* Açık halde: wrapper görünür + içerik pointer-events alır */
@@ -426,7 +426,7 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer {
   flex-direction: column;
   width: 100%;
   max-height: min(68dvh, 560px);
-  background: #202022;
+  background: rgb(32, 32, 34) !important;
   border-radius: 10px 10px 0 0;
   overflow: hidden;
   transform: translate3d(0, 100%, 0);
@@ -442,7 +442,7 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer__header {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: #202022;
+  background: rgb(32, 32, 34) !important;
   flex-shrink: 0;
   touch-action: none;
 }
@@ -500,6 +500,13 @@ body.mobile-site .providers-drawer-wrapper .ds-drawer__content {
   touch-action: pan-y;
   overscroll-behavior: contain;
   padding: 0 16px;
+  background: rgb(32, 32, 34) !important;
+}
+
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent,
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__underSearchContent,
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__section {
+  background: transparent !important;
 }
 
 /* ── Arama alanı ── */
@@ -514,7 +521,7 @@ body.mobile-site .providers-drawer-wrapper .sidebar-search {
   min-height: 40px;
   border: none;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(50, 50, 52) !important;
   padding: 0 14px;
   margin: 0 !important;
 }
@@ -584,9 +591,11 @@ body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__viewTog
 /* ── Provider ızgara: 3 sütun ── */
 body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__grid {
   padding-bottom: 12px;
+  background: transparent !important;
 }
 
-body.mobile-site .providers-drawer-wrapper .providerItemsHolder {
+body.mobile-site .providers-drawer-wrapper .providerItemsHolder,
+body.mobile-site .providers-drawer-wrapper .providerItemsHolder.module {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
@@ -600,10 +609,10 @@ body.mobile-site .providers-drawer-wrapper .providerItemsInner {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgb(50, 50, 52) !important;
   border: 0.8px solid rgba(0, 0, 0, 0);
   border-radius: 4px;
-  height: 48px;
+  height: 56px;
   padding: 0;
   cursor: pointer;
   overflow: hidden;
@@ -612,12 +621,12 @@ body.mobile-site .providers-drawer-wrapper .providerItemsInner {
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsInner.active {
-  background: rgba(255, 255, 255, 0.16) !important;
+  background: rgb(68, 68, 70) !important;
   border-color: rgba(255, 255, 255, 0.32);
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsInner:active {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(63, 63, 65) !important;
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn {
@@ -682,7 +691,7 @@ body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__footer 
   gap: 16px;
   padding: 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  background: #202022;
+  background: rgb(32, 32, 34) !important;
   flex-shrink: 0;
 }
 
@@ -695,7 +704,7 @@ body.mobile-site .providers-drawer-wrapper .provider-sheet-reset {
   padding: 0 16px;
   border: none;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(50, 50, 52) !important;
   color: rgba(255, 255, 255, 0.24);
   font-size: 16px;
   font-weight: 400;
@@ -706,7 +715,7 @@ body.mobile-site .providers-drawer-wrapper .provider-sheet-reset {
 }
 
 body.mobile-site .providers-drawer-wrapper .provider-sheet-reset.active-reset {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(63, 63, 65) !important;
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -725,7 +734,7 @@ body.mobile-site .providers-drawer-wrapper .provider-sheet-apply {
   padding: 0 16px;
   border: none;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(50, 50, 52) !important;
   color: rgba(255, 255, 255, 0.24);
   font-size: 16px;
   font-weight: 400;
