@@ -1156,11 +1156,15 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   content: none !important;
 }
 #mprofilePanel .mprofile-payment-modal {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
+  will-change: transform;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: calc(100% - var(--mobile-header-main-section-height, 46px));
+  z-index: 1072;
   display: none;
-  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%);
+  background: rgba(var(--b, 0, 0, 0), 0.7);
 }
 #mprofilePanel .mprofile-payment-modal.is-open {
   display: block !important;
@@ -1321,7 +1325,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   text-transform: uppercase;
 }
 #mprofilePanel .payment-details-scrollable-container {
-  height: calc(100% - 83px) !important;
+  height: calc(100% - 37px) !important;
   padding: 14px 8px 18px !important;
 }
 #mprofilePanel .payment-info-content {

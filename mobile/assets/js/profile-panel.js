@@ -480,7 +480,7 @@
   }
 
   function paymentDisplayName(method) {
-    return isCryptoMethod(method) ? 'XpayioCrypto' : methodName(method);
+    return methodName(method);
   }
 
   function methodLimit(method, key, fallback) {
@@ -518,7 +518,6 @@
   }
 
   function paymentMethodLogo(method) {
-    if (isCryptoMethod(method)) return '/assets/images/footer/payments/xpayiocrypto.png';
     return String((method && (method.logo_url || method.logo)) || '');
   }
 
