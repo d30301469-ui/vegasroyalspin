@@ -170,43 +170,64 @@ $slotDemoHref = static function (array $game): string {
         </div>
 
         <div class="casinoProviderAndGame slots-layout" id="slotsLayout">
-            <div class="casinoProviderBlock providers-sidebar" id="providersSidebar">
-            <div class="casinoProviderBlockHolder provider-sheet">
-                <div class="ds-drawer__header">
+            <!-- ds-drawer-wrapper: tam ekran overlay + blur arka plan -->
+            <div class="ds-drawer-wrapper providers-drawer-wrapper casinoProviderBlock providers-sidebar" id="providersSidebar" role="presentation">
+              <div class="ds-drawer-spring" aria-modal="true">
+                <div class="ds-drawer ds-drawer--contained">
+                  <!-- Drag handle + başlık -->
+                  <div class="ds-drawer__header">
                     <div class="ds-drawer__drag-handle" id="providerSheetDragHandle">
-                        <div class="ds-drawer__drag-bar"></div>
+                      <div class="ds-drawer__drag-bar"></div>
                     </div>
                     <div class="ds-drawer__title-bar">
-                        <div class="ds-drawer__title-content">
-                            <span class="ds-label ds-label--large-semibold ds-drawer__title-text">Sağlayıcılar</span>
+                      <div class="ds-drawer__title-content">
+                        <span class="ds-drawer__title-text">Sağlayıcılar</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Kaydırılabilir içerik -->
+                  <div class="ds-drawer__content" data-scroll-lock-scrollable="">
+                    <div class="casinoProvidersPopupContent">
+                      <!-- Arama -->
+                      <div class="casinoProvidersPopupContent__search">
+                        <div class="providerSearchRow sidebar-search provider-search-bar">
+                          <div class="searchInputWrp active">
+                            <input type="text" placeholder="Sağlayıcı Ara" id="providerSearchInput" class="searchInput provider-search-input" autocomplete="off">
+                            <p class="searchInputIcon bc-i-search provider-search-btn" id="providerSearchClearBtn" title="Sağlayıcı ara" aria-label="Sağlayıcı ara"><i id="providerSearchClearBtnIcon" aria-hidden="true"></i></p>
+                          </div>
                         </div>
-                    </div>
-                </div>
-                <div class="providerSearchAndReset provider-sheet-tools">
-                    <div class="providerSearchRow sidebar-search provider-search-bar provider-sheet-search">
-                        <div class="searchInputWrp active">
-                        <input type="text" placeholder="Sağlayıcı Ara" id="providerSearchInput" class="searchInput provider-search-input" autocomplete="off">
-                        <p class="searchInputIcon bc-i-search provider-search-btn" id="providerSearchClearBtn" title="Sağlayıcı ara" aria-label="Sağlayıcı ara"><i id="providerSearchClearBtnIcon" aria-hidden="true"></i></p>
+                      </div>
+                      <!-- Sağlayıcı listesi -->
+                      <div class="casinoProvidersPopupContent__underSearchContent">
+                        <div class="casinoProvidersPopupContent__section">
+                          <div class="casinoProvidersPopupContent__titleToggleContainer">
+                            <span class="casinoProvidersPopupContent__sectionTitle">Tüm Sağlayıcılar</span>
+                            <div class="casinoProvidersPopupContent__viewToggle">
+                              <i class="bc-i-view-list provider-sheet-grid-btn" id="providerSheetGridBtn" title="Modül görünümü" aria-label="Modül görünümü"></i>
+                            </div>
+                          </div>
+                          <div class="casinoProvidersPopupContent__grid" id="sidebarProvidersList">
+                            <div class="providerItemsHolder module">
+                            <div title="Tümü" class="providerItemsInner sidebar-provider-item <?= empty($selectedProviders) && empty($searchTerm) ? 'active' : '' ?>" role="button" tabindex="0" data-provider-all="1"><span class="providerBadgeBlock " data-badge=""></span><div class="providerItemsBtn">TÜMÜ</div></div>
+                            <?php
+                            foreach ($allUniqueProviders as $provider) {
+                                echo $renderProviderBtn($provider);
+                            }
+                            ?>
+                            </div>
+                          </div>
                         </div>
+                      </div>
                     </div>
-                    <div class="providerResetRow"><span class="providerSectionLabel">Tüm Sağlayıcılar</span><div class="providerTypeIconWrp"><div class="tooltipIconWrapper"><i class="bc-i-view-list provider-sheet-grid-btn" id="providerSheetGridBtn" title="Modül görünümü" aria-label="Modül görünümü"></i></div></div></div>
+                  </div>
+                  <!-- Footer: Sıfırla + FİLTRE -->
+                  <div class="casinoProvidersPopupContent__footer">
+                    <button type="button" class="ds-btn provider-sheet-reset" id="providerSheetResetBtn"><span class="btn__label">Sıfırla</span></button>
+                    <button type="button" class="ds-btn provider-sheet-apply" id="providerSheetApplyBtn"><span class="btn__label">FİLTRE</span></button>
+                  </div>
                 </div>
-                <div class="providerItemsContainer sidebar-providers-list" id="sidebarProvidersList" data-scroll-lock-scrollable="">
-                    <div class="providerItemsHolder module">
-                    <div title="Tümü" class="providerItemsInner sidebar-provider-item <?= empty($selectedProviders) && empty($searchTerm) ? 'active' : '' ?>" role="button" tabindex="0" data-provider-all="1"><span class="providerBadgeBlock " data-badge=""></span><div class="providerItemsBtn">TÜMÜ</div></div>
-                    <?php
-                    foreach ($allUniqueProviders as $provider) {
-                        echo $renderProviderBtn($provider);
-                    }
-                    ?>
-                    </div>
-                </div>
-                <div class="provider-sheet-footer">
-                    <button type="button" class="provider-sheet-reset" id="providerSheetResetBtn">Sıfırla</button>
-                    <button type="button" class="provider-sheet-apply" id="providerSheetApplyBtn">FİLTRE</button>
-                </div>
+              </div>
             </div>
-        </div>
 
             <div class="casinoGameListBlock games-main" id="gamesScrollContainer">
                 <div class="casinoGameListBlockHeader">
