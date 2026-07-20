@@ -397,7 +397,7 @@ body.mobile-site .providers-drawer-wrapper {
   touch-action: none;
   overscroll-behavior: none;
   padding-bottom: var(--tab-navigation-height, 48px);
-  background: rgb(32, 32, 34) !important;
+  background: rgba(0, 2, 5, 0.48);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
@@ -410,33 +410,6 @@ body.mobile-site .providers-drawer-wrapper.mobile-open {
 /* Scroll kilidi */
 body.mobile-site.provider-sheet-open {
   overflow: hidden;
-  background-image: none !important;
-  background-color: rgb(32, 32, 34) !important;
-}
-
-body.mobile-site.provider-sheet-open .slot-page-root,
-body.mobile-site.provider-sheet-open .mainContentWrap {
-  background: rgb(32, 32, 34) !important;
-}
-
-body.mobile-site.provider-sheet-open .layout-header-holder-bc,
-body.mobile-site.provider-sheet-open .header-bc,
-body.mobile-site.provider-sheet-open .hdr-main-content-bc,
-body.mobile-site.provider-sheet-open .hdr-dynamic-content,
-body.mobile-site.provider-sheet-open .hdr-additional-info,
-body.mobile-site.provider-sheet-open .hdr-guest-shortcuts,
-body.mobile-site.provider-sheet-open .hdr-navigation-scrollable-bc-holder,
-body.mobile-site.provider-sheet-open .hdr-navigation-scrollable-bc,
-body.mobile-site.provider-sheet-open .layout-header-holder-bc .hdr-dynamic-content,
-body.mobile-site.provider-sheet-open .layout-header-holder-bc .header-bc,
-body.mobile-site.provider-sheet-open .layout-header-holder-bc .hdr-additional-info,
-body.mobile-site.provider-sheet-open .layout-header-holder-bc .hdr-guest-shortcuts,
-body.mobile-site.provider-sheet-open .layout-header-holder-bc .hdr-navigation-scrollable-bc-holder,
-body.mobile-site.provider-sheet-open .layout-header-holder-bc .hdr-navigation-scrollable-bc,
-body.mobile-site.provider-sheet-open .layout-navigation-holder-bc .tab-navigation-w-bc {
-  background: rgb(32, 32, 34) !important;
-  background-image: none !important;
-  box-shadow: none !important;
 }
 
 /* Spring: flex sütun, full genişlik, en alta yasla */
@@ -2119,18 +2092,7 @@ body.mobile-site .sidebar-overlay {
   }
 }
 
-/* Provider sheet open: final override to remove all purple/blue page backgrounds. */
-body.mobile-site.provider-sheet-open,
-body.mobile-site.provider-sheet-open .bc-root,
-body.mobile-site.provider-sheet-open .mainContentWrap,
-body.mobile-site.provider-sheet-open .slot-page-root,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .casino-container,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .slots-filter-and-games,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .slots-category-filters.category-tabs-wrapper,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .casinoGameListBlockHeader,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .slots-games-container,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .casinoCategoryGames,
+/* Provider sheet open: keep only the opened provider panel on the original gray surface. */
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .ds-drawer,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .ds-drawer__header,
@@ -2142,85 +2104,18 @@ body.mobile-site.provider-sheet-open .providers-drawer-wrapper .sidebar-provider
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper #sidebarProvidersList,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .providerItemsHolder,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .providerItemsHolder.module,
-body.mobile-site.provider-sheet-open .providers-drawer-wrapper .casinoProvidersPopupContent__footer,
-body.mobile-site.provider-sheet-open .layout-header-holder-bc,
-body.mobile-site.provider-sheet-open .header-bc,
-body.mobile-site.provider-sheet-open .hdr-main-content-bc,
-body.mobile-site.provider-sheet-open .hdr-dynamic-content,
-body.mobile-site.provider-sheet-open .hdr-additional-info,
-body.mobile-site.provider-sheet-open .hdr-guest-shortcuts,
-body.mobile-site.provider-sheet-open .hdr-navigation-scrollable-bc-holder,
-body.mobile-site.provider-sheet-open .hdr-navigation-scrollable-bc,
-body.mobile-site.provider-sheet-open .layout-navigation-holder-bc .tab-navigation-w-bc {
+body.mobile-site.provider-sheet-open .providers-drawer-wrapper .casinoProvidersPopupContent__footer {
   background: rgb(32, 32, 34) !important;
   background-color: rgb(32, 32, 34) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-chip,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-chip--selected,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-textfield__field,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-select__field,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .ds-btn,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .games-search-expand .games-search-bar,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .games-search-expand.is-expanded .games-search-bar,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .mobile-sidebar-toggle,
-body.mobile-site.provider-sheet-open .slot-page-root.slot-page-root--unified .random-game-btn,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .sidebar-search,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .providerItemsInner,
 body.mobile-site.provider-sheet-open .providers-drawer-wrapper .provider-sheet-reset,
-body.mobile-site.provider-sheet-open .providers-drawer-wrapper .provider-sheet-apply,
-body.mobile-site.provider-sheet-open .header-bc .btn,
-body.mobile-site.provider-sheet-open .header-bc .sign-in,
-body.mobile-site.provider-sheet-open .header-bc .loginBtn,
-body.mobile-site.provider-sheet-open .header-bc #Giris,
-body.mobile-site.provider-sheet-open .header-bc .register,
-body.mobile-site.provider-sheet-open .header-bc #openRegister,
-body.mobile-site.provider-sheet-open .header-bc .hdr-toggle-button-bc,
-body.mobile-site.provider-sheet-open .header-bc .guest-shortcut-icon,
-body.mobile-site.provider-sheet-open .header-bc a.guest-shortcut-icon,
-body.mobile-site.provider-sheet-open .header-bc .guest-shortcut-wheel,
-body.mobile-site.provider-sheet-open .hdr-navigation-scrollable-bc .hdr-navigation-link-bc.active,
-body.mobile-site.provider-sheet-open .hdr-navigation-scrollable-bc .hdr-navigation-link-bc:hover,
-body.mobile-site.provider-sheet-open .hdr-navigation-scrollable-bc .hdr-navigation-link-bc:focus {
+body.mobile-site.provider-sheet-open .providers-drawer-wrapper .provider-sheet-apply {
   background: rgb(50, 50, 52) !important;
   background-color: rgb(50, 50, 52) !important;
   background-image: none !important;
-}
-
-body.mobile-site.provider-sheet-open .header-bc .btn,
-body.mobile-site.provider-sheet-open .header-bc .sign-in,
-body.mobile-site.provider-sheet-open .header-bc .loginBtn,
-body.mobile-site.provider-sheet-open .header-bc #Giris,
-body.mobile-site.provider-sheet-open .header-bc .register,
-body.mobile-site.provider-sheet-open .header-bc #openRegister,
-body.mobile-site.provider-sheet-open .hdr-navigation-scrollable-bc .hdr-navigation-link-bc.active {
-  border-color: rgba(255, 255, 255, 0.28) !important;
-  box-shadow: none !important;
-}
-
-body.mobile-site.provider-sheet-open .header-bc #Giris,
-body.mobile-site.provider-sheet-open .header-bc #openRegister,
-body.mobile-site.provider-sheet-open .header-bc a.guest-shortcut-icon,
-body.mobile-site.provider-sheet-open .header-bc .guest-shortcut-wheel {
-  background: rgb(50, 50, 52) !important;
-  background-color: rgb(50, 50, 52) !important;
-  background-image: none !important;
-  border-color: rgba(255, 255, 255, 0.28) !important;
-  box-shadow: none !important;
-}
-
-body.mobile-site.provider-sheet-open .header-bc.hdr-auth-guest #Giris.btn.sign-in.loginBtn,
-body.mobile-site.provider-sheet-open .header-bc.hdr-auth-guest #openRegister.btn.register,
-body.mobile-site.provider-sheet-open .header-bc.hdr-auth-guest .hdr-guest-shortcuts a.guest-shortcut-icon,
-body.mobile-site.provider-sheet-open .header-bc.hdr-auth-guest .hdr-guest-shortcuts a[class*="guest-shortcut-icon"],
-body.mobile-site.provider-sheet-open .header-bc.hdr-auth-guest .guest-shortcut-wheel,
-body.mobile-site.provider-sheet-open .header-bc.hdr-auth-guest [class*="bc-i-"][class*="guest-shortcut"] {
-  background: rgb(50, 50, 52) !important;
-  background-color: rgb(50, 50, 52) !important;
-  background-image: none !important;
-  border-color: rgba(255, 255, 255, 0.28) !important;
-  box-shadow: none !important;
-  opacity: 1 !important;
 }
