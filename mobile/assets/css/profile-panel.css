@@ -1127,8 +1127,31 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   align-items: flex-end;
 }
 #mprofilePanel .description-container-bc .second-tabs-bc {
+  height: 33px;
+  min-height: 33px;
+  padding: 0 !important;
   column-gap: 2px;
-  background-color: rgba(0, 0, 0, 0.28);
+  background-color: rgba(5, 7, 38, 0.9);
+  border-radius: 2px;
+}
+#mprofilePanel .description-container-bc .tab-bc.selected-underline {
+  height: 33px;
+  border: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 2px;
+  background: rgba(31, 35, 74, 0.92);
+  color: rgba(255, 255, 255, 0.52);
+}
+#mprofilePanel .description-container-bc .tab-bc.selected-underline.active {
+  border: 0 !important;
+  border-bottom: 0 !important;
+  background: rgba(123, 75, 130, 0.94);
+  color: #fff;
+}
+#mprofilePanel .description-container-bc .tab-bc.selected-underline::before,
+#mprofilePanel .description-container-bc .tab-bc.selected-underline::after {
+  display: none !important;
+  content: none !important;
 }
 #mprofilePanel .userProfile-content {
   flex: 1;
