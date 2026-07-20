@@ -19,6 +19,22 @@ if (class_exists('ApiMediaUrl', false)) {
     $mobileHeaderLogoUrl     = ApiMediaUrl::resolve($mobileHeaderLogoUrl);
     $mobileHeaderLogoAnimUrl = ApiMediaUrl::resolve($mobileHeaderLogoAnimUrl);
 }
+$mobileHeaderLoyaltyIconMap = [
+  'bronze' => '/assets/images/loyalty/badges/bronze.png',
+  'silver' => '/assets/images/loyalty/badges/silver.svg',
+  'gold' => '/assets/images/loyalty/badges/gold.svg',
+  'platinum' => '/assets/images/loyalty/badges/platinum.svg',
+  'diamond' => '/assets/images/loyalty/badges/diamond.svg',
+];
+$mobileHeaderLoyaltySource = strtolower((string) ($headerLoyaltyBadge['code'] ?? '') . ' ' . (string) ($headerLoyaltyBadge['name'] ?? '') . ' ' . (string) ($headerLoyaltyBadge['icon_url'] ?? ''));
+$mobileHeaderLoyaltyCode = 'bronze';
+foreach (array_keys($mobileHeaderLoyaltyIconMap) as $mobileHeaderLoyaltyLevelCode) {
+  if (str_contains($mobileHeaderLoyaltySource, $mobileHeaderLoyaltyLevelCode)) {
+    $mobileHeaderLoyaltyCode = $mobileHeaderLoyaltyLevelCode;
+    break;
+  }
+}
+$mobileHeaderLoyaltyIconUrl = $mobileHeaderLoyaltyIconMap[$mobileHeaderLoyaltyCode] ?? '/assets/images/loyalty/badges/bronze.png';
 $mobileHeaderSupportUrl = (string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : ''));
 $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
 ?>
@@ -106,7 +122,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
         <p class="loyaltyBonusHeaderBackground" aria-hidden="true"></p>
         <p class="loyaltyBonusHeaderText ellipsis" data-loyalty-level-name><?= htmlspecialchars((string) ($headerLoyaltyBadge['name'] ?? 'Bronze'), ENT_QUOTES, 'UTF-8') ?></p>
         <img class="loyaltyBonusImg"
-             src="<?= htmlspecialchars((string) ($headerLoyaltyBadge['icon_url'] ?? '/assets/images/loyalty/badges/bronze.png'), ENT_QUOTES, 'UTF-8') ?>"
+             src="<?= htmlspecialchars($mobileHeaderLoyaltyIconUrl, ENT_QUOTES, 'UTF-8') ?>"
              alt=""
              width="24"
              height="24"

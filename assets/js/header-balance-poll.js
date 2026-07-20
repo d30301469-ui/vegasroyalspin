@@ -177,10 +177,26 @@
         };
     }
 
-    function applyLoyalty(row) {
-        if (row && String(row.code || '').toLowerCase() === 'bronze') {
-            row.icon_url = '/assets/images/loyalty/badges/bronze.png';
+    function localLoyaltyIconUrl(row) {
+        var icons = {
+            bronze: '/assets/images/loyalty/badges/bronze.png',
+            silver: '/assets/images/loyalty/badges/silver.svg',
+            gold: '/assets/images/loyalty/badges/gold.svg',
+            platinum: '/assets/images/loyalty/badges/platinum.svg',
+            diamond: '/assets/images/loyalty/badges/diamond.svg'
+        };
+        var source = String((row && row.code) || '') + ' ' + String((row && row.name) || '') + ' ' + String((row && row.icon_url) || '');
+        source = source.toLowerCase();
+        for (var code in icons) {
+            if (Object.prototype.hasOwnProperty.call(icons, code) && source.indexOf(code) !== -1) {
+                return icons[code];
+            }
         }
+        return icons.bronze;
+    }
+
+    function applyLoyalty(row) {
+        row.icon_url = localLoyaltyIconUrl(row);
         document.querySelectorAll('[data-loyalty-badge]').forEach(function (el) {
             el.setAttribute('title', row.name);
             el.setAttribute('data-loyalty-code', row.code);
@@ -202,6 +218,20 @@
         });
         document.querySelectorAll('[data-loyalty-progress]').forEach(function (el) {
             el.style.width = Math.max(0, Math.min(100, parseInt(row.progress_percent, 10) || 0)) + '%';
+        });
+    }
+
+    function normalizeExistingLoyaltyIcons() {
+        document.querySelectorAll('[data-loyalty-badge]').forEach(function (el) {
+            var nameEl = el.querySelector('[data-loyalty-level-name]');
+            var iconEl = el.querySelector('[data-loyalty-level-icon]');
+            var row = {
+                name: (nameEl && nameEl.textContent.trim()) || el.getAttribute('title') || 'Bronze',
+                code: el.getAttribute('data-loyalty-code') || '',
+                icon_url: iconEl ? iconEl.getAttribute('src') || '' : '',
+                initial: ((nameEl && nameEl.textContent.trim()) || el.getAttribute('title') || 'Bronze').charAt(0).toUpperCase()
+            };
+            applyLoyalty(row);
         });
     }
 
@@ -331,6 +361,7 @@
             return;
         }
         window.__HEADER_BALANCE_POLL_STARTED__ = true;
+        normalizeExistingLoyaltyIcons();
         tick();
         loyaltyTick();
         scheduleBalanceTick();
