@@ -269,34 +269,34 @@ final class AdminAuth
     public static function attempt(string $email, string $password): bool
     {
         $config = self::config();
-        $identity = trim($email);
-        if ($identity === '') {
+        $email = trim($email);
+        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             return false;
         }
 
-        $admin = self::findAdminByIdentity($identity);
+        $admin = self::findAdminByEmail($email);
         if ($admin === null) {
-            self::writeLog('', 'login_failed', 'auth', 'failed', $identity);
+            self::writeLog('', 'login_failed', 'auth', 'failed', $email);
             return false;
         }
 
         $hash = (string) ($admin['password'] ?? '');
         if ($hash === '' || !password_verify($password, $hash)) {
-            self::writeLog('', 'login_failed', 'auth', 'failed', $identity);
+            self::writeLog('', 'login_failed', 'auth', 'failed', $email);
             return false;
         }
 
         session_regenerate_id(true);
         $_SESSION[(string) $config['session_key']] = [
             'id' => (int) ($admin['id'] ?? 0),
-            'username' => (string) ($admin['username'] ?? $identity),
+            'username' => (string) ($admin['username'] ?? $email),
             'email' => (string) ($admin['email'] ?? ''),
             'role' => (string) ($admin['role'] ?? 'admin'),
             'login_at' => time(),
         ];
         self::ensureAdminTables();
         self::recordSession();
-        self::writeLog((string) ($admin['username'] ?? $identity), 'login', 'auth', 'success');
+        self::writeLog((string) ($admin['username'] ?? $email), 'login', 'auth', 'success');
 
         return true;
     }
@@ -374,7 +374,7 @@ final class AdminAuth
         return '/dashboard';
     }
 
-    private static function findAdminByIdentity(string $identity): ?array
+    private static function findAdminByEmail(string $email): ?array
     {
         try {
             $pdo = AdminDatabase::pdo();
@@ -387,12 +387,11 @@ final class AdminAuth
             }
 
             $sql = $hasActiveColumn
-                ? 'SELECT * FROM admins WHERE (LOWER(email) = LOWER(:identity_email) OR LOWER(username) = LOWER(:identity_username)) AND is_active = 1 LIMIT 1'
-                : 'SELECT * FROM admins WHERE LOWER(email) = LOWER(:identity_email) OR LOWER(username) = LOWER(:identity_username) LIMIT 1';
+                ? 'SELECT * FROM admins WHERE LOWER(email) = LOWER(:email) AND is_active = 1 LIMIT 1'
+                : 'SELECT * FROM admins WHERE LOWER(email) = LOWER(:email) LIMIT 1';
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
-                'identity_email' => $identity,
-                'identity_username' => $identity,
+                'email' => $email,
             ]);
             $admin = $stmt->fetch();
 
