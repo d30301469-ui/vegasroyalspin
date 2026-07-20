@@ -232,18 +232,18 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
         </div></div>
         <div class="u-i-e-p-p-content-bc u-i-common-content mprofile-bet-history-content" data-scroll-lock-scrollable>
           <div class="componentFilterWrapper-bc" data-mbet-filter-wrapper>
-            <div class="componentFilterLabel-bc" data-mbet-filter-toggle>
+            <div class="componentFilterLabel-bc active" data-mbet-filter-toggle>
               <i class="componentFilterLabel-filter-i-bc bc-i-filter"></i>
-              <div class="componentFilterLabel-filter-bc"><p class="ellipsis">FİLTRE</p><p class="componentFilterLabel-filter-description ellipsis">TÜMÜ, 24 saat</p></div>
+              <div class="componentFilterLabel-filter-bc"><p class="ellipsis">FİLTRE</p></div>
               <i class="componentFilterChevron-bc bc-i-small-arrow-down"></i>
             </div>
-            <div class="componentFilterBody-bc" hidden>
-              <div class="componentFilterElsWrapper-bc"><form class="filter-form-w-bc" onsubmit="return false;">
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" name="bet_id" step="0" value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">BAHİS KİMLİĞİ</span></label></div></div>
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="name" step="0" value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Spor Adı</span></label></div><i class="sport-search-icon bc-i-search"></i></div>
+            <div class="componentFilterBody-bc">
+              <div class="componentFilterElsWrapper-bc"><form class="filter-form-w-bc">
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default "><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" name="bet_id" step="0" value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">BAHİS KİMLİĞİ</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default "><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="name" step="0" value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Spor Adı</span></label></div><i class="sport-search-icon bc-i-search"></i></div>
                 <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc active" name="bet_type" step="0"><option value="">TÜMÜ</option><option value="1">Tekli</option><option value="2">Kombine</option><option value="3">Sistem</option><option value="50">Bahis Oluşturucu</option></select><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">BAHİS TÜRÜ</span></label></div></div>
                 <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc active" name="period" step="0"><option value="24">24 saat</option><option value="72">72 saat</option><option value="168">Bir hafta</option><option value="720">30 Gün</option><option value="">Özel</option></select><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">PERİYOT</span></label></div></div>
-                <div class="u-i-p-c-footer-bc"><button class="btn a-color" type="submit" title="Göster"><span>Göster</span></button></div>
+                <div class="u-i-p-c-footer-bc"><button class="btn a-color " type="submit" title="Göster"><span>Göster</span></button></div>
               </form></div>
             </div>
           </div>

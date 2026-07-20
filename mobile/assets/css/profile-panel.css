@@ -1056,7 +1056,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   font-size: 18px;
   text-align: center;
 }
-#mprofilePanel .componentFilterWrapper-bc.is-open .componentFilterChevron-bc {
+#mprofilePanel .componentFilterLabel-bc.active .componentFilterChevron-bc {
   transform: rotate(180deg);
 }
 #mprofilePanel .componentFilterBody-bc {
