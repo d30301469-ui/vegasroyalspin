@@ -708,9 +708,7 @@ body.mobile-site .sidebar-overlay {
   position: fixed;
   inset: 0;
   z-index: 9998;
-  background: rgba(0, 0, 0, 0.48);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.65);
   touch-action: none;
   overscroll-behavior: none;
 }
