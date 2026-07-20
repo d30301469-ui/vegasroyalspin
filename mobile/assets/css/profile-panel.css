@@ -610,7 +610,8 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .form-control-title-bc {
   width: calc(100% - 48px);
   position: absolute;
-  top: 20px;
+  top: 12px;
+  transform: none;
   color: rgba(var(--b-sc, 255, 255, 255), 0.4);
   font-size: 12px;
   line-height: 14px;
@@ -622,9 +623,14 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 [dir="ltr"] #mprofilePanel .form-control-title-bc { left: 15px; }
 [dir="rtl"] #mprofilePanel .form-control-title-bc { right: 15px; }
-#mprofilePanel .form-control-input-bc:focus + .form-control-input-stroke-bc + .form-control-title-bc,
-#mprofilePanel .form-control-input-bc:not(:placeholder-shown) + .form-control-input-stroke-bc + .form-control-title-bc {
-  top: 10px;
+#mprofilePanel .form-control-label-bc.focused .form-control-title-bc,
+#mprofilePanel .form-control-label-bc.has-value .form-control-title-bc,
+#mprofilePanel .form-control-bc.focused .form-control-title-bc,
+#mprofilePanel .form-control-bc.filled .form-control-title-bc {
+  top: -2px;
+  transform: none;
+  font-size: 12px;
+  line-height: 15px;
 }
 #mprofilePanel .u-i-p-c-footer-bc {
   width: auto;
