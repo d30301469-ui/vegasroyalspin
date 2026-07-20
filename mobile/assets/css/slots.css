@@ -373,75 +373,81 @@ body.mobile-site .games-right-column {
   margin-left: 0;
 }
 
-/* ── ds-drawer slide-up animation ── */
+/* ═══════════════════════════════════════════════
+   ds-drawer: Sağlayıcı filtre drawer (CasinoMilyon mimarisi)
+   ═══════════════════════════════════════════════ */
+
 @keyframes ds-drawer-slide-up {
-  0% { transform: translate3d(0, 100%, 0); }
-  to  { transform: translateZ(0); }
+  0%  { transform: translate3d(0, 100%, 0); }
+  100%{ transform: translateZ(0); }
 }
 
-body.mobile-site .providers-sidebar {
+/* Wrapper = full-screen overlay (blur backdrop) - varsayılan gizli */
+body.mobile-site .providers-drawer-wrapper {
+  display: none;
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: auto;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  height: auto;
-  max-height: 80dvh;
-  min-height: 0;
+  inset: 0;
   z-index: 9999;
+  align-items: flex-end;
+  justify-content: center;
+  touch-action: none;
+  overscroll-behavior: none;
+  background: rgba(0, 2, 5, 0.48);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Açık halde: wrapper görünür + içerik pointer-events alır */
+body.mobile-site .providers-drawer-wrapper.mobile-open {
+  display: flex;
+}
+
+/* Scroll kilidi */
+body.mobile-site.provider-sheet-open {
+  overflow: hidden;
+}
+
+/* Spring: flex sütun, full genişlik, en alta yasla */
+body.mobile-site .providers-drawer-wrapper .ds-drawer-spring {
   display: flex;
   flex-direction: column;
-  border-radius: var(--fds-ref-radius-medium, 16px) var(--fds-ref-radius-medium, 16px) 0 0;
-  overflow: hidden;
-  background: #110a2a;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.55);
-  transform: translate3d(0, 100%, 0);
-  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-  pointer-events: none;
-}
-
-body.mobile-site .providers-sidebar.mobile-open {
-  transform: translateZ(0);
-  animation: ds-drawer-slide-up 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-  pointer-events: auto;
-}
-
-body.mobile-site .providers-sidebar:not(.mobile-open) {
-  pointer-events: none;
-  animation: none;
-}
-
-body.mobile-site .providers-sidebar.collapsed {
-  left: 0;
   width: 100%;
-  min-width: 0;
+  max-width: 100%;
+}
+
+/* Drawer paneli: KATI koyu arka plan, blur yok, yuvarlatılmış üst köşeler */
+body.mobile-site .providers-drawer-wrapper .ds-drawer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 80dvh;
+  background: #202022;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
   transform: translate3d(0, 100%, 0);
   animation: none;
 }
 
-body.mobile-site .providers-sidebar.collapsed.mobile-open {
-  transform: translate3d(0, 0, 0);
+body.mobile-site .providers-drawer-wrapper.mobile-open .ds-drawer {
+  animation: ds-drawer-slide-up 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
-/* ── ds-drawer header: drag handle + title ── */
-body.mobile-site .ds-drawer__header {
+/* ── Başlık alanı (sabit, kaymaz) ── */
+body.mobile-site .providers-drawer-wrapper .ds-drawer__header {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: inherit;
+  background: #202022;
   flex-shrink: 0;
   touch-action: none;
 }
 
-body.mobile-site .ds-drawer__drag-handle {
+body.mobile-site .providers-drawer-wrapper .ds-drawer__drag-handle {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 14px 0 8px;
+  padding: 16px 0 8px;
   cursor: grab;
   flex-shrink: 0;
   user-select: none;
@@ -449,272 +455,276 @@ body.mobile-site .ds-drawer__drag-handle {
   touch-action: none;
 }
 
-body.mobile-site .ds-drawer__drag-handle:active {
-  cursor: grabbing;
-}
-
-body.mobile-site .ds-drawer__drag-bar {
-  width: 36px;
+body.mobile-site .providers-drawer-wrapper .ds-drawer__drag-bar {
+  width: 32px;
   height: 4px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.56);
 }
 
-body.mobile-site .ds-drawer__title-bar {
+body.mobile-site .providers-drawer-wrapper .ds-drawer__title-bar {
   display: flex;
   align-items: center;
   width: 100%;
-  padding-bottom: 12px;
+  padding-bottom: 16px;
   flex-shrink: 0;
 }
 
-body.mobile-site .ds-drawer__title-content {
+body.mobile-site .providers-drawer-wrapper .ds-drawer__title-content {
   display: flex;
   align-items: center;
   width: 100%;
   padding: 0 16px;
 }
 
-body.mobile-site .ds-drawer__title-text {
+body.mobile-site .providers-drawer-wrapper .ds-drawer__title-text {
   flex: 1 0 0;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
 }
 
-body.mobile-site .provider-sheet {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  background: inherit;
-}
-
-/* ── Provider section title row ── */
-body.mobile-site .providerResetRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 14px 8px;
-  flex-shrink: 0;
-}
-
-body.mobile-site .providerSectionLabel {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-body.mobile-site .provider-sheet-tools {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 10px;
-  padding: 0 14px 12px;
-  flex-shrink: 0;
-}
-
-body.mobile-site .provider-sheet-tools > .sidebar-search {
-  flex: 1;
-  margin: 0 !important;
-  min-width: 0;
-  border-radius: 10px !important;
-  background: transparent !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-body.mobile-site .provider-sheet-grid-btn {
-  flex-shrink: 0;
-  width: 44px;
-  min-width: 44px;
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
-  cursor: pointer;
-  transition: var(--slot-transition);
-}
-
-body.mobile-site .provider-sheet-grid-btn:active {
-  color: #fff;
-  border-color: var(--slot-accent);
-}
-
-/* ── ds-drawer content scroll ── */
-body.mobile-site .providerItemsContainer.sidebar-providers-list {
+/* ── Kaydırılabilir içerik ── */
+body.mobile-site .providers-drawer-wrapper .ds-drawer__content {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior: contain;
+  padding: 0 16px;
 }
 
-/* ── Provider items grid ── */
-body.mobile-site .providerItemsHolder.module {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  padding: 4px 0 12px;
+/* ── Arama alanı ── */
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__search {
+  padding: 0 0 12px;
 }
 
-/* ── Footer: two-button layout ── */
-body.mobile-site .provider-sheet-footer {
-  flex-shrink: 0;
+body.mobile-site .providers-drawer-wrapper .sidebar-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  background: inherit;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  height: 44px;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 14px;
+  margin: 0 !important;
 }
 
-body.mobile-site .provider-sheet-reset {
+body.mobile-site .providers-drawer-wrapper .searchInputWrp {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+body.mobile-site .providers-drawer-wrapper .provider-search-input {
   flex: 1;
-  padding: 14px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 0;
+  height: 44px;
+}
+
+body.mobile-site .providers-drawer-wrapper .provider-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+body.mobile-site .providers-drawer-wrapper .provider-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  min-width: 20px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 16px;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Bölüm başlığı: "Tüm Sağlayıcılar" + liste ikonu ── */
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__titleToggleContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 10px;
+}
+
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__sectionTitle {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__viewToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ── Provider ızgara: 3 sütun ── */
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__grid {
+  padding-bottom: 12px;
+}
+
+body.mobile-site .providers-drawer-wrapper .providerItemsHolder {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+/* ── Provider item (CasinoMilyon gibi) ── */
+body.mobile-site .providers-drawer-wrapper .providerItemsInner {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  min-height: 52px;
+  padding: 10px 6px;
+  cursor: pointer;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+body.mobile-site .providers-drawer-wrapper .providerItemsInner.active {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.55);
+}
+
+body.mobile-site .providers-drawer-wrapper .providerItemsInner:active {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+body.mobile-site .providers-drawer-wrapper .providerItemsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+body.mobile-site .providers-drawer-wrapper .providerItemsBtn svg,
+body.mobile-site .providers-drawer-wrapper .providerItemsBtn img {
+  max-width: 100%;
+  max-height: 28px;
+  object-fit: contain;
+}
+
+body.mobile-site .providers-drawer-wrapper .providerItemsBtn .CMSIconSVGWrapper,
+body.mobile-site .providers-drawer-wrapper .providerItemsBtn .CMSIconSVGWrapper svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  max-height: 28px;
+  color: rgba(255, 255, 255, 0.85);
+  fill: rgba(255, 255, 255, 0.85);
+}
+
+body.mobile-site .providers-drawer-wrapper .providerItemsBtn .provider-list-row {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Badge konumlandırma */
+body.mobile-site .providers-drawer-wrapper .providerBadgeBlock {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ── Footer: Sıfırla + FİLTRE ── */
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: #202022;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+body.mobile-site .providers-drawer-wrapper .provider-sheet-reset {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 9999px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  appearance: none;
 }
 
-body.mobile-site .provider-sheet-reset:active {
-  background: rgba(255, 255, 255, 0.06);
+body.mobile-site .providers-drawer-wrapper .provider-sheet-reset .btn__label {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
-body.mobile-site .provider-sheet-apply {
+body.mobile-site .providers-drawer-wrapper .provider-sheet-apply {
   flex: 1;
-  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 16px;
   border: none;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.16);
   color: #fff;
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.06em;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  appearance: none;
 }
 
-body.mobile-site .provider-sheet-apply:active {
-  background: rgba(255, 255, 255, 0.22);
+body.mobile-site .providers-drawer-wrapper .provider-sheet-apply .btn__label {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
-/* ── Provider items in drawer ── */
-body.mobile-site .providers-sidebar .sidebar-providers-list {
-  flex: 1;
-  min-height: 0;
-  padding: 0 14px 16px;
-  gap: 0;
-}
-
-body.mobile-site .providers-sidebar .sidebar-provider-item {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 10px;
-  color: #fff;
-  font-weight: 600;
-  padding: 12px 8px;
-  min-width: 0;
-  overflow: hidden;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  aspect-ratio: unset;
-  min-height: 56px;
-}
-
-body.mobile-site .providers-sidebar .sidebar-provider-item.active {
-  border-color: rgba(168, 85, 247, 0.6);
-  background: rgba(168, 85, 247, 0.15);
-}
-
-body.mobile-site .providers-sidebar .sidebar-provider-item .providerItemsBtn {
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
-  font-size: 10px;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.88);
-}
-
-body.mobile-site .providers-sidebar .providerBadgeBlock {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-}
-
-body.mobile-site .provider-sheet-support-fab {
-  position: absolute;
-  right: 16px;
-  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  text-decoration: none;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1.15;
-  text-align: center;
-  background: radial-gradient(circle at 30% 25%, rgba(236, 72, 153, 0.9), rgba(126, 34, 206, 0.95));
-  box-shadow: 0 4px 24px rgba(168, 85, 247, 0.55);
-}
-
-body.mobile-site .provider-sheet-support-fab-icon {
-  font-size: 18px;
-  opacity: 0.95;
-}
-
-body.mobile-site .provider-sheet-support-fab-text {
-  letter-spacing: 0.02em;
-}
-
-body.mobile-site.provider-sheet-open {
-  overflow: hidden;
-}
-
-/* ── Backdrop: blur overlay ── */
+/* ── Eski sidebar-overlay (artık kullanılmıyor, yedek olarak gizle) ── */
 body.mobile-site .sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  background: rgba(0, 0, 0, 0.65);
-  touch-action: none;
-  overscroll-behavior: none;
-}
-
-body.mobile-site .sidebar-overlay.active {
-  display: block;
+  display: none !important;
 }
 
 @media (max-width: 992px) {

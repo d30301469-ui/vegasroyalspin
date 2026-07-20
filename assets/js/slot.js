@@ -872,7 +872,7 @@
 
     /* ── Sağlayıcı paneli: mobilde header altı tam genişlik sheet; masaüstünde dar sütun ── */
     function isMobileProviderSidebar() {
-        return window.innerWidth <= 992;
+        return !!(document.body && document.body.classList.contains('mobile-site'));
     }
 
     function syncProviderSidebarAria() {
