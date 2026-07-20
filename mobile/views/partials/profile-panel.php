@@ -14,7 +14,6 @@ $panelInitial = strtoupper(mb_substr($panelUsername !== '' ? $panelUsername : 'U
 
 $panelBadge = isset($headerLoyaltyBadge) && is_array($headerLoyaltyBadge) ? $headerLoyaltyBadge : [];
 $panelLoyaltyName = (string) ($panelBadge['name'] ?? 'Bronze');
-$panelLoyaltyCode = strtolower(preg_replace('/[^a-z0-9_-]+/i', '', (string) ($panelBadge['code'] ?? $panelLoyaltyName)) ?: 'bronze');
 $panelLoyaltyIconMap = [
   'bronze' => '/assets/images/loyalty/badges/bronze.png',
   'silver' => '/assets/images/loyalty/badges/silver.svg',
@@ -22,6 +21,14 @@ $panelLoyaltyIconMap = [
   'platinum' => '/assets/images/loyalty/badges/platinum.svg',
   'diamond' => '/assets/images/loyalty/badges/diamond.svg',
 ];
+$panelLoyaltySource = strtolower((string) ($panelBadge['code'] ?? '') . ' ' . $panelLoyaltyName . ' ' . (string) ($panelBadge['icon_url'] ?? ''));
+$panelLoyaltyCode = 'bronze';
+foreach (array_keys($panelLoyaltyIconMap) as $panelLoyaltyLevelCode) {
+    if (str_contains($panelLoyaltySource, $panelLoyaltyLevelCode)) {
+        $panelLoyaltyCode = $panelLoyaltyLevelCode;
+        break;
+    }
+}
 $panelLoyaltyIcon = $panelLoyaltyIconMap[$panelLoyaltyCode] ?? '/assets/images/loyalty/badges/bronze.png';
 $panelInitialLower = mb_strtolower($panelInitial);
 $panelBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
