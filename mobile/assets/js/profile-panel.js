@@ -552,7 +552,7 @@
   }
 
   function cryptoPopupHtml() {
-    return '<div id="mprofileCryptoPopup" class="popup-inner-bc mprofile-crypto-popup" aria-hidden="true" hidden><i id="mprofileCryptoClose" class="e-p-close-icon-bc bc-i-close-remove" data-mprofile-crypto-close></i><div class="status-popup-content-w-bc"><div><div class="multi-select-bc multi-select-popup"><div class="form-control-bc"><input class="form-control-input-bc" type="text" placeholder="Arama Kripto" value="" id="mprofileCryptoSearch"><i class="ss-icon-bc bc-i-search"></i><div class="multi-select-label-bc" data-scroll-lock-scrollable>' +
+    return '<div id="mprofileCryptoPopup" class="popup-inner-bc mprofile-crypto-popup" aria-hidden="true" hidden><div class="status-popup-content-w-bc"><div><div class="multi-select-bc multi-select-popup"><div class="form-control-bc"><input class="form-control-input-bc" type="text" placeholder="Arama Kripto" value="" id="mprofileCryptoSearch"><i class="ss-icon-bc bc-i-search"></i><div class="multi-select-label-bc" data-scroll-lock-scrollable>' +
       cryptoOptions().map(function (option, index) { return '<label class="checkbox-control-content-bc ' + (index === 5 ? 'active ' : '') + '" data-option-value="' + escapeHtml(option[0]) + '" data-option-label="' + escapeHtml(option[1]) + '"><p class="checkbox-control-text-bc ellipsis" style="pointer-events: none;">' + escapeHtml(option[1]) + '</p></label>'; }).join('') +
       '</div></div></div></div></div></div>';
   }
