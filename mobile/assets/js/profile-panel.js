@@ -2229,6 +2229,13 @@
   }
 
   window.__openMobileProfilePanel = openPanel;
+  window.__openMobileBalancePage = function (sectionName) {
+    var panel = getPanel();
+    if (!panel) return false;
+    if (!openPanel()) return false;
+    showBalancePage(panel, sectionName || 'deposit');
+    return true;
+  };
   window.__closeMobileProfilePanel = closePanel;
 
   function bind() {

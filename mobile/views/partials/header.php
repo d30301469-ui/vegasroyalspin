@@ -150,7 +150,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
         <div class="hdr-shortcuts-icons">
           <a href="<?= htmlspecialchars($depositHref, ENT_QUOTES, 'UTF-8') ?>"
              class="user-nav-icon bc-i-wallet"
-             onclick="event.preventDefault(); if (typeof redirectToDeposit === 'function') redirectToDeposit();"
+             onclick="event.preventDefault(); if (typeof window.__openMobileBalancePage === 'function' && window.__openMobileBalancePage('deposit')) return false; if (typeof redirectToDeposit === 'function') redirectToDeposit(); return false;"
              title="Para Yatır"
              aria-label="Para Yatır"></a>
           <a href="#"
