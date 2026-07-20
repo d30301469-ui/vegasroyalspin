@@ -877,6 +877,41 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   width: 100%;
   height: 34px;
 }
+#mprofilePanel .mprofile-password-section {
+  padding-top: 18px;
+}
+#mprofilePanel .profile-security-single--password {
+  width: 100%;
+}
+#mprofilePanel .password-change-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+#mprofilePanel .password-change-field {
+  width: 100%;
+  margin-bottom: 10px;
+}
+#mprofilePanel .mprofile-password-section .form-control-input-bc {
+  min-height: 52px;
+  background: rgba(var(--b-sc, 255, 255, 255), 0.15);
+}
+#mprofilePanel .mprofile-password-section .u-i-p-c-footer-bc {
+  margin-top: 14px;
+}
+#mprofilePanel .mprofile-password-section .u-i-p-c-footer-bc .btn {
+  height: 42px;
+}
+#mprofilePanel .mprofile-form-message {
+  min-height: 18px;
+  margin: 2px 0 0;
+  color: rgba(var(--b-sc, 255, 255, 255), 0.72);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+#mprofilePanel .mprofile-form-message.is-error { color: rgba(var(--oc-3, 255, 76, 76), 1); }
+#mprofilePanel .mprofile-form-message.is-success { color: #7bffb2; }
 
 #mprofilePanel .userLogoutBtn.btn {
   width: 100%;

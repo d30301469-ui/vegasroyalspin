@@ -3,8 +3,21 @@
 
   function getPanel() { return document.getElementById('mprofilePanel'); }
   function getOverlay() { return document.getElementById('mprofileOverlay'); }
+  var Shared = window.BetcoAuthShared || {};
 
   var isOpen = false;
+
+  function apiUrl(path) {
+    return Shared.apiUrl ? Shared.apiUrl(path) : path;
+  }
+
+  function memberAuthHeaders(extra) {
+    if (Shared.memberAuthHeaders) return Shared.memberAuthHeaders(extra);
+    var headers = extra || {};
+    var csrf = (window.__CSRF_TOKEN__ || '').trim();
+    if (csrf) headers['X-CSRF-Token'] = csrf;
+    return headers;
+  }
 
   function openPanel() {
     var panel = getPanel();
@@ -24,6 +37,11 @@
     isOpen = true;
     syncBalance();
     syncBalanceRail(panel);
+    if (window.location.search.indexOf('page=change-password') !== -1) {
+      showProfileDetails(panel, 'change-password');
+    } else if (window.location.search.indexOf('page=details') !== -1) {
+      showProfileDetails(panel, 'details');
+    }
     return true;
   }
 
@@ -99,12 +117,80 @@
     if (detail) detail.setAttribute('aria-hidden', 'true');
   }
 
-  function showProfileDetails(panel) {
+  function showProfileDetails(panel, sectionName) {
     panel = panel || getPanel();
     if (!panel) return;
+    sectionName = sectionName || 'details';
     panel.classList.add('mprofile-detail-active');
     var detail = panel.querySelector('[data-mprofile-view="details"]');
     if (detail) detail.setAttribute('aria-hidden', 'false');
+    panel.querySelectorAll('[data-mprofile-section]').forEach(function (section) {
+      var isActive = section.getAttribute('data-mprofile-section') === sectionName;
+      section.hidden = !isActive;
+    });
+    panel.querySelectorAll('[data-mprofile-tab]').forEach(function (tab) {
+      tab.classList.toggle('active', tab.getAttribute('data-mprofile-tab') === sectionName);
+    });
+  }
+
+  function setPasswordMessage(panel, type, text) {
+    var message = panel && panel.querySelector('[data-mprofile-password-message]');
+    if (!message) return;
+    message.textContent = text || '';
+    message.classList.toggle('is-error', type === 'error');
+    message.classList.toggle('is-success', type === 'success');
+  }
+
+  function submitPasswordForm(panel) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    var form = panel.querySelector('#mprofileChangePasswordForm');
+    if (!form) return;
+    var oldPwd = (form.querySelector('[name="current_password"]') || {}).value || '';
+    var newPwd = (form.querySelector('[name="password"]') || {}).value || '';
+    var confirmPass = (form.querySelector('[name="password_confirmation"]') || {}).value || '';
+    oldPwd = oldPwd.trim();
+    newPwd = newPwd.trim();
+    confirmPass = confirmPass.trim();
+
+    if (!oldPwd || !newPwd || !confirmPass) {
+      setPasswordMessage(panel, 'error', 'Lütfen tüm alanları doldurun.');
+      return;
+    }
+    if (newPwd !== confirmPass) {
+      setPasswordMessage(panel, 'error', 'Yeni şifreler uyuşmuyor.');
+      return;
+    }
+
+    var button = panel.querySelector('#mprofileChangePwdBtn');
+    if (button) button.disabled = true;
+    setPasswordMessage(panel, '', '');
+
+    fetch(apiUrl('/api/v2/password-update'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: memberAuthHeaders({ 'Content-Type': 'application/json', 'Accept': 'application/json' }),
+      body: JSON.stringify({
+        current_password: oldPwd,
+        password: newPwd,
+        password_confirmation: confirmPass
+      })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (env) {
+        if (env && env.success) {
+          setPasswordMessage(panel, 'success', (env.message && String(env.message).trim()) || 'Şifreniz güncellendi.');
+          form.reset();
+          return;
+        }
+        setPasswordMessage(panel, 'error', (env && env.message) ? env.message : 'Şifre güncellenemedi.');
+      })
+      .catch(function () {
+        setPasswordMessage(panel, 'error', 'Sunucu hatası. Lütfen tekrar deneyin.');
+      })
+      .then(function () {
+        if (button) button.disabled = false;
+      });
   }
 
   window.__openMobileProfilePanel = openPanel;
@@ -170,7 +256,14 @@
         var detailsLink = target.closest('a[href*="account=profile"][href*="page=details"]');
         if (detailsLink) {
           e.preventDefault();
-          showProfileDetails(panel);
+          showProfileDetails(panel, 'details');
+          return;
+        }
+
+        var changePasswordLink = target.closest('a[href*="account=profile"][href*="page=change-password"]');
+        if (changePasswordLink) {
+          e.preventDefault();
+          showProfileDetails(panel, 'change-password');
           return;
         }
 
@@ -185,6 +278,20 @@
         if (logoutButton) {
           e.preventDefault();
           window.location.href = '/logout';
+          return;
+        }
+
+        var passwordSubmit = target.closest('#mprofileChangePwdBtn');
+        if (passwordSubmit) {
+          e.preventDefault();
+          submitPasswordForm(panel);
+        }
+      });
+
+      panel.addEventListener('submit', function (e) {
+        if (e.target && e.target.closest && e.target.closest('#mprofileChangePasswordForm')) {
+          e.preventDefault();
+          submitPasswordForm(panel);
         }
       });
     }
