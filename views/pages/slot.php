@@ -38,8 +38,16 @@ $slotDemoHref = static function (array $game): string {
     return '/play?game_id=' . rawurlencode($gid) . '&mode=fun';
 };
 
+$slotRepairMojibake = static function (string $value): string {
+    return strtr($value, [
+        'Ã‡' => 'Ç', 'Ã–' => 'Ö', 'Ãœ' => 'Ü', 'Ä°' => 'İ', 'Åž' => 'Ş', 'Äž' => 'Ğ',
+        'Ã§' => 'ç', 'Ã¶' => 'ö', 'Ã¼' => 'ü', 'Ä±' => 'ı', 'ÅŸ' => 'ş', 'ÄŸ' => 'ğ',
+    ]);
+};
+
 /** @return string BEM modifier sınıfı (provider-badge--jackpot vb.) */
-$providerBadgeModifierClass = static function (string $badge): string {
+$providerBadgeModifierClass = static function (string $badge) use ($slotRepairMojibake): string {
+    $badge = $slotRepairMojibake($badge);
     $n = strtoupper(preg_replace('/\s+/u', ' ', trim($badge)));
     $n = str_replace(['İ', 'ı'], ['I', 'I'], $n);
     if (strpos($n, 'EN') !== false && strpos($n, 'IYI') !== false) {
@@ -63,7 +71,8 @@ $providerBadgeModifierClass = static function (string $badge): string {
     return 'provider-badge--default';
 };
 
-$providerBadgeBlockClass = static function (string $badge): string {
+$providerBadgeBlockClass = static function (string $badge) use ($slotRepairMojibake): string {
+    $badge = $slotRepairMojibake($badge);
     $n = strtoupper(preg_replace('/\s+/u', ' ', trim($badge)));
     $n = str_replace(['İ', 'ı'], ['I', 'I'], $n);
     if (strpos($n, 'EN') !== false && strpos($n, 'IYI') !== false) {
@@ -230,13 +239,14 @@ if (($slotGameType ?? 0) === 1) {
     ];
 }
 
-$renderProviderBtn = function ($provider) use ($providerBadges, $selectedProviders, $providerBadgeBlockClass) {
+$renderProviderBtn = function ($provider) use ($providerBadges, $selectedProviders, $providerBadgeBlockClass, $slotRepairMojibake) {
     $badgeSlug = ProviderDisplayBadgeMap::slugForDisplay($provider);
     $badges    = $badgeSlug !== null ? array_slice($providerBadges[$badgeSlug] ?? [], 0, 1) : [];
     $active = in_array($provider, $selectedProviders);
+    $provider = $slotRepairMojibake((string) $provider);
     $label = htmlspecialchars($provider);
     $esc = htmlspecialchars($provider, ENT_QUOTES, 'UTF-8');
-    $badge = $badges[0] ?? '';
+    $badge = $slotRepairMojibake((string) ($badges[0] ?? ''));
     $badgeClass = $badge !== '' ? $providerBadgeBlockClass($badge) : '';
     return '<div title="' . $esc . '" class="providerItemsInner sidebar-provider-item' . ($active ? ' active' : '') . '" role="button" tabindex="0" data-provider="' . $esc . '"><span class="providerBadgeBlock ' . htmlspecialchars($badgeClass, ENT_QUOTES, 'UTF-8') . '" data-badge="' . htmlspecialchars($badge, ENT_QUOTES, 'UTF-8') . '"></span><div class="providerItemsBtn"><span class="provider-list-row">' . $label . '</span></div></div>';
 };
