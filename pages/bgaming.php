@@ -36,7 +36,7 @@ $slotEmptyText = 'Admin panelinden BGaming oyun sync çalıştırın veya arama 
 $slotApiParams = ['source' => 'bgaming'];
 $sliderApiCategory = 'bgaming';
 $slotShowActionButtons = true;
-$slotHideProviders = true;
+$slotHideProviders = false;
 
 $mobileBgamingView = defined('MOBILE_PATH') ? MOBILE_PATH . '/views/pages/bgaming.php' : '';
 if (defined('SURFACE') && SURFACE === 'mobile' && $mobileBgamingView !== '' && is_file($mobileBgamingView)) {
