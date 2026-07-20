@@ -5,6 +5,13 @@ declare(strict_types=1);
 final class ApiLoyalty
 {
     private const BRONZE_ICON_URL = '/assets/images/loyalty/badges/bronze.png';
+    private const LOCAL_ICON_URLS = [
+        'bronze' => self::BRONZE_ICON_URL,
+        'silver' => '/assets/images/loyalty/badges/silver.svg',
+        'gold' => '/assets/images/loyalty/badges/gold.svg',
+        'platinum' => '/assets/images/loyalty/badges/platinum.svg',
+        'diamond' => '/assets/images/loyalty/badges/diamond.svg',
+    ];
 
     public static function fetchForUser(int $userId): array
     {
@@ -337,11 +344,18 @@ final class ApiLoyalty
 
     private static function normalizedIconUrl(string $code, string $iconUrl): string
     {
-        if (strtolower($code) === 'bronze') {
-            return self::BRONZE_ICON_URL;
+        $code = strtolower(trim($code));
+        if (isset(self::LOCAL_ICON_URLS[$code])) {
+            return self::LOCAL_ICON_URLS[$code];
         }
 
-        return $iconUrl;
+        foreach (self::LOCAL_ICON_URLS as $levelCode => $localIconUrl) {
+            if (str_contains(strtolower($iconUrl), $levelCode)) {
+                return $localIconUrl;
+            }
+        }
+
+        return self::BRONZE_ICON_URL;
     }
 
     private static function defaultLevels(): array
