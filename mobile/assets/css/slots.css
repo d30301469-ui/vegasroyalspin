@@ -2130,3 +2130,9 @@ body.mobile-site.provider-sheet-open .providers-drawer-wrapper .provider-sheet-a
   background-color: rgb(50, 50, 52) !important;
   background-image: none !important;
 }
+
+body.mobile-site.provider-sheet-open .tab-navigation-w-bc,
+body.mobile-site.provider-sheet-open .layout-navigation-holder-bc .tab-navigation-w-bc {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
