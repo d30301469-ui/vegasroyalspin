@@ -58,15 +58,6 @@ final class ApiPromotions
         }
         $timeout = function_exists('frontend_cms_http_timeout') ? frontend_cms_http_timeout() : 12;
 
-        if ($apiOnly) {
-            $cached = ApiCmsRemote::readPayloadCache($cacheKey, ApiCmsRemote::cacheFreshTtl(), false);
-            if (is_array($cached['result'] ?? null)) {
-                ApiCmsRemote::recordFetch($cacheKey, 'cache');
-
-                return $cached['result'];
-            }
-        }
-
         if (function_exists('metropol_should_skip_remote_backend') && metropol_should_skip_remote_backend()) {
             if ($apiOnly) {
                 $stale = ApiCmsRemote::readPayloadCache($cacheKey, ApiCmsRemote::cacheStaleMaxAge(), true);
