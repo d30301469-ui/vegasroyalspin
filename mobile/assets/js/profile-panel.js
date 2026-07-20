@@ -28,6 +28,10 @@
   var freespinsLoaded = { yeni: false, aktif: false };
   var freespinsRows = { yeni: [], aktif: [] };
   var activeFreespinTab = 'yeni';
+  var loyaltyLoaded = false;
+  var loyaltyPayload = null;
+  var activeLoyaltyLevelCode = '';
+  var activeLoyaltyRewardFilter = 'all';
   var transactionHistoryRows = [];
   var balanceMethodStore = { deposit: [], withdraw: [] };
   var activePaymentModal = null;
@@ -202,6 +206,26 @@
     }
   }
 
+  function integerText(value) {
+    var num = Number(value);
+    if (!isFinite(num)) num = 0;
+    try {
+      return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(num);
+    } catch (e) {
+      return String(Math.round(num));
+    }
+  }
+
+  function percentText(value) {
+    var num = Number(value);
+    if (!isFinite(num)) num = 0;
+    try {
+      return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: num % 1 ? 2 : 0, maximumFractionDigits: 2 }).format(num) + '%';
+    } catch (e) {
+      return String(num) + '%';
+    }
+  }
+
   function formatDateTime(value) {
     var raw = String(value || '').trim();
     if (!raw) return '—';
@@ -245,7 +269,7 @@
   }
 
   function bonusPageUsesNativeList(pageName) {
-    return pageName === 'bonus-request' || pageName === 'sport' || pageName === 'casino' || pageName === 'bonus-history' || pageName === 'promo-code' || pageName === 'casino-free-spins';
+    return pageName === 'bonus-request' || pageName === 'sport' || pageName === 'casino' || pageName === 'bonus-history' || pageName === 'promo-code' || pageName === 'casino-free-spins' || pageName === 'loyalty-points';
   }
 
   function bonusPageUsesPromotions(pageName) {
@@ -306,6 +330,46 @@
     var hash = 0;
     for (var i = 0; i < seed.length; i++) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
     return fallback[Math.abs(hash) % fallback.length];
+  }
+
+  function loyaltyIcon(row) {
+    row = row || {};
+    var code = String(row.code || '').toLowerCase();
+    var map = {
+      bronze: '/assets/images/loyalty/badges/bronze.png',
+      silver: '/assets/images/loyalty/badges/silver.svg',
+      gold: '/assets/images/loyalty/badges/gold.svg',
+      platinum: '/assets/images/loyalty/badges/platinum.svg',
+      platin: '/assets/images/loyalty/badges/platinum.svg',
+      diamond: '/assets/images/loyalty/badges/diamond.svg'
+    };
+    if (map[code]) return map[code];
+    var image = String(row.icon_url || '').trim();
+    if (image.indexOf('/content/images/loyalty_points/') === 0) {
+      Object.keys(map).some(function (key) {
+        if (image.toLowerCase().indexOf(key) !== -1) {
+          image = map[key];
+          return true;
+        }
+        return false;
+      });
+    }
+    return image || map.bronze;
+  }
+
+  function loyaltyColor(row) {
+    var color = String(row && row.color_hex || '').trim();
+    return /^#[0-9a-f]{3,8}$/i.test(color) ? color : '#b7791f';
+  }
+
+  function loyaltyRewardsForLevel(level) {
+    level = level || {};
+    var rewards = [];
+    var cashback = Number(level.cashback_rate || 0);
+    var weekly = Number(level.weekly_bonus_amount || 0);
+    if (cashback > 0) rewards.push({ state: 'active', title: 'Cashback', text: percentText(cashback) + ' cashback hakkı' });
+    if (weekly > 0) rewards.push({ state: 'inactive', title: 'Haftalık Bonus', text: moneyText(weekly) + ' seviye bonusu' });
+    return rewards;
   }
 
   function normalizeHistoryRow(row, source) {
@@ -1114,6 +1178,9 @@
     } else if (pageName === 'casino-free-spins') {
       renderFreespins(panel);
       if (!freespinsLoaded[activeFreespinTab]) loadFreespins(panel, activeFreespinTab);
+    } else if (pageName === 'loyalty-points') {
+      renderLoyaltyPoints(panel);
+      if (!loyaltyLoaded) loadLoyaltyPoints(panel);
     }
   }
 
@@ -1424,6 +1491,72 @@
         + '<div class="mprofile-freespin-meta"><b>' + escapeHtml(row.freespins_per_player || 0) + '</b><span>Free Spin</span><em class="mprofile-bonus-status mprofile-bonus-status--' + escapeHtml(rowStatus) + '">' + escapeHtml(freespinStatusLabel(row.status)) + '</em><small>Başlangıç: ' + escapeHtml(freespinDate(row.begins_at)) + '</small><small>Bitiş: ' + escapeHtml(freespinDate(row.expires_at)) + '</small>' + (playable ? '<a class="profile-bonus-claim-btn" href="' + escapeHtml(launchUrl) + '">Oyuna Git</a>' : '') + '</div>'
         + '</article>';
     }).join('') + '</div>';
+  }
+
+  function loadLoyaltyPoints(panel) {
+    panel = panel || getPanel();
+    var list = panel && panel.querySelector('[data-mbonus-promotions-list]');
+    if (list) list.innerHTML = '<p class="profile-active-bonus-loading" role="status">Sadakat puanları yükleniyor...</p>';
+    fetch(apiUrl('/api/v2/loyalty.php'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        loyaltyPayload = envelope && envelope.data ? envelope.data : {};
+        loyaltyLoaded = !!(envelope && envelope.success);
+        renderLoyaltyPoints(panel);
+      })
+      .catch(function () {
+        loyaltyPayload = null;
+        loyaltyLoaded = true;
+        if (list) list.innerHTML = '<p class="profile-active-bonus-error" role="status">Sadakat bilgileri yüklenemedi.</p>';
+      });
+  }
+
+  function renderLoyaltyPoints(panel) {
+    panel = panel || getPanel();
+    var list = panel && panel.querySelector('[data-mbonus-promotions-list]');
+    var status = panel && panel.querySelector('[data-mbonus-claim-status]');
+    if (!list) return;
+    if (status) {
+      status.textContent = '';
+      status.classList.remove('is-success', 'is-error');
+    }
+    if (!loyaltyLoaded || !loyaltyPayload) {
+      list.innerHTML = '<p class="profile-active-bonus-loading" role="status">Sadakat puanları yükleniyor...</p>';
+      return;
+    }
+    var account = loyaltyPayload.account || {};
+    var currentLevel = loyaltyPayload.level || {};
+    var nextLevel = loyaltyPayload.next_level || null;
+    var progress = loyaltyPayload.progress || {};
+    var levels = Array.isArray(loyaltyPayload.levels) && loyaltyPayload.levels.length ? loyaltyPayload.levels : [currentLevel];
+    var currentCode = String(currentLevel.code || 'bronze');
+    if (!activeLoyaltyLevelCode) activeLoyaltyLevelCode = currentCode;
+    var selectedLevel = levels.find(function (row) { return String(row.code || '') === activeLoyaltyLevelCode; }) || currentLevel;
+    var currentIndex = Math.max(0, levels.findIndex(function (row) { return String(row.code || '') === currentCode; }));
+    var selectedIndex = Math.max(0, levels.findIndex(function (row) { return String(row.code || '') === String(selectedLevel.code || ''); }));
+    var points = Number(account.points || 0);
+    var currentMin = Number(progress.current_level_min_points != null ? progress.current_level_min_points : currentLevel.min_points || 0);
+    var nextMin = nextLevel ? Number(progress.next_level_min_points != null ? progress.next_level_min_points : nextLevel.min_points || 0) : points;
+    var pointsToNext = nextLevel ? Math.max(0, Number(progress.points_to_next_level != null ? progress.points_to_next_level : nextMin - points)) : 0;
+    var percent = Math.max(0, Math.min(100, Number(progress.percent || 0)));
+    var currentColor = loyaltyColor(currentLevel);
+    var currentRewards = loyaltyRewardsForLevel(currentLevel).filter(function (reward) { return activeLoyaltyRewardFilter === 'all' || reward.state === activeLoyaltyRewardFilter; });
+    var selectedRewards = loyaltyRewardsForLevel(selectedLevel);
+    var levelCards = levels.map(function (row, index) {
+      var active = String(row.code || '') === String(selectedLevel.code || '');
+      return '<div class="horizontalCategoryItemWrp"><button type="button" class="loyaltySliderCard ' + (active ? 'active' : '') + '" data-mloyalty-level-card="' + escapeHtml(row.code || '') + '"' + (active ? ' style="background: rgba(0, 0, 0, 0.3);"' : '') + '><img class="loyaltySliderCardImg" src="' + escapeHtml(loyaltyIcon(row)) + '" alt="loyalty-level-img"><p class="loyaltySliderCardTitle ellipsis" data-title="' + escapeHtml(row.name || '') + '" style="color: ' + escapeHtml(loyaltyColor(row)) + ';">' + escapeHtml(row.name || 'Seviye') + '</p><p class="loyaltySliderCardInfo" style="background: rgba(0, 0, 0, 0.3); border-color: rgba(0, 0, 0, 0.5); box-shadow: rgba(0, 0, 0, 0.9) 0px 1px 0px 0px;">' + escapeHtml(String(index + 1)) + '</p></button></div>';
+    }).join('');
+    var currentRewardsHtml = currentRewards.length ? currentRewards.map(function (reward) {
+      return '<div class="loyaltyRewardCard ' + (reward.state === 'active' ? 'active' : '') + '"><strong>' + escapeHtml(reward.title) + '</strong><span>' + escapeHtml(reward.text) + '</span></div>';
+    }).join('') : '<div class="loyaltyLevelCardsError">Sadakat programı kullanıcıya hiçbir fayda sağlamaz</div>';
+    var selectedRewardsHtml = selectedRewards.length ? selectedRewards.map(function (reward) {
+      return '<div class="loyaltyRewardCard ' + (reward.state === 'active' ? 'active' : '') + '"><strong>' + escapeHtml(reward.title) + '</strong><span>' + escapeHtml(reward.text) + '</span></div>';
+    }).join('') : '<div class="loyaltyLevelCardsError">BU SEVİYENİN HERHANGİ BİR ÖDÜLÜ YOKTUR</div>';
+    var tableRows = levels.map(function (row, index) {
+      var isCurrent = String(row.code || '') === currentCode;
+      return '<div class="loyaltyLevelTableRow ' + (isCurrent ? 'loyaltyCurrentRow' : '') + '">' + (isCurrent ? '<span class="loyaltyCurrentRowBorder" style="background: ' + escapeHtml(currentColor) + ';"></span>' : '') + '<div class="loyaltyLevelTableCell"' + (isCurrent ? ' style="color: ' + escapeHtml(currentColor) + ';"' : '') + '>' + escapeHtml(String(index + 1)) + '</div><div class="loyaltyLevelTableCell"' + (isCurrent ? ' style="color: ' + escapeHtml(currentColor) + ';"' : '') + '>' + escapeHtml(integerText(row.min_points || 0)) + '</div><div class="loyaltyLevelTableCell"' + (isCurrent ? ' style="color: ' + escapeHtml(currentColor) + ';"' : '') + '>' + escapeHtml(moneyText(row.weekly_bonus_amount || 0)) + '</div></div>';
+    }).join('');
+    list.innerHTML = '<div class="loyaltyWrapper" data-scroll-lock-scrollable><div class="loyaltyProgramSection" style="background: linear-gradient(45deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.5) 80%);"><div class="loyaltyProgramInfo"><div class="loyaltyProgramInfoLeft"><p class="loyaltyProgramImg"><img src="' + escapeHtml(loyaltyIcon(currentLevel)) + '" alt="loyaltyProgramImg" style="filter: drop-shadow(rgba(0, 0, 0, 0.8) 0px 0px 15px);"></p><p class="loyaltyPointsLevel"><span class="loyaltyPointsLevelValue ellipsis">' + escapeHtml((currentLevel.name || 'Bronze') + ' ' + (currentIndex + 1)) + '</span><span class="loyaltyPointsLevelInfo ellipsis">Mevcut XP: ' + escapeHtml(integerText(points)) + '</span></p></div><div class="loyaltyProgramInfoRight"><div class="loyaltyPointsNumbers"><p class="loyaltyPointsNumbersPrev">' + escapeHtml(integerText(currentMin)) + '<span>XP</span></p><p class="loyaltyPointsNumbersNext">' + escapeHtml(nextLevel ? integerText(nextMin) : integerText(points)) + '<span>XP</span></p></div><div class="loyaltyProgressBar"><p class="loyalProgressBarStick" style="width: ' + escapeHtml(String(percent)) + '%; background: ' + escapeHtml(currentColor) + ';"></p></div><p class="loyaltyPointsLevelPoints">' + (nextLevel ? '<span>' + escapeHtml(integerText(pointsToNext)) + ' XP</span><span class="loyaltyPointsLevelPointsItem">KADAR</span><span>' + escapeHtml(nextLevel.name || '') + '</span><span> ' + escapeHtml(String(levels.findIndex(function (row) { return String(row.code || '') === String(nextLevel.code || ''); }) + 1)) + '</span>' : '<span>En üst seviyedesiniz</span>') + '</p></div></div><div class="loyaltyLevelCardsUser" data-scroll-lock-scrollable><div class="loyaltyLevelCardsUserSelect"><p class="loyaltyLevelInfoTitle">My Rewards</p><div class="form-control-bc select loyaltyLevelCardSelect s-small filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc ellipsis" aria-label="Select an option" data-mloyalty-reward-filter><option value="all"' + (activeLoyaltyRewardFilter === 'all' ? ' selected' : '') + '>TÜMÜ</option><option value="active"' + (activeLoyaltyRewardFilter === 'active' ? ' selected' : '') + '>AKTİF</option><option value="inactive"' + (activeLoyaltyRewardFilter === 'inactive' ? ' selected' : '') + '>Etkinleştirilmedi</option></select><i class="form-control-icon-bc bc-i-small-arrow-down"></i></label></div></div><div class="loyaltyLevelCardsItem loyaltyLevelCardsUserItem">' + currentRewardsHtml + '</div></div></div><div class="loyaltyProgramWrapper"><div class="horizontalList scroll-start"><div class="horizontalSliderWrapper scroll-start" data-scroll-lock-scrollable><div class="horizontalSliderRow loyaltyHorizontalList">' + levelCards + '</div></div></div><div class="loyaltyProgramItems"><div class="loyaltyLevelCards"><p class="loyaltyLevelInfoTitle">ÖDÜLLER</p><div class="loyaltyLevelCardsItem loyaltyLevelCardsLevelItem" data-scroll-lock-scrollable>' + selectedRewardsHtml + '</div></div><div class="loyaltyLevelBonus"><p class="loyaltyLevelInfoTitle">Seviye Atlama Bonusu</p><div class="loyaltyLevelTable"><div class="loyaltyLevelTableHeader"><div class="loyaltyLevelTableCell"><p class="ellipsis">' + escapeHtml(selectedLevel.name || 'Seviye') + '</p></div><div class="loyaltyLevelTableCell"><p class="ellipsis">XP</p></div><div class="loyaltyLevelTableCell"><p class="ellipsis">Bonus</p></div></div><div class="loyaltyLevelTableBody">' + tableRows + '</div></div></div></div></div></div>';
   }
 
   function rowMatchesBetHistoryPage(row, pageName) {
@@ -1922,6 +2055,14 @@
           return;
         }
 
+        var loyaltyLevelCard = target.closest('[data-mloyalty-level-card]');
+        if (loyaltyLevelCard) {
+          e.preventDefault();
+          activeLoyaltyLevelCode = loyaltyLevelCard.getAttribute('data-mloyalty-level-card') || '';
+          renderLoyaltyPoints(panel);
+          return;
+        }
+
         var menuItem = target.closest('.u-i-p-l-head-bc[data-href]');
         if (menuItem) {
           e.preventDefault();
@@ -2189,6 +2330,11 @@
         if (twofaToggle) submitTwofaToggle(panel, twofaToggle);
         var bonusHistoryLimit = target && target.closest('[data-mbonus-history-limit]');
         if (bonusHistoryLimit) loadBonusHistory(panel);
+        var loyaltyRewardFilter = target && target.closest('[data-mloyalty-reward-filter]');
+        if (loyaltyRewardFilter) {
+          activeLoyaltyRewardFilter = loyaltyRewardFilter.value || 'all';
+          renderLoyaltyPoints(panel);
+        }
       });
 
       panel.addEventListener('input', function (e) {
