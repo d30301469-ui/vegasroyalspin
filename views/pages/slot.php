@@ -102,6 +102,21 @@ $slotCategoryItems = [
     ['sort' => 'table', 'slug' => 'tablegames', 'id' => '94', 'title' => 'Masa Oyunları', 'icon' => 'bc-i-tablegames', 'href' => $slotPageBaseUrl . '?sort=table'],
     ['sort' => 'slots', 'slug' => 'slots', 'id' => '57', 'title' => 'Slots', 'icon' => 'bc-i-slots', 'href' => $slotPageBaseUrl . '?sort=slots'],
 ];
+$slotOriginalCategoryClassBySort = [
+    '' => '',
+    'liked' => 'TopSlots',
+    'popular' => 'PopularGames',
+    'new' => 'New',
+    'jackpots' => 'Jackpots',
+    'bonus-buy' => 'BuyBonus',
+    'video' => 'VideoSlots',
+    'special' => 'New',
+    'crash' => 'CrashGames',
+    'freespin' => 'BuyFeature',
+    'instant' => 'InstantWin',
+    'table' => 'TableGames',
+    'slots' => 'Slots',
+];
 if (($slotGameType ?? 0) === 1) {
     $slotCategoryItems = [
         ['sort' => '', 'slug' => 'all-games1', 'id' => '-1', 'title' => 'Tüm Oyunlar', 'icon' => 'bc-i-all-games1', 'href' => $slotPageBaseUrl],
@@ -183,33 +198,30 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
 <div class="casino-container">
     <div class="casinoProviderContent slots-filter-and-games" id="slotsFilterAndGames">
         <?php if ($slotMobileOriginalNav): ?>
-        <div class="casinoNavigationAndFilters casinoNavigationAndFilters--mobile-original">
+        <div class="casinoNavigationAndFilters">
             <div class="horizontal-scroll horizontal-scroll--left casinoCategories">
                 <div class="horizontal-scroll__inner horizontal-scroll__inner--gap-xs category-tabs-scroll" id="categoryTabsScroll" style="transform: translateX(0px);">
                     <div>
-                        <a href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>"
-                           class="casino-category-chip cat-tab<?= $currentSort === '' ? ' active' : '' ?>"
-                           data-id="lobby"
-                           data-sort="">
-                            <div class="ds-chip ds-chip-size--sm ds-chip-color--primary<?= $currentSort === '' ? ' ds-chip--selected' : '' ?>" aria-disabled="false">
-                                <span class="ds-label ds-label--small-regular chip__label">Lobby</span>
-                            </div>
-                        </a>
+                        <div class="ds-chip ds-chip-size--sm ds-chip-color--primary ds-chip--selected cat-tab<?= $currentSort === '' ? ' active' : '' ?>" aria-disabled="false" role="link" tabindex="0" data-id="lobby" data-sort="" data-href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">
+                            <span class="ds-label ds-label--small-regular chip__label">Lobby</span>
+                        </div>
                     </div>
                     <?php foreach ($slotCategoryItems as $category): ?>
                         <?php $isActive = $currentSort !== '' && $category['sort'] === $currentSort; ?>
-                        <div class="category-<?= htmlspecialchars($category['slug'], ENT_QUOTES, 'UTF-8') ?>">
-                            <a href="<?= htmlspecialchars($category['href'], ENT_QUOTES, 'UTF-8') ?>"
-                               class="casino-category-chip cat-tab<?= $isActive ? ' active' : '' ?>"
+                        <?php $originalCategoryClass = $slotOriginalCategoryClassBySort[$category['sort']] ?? preg_replace('/[^A-Za-z0-9]/', '', ucwords((string) $category['slug'], '-_')); ?>
+                        <div<?= $originalCategoryClass !== '' ? ' class="category-' . htmlspecialchars($originalCategoryClass, ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
+                            <div class="ds-chip ds-chip-size--sm ds-chip-color--primary cat-tab<?= $isActive ? ' ds-chip--selected active' : '' ?>"
+                               aria-disabled="false"
+                               role="link"
+                               tabindex="0"
                                data-id="<?= htmlspecialchars($category['id'], ENT_QUOTES, 'UTF-8') ?>"
-                               data-sort="<?= htmlspecialchars($category['sort'], ENT_QUOTES, 'UTF-8') ?>">
-                                <div class="ds-chip ds-chip-size--sm ds-chip-color--primary<?= $isActive ? ' ds-chip--selected' : '' ?>" aria-disabled="false">
-                                    <?php if ($category['sort'] !== ''): ?>
-                                    <span class="CMSIconSVGWrapper chip__icon chip__icon--left"><i class="bc-i-default-icon <?= htmlspecialchars($category['icon'], ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i></span>
-                                    <?php endif; ?>
-                                    <span class="ds-label ds-label--small-regular chip__label"><?= htmlspecialchars($category['title'], ENT_QUOTES, 'UTF-8') ?></span>
-                                </div>
-                            </a>
+                               data-sort="<?= htmlspecialchars($category['sort'], ENT_QUOTES, 'UTF-8') ?>"
+                               data-href="<?= htmlspecialchars($category['href'], ENT_QUOTES, 'UTF-8') ?>">
+                                <?php if ($category['sort'] !== ''): ?>
+                                <span class="CMSIconSVGWrapper chip__icon chip__icon--left"><i class="bc-i-default-icon <?= htmlspecialchars($category['icon'], ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i></span>
+                                <?php endif; ?>
+                                <span class="ds-label ds-label--small-regular chip__label"><?= htmlspecialchars($category['title'], ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -227,19 +239,19 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
                                        autocomplete="off">
                             </div>
                             <div class="ds-textfield__right">
-                                <span class="CMSIconSVGWrapper ds-textfield__icon ds-textfield__icon--right searchInputIcon bc-i-search games-search-icon-btn" id="searchClearBtn" title="Aramayı temizle" aria-label="Aramayı temizle"></span>
+                                <span class="CMSIconSVGWrapper ds-textfield__icon ds-textfield__icon--right searchInputIcon games-search-icon-btn" id="searchClearBtn" title="Aramayı temizle" aria-label="Aramayı temizle" role="button" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M15.0001 9.1665C15.0001 5.94484 12.3884 3.33317 9.16675 3.33317C5.94509 3.33317 3.33341 5.94484 3.33341 9.1665C3.33341 12.3882 5.94509 14.9998 9.16675 14.9998C10.7418 14.9998 12.1699 14.3745 13.2195 13.36C13.2398 13.3342 13.2624 13.3098 13.2862 13.286C13.31 13.2622 13.3344 13.2396 13.3603 13.2192C14.3748 12.1697 15.0001 10.7415 15.0001 9.1665ZM16.6667 9.1665C16.6667 10.9373 16.0516 12.5636 15.0253 13.8467L18.0893 16.9106L18.1462 16.9741C18.4132 17.3014 18.3944 17.7839 18.0893 18.089C17.7842 18.3941 17.3017 18.413 16.9744 18.146L16.9109 18.089L13.8469 15.0251C12.5639 16.0514 10.9376 16.6665 9.16675 16.6665C5.02461 16.6665 1.66675 13.3086 1.66675 9.1665C1.66675 5.02437 5.02461 1.6665 9.16675 1.6665C13.3089 1.6665 16.6667 5.02437 16.6667 9.1665Z"></path></svg></span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <?php if (!$slotHideProviders): ?>
-                <button type="button" class="ds-select ds-select-size--md ds-select-layout--fill mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç">
-                    <span class="ds-select__field" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-disabled="false" tabindex="0">
-                        <span class="ds-select__text"><span class="ds-select__label mobile-sidebar-toggle__pill-text">Sağlayıcılar</span><span class="ds-select__value ds-select__value--placeholder"></span></span>
-                        <span class="ds-select__right"><span class="CMSIconSVGWrapper ds-select__icon ds-select__icon--right"><i class="fas fa-filter" aria-hidden="true"></i></span></span>
-                    </span>
+                <div class="ds-select ds-select-size--md ds-select-layout--fill mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç">
+                    <div class="ds-select__field" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-disabled="false" tabindex="0">
+                        <div class="ds-select__text"><span class="ds-select__label mobile-sidebar-toggle__pill-text">Sağlayıcılar</span><span class="ds-select__value ds-select__value--placeholder"></span></div>
+                        <div class="ds-select__right"><span class="CMSIconSVGWrapper ds-select__icon ds-select__icon--right"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M12.5001 14.1665C12.9603 14.1665 13.3334 14.5396 13.3334 14.9998C13.3334 15.4601 12.9603 15.8332 12.5001 15.8332H7.50008C7.03984 15.8332 6.66675 15.4601 6.66675 14.9998C6.66675 14.5396 7.03984 14.1665 7.50008 14.1665H12.5001ZM15.0001 9.1665C15.4603 9.1665 15.8334 9.5396 15.8334 9.99984C15.8334 10.4601 15.4603 10.8332 15.0001 10.8332H5.00008C4.53984 10.8332 4.16675 10.4601 4.16675 9.99984C4.16675 9.5396 4.53984 9.1665 5.00008 9.1665H15.0001ZM17.5001 4.1665C17.9603 4.1665 18.3334 4.5396 18.3334 4.99984C18.3334 5.46007 17.9603 5.83317 17.5001 5.83317H2.50008C2.03984 5.83317 1.66675 5.46007 1.66675 4.99984C1.66675 4.5396 2.03984 4.1665 2.50008 4.1665H17.5001Z"></path></svg></span></div>
+                    </div>
                     <span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span>
-                </button>
+                </div>
                 <?php endif; ?>
                 <div class="casinoRandomGameButtonWrapper">
                     <button type="button" class="ds-btn ds-btn-variant--transparent ds-btn-size--md ds-btn-radius--full ds-btn-appearance--filled random-game-btn" id="randomGameBtn" aria-disabled="false" aria-busy="false" title="Rastgele Oyun Oyna" aria-label="Rastgele Oyun Oyna">
