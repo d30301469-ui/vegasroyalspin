@@ -1252,6 +1252,172 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .withdraw-form-l-bc .btn:disabled {
   opacity: 0.55;
 }
+#mprofilePanel .mprofile-payment-brandbar {
+  height: 46px;
+  min-height: 46px;
+  padding: 0 12px;
+  background: #050b39;
+}
+#mprofilePanel .mprofile-payment-brandbar .logo-container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+#mprofilePanel .mprofile-payment-brandbar .hdr-logo-bc {
+  max-width: 150px;
+  max-height: 30px;
+  object-fit: contain;
+}
+#mprofilePanel .mprofile-payment-brandbar .hdr-user-close {
+  margin-left: auto;
+  color: #c7bbe5;
+  font-size: 24px;
+  line-height: 46px;
+}
+#mprofilePanel .mprofile-payment-titlebar {
+  height: 37px;
+  min-height: 37px;
+  padding: 0 8px;
+  background: #202020;
+  color: #fff;
+}
+#mprofilePanel .mprofile-payment-titlebar .back-nav-icon-bc {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #d7d7d7;
+  color: #555;
+  font-size: 20px;
+  line-height: 20px;
+}
+#mprofilePanel .mprofile-payment-titlebar .back-nav-title-bc {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+#mprofilePanel .payment-details-scrollable-container {
+  height: calc(100% - 83px) !important;
+  padding: 14px 8px 18px !important;
+}
+#mprofilePanel .payment-info-content {
+  gap: 10px !important;
+}
+#mprofilePanel .description-c-row-bc {
+  display: grid !important;
+  grid-template-columns: 142px minmax(0, 1fr);
+  align-items: start;
+  gap: 0;
+  min-height: 61px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+#mprofilePanel .description-c-row-column-bc.pay-logo {
+  width: 142px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border: 2px solid rgba(156, 77, 177, 0.8);
+  border-radius: 0;
+  background: #080b36;
+  overflow: hidden;
+}
+#mprofilePanel .description-c-row-column-bc.pay-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+#mprofilePanel .description-c-row-column-bc.texts {
+  padding: 0 0 0 92px;
+  color: #c9b8dc;
+  font-size: 11px;
+}
+#mprofilePanel .description_payment-title,
+#mprofilePanel .description-card-info {
+  display: grid;
+  grid-template-columns: 1fr 63px;
+  gap: 8px;
+  min-height: 20px;
+}
+#mprofilePanel .description-title {
+  color: #aaa0c1;
+  font-size: 11px;
+  font-weight: 600;
+}
+#mprofilePanel .description-instant,
+#mprofilePanel .description-value {
+  display: block;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+}
+#mprofilePanel .expandableContentWrapper {
+  position: relative;
+  min-height: 104px;
+  padding: 20px 0 22px !important;
+  border-radius: 4px !important;
+  background: rgba(25, 8, 76, 0.74) !important;
+  color: #a99fbc !important;
+}
+#mprofilePanel .expandableContentWrapper p {
+  margin: 0 8px !important;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.22;
+  text-align: left;
+}
+#mprofilePanel .expandableContentWrapper::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid #aaa6bc;
+  border-bottom: 2px solid #aaa6bc;
+  transform: translateX(-50%) rotate(45deg);
+}
+#mprofilePanel .withdraw-form-l-bc form {
+  gap: 10px !important;
+}
+#mprofilePanel .withdraw-form-l-bc .form-control-bc {
+  height: 49px !important;
+  border-radius: 4px !important;
+  background: linear-gradient(90deg, rgba(142, 70, 138, 0.72), rgba(51, 64, 109, 0.82)) !important;
+}
+#mprofilePanel .withdraw-form-l-bc .form-control-title-bc {
+  top: 11px !important;
+  color: rgba(255, 255, 255, 0.42) !important;
+  font-size: 11px !important;
+  font-weight: 700;
+}
+#mprofilePanel .withdraw-form-l-bc .form-control-input-bc,
+#mprofilePanel .withdraw-form-l-bc .form-control-select-bc {
+  padding-top: 16px !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 700;
+}
+#mprofilePanel .withdraw-form-l-bc .u-i-p-c-footer-bc {
+  margin-top: 18px !important;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(156, 77, 177, 0.55);
+}
+#mprofilePanel .withdraw-form-l-bc .btn {
+  height: 35px !important;
+  background: rgba(96, 76, 138, 0.68) !important;
+  color: rgba(255, 255, 255, 0.42) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+#mprofilePanel .withdraw-form-l-bc .btn:not(:disabled) {
+  background: rgba(156, 77, 177, 0.95) !important;
+  color: #fff !important;
+}
 #mprofilePanel .userProfile-content {
   flex: 1;
   min-height: 0;
