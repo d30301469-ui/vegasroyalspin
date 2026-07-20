@@ -172,10 +172,15 @@ $slotDemoHref = static function (array $game): string {
         <div class="casinoProviderAndGame slots-layout" id="slotsLayout">
             <div class="casinoProviderBlock providers-sidebar" id="providersSidebar">
             <div class="casinoProviderBlockHolder provider-sheet">
-                <div class="provider-sheet-header">
-                    <button type="button" class="provider-sheet-back" id="providerSheetBackBtn" aria-label="Geri">
-                        <i class="fas fa-chevron-left" aria-hidden="true"></i> GERİ
-                    </button>
+                <div class="ds-drawer__header">
+                    <div class="ds-drawer__drag-handle" id="providerSheetDragHandle">
+                        <div class="ds-drawer__drag-bar"></div>
+                    </div>
+                    <div class="ds-drawer__title-bar">
+                        <div class="ds-drawer__title-content">
+                            <span class="ds-label ds-label--large-semibold ds-drawer__title-text">Sağlayıcılar</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="providerSearchAndReset provider-sheet-tools">
                     <div class="providerSearchRow sidebar-search provider-search-bar provider-sheet-search">
@@ -184,7 +189,7 @@ $slotDemoHref = static function (array $game): string {
                         <p class="searchInputIcon bc-i-search provider-search-btn" id="providerSearchClearBtn" title="Sağlayıcı ara" aria-label="Sağlayıcı ara"><i id="providerSearchClearBtnIcon" aria-hidden="true"></i></p>
                         </div>
                     </div>
-                    <div class="providerResetRow"><p class="providerCountTxt" title=""></p><div class="providerTypeIconWrp"><div class="tooltipIconWrapper"><i class="bc-i-view-list provider-sheet-grid-btn" id="providerSheetGridBtn" title="Modül görünümü" aria-label="Modül görünümü"></i></div></div></div>
+                    <div class="providerResetRow"><span class="providerSectionLabel">Tüm Sağlayıcılar</span><div class="providerTypeIconWrp"><div class="tooltipIconWrapper"><i class="bc-i-view-list provider-sheet-grid-btn" id="providerSheetGridBtn" title="Modül görünümü" aria-label="Modül görünümü"></i></div></div></div>
                 </div>
                 <div class="providerItemsContainer sidebar-providers-list" id="sidebarProvidersList" data-scroll-lock-scrollable="">
                     <div class="providerItemsHolder module">
@@ -197,7 +202,8 @@ $slotDemoHref = static function (array $game): string {
                     </div>
                 </div>
                 <div class="provider-sheet-footer">
-                    <button type="button" class="provider-sheet-apply" id="providerSheetApplyBtn">UYGULA</button>
+                    <button type="button" class="provider-sheet-reset" id="providerSheetResetBtn">Sıfırla</button>
+                    <button type="button" class="provider-sheet-apply" id="providerSheetApplyBtn">FİLTRE</button>
                 </div>
             </div>
         </div>
