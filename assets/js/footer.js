@@ -407,7 +407,17 @@
             promoLink.addEventListener("click", function () { closeNewSmartPanel(); }, true);
         });
         document.querySelectorAll('.hdr-smart-panel-holder-bc a[data-nav-mode="modal"]').forEach(function (modalLink) {
-            modalLink.addEventListener("click", function () { closeNewSmartPanel(); }, true);
+            modalLink.addEventListener("click", function (event) {
+                var href = modalLink.getAttribute("href") || "";
+                if (href === "/profile/bonus-spor" && typeof window.__openMobileBonusesPage === "function" && window.__openMobileBonusesPage("bonus-request")) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                    closeNewSmartPanel();
+                    return;
+                }
+                closeNewSmartPanel();
+            }, true);
         });
 
         document.querySelectorAll('a[href="/sportbook"], a[href="/sportsbook"]').forEach(function (sportsbookLink) {

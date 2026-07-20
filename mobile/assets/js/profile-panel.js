@@ -2229,6 +2229,13 @@
   }
 
   window.__openMobileProfilePanel = openPanel;
+  window.__openMobileBonusesPage = function (pageName) {
+    var panel = getPanel();
+    if (!panel) return false;
+    if (!openPanel()) return false;
+    showBonusesPage(panel, pageName || 'bonus-request');
+    return true;
+  };
   window.__openMobileBalancePage = function (sectionName) {
     var panel = getPanel();
     if (!panel) return false;
