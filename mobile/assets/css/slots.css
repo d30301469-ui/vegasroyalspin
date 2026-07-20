@@ -1772,8 +1772,9 @@ body.mobile-site .sidebar-overlay.active {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex: 1 1 100%;
+    flex: 0 0 100%;
     width: 100%;
+    max-width: 100%;
     height: var(--fds-sem-dimension-medium);
     min-height: var(--fds-sem-dimension-medium);
     margin: 0;
@@ -1836,6 +1837,7 @@ body.mobile-site .sidebar-overlay.active {
   body.mobile-site .slot-page-root.slot-page-root--unified .casinoNavigationAndFilters .mobile-sidebar-toggle {
     display: flex;
     align-items: stretch;
+    justify-content: flex-start;
     gap: var(--fds-ref-spacing-3xsmall);
     height: var(--fds-sem-dimension-medium);
     min-height: var(--fds-sem-dimension-medium);
