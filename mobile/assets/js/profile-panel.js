@@ -19,6 +19,18 @@
     return headers;
   }
 
+  function requestedProfileSection() {
+    var params;
+    try {
+      params = new URLSearchParams(window.location.search || '');
+    } catch (e) {
+      return '';
+    }
+    if (params.get('profile') !== 'open' || params.get('account') !== 'profile') return '';
+    var page = params.get('page') || '';
+    return ['details', 'change-password', 'two-factor-authentication', 'timeout-limits'].indexOf(page) !== -1 ? page : '';
+  }
+
   function openPanel() {
     var panel = getPanel();
     var overlay = getOverlay();
@@ -37,15 +49,8 @@
     isOpen = true;
     syncBalance();
     syncBalanceRail(panel);
-    if (window.location.search.indexOf('page=timeout-limits') !== -1) {
-      showProfileDetails(panel, 'timeout-limits');
-    } else if (window.location.search.indexOf('page=two-factor-authentication') !== -1) {
-      showProfileDetails(panel, 'two-factor-authentication');
-    } else if (window.location.search.indexOf('page=change-password') !== -1) {
-      showProfileDetails(panel, 'change-password');
-    } else if (window.location.search.indexOf('page=details') !== -1) {
-      showProfileDetails(panel, 'details');
-    }
+    var section = requestedProfileSection();
+    if (section) showProfileDetails(panel, section);
     return true;
   }
 
@@ -335,6 +340,11 @@
     var panel = getPanel();
     if (panel) {
       bindBalanceRail(panel);
+      var initialSection = requestedProfileSection();
+      if (initialSection) {
+        openPanel();
+        showProfileDetails(panel, initialSection);
+      }
       panel.addEventListener('click', function (e) {
         var target = e.target && e.target.closest ? e.target : null;
         if (!target) return;
