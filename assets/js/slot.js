@@ -969,6 +969,14 @@
         });
     }
 
+    if (providersSidebar && providersSidebar.classList.contains('providers-drawer-wrapper')) {
+        providersSidebar.addEventListener('click', function(e) {
+            if (e.target === providersSidebar) {
+                closeProviderSheet();
+            }
+        });
+    }
+
     if (providerSheetBackBtn) {
         providerSheetBackBtn.addEventListener('click', closeProviderSheet);
     }
@@ -990,9 +998,9 @@
                 var allItem = sidebarProvidersList.querySelector('[data-provider-all]');
                 if (allItem) allItem.classList.add('active');
             }
-            updateMobileSidebarToggle();
+            syncMobileFilterControls();
             closeProviderSheet();
-            loadGames(false);
+            loadSlots(false);
         });
     }
 

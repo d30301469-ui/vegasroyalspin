@@ -412,7 +412,51 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
 
         <div class="casinoProviderAndGame slots-layout<?= $slotHideProviders ? ' slots-layout--full-games' : '' ?>" id="slotsLayout">
             <?php if (!$slotHideProviders): ?>
-            <div class="casinoProviderBlock providers-sidebar" id="providersSidebar">
+            <div class="<?= $slotMobileOriginalNav ? 'providers-drawer-wrapper' : 'casinoProviderBlock providers-sidebar' ?>" id="providersSidebar">
+            <?php if ($slotMobileOriginalNav): ?>
+            <div class="ds-drawer-spring">
+            <div class="ds-drawer provider-sheet">
+                <div class="ds-drawer__header">
+                    <div class="ds-drawer__drag-handle" aria-hidden="true"><span class="ds-drawer__drag-bar"></span></div>
+                    <div class="ds-drawer__title-bar">
+                        <div class="ds-drawer__title-content">
+                            <span class="ds-drawer__title-text">Sağlayıcılar</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ds-drawer__content">
+                    <div class="casinoProvidersPopupContent__search">
+                        <div class="providerSearchRow sidebar-search provider-search-bar provider-sheet-search">
+                            <div class="searchInputWrp active">
+                            <input type="text" placeholder="Sağlayıcı Ara" id="providerSearchInput" class="searchInput provider-search-input" autocomplete="off">
+                            <p class="searchInputIcon bc-i-search provider-search-btn" id="providerSearchClearBtn" title="Sağlayıcı ara" aria-label="Sağlayıcı ara"><i id="providerSearchClearBtnIcon" aria-hidden="true"></i></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="casinoProvidersPopupContent__titleToggleContainer">
+                        <span class="casinoProvidersPopupContent__sectionTitle">Tüm Sağlayıcılar</span>
+                        <span class="casinoProvidersPopupContent__viewToggle"><i class="bc-i-view-list provider-sheet-grid-btn" id="providerSheetGridBtn" title="Modül görünümü" aria-label="Modül görünümü"></i></span>
+                    </div>
+                    <div class="casinoProvidersPopupContent__grid">
+                        <div class="providerItemsContainer sidebar-providers-list" id="sidebarProvidersList" data-scroll-lock-scrollable="">
+                            <div class="providerItemsHolder module">
+                            <div title="Tümü" class="providerItemsInner sidebar-provider-item <?= empty($selectedProviders) && empty($searchTerm) ? 'active' : '' ?>" role="button" tabindex="0" data-provider-all="1"><span class="providerBadgeBlock " data-badge=""></span><div class="providerItemsBtn">TÜMÜ</div></div>
+                            <?php
+                            foreach ($allUniqueProviders as $provider) {
+                                echo $renderProviderBtn($provider);
+                            }
+                            ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="casinoProvidersPopupContent__footer">
+                    <button type="button" class="provider-sheet-reset" id="providerSheetResetBtn"><span class="btn__label">Sıfırla</span></button>
+                    <button type="button" class="provider-sheet-apply" id="providerSheetApplyBtn"><span class="btn__label">FİLTRE</span></button>
+                </div>
+            </div>
+            </div>
+            <?php else: ?>
             <div class="casinoProviderBlockHolder provider-sheet">
                 <div class="provider-sheet-header">
                     <button type="button" class="provider-sheet-back" id="providerSheetBackBtn" aria-label="Geri">
@@ -442,6 +486,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                     <button type="button" class="provider-sheet-apply" id="providerSheetApplyBtn">UYGULA</button>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 
