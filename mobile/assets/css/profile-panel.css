@@ -187,28 +187,34 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  height: 36px;
-  padding: 0 var(--padding-page-aside, 10px);
-  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%);
-  color: rgba(var(--b-sc, 255, 255, 255), 0.9);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: #1b1b20;
+  color: #fff;
+  border-bottom: 1px solid rgba(214, 35, 205, 0.75);
+  box-shadow: 0 2px 7px rgba(214, 35, 205, 0.55);
   cursor: pointer;
+  z-index: 2;
 }
 #mprofilePanel .back-nav-icon-bc {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  margin-inline-end: 6px;
+  width: 20px;
+  height: 20px;
+  margin-inline-end: 8px;
   border-radius: 50%;
-  background: rgba(var(--b-sc, 255, 255, 255), 0.85);
-  color: rgba(var(--b, 0, 0, 0), 0.8);
-  font-size: 12px;
-  line-height: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #202025;
+  font-size: 11px;
+  line-height: 20px;
   text-align: center;
 }
 #mprofilePanel .back-nav-title-bc {
   font-size: 14px;
   font-weight: 700;
+  line-height: 40px;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 #mprofilePanel .user-tab-navigation {
   flex-shrink: 0;
