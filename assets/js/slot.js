@@ -286,7 +286,7 @@
     const providerSheetApplyBtn = document.getElementById('providerSheetApplyBtn');
     const catArrowLeft       = document.getElementById('catArrowLeft');
     const catArrowRight      = document.getElementById('catArrowRight');
-    const catScroll          = document.getElementById('categoryTabsScroll');
+    const catScroll          = document.getElementById('categoryTabsScroll') || document.querySelector('.casinoNavigationAndFilters .casinoCategories .horizontal-scroll__inner');
     const gameGrid           = getCasinoCategoryGames(slotPageRoot);
     const activeFiltersRow   = document.querySelector('.active-filters-row');
     const activeFiltersBox   = document.getElementById('active-filters-box');
@@ -1001,7 +1001,7 @@
 
     /* Orijinal slider hissi: kategori satırını sürükleyerek yatay kaydır. */
     if (catScroll) {
-        catScroll.querySelectorAll('.cat-tab').forEach(function(tab) {
+        catScroll.querySelectorAll('.ds-chip, .cat-tab').forEach(function(tab) {
             tab.setAttribute('draggable', 'false');
             tab.addEventListener('dragstart', function(e) {
                 e.preventDefault();
@@ -1059,7 +1059,7 @@
     /* Aktif kategori sekmesini görünür yap (scroll alanında ortalanmış) */
     function scrollActiveCategoryIntoView() {
         if (!catScroll) return;
-        var activeTab = catScroll.querySelector('.cat-tab.active');
+        var activeTab = catScroll.querySelector('.cat-tab.active, .ds-chip--selected');
         if (!activeTab) return;
         requestAnimationFrame(function() {
             var tabLeft = activeTab.offsetLeft;
@@ -1251,7 +1251,52 @@
 
     /* ── Category tabs: normal link navigation; drag-scroll click guard handles real drags. ── */
 
+    const mobileOriginalSortMap = {
+        TopSlots: 'liked',
+        PopularGames: 'popular',
+        New: 'new',
+        Jackpots: 'jackpots',
+        BuyBonus: 'bonus-buy',
+        VideoSlots: 'video',
+        CrashGames: 'crash',
+        BuyFeature: 'freespin',
+        InstantWin: 'instant',
+        TableGames: 'table',
+        Slots: 'slots'
+    };
+
+    function getMobileOriginalCategorySort(tab) {
+        if (!tab) return null;
+        var wrapper = tab.parentElement;
+        var className = wrapper && typeof wrapper.className === 'string' ? wrapper.className : '';
+        var matched = className.match(/category-([A-Za-z0-9]+)/);
+        if (matched && mobileOriginalSortMap[matched[1]] !== undefined) {
+            return mobileOriginalSortMap[matched[1]];
+        }
+        var label = tab.querySelector('.chip__label');
+        var text = label ? (label.textContent || '').trim().toLowerCase() : '';
+        if (text === 'lobby' || text === 'tüm oyunlar') {
+            return '';
+        }
+        return null;
+    }
+
+    function buildCategoryHref(sort) {
+        var basePath = window.location.pathname || '/slot';
+        if (!sort) return basePath;
+        return basePath + '?sort=' + encodeURIComponent(sort);
+    }
+
     if (catScroll) {
+        catScroll.addEventListener('click', function(e) {
+            var chip = e.target.closest('.casinoNavigationAndFilters .casinoCategories .ds-chip');
+            if (!chip || !catScroll.contains(chip)) return;
+            var sort = getMobileOriginalCategorySort(chip);
+            if (sort === null) return;
+            e.preventDefault();
+            window.location.href = buildCategoryHref(sort);
+        });
+
         catScroll.addEventListener('click', function(e) {
             var tab = e.target.closest('.cat-tab[data-href]');
             if (!tab || !catScroll.contains(tab) || tab.tagName === 'A') return;
@@ -1273,10 +1318,30 @@
 
     function setActiveCategoryTab() {
         if (!catScroll) return;
-        catScroll.querySelectorAll('.cat-tab[data-sort]').forEach(function(t) {
-            const tabSort = t.getAttribute('data-sort') || '';
-            t.classList.toggle('active', tabSort === state.sort);
-            t.classList.toggle('ds-chip--selected', tabSort === state.sort);
+        var dataSortTabs = catScroll.querySelectorAll('.cat-tab[data-sort]');
+        if (dataSortTabs.length > 0) {
+            dataSortTabs.forEach(function(t) {
+                const tabSort = t.getAttribute('data-sort') || '';
+                t.classList.toggle('active', tabSort === state.sort);
+                t.classList.toggle('ds-chip--selected', tabSort === state.sort);
+            });
+            return;
+        }
+
+        catScroll.querySelectorAll('.ds-chip').forEach(function(chip) {
+            var label = chip.querySelector('.chip__label');
+            var text = label ? (label.textContent || '').trim().toLowerCase() : '';
+            if (text === 'lobby') {
+                chip.classList.toggle('ds-chip--selected', state.sort === '');
+                return;
+            }
+            if (text === 'tüm oyunlar') {
+                chip.classList.remove('ds-chip--selected');
+                return;
+            }
+            var sort = getMobileOriginalCategorySort(chip);
+            if (sort === null) return;
+            chip.classList.toggle('ds-chip--selected', sort === state.sort);
         });
     }
 

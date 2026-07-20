@@ -327,9 +327,9 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
         <?php if ($slotMobileOriginalNav): ?>
         <div class="casinoNavigationAndFilters">
             <div class="horizontal-scroll horizontal-scroll--left casinoCategories">
-                <div class="horizontal-scroll__inner horizontal-scroll__inner--gap-xs category-tabs-scroll" id="categoryTabsScroll" style="transform: translateX(0px);">
+                <div class="horizontal-scroll__inner horizontal-scroll__inner--gap-xs" style="transform: translateX(0px);">
                     <div>
-                        <div class="ds-chip ds-chip-size--sm ds-chip-color--primary ds-chip--selected cat-tab<?= $currentSort === '' ? ' active' : '' ?>" aria-disabled="false" role="link" tabindex="0" data-id="lobby" data-sort="" data-href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="ds-chip ds-chip-size--sm ds-chip-color--primary ds-chip--selected" aria-disabled="false">
                             <span class="ds-label ds-label--small-regular chip__label">Lobby</span>
                         </div>
                     </div>
@@ -338,13 +338,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                         <?php $isActive = $currentSort !== '' && $category['sort'] === $currentSort; ?>
                         <?php $originalCategoryClass = $slotOriginalCategoryClassBySort[$category['sort']] ?? preg_replace('/[^A-Za-z0-9]/', '', ucwords((string) $category['slug'], '-_')); ?>
                         <div<?= $originalCategoryClass !== '' ? ' class="category-' . htmlspecialchars($originalCategoryClass, ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
-                            <div class="ds-chip ds-chip-size--sm ds-chip-color--primary cat-tab<?= $isActive ? ' ds-chip--selected active' : '' ?>"
-                               aria-disabled="false"
-                               role="link"
-                               tabindex="0"
-                               data-id="<?= htmlspecialchars($category['id'], ENT_QUOTES, 'UTF-8') ?>"
-                               data-sort="<?= htmlspecialchars($category['sort'], ENT_QUOTES, 'UTF-8') ?>"
-                               data-href="<?= htmlspecialchars($category['href'], ENT_QUOTES, 'UTF-8') ?>">
+                                     <div class="ds-chip ds-chip-size--sm ds-chip-color--primary<?= $isActive ? ' ds-chip--selected' : '' ?>" aria-disabled="false">
                                 <?php if ($category['sort'] !== ''): ?>
                                 <span class="CMSIconSVGWrapper chip__icon chip__icon--left"><?= $renderOriginalCategorySvg($category) ?></span>
                                 <?php endif; ?>
