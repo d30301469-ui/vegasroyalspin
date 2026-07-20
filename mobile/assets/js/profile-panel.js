@@ -21,6 +21,10 @@
   var casinoHistoryFormFilterActive = false;
   var bonusPromotionsLoaded = false;
   var bonusPromotionsPayload = null;
+  var bonusClaimsLoaded = false;
+  var bonusClaimsRows = [];
+  var promocodesLoaded = false;
+  var promocodesRows = [];
   var transactionHistoryRows = [];
   var balanceMethodStore = { deposit: [], withdraw: [] };
   var activePaymentModal = null;
@@ -238,6 +242,10 @@
   }
 
   function bonusPageUsesNativeList(pageName) {
+    return pageName === 'bonus-request' || pageName === 'sport' || pageName === 'casino' || pageName === 'bonus-history' || pageName === 'promo-code';
+  }
+
+  function bonusPageUsesPromotions(pageName) {
     return pageName === 'bonus-request' || pageName === 'sport' || pageName === 'casino';
   }
 
@@ -254,6 +262,20 @@
   function bonusDepositWarning(policy) {
     var message = policy && typeof policy.depositRequiredMessage === 'string' ? policy.depositRequiredMessage.trim() : '';
     return message || 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.';
+  }
+
+  function bonusClaimStatusLabel(status) {
+    status = String(status || '').toLowerCase();
+    if (status === 'pending') return 'Beklemede';
+    if (status === 'approved') return 'Onaylandı';
+    if (status === 'rejected') return 'Reddedildi';
+    return status || '—';
+  }
+
+  function bonusCategoryLabel(category) {
+    var key = String(category || '').toLowerCase();
+    var map = { spor: 'Spor', sport: 'Spor', sports: 'Spor', casino: 'Casino', slots: 'Slot', slot: 'Slot', loss_bonus: 'Kayıp Bonusu' };
+    return map[key] || category || '—';
   }
 
   function normalizeHistoryRow(row, source) {
@@ -1050,9 +1072,15 @@
     var useNative = bonusPageUsesNativeList(pageName);
     if (nativeContent) nativeContent.hidden = !useNative;
     if (iframe) iframe.hidden = useNative;
-    if (useNative) {
+    if (bonusPageUsesPromotions(pageName)) {
       renderBonusPromotions(panel, pageName);
       if (!bonusPromotionsLoaded) loadBonusPromotions(panel, pageName);
+    } else if (pageName === 'bonus-history') {
+      renderBonusHistory(panel);
+      if (!bonusClaimsLoaded) loadBonusHistory(panel);
+    } else if (pageName === 'promo-code') {
+      renderPromoCodePage(panel);
+      if (!promocodesLoaded) loadPromocodes(panel);
     }
   }
 
@@ -1156,6 +1184,159 @@
       .then(function () {
         if (button) button.disabled = false;
       });
+  }
+
+  function loadBonusHistory(panel) {
+    panel = panel || getPanel();
+    var list = panel && panel.querySelector('[data-mbonus-promotions-list]');
+    var limitSelect = panel && panel.querySelector('[data-mbonus-history-limit]');
+    var limit = limitSelect ? parseInt(limitSelect.value || '20', 10) : 20;
+    if (!isFinite(limit) || limit < 1) limit = 20;
+    if (limit > 50) limit = 50;
+    if (list) list.innerHTML = '<p class="profile-active-bonus-loading" role="status">Bonus geçmişi yükleniyor...</p>';
+    fetch(appendQuery(apiUrl('/api/v2/bonus-claims-me'), 'limit=' + encodeURIComponent(String(limit))), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        var data = envelope && envelope.data ? envelope.data : {};
+        bonusClaimsRows = Array.isArray(data.claims) ? data.claims : (Array.isArray(data.items) ? data.items : []);
+        bonusClaimsLoaded = true;
+        renderBonusHistory(panel);
+      })
+      .catch(function () {
+        bonusClaimsRows = [];
+        bonusClaimsLoaded = true;
+        if (list) list.innerHTML = '<p class="profile-active-bonus-error" role="status">Bonus geçmişi yüklenemedi.</p>';
+      });
+  }
+
+  function renderBonusHistory(panel) {
+    panel = panel || getPanel();
+    var list = panel && panel.querySelector('[data-mbonus-promotions-list]');
+    var status = panel && panel.querySelector('[data-mbonus-claim-status]');
+    if (!list) return;
+    if (status) {
+      status.textContent = '';
+      status.classList.remove('is-success', 'is-error');
+    }
+    if (!bonusClaimsLoaded) {
+      list.innerHTML = '<p class="profile-active-bonus-loading" role="status">Bonus geçmişi yükleniyor...</p>';
+      return;
+    }
+    var controls = '<div class="mprofile-bonus-toolbar"><label class="mprofile-bonus-toolbar-label">LİSTE ADEDİ<select data-mbonus-history-limit><option value="10">10</option><option value="20" selected>20</option><option value="30">30</option><option value="50">50</option></select></label><button type="button" class="profile-bonus-claim-btn" data-mbonus-history-reload>YENİLE</button></div>';
+    if (!bonusClaimsRows.length) {
+      list.innerHTML = controls + '<p class="profile-active-bonus-empty" role="status">Henüz bonus talebi bulunmuyor.</p>';
+      return;
+    }
+    list.innerHTML = controls + '<div class="mprofile-bonus-history-list">' + bonusClaimsRows.map(function (row) {
+      var statusKey = String(row.status || '').toLowerCase();
+      var wagering = row.wageringMultiplierLabel || (row.wageringMultiplier != null ? String(row.wageringMultiplier) + 'x' : '—');
+      return '<article class="mprofile-bonus-history-card">'
+        + '<div class="mprofile-bonus-history-head"><strong>' + escapeHtml(row.bonusName || 'Bonus') + '</strong><span class="mprofile-bonus-status mprofile-bonus-status--' + escapeHtml(statusKey) + '">' + escapeHtml(bonusClaimStatusLabel(row.status)) + '</span></div>'
+        + '<dl>'
+        + '<div><dt>Tarih</dt><dd>' + escapeHtml(formatDateTime(row.createdAt || row.created_at || '')) + '</dd></div>'
+        + '<div><dt>Kategori</dt><dd>' + escapeHtml(bonusCategoryLabel(row.category)) + '</dd></div>'
+        + '<div><dt>Talep</dt><dd>' + escapeHtml(moneyText(row.requestedAmount || row.requested_amount || 0)) + '</dd></div>'
+        + '<div><dt>Çevrim</dt><dd>' + escapeHtml(wagering) + '</dd></div>'
+        + '<div><dt>Not</dt><dd>' + escapeHtml(row.rejectReason || '—') + '</dd></div>'
+        + '</dl></article>';
+    }).join('') + '</div>';
+  }
+
+  function loadPromocodes(panel) {
+    panel = panel || getPanel();
+    var list = panel && panel.querySelector('[data-mbonus-promotions-list]');
+    if (list) list.innerHTML = '<p class="profile-active-bonus-loading" role="status">Promosyon kodları yükleniyor...</p>';
+    fetch(apiUrl('/api/v2/promocodes'), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (response) { return response.json(); })
+      .then(function (envelope) {
+        var data = envelope && envelope.data ? envelope.data : {};
+        promocodesRows = Array.isArray(data.promocodes) ? data.promocodes : (Array.isArray(data.items) ? data.items : []);
+        promocodesLoaded = true;
+        renderPromoCodePage(panel);
+      })
+      .catch(function () {
+        promocodesRows = [];
+        promocodesLoaded = true;
+        if (list) list.innerHTML = '<p class="profile-active-bonus-error" role="status">Promosyon kodları yüklenemedi.</p>';
+      });
+  }
+
+  function renderPromoCodePage(panel) {
+    panel = panel || getPanel();
+    var list = panel && panel.querySelector('[data-mbonus-promotions-list]');
+    var status = panel && panel.querySelector('[data-mbonus-claim-status]');
+    if (!list) return;
+    if (status) {
+      status.textContent = '';
+      status.classList.remove('is-success', 'is-error');
+    }
+    var options = promocodesRows.map(function (row) {
+      var id = row.id || '';
+      var code = row.code || row.kod || 'Kod';
+      var amount = row.amount != null ? moneyText(row.amount) : (row.miktar != null ? moneyText(row.miktar) : '—');
+      var expires = row.expiresAt || row.son_gecerlilik_tarihi || 'Süresiz';
+      var remaining = row.remainingUses == null ? 'Sınırsız' : String(row.remainingUses);
+      return '<option value="' + escapeHtml(id) + '">' + escapeHtml(code + ' · ' + amount + ' · ' + expires + ' · Kalan: ' + remaining) + '</option>';
+    }).join('');
+    list.innerHTML = '<div class="mprofile-promocode-panel">'
+      + '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc active" data-mbonus-promocode-select><option value="">' + (promocodesLoaded ? 'Kod seçin...' : 'Yükleniyor...') + '</option>' + options + '</select><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">PROMOSYON KODU SEÇ</span></label></div></div>'
+      + '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" data-mbonus-promocode-note value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Not</span></label></div></div>'
+      + '<div class="mprofile-promocode-actions"><button type="button" class="profile-bonus-claim-btn" data-mbonus-promocode-request>Talep Et</button></div>'
+      + '<div class="mprofile-promocode-divider"></div>'
+      + '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" data-mbonus-promocode-legacy value=""><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">KOD GİR</span></label></div></div>'
+      + '<div class="mprofile-promocode-actions"><button type="button" class="profile-bonus-claim-btn" data-mbonus-promocode-use>Kodu Kullan</button></div>'
+      + '</div>';
+  }
+
+  function setBonusStatus(panel, type, message) {
+    var status = panel && panel.querySelector('[data-mbonus-claim-status]');
+    if (!status) return;
+    status.textContent = message || '';
+    status.classList.toggle('is-success', type === 'success');
+    status.classList.toggle('is-error', type === 'error');
+  }
+
+  function submitPromocodeRequest(panel, button) {
+    var select = panel && panel.querySelector('[data-mbonus-promocode-select]');
+    var note = panel && panel.querySelector('[data-mbonus-promocode-note]');
+    var id = select ? parseInt(select.value || '0', 10) : 0;
+    if (!id) {
+      setBonusStatus(panel, 'error', 'Listeden bir promosyon kodu seçin.');
+      return;
+    }
+    if (button) button.disabled = true;
+    var payload = { promocodeId: id };
+    if (note && note.value.trim()) payload.message = note.value.trim();
+    fetch(apiUrl('/api/v2/promocode-request'), { method: 'POST', credentials: 'same-origin', headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }), body: JSON.stringify(payload) })
+      .then(function (response) { return response.json().then(function (data) { return { response: response, data: data || {} }; }); })
+      .then(function (result) {
+        var ok = result.response.ok && !!result.data.success;
+        setBonusStatus(panel, ok ? 'success' : 'error', result.data.message || (ok ? 'Talebiniz alındı.' : 'Talep gönderilemedi.'));
+        if (ok) {
+          if (note) note.value = '';
+        }
+      })
+      .catch(function () { setBonusStatus(panel, 'error', 'Bağlantı hatası.'); })
+      .then(function () { if (button) button.disabled = false; });
+  }
+
+  function submitPromocodeUse(panel, button) {
+    var input = panel && panel.querySelector('[data-mbonus-promocode-legacy]');
+    var code = input ? input.value.trim() : '';
+    if (!code) {
+      setBonusStatus(panel, 'error', 'Promosyon kodu girin.');
+      return;
+    }
+    if (button) button.disabled = true;
+    fetch(apiUrl('/api/v2/bonus/use-code'), { method: 'POST', credentials: 'same-origin', headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }), body: JSON.stringify({ kod: code }) })
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        var ok = data && (data.success || data.status === 'success');
+        setBonusStatus(panel, ok ? 'success' : 'error', data.message || data.mesaj || (ok ? 'Promosyon kodu talebiniz alındı.' : 'İşlem yapılamadı.'));
+        if (ok && input) input.value = '';
+      })
+      .catch(function () { setBonusStatus(panel, 'error', 'Bağlantı hatası.'); })
+      .then(function () { if (button) button.disabled = false; });
   }
 
   function rowMatchesBetHistoryPage(row, pageName) {
@@ -1626,6 +1807,27 @@
           return;
         }
 
+        var bonusHistoryReload = target.closest('[data-mbonus-history-reload]');
+        if (bonusHistoryReload) {
+          e.preventDefault();
+          loadBonusHistory(panel);
+          return;
+        }
+
+        var promocodeRequest = target.closest('[data-mbonus-promocode-request]');
+        if (promocodeRequest) {
+          e.preventDefault();
+          submitPromocodeRequest(panel, promocodeRequest);
+          return;
+        }
+
+        var promocodeUse = target.closest('[data-mbonus-promocode-use]');
+        if (promocodeUse) {
+          e.preventDefault();
+          submitPromocodeUse(panel, promocodeUse);
+          return;
+        }
+
         var menuItem = target.closest('.u-i-p-l-head-bc[data-href]');
         if (menuItem) {
           e.preventDefault();
@@ -1891,6 +2093,8 @@
         var target = e.target && e.target.closest ? e.target : null;
         var twofaToggle = target && target.closest('#mprofileTwofaToggle');
         if (twofaToggle) submitTwofaToggle(panel, twofaToggle);
+        var bonusHistoryLimit = target && target.closest('[data-mbonus-history-limit]');
+        if (bonusHistoryLimit) loadBonusHistory(panel);
       });
 
       panel.addEventListener('input', function (e) {
