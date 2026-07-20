@@ -1,6 +1,7 @@
 <?php
 
-$configRow = is_array($configRow ?? null) ? $configRow : [];
+$rawConfigRow = $configRow ?? [];
+$configRow = is_array($rawConfigRow) ? $rawConfigRow : [];
 $flash     = trim((string) ($flash ?? ''));
 $text      = static fn (mixed $value): string => htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 
@@ -100,6 +101,7 @@ $isActive     = !empty($configRow['is_active']) && $configRow['is_active'] !== '
         if (!isset($langOptions[$currentLang])) {
             $langOptions = [$currentLang => strtoupper($currentLang)] + $langOptions;
         }
+        $apiBaseUrl = trim((string) ($configRow['api_base_url'] ?? 'https://gator.drakon.casino/api/v1'));
         ?>
         <div class="field">
             <label class="field-label" for="currency">Para Birimi</label>
@@ -119,6 +121,14 @@ $isActive     = !empty($configRow['is_active']) && $configRow['is_active'] !== '
                 <?php endforeach; ?>
             </select>
             <p class="drakon-help">Oyun başlatılırken kullanılacak varsayılan dil. Oyun URL'sinde <code>?lang=</code> gelirse o önceliklidir.</p>
+        </div>
+
+        <div class="field">
+            <label class="field-label" for="api_base_url">Drakon API Base URL</label>
+            <input id="api_base_url" class="input" type="url" name="api_base_url"
+                   value="<?= $text($apiBaseUrl) ?>"
+                   placeholder="https://gator.drakon.casino/api/v1">
+            <p class="drakon-help">Auth, oyun başlatma, senkronizasyon ve freespin isteklerinde kullanılacak Drakon API kökü.</p>
         </div>
 
         <div class="field">

@@ -221,7 +221,7 @@ final class DrakonService
     public static function updateConfig(PDO $pdo, array $data): void
     {
         self::ensureConfigColumns($pdo);
-        $allowed = ['agent_code', 'agent_token', 'agent_secret', 'currency', 'lang', 'site_endpoint', 'home_url'];
+        $allowed = ['agent_code', 'agent_token', 'agent_secret', 'currency', 'lang', 'api_base_url', 'site_endpoint', 'home_url'];
         $sets    = [];
         $params  = [];
         foreach ($allowed as $key) {
@@ -259,6 +259,16 @@ final class DrakonService
             && !empty($cfg['agent_secret']);
     }
 
+    private static function apiBase(array $cfg = []): string
+    {
+        $base = rtrim(trim((string) ($cfg['api_base_url'] ?? '')), '/');
+        if ($base === '') {
+            $base = self::API_BASE;
+        }
+
+        return $base;
+    }
+
     // ─── Authentication ───────────────────────────────────────────────────────
 
     public static function getToken(PDO $pdo): string
@@ -273,39 +283,75 @@ final class DrakonService
 
     private static function authenticate(PDO $pdo, array $cfg): string
     {
+        $agentCode   = (string) ($cfg['agent_code'] ?? '');
         $agentToken  = (string) ($cfg['agent_token'] ?? '');
         $agentSecret = (string) ($cfg['agent_secret'] ?? '');
         if ($agentToken === '' || $agentSecret === '') {
             throw new RuntimeException('Drakon agent_token ve agent_secret yapılandırılmamış.');
         }
-        $credentials = base64_encode($agentToken . ':' . $agentSecret);
-        $response = self::httpRequest('POST', self::API_BASE . '/auth/authentication', [], [
-            'Authorization: Bearer ' . $credentials,
-            'Accept: application/json',
-        ]);
-        if (empty($response['access_token'])) {
-            throw new RuntimeException('Drakon kimlik doğrulama başarısız: ' . json_encode($response));
+
+        $url = self::apiBase($cfg) . '/auth/authentication';
+        $attempts = [
+            [[], ['Authorization: Bearer ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
+            [[], ['Authorization: Basic ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
+        ];
+        if ($agentCode !== '') {
+            $attempts[] = [[], ['Authorization: Bearer ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
+            $attempts[] = [[], ['Authorization: Basic ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
+            $attempts[] = [[
+                'agent_code' => $agentCode,
+                'agent_token' => $agentToken,
+                'agent_secret' => $agentSecret,
+            ], ['Accept: application/json']];
         }
-        $token = (string) $response['access_token'];
-        // Cache for 50 minutes
-        $stmt = $pdo->prepare(
-            "UPDATE drakon_config
-                SET access_token = :tok, token_expires_at = :exp, last_auth_at = NOW()
-              WHERE id = 1"
-        );
-        $stmt->execute([
-            ':tok' => $token,
-            ':exp' => date('Y-m-d H:i:s', time() + 3000),
-        ]);
-        return $token;
+
+        $lastResponse = [];
+        foreach ($attempts as [$payload, $headers]) {
+            $response = self::httpRequest('POST', $url, $payload, $headers);
+            $token = self::extractAccessToken($response);
+            if ($token !== '') {
+                $stmt = $pdo->prepare(
+                    "UPDATE drakon_config
+                        SET access_token = :tok, token_expires_at = :exp, last_auth_at = NOW()
+                      WHERE id = 1"
+                );
+                $stmt->execute([
+                    ':tok' => $token,
+                    ':exp' => date('Y-m-d H:i:s', time() + 3000),
+                ]);
+
+                return $token;
+            }
+            $lastResponse = $response;
+        }
+
+        throw new RuntimeException('Drakon kimlik doğrulama başarısız: ' . json_encode(self::redactWebhookPayload($lastResponse), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    private static function extractAccessToken(array $response): string
+    {
+        foreach ([
+            $response['access_token'] ?? null,
+            $response['token'] ?? null,
+            $response['data']['access_token'] ?? null,
+            $response['data']['token'] ?? null,
+        ] as $candidate) {
+            $token = trim((string) $candidate);
+            if ($token !== '') {
+                return $token;
+            }
+        }
+
+        return '';
     }
 
     // ─── Sync ────────────────────────────────────────────────────────────────
 
     public static function syncProviders(PDO $pdo): array
     {
+        $cfg      = self::config($pdo);
         $token    = self::getToken($pdo);
-        $response = self::httpRequest('GET', self::API_BASE . '/games/provider', [], [
+        $response = self::httpRequest('GET', self::apiBase($cfg) . '/games/provider', [], [
             'Authorization: Bearer ' . $token,
             'Accept: application/json',
         ], 60);
@@ -364,8 +410,9 @@ final class DrakonService
 
     public static function syncGames(PDO $pdo): array
     {
+        $cfg      = self::config($pdo);
         $token    = self::getToken($pdo);
-        $response = self::httpRequest('GET', self::API_BASE . '/games/all', [], [
+        $response = self::httpRequest('GET', self::apiBase($cfg) . '/games/all', [], [
             'Authorization: Bearer ' . $token,
             'Accept: application/json',
         ], 180);
@@ -630,7 +677,7 @@ final class DrakonService
 
         try {
             $token    = self::getToken($pdo);
-            $response = self::httpRequest('GET', self::API_BASE . '/games/game_launch', $params, [
+            $response = self::httpRequest('GET', self::apiBase($cfg) . '/games/game_launch', $params, [
                 'Authorization: Bearer ' . $token,
                 'Accept: application/json',
             ]);
@@ -777,13 +824,14 @@ final class DrakonService
         array $params = [],
         array $extraHeaders = []
     ): array {
+        $cfg     = self::config($pdo);
         $token   = self::getToken($pdo);
         $headers = array_merge([
             'Authorization: Bearer ' . $token,
             'Accept: application/json',
         ], $extraHeaders);
 
-        $response = self::httpRequest($method, self::API_BASE . $path, $params, $headers, 45);
+        $response = self::httpRequest($method, self::apiBase($cfg) . $path, $params, $headers, 45);
 
         $status = $response['status'] ?? null;
         $ok     = $status === true || $status === 'success' || $status === 1;
