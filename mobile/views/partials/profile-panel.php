@@ -150,8 +150,8 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
                   <div class="u-i-p-amounts-bc bonuses">
                     <div class="u-i-p-a-content-bc">
                       <span class="u-i-p-a-title-bc ellipsis">TOPLAM BONUS PARA</span>
-                      <span class="u-i-p-a-amount-bc">0 ₺</span>
-                      <div class="bonus-info-section"><div><span class="ellipsis">TOPLAM BONUS PARA</span><b>0.00 ₺</b></div></div>
+                      <span class="u-i-p-a-amount-bc"><span data-balance-target="mprofileBonus">0.00</span> ₺</span>
+                      <div class="bonus-info-section"><div><span class="ellipsis">TOPLAM BONUS PARA</span><b><span data-balance-target="mprofileBonus">0.00</span> ₺</b></div></div>
                     </div>
                   </div>
                 </div>
