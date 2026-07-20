@@ -488,38 +488,60 @@
     message.classList.toggle('is-success', type === 'success');
   }
 
+  function syncPaymentSubmitState() {
+    var amount = document.getElementById('mprofilePaymentAmount');
+    var submit = document.querySelector('#mprofilePaymentModal .mprofile-payment-submit');
+    if (submit && !paymentModalSubmitting) submit.disabled = !(amount && String(amount.value || '').trim());
+  }
+
   function closePaymentModal() {
     var modal = document.getElementById('mprofilePaymentModal');
     if (!modal) return;
     modal.classList.remove('is-open');
     modal.setAttribute('aria-hidden', 'true');
+    modal.style.transform = 'translateY(100%)';
+    modal.style.opacity = '0';
     activePaymentModal = null;
     paymentModalSubmitting = false;
+  }
+
+  function paymentMethodClass(method) {
+    return methodName(method).replace(/[^A-Za-z0-9_-]+/g, '') || methodId(method) || 'payment';
+  }
+
+  function paymentMethodLogo(method) {
+    return String((method && (method.logo_url || method.logo)) || '');
   }
 
   function withdrawExtraFieldsHtml(method) {
     var id = methodId(method).toLowerCase();
     if (id.indexOf('bank') !== -1) {
-      return '<div class="mprofile-payment-field"><input type="text" id="mprofilePaymentAccount" name="account_number" placeholder="IBAN" maxlength="26" autocomplete="off"></div>';
+      return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" maxlength="26" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">IBAN</span></label></div></div>';
     }
     if (id.indexOf('crypto') !== -1) {
-      return '<input type="hidden" id="mprofilePaymentNetwork" value="TRON"><div class="mprofile-payment-field"><input type="text" id="mprofilePaymentAccount" name="account_number" placeholder="address" autocomplete="off"></div>';
+      return '<input type="hidden" id="mprofilePaymentNetwork" value="TRON"><div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">address</span></label></div></div>';
     }
-    return '<div class="mprofile-payment-field"><input type="text" id="mprofilePaymentAccount" name="account_number" placeholder="address" autocomplete="off"></div>';
+    return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" id="mprofilePaymentAccount" name="account_number" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">address</span></label></div></div>';
+  }
+
+  function depositExtraFieldsHtml(method) {
+    if (methodId(method).toLowerCase().indexOf('crypto') === -1) return '';
+    return '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon valid filled"><label class="form-control-label-bc inputs"><select class="form-control-select-bc active" name="crypto_type" id="mprofilePaymentCryptoType" step="0"><option value="TRON">tron</option><option value="ETH">eth</option><option value="BSC">bsc</option></select><i class="form-control-icon-bc bc-i-small-arrow-down"></i><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">crypto_type</span></label></div></div>';
   }
 
   function paymentModalHtml(kind, method) {
     var min = methodLimit(method, 'min_amount', 0);
     var max = methodLimit(method, 'max_amount', 999999);
     var name = methodName(method);
+    var logo = paymentMethodLogo(method);
+    var methodClass = paymentMethodClass(method);
     var submitText = kind === 'withdraw' ? 'ÇEKİM YAP' : 'PARA YATIR';
-    return '<form id="mprofilePaymentForm" class="mprofile-payment-form" onsubmit="return false;">' +
-      '<div class="mprofile-payment-summary"><div><strong>Ödeme Yöntemi</strong><span>' + escapeHtml(name) + '</span></div><div><strong>Ücret</strong><span>Ücretsiz</span></div><div><strong>İşlem Süresi</strong><span>' + escapeHtml(method.processing_time || 'Anlık') + '</span></div><div><strong>Min.</strong><span>' + escapeHtml(limitText(min)) + '</span></div><div><strong>Maks.</strong><span>' + escapeHtml(limitText(max)) + '</span></div></div>' +
-      (kind === 'withdraw' ? withdrawExtraFieldsHtml(method) : '') +
-      '<div class="mprofile-payment-field"><input type="number" id="mprofilePaymentAmount" name="amount" placeholder="Tutar *" min="' + escapeHtml(min) + '" max="' + escapeHtml(max) + '" step="1" inputmode="decimal" autocomplete="off"></div>' +
-      '<div class="mprofile-form-message" data-mprofile-payment-message role="status" aria-live="polite"></div>' +
-      '<button type="submit" class="btn a-color mprofile-payment-submit"><span>' + escapeHtml(submitText) + '</span></button>' +
-      '</form>';
+    var extraFields = kind === 'withdraw' ? withdrawExtraFieldsHtml(method) : depositExtraFieldsHtml(method);
+    return '<div class="payment-info-bc" tabindex="-1"><div class="payment-info-content">' +
+      '<div class="description-c-row-bc ' + escapeHtml(methodClass) + '"><div class="description-c-row-column-bc pay-logo">' + (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(name) + '</span>') + '</div><div class="description-c-row-column-bc texts"><div class="description-c-row-c-title-bc description_payment-title"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis">Ücret: Ücretsiz</span></div><div class="description-c-r-c-t-column-bc"><span class="description-instant ellipsis">' + escapeHtml(method.processing_time || 'Anlık') + '</span></div></div><div class="description-card-info"><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Min.">Min.</span><span class="description-value ellipsis" title="' + escapeHtml(limitText(min)) + '">' + escapeHtml(limitText(min)) + '</span></div><div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Maks.">Maks.</span><span class="description-value ellipsis" title="' + escapeHtml(limitText(max)) + '">' + escapeHtml(limitText(max)) + '</span></div></div></div></div>' +
+      '<div class="expandableContentWrapper"><div class="expandableContentData ' + escapeHtml(methodClass) + ' payment-content not-expandable" data-scroll-lock-scrollable><div class="container"><p>CasinoMilyon Ailesine hoş geldiniz. İyi eğlenceler, bol şanslar dileriz. ' + (kind === 'withdraw' ? 'Para çekmek' : 'Para yatırmak') + ' için lütfen aşağıdaki tüm gerekli alanları doldurun. Minimum tutar altı yatırımlar &quot;İADE EDİLMEZ&quot; lütfen kurallara uygun yatırım yapınız.</p></div></div></div>' +
+      '<div class="withdraw-form-l-bc"><form id="mprofilePaymentForm"><div id="screenArea">' + extraFields + '<div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default"><label class="form-control-label-bc inputs"><input type="text" inputmode="decimal" class="form-control-input-bc" id="mprofilePaymentAmount" name="amount" step="0" value="" autocomplete="off"><i class="form-control-input-stroke-bc"></i><span class="form-control-title-bc ellipsis">Tutar</span></label></div></div><div class="mprofile-form-message" data-mprofile-payment-message role="status" aria-live="polite"></div><div class="u-i-p-c-footer-bc"><button class="btn a-color ' + (kind === 'withdraw' ? 'withdraw' : 'deposit') + ' mprofile-payment-submit" type="submit" title="' + escapeHtml(submitText) + '" disabled><span>' + escapeHtml(submitText) + '</span></button></div></div></form></div>' +
+      '</div></div>';
   }
 
   function openPaymentModal(kind, method) {
@@ -529,10 +551,12 @@
     if (!modal || !content || !method) return;
     kind = kind === 'withdraw' ? 'withdraw' : 'deposit';
     activePaymentModal = { kind: kind, method: method };
-    if (title) title.textContent = kind === 'withdraw' ? 'ÇEKİM' : 'PARA YATIR';
+    if (title) title.textContent = methodName(method);
     content.innerHTML = paymentModalHtml(kind, method);
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
+    modal.style.transform = 'translateY(0px)';
+    modal.style.opacity = '1';
     var amount = document.getElementById('mprofilePaymentAmount');
     if (amount) amount.focus({ preventScroll: true });
   }
@@ -1046,6 +1070,10 @@
         var target = e.target && e.target.closest ? e.target : null;
         var twofaToggle = target && target.closest('#mprofileTwofaToggle');
         if (twofaToggle) submitTwofaToggle(panel, twofaToggle);
+      });
+
+      panel.addEventListener('input', function (e) {
+        if (e.target && e.target.id === 'mprofilePaymentAmount') syncPaymentSubmitState();
       });
     }
   }
