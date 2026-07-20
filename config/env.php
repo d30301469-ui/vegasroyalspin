@@ -143,6 +143,29 @@ if (!function_exists('frontend_is_api_only')) {
             return true;
         }
 
+        $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
+        if ($host !== '') {
+            if (function_exists('metropol_is_backend_host') && metropol_is_backend_host($host)) {
+                return false;
+            }
+            if (in_array($host, ['admin.vegasroyalspin.com', 'api.vegasroyalspin.com'], true)) {
+                return false;
+            }
+
+            $publicHosts = ['vegasroyalspin.com', 'www.vegasroyalspin.com', 'm.vegasroyalspin.com'];
+            foreach (['PUBLIC_URL_HOSTS', 'ALLOWED_FRONTEND_HOSTS'] as $key) {
+                foreach (explode(',', frontend_env_string($key)) as $candidate) {
+                    $candidate = strtolower(preg_replace('/:\d+$/', '', trim((string) $candidate)) ?? '');
+                    if ($candidate !== '') {
+                        $publicHosts[] = $candidate;
+                    }
+                }
+            }
+            if (in_array($host, array_values(array_unique($publicHosts)), true)) {
+                return true;
+            }
+        }
+
         if (!frontend_app_is_production()) {
             return false;
         }
