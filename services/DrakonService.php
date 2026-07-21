@@ -495,6 +495,22 @@ final class DrakonService
         $hasProviderCode = in_array('provider_code', $cols, true);
         $hasType         = in_array('type', $cols, true);
         $hasGameType     = in_array('game_type', $cols, true);
+        $hasIsActive     = in_array('is_active', $cols, true);
+        $hasSyncedAt     = in_array('synced_at', $cols, true);
+
+        // Marker read from the DATABASE clock (not PHP's) so we can reliably
+        // tell which rows this sync refreshed vs. stale rows left over from an
+        // older catalog snapshot. Every upserted row below sets synced_at =
+        // NOW(), so anything still older than this marker after the sync was
+        // NOT present in Drakon's current catalog.
+        $syncStart = '';
+        if ($hasIsActive && $hasSyncedAt) {
+            try {
+                $syncStart = (string) $pdo->query('SELECT NOW()')->fetchColumn();
+            } catch (Throwable) {
+                $syncStart = '';
+            }
+        }
 
         // Build a column-aware upsert. game_type/type are only set on INSERT
         // (kept out of the UPDATE clause) so any manual retyping in the admin
@@ -558,7 +574,34 @@ final class DrakonService
             $stmt->execute($params);
             $count++;
         }
-        return ['count' => $count];
+
+        // Prune stale games. Drakon periodically re-numbers/retires games
+        // (confirmed for Pragmatic Play: the old "23xxx"/"24xxx" ids were
+        // retired in favour of new working ids such as 51096 — the retired ids
+        // stay in the /games/all-derived catalog but fail at launch with the
+        // provider "/game-error" page). Because the upsert above only ever
+        // ADDS/updates rows, retired ids would otherwise linger in our catalog
+        // forever and keep showing broken game tiles. Any active row NOT
+        // refreshed by this sync (synced_at older than the marker) is
+        // deactivated so it disappears from the public listing. Deactivation
+        // (is_active = 0) is reversible and only runs when the sync returned a
+        // healthy, non-truncated catalog (>= 200 games) so a partial/failed API
+        // response can never wipe the listing.
+        $pruned = 0;
+        if ($hasIsActive && $hasSyncedAt && $syncStart !== '' && $count >= 200) {
+            try {
+                $prune = $pdo->prepare(
+                    'UPDATE drakon_games SET is_active = 0
+                     WHERE is_active = 1 AND (synced_at IS NULL OR synced_at < :start)'
+                );
+                $prune->execute([':start' => $syncStart]);
+                $pruned = (int) $prune->rowCount();
+            } catch (Throwable) {
+                $pruned = 0;
+            }
+        }
+
+        return ['count' => $count, 'pruned' => $pruned];
     }
 
     /**
