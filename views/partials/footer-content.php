@@ -71,7 +71,7 @@ $siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding 
                                 <div class="col-12 mt-4 d-flex flex-column align-items-center">
                                     <div class="mb-3">
                                         <?php if ($footerContentLogoUrl !== ''): ?>
-                                        <img loading="lazy" src="<?= htmlspecialchars($footerContentLogoUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                        <img loading="lazy" data-site-logo-link src="<?= htmlspecialchars($footerContentLogoUrl, ENT_QUOTES, 'UTF-8') ?>"
                                              alt="<?= htmlspecialchars($footerContentSiteName, ENT_QUOTES, 'UTF-8') ?>" width="308" height="102"
                                              style="max-width: 308px; height: auto; display: block;">
                                         <?php endif; ?>

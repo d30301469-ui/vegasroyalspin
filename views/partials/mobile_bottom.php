@@ -62,7 +62,7 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
 <div class="mobileMenu-overlay" id="mobileMenu-overlay"></div>
 <aside class="mobileMenu" id="mobileMenu">
     <div class="mobileMenu-header">
-        <a href="/" class="mobileMenu-logo">
+        <a href="/" class="mobileMenu-logo" data-site-logo-link>
             <img src="<?= $h($mobileMenuLogoUrl) ?>" alt="<?= $h($mobileMenuSiteName) ?>">
         </a>
         <button class="mobileMenu-close" id="mobileMenu-close" type="button" aria-label="Kapat">
