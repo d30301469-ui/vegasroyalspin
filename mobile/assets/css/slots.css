@@ -2133,6 +2133,19 @@ body.mobile-site.provider-sheet-open .providers-drawer-wrapper .provider-sheet-a
   background-image: none !important;
 }
 
+body.mobile-site.provider-sheet-open .providers-drawer-wrapper .provider-sheet-reset.active-reset {
+  background: rgb(63, 63, 65) !important;
+  background-color: rgb(63, 63, 65) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.mobile-site.provider-sheet-open .providers-drawer-wrapper .provider-sheet-apply.active-apply {
+  background: rgba(255, 255, 255, 0.9) !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  color: #202022 !important;
+  font-weight: 700 !important;
+}
+
 body.mobile-site.provider-sheet-open .tab-navigation-w-bc,
 body.mobile-site.provider-sheet-open .layout-navigation-holder-bc .tab-navigation-w-bc {
   visibility: hidden !important;
