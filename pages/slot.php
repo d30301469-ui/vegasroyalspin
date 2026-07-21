@@ -176,8 +176,17 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
     } elseif ($normalizedKey === 'novomatic') {
         $svgLogo = '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--novomatic"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Novomatic"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">NOVOMATIC</text></svg></span>';
     } else {
-        $svgLabel = htmlspecialchars(mb_strtoupper((string) $provider, 'UTF-8'), ENT_QUOTES | ENT_XML1, 'UTF-8');
-        $svgLogo = '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fallback"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="' . $svgLabel . '"><text x="110" y="18" text-anchor="middle" font-size="17" font-weight="700" font-family="Arial, sans-serif">' . $svgLabel . '</text></svg></span>';
+        $fallbackRaw = trim((string) $provider);
+        $fallbackLabel = mb_strtoupper($fallbackRaw, 'UTF-8');
+        $svgLabel = htmlspecialchars($fallbackLabel, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $fallbackMonogramRaw = preg_replace('/[^\pL\pN]+/u', '', $fallbackLabel) ?: $fallbackLabel;
+        $fallbackMonogram = mb_substr($fallbackMonogramRaw, 0, 2, 'UTF-8');
+        $fallbackMonogramEsc = htmlspecialchars($fallbackMonogram, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $fallbackHash = md5($fallbackRaw !== '' ? $fallbackRaw : 'provider');
+        $hueStart = hexdec(substr($fallbackHash, 0, 2)) % 360;
+        $hueEnd = ($hueStart + 45 + (hexdec(substr($fallbackHash, 2, 2)) % 120)) % 360;
+        $gradientId = 'providerGrad' . substr($fallbackHash, 0, 8);
+        $svgLogo = '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fallback"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" role="img" aria-label="' . $svgLabel . '"><defs><linearGradient id="' . $gradientId . '" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(' . $hueStart . ' 82% 42%)" /><stop offset="100%" stop-color="hsl(' . $hueEnd . ' 78% 54%)" /></linearGradient></defs><rect x="1" y="1" width="218" height="22" rx="11" fill="url(#' . $gradientId . ')" /><circle cx="14" cy="12" r="8" fill="rgba(255,255,255,0.28)" /><text x="14" y="15" text-anchor="middle" font-size="8" font-weight="800" fill="#ffffff" font-family="Arial, sans-serif">' . $fallbackMonogramEsc . '</text><text x="28" y="16" font-size="10.5" font-weight="700" fill="#ffffff" font-family="Arial, sans-serif">' . $svgLabel . '</text></svg></span>';
     }
 
     return '<div title="' . $esc . '" class="providerItemsInner sidebar-provider-item' . ($active ? ' active' : '') . '" role="button" tabindex="0" data-provider="' . $esc . '">' . $badgeHtml . '<div class="providerItemsBtn has-provider-icon">' . $svgLogo . '<span class="provider-list-row">' . htmlspecialchars($provider, ENT_QUOTES, 'UTF-8') . '</span></div></div>';
