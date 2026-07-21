@@ -924,6 +924,41 @@ body:has(.slot-page-root)::-webkit-scrollbar {
     overflow: hidden;
 }
 
+.providerItemsBtn.has-provider-icon {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.providerItemsBtn .provider-logo-svg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 0 0 auto;
+    width: min(110px, 100%);
+    max-width: 100%;
+    height: 20px;
+}
+
+.providerItemsBtn .provider-logo-svg svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.providerItemsBtn .provider-logo-svg + .provider-list-row,
+.providerItemsBtn .CMSIconSVGWrapper + .provider-list-row {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 /* Tek etiket: sağlayıcı satırının sağ üstünde, ufak */
 .sidebar-provider-item .provider-badges {
     position: absolute;
