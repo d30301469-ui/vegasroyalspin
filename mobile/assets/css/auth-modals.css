@@ -163,6 +163,8 @@ body.mobile-site #registerModal .entrance-form-bc.registration.popup {
 body.mobile-site #login2 .login-modal-container {
   position: relative;
   gap: 0;
+  height: auto !important;
+  min-height: 100% !important;
 }
 
 body.mobile-site #login2 .login-modal-header.e-p-header-bc,
@@ -340,30 +342,31 @@ body.mobile-site #registerModal:not(.show) .mobile-auth-close {
 }
 
 body.mobile-site #login2 #loginFormScreen {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto !important;
+  min-height: auto !important;
   display: flex;
   flex-direction: column;
 }
 
 body.mobile-site #login2 .login-form {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto !important;
+  min-height: auto !important;
   display: flex;
   flex-direction: column;
 }
 
 body.mobile-site #login2 .entrance-form-content-bc.single-side.step-0 {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto !important;
+  min-height: auto !important;
   display: flex;
   flex-direction: column;
-  padding: 0 14px 12px;
+  padding: 0 14px 10px !important;
 }
 
 body.mobile-site #login2 .sg-n-text-row-2-bc {
-  flex: 0 0 clamp(78px, 15vh, 126px) !important;
-  min-height: 0;
+  flex: 0 0 clamp(84px, 18svh, 132px) !important;
+  min-height: clamp(84px, 18svh, 132px) !important;
+  max-height: 132px !important;
 }
 
 body.mobile-site #login2 .form-group.entrance-f-item-bc,
