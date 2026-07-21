@@ -764,9 +764,9 @@
     }
 
     /* ── Inline Search: 600 ms debounce ile otomatik arama, X ile temizleme ── */
-    function applySearch() {
-        if (!searchInput) return;
-        setSearch(searchInput.value);
+    function applySearch(value) {
+        if (!searchInput && value === undefined) return;
+        setSearch(value !== undefined ? value : searchInput.value);
         loadSlots(false);
     }
 
@@ -787,11 +787,11 @@
         searchClearBtn.setAttribute('aria-label', hasText ? 'Aramayı temizle' : 'Oyun ara');
     }
 
-    function scheduleSearch() {
+    function scheduleSearch(value) {
         if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
         searchDebounceTimer = setTimeout(function() {
             searchDebounceTimer = null;
-            applySearch();
+            applySearch(value);
         }, SEARCH_DEBOUNCE_MS);
     }
 
@@ -808,6 +808,22 @@
             }
         });
     }
+    document.addEventListener('input', function(e) {
+        var field = e.target && e.target.closest ? e.target.closest('.games-search-input') : null;
+        if (!field || field === searchInput || (slotPageRoot && !slotPageRoot.contains(field))) return;
+        setSearch(field.value);
+        updateSearchBtnIcon();
+        scheduleSearch(field.value);
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        var field = e.target && e.target.closest ? e.target.closest('.games-search-input') : null;
+        if (!field || field === searchInput || (slotPageRoot && !slotPageRoot.contains(field))) return;
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = null;
+        setSearch(field.value);
+        applySearch(field.value);
+    });
     function syncGamesSearchExpandAria() {
         if (!gamesSearchExpandEl || !document.body.classList.contains('mobile-site')) return;
         gamesSearchExpandEl.setAttribute('aria-expanded', gamesSearchExpandEl.classList.contains('is-expanded') ? 'true' : 'false');
@@ -833,6 +849,21 @@
             }
         });
     }
+    document.addEventListener('click', function(e) {
+        var btn = e.target && e.target.closest ? e.target.closest('.games-search-icon-btn') : null;
+        if (!btn || btn === searchClearBtn || (slotPageRoot && !slotPageRoot.contains(btn))) return;
+        var wrapper = btn.closest('.casinoSearchWrapper, .games-search-expand, .casinoInputWrp') || slotPageRoot || document;
+        var field = wrapper.querySelector('.games-search-input');
+        if (!field) return;
+        if (field.value.trim().length > 0) {
+            field.value = '';
+            setSearch('');
+            updateSearchBtnIcon();
+            loadSlots(false);
+        } else {
+            field.focus();
+        }
+    });
     updateSearchBtnIcon();
 
     /* ── Provider search (sidebar) – oyun arama kutusu gibi: sağda ikon, metin varken çarpı ── */
