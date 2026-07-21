@@ -102,7 +102,10 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
     $active = in_array($provider, $selectedProviders, true);
     $esc = htmlspecialchars($provider, ENT_QUOTES, 'UTF-8');
     $badgeClass = $badge !== '' ? $providerBadgeBlockClass($badge) : '';
-    return '<div title="' . $esc . '" class="providerItemsInner sidebar-provider-item' . ($active ? ' active' : '') . '" role="button" tabindex="0" data-provider="' . $esc . '"><span class="providerBadgeBlock ' . htmlspecialchars($badgeClass, ENT_QUOTES, 'UTF-8') . '" data-badge="' . htmlspecialchars($badge, ENT_QUOTES, 'UTF-8') . '"></span><div class="providerItemsBtn"><span class="provider-list-row">' . htmlspecialchars($provider, ENT_QUOTES, 'UTF-8') . '</span></div></div>';
+    $svgLabel = htmlspecialchars(mb_strtoupper((string) $provider, 'UTF-8'), ENT_QUOTES | ENT_XML1, 'UTF-8');
+    $svgLogo = '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fallback"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="' . $svgLabel . '"><text x="110" y="16" text-anchor="middle" font-size="12" font-family="Arial, sans-serif">' . $svgLabel . '</text></svg></span>';
+
+    return '<div title="' . $esc . '" class="providerItemsInner sidebar-provider-item' . ($active ? ' active' : '') . '" role="button" tabindex="0" data-provider="' . $esc . '"><span class="providerBadgeBlock ' . htmlspecialchars($badgeClass, ENT_QUOTES, 'UTF-8') . '" data-badge="' . htmlspecialchars($badge, ENT_QUOTES, 'UTF-8') . '"></span><div class="providerItemsBtn has-provider-icon">' . $svgLogo . '<span class="provider-list-row">' . htmlspecialchars($provider, ENT_QUOTES, 'UTF-8') . '</span></div></div>';
 };
 
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
