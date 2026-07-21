@@ -353,10 +353,11 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                     <div class="ds-textfield ds-textfield-size--md ds-textfield-layout--fill">
                         <div class="ds-textfield__field">
                             <div class="ds-textfield__text">
-                                <span class="ds-textfield__label">Oyun Ara</span>
                                 <input type="text"
                                        class="ds-textfield__input searchInput games-search-input"
                                        id="gamesFilterSearchInput"
+                                       placeholder="Oyun Ara"
+                                       aria-label="Oyun Ara"
                                        value="<?= htmlspecialchars($searchTerm, ENT_QUOTES); ?>"
                                        autocomplete="off">
                             </div>
