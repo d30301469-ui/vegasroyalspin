@@ -196,6 +196,32 @@ if (!is_array($mpConfig)) {
     echo "  Panel â†’ Callback URL: {$mpCallback}\n";
 }
 
+// Bu sunucunun MegaPayz'e giden isteklerde ger\u00e7ekte kulland\u0131\u011f\u0131 IPv4 \u00e7\u0131k\u0131\u015f (egress) adresi.
+// "IP whitelist'te olmas\u0131na ra\u011fmen 74403 (IP not whitelisted)" hatas\u0131n\u0131n en yayg\u0131n nedeni,
+// MegaPayz'e bildirilen IP ile sunucunun ger\u00e7ekten d\u0131\u015far\u0131ya \u00e7\u0131karken kulland\u0131\u011f\u0131 IP'nin
+// (birden fazla NIC / floating-IP NAT / yeniden ba\u015flat\u0131lan dyn. IP nedeniyle) farkl\u0131 olmas\u0131d\u0131r.
+$mpEgress = $probeHttp('GET', 'https://api.ipify.org?format=json');
+$mpEgressIp = '';
+if ($mpEgress['http'] === 200 && $mpEgress['body'] !== '') {
+    $decodedEgress = json_decode($mpEgress['body'], true);
+    $mpEgressIp = is_array($decodedEgress) ? trim((string) ($decodedEgress['ip'] ?? '')) : '';
+}
+if ($mpEgressIp !== '') {
+    $expectedIp = trim((string) (getenv('MEGAPAYZ_WHITELISTED_IP') ?: ''));
+    echo "  Sunucu egress IPv4 (MegaPayz'in gördüğü IP): {$mpEgressIp}\n";
+    if ($expectedIp !== '') {
+        if ($expectedIp === $mpEgressIp) {
+            $line('OK', "Egress IP, MEGAPAYZ_WHITELISTED_IP ({$expectedIp}) ile eşleşiyor.");
+        } else {
+            $line('FAIL', "Egress IP ({$mpEgressIp}) MEGAPAYZ_WHITELISTED_IP ({$expectedIp}) ile UYUŞMUYOR — MegaPayz'e bildirilen IP bu değil, whitelist güncellenmeli.");
+        }
+    } else {
+        $line('WARN', 'MEGAPAYZ_WHITELISTED_IP tanımlı değil — yukarıdaki IP\'yi MegaPayz panelindeki whitelist kaydıyla manuel karşılaştırın.');
+    }
+} else {
+    $line('WARN', 'Egress IP tespit edilemedi (api.ipify.org erişilemedi) — sunucudan MegaPayz whitelist IP\'sini manuel doğrulayın.');
+}
+
 $mpToken = trim((string) (getenv('MEGAPAYZ_CALLBACK_TOKEN') ?: ''));
 if ($mpToken !== '') {
     $line('OK', 'MEGAPAYZ_CALLBACK_TOKEN tanÄ±mlÄ± (callback testi token gerektirir)');

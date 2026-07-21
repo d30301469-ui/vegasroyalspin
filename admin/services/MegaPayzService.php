@@ -976,14 +976,26 @@ final class MegaPayzService
         $raw = curl_exec($ch);
         $errno = (int) curl_errno($ch);
         $err = (string) curl_error($ch);
+        // Bu makinenin bu istek için kullandığı gerçek çıkış (egress) IP'sini ve
+        // bağlanılan MegaPayz IP'sini kaydediyoruz. "IP whitelist'te olmasına rağmen
+        // 74403 alıyoruz" şikayetlerinde, whitelist'e bildirilen IP ile burada
+        // görünen local_ip'nin gerçekten aynı olup olmadığını response_payload
+        // üzerinden doğrulamak için (birden fazla NIC/egress IP olan sunucularda
+        // bu ikisi farklı olabilir).
+        $egress = [
+            'local_ip' => (string) curl_getinfo($ch, CURLINFO_LOCAL_IP),
+            'remote_ip' => (string) curl_getinfo($ch, CURLINFO_PRIMARY_IP),
+            'http_code' => (int) curl_getinfo($ch, CURLINFO_HTTP_CODE),
+        ];
         curl_close($ch);
         if ($raw === false || $raw === '') {
-            return ['status' => false, 'code' => 502, 'message' => $err !== '' ? $err : 'MegaPayz yanıt vermedi.', 'curl_errno' => $errno];
+            return ['status' => false, 'code' => 502, 'message' => $err !== '' ? $err : 'MegaPayz yanıt vermedi.', 'curl_errno' => $errno, '_egress' => $egress];
         }
         $decoded = json_decode((string) $raw, true);
         if (!is_array($decoded)) {
-            return ['status' => false, 'code' => 502, 'message' => 'MegaPayz JSON yanıtı okunamadı.', 'raw' => (string) $raw];
+            return ['status' => false, 'code' => 502, 'message' => 'MegaPayz JSON yanıtı okunamadı.', 'raw' => (string) $raw, '_egress' => $egress];
         }
+        $decoded['_egress'] = $egress;
         return $decoded;
     }
 
