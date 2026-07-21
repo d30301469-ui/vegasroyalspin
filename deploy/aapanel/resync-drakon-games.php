@@ -47,12 +47,39 @@ if (!$bootstrapped) {
     exit(1);
 }
 
-if (!class_exists('AdminDatabase', false)) {
-    require_once admin_project_path('app/Core/AdminDatabase.php');
-}
-if (!class_exists('DrakonService', false)) {
-    require_once admin_project_path('services/DrakonService.php');
-}
+// Resolve AdminDatabase / DrakonService across the possible monorepo layouts
+// (backend-only deploy where these live at <root>/app|services, or the full
+// monorepo where the admin code lives under <root>/admin/...). admin_project_path()
+// can resolve to either the repo root or the admin subdir depending on install
+// markers, so probe a candidate list instead of assuming a single path.
+$requireFirstReadable = static function (string $class, array $candidates): void {
+    if (class_exists($class, false)) {
+        return;
+    }
+    foreach ($candidates as $candidate) {
+        if ($candidate !== '' && is_readable($candidate)) {
+            require_once $candidate;
+            if (class_exists($class, false)) {
+                return;
+            }
+        }
+    }
+    fwrite(STDERR, "Could not locate {$class} (tried: " . implode(', ', $candidates) . ")\n");
+    exit(1);
+};
+
+$requireFirstReadable('AdminDatabase', [
+    admin_project_path('app/Core/AdminDatabase.php'),
+    admin_project_path('admin/app/Core/AdminDatabase.php'),
+    $root . '/app/Core/AdminDatabase.php',
+    $root . '/admin/app/Core/AdminDatabase.php',
+]);
+$requireFirstReadable('DrakonService', [
+    admin_project_path('services/DrakonService.php'),
+    admin_project_path('admin/services/DrakonService.php'),
+    $root . '/services/DrakonService.php',
+    $root . '/admin/services/DrakonService.php',
+]);
 
 try {
     $pdo = AdminDatabase::pdo();
