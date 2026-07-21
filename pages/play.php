@@ -310,9 +310,18 @@ if ($playBypassShell) {
 </head>
 <body class="play-shell-body">
 
+<?php
+// Anında (gecikmesiz) ilk boya için sunucu tarafi render; site-settings-hydrate.js
+// sayfa yuklendiginde /api/v2/site-settings'ten taze veriyi cekip gerekirse anlik
+// duzeltir (data-site-logo-link isaretlisi sayesinde), boylece hem hizli hem guncel.
+$playLogoUrl = (string) ($siteBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
+if ($playLogoUrl !== '' && class_exists('ApiMediaUrl', false)) {
+    $playLogoUrl = ApiMediaUrl::resolve($playLogoUrl);
+}
+?>
 <header class="play-topbar" aria-label="Oyun çubuğu">
   <a class="play-topbar-logo" href="/" title="Ana sayfa" data-site-logo-link>
-    <img alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="180" height="60" loading="lazy">
+    <img src="<?= htmlspecialchars($playLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="180" height="60" loading="lazy">
   </a>
   <div class="play-topbar-actions">
     <div class="play-topbar-balance<?= $loggedIn ? ' is-visible' : '' ?>" id="playBalanceWrap" aria-live="polite">
