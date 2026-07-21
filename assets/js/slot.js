@@ -661,6 +661,7 @@
         state.nextPage = 2;
         if (searchInput) searchInput.value = '';
         syncMobileFilterControls();
+        updateDrawerButtonStates();
     }
 
     function setSort(sortVal) {
@@ -918,11 +919,15 @@
         var resetBtn = document.getElementById('providerSheetResetBtn');
         var applyBtn = document.getElementById('providerSheetApplyBtn');
         var hasSelection = state.providers.length > 0;
+        var applyLabel = applyBtn ? applyBtn.querySelector('.btn__label') : null;
         if (resetBtn) {
             resetBtn.classList.toggle('active-reset', hasSelection);
         }
         if (applyBtn) {
             applyBtn.classList.toggle('active-apply', hasSelection);
+        }
+        if (applyLabel) {
+            applyLabel.textContent = hasSelection ? ('FİLTRE +' + state.providers.length) : 'FİLTRE';
         }
     }
 
@@ -999,6 +1004,7 @@
                 if (allItem) allItem.classList.add('active');
             }
             syncMobileFilterControls();
+            updateDrawerButtonStates();
             closeProviderSheet();
             loadSlots(false);
         });
@@ -1145,6 +1151,7 @@
         }
         state.nextPage = 2;
         syncMobileFilterControls();
+        updateDrawerButtonStates();
         loadSlots(false);
     }
 
