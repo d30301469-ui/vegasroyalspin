@@ -54,7 +54,9 @@
 
     function getSlotSearchInput(root) {
         var scope = root || document;
-        return scope.querySelector('.casinoGameListBlockHeader .casinoInputWrp .searchInputWrp input.searchInput') ||
+        return scope.querySelector('.casinoGameProviderFilters .games-search-input') ||
+            scope.querySelector('#gamesFilterSearchInput') ||
+            scope.querySelector('.casinoGameListBlockHeader .casinoInputWrp .searchInputWrp input.searchInput') ||
             scope.querySelector('.casinoGameListBlockHeader input.searchInput') ||
             scope.querySelector('#searchModalInput') ||
             document.getElementById('searchModalInput');
@@ -273,7 +275,7 @@
     /* ── DOM refs (oyun arama: .slot-page-root içinde — header panellerindeki aynı id’lerle çakışmasın) ── */
     const slotPageRoot       = document.querySelector('.slot-page-root');
     const searchInput        = getSlotSearchInput(slotPageRoot);
-    const searchClearBtn     = slotPageRoot ? slotPageRoot.querySelector('#searchClearBtn') : document.getElementById('searchClearBtn');
+    const searchClearBtn     = slotPageRoot ? (slotPageRoot.querySelector('#gamesFilterSearchClearBtn') || slotPageRoot.querySelector('.casinoGameProviderFilters .games-search-icon-btn') || slotPageRoot.querySelector('#searchClearBtn')) : document.getElementById('searchClearBtn');
     const gamesSearchExpandEl = slotPageRoot ? slotPageRoot.querySelector('#gamesSearchExpand') : document.getElementById('gamesSearchExpand');
     let searchDebounceTimer  = null;
     const SEARCH_DEBOUNCE_MS = 600;
