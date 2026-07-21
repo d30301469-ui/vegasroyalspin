@@ -23,7 +23,7 @@ if (class_exists('ApiMediaUrl', false)) {
                 <div class="e-p-content-bc">
                     <div class="register-modal-header-text e-p-header-bc">
                         <div class="register-modal-top-bar">
-                            <a class="popup-t-logo-w-bc register-logo" href="/">
+                            <a class="popup-t-logo-w-bc register-logo" href="/" data-site-logo-link>
                                 <img src="<?= htmlspecialchars($registerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($registerSiteName, ENT_QUOTES, 'UTF-8') ?>" class="register-logo-img hdr-logo-bc">
                             </a>
                             <div class="register-top-right e-p-sections-bc">

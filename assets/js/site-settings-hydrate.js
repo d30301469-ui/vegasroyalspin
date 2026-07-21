@@ -50,7 +50,7 @@
 
     function logoLinks() {
         var seen = [];
-        var selectors = ['a[data-site-logo-link]', 'a.headLogo', '.logo-container a.logo'];
+        var selectors = ['a[data-site-logo-link]', 'img[data-site-logo-link]', 'a.headLogo', '.logo-container a.logo'];
         for (var i = 0; i < selectors.length; i++) {
             var nodes = d.querySelectorAll(selectors[i]);
             for (var j = 0; j < nodes.length; j++) {
@@ -69,6 +69,19 @@
         var links = logoLinks();
         for (var i = 0; i < links.length; i++) {
             var link = links[i];
+
+            // Marker is directly on the <img> (no wrapping link/video structure),
+            // e.g. footer logo or login modal logo.
+            if (link.tagName === 'IMG') {
+                if (url && link.getAttribute('src') !== url) {
+                    link.setAttribute('src', url);
+                }
+                if (name) {
+                    link.setAttribute('alt', name);
+                }
+                continue;
+            }
+
             var video = link.querySelector('video');
             if (video) {
                 if (animatedUrl) {

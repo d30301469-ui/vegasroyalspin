@@ -291,7 +291,7 @@ if (class_exists('ApiMediaUrl', false)) {
                         <div class="login-modal-container">
                             <div class="login-modal-header e-p-header-bc">
                                 <div class="login-logo">
-                                    <img src="<?= htmlspecialchars($loginLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($loginSiteName, ENT_QUOTES, 'UTF-8') ?>" class="login-logo-img">
+                                    <img data-site-logo-link src="<?= htmlspecialchars($loginLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($loginSiteName, ENT_QUOTES, 'UTF-8') ?>" class="login-logo-img">
                                 </div>
                                 <div class="login-header-actions e-p-sections-bc">
                                     <button type="button" class="login-register-btn e-p-section-title-bc" id="openRegisterFromLogin">KAYIT</button>
