@@ -23,4 +23,5 @@ jobs:
             php tools/update_menu_bgaming_v2.php || true
             php tools/update_tabbar_v1.php || true
             php deploy/aapanel/fix-drakon-api-base.php || true
+            php deploy/aapanel/resync-drakon-games.php || true
             php -r "if(function_exists('opcache_reset')) opcache_reset(); echo 'opcache cleared\n';"
