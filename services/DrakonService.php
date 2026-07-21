@@ -286,6 +286,57 @@ final class DrakonService
         return $base;
     }
 
+    /**
+     * Resolves the configured "Return / Home URL" (drakon_config.home_url) into
+     * an absolute, public-facing URL suitable both for our own response payload
+     * (consumed by assets/js/play-page.js for our close/lobby button) and for
+     * Drakon's own "home_url" launch parameter, which its game templates use to
+     * populate the in-game "LOBBY" button.
+     *
+     * Self-healing rules (mirrors apiBase()'s stale-host correction):
+     *  - Empty value defaults to "/slot".
+     *  - Relative paths ("/slot") are resolved against FRONTEND_URL (the public
+     *    site), never SITE_URL, because this service also runs inside the admin
+     *    backend request lifecycle where SITE_URL would resolve to the admin
+     *    domain instead of the public one.
+     *  - If the stored/resolved value's host matches the admin/backend domain
+     *    (BACKEND_URL), it is corrected to the public FRONTEND_URL instead — a
+     *    misconfigured admin-domain home_url was observed causing Drakon's own
+     *    in-game LOBBY button to redirect to "admin.<domain>" ("refused to
+     *    connect") instead of the public site.
+     */
+    private static function resolveHomeUrl(array $cfg): string
+    {
+        $raw = trim((string) ($cfg['home_url'] ?? ''));
+        if ($raw === '') {
+            $raw = '/slot';
+        }
+
+        $frontendUrl = defined('FRONTEND_URL') && (string) FRONTEND_URL !== ''
+            ? rtrim((string) FRONTEND_URL, '/')
+            : rtrim((string) (defined('SITE_URL') ? SITE_URL : ''), '/');
+
+        if ($raw[0] === '/') {
+            return $frontendUrl !== '' ? $frontendUrl . $raw : $raw;
+        }
+
+        $host = parse_url($raw, PHP_URL_HOST);
+        $backendHost  = defined('BACKEND_URL') ? parse_url((string) BACKEND_URL, PHP_URL_HOST) : null;
+        $frontendHost = $frontendUrl !== '' ? parse_url($frontendUrl, PHP_URL_HOST) : null;
+
+        $looksLikeAdminHost = is_string($host) && (
+            (is_string($backendHost) && strcasecmp($host, $backendHost) === 0)
+            || stripos($host, 'admin.') === 0
+        );
+
+        if ($looksLikeAdminHost && $frontendUrl !== '' && !(is_string($frontendHost) && strcasecmp($host, $frontendHost) === 0)) {
+            error_log('[DrakonService] Ignoring admin-domain home_url (' . $raw . '); falling back to ' . $frontendUrl);
+            return $frontendUrl;
+        }
+
+        return $raw;
+    }
+
     // ─── Authentication ───────────────────────────────────────────────────────
 
     public static function getToken(PDO $pdo): string
@@ -674,6 +725,8 @@ final class DrakonService
             return ['success' => false, 'code' => 503, 'message' => 'Drakon agent yapılandırılmamış.'];
         }
 
+        $homeUrl = self::resolveHomeUrl($cfg);
+
         $params = [
             'agent_code'  => $agentCode,
             'agent_token' => $agentToken,
@@ -681,6 +734,7 @@ final class DrakonService
             'currency'    => $currency,
             'lang'        => $lang,
             'mode'        => $mode,
+            'home_url'    => $homeUrl,
         ];
 
         if ($mode === 'real' && is_array($user)) {
@@ -767,7 +821,7 @@ final class DrakonService
                 'game_url'       => $gameUrl,
                 'launch_url'     => $gameUrl,
                 'mode'           => $mode,
-                'home_url'       => trim((string) ($cfg['home_url'] ?? '')),
+                'home_url'       => $homeUrl,
                 'launch_options' => ['game_url' => $gameUrl],
             ],
             'game_url' => $gameUrl,
