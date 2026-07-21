@@ -131,12 +131,61 @@ try {
          FROM drakon_games WHERE game_name LIKE '%Sweet Bonanza%' ORDER BY game_name LIMIT 12"
     )->fetchAll(PDO::FETCH_ASSOC);
 
+    // 3) Group the feed by provider and probe one launchable sample per provider.
+    $byProvider = [];
+    foreach ($games as $g) {
+        $prov = (string) ($g['provider_game'] ?? '');
+        $gid  = (string) ($g['game_id'] ?? '');
+        if ($prov === '' || $gid === '') {
+            continue;
+        }
+        if (!isset($byProvider[$prov])) {
+            $byProvider[$prov] = ['count' => 0, 'sample' => $gid, 'sample_name' => (string) ($g['game_name'] ?? '')];
+        }
+        $byProvider[$prov]['count']++;
+    }
+
+    $probe = [];
+    if (isset($_GET['probe'])) {
+        // Explicit ids to test (comma separated) + one sample per provider.
+        $ids = [];
+        $explicit = trim((string) ($_GET['ids'] ?? ''));
+        if ($explicit !== '') {
+            foreach (explode(',', $explicit) as $e) {
+                $e = trim($e);
+                if ($e !== '') {
+                    $ids['explicit:' . $e] = $e;
+                }
+            }
+        }
+        foreach ($byProvider as $prov => $info) {
+            $ids[$prov] = $info['sample'];
+        }
+        foreach ($ids as $label => $gid) {
+            $res = DrakonService::launch($pdo, null, ['game_id' => $gid, 'mode' => 'fun']);
+            $rawUrl = '';
+            if (isset($res['raw']) && is_array($res['raw'])) {
+                $rawUrl = (string) ($res['raw']['game_url'] ?? ($res['raw']['data']['game_url'] ?? ''));
+            }
+            $probe[] = [
+                'provider'  => $label,
+                'game_id'   => $gid,
+                'success'   => (bool) ($res['success'] ?? false),
+                'error'     => (string) ($res['error'] ?? ''),
+                'game_url'  => (string) ($res['game_url'] ?? ''),
+                'raw_url'   => $rawUrl,
+            ];
+        }
+    }
+
     echo json_encode([
         'feed_total'        => count($games),
         'feed_status'       => $feed['status'] ?? null,
         'feed_sweet'        => $feedSweet,
         'feed_has_51096'    => $has51096InFeed,
         'db_sweet'          => $dbSweet,
+        'providers'         => $byProvider,
+        'probe'             => $probe,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);
