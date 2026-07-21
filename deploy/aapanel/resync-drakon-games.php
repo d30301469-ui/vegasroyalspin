@@ -96,6 +96,31 @@ try {
         exit(0);
     }
 
+    // Self-heal the schema for catalogs created by an older migration. The live
+    // drakon_games table can predate the game_code/image_url columns; because
+    // production disables runtime CREATE/ALTER and `CREATE TABLE IF NOT EXISTS`
+    // never backfills columns, syncGames()/games() would hit "Unknown column"
+    // and the admin `casino/games` route silently drops every Drakon game.
+    // MySQL 8 has no `ADD COLUMN IF NOT EXISTS`, so guard via information_schema.
+    $columnExists = static function (PDO $pdo, string $column): bool {
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(*) FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = :t
+                AND COLUMN_NAME = :c'
+        );
+        $stmt->execute([':t' => 'drakon_games', ':c' => $column]);
+        return (int) $stmt->fetchColumn() > 0;
+    };
+    if (!$columnExists($pdo, 'game_code')) {
+        $pdo->exec('ALTER TABLE drakon_games ADD COLUMN game_code VARCHAR(100) NULL AFTER game_id');
+        echo "Added missing column drakon_games.game_code.\n";
+    }
+    if (!$columnExists($pdo, 'image_url')) {
+        $pdo->exec('ALTER TABLE drakon_games ADD COLUMN image_url VARCHAR(500) NULL AFTER banner');
+        echo "Added missing column drakon_games.image_url.\n";
+    }
+
     @set_time_limit(0);
     $result = DrakonService::syncGames($pdo);
     $count  = (int) ($result['count'] ?? 0);

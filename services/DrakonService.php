@@ -492,6 +492,8 @@ final class DrakonService
         $count    = 0;
 
         $cols          = self::tableColumns($pdo, 'drakon_games');
+        $hasGameCode     = in_array('game_code', $cols, true);
+        $hasImageUrl     = in_array('image_url', $cols, true);
         $hasProviderCode = in_array('provider_code', $cols, true);
         $hasType         = in_array('type', $cols, true);
         $hasGameType     = in_array('game_type', $cols, true);
@@ -514,18 +516,30 @@ final class DrakonService
 
         // Build a column-aware upsert. game_type/type are only set on INSERT
         // (kept out of the UPDATE clause) so any manual retyping in the admin
-        // panel survives re-syncs.
-        $insert = ['game_id', 'game_code', 'game_name', 'provider_name', 'rtp', 'banner', 'image_url', 'synced_at'];
-        $values = [':game_id', ':game_code', ':game_name', ':provider_name', ':rtp', ':banner', ':img', 'NOW()'];
+        // panel survives re-syncs. game_code/image_url are guarded because older
+        // live catalogs may predate those columns (production disables runtime
+        // ALTER and `CREATE TABLE IF NOT EXISTS` never backfills them) — an
+        // unconditional reference would fatal the whole sync with "Unknown
+        // column".
+        $insert = ['game_id', 'game_name', 'provider_name', 'rtp', 'banner', 'synced_at'];
+        $values = [':game_id', ':game_name', ':provider_name', ':rtp', ':banner', 'NOW()'];
         $update = [
-            'game_code     = VALUES(game_code)',
             'game_name     = VALUES(game_name)',
             'provider_name = VALUES(provider_name)',
             'rtp           = VALUES(rtp)',
             'banner        = VALUES(banner)',
-            'image_url     = VALUES(image_url)',
             'synced_at     = NOW()',
         ];
+        if ($hasGameCode) {
+            $insert[] = 'game_code';
+            $values[] = ':game_code';
+            $update[] = 'game_code = VALUES(game_code)';
+        }
+        if ($hasImageUrl) {
+            $insert[] = 'image_url';
+            $values[] = ':img';
+            $update[] = 'image_url = VALUES(image_url)';
+        }
         if ($hasProviderCode) {
             $insert[] = 'provider_code';
             $values[] = ':provider_code';
@@ -555,13 +569,17 @@ final class DrakonService
             $isLive   = self::isLiveProviderName($provider);
             $params = [
                 ':game_id'       => $gameId,
-                ':game_code'     => (string) ($game['game_code'] ?? $gameId),
                 ':game_name'     => (string) ($game['game_name'] ?? $gameId),
                 ':provider_name' => $provider,
                 ':rtp'           => isset($game['rtp']) ? (float) $game['rtp'] : null,
                 ':banner'        => $banner,
-                ':img'           => $banner,
             ];
+            if ($hasGameCode) {
+                $params[':game_code'] = (string) ($game['game_code'] ?? $gameId);
+            }
+            if ($hasImageUrl) {
+                $params[':img'] = $banner;
+            }
             if ($hasProviderCode) {
                 $params[':provider_code'] = $provider;
             }
@@ -659,15 +677,23 @@ final class DrakonService
         $search   = trim((string) ($query['search'] ?? $query['q'] ?? ''));
         $provider = trim((string) ($query['provider'] ?? ''));
 
+        // Detect columns up front so both the WHERE filters and the SELECT list
+        // stay compatible with older live catalogs that predate newer columns
+        // (game_code, image_url, game_type, type). Referencing a missing column
+        // throws "Unknown column", and the admin `casino/games` route swallows
+        // that Throwable — silently dropping ALL Drakon games from the list.
+        $cols     = self::tableColumns($pdo, 'drakon_games');
+        $hasGameTypeCol = in_array('game_type', $cols, true);
+
         $where  = ['is_active = 1'];
         $params = [];
 
         // Slot lobby (game_type 0) vs live casino (game_type 1). Only apply the
-        // filter when the caller explicitly requests a type so that unfiltered
-        // callers still receive the full catalogue.
+        // filter when the caller explicitly requests a type AND the column
+        // exists, so that unfiltered callers still receive the full catalogue.
         $gameTypeRaw = $query['game_type'] ?? $query['filter_game_type'] ?? null;
         $gameType = null;
-        if ($gameTypeRaw !== null && $gameTypeRaw !== '') {
+        if ($hasGameTypeCol && $gameTypeRaw !== null && $gameTypeRaw !== '') {
             $gameType = (int) $gameTypeRaw === 1 ? 1 : 0;
             $where[]           = 'game_type = :game_type';
             $params[':game_type'] = $gameType;
@@ -688,8 +714,18 @@ final class DrakonService
         $stmtTotal->execute($params);
         $total = (int) $stmtTotal->fetchColumn();
 
+        // Column-aware SELECT list (see the column detection above). Select only
+        // columns that actually exist; the mapper below already null-coalesces
+        // every field so missing optional columns degrade gracefully.
+        $selectCols = ['game_id', 'game_name', 'provider_name', 'rtp', 'banner', 'is_active'];
+        foreach (['game_code', 'image_url', 'game_type', 'type'] as $optional) {
+            if (in_array($optional, $cols, true)) {
+                $selectCols[] = $optional;
+            }
+        }
+
         $stmtRows = $pdo->prepare(
-            "SELECT game_id, game_code, game_name, provider_name, rtp, banner, image_url, is_active, game_type, type
+            'SELECT ' . implode(', ', $selectCols) . "
              FROM drakon_games {$whereSql}
              ORDER BY game_name ASC
              LIMIT :lim OFFSET :off"
