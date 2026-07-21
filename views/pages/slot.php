@@ -420,9 +420,8 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
     $provider = $slotRepairMojibake((string) $provider);
     $label = htmlspecialchars($provider);
     $esc = htmlspecialchars($provider, ENT_QUOTES, 'UTF-8');
-    $iconClass = $providerIconClass($provider, $badgeSlug);
     $svgLogo = $providerLogoSvg($provider, $badgeSlug);
-    $icon = $svgLogo !== '' ? $svgLogo : ($iconClass !== '' ? '<i class="provider-logo-icon ' . htmlspecialchars($iconClass, ENT_QUOTES, 'UTF-8') . '" aria-hidden="true"></i>' : '');
+    $icon = $svgLogo;
     $badge = $slotRepairMojibake((string) ($badges[0] ?? ''));
     $badgeClass = $badge !== '' ? $providerBadgeBlockClass($badge) : '';
     $badgeHtml = '';
