@@ -147,6 +147,7 @@ try {
 
     $probe = [];
     if (isset($_GET['probe'])) {
+        @set_time_limit(0);
         // Explicit ids to test (comma separated) + one sample per provider.
         $ids = [];
         $explicit = trim((string) ($_GET['ids'] ?? ''));
@@ -158,8 +159,11 @@ try {
                 }
             }
         }
-        foreach ($byProvider as $prov => $info) {
-            $ids[$prov] = $info['sample'];
+        if (!isset($_GET['onlyexplicit'])) {
+            $capped = array_slice($byProvider, 0, 14, true);
+            foreach ($capped as $prov => $info) {
+                $ids[$prov] = $info['sample'];
+            }
         }
         foreach ($ids as $label => $gid) {
             $res = DrakonService::launch($pdo, null, ['game_id' => $gid, 'mode' => 'fun']);
