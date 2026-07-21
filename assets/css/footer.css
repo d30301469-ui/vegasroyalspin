@@ -238,7 +238,7 @@ app-g6-footer {
   }
 
   /* Mobil footer'da marka logosu ve uygulama indir görselini %50 küçült */
-  .footerRow img[alt="MaltaBet"] {
+  .footerRow img[data-site-logo-link] {
     max-width: 220px !important;
   }
 

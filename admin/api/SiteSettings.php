@@ -336,6 +336,7 @@ final class ApiSiteSettings
         if (!isset($payload['logo_url']) || trim((string) $payload['logo_url']) === '') {
             $payload['logo_url'] = (string) ($payload['site_logo'] ?? $branding['logo_url'] ?? '');
         }
+        $payload['logo_url'] = self::stripLegacyMaltaBetLogo((string) ($payload['logo_url'] ?? ''));
         if (!isset($payload['favicon_url']) || trim((string) $payload['favicon_url']) === '') {
             $payload['favicon_url'] = (string) ($branding['favicon_url'] ?? '');
         }
@@ -532,11 +533,11 @@ final class ApiSiteSettings
     {
         $siteName = trim((string) ($settings['site_adi'] ?? ''));
         $description = trim((string) ($settings['site_aciklama'] ?? ''));
-        $logoUrl         = self::publicAssetUrl((string) ($settings['logo_url'] ?? ''), '');
-        $logoAnimatedUrl = self::publicAssetUrl((string) ($settings['logo_animated_url'] ?? ''), '');
-        $logoMobileUrl   = self::publicAssetUrl((string) ($settings['logo_mobile_url'] ?? ''), '');
-        $logoDarkUrl     = self::publicAssetUrl((string) ($settings['logo_dark_url'] ?? ''), '');
-        $logoFooterUrl   = self::publicAssetUrl((string) ($settings['logo_footer_url'] ?? ''), '');
+        $logoUrl         = self::publicAssetUrl(self::stripLegacyMaltaBetLogo((string) ($settings['logo_url'] ?? '')), '');
+        $logoAnimatedUrl = self::publicAssetUrl(self::stripLegacyMaltaBetLogo((string) ($settings['logo_animated_url'] ?? '')), '');
+        $logoMobileUrl   = self::publicAssetUrl(self::stripLegacyMaltaBetLogo((string) ($settings['logo_mobile_url'] ?? '')), '');
+        $logoDarkUrl     = self::publicAssetUrl(self::stripLegacyMaltaBetLogo((string) ($settings['logo_dark_url'] ?? '')), '');
+        $logoFooterUrl   = self::publicAssetUrl(self::stripLegacyMaltaBetLogo((string) ($settings['logo_footer_url'] ?? '')), '');
         $faviconUrl = self::publicAssetUrl((string) ($settings['favicon_url'] ?? ''), '/assets/images/favicons/favicon.svg');
         $manifestUrl = self::publicAssetUrl((string) ($settings['manifest_url'] ?? ''), '/assets/images/favicons/site.webmanifest');
         $ogRaw = trim((string) ($settings['og_image_url'] ?? ''));
@@ -772,6 +773,24 @@ final class ApiSiteSettings
     private static function legacyPublicAssetUrl(string $value): string
     {
         return '/' . ltrim($value, '/');
+    }
+
+    /**
+     * Legacy MaltaBet logo URL degeri gorulurse yayina cikmasini engelle.
+     */
+    private static function stripLegacyMaltaBetLogo(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        $lower = strtolower($value);
+        if (str_contains($lower, 'maltabetlogo') || (str_contains($lower, 'maltabet') && str_contains($lower, 'logo'))) {
+            return '';
+        }
+
+        return $value;
     }
 
     private static function applyFaviconCacheBusting(string $url): string
