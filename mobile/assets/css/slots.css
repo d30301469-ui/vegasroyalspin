@@ -622,7 +622,7 @@ body.mobile-site .providers-drawer-wrapper .providerItemsInner {
   background: rgb(50, 50, 52) !important;
   border: 0.8px solid rgba(0, 0, 0, 0);
   border-radius: 4px;
-  height: 56px;
+  height: 62px;
   padding: 0;
   isolation: isolate;
   cursor: pointer;
@@ -653,7 +653,7 @@ body.mobile-site .providers-drawer-wrapper .providerItemsBtn {
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn svg,
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn img {
   max-width: calc(100% - 6px);
-  max-height: 30px;
+  max-height: 36px;
   object-fit: contain;
   display: block;
 }
@@ -683,7 +683,7 @@ body.mobile-site .providers-drawer-wrapper .providerItemsBtn .CMSIconSVGWrapper 
   display: block;
   max-width: 100%;
   height: auto;
-  max-height: 28px;
+  max-height: 34px;
   color: rgba(255, 255, 255, 0.85);
 }
 
