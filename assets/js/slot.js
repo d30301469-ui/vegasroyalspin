@@ -570,7 +570,7 @@
 
     function normalizeProviderLogoScale() {
         document.querySelectorAll('.providerItemsBtn .provider-logo-svg svg').forEach(function(svg) {
-            svg.setAttribute('preserveAspectRatio', 'none');
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         });
     }
 
