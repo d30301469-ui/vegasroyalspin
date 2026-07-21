@@ -343,7 +343,7 @@ $providerLogoSvg = static function (string $provider, ?string $badgeSlug) use ($
     // Guarantee SVG output for every provider by using a text logo fallback.
     $fallbackLabel = mb_strtoupper($slotRepairMojibake(trim($provider)), 'UTF-8');
     $fallbackLabelEsc = htmlspecialchars($fallbackLabel, ENT_QUOTES | ENT_XML1, 'UTF-8');
-    return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fallback"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="' . $fallbackLabelEsc . '"><text x="110" y="16" text-anchor="middle" font-size="12" font-family="Arial, sans-serif">' . $fallbackLabelEsc . '</text></svg></span>';
+    return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fallback"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="' . $fallbackLabelEsc . '"><text x="110" y="18" text-anchor="middle" font-size="17" font-weight="700" font-family="Arial, sans-serif">' . $fallbackLabelEsc . '</text></svg></span>';
 };
 
 $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProviders, $providerBadgeBlockClass, $slotRepairMojibake, $providerIconClass, $providerLogoSvg) {
