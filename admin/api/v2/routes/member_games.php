@@ -104,8 +104,9 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $providers = [];
     if ($provider !== '') {
         $providers[] = $provider;
-    } elseif (isset($_GET['providers']) && is_array($_GET['providers'])) {
-        $providers = $_GET['providers'];
+    }
+    if (isset($_GET['providers']) && is_array($_GET['providers'])) {
+        $providers = array_merge($providers, $_GET['providers']);
     }
 
     $extraQuery = [];

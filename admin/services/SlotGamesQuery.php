@@ -83,7 +83,7 @@ final class SlotGamesQuery
         }
         $cleanProviders = array_values(array_filter(array_map(static fn ($x): string => trim((string) $x), $providers), static fn (string $x): bool => $x !== ''));
         if ($cleanProviders !== []) {
-            // Yeni katalog endpoint'i tek provider filtresi destekler; UI tarafında tek seçim aktif tutulur.
+            $query['providers'] = $cleanProviders;
             $query['provider'] = $cleanProviders[0];
         }
 
@@ -345,6 +345,12 @@ final class SlotGamesQuery
 
         $search       = trim((string) ($query['search'] ?? ''));
         $provider     = trim((string) ($query['provider'] ?? $query['provider_code'] ?? ''));
+        $providerList = [];
+        if (isset($query['providers']) && is_array($query['providers'])) {
+            $providerList = array_values(array_filter(array_map(static fn ($x): string => trim((string) $x), $query['providers']), static fn (string $x): bool => $x !== '' && strtolower($x) !== 'hepsi'));
+        } elseif ($provider !== '' && strtolower($provider) !== 'hepsi') {
+            $providerList = [$provider];
+        }
         $onlyFeatured = (string) ($query['is_featured'] ?? '') === '1';
         // Optional source restriction: 'bgaming' shows only the direct BGaming
         // catalog, 'drakon' only the Drakon catalog. Empty means both providers.
@@ -408,9 +414,14 @@ final class SlotGamesQuery
             $params[':search']  = '%' . $search . '%';
             $params[':search2'] = '%' . $search . '%';
         }
-        if ($provider !== '' && strtolower($provider) !== 'hepsi') {
-            $where[]             = 'provider = :provider';
-            $params[':provider'] = $provider;
+        if ($providerList !== []) {
+            $placeholders = [];
+            foreach ($providerList as $idx => $providerName) {
+                $key = ':provider' . $idx;
+                $placeholders[] = $key;
+                $params[$key] = $providerName;
+            }
+            $where[] = 'provider IN (' . implode(', ', $placeholders) . ')';
         }
         if ($onlyFeatured) {
             $where[] = 'is_featured = 1';

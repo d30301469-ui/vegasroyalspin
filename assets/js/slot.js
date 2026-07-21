@@ -308,7 +308,7 @@
         params.set('page', String(append ? state.nextPage : 1));
         if (API_ADAPTER === 'member_api_games') {
             if (API_GAME_TYPE !== '') params.set('game_type', API_GAME_TYPE);
-            if (state.providers.length > 0) params.set('provider', state.providers[0]);
+            state.providers.forEach(p => params.append('providers[]', p));
             if (state.sort) params.set('sort', state.sort);
         } else {
             state.providers.forEach(p => params.append('providers[]', p));
@@ -1139,9 +1139,9 @@
     function toggleProvider(provider) {
         const idx = state.providers.indexOf(provider);
         if (idx !== -1) {
-            state.providers = [];
+            state.providers.splice(idx, 1);
         } else {
-            state.providers = [provider];
+            state.providers.push(provider);
         }
         state.nextPage = 2;
         syncMobileFilterControls();
