@@ -18,22 +18,22 @@ final class AdminDashboardController extends AdminController
         $bonusClaimWhere = $this->dateCondition('created_at', $dateRange);
         $activeBonusWhere = $this->dateCondition('created_at', $dateRange);
         $adjustWhere = $this->dateCondition('created_at', $dateRange);
-        $userCount = $this->scalar("SELECT COUNT(*) FROM users WHERE {$userWhere}");
+        $userCount = $this->scalar('SELECT COUNT(*) FROM users');
         $depositTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'confirmed' AND {$txWhere}");
-        $todayDepositTotal = $depositTotal;
-        $pendingDeposits = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'pending' AND {$txWhere}");
+        $todayDepositTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'confirmed' AND {$this->dateCondition('created_at', ['start' => new DateTimeImmutable('today'), 'end' => (new DateTimeImmutable('today'))->setTime(23, 59, 59)])}");
+        $pendingDeposits = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'pending'");
         $withdrawTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'confirmed' AND {$txWhere}");
-        $pendingWithdrawals = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'pending' AND {$txWhere}");
+        $pendingWithdrawals = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'pending'");
         $activeGames = $this->scalar('SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1');
         $todayVisits = $this->scalar("SELECT COUNT(*) FROM visitor_logs WHERE {$this->dateCondition('created_at', $dateRange)}");
-        $todayUsers = $userCount;
-        $verifiedUsers = $this->scalar("SELECT COUNT(*) FROM users WHERE is_verified = 1 AND {$userWhere}");
-        $bannedUsers = $this->scalar("SELECT COUNT(*) FROM users WHERE banned = 1 AND {$userWhere}");
-        $pendingKyc = $this->scalar("SELECT COUNT(*) FROM kyc_requests WHERE status = 'pending' AND {$kycWhere}");
+        $todayUsers = $this->scalar("SELECT COUNT(*) FROM users WHERE {$this->dateCondition('created_at', ['start' => new DateTimeImmutable('today'), 'end' => (new DateTimeImmutable('today'))->setTime(23, 59, 59)])}");
+        $verifiedUsers = $this->scalar('SELECT COUNT(*) FROM users WHERE is_verified = 1');
+        $bannedUsers = $this->scalar('SELECT COUNT(*) FROM users WHERE banned = 1');
+        $pendingKyc = $this->scalar("SELECT COUNT(*) FROM kyc_requests WHERE status = 'pending'");
         $openSupportTickets = $this->scalar("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','answered')");
         $openAmlAlerts = $this->scalar("SELECT COUNT(*) FROM aml_alerts WHERE status = 'open'");
         $openRiskAlerts = $this->scalar("SELECT COUNT(*) FROM risk_alerts WHERE status = 'open'");
-        $bonusClaims = $this->scalar("SELECT COUNT(*) FROM bonus_claim_requests WHERE status IN ('pending', 'requested', 'waiting') AND {$bonusClaimWhere}");
+        $bonusClaims = $this->scalar("SELECT COUNT(*) FROM bonus_claim_requests WHERE status IN ('pending', 'requested', 'waiting')");
         $activeBonuses = $this->scalar("SELECT COUNT(*) FROM user_active_bonuses WHERE status IN ('active', 'pending') AND {$activeBonusWhere}");
         $activePromotions = $this->scalar("SELECT COUNT(*) FROM promotions WHERE status IN ('active', 'published', '1')");
         $activeSliders = $this->scalar("SELECT COUNT(*) FROM sliders WHERE status IN ('active', 'published', '1')");
@@ -42,10 +42,10 @@ final class AdminDashboardController extends AdminController
         $openOperations = $pendingWithdrawals + $pendingDeposits + $pendingKyc + $bonusClaims + $openSupportTickets + $openAmlAlerts;
         $adjustUp = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM admin_balance_adjustments WHERE action = 'add' AND {$adjustWhere}");
         $adjustDown = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM admin_balance_adjustments WHERE action = 'subtract' AND {$adjustWhere}");
-        $totalPlayerBalance = $this->scalar("SELECT COALESCE(SUM(balance), 0) FROM users WHERE {$userWhere}");
-        $totalBonusBalance = $this->scalar("SELECT COALESCE(SUM(bonus_balance), 0) FROM users WHERE {$userWhere}");
+        $totalPlayerBalance = $this->scalar('SELECT COALESCE(SUM(balance), 0) FROM users');
+        $totalBonusBalance = $this->scalar('SELECT COALESCE(SUM(bonus_balance), 0) FROM users');
         $loginUsers = $this->scalar("SELECT COUNT(*) FROM users WHERE {$loginWhere}");
-        $activeUsers = $this->scalar("SELECT COUNT(*) FROM users WHERE COALESCE(banned, 0) = 0 AND {$userWhere}");
+        $activeUsers = $this->scalar('SELECT COUNT(*) FROM users WHERE COALESCE(banned, 0) = 0');
 
         $kpiCards = [
             ['label' => 'Toplam Yatırım', 'value' => $depositTotal, 'type' => 'money', 'count' => $this->scalar("SELECT COUNT(DISTINCT user_id) FROM megapayz_transactions WHERE type = 'deposit' AND {$txWhere}"), 'status' => 'success', 'icon' => 'deposit'],
@@ -318,7 +318,7 @@ final class AdminDashboardController extends AdminController
 
     private function dateRange(): array
     {
-        $period = trim((string) ($_GET['period'] ?? 'prev_month'));
+        $period = trim((string) ($_GET['period'] ?? 'month'));
         $allowed = ['yesterday', 'today', 'week', 'month', 'prev_month', 'custom'];
         if (!in_array($period, $allowed, true)) {
             $period = 'prev_month';
@@ -350,7 +350,7 @@ final class AdminDashboardController extends AdminController
                     [$start, $end] = [$end->setTime(0, 0), $start->setTime(23, 59, 59)];
                 }
             } else {
-                $period = 'prev_month';
+                $period = 'month';
             }
         }
 
