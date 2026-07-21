@@ -269,6 +269,20 @@ final class DrakonService
             $base = self::API_BASE;
         }
 
+        // Known-stale/decommissioned host: this project's drakon_config was seeded at
+        // one point with "gator.drakonapi.tech" (an older/reseller endpoint). That
+        // host no longer accepts connections ("refused to connect" both server-side
+        // for API calls and client-side when the browser is redirected to the actual
+        // game session URL). Silently correct to the official documented host so a
+        // stale saved value can't keep breaking auth/launch; this does NOT touch the
+        // stored DB value, so Admin > Drakon > Settings should still be updated to
+        // avoid confusion, but functionality no longer depends on that being done.
+        $host = parse_url($base, PHP_URL_HOST);
+        if (is_string($host) && stripos($host, 'drakonapi.tech') !== false) {
+            error_log('[DrakonService] Ignoring stale api_base_url (' . $base . '); falling back to ' . self::API_BASE);
+            $base = self::API_BASE;
+        }
+
         return $base;
     }
 
