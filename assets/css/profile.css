@@ -2663,7 +2663,8 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     .personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .profile-section-body {
         padding: 0.35rem 0 0.9rem;
     }
-    
+}
+
 @media (max-width: 991px) {
     .profile-modal {
         left: 50%;
@@ -2878,7 +2879,6 @@ body.profile-modal-body .centerWrap.porfileWrap > .sidebarMain.playersidebarMain
     .profile-modal__content .profile-sidebar-promo .profile-sidebar-promo-btn {
         border-radius: 4px;
     }
-}
 }
 .personal-details-page--messages:not(.personal-details-page--messages-sent):not(.personal-details-page--messages-new) .inbox-list-wrap {
     padding-top: 0;
