@@ -179,14 +179,9 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
         $fallbackRaw = trim((string) $provider);
         $fallbackLabel = mb_strtoupper($fallbackRaw, 'UTF-8');
         $svgLabel = htmlspecialchars($fallbackLabel, ENT_QUOTES | ENT_XML1, 'UTF-8');
-        $fallbackMonogramRaw = preg_replace('/[^\pL\pN]+/u', '', $fallbackLabel) ?: $fallbackLabel;
-        $fallbackMonogram = mb_substr($fallbackMonogramRaw, 0, 2, 'UTF-8');
-        $fallbackMonogramEsc = htmlspecialchars($fallbackMonogram, ENT_QUOTES | ENT_XML1, 'UTF-8');
-        $fallbackHash = md5($fallbackRaw !== '' ? $fallbackRaw : 'provider');
-        $hueStart = hexdec(substr($fallbackHash, 0, 2)) % 360;
-        $hueEnd = ($hueStart + 45 + (hexdec(substr($fallbackHash, 2, 2)) % 120)) % 360;
-        $gradientId = 'providerGrad' . substr($fallbackHash, 0, 8);
-        $svgLogo = '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fallback"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" role="img" aria-label="' . $svgLabel . '"><defs><linearGradient id="' . $gradientId . '" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(' . $hueStart . ' 82% 42%)" /><stop offset="100%" stop-color="hsl(' . $hueEnd . ' 78% 54%)" /></linearGradient></defs><rect x="1" y="1" width="218" height="22" rx="11" fill="url(#' . $gradientId . ')" /><circle cx="14" cy="12" r="8" fill="rgba(255,255,255,0.28)" /><text x="14" y="15" text-anchor="middle" font-size="8" font-weight="800" fill="#ffffff" font-family="Arial, sans-serif">' . $fallbackMonogramEsc . '</text><text x="28" y="16" font-size="10.5" font-weight="700" fill="#ffffff" font-family="Arial, sans-serif">' . $svgLabel . '</text></svg></span>';
+        $labelLength = mb_strlen($fallbackLabel, 'UTF-8');
+        $fontSize = $labelLength > 16 ? 12 : ($labelLength > 11 ? 14 : 16);
+        $svgLogo = '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fallback"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" fill="none" role="img" aria-label="' . $svgLabel . '"><text x="110" y="22" text-anchor="middle" font-size="' . $fontSize . '" font-weight="800" fill="#f5f5f5" font-family="Arial, sans-serif" letter-spacing="1.2">' . $svgLabel . '</text><path d="M62 29H158" stroke="#f5f5f5" stroke-opacity="0.5" stroke-width="1.5" stroke-linecap="round" /></svg></span>';
     }
 
     return '<div title="' . $esc . '" class="providerItemsInner sidebar-provider-item' . ($active ? ' active' : '') . '" role="button" tabindex="0" data-provider="' . $esc . '">' . $badgeHtml . '<div class="providerItemsBtn has-provider-icon">' . $svgLogo . '<span class="provider-list-row">' . htmlspecialchars($provider, ENT_QUOTES, 'UTF-8') . '</span></div></div>';
