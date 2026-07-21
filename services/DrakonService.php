@@ -299,11 +299,22 @@ final class DrakonService
 
         $url = self::apiBase($cfg) . '/auth/authentication';
         $attempts = [
+            // Documented format: Authorization: Bearer base64(agent_token:agent_secret), no body.
             ['bearer_token_secret', [], ['Authorization: Bearer ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
+            // Same header, ALSO sending agent_token/agent_secret in a JSON body (some Drakon
+            // deployments require both, per the endpoint's field table).
+            ['bearer_token_secret_body', [
+                'agent_token' => $agentToken,
+                'agent_secret' => $agentSecret,
+            ], ['Authorization: Bearer ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
             ['basic_token_secret', [], ['Authorization: Basic ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
             ['bearer_raw_token', [], ['Authorization: Bearer ' . $agentToken, 'Accept: application/json']],
         ];
         if ($agentCode !== '') {
+            // agent_code:agent_secret pairing (not in the doc, but INVALID_AGENT on every
+            // token-based attempt suggests the remote agent lookup may key off agent_code).
+            $attempts[] = ['bearer_code_secret', [], ['Authorization: Bearer ' . base64_encode($agentCode . ':' . $agentSecret), 'Accept: application/json']];
+            $attempts[] = ['basic_code_secret', [], ['Authorization: Basic ' . base64_encode($agentCode . ':' . $agentSecret), 'Accept: application/json']];
             $attempts[] = ['bearer_code_token', [], ['Authorization: Bearer ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
             $attempts[] = ['basic_code_token', [], ['Authorization: Basic ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
             $attempts[] = ['bearer_raw_token_with_code', [], ['Authorization: Bearer ' . $agentToken, 'X-Agent-Code: ' . $agentCode, 'Accept: application/json']];
@@ -355,6 +366,15 @@ final class DrakonService
         throw new RuntimeException('Drakon kimlik doğrulama başarısız: ' . json_encode([
             'last_response' => self::redactWebhookPayload($lastResponse),
             'attempts' => $attemptSummary,
+            // Masked lengths only (never the actual secret) — helps tell "config is
+            // empty/truncated/has stray whitespace" apart from "credentials are simply
+            // wrong/revoked on Drakon's side" without leaking anything sensitive.
+            'config_diagnostic' => [
+                'agent_code_len'   => strlen($agentCode),
+                'agent_token_len'  => strlen($agentToken),
+                'agent_secret_len' => strlen($agentSecret),
+                'api_base'         => self::apiBase($cfg),
+            ],
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
