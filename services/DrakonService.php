@@ -740,6 +740,25 @@ final class DrakonService
             ];
         }
 
+        // Drakon returns HTTP 200 + a "successful" game_url even when the requested
+        // provider/game can't actually be launched for this agent (observed for
+        // every Pragmatic Play title tested — Sweet Bonanza, Gates of Olympus,
+        // etc.). Instead of a proper error code, it points to its own generic
+        // "/game-error" fallback page, which then redirects to the dead legacy
+        // "gator.drakonapi.tech" host and gets blocked by X-Frame-Options when
+        // embedded in our iframe. Detect that pattern and surface it as a clean
+        // launch failure instead of an unusable blocked iframe.
+        $gameUrlPath = (string) (parse_url($gameUrl, PHP_URL_PATH) ?? '');
+        if (rtrim($gameUrlPath, '/') === '/game-error') {
+            return [
+                'success' => false,
+                'code'    => 422,
+                'error'   => 'provider_game_error',
+                'message' => 'Bu oyun şu anda sağlayıcı tarafında kullanılamıyor. Lütfen daha sonra tekrar deneyin veya başka bir oyun seçin.',
+                'raw'     => $response,
+            ];
+        }
+
         return [
             'success'  => true,
             'code'     => 200,
