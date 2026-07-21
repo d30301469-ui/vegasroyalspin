@@ -5,7 +5,7 @@ $hasToken = $resetToken !== '';
 global $siteBranding, $ayar;
 $resetAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('login') : [];
 $resetBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-$resetSiteName = (string) ($resetBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
+$resetSiteName = (string) ($resetBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
 $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 
 /**

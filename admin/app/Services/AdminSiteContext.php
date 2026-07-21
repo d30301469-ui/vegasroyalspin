@@ -26,12 +26,12 @@ final class AdminSiteContext
     public static function staticContext(): array
     {
         $siteName = function_exists('admin_env')
-            ? (admin_env('SITE_NAME') ?: admin_env('APP_NAME', 'MaltaBet'))
-            : 'MaltaBet';
+            ? (admin_env('SITE_NAME') ?: admin_env('APP_NAME', 'VegasRoyalSpin'))
+            : 'VegasRoyalSpin';
         $language = function_exists('admin_env') ? admin_env('SITE_LANG', 'tr') : 'tr';
 
         return [
-            'site_name' => $siteName !== '' ? $siteName : 'MaltaBet',
+            'site_name' => $siteName !== '' ? $siteName : 'VegasRoyalSpin',
             'description' => 'Güvenilir casino ve bahis',
             'logo_url' => '',
             'favicon_url' => '',
@@ -57,7 +57,7 @@ final class AdminSiteContext
         }
 
         $defaults = [
-            'site_name' => 'MaltaBet',
+            'site_name' => 'VegasRoyalSpin',
             'description' => 'Güvenilir casino ve bahis',
             'logo_url' => '',
             'favicon_url' => '',

@@ -15,7 +15,7 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 <?php endif; ?>
     <?php include __DIR__ . '/../../views/partials/profile-sidebar.php'; ?>
     <?php
-    $dw_site_raw = (is_array($ayar ?? null) && !empty($ayar['site_adi'])) ? $ayar['site_adi'] : 'MaltaBet';
+    $dw_site_raw = (is_array($ayar ?? null) && !empty($ayar['site_adi'])) ? $ayar['site_adi'] : 'VegasRoyalSpin';
     $dw_site_brand = htmlspecialchars($dw_site_raw, ENT_QUOTES, 'UTF-8');
     $dw_site_brand_upper = htmlspecialchars(function_exists('mb_strtoupper') ? mb_strtoupper($dw_site_raw, 'UTF-8') : strtoupper($dw_site_raw), ENT_QUOTES, 'UTF-8');
     ?>

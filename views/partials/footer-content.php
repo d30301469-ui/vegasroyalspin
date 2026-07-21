@@ -47,7 +47,7 @@ $siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding 
                                         <h6>HIZLI ERİŞİM</h6>
                                         <ul>
                                             <li><a class="footLink border-0" href="javascript:void(0)" title="Bonus Talep">Bonus Talep</a></li>
-                                            <li><a class="footLink" href="javascript:void(0)" title="MaltaBet TV">MaltaBet TV</a></li>
+                                            <li><a class="footLink" href="javascript:void(0)" title="Canli Yayin">Canli Yayin</a></li>
                                             <li><a class="footLink" href="javascript:void(0)" title="Canlı Karşılaşmalar">Canlı Karşılaşmalar</a></li>
                                             <li><a class="footLink" href="/sportbook" title="Spor Bahisleri">Spor Bahisleri</a></li>
                                             <li><a class="footLink" href="/slot" title="Slot Oyunları">Slot Oyunları</a></li>
@@ -342,10 +342,10 @@ $siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding 
                                              style="height: 38px; width: auto; display: inline-block;">
                                     </div>
                                     <div class="copytext">
-                                        <p>MaltaBet ile büyük hayal et, büyük kazan! 2000'den
+                                        <p>VegasRoyalSpin ile buyuk hayal et, buyuk kazan! 2000'den
                                             fazla casino oyunu, spor etkinlikleri ve bahis seçenekleri ile -
-                                            becerilerin, şansın ve bilginle büyük kazançlar kazanmak için bahis yap.
-                                            Şansını dene!</p>
+                                            becerilerin, sansin ve bilginle buyuk kazanclar kazanmak icin bahis yap.
+                                            Sansini dene!</p>
                                     </div>
                                     <div class="payment-center">
                                         <div>

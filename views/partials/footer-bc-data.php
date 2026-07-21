@@ -93,7 +93,7 @@ unset($columnIndex, $column, $linkIndex, $link, $links, $href);
 $footerFlagImage = (string) ($footerPayload['flag_image'] ?? '/assets/images/footer/flag-tr.png');
 $footerCopyrightSince = (int) ($footerPayload['copyright_since'] ?? 2014);
 $footerBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
-$footerSiteName = (string) ($footerPayload['site_name'] ?? $footerBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
+$footerSiteName = (string) ($footerPayload['site_name'] ?? $footerBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
 $footerShowCustomContent = (bool) ($footerPayload['show_custom_content'] ?? true);
 $footerSupportBadge = is_array($footerPayload['support_badge'] ?? null)
     ? $footerPayload['support_badge']

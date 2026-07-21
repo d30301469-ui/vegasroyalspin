@@ -50,7 +50,7 @@ if ($isPromosyonlar || $isPromotions) {
 }
 $headBranding = (isset($siteBranding) && is_array($siteBranding)) ? $siteBranding : [];
 $headMeta = (isset($siteMeta) && is_array($siteMeta)) ? $siteMeta : [];
-$headSiteName = (string) ($headBranding['site_name'] ?? $ayar['site_adi'] ?? 'MaltaBet');
+$headSiteName = (string) ($headBranding['site_name'] ?? $ayar['site_adi'] ?? 'VegasRoyalSpin');
 $headDescription = (string) ($headMeta['description'] ?? $headBranding['description'] ?? $ayar['site_aciklama'] ?? '');
 $headTitle = (string) ($headMeta['title'] ?? trim($headSiteName . ' - ' . $headDescription));
 $headFaviconPath = (string) ($headBranding['favicon_url'] ?? '/assets/images/favicons/favicon.svg');
