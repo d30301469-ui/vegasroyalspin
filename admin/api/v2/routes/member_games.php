@@ -100,6 +100,68 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     // from leaking onto the dedicated /bgaming page.
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));
 
+    admin_require_project_file('services/SlotGamesQuery.php');
+    $providers = [];
+    if ($provider !== '') {
+        $providers[] = $provider;
+    } elseif (isset($_GET['providers']) && is_array($_GET['providers'])) {
+        $providers = $_GET['providers'];
+    }
+
+    $extraQuery = [];
+    if ($source !== '') {
+        $extraQuery['source'] = $source;
+    }
+    if ($onlyFeatured) {
+        $extraQuery['is_featured'] = '1';
+    }
+    $result = SlotGamesQuery::gamesPage($gameType, $search, $providers, $limit, $page, (string) ($_GET['sort'] ?? ''), $extraQuery);
+    $games = [];
+    foreach (($result['games'] ?? []) as $game) {
+        if (!is_array($game)) {
+            continue;
+        }
+        $name = (string) ($game['game_name'] ?? $game['name'] ?? '');
+        $cover = (string) ($game['cover'] ?? $game['image_url'] ?? '');
+        $games[] = $game + [
+            'name'          => $name,
+            'title'         => $name,
+            'image_url'     => $cover,
+            'thumbnail_url' => $cover,
+            'category'      => $gameType === 1 ? 'live-casino' : 'slots',
+            'game_type'     => $gameType,
+        ];
+    }
+
+    $total = (int) ($result['total'] ?? count($games));
+    $perPage = (int) ($result['perPage'] ?? $limit);
+    $pageRet = (int) ($result['page'] ?? $page);
+    $totalPages = (int) ($result['totalPages'] ?? ($total > 0 ? ceil($total / max(1, $perPage)) : 0));
+    $memberEnvelope(!empty($result['apiError']) ? 503 : 200, [
+        'success' => empty($result['apiError']),
+        'code'    => !empty($result['apiError']) ? 503 : 200,
+        'message' => !empty($result['apiError']) ? 'Oyun listesi alınamadı' : 'Oyun listesi',
+        'data'    => [
+            'games'       => $games,
+            'items'       => $games,
+            'total'       => $total,
+            'page'        => $pageRet,
+            'limit'       => $perPage,
+            'perPage'     => $perPage,
+            'total_pages' => $totalPages,
+            'pagination'  => [
+                'page'       => $pageRet,
+                'perPage'    => $perPage,
+                'limit'      => $perPage,
+                'offset'     => ($pageRet - 1) * $perPage,
+                'total'      => $total,
+                'totalPages' => $totalPages,
+                'hasNext'    => !empty($result['hasNext']),
+                'hasPrev'    => $pageRet > 1,
+            ],
+        ],
+    ]);
+
     $union = [];
     if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
         $union[] = "SELECT
