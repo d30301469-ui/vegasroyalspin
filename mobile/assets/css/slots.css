@@ -624,6 +624,7 @@ body.mobile-site .providers-drawer-wrapper .providerItemsInner {
   border-radius: 4px;
   height: 56px;
   padding: 0;
+  isolation: isolate;
   cursor: pointer;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
@@ -646,15 +647,29 @@ body.mobile-site .providers-drawer-wrapper .providerItemsBtn {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  padding: 6px;
+  padding: 8px 9px;
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn svg,
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn img {
-  max-width: calc(100% - 4px);
-  max-height: 28px;
+  max-width: calc(100% - 6px);
+  max-height: 30px;
   object-fit: contain;
   display: block;
+}
+
+body.mobile-site .providers-drawer-wrapper .providerItemsBtn .provider-logo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 38px;
+  line-height: 1;
+  text-rendering: geometricPrecision;
+}
+
+body.mobile-site .providers-drawer-wrapper .providerItemsBtn.has-provider-icon .provider-list-row {
+  display: none;
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn .CMSIconSVGWrapper {
@@ -673,25 +688,77 @@ body.mobile-site .providers-drawer-wrapper .providerItemsBtn .CMSIconSVGWrapper 
 }
 
 body.mobile-site .providers-drawer-wrapper .providerItemsBtn .provider-list-row {
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 10px;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 13px;
+  font-weight: 900;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
   padding: 0 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  transform: scaleX(0.96);
+  transform-origin: center;
 }
 
 /* Badge konumlandırma */
 body.mobile-site .providers-drawer-wrapper .providerBadgeBlock {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  z-index: 2;
+  top: 0;
+  right: 4px;
+  z-index: 3;
   pointer-events: none;
+}
+
+body.mobile-site .providers-drawer-wrapper .providerBadgeBlock[data-badge=""] {
+  display: none;
+}
+
+body.mobile-site .providers-drawer-wrapper .providerBadgeBlock:not([data-badge=""])::after {
+  content: attr(data-badge);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  max-width: 58px;
+  height: 14px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+body.mobile-site .providers-drawer-wrapper .providerBadgeBlock.badge-top::after {
+  background: linear-gradient(180deg, #a166d8 0%, #7b43bf 100%);
+}
+
+body.mobile-site .providers-drawer-wrapper .providerBadgeBlock.badge-jackpot::after {
+  background: linear-gradient(180deg, #c4a13f 0%, #9b7a22 100%);
+}
+
+body.mobile-site .providers-drawer-wrapper .providerBadgeBlock.badge-hot::after {
+  background: linear-gradient(180deg, #ff5c64 0%, #e62845 100%);
+}
+
+body.mobile-site .providers-drawer-wrapper .providerBadgeBlock.badge-promo::after {
+  background: linear-gradient(180deg, #4ec8ad 0%, #229d88 100%);
+}
+
+body.mobile-site .providers-drawer-wrapper .providerBadgeBlock.badge-exclusive::after {
+  background: linear-gradient(180deg, #80c674 0%, #4ca354 100%);
+}
+
+body.mobile-site .providers-drawer-wrapper .providerBadgeBlock.badge-ortak::after {
+  background: linear-gradient(180deg, #6aa8ff 0%, #3472d4 100%);
 }
 
 /* ── Footer: Sıfırla + FİLTRE ── */

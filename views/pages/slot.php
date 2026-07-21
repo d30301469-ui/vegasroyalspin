@@ -239,16 +239,46 @@ if (($slotGameType ?? 0) === 1) {
     ];
 }
 
-$renderProviderBtn = function ($provider) use ($providerBadges, $selectedProviders, $providerBadgeBlockClass, $slotRepairMojibake) {
+$providerIconClass = static function (string $provider, ?string $badgeSlug) use ($slotRepairMojibake): string {
+    $key = $badgeSlug ?: mb_strtolower($slotRepairMojibake(trim($provider)), 'UTF-8');
+    $key = strtr($key, ['ı' => 'i', 'İ' => 'i', 'ğ' => 'g', 'Ğ' => 'g', 'ü' => 'u', 'Ü' => 'u', 'ş' => 's', 'Ş' => 's', 'ö' => 'o', 'Ö' => 'o', 'ç' => 'c', 'Ç' => 'c']);
+    $key = preg_replace('/[^a-z0-9]+/i', '', $key) ?: '';
+
+    $map = [
+        'pragmatic' => 'bc-i-pragmaticplay',
+        'pragmaticplay' => 'bc-i-pragmaticplay',
+        'pgsoft' => 'bc-i-PPG',
+        'hacksaw' => 'bc-i-hacksawexclusive',
+        'hacksawgaming' => 'bc-i-hacksawexclusive',
+        'rubyplay' => 'bc-i-rubyplay',
+        'amusnet' => 'bc-i-amusnet',
+        'egtdigital' => 'bc-i-Egtdigital',
+        'egt' => 'bc-i-EGT',
+        'netent' => 'bc-i-NETENT',
+        'evoplay' => 'bc-i-Play',
+        'popok' => 'bc-i-popokstorm',
+        'popokgaming' => 'bc-i-popokstorm',
+        'pascal' => 'bc-i-pascal',
+        'pascalgaming' => 'bc-i-pascalGaming',
+        'habanero' => 'bc-i-hbn',
+        'smartsoft' => 'bc-i-smartsoft',
+    ];
+
+    return $map[$key] ?? '';
+};
+
+$renderProviderBtn = function ($provider) use ($providerBadges, $selectedProviders, $providerBadgeBlockClass, $slotRepairMojibake, $providerIconClass) {
     $badgeSlug = ProviderDisplayBadgeMap::slugForDisplay($provider);
     $badges    = $badgeSlug !== null ? array_slice($providerBadges[$badgeSlug] ?? [], 0, 1) : [];
     $active = in_array($provider, $selectedProviders);
     $provider = $slotRepairMojibake((string) $provider);
     $label = htmlspecialchars($provider);
     $esc = htmlspecialchars($provider, ENT_QUOTES, 'UTF-8');
+    $iconClass = $providerIconClass($provider, $badgeSlug);
+    $icon = $iconClass !== '' ? '<i class="provider-logo-icon ' . htmlspecialchars($iconClass, ENT_QUOTES, 'UTF-8') . '" aria-hidden="true"></i>' : '';
     $badge = $slotRepairMojibake((string) ($badges[0] ?? ''));
     $badgeClass = $badge !== '' ? $providerBadgeBlockClass($badge) : '';
-    return '<div title="' . $esc . '" class="providerItemsInner sidebar-provider-item' . ($active ? ' active' : '') . '" role="button" tabindex="0" data-provider="' . $esc . '"><span class="providerBadgeBlock ' . htmlspecialchars($badgeClass, ENT_QUOTES, 'UTF-8') . '" data-badge="' . htmlspecialchars($badge, ENT_QUOTES, 'UTF-8') . '"></span><div class="providerItemsBtn"><span class="provider-list-row">' . $label . '</span></div></div>';
+    return '<div title="' . $esc . '" class="providerItemsInner sidebar-provider-item' . ($active ? ' active' : '') . '" role="button" tabindex="0" data-provider="' . $esc . '"><span class="providerBadgeBlock ' . htmlspecialchars($badgeClass, ENT_QUOTES, 'UTF-8') . '" data-badge="' . htmlspecialchars($badge, ENT_QUOTES, 'UTF-8') . '"></span><div class="providerItemsBtn' . ($iconClass !== '' ? ' has-provider-icon' : '') . '">' . $icon . '<span class="provider-list-row">' . $label . '</span></div></div>';
 };
 
 $renderOriginalCategorySvg = static function (array $category) use ($slotOriginalCategorySvgBySort): string {
