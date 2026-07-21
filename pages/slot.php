@@ -79,6 +79,25 @@ $providerBadgeBlockClass = static function (string $badge): string {
     return '';
 };
 
+$providerBadgeStyle = static function (string $badgeClass): string {
+    if ($badgeClass === 'badge-hot') {
+        return 'background: rgb(227, 32, 32); color: rgb(255, 255, 255);';
+    }
+    if ($badgeClass === 'badge-jackpot') {
+        return 'background: rgb(123, 100, 24); color: rgb(255, 255, 255);';
+    }
+    if ($badgeClass === 'badge-ortak') {
+        return 'background: rgb(112, 0, 255); color: rgb(255, 255, 255);';
+    }
+    if ($badgeClass === 'badge-promo') {
+        return 'background: rgb(34, 157, 136); color: rgb(255, 255, 255);';
+    }
+    if ($badgeClass === 'badge-exclusive') {
+        return 'background: rgb(76, 163, 84); color: rgb(255, 255, 255);';
+    }
+    return 'background: rgb(110, 58, 133); color: rgb(255, 255, 255);';
+};
+
 $slotCategoryItems = [
     ['sort' => '', 'slug' => 'all-games1', 'id' => '-1', 'title' => 'Tüm Oyunlar', 'icon' => 'bc-i-all-games1', 'href' => '/slot'],
     ['sort' => 'liked', 'slug' => 'topslots', 'id' => '93', 'title' => 'En Beğenilen Oyunlar', 'icon' => 'bc-i-topslots', 'href' => '/slot?sort=liked'],
@@ -95,7 +114,7 @@ $slotCategoryItems = [
     ['sort' => 'slots', 'slug' => 'slots', 'id' => '57', 'title' => 'Slots', 'icon' => 'bc-i-slots', 'href' => '/slot?sort=slots'],
 ];
 
-$renderProviderBtn = function ($provider) use ($providerBadges, $selectedProviders, $providerBadgeBlockClass) {
+$renderProviderBtn = function ($provider) use ($providerBadges, $selectedProviders, $providerBadgeBlockClass, $providerBadgeStyle) {
     $badgeSlug = ProviderDisplayBadgeMap::slugForDisplay($provider);
     $badges = $badgeSlug !== null ? array_slice($providerBadges[$badgeSlug] ?? [], 0, 1) : [];
     $badge = $badges[0] ?? '';
@@ -103,6 +122,12 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
     $esc = htmlspecialchars($provider, ENT_QUOTES, 'UTF-8');
     $badgeClass = $badge !== '' ? $providerBadgeBlockClass($badge) : '';
     $normalizedKey = preg_replace('/[^a-z0-9]+/i', '', mb_strtolower((string) $provider, 'UTF-8')) ?: '';
+    $badgeHtml = '';
+    if ($badge !== '') {
+        $badgeEsc = htmlspecialchars($badge, ENT_QUOTES, 'UTF-8');
+        $badgeStyle = $providerBadgeStyle($badgeClass);
+        $badgeHtml = '<span class="badge-standalone providerBadge"><div class="badge badge--sm" style="' . $badgeStyle . '"><span class="ds-caption ds-caption--medium-medium" aria-label="' . $badgeEsc . '">' . $badgeEsc . '</span></div></span>';
+    }
 
     if ($normalizedKey === 'pragmatic' || $normalizedKey === 'pragmaticplay' || $normalizedKey === 'pragmatics') {
         $svgLogo = '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--pragmaticplay"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 53 24" fill="currentColor"><path d="M43.9141 7.26074C46.1336 7.26074 48.2625 8.14256 49.832 9.71191C51.4016 11.2815 52.2832 13.4111 52.2832 15.6309C52.2831 17.2861 51.7926 18.904 50.873 20.2803C49.9534 21.6566 48.6465 22.7298 47.1172 23.3633C45.5879 23.9967 43.9048 24.1618 42.2812 23.8389C40.6578 23.5159 39.1665 22.7192 37.9961 21.5488C36.8257 20.3784 36.028 18.8871 35.7051 17.2637C35.3821 15.6402 35.5482 13.957 36.1816 12.4277C36.8151 10.8984 37.8883 9.59153 39.2646 8.67188C40.641 7.75227 42.2588 7.26076 43.9141 7.26074ZM46.7793 8.71191C45.4106 8.14504 43.9042 7.99704 42.4512 8.28613C40.9981 8.57526 39.6637 9.28924 38.6162 10.3369C37.5688 11.3845 36.8553 12.7189 36.5664 14.1719C36.2775 15.625 36.426 17.1313 36.9932 18.5C37.5603 19.8685 38.5202 21.0385 39.752 21.8613C40.9839 22.6842 42.4326 23.1233 43.9141 23.123C45.9004 23.1227 47.8055 22.3334 49.21 20.9287C50.6143 19.5241 51.4032 17.619 51.4033 15.6328C51.4033 14.1513 50.9637 12.7025 50.1406 11.4707C49.3176 10.2391 48.1479 9.27878 46.7793 8.71191ZM13.7178 13.6514C14.2551 13.6514 14.7029 13.7838 15.0605 14.0479C15.4181 14.312 15.6702 14.6948 15.7705 15.1279H15.0029C14.9074 14.8882 14.7385 14.6849 14.5205 14.5469C14.2825 14.3979 14.0054 14.3219 13.7246 14.3291C13.4588 14.3248 13.1967 14.3927 12.9668 14.5264C12.7419 14.6596 12.5595 14.8551 12.4424 15.0889C12.3122 15.3561 12.2492 15.6511 12.2578 15.9482C12.2493 16.2556 12.3148 16.5604 12.4492 16.8369C12.5685 17.0751 12.7569 17.2721 12.9893 17.4023C13.2372 17.537 13.5158 17.6057 13.7979 17.6006C14.1519 17.6068 14.4954 17.4805 14.7617 17.2471C15.0296 17.0152 15.1922 16.6969 15.248 16.292H13.5898V15.7549H15.8594V16.4512C15.8115 16.7756 15.6902 17.0849 15.5049 17.3555C15.3168 17.6287 15.0639 17.8519 14.7695 18.0049C14.4465 18.1707 14.0876 18.2537 13.7246 18.2471C13.3173 18.2554 12.915 18.1539 12.5605 17.9531C12.2283 17.7616 11.9578 17.4791 11.7812 17.1387C11.6004 16.7673 11.5069 16.3593 11.5068 15.9463C11.5068 15.5332 11.6004 15.1253 11.7812 14.7539C11.9571 14.4147 12.2266 14.1332 12.5576 13.9424C12.9115 13.7437 13.312 13.643 13.7178 13.6514ZM32.6777 13.6445C33.2312 13.645 33.6918 13.7853 34.0586 14.0664C34.4282 14.3528 34.6895 14.7565 34.7998 15.2109H34.0264C33.9276 14.9479 33.7502 14.7216 33.5186 14.5625C33.2656 14.3967 32.9673 14.3126 32.665 14.3223C32.4114 14.3182 32.1612 14.3874 31.9453 14.5205C31.7297 14.6587 31.5574 14.8547 31.4473 15.0859C31.3274 15.3556 31.2646 15.6473 31.2646 15.9424C31.2647 16.2375 31.3274 16.5292 31.4473 16.7988C31.5572 17.0304 31.7294 17.227 31.9453 17.3652C32.1612 17.4984 32.4114 17.5666 32.665 17.5625C32.9672 17.5723 33.2655 17.4888 33.5186 17.3232C33.749 17.1656 33.9262 16.9413 34.0264 16.6807H34.7998C34.6903 17.1344 34.4287 17.5369 34.0586 17.8213C33.6922 18.1007 33.2317 18.2412 32.6777 18.2412C32.2812 18.2487 31.8905 18.1472 31.5469 17.9492C31.2205 17.7574 30.9562 17.4758 30.7861 17.1377C30.6091 16.7652 30.5166 16.3577 30.5166 15.9453C30.5166 15.533 30.6091 15.1254 30.7861 14.7529C30.9568 14.4145 31.2211 14.1322 31.5469 13.9385C31.8899 13.7388 32.2809 13.637 32.6777 13.6445ZM1.53418 13.6895C2.05422 13.6895 2.44518 13.8133 2.70703 14.0605C2.96888 14.3079 3.10078 14.647 3.10254 15.0771C3.1025 15.5036 2.96854 15.8393 2.7002 16.084C2.43181 16.3287 2.04397 16.4511 1.53711 16.4512H0.728516V18.2031H0V13.6895H1.53418ZM5.33105 13.6895C5.8464 13.6895 6.2382 13.8151 6.50488 14.0664C6.77151 14.3177 6.90474 14.6506 6.9043 15.0645C6.90429 15.4159 6.80458 15.7056 6.60645 15.9336C6.40831 16.1616 6.12295 16.3067 5.75 16.3682L6.93652 18.2031H6.11133L4.98633 16.4004H4.46777V18.2031H3.73926V13.6895H5.33105ZM11.3789 18.2031H10.5986L10.2539 17.2246H8.34863L8.00293 18.2031H7.22363L8.88574 13.7598H9.72266L11.3789 18.2031ZM18.6787 17.3076L20.123 13.7598H21.0059V18.2031H20.2695V14.873L18.9854 18.2031H18.3467L17.0547 14.873V18.2031H16.3262V13.7598H17.208L18.6787 17.3076ZM25.6973 18.2031H24.917L24.5723 17.2246H22.6699L22.3252 18.2031H21.543L23.2041 13.7598H24.042L25.6973 18.2031ZM28.8164 14.2773H27.5576V18.2031H26.8223V14.2773H25.5693V13.6895H28.8164V14.2773ZM29.9355 18.2031H29.207V13.6895H29.9355V18.2031ZM39.0439 13.6895C39.5631 13.6895 39.9541 13.8134 40.2168 14.0605C40.4795 14.3079 40.6114 14.647 40.6123 15.0771C40.6123 15.5036 40.4783 15.8393 40.21 16.084C39.9416 16.3287 39.5538 16.4511 39.0469 16.4512H38.2383V18.2031H37.5098V13.6895H39.0439ZM41.8623 17.6338H43.4229V18.2031H41.1338V13.6895H41.8623V17.6338ZM47.8848 18.2031H47.1045L46.7588 17.2246H44.8545L44.5088 18.2031H43.7285L45.3916 13.7598H46.2285L47.8848 18.2031ZM48.9463 15.7803L49.9814 13.6895H50.8105L49.3086 16.5596V18.2031H48.5742V16.5596L47.0664 13.6895H47.9102L48.9463 15.7803ZM8.55273 16.6621H10.0488L9.30078 14.5537L8.55273 16.6621ZM22.8721 16.6621H24.3682L23.6201 14.5537L22.8721 16.6621ZM45.0586 16.6621H46.5547L45.8066 14.5537L45.0586 16.6621ZM4.46777 15.8818H5.27246C5.86096 15.8817 6.15474 15.6222 6.1543 15.1025C6.15427 14.8558 6.08305 14.6632 5.94043 14.5244C5.79748 14.3861 5.57543 14.3165 5.27246 14.3164H4.46777V15.8818ZM0.728516 15.8564H1.45801C2.0579 15.8564 2.35788 15.5967 2.3584 15.0771C2.3584 14.8216 2.28714 14.6266 2.14453 14.4922C2.00178 14.3578 1.77288 14.2906 1.45801 14.291H0.728516V15.8564ZM38.2383 15.8564H38.9668C39.5691 15.8564 39.87 15.5968 39.8701 15.0771C39.8701 14.8216 39.7989 14.6266 39.6562 14.4922C39.5135 14.3577 39.2842 14.2906 38.9688 14.291H38.2383V15.8564ZM45.0107 9.35059C47.7786 9.17859 49.2606 12.5422 46.4512 12.7168C43.5793 12.8952 42.413 9.51204 45.0107 9.35059ZM39.1494 0C40.7713 1.98166 42.0205 5.22363 42.0205 5.22363C42.0205 5.22363 41.6752 2.91986 43.6621 1.41797C42.6143 3.59667 43.1927 5.84608 43.3555 6.37988C41.9109 6.42997 40.5044 6.85602 39.2744 7.61523C39.0912 7.04191 38.2905 4.90402 36.2266 3.71777C38.6996 3.83459 39.7182 5.90553 39.7305 5.93066C39.721 5.89057 38.9319 2.53577 39.1494 0Z"></path></svg></span>';
@@ -155,7 +180,7 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
         $svgLogo = '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fallback"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="' . $svgLabel . '"><text x="110" y="18" text-anchor="middle" font-size="17" font-weight="700" font-family="Arial, sans-serif">' . $svgLabel . '</text></svg></span>';
     }
 
-    return '<div title="' . $esc . '" class="providerItemsInner sidebar-provider-item' . ($active ? ' active' : '') . '" role="button" tabindex="0" data-provider="' . $esc . '"><span class="providerBadgeBlock ' . htmlspecialchars($badgeClass, ENT_QUOTES, 'UTF-8') . '" data-badge="' . htmlspecialchars($badge, ENT_QUOTES, 'UTF-8') . '"></span><div class="providerItemsBtn has-provider-icon">' . $svgLogo . '<span class="provider-list-row">' . htmlspecialchars($provider, ENT_QUOTES, 'UTF-8') . '</span></div></div>';
+    return '<div title="' . $esc . '" class="providerItemsInner sidebar-provider-item' . ($active ? ' active' : '') . '" role="button" tabindex="0" data-provider="' . $esc . '">' . $badgeHtml . '<div class="providerItemsBtn has-provider-icon">' . $svgLogo . '<span class="provider-list-row">' . htmlspecialchars($provider, ENT_QUOTES, 'UTF-8') . '</span></div></div>';
 };
 
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
@@ -261,7 +286,7 @@ $slotDemoHref = static function (array $game): string {
                           </div>
                           <div class="casinoProvidersPopupContent__grid" id="sidebarProvidersList">
                             <div class="providerItemsHolder module">
-                            <div title="Tümü" class="providerItemsInner sidebar-provider-item <?= empty($selectedProviders) && empty($searchTerm) ? 'active' : '' ?>" role="button" tabindex="0" data-provider-all="1"><span class="providerBadgeBlock " data-badge=""></span><div class="providerItemsBtn">TÜMÜ</div></div>
+                            <div title="Tümü" class="providerItemsInner sidebar-provider-item <?= empty($selectedProviders) && empty($searchTerm) ? 'active' : '' ?>" role="button" tabindex="0" data-provider-all="1"><div class="providerItemsBtn">TÜMÜ</div></div>
                             <?php
                             foreach ($allUniqueProviders as $provider) {
                                 echo $renderProviderBtn($provider);

@@ -723,6 +723,37 @@ body.mobile-site .providers-drawer-wrapper .providerItemsBtn .provider-list-row 
 }
 
 /* Badge konumlandırma */
+body.mobile-site .providers-drawer-wrapper .badge-standalone.providerBadge {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  z-index: 3;
+  display: inline-flex;
+  pointer-events: none;
+}
+
+body.mobile-site .providers-drawer-wrapper .badge-standalone.providerBadge .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  max-width: 58px;
+  height: 14px;
+  padding: 0 6px;
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+body.mobile-site .providers-drawer-wrapper .badge-standalone.providerBadge .ds-caption {
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 body.mobile-site .providers-drawer-wrapper .providerBadgeBlock {
   position: absolute;
   top: 0;
