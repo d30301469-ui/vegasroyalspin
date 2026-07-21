@@ -568,6 +568,12 @@
         });
     }
 
+    function normalizeProviderLogoScale() {
+        document.querySelectorAll('.providerItemsBtn .provider-logo-svg svg').forEach(function(svg) {
+            svg.setAttribute('preserveAspectRatio', 'none');
+        });
+    }
+
     function syncMobileFilterControls() {
         if (!document.body.classList.contains('mobile-site')) return;
         if (gamesSearchExpandEl) {
@@ -719,6 +725,7 @@
                     if (!append) {
                         updateActiveFiltersRow();
                         updateSidebarActive();
+                        normalizeProviderLogoScale();
                         syncMobileFilterControls();
                         updateUrl();
                     }
@@ -735,6 +742,7 @@
                         gameGrid.innerHTML = games.map(renderGameItem).join('');
                         updateActiveFiltersRow();
                         updateSidebarActive();
+                        normalizeProviderLogoScale();
                         syncMobileFilterControls();
                         updateUrl();
                     }
@@ -1431,11 +1439,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             setActiveCategoryTab();
             scrollActiveCategoryIntoView();
+            normalizeProviderLogoScale();
             syncMobileFilterControls();
         });
     } else {
         setActiveCategoryTab();
         scrollActiveCategoryIntoView();
+        normalizeProviderLogoScale();
         syncMobileFilterControls();
     }
 })();
