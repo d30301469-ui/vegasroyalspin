@@ -302,8 +302,7 @@ final class DrakonService
     {
         // Trim defensively even if the stored value already has stray whitespace
         // (e.g. saved before this fix, or edited directly in the DB) — a trailing
-        // newline/space silently breaks the base64(agent_token:agent_secret) header
-        // and every auth attempt fails with INVALID_AGENT/INVALID_TOKEN.
+        // newline/space silently breaks the base64(agent_token:agent_secret) header.
         $agentCode   = trim((string) ($cfg['agent_code'] ?? ''));
         $agentToken  = trim((string) ($cfg['agent_token'] ?? ''));
         $agentSecret = trim((string) ($cfg['agent_secret'] ?? ''));
@@ -311,75 +310,33 @@ final class DrakonService
             throw new RuntimeException('Drakon agent_token ve agent_secret yapılandırılmamış.');
         }
 
-        $url = self::apiBase($cfg) . '/auth/authentication';
-        $attempts = [
-            // Documented format: Authorization: Bearer base64(agent_token:agent_secret), no body.
-            ['bearer_token_secret', [], ['Authorization: Bearer ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
-            // Same header, ALSO sending agent_token/agent_secret in a JSON body (some Drakon
-            // deployments require both, per the endpoint's field table).
-            ['bearer_token_secret_body', [
-                'agent_token' => $agentToken,
-                'agent_secret' => $agentSecret,
-            ], ['Authorization: Bearer ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
-            ['basic_token_secret', [], ['Authorization: Basic ' . base64_encode($agentToken . ':' . $agentSecret), 'Accept: application/json']],
-            ['bearer_raw_token', [], ['Authorization: Bearer ' . $agentToken, 'Accept: application/json']],
+        // Exactly per Drakon's official integration guide, section 2 ("Kimlik Doğrulama"):
+        // POST /auth/authentication, Authorization: Bearer base64(agent_token:agent_secret),
+        // no request body.
+        $url     = self::apiBase($cfg) . '/auth/authentication';
+        $headers = [
+            'Authorization: Bearer ' . base64_encode($agentToken . ':' . $agentSecret),
+            'Accept: application/json',
         ];
-        if ($agentCode !== '') {
-            // agent_code:agent_secret pairing (not in the doc, but INVALID_AGENT on every
-            // token-based attempt suggests the remote agent lookup may key off agent_code).
-            $attempts[] = ['bearer_code_secret', [], ['Authorization: Bearer ' . base64_encode($agentCode . ':' . $agentSecret), 'Accept: application/json']];
-            $attempts[] = ['basic_code_secret', [], ['Authorization: Basic ' . base64_encode($agentCode . ':' . $agentSecret), 'Accept: application/json']];
-            $attempts[] = ['bearer_code_token', [], ['Authorization: Bearer ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
-            $attempts[] = ['basic_code_token', [], ['Authorization: Basic ' . base64_encode($agentCode . ':' . $agentToken), 'Accept: application/json']];
-            $attempts[] = ['bearer_raw_token_with_code', [], ['Authorization: Bearer ' . $agentToken, 'X-Agent-Code: ' . $agentCode, 'Accept: application/json']];
-            $attempts[] = ['json_code_token', [
-                'agent_code' => $agentCode,
-                'agent_token' => $agentToken,
-            ], ['Accept: application/json']];
-            $attempts[] = ['json_code_token_secret', [
-                'agent_code' => $agentCode,
-                'agent_token' => $agentToken,
-                'agent_secret' => $agentSecret,
-            ], ['Accept: application/json']];
-            $attempts[] = ['form_code_token', [
-                'agent_code' => $agentCode,
-                'agent_token' => $agentToken,
-            ], ['Content-Type: application/x-www-form-urlencoded', 'Accept: application/json']];
-            $attempts[] = ['form_code_token_secret', [
-                'agent_code' => $agentCode,
-                'agent_token' => $agentToken,
-                'agent_secret' => $agentSecret,
-            ], ['Content-Type: application/x-www-form-urlencoded', 'Accept: application/json']];
-        }
 
-        $lastResponse = [];
-        $attemptSummary = [];
-        foreach ($attempts as [$label, $payload, $headers]) {
-            $response = self::httpRequest('POST', $url, $payload, $headers);
-            $token = self::extractAccessToken($response);
-            if ($token !== '') {
-                $stmt = $pdo->prepare(
-                    "UPDATE drakon_config
-                        SET access_token = :tok, token_expires_at = :exp, last_auth_at = NOW()
-                      WHERE id = 1"
-                );
-                $stmt->execute([
-                    ':tok' => $token,
-                    ':exp' => date('Y-m-d H:i:s', time() + 3000),
-                ]);
+        $response = self::httpRequest('POST', $url, [], $headers);
+        $token    = self::extractAccessToken($response);
+        if ($token !== '') {
+            $stmt = $pdo->prepare(
+                "UPDATE drakon_config
+                    SET access_token = :tok, token_expires_at = :exp, last_auth_at = NOW()
+                  WHERE id = 1"
+            );
+            $stmt->execute([
+                ':tok' => $token,
+                ':exp' => date('Y-m-d H:i:s', time() + 3000),
+            ]);
 
-                return $token;
-            }
-            $lastResponse = $response;
-            $attemptSummary[] = [
-                'attempt' => $label,
-                'response' => self::redactWebhookPayload($response),
-            ];
+            return $token;
         }
 
         throw new RuntimeException('Drakon kimlik doğrulama başarısız: ' . json_encode([
-            'last_response' => self::redactWebhookPayload($lastResponse),
-            'attempts' => $attemptSummary,
+            'response' => self::redactWebhookPayload($response),
             // Masked lengths only (never the actual secret) — helps tell "config is
             // empty/truncated/has stray whitespace" apart from "credentials are simply
             // wrong/revoked on Drakon's side" without leaking anything sensitive.
