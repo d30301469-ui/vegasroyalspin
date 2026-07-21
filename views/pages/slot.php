@@ -356,47 +356,47 @@ $providerLogoSvg = static function (string $provider, ?string $badgeSlug) use ($
     }
 
     if ($key === 'amatic' || $key === 'amaticindustries') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--amatic"><img src="https://garsbet.com/provider/images/amatic.jpg" alt="Amatic" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--amatic"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Amatic"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">AMATIC</text></svg></span>';
     }
 
     if ($key === 'amigogaming' || $key === 'amigo') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--amigogaming"><img src="https://garsbet.com/provider/images/amigogaming.jpg" alt="Amigo Gaming" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--amigogaming"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Amigo Gaming"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">AMIGOGAMING</text></svg></span>';
     }
 
     if ($key === 'fazi') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fazi"><img src="https://garsbet.com/provider/images/fazi.jpg" alt="Fazi" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fazi"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Fazi"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">FAZI</text></svg></span>';
     }
 
     if ($key === 'fugaso' || $key === 'fugasoogs') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fugaso"><img src="https://garsbet.com/provider/images/fugaso.jpg" alt="Fugaso" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--fugaso"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Fugaso"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">FUGASO</text></svg></span>';
     }
 
     if ($key === 'tomhorn' || $key === 'tomhorngaming') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--tomhorn"><img src="https://garsbet.com/provider/images/tomhorn.jpg" alt="Tom Horn" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--tomhorn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Tom Horn"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">TOMHORN</text></svg></span>';
     }
 
     if ($key === 'kagaming') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--kagaming"><img src="https://garsbet.com/provider/images/kagaming.jpg" alt="KA Gaming" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--kagaming"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="KA Gaming"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">KAGAMING</text></svg></span>';
     }
 
     if ($key === 'smartsoft') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--smartsoft"><img src="https://garsbet.com/provider/images/smartsoft.jpg" alt="Smartsoft" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--smartsoft"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Smartsoft"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">SMARTSOFT</text></svg></span>';
     }
 
     if ($key === 'quickspin') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--quickspin"><img src="https://garsbet.com/provider/images/quickspin.jpg" alt="Quickspin" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--quickspin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Quickspin"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">QUICKSPIN</text></svg></span>';
     }
 
     if ($key === 'tronixzone') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--tronixzone"><img src="https://garsbet.com/provider/images/tronixzone.jpg" alt="Tronixzone" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--tronixzone"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Tronixzone"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">TRONIXZONE</text></svg></span>';
     }
 
     if ($key === 'netgame' || $key === 'netgameentertainment') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--netgame"><img src="https://garsbet.com/provider/images/netgame.jpg" alt="Netgame" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--netgame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Netgame"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">NETGAME</text></svg></span>';
     }
 
     if ($key === 'novomatic') {
-        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--novomatic"><img src="https://garsbet.com/provider/images/novomatic.jpg" alt="Novomatic" loading="lazy" style="height:24px;width:auto;max-width:100%;display:block;" /></span>';
+        return '<span class="CMSIconSVGWrapper provider-logo-svg provider-logo-svg--novomatic"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 24" fill="currentColor" role="img" aria-label="Novomatic"><text x="110" y="18" text-anchor="middle" font-size="16" font-weight="700" font-family="Arial, sans-serif">NOVOMATIC</text></svg></span>';
     }
 
     if ($key === 'iconic21' || $key === 'iconic21slots') {
