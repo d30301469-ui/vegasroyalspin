@@ -310,24 +310,9 @@ if ($playBypassShell) {
 </head>
 <body class="play-shell-body">
 
-<?php
-// Get logo from API branding (updated via admin panel)
-$playLogoUrl = (string) ($siteBranding['logo_url'] ?? $ayar['logo_url'] ?? '');
-if (class_exists('ApiMediaUrl', false)) {
-    $playLogoUrl = ApiMediaUrl::resolve($playLogoUrl);
-}
-// Cache busting — sadece yerel path için
-if ($playLogoUrl !== '') {
-    $playLogoPath = parse_url($playLogoUrl, PHP_URL_PATH) ?? '';
-    $playLogoFile = BASE_PATH . '/' . ltrim($playLogoPath, '/');
-    if ($playLogoPath !== '' && is_file($playLogoFile)) {
-        $playLogoUrl = $playLogoUrl . '?v=' . (int) filemtime($playLogoFile);
-    }
-}
-?>
 <header class="play-topbar" aria-label="Oyun çubuğu">
-  <a class="play-topbar-logo" href="/" title="Ana sayfa">
-    <img src="<?= htmlspecialchars($playLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="180" height="60" loading="lazy">
+  <a class="play-topbar-logo" href="/" title="Ana sayfa" data-site-logo-link>
+    <img alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="180" height="60" loading="lazy">
   </a>
   <div class="play-topbar-actions">
     <div class="play-topbar-balance<?= $loggedIn ? ' is-visible' : '' ?>" id="playBalanceWrap" aria-live="polite">
@@ -372,6 +357,7 @@ window.__MEMBER_API_BASE__ = <?= json_encode((string) ($memberApiLayout['__MEMBE
 window.__FRONTEND_DIRECT_MEMBER_API__ = <?= !empty($memberApiLayout['__FRONTEND_DIRECT_MEMBER_API__']) ? 'true' : 'false' ?>;
 </script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars(asset_url('assets/js/site-settings-hydrate.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="/assets/js/play-page.js?v=<?= htmlspecialchars($playJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>
