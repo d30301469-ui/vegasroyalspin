@@ -109,7 +109,6 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     }
 
     $extraQuery = [];
-    $extraQuery['prefer_backend'] = '1';
     if ($source !== '') {
         $extraQuery['source'] = $source;
     }

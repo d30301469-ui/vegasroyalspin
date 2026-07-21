@@ -81,21 +81,16 @@ final class SlotGamesQuery
                 }
             }
         }
-        $preferBackend = !empty($query['prefer_backend']);
-        unset($query['prefer_backend']);
-
         $cleanProviders = array_values(array_filter(array_map(static fn ($x): string => trim((string) $x), $providers), static fn (string $x): bool => $x !== ''));
         if ($cleanProviders !== []) {
             // Yeni katalog endpoint'i tek provider filtresi destekler; UI tarafında tek seçim aktif tutulur.
             $query['provider'] = $cleanProviders[0];
         }
 
-        if (!$preferBackend) {
-            $local = self::localGamesPage($query, $limit, $page, trim($searchTerm) !== '' || $cleanProviders !== []);
-            if ($local !== null) {
-                $local['apiError'] = false;
-                return $local;
-            }
+        $local = self::localGamesPage($query, $limit, $page, trim($searchTerm) !== '' || $cleanProviders !== []);
+        if ($local !== null) {
+            $local['apiError'] = false;
+            return $local;
         }
 
         $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query);
