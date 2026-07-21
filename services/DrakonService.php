@@ -233,7 +233,10 @@ final class DrakonService
                 continue;
             }
             $sets[]            = "`{$key}` = :{$key}";
-            $params[":{$key}"] = (string) $data[$key];
+            // Trim to avoid accidental copy/paste whitespace or newlines corrupting
+            // the base64(agent_token:agent_secret) auth header (causes INVALID_AGENT/
+            // INVALID_TOKEN on every attempt even though the credentials "look" right).
+            $params[":{$key}"] = trim((string) $data[$key]);
         }
         // is_active checkbox: absent means unchecked (0)
         $sets[]               = 'is_active = :is_active';
@@ -283,9 +286,13 @@ final class DrakonService
 
     private static function authenticate(PDO $pdo, array $cfg): string
     {
-        $agentCode   = (string) ($cfg['agent_code'] ?? '');
-        $agentToken  = (string) ($cfg['agent_token'] ?? '');
-        $agentSecret = (string) ($cfg['agent_secret'] ?? '');
+        // Trim defensively even if the stored value already has stray whitespace
+        // (e.g. saved before this fix, or edited directly in the DB) — a trailing
+        // newline/space silently breaks the base64(agent_token:agent_secret) header
+        // and every auth attempt fails with INVALID_AGENT/INVALID_TOKEN.
+        $agentCode   = trim((string) ($cfg['agent_code'] ?? ''));
+        $agentToken  = trim((string) ($cfg['agent_token'] ?? ''));
+        $agentSecret = trim((string) ($cfg['agent_secret'] ?? ''));
         if ($agentToken === '' || $agentSecret === '') {
             throw new RuntimeException('Drakon agent_token ve agent_secret yapılandırılmamış.');
         }
