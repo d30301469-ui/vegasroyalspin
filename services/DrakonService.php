@@ -689,7 +689,7 @@ final class DrakonService
         $total = (int) $stmtTotal->fetchColumn();
 
         $stmtRows = $pdo->prepare(
-            "SELECT game_id, game_name, provider_name, rtp, banner, image_url, is_active, game_type, type
+            "SELECT game_id, game_code, game_name, provider_name, rtp, banner, image_url, is_active, game_type, type
              FROM drakon_games {$whereSql}
              ORDER BY game_name ASC
              LIMIT :lim OFFSET :off"
@@ -704,6 +704,7 @@ final class DrakonService
 
         $games = array_map(static function (array $row): array {
             $gameId = (string) ($row['game_id'] ?? '');
+            $gameCode = (string) ($row['game_code'] ?? '');
             $img    = (string) ($row['image_url'] ?? '') !== ''
                 ? (string) $row['image_url']
                 : (string) ($row['banner'] ?? '');
@@ -712,7 +713,7 @@ final class DrakonService
                 'id'            => DrakonService::GAME_ID_PREFIX . $gameId,
                 'identifier'    => DrakonService::GAME_ID_PREFIX . $gameId,
                 'game_id'       => DrakonService::GAME_ID_PREFIX . $gameId,
-                'game_code'     => $gameId,
+                'game_code'     => $gameCode !== '' ? $gameCode : $gameId,
                 'name'          => (string) ($row['game_name'] ?? ''),
                 'title'         => (string) ($row['game_name'] ?? ''),
                 'producer'      => (string) ($row['provider_name'] ?? ''),
@@ -770,10 +771,24 @@ final class DrakonService
 
         $homeUrl = self::resolveHomeUrl($cfg);
 
-        $params = [
+        // Drakon's /games/all feed exposes both a game_id and a game_code. For
+        // most titles they are identical, but for some providers (observed for
+        // Pragmatic Play) the two diverge and only ONE of them is actually
+        // launchable — launching with the wrong one returns Drakon's generic
+        // "/game-error" fallback page (HTTP 200 + a game-error URL). Look up the
+        // stored game_code so we can retry with it if the primary id fails.
+        $gameCode = '';
+        try {
+            $codeStmt = $pdo->prepare('SELECT game_code FROM drakon_games WHERE game_id = :id LIMIT 1');
+            $codeStmt->execute([':id' => $gameId]);
+            $gameCode = trim((string) ($codeStmt->fetchColumn() ?: ''));
+        } catch (Throwable) {
+            $gameCode = '';
+        }
+
+        $baseParams = [
             'agent_code'  => $agentCode,
             'agent_token' => $agentToken,
-            'game_id'     => $gameId,
             'currency'    => $currency,
             'lang'        => $lang,
             'mode'        => $mode,
@@ -784,77 +799,108 @@ final class DrakonService
             $userId   = (int) ($user['id'] ?? 0);
             $userName = trim((string) ($user['name'] ?? $user['username'] ?? ''));
             if ($userId > 0) {
-                $params['user_id']   = (string) $userId;
-                $params['user_name'] = $userName ?: 'user_' . $userId;
+                $baseParams['user_id']   = (string) $userId;
+                $baseParams['user_name'] = $userName ?: 'user_' . $userId;
             }
         } elseif ($mode === 'fun') {
             // Drakon requires a user id even for demo/fun launches.
-            $params['user_id']   = 'demo';
-            $params['user_name'] = 'Demo Player';
+            $baseParams['user_id']   = 'demo';
+            $baseParams['user_name'] = 'Demo Player';
         }
 
-        try {
-            $token    = self::getToken($pdo);
-            $response = self::httpRequest('GET', self::apiBase($cfg) . '/games/game_launch', $params, [
-                'Authorization: Bearer ' . $token,
-                'Accept: application/json',
-            ]);
-        } catch (Throwable $e) {
-            return ['success' => false, 'code' => 503, 'message' => 'Drakon API bağlantı hatası: ' . $e->getMessage()];
-        }
-
-        $responseData = is_array($response['data'] ?? null) ? $response['data'] : [];
-        $launchOptions = is_array($responseData['launch_options'] ?? null) ? $responseData['launch_options'] : [];
-        $gameUrl = trim((string) (
-            $response['game_url']
-            ?? $responseData['game_url']
-            ?? $response['launch_url']
-            ?? $responseData['launch_url']
-            ?? $response['url']
-            ?? $responseData['url']
-            ?? $launchOptions['game_url']
-            ?? $launchOptions['launch_url']
-            ?? $launchOptions['url']
-            ?? ''
-        ));
-        if ($gameUrl === '') {
-            $errorCode = strtoupper(trim((string) ($response['error'] ?? $responseData['error'] ?? '')));
-            if ($errorCode === 'FUN_MODE_NOT_AVAILABLE') {
-                return [
-                    'success' => false,
-                    'code'    => 422,
-                    'error'   => 'fun_mode_not_available',
-                    'message' => 'Bu oyun demo modunu desteklemiyor. Lütfen giriş yaparak gerçek modda oynayın.',
-                    'raw'     => $response,
-                ];
+        // Single launch attempt for a given identifier. Returns a normalised
+        // outcome so the caller can decide whether to retry with a fallback id.
+        $attempt = function (string $launchId) use ($pdo, $cfg, $baseParams): array {
+            $params = ['game_id' => $launchId] + $baseParams;
+            try {
+                $token    = self::getToken($pdo);
+                $response = self::httpRequest('GET', self::apiBase($cfg) . '/games/game_launch', $params, [
+                    'Authorization: Bearer ' . $token,
+                    'Accept: application/json',
+                ]);
+            } catch (Throwable $e) {
+                return ['kind' => 'exception', 'message' => $e->getMessage()];
             }
 
+            $responseData  = is_array($response['data'] ?? null) ? $response['data'] : [];
+            $launchOptions = is_array($responseData['launch_options'] ?? null) ? $responseData['launch_options'] : [];
+            $gameUrl = trim((string) (
+                $response['game_url']
+                ?? $responseData['game_url']
+                ?? $response['launch_url']
+                ?? $responseData['launch_url']
+                ?? $response['url']
+                ?? $responseData['url']
+                ?? $launchOptions['game_url']
+                ?? $launchOptions['launch_url']
+                ?? $launchOptions['url']
+                ?? ''
+            ));
+
+            if ($gameUrl === '') {
+                $errorCode = strtoupper(trim((string) ($response['error'] ?? $responseData['error'] ?? '')));
+                if ($errorCode === 'FUN_MODE_NOT_AVAILABLE') {
+                    return ['kind' => 'fun_unavailable', 'raw' => $response];
+                }
+                return ['kind' => 'no_url', 'raw' => $response];
+            }
+
+            $gameUrlPath = (string) (parse_url($gameUrl, PHP_URL_PATH) ?? '');
+            if (rtrim($gameUrlPath, '/') === '/game-error') {
+                return ['kind' => 'game_error', 'raw' => $response];
+            }
+
+            return ['kind' => 'ok', 'game_url' => $gameUrl, 'raw' => $response];
+        };
+
+        // Primary attempt uses the catalogue game_id (doc-compliant). If Drakon
+        // routes it to its "/game-error" fallback and a DISTINCT game_code
+        // exists, retry with the code — this recovers titles whose launchable
+        // identifier is the code rather than the id.
+        $result = $attempt($gameId);
+        if (($result['kind'] ?? '') === 'game_error' && $gameCode !== '' && $gameCode !== $gameId) {
+            $retry = $attempt($gameCode);
+            if (($retry['kind'] ?? '') === 'ok') {
+                $result = $retry;
+            }
+        }
+
+        $kind = (string) ($result['kind'] ?? 'no_url');
+
+        if ($kind === 'exception') {
+            return ['success' => false, 'code' => 503, 'message' => 'Drakon API bağlantı hatası: ' . (string) ($result['message'] ?? '')];
+        }
+
+        if ($kind === 'fun_unavailable') {
             return [
                 'success' => false,
                 'code'    => 422,
-                'message' => 'Drakon oyun URL döndürmedi.',
-                'raw'     => $response,
+                'error'   => 'fun_mode_not_available',
+                'message' => 'Bu oyun demo modunu desteklemiyor. Lütfen giriş yaparak gerçek modda oynayın.',
+                'raw'     => $result['raw'] ?? null,
             ];
         }
 
-        // Drakon returns HTTP 200 + a "successful" game_url even when the requested
-        // provider/game can't actually be launched for this agent (observed for
-        // every Pragmatic Play title tested — Sweet Bonanza, Gates of Olympus,
-        // etc.). Instead of a proper error code, it points to its own generic
-        // "/game-error" fallback page, which then redirects to the dead legacy
-        // "gator.drakonapi.tech" host and gets blocked by X-Frame-Options when
-        // embedded in our iframe. Detect that pattern and surface it as a clean
-        // launch failure instead of an unusable blocked iframe.
-        $gameUrlPath = (string) (parse_url($gameUrl, PHP_URL_PATH) ?? '');
-        if (rtrim($gameUrlPath, '/') === '/game-error') {
+        if ($kind === 'game_error') {
             return [
                 'success' => false,
                 'code'    => 422,
                 'error'   => 'provider_game_error',
                 'message' => 'Bu oyun şu anda sağlayıcı tarafında kullanılamıyor. Lütfen daha sonra tekrar deneyin veya başka bir oyun seçin.',
-                'raw'     => $response,
+                'raw'     => $result['raw'] ?? null,
             ];
         }
+
+        if ($kind !== 'ok') {
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Drakon oyun URL döndürmedi.',
+                'raw'     => $result['raw'] ?? null,
+            ];
+        }
+
+        $gameUrl = (string) ($result['game_url'] ?? '');
 
         return [
             'success'  => true,
