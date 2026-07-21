@@ -81,6 +81,8 @@ final class SlotGamesQuery
                 }
             }
         }
+        $preferBackend = !empty($query['prefer_backend']);
+        unset($query['prefer_backend']);
 
         $cleanProviders = array_values(array_filter(array_map(static fn ($x): string => trim((string) $x), $providers), static fn (string $x): bool => $x !== ''));
         if ($cleanProviders !== []) {
@@ -88,10 +90,12 @@ final class SlotGamesQuery
             $query['provider'] = $cleanProviders[0];
         }
 
-        $local = self::localGamesPage($query, $limit, $page, trim($searchTerm) !== '' || $cleanProviders !== []);
-        if ($local !== null) {
-            $local['apiError'] = false;
-            return $local;
+        if (!$preferBackend) {
+            $local = self::localGamesPage($query, $limit, $page, trim($searchTerm) !== '' || $cleanProviders !== []);
+            if ($local !== null) {
+                $local['apiError'] = false;
+                return $local;
+            }
         }
 
         $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query);
