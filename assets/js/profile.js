@@ -2431,8 +2431,7 @@
         var panel = document.getElementById('vegaPanel');
         var overlay = document.getElementById('vegaOverlay');
         var panelContent = document.getElementById('panelContent');
-        if (!panel || !panelContent || !paymentUrl || !trx) {
-            if (paymentUrl) window.location.href = paymentUrl;
+        if (!panel || !panelContent || !paymentUrl) {
             return;
         }
         stopDepositStatusPolling();
@@ -2451,8 +2450,10 @@
             + '</div>';
         panel.classList.add('active');
         if (overlay) overlay.classList.add('active');
-        activeDepositStatusPoll = { trx: trx, timer: null };
-        pollDesktopDepositStatus(trx, 0);
+        if (trx) {
+            activeDepositStatusPoll = { trx: trx, timer: null };
+            pollDesktopDepositStatus(trx, 0);
+        }
     }
 
     function createDepositFormHtml(limits, method, provider, name) {
@@ -3082,11 +3083,8 @@
                     var payUrl = String(data.data.payment_url).trim();
                     if (payUrl) {
                         var trx = data.data.trx ? String(data.data.trx).trim() : '';
-                        if (trx) {
-                            openDesktopDepositMonitor(payUrl, trx);
-                            return;
-                        }
-                        window.location.href = payUrl;
+                        openDesktopDepositMonitor(payUrl, trx);
+                        return;
                     }
                     return;
                 }
