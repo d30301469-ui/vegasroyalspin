@@ -952,15 +952,16 @@
 
   function openMobileDepositMonitor(method, paymentUrl, trx) {
     var content = document.getElementById('mprofilePaymentModalContent');
-    if (!content || !paymentUrl || !trx) {
-      if (paymentUrl) window.location.href = paymentUrl;
+    if (!content || !paymentUrl) {
       return;
     }
     stopPaymentStatusPolling();
     activePaymentModal = { kind: 'deposit', method: method, trx: trx, paymentUrl: paymentUrl };
     content.innerHTML = '<div class="payment-info-bc" tabindex="-1"><div class="payment-info-content"><div class="expandableContentWrapper"><div class="expandableContentData ' + escapeHtml(paymentMethodClass(method)) + ' payment-content not-expandable" data-scroll-lock-scrollable><div class="container"><p data-mprofile-payment-status>Ödeme bekleniyor</p><p data-mprofile-payment-status-hint>Ödeme onaylandığında bu alan otomatik güncellenecek.</p><p><strong>Referans:</strong> ' + escapeHtml(trx) + '</p></div></div></div><div style="border-radius:16px;overflow:hidden;background:#fff"><iframe src="' + escapeHtml(paymentUrl) + '" title="MegaPayz ödeme" style="display:block;width:100%;height:460px;border:0;background:#fff"></iframe></div></div></div>';
-    activePaymentStatusPoll = { trx: trx, timer: null };
-    pollMobileDepositStatus(trx, 0);
+    if (trx) {
+      activePaymentStatusPoll = { trx: trx, timer: null };
+      pollMobileDepositStatus(trx, 0);
+    }
   }
 
   function paymentMethodClass(method) {
@@ -1148,7 +1149,7 @@
         if (env && env.success && env.data && env.data.payment_url) {
           var payUrl = String(env.data.payment_url).trim();
           var trx = env.data.trx ? String(env.data.trx).trim() : '';
-          if (kind === 'deposit' && payUrl && trx) {
+          if (kind === 'deposit' && payUrl) {
             openMobileDepositMonitor(method, payUrl, trx);
             return;
           }
