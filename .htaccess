@@ -28,8 +28,6 @@
     RewriteRule ^api/v2/bgaming-wallet/?(.*)$ admin/api/v2/bgaming_callback.php?endpoint=$1 [END,QSA]
     RewriteRule ^api/v2/bgaming/?(.*)$ admin/api/v2/bgaming_callback.php?endpoint=$1 [END,QSA]
     RewriteRule ^api/v2/megapayz-callback/?$ admin/index.php [END,QSA]
-    RewriteRule ^drakon_api/?$ admin/index.php [END,QSA]
-    RewriteRule ^api/v2/drakon_callback/?$ admin/index.php [END,QSA]
     RewriteRule ^sportsbook_api/?$ admin/index.php [END,QSA]
     RewriteRule ^api/v2/sportsbook-wallet/?$ admin/api/v2/sportsbook_callback.php [END,QSA]
 

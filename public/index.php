@@ -19,7 +19,7 @@ if (is_readable($installGate)) {
         exit;
     }
 }
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($requestPath, ['/', '/drakon_api', '/sportsbook_api', '/api/v2/sportsbook-wallet', '/api/v2/sportsbook-wallet/'], true)) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($requestPath, ['/', '/sportsbook_api', '/api/v2/sportsbook-wallet', '/api/v2/sportsbook-wallet/'], true)) {
     $rawBody = (string) file_get_contents('php://input');
     $payload = json_decode($rawBody, true);
     if (!is_array($payload) && $_POST !== []) {

@@ -6,7 +6,7 @@ Backend host (`bo-backoffice.site`) iki katman sunar:
 |--------|----------|------|
 | **Public Member API** | `/api/v2/*` | JWT Bearer (üye) veya public GET |
 | **Admin Internal API** | `/api/v2/internal/*` (veya admin oturumlu `/api/v2/*`) | Admin oturumu + CSRF |
-| **Provider Callbacks** | `/api/v2/drakon_callback`, `/api/v2/bgaming-wallet/*`, `/api/v2/megapayz-callback` | İmza / IP |
+| **Provider Callbacks** | `/api/v2/bgaming-wallet/*`, `/api/v2/megapayz-callback` | İmza / IP |
 
 ## JSON sözleşmesi
 
@@ -87,7 +87,6 @@ Panel UI (Phase 3):
 
 ## Provider callbacks
 
-- Drakon: `POST /api/v2/drakon_callback`
 - BGaming: `POST /api/v2/bgaming-wallet/{balance|play|rollback|...}`
 - MegaPayz: `POST /api/v2/megapayz-callback`
 

@@ -52,11 +52,6 @@ if (strpos($uri, '/api/v2') === 0 || strpos($uri, '/api/member/') === 0 || strpo
     require $isBackendHost ? __DIR__ . '/admin/index.php' : __DIR__ . '/public/index.php';
     return true;
 }
-// Drakon Casino webhook — Drakon agent panelinde site_endpoint/drakon_api olarak kayıtlı
-if ($trimmedUri === '/drakon_api' || str_starts_with($trimmedUri, '/drakon_api/')) {
-    require __DIR__ . '/admin/index.php';
-    return true;
-}
 // Eski api-gates callback URL'i â†’ front controller (casino callback)
 $trimmedForLegacy = rtrim($uri, '/');
 if ($trimmedForLegacy === '/api-gates') {

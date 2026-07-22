@@ -408,8 +408,6 @@ if (!function_exists('frontend_uri_is_backend_only')) {
             '/megapayz-callback',
             '/bgaming_callback',
             '/casino-callback',
-            '/drakon_api',
-            '/api/v2/drakon_callback',
             '/api/v2/sportsbook-wallet',
             '/api/v2/sportsbook_callback',
         ];

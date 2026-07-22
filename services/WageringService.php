@@ -200,7 +200,7 @@ final class WageringService
     }
 
     /**
-     * Sağlayıcı entegrasyonlarının (BgamingService/DrakonService) gerçek
+     * Sağlayıcı entegrasyonlarının (BgamingService) gerçek
      * bahis/kazanç tutarını hangi `users` kolonundan okuyup/yazacağını
      * belirler. 'bonus' modundaysa oynanış `bonus_balance` üzerinden yürür
      * (kullanıcı oyunu bonus bakiyesiyle başlatmayı seçti); aksi halde
@@ -252,8 +252,8 @@ final class WageringService
             }
 
             // Gerçek oynanış artık (mod='bonus' iken) doğrudan bonus_balance
-            // üzerinden yürüdüğü için (bkz. walletSourceColumn + BgamingService/
-            // DrakonService applyActions/webhookBet), tamamlanma anındaki tutar
+            // üzerinden yürüdüğü için (bkz. walletSourceColumn + BgamingService
+            // applyActions/webhookBet), tamamlanma anındaki tutar
             // artık kazanç/kayıplarla değişmiş olabilir — bu yüzden STATİK
             // current_bonus_balance yerine CANLI bonus_balance aktarılır.
             // Kullanıcının TÜM aktif bonusları tamamlandıysa (bu bonus da dahil),

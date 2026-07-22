@@ -26,11 +26,6 @@ $isWriteProtectedTable = in_array($table, [
     'bgaming_config',
     'bgaming_transactions',
     'bgaming_wallet_logs',
-    'drakon_config',
-    'drakon_providers',
-    'drakon_games',
-    'drakon_transactions',
-    'drakon_webhook_logs',
 ], true);
 $actionColumnWidth = in_array($moduleKey, ['withdrawals', 'promocode-requests'], true)
     ? '17%'

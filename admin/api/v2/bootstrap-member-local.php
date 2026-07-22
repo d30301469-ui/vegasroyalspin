@@ -78,7 +78,6 @@ foreach ([
     'ComplianceMonitorService.php',
     'MegaPayzService.php',
     'BgamingService.php',
-    'DrakonService.php',
     'SportsbookService.php',
 ] as $serviceFile) {
     admin_require_project_file('services/' . $serviceFile);
