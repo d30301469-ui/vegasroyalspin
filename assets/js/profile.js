@@ -2381,13 +2381,11 @@
     function openDesktopDepositResultSurface() {
         stopDepositStatusPolling();
         fetchBalanceData(true).catch(function() {});
-        var profileModal = document.getElementById('profileModal');
         if (typeof closeVegaPanel === 'function') closeVegaPanel();
-        if (profileModal && profileModal.classList.contains('is-open') && typeof window.__openProfileModalUrl === 'function') {
-            window.__openProfileModalUrl('/profile/deposit-withdraw-history');
+        if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/deposit-withdraw-history')) {
             return;
         }
-        window.location.href = '/profile/deposit-withdraw-history';
+        window.location.href = '/profile/deposit-withdraw-history?modal=1';
     }
 
     function pollDesktopDepositStatus(trx, attempt) {
