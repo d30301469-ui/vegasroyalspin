@@ -3,7 +3,7 @@
 $configRow = is_array($configRow ?? null) ? $configRow : [];
 $flash = trim((string) ($flash ?? ''));
 $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
-$callbackUrl = (defined('BACKEND_URL') ? rtrim((string) BACKEND_URL, '/') : rtrim((string) (getenv('BACKEND_URL') ?: getenv('BACKEND_FALLBACK_URL') ?: ''), '/')) . '/MegaPayz/deposit';
+$callbackUrl = (defined('BACKEND_URL') ? rtrim((string) BACKEND_URL, '/') : rtrim((string) (getenv('BACKEND_URL') ?: getenv('BACKEND_FALLBACK_URL') ?: 'https://admin.vegasroyalspin.com'), '/')) . '/api/v2/megapayz-callback';
 ?>
 <style>
     .megapayz-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
