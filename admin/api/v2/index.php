@@ -34,6 +34,31 @@ if ($method === 'POST' && in_array($route, ['sportsbook-wallet', 'sportsbook_wal
     exit;
 }
 
+$megaPayzRoute = strtolower(trim((string) $route, '/'));
+if ($method === 'POST' && in_array($megaPayzRoute, ['megapayz-callback', 'megapayz/deposit'], true)) {
+    $transport = MegaPayzService::verifyCallbackTransport($_SERVER);
+    if (empty($transport['valid'])) {
+        http_response_code((int) ($transport['code'] ?? 403));
+        echo json_encode([
+            'status' => false,
+            'code' => (int) ($transport['code'] ?? 403),
+            'message' => (string) ($transport['error'] ?? 'FORBIDDEN'),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    $megaResult = MegaPayzService::handleUnifiedCallback(AdminDatabase::pdo(), $payload['body'] ?? []);
+    $megaCode = (int) ($megaResult['code'] ?? 200);
+    if ($megaCode === 99999 || empty($megaResult['status'])) {
+        http_response_code(in_array($megaCode, [400, 403, 404, 405, 422], true) ? $megaCode : 422);
+    } elseif ($megaCode >= 400 && $megaCode < 600) {
+        http_response_code($megaCode);
+    }
+
+    echo json_encode($megaResult, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 // BGaming callbacks can come via multiple route formats depending on edge rewrites.
 // Normalize route and request URI to avoid false 404 on wallet actions (e.g. balance/play).
 $routeLower = trim(strtolower($route), '/');

@@ -30,6 +30,8 @@ if (!AdminInstallGate::isInstalled(__DIR__)) {
  */
 $isLightweightRoute = preg_match('#^/api/v2/(?:bgaming-wallet|bgaming)(?:/.*)?$#', $backendPath) === 1
     || $backendPath === '/api/v2/megapayz-callback'
+    || $backendPath === '/MegaPayz/deposit'
+    || $backendPath === '/megapayz/deposit'
     || $backendPath === '/api/v2/casino-callback'
     || $backendPath === '/api/v2/sportsbook-wallet'
     || str_starts_with($backendPath, '/api/v2/sportsbook-wallet/')
@@ -47,7 +49,7 @@ if ($isLightweightRoute) {
         require __DIR__ . '/api/v2/bgaming_callback.php';
         exit;
     }
-    if ($backendPath === '/api/v2/megapayz-callback') {
+    if (in_array($backendPath, ['/api/v2/megapayz-callback', '/MegaPayz/deposit', '/megapayz/deposit'], true)) {
         require_once __DIR__ . '/app/Core/AdminPaths.php';
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';

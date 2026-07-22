@@ -21,7 +21,10 @@ return static function (Router $router): void {
         $router->any('/api/v2/bgaming/{any}', [$bgaming, '__invoke'], $backend);
     }
     if (class_exists(\App\Http\Controllers\Callback\MegaPayzCallbackController::class)) {
-        $router->any('/api/v2/megapayz-callback', [new \App\Http\Controllers\Callback\MegaPayzCallbackController(), '__invoke'], $backend);
+        $megaPayzCallback = [new \App\Http\Controllers\Callback\MegaPayzCallbackController(), '__invoke'];
+        $router->any('/api/v2/megapayz-callback', $megaPayzCallback, $backend);
+        $router->any('/MegaPayz/deposit', $megaPayzCallback, $backend);
+        $router->any('/megapayz/deposit', $megaPayzCallback, $backend);
     }
     if (class_exists(\App\Http\Controllers\Callback\CasinoCallbackController::class)) {
         $router->any('/api/v2/casino-callback', [new \App\Http\Controllers\Callback\CasinoCallbackController(), '__invoke'], $backend);

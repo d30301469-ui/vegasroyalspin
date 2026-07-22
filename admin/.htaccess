@@ -43,6 +43,7 @@
     RewriteRule ^api/v2/sportsbook_callback\.php$ - [L]
     RewriteRule ^api/v2/sportsbook-wallet/?$ api/v2/sportsbook_callback.php [L,QSA]
     RewriteRule ^api/v2/megapayz-callback/?$ index.php [L,QSA]
+    RewriteRule ^[Mm]ega[Pp]ayz/deposit/?$ index.php [L,QSA]
 
     # ─── API v2 front controller ──────────────────────────────────────
     RewriteRule ^api/v2/index\.php$ - [L]
