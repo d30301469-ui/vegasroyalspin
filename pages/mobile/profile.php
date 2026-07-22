@@ -42,7 +42,7 @@ $profilePageMap = [
 ];
 
 $targetKey = $queryAccount . '|' . $queryPage;
-$isBalanceHistoryRequest = ($queryProfileOpen === 'open' && $queryAccount === 'balance' && $queryPage === 'history');
+$isBalanceHistoryRequest = ($queryProfileOpen === 'open' && $queryAccount === 'balance' && $queryPage === 'history' && (string) ($_GET['fromPayment'] ?? '') !== '1');
 if ($isBalanceHistoryRequest) {
     header('Location: /mobile/profile?' . http_build_query(['profile' => 'open', 'account' => 'balance', 'page' => 'deposit', 'openDepositPanel' => '1']));
     exit;
@@ -150,7 +150,10 @@ echo '</div>';
             if (q.get('bilgi') === '1') return mobileProfileUrl('balance', 'info');
             return mobileProfileUrl('balance', 'withdraw');
         }
-        if (p === '/profile/deposit-withdraw-history') return mobileProfileUrl('balance', 'deposit', { openDepositPanel: '1' });
+        if (p === '/profile/deposit-withdraw-history') {
+            if (q.get('fromPayment') === '1') return mobileProfileUrl('balance', 'history', { fromPayment: '1' });
+            return mobileProfileUrl('balance', 'deposit', { openDepositPanel: '1' });
+        }
         if (p === '/profile/withdrawal-status') return mobileProfileUrl('balance', 'withdraws');
 
         if (p === '/profile/bet-history') {
