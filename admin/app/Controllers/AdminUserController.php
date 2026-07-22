@@ -51,7 +51,7 @@ final class AdminUserController extends AdminController
             'deposits' => $this->rows("SELECT id, method, 'megapayz' AS provider, amount, fee, status, trx, created_at, updated_at FROM megapayz_transactions WHERE user_id = :user_id AND type = 'deposit' ORDER BY id DESC LIMIT 30", $userId),
             'withdrawals' => $this->rows("SELECT id, method, 'megapayz' AS provider, amount, fee, currency, status, NULL AS admin_status, trx, created_at, updated_at FROM megapayz_transactions WHERE user_id = :user_id AND type = 'withdraw' ORDER BY id DESC LIMIT 30", $userId),
             'adjustments' => $this->rows('SELECT id, wallet, action, amount, before_balance, after_balance, note, admin_username, created_at FROM admin_balance_adjustments WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 30', $userId),
-            'games' => [],
+            'games' => $this->gameRows($userId),
             'sportsbookCoupons' => $sportsbookCoupons,
             'bonusClaims' => $this->rows('SELECT id, bonus_name, requested_amount, status, processed_by, processed_at, created_at FROM bonus_claim_requests WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 20', $userId),
             'activeBonuses' => $this->rows('SELECT id, name, initial_amount, current_bonus_balance, wagering_requirement, wagering_target, total_bet_amount, is_complete, status, deadline, created_at FROM user_active_bonuses WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 20', $userId),
@@ -382,6 +382,80 @@ final class AdminUserController extends AdminController
         $stmt->execute(['user_id' => $userId]);
 
         return (float) $stmt->fetchColumn();
+    }
+
+    private function gameRows(int $userId): array
+    {
+        $pdo = AdminDatabase::pdo();
+        $rows = [];
+
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT
+                    CAST(id AS CHAR) AS id,
+                    COALESCE(game_name, game_code, game_id, '-') AS game_name,
+                    COALESCE(provider_name, provider_code, source, '') AS provider_name,
+                    '' AS image_url,
+                    COALESCE(provider_txn_id, '-') AS transaction_id,
+                    COALESCE(round_id, '-') AS round_id,
+                    LOWER(COALESCE(txn_type, 'bet')) AS txn_type,
+                    COALESCE(bet_amount, 0) AS bet_amount,
+                    COALESCE(win_amount, 0) AS win_amount,
+                    COALESCE(balance_after, 0) AS balance_after,
+                    created_at
+                 FROM games_transactions
+                 WHERE user_id = :user_id
+                 ORDER BY created_at DESC
+                 LIMIT 100"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            $rows = array_merge($rows, $stmt->fetchAll());
+        } catch (Throwable) {
+        }
+
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT
+                    CONCAT('bgaming:', t.id) AS id,
+                    COALESCE(g.title, t.game_identifier, '-') AS game_name,
+                    COALESCE(NULLIF(g.provider, ''), 'BGaming') AS provider_name,
+                    COALESCE(g.thumbnail_url, '') AS image_url,
+                    COALESCE(NULLIF(t.casino_tx_id, ''), NULLIF(t.action_id, ''), '-') AS transaction_id,
+                    COALESCE(NULLIF(t.round_id, ''), '-') AS round_id,
+                    LOWER(COALESCE(t.txn_type, 'bet')) AS txn_type,
+                    COALESCE(t.amount, 0) AS raw_amount,
+                    COALESCE(t.after_balance, 0) AS balance_after,
+                    COALESCE(t.processed_at, t.created_at) AS created_at
+                 FROM bgaming_transactions t
+                 LEFT JOIN bgaming_games g ON g.identifier = t.game_identifier
+                 WHERE t.user_id = :user_id
+                 ORDER BY t.id DESC
+                 LIMIT 100"
+            );
+            $stmt->execute(['user_id' => $userId]);
+
+            foreach ($stmt->fetchAll() as $row) {
+                $txnType = strtolower((string) ($row['txn_type'] ?? 'bet'));
+                $normalizedTxnType = match ($txnType) {
+                    'win', 'promo_win', 'freespins_win' => 'win',
+                    'rollback' => 'refund',
+                    default => 'bet',
+                };
+                $amount = (float) ($row['raw_amount'] ?? 0);
+                $row['txn_type'] = $normalizedTxnType;
+                $row['bet_amount'] = $normalizedTxnType === 'bet' ? $amount : 0.0;
+                $row['win_amount'] = $normalizedTxnType !== 'bet' ? $amount : 0.0;
+                unset($row['raw_amount']);
+                $rows[] = $row;
+            }
+        } catch (Throwable) {
+        }
+
+        usort($rows, static function (array $left, array $right): int {
+            return strtotime((string) ($right['created_at'] ?? '')) <=> strtotime((string) ($left['created_at'] ?? ''));
+        });
+
+        return array_slice($rows, 0, 100);
     }
 
     private function validateUserData(int $userId, array $data): string
