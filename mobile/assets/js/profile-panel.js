@@ -78,8 +78,6 @@
     }
     if (params.get('profile') !== 'open' || params.get('account') !== 'balance') return '';
     var page = params.get('page') || 'deposit';
-    if (page === 'history' && params.get('fromPayment') === '1') return 'history';
-    if (page === 'history') return 'deposit';
     return ['deposit', 'withdraw', 'history', 'info', 'withdraws'].indexOf(page) !== -1 ? page : 'deposit';
   }
 
@@ -96,7 +94,7 @@
         }
       });
     }
-    return '/mobile/profile?' + params.toString();
+    return '/?' + params.toString();
   }
 
   function openPaymentHistorySurface() {
@@ -105,7 +103,7 @@
       showBalancePage(panel, 'history');
     }
     if (window.history && typeof window.history.replaceState === 'function') {
-      window.history.replaceState({}, '', buildBalanceUrl('history', { fromPayment: '1' }));
+      window.history.replaceState({}, '', buildBalanceUrl('history'));
     }
     return true;
   }
