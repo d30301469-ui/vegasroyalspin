@@ -3053,7 +3053,10 @@
             return;
         }
         var payload = { amount: amount };
-        if (selectedPaymentMethodId) {
+        if (selectedProvider === 'megapayz') {
+            payload.method = selectedPaymentMethod;
+            payload.provider = selectedProvider || 'megapayz';
+        } else if (selectedPaymentMethodId) {
             payload.payment_method_id = selectedPaymentMethodId;
         } else {
             payload.method = selectedPaymentMethod;

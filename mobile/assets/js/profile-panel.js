@@ -1111,7 +1111,10 @@
     }
     var payload = { amount: amount };
     var paymentMethodId = method.id != null ? String(method.id) : '';
-    if (paymentMethodId) {
+    if (kind === 'deposit') {
+      payload.method = methodId(method);
+      payload.provider = methodProvider(method) || 'megapayz';
+    } else if (paymentMethodId) {
       payload.payment_method_id = paymentMethodId;
     } else {
       payload.method = methodId(method);
