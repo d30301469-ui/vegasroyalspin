@@ -589,9 +589,20 @@
         return pathname.indexOf('/profile/') === 0;
     }
 
+    function isHomeBalanceHistoryQuery(urlObj) {
+        return !!(urlObj
+            && urlObj.pathname === '/'
+            && urlObj.searchParams.get('profile') === 'open'
+            && urlObj.searchParams.get('account') === 'balance'
+            && urlObj.searchParams.get('page') === 'history');
+    }
+
     function toModalUrl(url) {
         var base = new URL(url, window.location.origin);
-        if (base.pathname === '/profile/transaction-history') {
+        if (isHomeBalanceHistoryQuery(base)) {
+            base.pathname = '/profile/deposit-withdraw-history';
+            base.search = '';
+        } else if (base.pathname === '/profile/transaction-history') {
             base.pathname = '/profile/deposit-withdraw-history';
         } else if (base.pathname === '/profile/info') {
             base.pathname = '/profile/deposit-withdraw';
@@ -611,6 +622,9 @@
 
     function modalUrlToDisplayUrl(modalUrl) {
         var u = new URL(modalUrl, window.location.origin);
+        if (u.pathname === '/profile/deposit-withdraw-history') {
+            return '/?profile=open&account=balance&page=history';
+        }
         u.searchParams.delete('modal');
         return u.pathname + u.search + u.hash;
     }
@@ -1673,8 +1687,14 @@
             } catch (err) {
                 return false;
             }
-            if (parsed.origin !== window.location.origin || !canLoadInProfileModal(parsed.pathname)) {
+            if (parsed.origin !== window.location.origin) {
                 return false;
+            }
+            if (!canLoadInProfileModal(parsed.pathname)) {
+                if (!isHomeBalanceHistoryQuery(parsed)) {
+                    return false;
+                }
+                parsed = new URL('/profile/deposit-withdraw-history', window.location.origin);
             }
 
             hideProfileHeaderFlyouts();
@@ -1687,6 +1707,21 @@
             return true;
         }
 
+        function maybeOpenProfileModalFromHomeHistoryQuery() {
+            var current;
+            try {
+                current = new URL(window.location.href);
+            } catch (eUrl) {
+                return;
+            }
+            if (!isHomeBalanceHistoryQuery(current)) {
+                return false;
+            }
+            if (window.__profileHistoryAutoOpened) return;
+            window.__profileHistoryAutoOpened = true;
+            openProfileModalUrl('/?profile=open&account=balance&page=history');
+        }
+
         if (profileLink) {
             profileLink.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1696,6 +1731,7 @@
 
         window.__openProfileModalInitial = openProfileModalFromHeader;
         window.__openProfileModalUrl = openProfileModalUrl;
+        maybeOpenProfileModalFromHomeHistoryQuery();
 
         function headerModalTargetPath(a) {
             var d = (a.getAttribute('data-profile-modal-href') || '').trim();
@@ -2382,10 +2418,10 @@
         stopDepositStatusPolling();
         fetchBalanceData(true).catch(function() {});
         if (typeof closeVegaPanel === 'function') closeVegaPanel();
-        if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/deposit-withdraw-history')) {
+        if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/?profile=open&account=balance&page=history')) {
             return;
         }
-        window.location.href = '/profile/deposit-withdraw-history?modal=1';
+        window.location.href = '/?profile=open&account=balance&page=history';
     }
 
     function pollDesktopDepositStatus(trx, attempt) {
