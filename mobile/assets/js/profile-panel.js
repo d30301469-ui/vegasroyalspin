@@ -78,8 +78,36 @@
     }
     if (params.get('profile') !== 'open' || params.get('account') !== 'balance') return '';
     var page = params.get('page') || 'deposit';
+    if (page === 'history' && params.get('fromPayment') === '1') return 'history';
     if (page === 'history') return 'deposit';
     return ['deposit', 'withdraw', 'history', 'info', 'withdraws'].indexOf(page) !== -1 ? page : 'deposit';
+  }
+
+  function buildBalanceUrl(sectionName, extras) {
+    var params = new URLSearchParams();
+    params.set('profile', 'open');
+    params.set('account', 'balance');
+    params.set('page', sectionName || 'deposit');
+    if (extras && typeof extras === 'object') {
+      Object.keys(extras).forEach(function (key) {
+        var value = extras[key];
+        if (value != null && value !== '') {
+          params.set(key, String(value));
+        }
+      });
+    }
+    return '/mobile/profile?' + params.toString();
+  }
+
+  function openPaymentHistorySurface() {
+    var panel = getPanel();
+    if (panel) {
+      showBalancePage(panel, 'history');
+    }
+    if (window.history && typeof window.history.replaceState === 'function') {
+      window.history.replaceState({}, '', buildBalanceUrl('history', { fromPayment: '1' }));
+    }
+    return true;
   }
 
   function buildCurrentHomeUrl() {
@@ -2710,7 +2738,7 @@
         var paymentClose = target.closest('[data-mprofile-payment-close]');
         if (paymentClose) {
           e.preventDefault();
-          closePaymentModal();
+          openPaymentHistorySurface();
           return;
         }
 

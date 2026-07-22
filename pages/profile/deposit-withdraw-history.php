@@ -3,7 +3,7 @@
 require_once __DIR__ . '/database.php';
 
 $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
-if ($host !== '' && str_starts_with($host, 'm.')) {
+if ($host !== '' && str_starts_with($host, 'm.') && (string) ($_GET['fromPayment'] ?? '') !== '1') {
     header('Location: /mobile/profile?' . http_build_query(['profile' => 'open', 'account' => 'balance', 'page' => 'deposit', 'openDepositPanel' => '1']));
     exit();
 }
