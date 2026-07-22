@@ -1327,39 +1327,30 @@ final class BgamingService
 
     private static function extractFreespinsPayoutSubunits(array $payload, string $currency): int
     {
-        $candidates = [
-            $payload['total_amount'] ?? null,
-            $payload['totalAmount'] ?? null,
-            $payload['win_amount'] ?? null,
-            $payload['winAmount'] ?? null,
-            $payload['amount'] ?? null,
-            $payload['payout'] ?? null,
-        ];
+        return self::extractWalletPayoutSubunits($payload, [], $currency);
+    }
 
-        foreach ($candidates as $value) {
-            if ($value === null || $value === '') {
+    private static function extractWalletPayoutSubunits(array $payload, array $action, string $currency): int
+    {
+        $candidateSets = [$action, $payload];
+
+        foreach ($candidateSets as $source) {
+            if (!is_array($source) || $source === []) {
                 continue;
             }
-            if (is_int($value)) {
-                return max(0, $value);
-            }
-            if (is_float($value)) {
-                return max(0, self::toSubunits($value, $currency));
-            }
 
-            $raw = trim((string) $value);
-            if ($raw === '') {
-                continue;
-            }
-            if (preg_match('/[\.,]/', $raw) === 1) {
-                $normalized = str_replace(',', '.', $raw);
-                if (is_numeric($normalized)) {
-                    return max(0, self::toSubunits((float) $normalized, $currency));
+            foreach ([
+                $source['total_amount'] ?? null,
+                $source['totalAmount'] ?? null,
+                $source['win_amount'] ?? null,
+                $source['winAmount'] ?? null,
+                $source['amount'] ?? null,
+                $source['payout'] ?? null,
+            ] as $value) {
+                $subunits = self::normalizeWalletAmountCandidate($value, $currency);
+                if ($subunits > 0) {
+                    return $subunits;
                 }
-                continue;
-            }
-            if (is_numeric($raw)) {
-                return max(0, (int) $raw);
             }
         }
 
@@ -1377,6 +1368,34 @@ final class BgamingService
         }
 
         return 0;
+    }
+
+    private static function normalizeWalletAmountCandidate(mixed $value, string $currency): int
+    {
+        if ($value === null || $value === '') {
+            return 0;
+        }
+        if (is_int($value)) {
+            return max(0, $value);
+        }
+        if (is_float($value)) {
+            return max(0, self::toSubunits($value, $currency));
+        }
+
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return 0;
+        }
+        if (preg_match('/[\.,]/', $raw) === 1) {
+            $normalized = str_replace(',', '.', $raw);
+            if (is_numeric($normalized)) {
+                return max(0, self::toSubunits((float) $normalized, $currency));
+            }
+
+            return 0;
+        }
+
+        return is_numeric($raw) ? max(0, (int) $raw) : 0;
     }
 
     private static function syncFreespinIssueFromWallet(PDO $pdo, array $payload, string $status): void
@@ -1913,6 +1932,9 @@ final class BgamingService
                 }
 
                 $amountSubunits = (int) ($action['amount'] ?? 0);
+                if ($amountSubunits <= 0 && in_array($type, ['win', 'promo_win', 'freespins_win'], true)) {
+                    $amountSubunits = self::extractWalletPayoutSubunits($payload, $action, $currency);
+                }
                 $amount = self::fromSubunits($amountSubunits, $currency);
                 $before = $balance;
                 $originalActionId = trim((string) ($action['original_action_id'] ?? ''));
