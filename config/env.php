@@ -406,6 +406,8 @@ if (!function_exists('frontend_uri_is_backend_only')) {
             '/api/v2/bgaming-wallet',
             '/api/v2/megapayz',
             '/megapayz-callback',
+            '/megapayz/deposit',
+            '/MegaPayz/deposit',
             '/bgaming_callback',
             '/casino-callback',
             '/api/v2/sportsbook-wallet',
