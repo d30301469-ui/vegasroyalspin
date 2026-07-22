@@ -142,6 +142,7 @@ final class PublicMemberApiDispatcher
         'payments/methods' => true,
         'payment-methods' => true,
         'payment.php' => true,
+        'payment/status' => true,
         'payment/methods' => true,
         'payment_methods.php' => true,
         'profile/casino-game-history' => true,

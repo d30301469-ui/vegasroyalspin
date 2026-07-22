@@ -765,11 +765,16 @@ final class MegaPayzService
         $perPage = min(100, max(1, (int) ($query['per_page'] ?? $query['limit'] ?? 20)));
         $offset = ($page - 1) * $perPage;
         $status = trim((string) ($query['status'] ?? ''));
+        $trx = trim((string) ($query['trx'] ?? ''));
         $where = ['user_id = :user_id', 'type = :type'];
         $params = ['user_id' => $userId, 'type' => $type];
         if ($status !== '') {
             $where[] = 'status = :status';
             $params['status'] = $status;
+        }
+        if ($trx !== '') {
+            $where[] = 'trx = :trx';
+            $params['trx'] = $trx;
         }
         $whereSql = implode(' AND ', $where);
         $countStmt = $pdo->prepare('SELECT COUNT(*) FROM megapayz_transactions WHERE ' . $whereSql);
@@ -798,6 +803,14 @@ final class MegaPayzService
                 'hasNext' => $page < $totalPages,
             ],
         ];
+    }
+
+    public static function findUserTransactionByTrx(PDO $pdo, int $userId, string $trx, string $type = 'deposit'): ?array
+    {
+        $history = self::history($pdo, $userId, $type, ['trx' => trim($trx), 'limit' => 1]);
+        $items = is_array($history['items'] ?? null) ? $history['items'] : [];
+
+        return isset($items[0]) && is_array($items[0]) ? $items[0] : null;
     }
 
     private static function runtimeSchemaChangesAllowed(): bool
@@ -1091,6 +1104,10 @@ final class MegaPayzService
             'admin_status' => null,
             'created_at' => (string) ($row['created_at'] ?? ''),
             'createdAt' => (string) ($row['created_at'] ?? ''),
+            'updated_at' => (string) ($row['updated_at'] ?? ''),
+            'updatedAt' => (string) ($row['updated_at'] ?? ''),
+            'finalized_at' => (string) ($row['finalized_at'] ?? ''),
+            'finalizedAt' => (string) ($row['finalized_at'] ?? ''),
         ];
     }
 }
