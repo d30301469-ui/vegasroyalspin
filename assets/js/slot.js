@@ -465,6 +465,13 @@
         );
     }
 
+    function isBgamingGame(game) {
+        if (!game || typeof game !== 'object') return false;
+        const provider = String(game.provider || game.provider_code || '').trim().toLowerCase();
+        const source = String(game.source || '').trim().toLowerCase();
+        return provider === 'bgaming' || source === 'bgaming';
+    }
+
     function normalizeApiResponse(data) {
         if (API_ADAPTER !== 'member_api_games') {
             return data || {};
@@ -484,6 +491,8 @@
                 provider_code: game.provider_code || '',
                 source: game.source || ''
             };
+        }).filter(function(game) {
+            return !isBgamingGame(game);
         });
         var page = Number(pagination.page || 1);
         var perPage = Number(pagination.perPage || PAGE_SIZE);

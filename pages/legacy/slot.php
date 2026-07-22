@@ -37,7 +37,15 @@ $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 
 // Oyunları al - SADECE SLOTS
 $games = getGames($searchTerm, $selectedProviders, $limit, $offset, $currentSort);
-$allUniqueProviders = getAllUniqueProviders();
+$games = array_values(array_filter($games, static function (array $game): bool {
+    $provider = strtolower(trim((string) ($game['provider'] ?? $game['provider_code'] ?? '')));
+    $source = strtolower(trim((string) ($game['source'] ?? '')));
+
+    return $provider !== 'bgaming' && $source !== 'bgaming';
+}));
+$allUniqueProviders = array_values(array_filter(getAllUniqueProviders(), static function (string $provider): bool {
+    return stripos($provider, 'bgaming') === false && stripos($provider, 'b gaming') === false;
+}));
 $slotDemoHref = static function (array $game): string {
     $gid = (string) ($game['game_id'] ?? '');
 

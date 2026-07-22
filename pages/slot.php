@@ -27,7 +27,12 @@ $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
 $result = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $currentSort);
-$games = $result['games'];
+$games = array_values(array_filter($result['games'], static function (array $game): bool {
+    $provider = strtolower(trim((string) ($game['provider'] ?? $game['provider_code'] ?? '')));
+    $source = strtolower(trim((string) ($game['source'] ?? '')));
+
+    return $provider !== 'bgaming' && $source !== 'bgaming';
+}));
 $allUniqueProviders = array_values(array_filter(getAllUniqueProviders(), static function (string $provider): bool {
     return stripos($provider, 'bgaming') === false && stripos($provider, 'b gaming') === false;
 }));
