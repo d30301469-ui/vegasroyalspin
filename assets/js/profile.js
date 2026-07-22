@@ -627,9 +627,16 @@
             && urlObj.searchParams.get('page') === 'history');
     }
 
+    function isMobileSiteContext() {
+        var host = String((window.location && window.location.hostname) || '').toLowerCase();
+        if (host.indexOf('m.') === 0) return true;
+        var body = document.body;
+        return !!(body && body.classList && body.classList.contains('mobile-site'));
+    }
+
     function toModalUrl(url) {
         var base = new URL(url, window.location.origin);
-        if (isHomeBalanceHistoryQuery(base)) {
+        if (isHomeBalanceHistoryQuery(base) && !isMobileSiteContext()) {
             base.pathname = '/profile/deposit-withdraw-history';
             base.search = '';
         } else if (base.pathname === '/profile/transaction-history') {
@@ -1737,6 +1744,9 @@
                 if (!isHomeBalanceHistoryQuery(parsed)) {
                     return false;
                 }
+                if (isMobileSiteContext()) {
+                    return false;
+                }
                 parsed = new URL('/profile/deposit-withdraw-history', window.location.origin);
             }
 
@@ -1751,6 +1761,9 @@
         }
 
         function maybeOpenProfileModalFromHomeHistoryQuery() {
+            if (isMobileSiteContext()) {
+                return;
+            }
             var current;
             try {
                 current = new URL(window.location.href);
