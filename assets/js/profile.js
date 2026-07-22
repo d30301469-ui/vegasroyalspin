@@ -518,6 +518,36 @@
     var profileShellPrefetchPending = {};
     var profileShellPrefetchQueued = false;
     var profileShellPrefetchDone = false;
+    var PROFILE_AUTH_RELOAD_GUARD_KEY = 'profileAuthReloadGuard';
+    var PROFILE_AUTH_RELOAD_WINDOW_MS = 15000;
+
+    function clearProfileAuthReloadGuard() {
+        try {
+            sessionStorage.removeItem(PROFILE_AUTH_RELOAD_GUARD_KEY);
+        } catch (eGuard) {}
+        window.__profileAuthReloadAttempted = false;
+    }
+
+    function shouldAttemptProfileAuthReload() {
+        var now = Date.now();
+        try {
+            var raw = sessionStorage.getItem(PROFILE_AUTH_RELOAD_GUARD_KEY);
+            var guard = raw ? JSON.parse(raw) : null;
+            var sameWindow = !!(guard && guard.ts && (now - Number(guard.ts) < PROFILE_AUTH_RELOAD_WINDOW_MS));
+            var count = sameWindow ? Number(guard.count || 0) : 0;
+            if (count >= 1) {
+                return false;
+            }
+            sessionStorage.setItem(PROFILE_AUTH_RELOAD_GUARD_KEY, JSON.stringify({ ts: now, count: count + 1 }));
+            return true;
+        } catch (eGuard) {
+            if (window.__profileAuthReloadAttempted) {
+                return false;
+            }
+            window.__profileAuthReloadAttempted = true;
+            return true;
+        }
+    }
 
     function fastStringHash(input) {
         var str = String(input || '');
@@ -1168,6 +1198,7 @@
 
         loadPromise
             .then(function(html) {
+                clearProfileAuthReloadGuard();
                 window.__profileBilgiTitleBackup = undefined;
                 var merged = false;
                 try {
@@ -1199,14 +1230,26 @@
             .catch(function(err) {
                 if (err && err.authRequired) {
                     if (shellRoot.id === 'profileModalContent') {
-                        shellRoot.innerHTML = '<div style="padding:16px;color:#fff;">Oturum doğrulanıyor, sayfa yenileniyor...</div>';
+                        shellRoot.innerHTML = '<div style="padding:16px;color:#fff;">Oturum doğrulanıyor...</div>';
                     }
                     if (window.MaltabetToast) {
                         MaltabetToast.warning('Oturum bilgisi yenileniyor. Lütfen tekrar deneyin.', 'Oturum');
                     }
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 900);
+                    if (shouldAttemptProfileAuthReload()) {
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 900);
+                    } else {
+                        if (window.history && typeof window.history.replaceState === 'function') {
+                            window.history.replaceState({}, '', '/');
+                        }
+                        if (profileModalApi && typeof profileModalApi.closeModal === 'function') {
+                            profileModalApi.closeModal();
+                        }
+                        if (window.MaltabetToast) {
+                            MaltabetToast.error('Oturum yenileme döngüsü durduruldu. Lütfen tekrar giriş yapın.', 'Oturum');
+                        }
+                    }
                     return;
                 }
                 if (isFullPage) {
