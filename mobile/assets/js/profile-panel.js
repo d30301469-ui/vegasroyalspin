@@ -1,6 +1,8 @@
 (function () {
   'use strict';
 
+  window.__mprofilePaymentModalPrimary = true;
+
   function getPanel() { return document.getElementById('mprofilePanel'); }
   function getOverlay() { return document.getElementById('mprofileOverlay'); }
   var Shared = window.BetcoAuthShared || {};
