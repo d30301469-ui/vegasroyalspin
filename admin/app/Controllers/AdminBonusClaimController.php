@@ -23,6 +23,7 @@ final class AdminBonusClaimController extends AdminController
 
         $pdo = AdminDatabase::pdo();
         $adminUsername = AdminAuth::userName();
+        $processedByBinding = $this->processedByBinding($pdo);
 
         try {
             $pdo->beginTransaction();
@@ -85,11 +86,14 @@ final class AdminBonusClaimController extends AdminController
             $pdo->prepare('UPDATE users SET bonus_balance = bonus_balance + :amount WHERE id = :id')
                 ->execute(['amount' => number_format($bonusAmount, 2, '.', ''), 'id' => $userId]);
 
-            $pdo->prepare(
+            $claimUpdate = $pdo->prepare(
                 "UPDATE bonus_claim_requests
                  SET status = 'approved', processed_by = :processed_by, processed_at = NOW(), updated_at = NOW()
                  WHERE id = :id"
-            )->execute(['processed_by' => $adminUsername, 'id' => $id]);
+            );
+            $claimUpdate->bindValue(':processed_by', $processedByBinding['value'], $processedByBinding['type']);
+            $claimUpdate->bindValue(':id', $id, PDO::PARAM_INT);
+            $claimUpdate->execute();
 
             AdminAuth::writeLog($adminUsername, 'bonus_claim_approve', 'bonus_claim_requests', 'success', (string) $id);
             $pdo->commit();
@@ -118,12 +122,15 @@ final class AdminBonusClaimController extends AdminController
 
         $pdo = AdminDatabase::pdo();
         $adminUsername = AdminAuth::userName();
+        $processedByBinding = $this->processedByBinding($pdo);
         $stmt = $pdo->prepare(
             "UPDATE bonus_claim_requests
              SET status = 'rejected', processed_by = :processed_by, processed_at = NOW(), updated_at = NOW()
              WHERE id = :id AND status = 'pending'"
         );
-        $stmt->execute(['processed_by' => $adminUsername, 'id' => $id]);
+        $stmt->bindValue(':processed_by', $processedByBinding['value'], $processedByBinding['type']);
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
 
         if ($stmt->rowCount() > 0) {
             AdminAuth::writeLog($adminUsername, 'bonus_claim_reject', 'bonus_claim_requests', 'success', (string) $id);
@@ -147,5 +154,40 @@ final class AdminBonusClaimController extends AdminController
     private function flash(string $message): void
     {
         $_SESSION['admin_flash'] = $message;
+    }
+
+    /**
+     * processed_by kolonunu şema tipine göre güvenli biçimde doldurur.
+     *
+     * @return array{value:int|string,type:int}
+     */
+    private function processedByBinding(PDO $pdo): array
+    {
+        $admin = AdminAuth::user();
+        $adminId = max(0, (int) ($admin['id'] ?? 0));
+        $adminUsername = (string) ($admin['username'] ?? AdminAuth::userName());
+        $isNumeric = true;
+
+        try {
+            $colStmt = $pdo->prepare(
+                "SELECT DATA_TYPE FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bonus_claim_requests' AND COLUMN_NAME = 'processed_by'
+                 LIMIT 1"
+            );
+            $colStmt->execute();
+            $dataType = strtolower((string) $colStmt->fetchColumn());
+            if ($dataType !== '') {
+                $isNumeric = in_array($dataType, ['tinyint', 'smallint', 'mediumint', 'int', 'integer', 'bigint'], true);
+            }
+        } catch (Throwable) {
+            // Tip tespit edilemezse integer değer kullanmak prod şemasıyla uyumludur.
+            $isNumeric = true;
+        }
+
+        if ($isNumeric) {
+            return ['value' => $adminId, 'type' => PDO::PARAM_INT];
+        }
+
+        return ['value' => $adminUsername, 'type' => PDO::PARAM_STR];
     }
 }
