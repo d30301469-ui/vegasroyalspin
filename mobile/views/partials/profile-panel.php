@@ -389,6 +389,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
 (function(){
   if (window.__mprofilePaymentModalFallbackBound) return;
   window.__mprofilePaymentModalFallbackBound = true;
+  if (window.__mprofilePaymentModalPrimary) return;
   window.__mprofileSiteName = <?= json_encode($panelSiteName, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
   var methodCache = null, active = null, submitting = false;
   function api(path){return window.BetcoAuthShared&&window.BetcoAuthShared.apiUrl?window.BetcoAuthShared.apiUrl(path):path;}
