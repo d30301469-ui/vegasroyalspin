@@ -240,6 +240,31 @@ if ($method === 'GET' && ($route === 'deposit_history.php' || $route === 'histor
     ]);
 }
 
+if ($method === 'GET' && ($route === 'payment/status' || $route === 'payment_status.php')) {
+    $userId = $memberRequireLogin();
+    $trx = trim((string) ($_GET['trx'] ?? ''));
+    if ($trx === '') {
+        $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'trx zorunludur.']);
+    }
+    $transaction = MegaPayzService::findUserTransactionByTrx(AdminDatabase::pdo(), $userId, $trx, 'deposit');
+    if ($transaction === null) {
+        $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'İşlem bulunamadı.']);
+    }
+    $status = strtolower(trim((string) ($transaction['status'] ?? '')));
+    $memberEnvelope(200, [
+        'success' => true,
+        'code' => 200,
+        'message' => 'İşlem durumu',
+        'data' => [
+            'transaction' => $transaction,
+            'trx' => $trx,
+            'status' => $status,
+            'confirmed' => in_array($status, ['confirmed', 'approved', 'completed', 'success'], true),
+            'terminal' => in_array($status, ['confirmed', 'approved', 'completed', 'success', 'rejected', 'failed', 'cancelled'], true),
+        ],
+    ]);
+}
+
 if ($method === 'GET' && ($route === 'withdraw_history.php' || $route === 'history/withdrawals')) {
     $userId = $memberRequireLogin();
     $pdo = AdminDatabase::pdo();

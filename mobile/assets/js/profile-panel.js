@@ -41,6 +41,7 @@
   var balanceMethodStore = { deposit: [], withdraw: [] };
   var activePaymentModal = null;
   var paymentModalSubmitting = false;
+  var activePaymentStatusPoll = null;
 
   function apiUrl(path) {
     return Shared.apiUrl ? Shared.apiUrl(path) : path;
@@ -879,6 +880,7 @@
   }
 
   function closePaymentModal() {
+    stopPaymentStatusPolling();
     var modal = document.getElementById('mprofilePaymentModal');
     if (!modal) return;
     modal.classList.remove('is-open');
@@ -887,6 +889,78 @@
     modal.style.opacity = '0';
     activePaymentModal = null;
     paymentModalSubmitting = false;
+  }
+
+  function stopPaymentStatusPolling() {
+    if (activePaymentStatusPoll && activePaymentStatusPoll.timer) {
+      clearTimeout(activePaymentStatusPoll.timer);
+    }
+    activePaymentStatusPoll = null;
+  }
+
+  function paymentStatusLabel(status) {
+    var normalized = String(status || '').toLowerCase();
+    var map = { pending: 'Ödeme bekleniyor', processing: 'İşlem kontrol ediliyor', approved: 'Ödeme onaylandı', confirmed: 'Ödeme onaylandı', completed: 'Ödeme tamamlandı', success: 'Ödeme tamamlandı', rejected: 'Ödeme reddedildi', failed: 'Ödeme başarısız oldu', cancelled: 'Ödeme iptal edildi' };
+    return map[normalized] || 'İşlem durumu güncelleniyor';
+  }
+
+  function paymentStatusTerminal(status) {
+    return ['approved', 'confirmed', 'completed', 'success', 'rejected', 'failed', 'cancelled'].indexOf(String(status || '').toLowerCase()) !== -1;
+  }
+
+  function updatePaymentMonitorMessage(status, text) {
+    var state = document.querySelector('#mprofilePaymentModal [data-mprofile-payment-status]');
+    var hint = document.querySelector('#mprofilePaymentModal [data-mprofile-payment-status-hint]');
+    if (state) state.textContent = paymentStatusLabel(status);
+    if (hint && text) hint.textContent = text;
+  }
+
+  function openMobileDepositResultSurface() {
+    var panel = getPanel();
+    transactionHistoryLoaded = false;
+    closePaymentModal();
+    showBalancePage(panel, 'history');
+  }
+
+  function pollMobileDepositStatus(trx, attempt) {
+    attempt = attempt || 0;
+    if (!trx) return;
+    fetch(appendQuery(apiUrl('/api/v2/payment/status'), 'trx=' + encodeURIComponent(trx)), { credentials: 'same-origin', headers: memberAuthHeaders({ Accept: 'application/json' }) })
+      .then(function (res) { return res.json().catch(function () { return null; }); })
+      .then(function (env) {
+        if (!env || !env.success || !env.data) throw new Error('status-unavailable');
+        var status = String(env.data.status || '').toLowerCase();
+        updatePaymentMonitorMessage(status, env.message || 'Ödeme onayı bekleniyor.');
+        if (['approved', 'confirmed', 'completed', 'success'].indexOf(status) !== -1) {
+          updatePaymentMonitorMessage(status, 'Ödemeniz onaylandı. İşlem geçmişiniz açılıyor.');
+          setTimeout(openMobileDepositResultSurface, 500);
+          return;
+        }
+        if (paymentStatusTerminal(status)) {
+          stopPaymentStatusPolling();
+          setPaymentModalMessage('error', paymentStatusLabel(status) + '.');
+          return;
+        }
+        if (!activePaymentStatusPoll || activePaymentStatusPoll.trx !== trx) return;
+        activePaymentStatusPoll.timer = setTimeout(function () { pollMobileDepositStatus(trx, attempt + 1); }, attempt < 20 ? 2500 : 4000);
+      })
+      .catch(function () {
+        if (!activePaymentStatusPoll || activePaymentStatusPoll.trx !== trx) return;
+        activePaymentStatusPoll.timer = setTimeout(function () { pollMobileDepositStatus(trx, attempt + 1); }, 4000);
+      });
+  }
+
+  function openMobileDepositMonitor(method, paymentUrl, trx) {
+    var content = document.getElementById('mprofilePaymentModalContent');
+    if (!content || !paymentUrl || !trx) {
+      if (paymentUrl) window.location.href = paymentUrl;
+      return;
+    }
+    stopPaymentStatusPolling();
+    activePaymentModal = { kind: 'deposit', method: method, trx: trx, paymentUrl: paymentUrl };
+    content.innerHTML = '<div class="payment-info-bc" tabindex="-1"><div class="payment-info-content"><div class="expandableContentWrapper"><div class="expandableContentData ' + escapeHtml(paymentMethodClass(method)) + ' payment-content not-expandable" data-scroll-lock-scrollable><div class="container"><p data-mprofile-payment-status>Ödeme bekleniyor</p><p data-mprofile-payment-status-hint>Ödeme onaylandığında bu alan otomatik güncellenecek.</p><p><strong>Referans:</strong> ' + escapeHtml(trx) + '</p></div></div></div><div style="border-radius:16px;overflow:hidden;background:#fff"><iframe src="' + escapeHtml(paymentUrl) + '" title="MegaPayz ödeme" style="display:block;width:100%;height:460px;border:0;background:#fff"></iframe></div></div></div>';
+    activePaymentStatusPoll = { trx: trx, timer: null };
+    pollMobileDepositStatus(trx, 0);
   }
 
   function paymentMethodClass(method) {
@@ -1072,7 +1146,13 @@
       .then(function (res) { return res.json(); })
       .then(function (env) {
         if (env && env.success && env.data && env.data.payment_url) {
-          window.location.href = String(env.data.payment_url);
+          var payUrl = String(env.data.payment_url).trim();
+          var trx = env.data.trx ? String(env.data.trx).trim() : '';
+          if (kind === 'deposit' && payUrl && trx) {
+            openMobileDepositMonitor(method, payUrl, trx);
+            return;
+          }
+          window.location.href = payUrl;
           return;
         }
         if (env && env.success) {

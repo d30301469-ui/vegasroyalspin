@@ -2066,6 +2066,7 @@
     var depositSubmitInFlight = false;
     /** Çekim talebi sürerken ikinci tıklamayı engelle (buton metni yarışından kaçın) */
     var withdrawSubmitInFlight = false;
+    var activeDepositStatusPoll = null;
 
     function openDefaultDepositPanel() {
         setTimeout(function() {
@@ -2335,10 +2336,123 @@
     }
 
     function closeVegaPanel() {
+        stopDepositStatusPolling();
         var panel = document.getElementById('vegaPanel');
         var overlay = document.getElementById('vegaOverlay');
         if (panel) panel.classList.remove('active');
         if (overlay) overlay.classList.remove('active');
+    }
+
+    function stopDepositStatusPolling() {
+        if (activeDepositStatusPoll && activeDepositStatusPoll.timer) {
+            clearTimeout(activeDepositStatusPoll.timer);
+        }
+        activeDepositStatusPoll = null;
+    }
+
+    function depositStatusLabel(status) {
+        var normalized = String(status || '').toLowerCase();
+        var labels = {
+            pending: 'Ödeme bekleniyor',
+            processing: 'İşlem kontrol ediliyor',
+            approved: 'Ödeme onaylandı',
+            confirmed: 'Ödeme onaylandı',
+            completed: 'Ödeme tamamlandı',
+            success: 'Ödeme tamamlandı',
+            rejected: 'Ödeme reddedildi',
+            failed: 'Ödeme başarısız oldu',
+            cancelled: 'Ödeme iptal edildi'
+        };
+
+        return labels[normalized] || 'İşlem durumu güncelleniyor';
+    }
+
+    function depositStatusIsTerminal(status) {
+        return ['approved', 'confirmed', 'completed', 'success', 'rejected', 'failed', 'cancelled'].indexOf(String(status || '').toLowerCase()) !== -1;
+    }
+
+    function updateDepositMonitorUi(status, message) {
+        var statusEl = document.getElementById('vegaDepositStatusText');
+        var hintEl = document.getElementById('vegaDepositStatusHint');
+        if (statusEl) statusEl.textContent = depositStatusLabel(status);
+        if (hintEl && message) hintEl.textContent = message;
+    }
+
+    function openDesktopDepositResultSurface() {
+        stopDepositStatusPolling();
+        fetchBalanceData(true).catch(function() {});
+        var profileModal = document.getElementById('profileModal');
+        if (typeof closeVegaPanel === 'function') closeVegaPanel();
+        if (profileModal && profileModal.classList.contains('is-open') && typeof window.__openProfileModalUrl === 'function') {
+            window.__openProfileModalUrl('/profile/deposit-withdraw-history');
+            return;
+        }
+        window.location.href = '/profile/deposit-withdraw-history';
+    }
+
+    function pollDesktopDepositStatus(trx, attempt) {
+        attempt = attempt || 0;
+        if (!trx) return;
+        fetch(appendQuery(apiUrl('/api/v2/payment/status'), 'trx=' + encodeURIComponent(trx)), {
+            credentials: 'same-origin',
+            headers: memberAuthHeaders({ Accept: 'application/json' })
+        })
+            .then(function(response) { return response.json().catch(function() { return null; }); })
+            .then(function(env) {
+                if (!env || !env.success || !env.data) {
+                    throw new Error('status-unavailable');
+                }
+                var status = String(env.data.status || '').toLowerCase();
+                updateDepositMonitorUi(status, env.message || 'Ödeme onayı bekleniyor.');
+                if (['approved', 'confirmed', 'completed', 'success'].indexOf(status) !== -1) {
+                    updateDepositMonitorUi(status, 'Ödemeniz onaylandı. İşlem geçmişiniz açılıyor.');
+                    setTimeout(openDesktopDepositResultSurface, 600);
+                    return;
+                }
+                if (depositStatusIsTerminal(status)) {
+                    stopDepositStatusPolling();
+                    showAppFeedbackDialog({ type: 'error', title: 'Ödeme tamamlanamadı', message: depositStatusLabel(status) + '.' });
+                    return;
+                }
+                if (!activeDepositStatusPoll || activeDepositStatusPoll.trx !== trx) return;
+                activeDepositStatusPoll.timer = setTimeout(function() {
+                    pollDesktopDepositStatus(trx, attempt + 1);
+                }, attempt < 20 ? 2500 : 4000);
+            })
+            .catch(function() {
+                if (!activeDepositStatusPoll || activeDepositStatusPoll.trx !== trx) return;
+                activeDepositStatusPoll.timer = setTimeout(function() {
+                    pollDesktopDepositStatus(trx, attempt + 1);
+                }, 4000);
+            });
+    }
+
+    function openDesktopDepositMonitor(paymentUrl, trx) {
+        var panel = document.getElementById('vegaPanel');
+        var overlay = document.getElementById('vegaOverlay');
+        var panelContent = document.getElementById('panelContent');
+        if (!panel || !panelContent || !paymentUrl || !trx) {
+            if (paymentUrl) window.location.href = paymentUrl;
+            return;
+        }
+        stopDepositStatusPolling();
+        panel.classList.remove('vega-panel--withdraw');
+        panel.classList.add('vega-panel--deposit');
+        panelContent.innerHTML = ''
+            + '<div class="vega-deposit-sheet">'
+            + '<div class="panel-info-table vega-deposit-summary">'
+            + '<div class="panel-info-cell"><strong>Durum</strong><span id="vegaDepositStatusText">Ödeme bekleniyor</span></div>'
+            + '<div class="panel-info-cell"><strong>Referans</strong><span>' + escapeHtml(trx) + '</span></div>'
+            + '</div>'
+            + '<div class="panel-instruction vega-deposit-welcome" id="vegaDepositStatusHint">Ödeme onaylandığında bu alan otomatik güncellenecek.</div>'
+            + '<div style="margin-top:16px;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 10px 28px rgba(15,23,42,.08)">'
+            + '<iframe src="' + escapeHtml(paymentUrl) + '" title="MegaPayz ödeme" style="display:block;width:100%;height:560px;border:0;background:#fff"></iframe>'
+            + '</div>'
+            + '</div>';
+        panel.classList.add('active');
+        if (overlay) overlay.classList.add('active');
+        activeDepositStatusPoll = { trx: trx, timer: null };
+        pollDesktopDepositStatus(trx, 0);
     }
 
     function createDepositFormHtml(limits, method, provider, name) {
@@ -2965,9 +3079,13 @@
                     return;
                 }
                 if (data.success && data.data && data.data.payment_url) {
-                    if (typeof closeVegaPanel === 'function') closeVegaPanel();
                     var payUrl = String(data.data.payment_url).trim();
                     if (payUrl) {
+                        var trx = data.data.trx ? String(data.data.trx).trim() : '';
+                        if (trx) {
+                            openDesktopDepositMonitor(payUrl, trx);
+                            return;
+                        }
                         window.location.href = payUrl;
                     }
                     return;
