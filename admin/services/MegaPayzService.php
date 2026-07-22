@@ -963,7 +963,7 @@ final class MegaPayzService
     private static function defaultReturnUrl(): string
     {
         $site = defined('FRONTEND_URL') ? rtrim((string) FRONTEND_URL, '/') : (defined('SITE_URL') ? rtrim((string) SITE_URL, '/') : '');
-        return $site !== '' ? $site . '/profile/deposit-withdraw-history' : '/profile/deposit-withdraw-history';
+        return $site !== '' ? $site . '/?profile=open&account=balance&page=history' : '/?profile=open&account=balance&page=history';
     }
 
     private static function defaultCallbackUrl(): string
