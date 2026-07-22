@@ -82,6 +82,71 @@
     return ['deposit', 'withdraw', 'history', 'info', 'withdraws'].indexOf(page) !== -1 ? page : 'deposit';
   }
 
+  function buildCurrentHomeUrl() {
+    var params;
+    try {
+      params = new URLSearchParams(window.location.search || '');
+    } catch (e) {
+      params = null;
+    }
+
+    if (params && params.get('profile') === 'open' && params.get('account')) {
+      return '/?' + params.toString();
+    }
+
+    var panel = getPanel();
+    if (!panel) return '/';
+
+    if (panel.classList.contains('mprofile-balance-active')) {
+      var balanceTab = panel.querySelector('[data-mbalance-tab].active');
+      var balanceSection = balanceTab ? (balanceTab.getAttribute('data-mbalance-tab') || 'deposit') : 'deposit';
+      return '/?profile=open&account=balance&page=' + encodeURIComponent(balanceSection);
+    }
+
+    if (panel.classList.contains('mprofile-bet-history-active')) {
+      var betTab = panel.querySelector('[data-mbet-history-tab].active');
+      var betPage = betTab ? (betTab.getAttribute('data-mbet-history-tab') || activeBetHistoryPage || 'bets') : (activeBetHistoryPage || 'bets');
+      return '/?profile=open&account=history&page=' + encodeURIComponent(betPage);
+    }
+
+    if (panel.classList.contains('mprofile-casino-history-active')) {
+      var casinoTab = panel.querySelector('[data-mcasino-history-tab].active');
+      var casinoPage = casinoTab ? (casinoTab.getAttribute('data-mcasino-history-tab') || activeCasinoHistoryPage || 'bets') : (activeCasinoHistoryPage || 'bets');
+      var casinoUrl = '/?profile=open&account=bet&page=casino-history';
+      if (casinoPage && casinoPage !== 'bets') {
+        casinoUrl += '&filter=' + encodeURIComponent(casinoPage);
+      }
+      return casinoUrl;
+    }
+
+    if (panel.classList.contains('mprofile-bonuses-active')) {
+      var bonusTab = panel.querySelector('[data-mbonus-tab].active');
+      var bonusPage = bonusTab ? (bonusTab.getAttribute('data-mbonus-tab') || 'bonus-request') : 'bonus-request';
+      return '/?profile=open&account=bonuses&page=' + encodeURIComponent(bonusPage);
+    }
+
+    if (panel.classList.contains('mprofile-messages-active')) {
+      var messageTab = panel.querySelector('[data-mmessages-tab].active');
+      var messagePage = messageTab ? (messageTab.getAttribute('data-mmessages-tab') || activeMessagesPage || 'inbox') : (activeMessagesPage || 'inbox');
+      return '/?profile=open&account=messages&page=' + encodeURIComponent(messagePage);
+    }
+
+    if (panel.classList.contains('mprofile-detail-active')) {
+      var profileTab = panel.querySelector('[data-mprofile-tab].active');
+      var profilePage = profileTab ? (profileTab.getAttribute('data-mprofile-tab') || 'details') : 'details';
+      return '/?profile=open&account=profile&page=' + encodeURIComponent(profilePage);
+    }
+
+    return '/';
+  }
+
+  window.__openMobileHomeWithCurrentPage = function () {
+    var targetUrl = buildCurrentHomeUrl();
+    if (!targetUrl) return false;
+    window.location.href = targetUrl;
+    return true;
+  };
+
   function requestedBetHistorySection() {
     var pathname = window.location.pathname || '';
     if (pathname.replace(/\/+$/, '') === '/profile/bet-history') return 'bets';
