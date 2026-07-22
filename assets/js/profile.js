@@ -2426,10 +2426,16 @@
     }
 
     function openDesktopDepositMonitor(paymentUrl, trx) {
+        var payUrl = String(paymentUrl || '').trim();
+        if (!payUrl) {
+            return;
+        }
         var panel = document.getElementById('vegaPanel');
         var overlay = document.getElementById('vegaOverlay');
         var panelContent = document.getElementById('panelContent');
-        if (!panel || !panelContent || !paymentUrl) {
+        if (!panel || !panelContent) {
+            // Some desktop layouts no longer render vegaPanel; fall back to direct navigation.
+            window.location.href = payUrl;
             return;
         }
         stopDepositStatusPolling();
@@ -2443,7 +2449,7 @@
             + '</div>'
             + '<div class="panel-instruction vega-deposit-welcome" id="vegaDepositStatusHint">Ödeme onaylandığında bu alan otomatik güncellenecek.</div>'
             + '<div style="margin-top:16px;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 10px 28px rgba(15,23,42,.08)">'
-            + '<iframe src="' + escapeHtml(paymentUrl) + '" title="MegaPayz ödeme" style="display:block;width:100%;height:560px;border:0;background:#fff"></iframe>'
+            + '<iframe src="' + escapeHtml(payUrl) + '" title="MegaPayz ödeme" style="display:block;width:100%;height:560px;border:0;background:#fff"></iframe>'
             + '</div>'
             + '</div>';
         panel.classList.add('active');
