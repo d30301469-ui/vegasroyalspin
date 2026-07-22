@@ -126,7 +126,7 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                                     <a class="depositNav-link" href="/profile/withdraw" data-nav-mode="modal" role="menuitem">
                                         <i class="depositNav-icon bc-i-withdraw" aria-hidden="true"></i> ÇEKİM
                                     </a>
-                                    <a class="depositNav-link" href="/profile/deposit-withdraw-history" data-nav-mode="modal" role="menuitem">
+                                    <a class="depositNav-link" href="/?profile=open&amp;account=balance&amp;page=history" data-profile-modal-href="/profile/deposit-withdraw-history" data-nav-mode="modal" role="menuitem">
                                         <i class="depositNav-icon bc-i-bet-history" aria-hidden="true"></i> İŞLEM GEÇMİŞİ
                                     </a>
                                     <a class="depositNav-link" href="/profile/deposit-withdraw?bilgi=1#bilgi" data-nav-mode="modal" role="menuitem">
