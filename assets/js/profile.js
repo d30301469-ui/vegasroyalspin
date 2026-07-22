@@ -1775,6 +1775,9 @@
             }
             if (window.__profileHistoryAutoOpened) return;
             window.__profileHistoryAutoOpened = true;
+            if (window.history && typeof window.history.replaceState === 'function') {
+                window.history.replaceState({}, '', '/');
+            }
             openProfileModalUrl('/?profile=open&account=balance&page=history');
         }
 
