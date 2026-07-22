@@ -305,7 +305,26 @@
     document.body.classList.remove('mprofile-open');
     document.body.classList.remove('overlay-sliding-is-visible', 'overlaySlidingIsVisible');
     isOpen = false;
+    consumeHomeProfileQuery();
     showProfileMenu(panel);
+  }
+
+  function isHomeProfileQueryOpen() {
+    if ((window.location.pathname || '/') !== '/') return false;
+    var params;
+    try {
+      params = new URLSearchParams(window.location.search || '');
+    } catch (e) {
+      return false;
+    }
+    return params.get('profile') === 'open' && !!params.get('account');
+  }
+
+  function consumeHomeProfileQuery() {
+    if (!isHomeProfileQueryOpen()) return;
+    if (window.history && typeof window.history.replaceState === 'function') {
+      window.history.replaceState({}, '', '/');
+    }
   }
 
   function escapeHtml(value) {
@@ -2453,21 +2472,27 @@
       var initialBonusSection = requestedBonusSection();
       var initialMessagesSection = requestedMessagesSection();
       if (initialMessagesSection) {
+        consumeHomeProfileQuery();
         openPanel();
         showMessagesPage(panel, initialMessagesSection);
       } else if (initialBonusSection) {
+        consumeHomeProfileQuery();
         openPanel();
         showBonusesPage(panel, initialBonusSection);
       } else if (initialCasinoHistorySection) {
+        consumeHomeProfileQuery();
         openPanel();
         showCasinoHistoryPage(panel, initialCasinoHistorySection);
       } else if (initialBetHistorySection) {
+        consumeHomeProfileQuery();
         openPanel();
         showBetHistoryPage(panel, initialBetHistorySection);
       } else if (initialBalanceSection) {
+        consumeHomeProfileQuery();
         openPanel();
         showBalancePage(panel, initialBalanceSection);
       } else if (initialSection) {
+        consumeHomeProfileQuery();
         openPanel();
         showProfileDetails(panel, initialSection);
       }
