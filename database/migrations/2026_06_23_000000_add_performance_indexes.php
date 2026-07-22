@@ -61,7 +61,6 @@ return static function (PDO $pdo): void {
     };
 
     $addIndex($pdo, 'megapayz_transactions', 'idx_megapayz_type_status_created', ['type', 'status', 'created_at']);
-    $addIndex($pdo, 'drakon_transactions', 'idx_drakon_txntype_created', ['txn_type', 'created_at']);
     $addIndex($pdo, 'bgaming_transactions', 'idx_bgaming_txntype_processed', ['txn_type', 'processed_at']);
     $addIndex($pdo, 'kyc_requests', 'idx_kyc_status_submitted', ['status', 'submitted_at']);
     $addIndex($pdo, 'user_active_bonuses', 'idx_active_bonus_status_created', ['status', 'created_at']);

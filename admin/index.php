@@ -31,10 +31,6 @@ if (!AdminInstallGate::isInstalled(__DIR__)) {
 $isLightweightRoute = preg_match('#^/api/v2/(?:bgaming-wallet|bgaming)(?:/.*)?$#', $backendPath) === 1
     || $backendPath === '/api/v2/megapayz-callback'
     || $backendPath === '/api/v2/casino-callback'
-    || $backendPath === '/drakon_api'
-    || str_starts_with($backendPath, '/drakon_api/')
-    || $backendPath === '/api/v2/drakon_callback'
-    || str_starts_with($backendPath, '/api/v2/drakon_callback/')
     || $backendPath === '/api/v2/sportsbook-wallet'
     || str_starts_with($backendPath, '/api/v2/sportsbook-wallet/')
     || $backendPath === '/sportsbook_api'
@@ -87,38 +83,6 @@ if ($isLightweightRoute) {
             http_response_code($megaCode);
         }
         echo json_encode($megaResult, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        exit;
-    }
-    if ($backendPath === '/drakon_api'
-        || str_starts_with($backendPath, '/drakon_api/')
-        || $backendPath === '/api/v2/drakon_callback'
-        || str_starts_with($backendPath, '/api/v2/drakon_callback/')
-    ) {
-        $rawBody = (string) file_get_contents('php://input');
-        $body = json_decode($rawBody, true);
-        if (!is_array($body) && $_POST !== []) {
-            $body = $_POST;
-        }
-        if (!is_array($body) && trim($rawBody) !== '') {
-            parse_str($rawBody, $parsed);
-            if (is_array($parsed) && $parsed !== []) {
-                $body = $parsed;
-            }
-        }
-        $method = trim((string) ($body['method'] ?? $body['action'] ?? ''));
-        $method = strtolower(str_replace(['_', ' '], '', $method));
-        if (in_array($method, ['getbalance', 'changebalance', 'updatedetail'], true)) {
-            require_once __DIR__ . '/app/Core/AdminPaths.php';
-            admin_paths_bootstrap();
-            require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
-            require __DIR__ . '/api/v2/sportsbook_callback.php';
-            exit;
-        }
-
-        require_once __DIR__ . '/app/Core/AdminPaths.php';
-        admin_paths_bootstrap();
-        require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
-        require __DIR__ . '/api/v2/drakon_callback.php';
         exit;
     }
     if ($backendPath === '/api/v2/sportsbook-wallet'
@@ -215,15 +179,6 @@ $router->get('/bgaming/freespins', [AdminBgamingController::class, 'freespins'])
 $router->post('/bgaming/freespins/issue', [AdminBgamingController::class, 'issueFreespins']);
 $router->post('/bgaming/freespins/sync', [AdminBgamingController::class, 'syncFreespinStatus']);
 $router->post('/bgaming/freespins/cancel', [AdminBgamingController::class, 'cancelFreespin']);
-$router->get('/drakon/settings', [AdminDrakonController::class, 'settings']);
-$router->post('/drakon/settings', [AdminDrakonController::class, 'updateSettings']);
-$router->post('/drakon/sync-providers', [AdminDrakonController::class, 'syncProviders']);
-$router->post('/drakon/sync-games', [AdminDrakonController::class, 'syncGames']);
-$router->get('/drakon/campaigns', [AdminDrakonController::class, 'campaigns']);
-$router->post('/drakon/campaigns/create', [AdminDrakonController::class, 'createCampaign']);
-$router->post('/drakon/campaigns/cancel', [AdminDrakonController::class, 'cancelCampaign']);
-$router->post('/drakon/campaigns/players/add', [AdminDrakonController::class, 'addPlayers']);
-$router->post('/drakon/campaigns/players/remove', [AdminDrakonController::class, 'removePlayers']);
 $router->get('/sportsbook/settings', [AdminSportsbookController::class, 'settings']);
 $router->post('/sportsbook/settings', [AdminSportsbookController::class, 'updateSettings']);
 $router->get('/megapayz/settings', [AdminMegaPayzController::class, 'settings']);

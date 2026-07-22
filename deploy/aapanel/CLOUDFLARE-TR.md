@@ -62,15 +62,15 @@ Bunu yaptıktan sonra:
 
 ---
 
-## Sağlayıcı callback'leri (MegaPayz / Drakon / BGaming / Casino)
+## Sağlayıcı callback'leri (MegaPayz / BGaming / Casino)
 
 Bu uçlar sunucu-sunucu webhook'tur ve IP allowlist kullanabilir:
 
-- `DRAKON_CALLBACK_ALLOWED_IPS`, `MEGAPAYZ_CALLBACK_ALLOWED_IPS`, `CASINO_CALLBACK_ALLOWED_IPS`
+- `MEGAPAYZ_CALLBACK_ALLOWED_IPS`, `CASINO_CALLBACK_ALLOWED_IPS`
 - Domain **proxied** ise `REMOTE_ADDR` = Cloudflare IP olur → sağlayıcı IP allowlist'i **kırılır (403)**.
 - Çözüm (birini seçin):
   1. Allowlist'i **boş bırakın**, bunun yerine imza/secret doğrulamasına güvenin
-     (`DRAKON_CALLBACK_SECRET` vb.) — önerilen.
+   (sağlayıcı callback secret değerleri) — önerilen.
   2. Allowlist'e sağlayıcı IP'leri yerine **Cloudflare IP aralıklarını** yazın.
   3. Callback için **DNS-only (gri bulut)** ayrı subdomain kullanın.
 

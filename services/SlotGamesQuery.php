@@ -325,12 +325,10 @@ final class SlotGamesQuery
     }
 
     /**
-     * Combined BGaming + Drakon catalog page filtered by game_type.
+     * BGaming catalog page filtered by game_type.
      *
-     * BGaming games are all slots (game_type 0). Drakon games carry a real
-     * game_type column (0 = slot/casino, 1 = live casino). The two sources are
-     * merged with a single UNION so search, provider filtering and pagination
-     * stay correct across both providers.
+     * BGaming games are all slots (game_type 0), so the live-casino lobby
+     * (game_type 1) returns an empty result set.
      *
      * @param array<string, mixed> $query
      * @return array{games: array<int, array<string, mixed>>, pagination: array<string, mixed>}
@@ -353,10 +351,7 @@ final class SlotGamesQuery
         }
         $onlyFeatured = (string) ($query['is_featured'] ?? '') === '1';
         // Optional source restriction: 'bgaming' shows only the direct BGaming
-        // catalog, 'drakon' only the Drakon catalog. Empty means both providers.
-        // Required because Drakon (aggregator) also carries BGaming-branded games,
-        // so filtering by provider name alone would leak Drakon rows onto the
-        // dedicated /bgaming page.
+        // catalog. Empty means all sources.
         $source       = strtolower(trim((string) ($query['source'] ?? '')));
 
         $union = [];
@@ -373,19 +368,6 @@ final class SlotGamesQuery
                     CAST(id AS CHAR) AS row_id
                 FROM bgaming_games
                 WHERE is_active = 1";
-        }
-        if ($source === '' || $source === 'drakon') {
-            $union[] = "SELECT
-                    CONCAT('drakon:', game_id) AS game_id,
-                    game_name AS name,
-                    provider_name AS provider,
-                    provider_name AS provider_code,
-                    COALESCE(NULLIF(image_url, ''), NULLIF(banner, ''), '') AS image_url,
-                    is_featured AS is_featured,
-                    'drakon' AS source,
-                    CAST(id AS CHAR) AS row_id
-                FROM drakon_games
-                WHERE is_active = 1 AND game_type = {$gameType}";
         }
 
         if ($union === []) {
@@ -506,9 +488,9 @@ final class SlotGamesQuery
                     FROM bgaming_games
                     WHERE is_active = 1 AND provider <> ''";
             }
-            $union[] = "SELECT DISTINCT provider_name
-                FROM drakon_games
-                WHERE is_active = 1 AND game_type = {$gt} AND provider_name <> ''";
+            if ($union === []) {
+                return [];
+            }
             $sql  = implode(' UNION ', $union);
             $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable) {

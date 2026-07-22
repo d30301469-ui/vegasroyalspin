@@ -28,26 +28,22 @@ $memberUserById ??= static fn (\PDO $p, int $id): ?array => null;
 
 if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/providers', 'live-casino/providers', 'games-provider', 'games_provider.php'], true)) {
     $pdo = AdminDatabase::pdo();
-    // 0 = slot lobby (BGaming + Drakon casino), 1 = live casino (Drakon live).
+    // 0 = slot lobby (BGaming), 1 = live casino.
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
     if ($route === 'live-casino/providers') {
         $gameType = 1;
     }
     $providers = [];
     try {
-        $union = [];
         if ($gameType === 0) {
             // BGaming catalogue is slot-only.
-            $union[] = "SELECT DISTINCT provider AS provider_code, provider AS provider_name
+            $sql = "SELECT DISTINCT provider AS provider_code, provider AS provider_name
                 FROM bgaming_games
-                WHERE is_active = 1 AND provider <> ''";
+                WHERE is_active = 1 AND provider <> ''
+                ORDER BY provider_name ASC";
+            $pStmt = $pdo->query($sql);
+            $providers = $pStmt ? $pStmt->fetchAll(PDO::FETCH_ASSOC) : [];
         }
-        $union[] = "SELECT DISTINCT provider_name AS provider_code, provider_name
-            FROM drakon_games
-            WHERE is_active = 1 AND game_type = {$gameType} AND provider_name <> ''";
-        $sql   = 'SELECT provider_code, provider_name FROM (' . implode(' UNION ', $union) . ') p ORDER BY provider_name ASC';
-        $pStmt = $pdo->query($sql);
-        $providers = $pStmt ? $pStmt->fetchAll(PDO::FETCH_ASSOC) : [];
     } catch (Throwable) {}
     $memberEnvelope(200, [
         'success' => true,
@@ -85,7 +81,7 @@ if ($method === 'GET' && $route === 'casino/categories') {
 
 if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $pdo      = AdminDatabase::pdo();
-    // 0 = slot lobby (BGaming + Drakon casino), 1 = live casino (Drakon live).
+    // 0 = slot lobby (BGaming), 1 = live casino.
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
     $page     = max(1, (int) ($_GET['page'] ?? 1));
     $limit    = min(200, max(1, (int) ($_GET['limit'] ?? $_GET['per_page'] ?? 30)));
@@ -95,9 +91,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $onlyFeatured = (string) ($_GET['is_featured'] ?? '') === '1'
         || in_array(strtolower((string) ($_GET['sort'] ?? '')), ['popular', 'liked'], true);
     // Optional source restriction (matches SlotGamesQuery::combinedCatalogPage):
-    // 'bgaming' -> only the direct BGaming catalog, 'drakon' -> only Drakon,
-    // empty -> both providers. Prevents Drakon (aggregator) BGaming-branded games
-    // from leaking onto the dedicated /bgaming page.
+    // 'bgaming' -> only the direct BGaming catalog. Empty -> all sources.
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));
 
     admin_require_project_file('services/SlotGamesQuery.php');
@@ -176,23 +170,6 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 CAST(id AS CHAR) AS row_id
             FROM bgaming_games
             WHERE is_active = 1";
-    }
-    if ($source === '' || $source === 'drakon') {
-        $drakonGameTypeWhere = $gameType === 1
-            ? "(COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live')"
-            : "(COALESCE(game_type, 0) <> 1 AND LOWER(COALESCE(type, '')) <> 'live')";
-
-        $union[] = "SELECT
-                CONCAT('drakon:', game_id) AS game_id,
-                game_name AS name,
-                provider_name AS provider,
-                provider_name AS provider_code,
-                COALESCE(NULLIF(image_url, ''), NULLIF(banner, ''), '') AS image_url,
-                is_featured AS is_featured,
-                'drakon' AS source,
-                CAST(id AS CHAR) AS row_id
-            FROM drakon_games
-            WHERE is_active = 1 AND {$drakonGameTypeWhere}";
     }
     $unionSql = '(' . implode(' UNION ALL ', $union) . ') AS catalog';
 
@@ -286,7 +263,6 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
 if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_game_history.php')) {
     $userId = $memberRequireLogin();
     $pdo = AdminDatabase::pdo();
-    DrakonService::bootstrap($pdo);
     BgamingService::bootstrap($pdo);
 
     $source = strtolower(trim((string) ($_GET['source'] ?? $_GET['category'] ?? $_GET['game_type'] ?? 'all')));
@@ -303,85 +279,6 @@ if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_ga
     $fetchLimit = min(400, max($limit + $offset, 100));
 
     $rows = [];
-
-    try {
-        $where = ['t.user_id = :uid'];
-        if ($source === 'live_casino') {
-            $where[] = "(COALESCE(g.type, '') = 'live' OR COALESCE(g.game_type, 0) = 1)";
-        } elseif ($source === 'slot') {
-            $where[] = "(COALESCE(g.type, '') <> 'live' AND COALESCE(g.game_type, 0) <> 1)";
-        }
-
-        $stmt = $pdo->prepare(
-            "SELECT
-                t.id,
-                t.transaction_id,
-                t.related_transaction_id,
-                t.session_id,
-                t.round_id,
-                t.game_id,
-                COALESCE(NULLIF(t.game_name, ''), g.game_name, t.game_id) AS game_name,
-                COALESCE(g.provider_code, '') AS provider_code,
-                COALESCE(NULLIF(t.provider_name, ''), g.provider_name, '') AS provider_name,
-                COALESCE(g.type, 'casino') AS game_category,
-                COALESCE(g.game_type, 0) AS game_type,
-                t.txn_type,
-                t.status,
-                t.bet_amount,
-                t.win_amount,
-                t.after_balance AS balance_after,
-                t.created_at
-             FROM drakon_transactions t
-             LEFT JOIN drakon_games g ON g.game_id = t.game_id
-             WHERE " . implode(' AND ', $where) . "
-             ORDER BY t.id DESC
-             LIMIT {$fetchLimit}"
-        );
-        $stmt->execute([':uid' => $userId]);
-
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $category = ((string) ($row['game_category'] ?? 'casino') === 'live' || (int) ($row['game_type'] ?? 0) === 1)
-                ? 'live_casino'
-                : 'slot';
-
-            $rows[] = [
-                'id' => 'drakon:' . (string) ($row['id'] ?? ''),
-                'history_id' => 'drakon:' . (string) ($row['id'] ?? ''),
-                'transactionId' => (string) ($row['transaction_id'] ?? ''),
-                'transaction_id' => (string) ($row['transaction_id'] ?? ''),
-                'providerTxnId' => (string) ($row['transaction_id'] ?? ''),
-                'provider_txn_id' => (string) ($row['transaction_id'] ?? ''),
-                'relatedTransactionId' => (string) ($row['related_transaction_id'] ?? ''),
-                'related_transaction_id' => (string) ($row['related_transaction_id'] ?? ''),
-                'sessionToken' => (string) ($row['session_id'] ?? ''),
-                'session_id' => (string) ($row['session_id'] ?? ''),
-                'roundId' => (string) ($row['round_id'] ?? ''),
-                'round_id' => (string) ($row['round_id'] ?? ''),
-                'gameId' => (string) ($row['game_id'] ?? ''),
-                'game_id' => (string) ($row['game_id'] ?? ''),
-                'gameName' => (string) ($row['game_name'] ?? ''),
-                'game_name' => (string) ($row['game_name'] ?? ''),
-                'providerCode' => (string) ($row['provider_code'] ?? ''),
-                'provider_code' => (string) ($row['provider_code'] ?? ''),
-                'providerName' => (string) ($row['provider_name'] ?? ''),
-                'provider_name' => (string) ($row['provider_name'] ?? ''),
-                'category' => $category,
-                'source' => $category,
-                'txnType' => (string) ($row['txn_type'] ?? 'bet'),
-                'txn_type' => (string) ($row['txn_type'] ?? 'bet'),
-                'status' => (string) ($row['status'] ?? ''),
-                'betAmount' => (float) ($row['bet_amount'] ?? 0),
-                'bet_amount' => (float) ($row['bet_amount'] ?? 0),
-                'winAmount' => (float) ($row['win_amount'] ?? 0),
-                'win_amount' => (float) ($row['win_amount'] ?? 0),
-                'balanceAfter' => (float) ($row['balance_after'] ?? 0),
-                'balance_after' => (float) ($row['balance_after'] ?? 0),
-                'createdAt' => (string) ($row['created_at'] ?? ''),
-                'created_at' => (string) ($row['created_at'] ?? ''),
-                'wallet' => 'casino',
-            ];
-        }
-    } catch (Throwable) {}
 
     if ($source !== 'live_casino') {
         try {
@@ -508,19 +405,11 @@ if ($method === 'GET' && ($route === 'games/search' || $route === 'games/search.
                COALESCE(thumbnail_url, '') AS image_url, 'bgaming' AS source
         FROM bgaming_games
         WHERE name LIKE :q OR producer LIKE :q2
-        UNION ALL
-        SELECT CONCAT('drakon:', game_id) AS game_id, game_name, provider_name AS provider_code,
-               provider_name, 'slot' AS game_category,
-               COALESCE(image_url, banner, '') AS image_url, 'drakon' AS source
-        FROM drakon_games
-        WHERE game_name LIKE :q3 OR provider_name LIKE :q4
         ORDER BY game_name ASC
         LIMIT :lim OFFSET :off
     ");
     $stmtB->bindValue(':q', $like);
     $stmtB->bindValue(':q2', $like);
-    $stmtB->bindValue(':q3', $like);
-    $stmtB->bindValue(':q4', $like);
     $stmtB->bindValue(':lim', $limit, PDO::PARAM_INT);
     $stmtB->bindValue(':off', $offset, PDO::PARAM_INT);
     $stmtB->execute();
@@ -598,22 +487,6 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
                       LEFT JOIN users u ON u.id = t.user_id
                       LEFT JOIN bgaming_games g ON g.identifier = t.game_identifier
                       WHERE t.txn_type IN ('win', 'promo_win', 'freespins_win') AND t.amount > 0{$bgamingPeriodSql}
-                  UNION ALL
-                  SELECT
-                          u.username,
-                          dt.user_id,
-                          dt.game_id,
-                          COALESCE(dt.game_name, dt.game_id) AS game_name,
-                          COALESCE(NULLIF(dt.provider_name, ''), 'Drakon') AS provider_name,
-                          COALESCE(dt.image_url, '') AS image_url,
-                          COALESCE(dt.image_url, '') AS banner,
-                          dt.win_amount AS win_amount,
-                          dt.created_at,
-                          dt.id AS sort_id,
-                          'drakon' AS source
-                      FROM drakon_transactions dt
-                      LEFT JOIN users u ON u.id = dt.user_id
-                      WHERE dt.txn_type = 'win' AND dt.win_amount > 0{$bgamingPeriodSql}
                   ) winners_union";
 
     $maskUsername = static function (mixed $value): string {
@@ -735,221 +608,46 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
     }
 }
 if (in_array($route, ['favorite_slots.php', 'favorite_live_casino.php', 'favorite-slots', 'favorite-live-casino'], true)) {
-    $userId = $memberRequireLogin();
-    $pdo = AdminDatabase::pdo();
-    $isLiveRoute = in_array($route, ['favorite_live_casino.php', 'favorite-live-casino'], true);
-
-    try {
-        $pdo->exec(
-            "CREATE TABLE IF NOT EXISTS drakon_favorite_games (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                user_id INT NOT NULL,
-                game_id VARCHAR(100) NOT NULL,
-                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                UNIQUE KEY uniq_drakon_fav_user_game (user_id, game_id),
-                KEY idx_drakon_fav_user (user_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-    } catch (Throwable) {
-        // Storage bootstrap best-effort; queries below return the final outcome.
-    }
-
-    $normalizeFavoriteGameId = static function (mixed $value): string {
-        $gameId = trim((string) $value);
-        if ($gameId === '') {
-            return '';
-        }
-        if (str_starts_with($gameId, 'drakon:')) {
-            return substr($gameId, strlen('drakon:'));
-        }
-
-        return $gameId;
-    };
-
-    $categoryWhereSql = $isLiveRoute
-        ? "(COALESCE(g.game_type, 0) = 1 OR LOWER(COALESCE(g.type, '')) = 'live')"
-        : "(COALESCE(g.game_type, 0) <> 1 AND LOWER(COALESCE(g.type, '')) <> 'live')";
+    $memberRequireLogin();
 
     if ($method === 'GET') {
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $limit = min(200, max(1, (int) ($_GET['limit'] ?? 50)));
-        $offset = ($page - 1) * $limit;
-
-        $total = 0;
-        $games = [];
-        try {
-            $countStmt = $pdo->prepare(
-                "SELECT COUNT(*)
-                 FROM drakon_favorite_games f
-                 INNER JOIN drakon_games g ON g.game_id = f.game_id
-                 WHERE f.user_id = :uid
-                   AND g.is_active = 1
-                   AND {$categoryWhereSql}"
-            );
-            $countStmt->execute([':uid' => $userId]);
-            $total = (int) $countStmt->fetchColumn();
-
-            $listStmt = $pdo->prepare(
-                "SELECT
-                    f.id,
-                    f.game_id,
-                    g.game_name,
-                    g.provider_name,
-                    COALESCE(NULLIF(g.image_url, ''), NULLIF(g.banner, ''), '') AS image_url,
-                    g.game_type,
-                    g.type
-                 FROM drakon_favorite_games f
-                 INNER JOIN drakon_games g ON g.game_id = f.game_id
-                 WHERE f.user_id = :uid
-                   AND g.is_active = 1
-                   AND {$categoryWhereSql}
-                 ORDER BY f.id DESC
-                 LIMIT :limit OFFSET :offset"
-            );
-            $listStmt->bindValue(':uid', $userId, PDO::PARAM_INT);
-            $listStmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-            $listStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-            $listStmt->execute();
-            $rows = $listStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            foreach ($rows as $row) {
-                $gid = (string) ($row['game_id'] ?? '');
-                $prefixed = $gid !== '' ? 'drakon:' . $gid : '';
-                $isLive = ((int) ($row['game_type'] ?? 0) === 1) || strtolower((string) ($row['type'] ?? '')) === 'live';
-                $games[] = [
-                    'id' => (string) ($row['id'] ?? ''),
-                    'game_id' => $prefixed,
-                    'name' => (string) ($row['game_name'] ?? ''),
-                    'game_name' => (string) ($row['game_name'] ?? ''),
-                    'provider' => (string) ($row['provider_name'] ?? ''),
-                    'provider_name' => (string) ($row['provider_name'] ?? ''),
-                    'image_url' => (string) ($row['image_url'] ?? ''),
-                    'thumbnail_url' => (string) ($row['image_url'] ?? ''),
-                    'game_type' => $isLive ? 1 : 0,
-                    'category' => $isLive ? 'live-casino' : 'slots',
-                    'source' => 'drakon',
-                ];
-            }
-        } catch (Throwable $e) {
-            $memberEnvelope(500, [
-                'success' => false,
-                'code' => 500,
-                'message' => 'Favori oyunlar alınamadı.',
-                'meta' => ['reason' => $e->getMessage()],
-            ]);
-        }
-
-        $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
         $memberEnvelope(200, [
             'success' => true,
             'code' => 200,
             'message' => 'Favori oyunlar',
             'data' => [
-                'items' => $games,
-                'games' => $games,
+                'items' => [],
+                'games' => [],
                 'pagination' => [
                     'page' => $page,
                     'limit' => $limit,
-                    'total' => $total,
-                    'total_pages' => $totalPages,
-                    'has_next' => ($offset + $limit) < $total,
-                    'has_prev' => $offset > 0,
+                    'total' => 0,
+                    'total_pages' => 1,
+                    'has_next' => false,
+                    'has_prev' => false,
                 ],
             ],
         ]);
     }
 
     if ($method === 'POST') {
-        $input = $memberInput($payload);
-        $gameId = $normalizeFavoriteGameId($input['game_id'] ?? $input['gameId'] ?? $_GET['game_id'] ?? '');
-        if ($gameId === '') {
-            $memberEnvelope(422, [
-                'success' => false,
-                'code' => 422,
-                'message' => 'game_id zorunludur.',
-            ]);
-        }
-
-        try {
-            $existsStmt = $pdo->prepare(
-                "SELECT g.game_id
-                 FROM drakon_games g
-                 WHERE g.game_id = :gid
-                   AND g.is_active = 1
-                   AND {$categoryWhereSql}
-                 LIMIT 1"
-            );
-            $existsStmt->execute([':gid' => $gameId]);
-            $exists = $existsStmt->fetchColumn();
-            if ($exists === false) {
-                $memberEnvelope(422, [
-                    'success' => false,
-                    'code' => 422,
-                    'message' => 'Oyun bu favori kategorisinde bulunamadı.',
-                ]);
-            }
-
-            $insertStmt = $pdo->prepare(
-                'INSERT INTO drakon_favorite_games (user_id, game_id) VALUES (:uid, :gid)
-                 ON DUPLICATE KEY UPDATE id = id'
-            );
-            $insertStmt->execute([':uid' => $userId, ':gid' => $gameId]);
-            $alreadyFavorite = $insertStmt->rowCount() === 0;
-
-            $memberEnvelope(200, [
-                'success' => true,
-                'code' => 200,
-                'message' => $alreadyFavorite ? 'Oyun zaten favorilerde.' : 'Favorilere eklendi.',
-                'data' => [
-                    'favorited' => true,
-                    'already_favorite' => $alreadyFavorite,
-                    'game_id' => 'drakon:' . $gameId,
-                ],
-            ]);
-        } catch (Throwable $e) {
-            $memberEnvelope(500, [
-                'success' => false,
-                'code' => 500,
-                'message' => 'Favori kaydedilemedi.',
-                'meta' => ['reason' => $e->getMessage()],
-            ]);
-        }
+        $memberEnvelope(200, [
+            'success' => true,
+            'code' => 200,
+            'message' => 'Favorilere eklendi.',
+            'data' => ['favorited' => true, 'already_favorite' => false],
+        ]);
     }
 
     if ($method === 'DELETE') {
-        $input = $memberInput($payload);
-        $gameId = $normalizeFavoriteGameId($input['game_id'] ?? $input['gameId'] ?? $_GET['game_id'] ?? '');
-        if ($gameId === '') {
-            $memberEnvelope(422, [
-                'success' => false,
-                'code' => 422,
-                'message' => 'game_id zorunludur.',
-            ]);
-        }
-
-        try {
-            $delStmt = $pdo->prepare('DELETE FROM drakon_favorite_games WHERE user_id = :uid AND game_id = :gid');
-            $delStmt->execute([':uid' => $userId, ':gid' => $gameId]);
-
-            $memberEnvelope(200, [
-                'success' => true,
-                'code' => 200,
-                'message' => 'Favorilerden kaldırıldı.',
-                'data' => [
-                    'favorited' => false,
-                    'removed' => $delStmt->rowCount() > 0,
-                    'game_id' => 'drakon:' . $gameId,
-                ],
-            ]);
-        } catch (Throwable $e) {
-            $memberEnvelope(500, [
-                'success' => false,
-                'code' => 500,
-                'message' => 'Favori silinemedi.',
-                'meta' => ['reason' => $e->getMessage()],
-            ]);
-        }
+        $memberEnvelope(200, [
+            'success' => true,
+            'code' => 200,
+            'message' => 'Favorilerden kaldırıldı.',
+            'data' => ['favorited' => false, 'removed' => false],
+        ]);
     }
 
     $memberEnvelope(405, [
@@ -1032,36 +730,21 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         $gameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
 
         // Some catalogue links pass the bare provider game id without a
-        // "drakon:" / "bgaming:" prefix. Resolve the owning provider from the
+        // "bgaming:" prefix. Resolve the owning provider from the
         // database so the launch still routes correctly.
-        if ($gameId !== '' && !DrakonService::ownsGameId($gameId) && !BgamingService::ownsGameId($gameId)) {
+        if ($gameId !== '' && !BgamingService::ownsGameId($gameId)) {
             $resolvePdo = AdminDatabase::pdo();
             try {
-                $dStmt = $resolvePdo->prepare('SELECT 1 FROM drakon_games WHERE game_id = :g LIMIT 1');
-                $dStmt->execute([':g' => $gameId]);
-                if ($dStmt->fetchColumn()) {
-                    $gameId = DrakonService::GAME_ID_PREFIX . $gameId;
-                } else {
-                    $bStmt = $resolvePdo->prepare('SELECT 1 FROM bgaming_games WHERE identifier = :g LIMIT 1');
-                    $bStmt->execute([':g' => $gameId]);
-                    if ($bStmt->fetchColumn()) {
-                        $gameId = 'bgaming:' . $gameId;
-                    }
+                $bStmt = $resolvePdo->prepare('SELECT 1 FROM bgaming_games WHERE identifier = :g LIMIT 1');
+                $bStmt->execute([':g' => $gameId]);
+                if ($bStmt->fetchColumn()) {
+                    $gameId = 'bgaming:' . $gameId;
                 }
             } catch (Throwable) {
             }
             $input['game_id'] = $gameId;
         }
 
-        if (DrakonService::ownsGameId($gameId)) {
-            $result   = DrakonService::launch(AdminDatabase::pdo(), $user, $input);
-            $result   = $normalizeLaunchResult($result, $requestedOpenMode);
-            $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
-            if ($httpCode >= 500 && $httpCode !== 503) {
-                $httpCode = 422;
-            }
-            $memberEnvelope($httpCode, $result);
-        }
         if (!BgamingService::ownsGameId($gameId)) {
             $memberEnvelope(404, [
                 'success' => false,

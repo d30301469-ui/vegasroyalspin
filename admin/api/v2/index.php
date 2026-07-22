@@ -12,7 +12,6 @@ admin_require_project_file('services/ComplianceService.php');
 admin_require_project_file('services/ComplianceMonitorService.php');
 admin_require_project_file('services/MegaPayzService.php');
 admin_require_project_file('services/BgamingService.php');
-admin_require_project_file('services/DrakonService.php');
 admin_require_project_file('services/SportsbookService.php');
 
 header('Content-Type: application/json; charset=UTF-8');

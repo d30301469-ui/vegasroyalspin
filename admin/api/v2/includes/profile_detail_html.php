@@ -284,38 +284,7 @@ if (!function_exists('member_profile_render_game_history_detail')) {
         $id = (int) $localId;
         $row = null;
 
-        if ($source === '' || $source === 'drakon') {
-            $stmt = $pdo->prepare("SELECT
-                                       t.id,
-                                       'drakon' AS source,
-                                       t.transaction_id,
-                                       t.related_transaction_id,
-                                       t.session_id,
-                                       t.round_id,
-                                       t.game_id,
-                                       COALESCE(NULLIF(t.game_name, ''), g.game_name, t.game_id) AS game_name,
-                                       COALESCE(g.provider_code, '') AS provider_code,
-                                       COALESCE(NULLIF(t.provider_name, ''), g.provider_name, '') AS provider_name,
-                                       COALESCE(g.type, 'casino') AS game_category,
-                                       COALESCE(g.game_type, 0) AS game_type,
-                                       t.txn_type,
-                                       t.status,
-                                       t.bet_amount,
-                                       t.win_amount,
-                                       t.after_balance AS balance_after,
-                                       t.created_at
-                                   FROM drakon_transactions t
-                                   LEFT JOIN drakon_games g ON g.game_id = t.game_id
-                                   WHERE t.user_id = :user_id AND t.id = :id
-                                   LIMIT 1");
-            $stmt->execute(['user_id' => $userId, 'id' => $id]);
-            $candidate = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (is_array($candidate)) {
-                $row = $candidate;
-            }
-        }
-
-        if ($row === null && ($source === '' || $source === 'bgaming')) {
+        if ($source === '' || $source === 'bgaming') {
             $stmt = $pdo->prepare("SELECT
                                        t.id,
                                        'bgaming' AS source,

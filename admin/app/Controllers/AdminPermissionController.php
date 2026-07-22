@@ -222,7 +222,6 @@ final class AdminPermissionController extends AdminController
             'deposits', 'withdrawals', 'reports-financial' => 'Yatırım, çekim ve finansal rapor ekranları.',
             'dashboard', 'reports-charts', 'reports-calendar', 'backoffice-suite' => 'Dashboard, grafikler ve operasyon takvimi.',
             'bgaming-settings', 'bgaming-games', 'bgaming-transactions', 'bgaming-wallet-logs' => 'BGaming sağlayıcı ve oyun yönetimi.',
-            'drakon-settings', 'drakon-games', 'drakon-providers', 'drakon-transactions', 'drakon-webhook-logs' => 'Drakon Casino sağlayıcı ve oyun yönetimi.',
             'sportsbook-settings', 'sportsbook-sessions', 'sportsbook-transactions', 'sportsbook-wallet-logs' => 'Sportsbook (BetBy) spor bahisleri sağlayıcı yönetimi.',
             'payment-providers', 'payment-methods' => 'Ödeme sağlayıcı ve metot ayarlarını yönetme.',
             'promotions', 'sliders', 'auth-sliders', 'homepage-sections', 'announcements', 'promocodes', 'promocode-requests' => 'Site içerik ve kampanya alanlarını yönetme.',

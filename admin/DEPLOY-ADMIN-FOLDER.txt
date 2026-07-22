@@ -10,7 +10,7 @@ Dizin yapısı:
   composer.json
   app/              — admin panel + framework (Database, Config)
   api/              — bootstrap + v2 member API + callbacks
-  services/         — MegaPayz, Drakon, BGaming, MemberJwt, …
+  services/         — MegaPayz, BGaming, MemberJwt, …
   config/           — app.php, database.php, env.php
   database/         — migrations
   controllers/

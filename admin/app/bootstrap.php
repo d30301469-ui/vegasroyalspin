@@ -88,7 +88,6 @@ require_once ADMIN_APP_PATH . '/Core/AdminDatabase.php';
 require_once ADMIN_APP_PATH . '/Services/AdminSiteContext.php';
 admin_require_project_file('services/MegaPayzService.php');
 admin_require_project_file('services/BgamingService.php');
-admin_require_project_file('services/DrakonService.php');
 admin_require_project_file('services/SportsbookService.php');
 admin_require_project_file('services/MemberKycService.php');
 admin_require_project_file('services/MemberNotificationService.php');
@@ -99,7 +98,6 @@ if (!$isProduction && (string) getenv('METROPOL_RUNTIME_PROVIDER_BOOTSTRAP') ===
     try {
         MegaPayzService::bootstrap(AdminDatabase::pdo());
         BgamingService::bootstrap(AdminDatabase::pdo());
-        DrakonService::bootstrap(AdminDatabase::pdo());
     } catch (Throwable) {
     }
 }
@@ -121,7 +119,6 @@ require_once ADMIN_APP_PATH . '/Controllers/AdminTableController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminModuleController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminMegaPayzController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminBgamingController.php';
-require_once ADMIN_APP_PATH . '/Controllers/AdminDrakonController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminSportsbookController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminFooterController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminSiteSettingsController.php';
