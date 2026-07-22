@@ -7,6 +7,94 @@
 /** @var callable $memberInput */
 /** @var callable $memberEnvelope */
 
+if (!function_exists('memberPromotionResolveClaimAmountV2')) {
+    /**
+     * Talep tutarını promosyon kaydı + bonus_rules + son onaylı yatırım üzerinden hesaplar.
+     */
+    function memberPromotionResolveClaimAmountV2(PDO $pdo, int $userId, array $promotion): float
+    {
+        $amount = round((float) ($promotion['bonus_amount'] ?? 0), 2);
+        if ($amount > 0) {
+            return $amount;
+        }
+
+        $bonusType = strtolower(trim((string) ($promotion['bonus_type'] ?? '')));
+        $rules = [];
+        $rawRules = $promotion['bonus_rules'] ?? null;
+        if (is_string($rawRules) && trim($rawRules) !== '') {
+            $decoded = json_decode($rawRules, true);
+            if (is_array($decoded)) {
+                if (array_is_list($decoded)) {
+                    foreach ($decoded as $rule) {
+                        if (is_array($rule)) {
+                            $rules[] = $rule;
+                        }
+                    }
+                } else {
+                    $rules[] = $decoded;
+                }
+            }
+        }
+
+        $rule = null;
+        foreach ($rules as $candidate) {
+            $appliesTo = strtolower((string) ($candidate['applies_to'] ?? ''));
+            if (in_array($appliesTo, ['', 'any', 'all', 'deposit', 'first_deposit', 'firstdeposit'], true)) {
+                $rule = $candidate;
+                break;
+            }
+        }
+        if ($rule === null && isset($rules[0]) && is_array($rules[0])) {
+            $rule = $rules[0];
+        }
+
+        $latestDepositAmount = 0.0;
+        try {
+            $latestDeposit = $pdo->prepare(
+                "SELECT amount FROM megapayz_transactions
+                 WHERE user_id = :user_id AND type = 'deposit' AND status IN ('confirmed', 'approved', 'success', 'completed')
+                 ORDER BY id DESC LIMIT 1"
+            );
+            $latestDeposit->execute(['user_id' => $userId]);
+            $latestDepositAmount = (float) $latestDeposit->fetchColumn();
+        } catch (Throwable) {
+            $latestDepositAmount = 0.0;
+        }
+
+        $ruleType = strtolower((string) ($rule['type'] ?? $bonusType));
+        $ruleValue = (float) ($rule['value'] ?? $rule['amount'] ?? 0);
+
+        if ($ruleType === 'percentage' && $latestDepositAmount > 0 && $ruleValue > 0) {
+            $calculated = ($latestDepositAmount * $ruleValue) / 100;
+            $minAmount = (float) ($rule['min_amount'] ?? 0);
+            $maxAmount = (float) ($rule['max_amount'] ?? 0);
+            if ($minAmount > 0) {
+                $calculated = max($calculated, $minAmount);
+            }
+            if ($maxAmount > 0) {
+                $calculated = min($calculated, $maxAmount);
+            }
+            return round(max(0, $calculated), 2);
+        }
+
+        if ($ruleValue > 0) {
+            return round($ruleValue, 2);
+        }
+
+        if ($latestDepositAmount > 0) {
+            $title = strtolower((string) ($promotion['title'] ?? ''));
+            if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/u', $title, $m) || preg_match('/(\d+(?:[\.,]\d+)?)\s*(?:ilk\s*)?yatirim/u', $title, $m)) {
+                $percent = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
+                if ($percent > 0) {
+                    return round(($latestDepositAmount * $percent) / 100, 2);
+                }
+            }
+        }
+
+        return 0.0;
+    }
+}
+
 if ($method === 'GET' && $route === 'active_bonus.php') {
     $userId = $memberRequireLogin();
     $pdo = AdminDatabase::pdo();
@@ -316,7 +404,7 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
     $hasConfirmedDeposit = false;
     try {
         MegaPayzService::bootstrap($pdo);
-        $depositCheck = $pdo->prepare("SELECT COUNT(*) FROM megapayz_transactions WHERE user_id = :user_id AND type = 'deposit' AND status = 'confirmed'");
+        $depositCheck = $pdo->prepare("SELECT COUNT(*) FROM megapayz_transactions WHERE user_id = :user_id AND type = 'deposit' AND status IN ('confirmed', 'approved', 'success', 'completed')");
         $depositCheck->execute(['user_id' => $userId]);
         $hasConfirmedDeposit = (int) $depositCheck->fetchColumn() > 0;
     } catch (Throwable) {
@@ -338,7 +426,7 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
     }
     $promo = null;
     if ($promotionId > 0) {
-        $promotion = $pdo->prepare("SELECT id, title, type, bonus_type, bonus_amount, wagering_multiplier FROM promotions WHERE id = :id AND status = 'active' LIMIT 1");
+        $promotion = $pdo->prepare("SELECT id, title, type, bonus_type, bonus_amount, bonus_rules, wagering_multiplier FROM promotions WHERE id = :id AND status = 'active' LIMIT 1");
         $promotion->execute(['id' => $promotionId]);
         $promo = $promotion->fetch(PDO::FETCH_ASSOC);
     } else {
@@ -353,7 +441,7 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
             return preg_replace('/[^a-z0-9%]+/u', '', $value) ?: '';
         };
         $wantedTitle = $normalizeTitle($title);
-        $promotion = $pdo->query("SELECT id, title, type, bonus_type, bonus_amount, wagering_multiplier FROM promotions WHERE status = 'active' ORDER BY sort_order ASC, id ASC");
+        $promotion = $pdo->query("SELECT id, title, type, bonus_type, bonus_amount, bonus_rules, wagering_multiplier FROM promotions WHERE status = 'active' ORDER BY sort_order ASC, id ASC");
         foreach ($promotion->fetchAll(PDO::FETCH_ASSOC) as $row) {
             if ($wantedTitle !== '' && $normalizeTitle((string) ($row['title'] ?? '')) === $wantedTitle) {
                 $promo = $row;
@@ -379,13 +467,17 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
         VALUES
         (:user_id, :promotion_id, :bonus_name, :category, :promotion_type, :requested_amount, :wagering_multiplier, :user_message, 'pending', NOW())"
     );
+    $requestedAmount = memberPromotionResolveClaimAmountV2($pdo, $userId, $promo);
+    if ($requestedAmount <= 0) {
+        $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Promosyon bonus tutarı hesaplanamadı. Lütfen yönetici ile iletişime geçin.']);
+    }
     $insert->execute([
         'user_id' => $userId,
         'promotion_id' => $claimPromotionId,
         'bonus_name' => (string) ($promo['title'] ?? ''),
         'category' => (string) ($promo['type'] ?? ''),
         'promotion_type' => (string) ($promo['bonus_type'] ?? ''),
-        'requested_amount' => number_format((float) ($promo['bonus_amount'] ?? 0), 2, '.', ''),
+        'requested_amount' => number_format($requestedAmount, 2, '.', ''),
         'wagering_multiplier' => number_format((float) ($promo['wagering_multiplier'] ?? 1), 2, '.', ''),
         'user_message' => trim((string) ($input['message'] ?? '')) ?: null,
     ]);

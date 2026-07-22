@@ -65,14 +65,15 @@ final class AdminBonusClaimController extends AdminController
                 "INSERT INTO user_active_bonuses
                  (user_id, promotion_id, name, category, initial_amount, current_bonus_balance,
                   wagering_requirement, wagering_target, total_bet_amount, status, granted_at, deadline)
-                 VALUES (:user_id, :promotion_id, :name, :category, :amount, :amount,
+                 VALUES (:user_id, :promotion_id, :name, :category, :initial_amount, :current_amount,
                   :wagering_req, :wagering_target, 0, 'active', NOW(), :deadline)"
             )->execute([
                 'user_id' => $userId,
                 'promotion_id' => $promotionId > 0 ? $promotionId : null,
                 'name' => $bonusName,
                 'category' => $category,
-                'amount' => number_format($bonusAmount, 2, '.', ''),
+                'initial_amount' => number_format($bonusAmount, 2, '.', ''),
+                'current_amount' => number_format($bonusAmount, 2, '.', ''),
                 'wagering_req' => $wageringMult,
                 'wagering_target' => number_format($wageringTarget, 2, '.', ''),
                 'deadline' => $deadline,
