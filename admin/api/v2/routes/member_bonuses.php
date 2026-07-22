@@ -13,12 +13,8 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
      */
     function memberPromotionResolveClaimAmountV2(PDO $pdo, int $userId, array $promotion): float
     {
-        $amount = round((float) ($promotion['bonus_amount'] ?? 0), 2);
-        if ($amount > 0) {
-            return $amount;
-        }
-
         $bonusType = strtolower(trim((string) ($promotion['bonus_type'] ?? '')));
+        $title = strtolower((string) ($promotion['title'] ?? ''));
         $rules = [];
         $rawRules = $promotion['bonus_rules'] ?? null;
         if (is_string($rawRules) && trim($rawRules) !== '') {
@@ -48,47 +44,48 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
             $rule = $rules[0];
         }
 
-        $latestDepositAmount = 0.0;
+        $approvedDepositTotal = 0.0;
         try {
-            $latestDeposit = $pdo->prepare(
-                "SELECT amount FROM megapayz_transactions
+            $depositTotalStmt = $pdo->prepare(
+                "SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions
                  WHERE user_id = :user_id AND type = 'deposit' AND status IN ('confirmed', 'approved', 'success', 'completed')
-                 ORDER BY id DESC LIMIT 1"
+                "
             );
-            $latestDeposit->execute(['user_id' => $userId]);
-            $latestDepositAmount = (float) $latestDeposit->fetchColumn();
+            $depositTotalStmt->execute(['user_id' => $userId]);
+            $approvedDepositTotal = (float) $depositTotalStmt->fetchColumn();
         } catch (Throwable) {
-            $latestDepositAmount = 0.0;
+            $approvedDepositTotal = 0.0;
         }
 
         $ruleType = strtolower((string) ($rule['type'] ?? $bonusType));
         $ruleValue = (float) ($rule['value'] ?? $rule['amount'] ?? 0);
+        $titlePercent = 0.0;
+        if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/u', $title, $m)) {
+            $titlePercent = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
+        }
 
-        if ($ruleType === 'percentage' && $latestDepositAmount > 0 && $ruleValue > 0) {
-            $calculated = ($latestDepositAmount * $ruleValue) / 100;
-            $minAmount = (float) ($rule['min_amount'] ?? 0);
-            $maxAmount = (float) ($rule['max_amount'] ?? 0);
-            if ($minAmount > 0) {
-                $calculated = max($calculated, $minAmount);
+        $isPercentagePromo = $ruleType === 'percentage' || $bonusType === 'percentage' || $titlePercent > 0;
+
+        if ($isPercentagePromo && $approvedDepositTotal > 0) {
+            $percent = 0.0;
+            if ($titlePercent > 0) {
+                $percent = $titlePercent;
+            } elseif ($ruleValue > 0 && $ruleValue <= 200) {
+                $percent = $ruleValue;
             }
-            if ($maxAmount > 0) {
-                $calculated = min($calculated, $maxAmount);
+
+            if ($percent > 0) {
+                return round(($approvedDepositTotal * $percent) / 100, 2);
             }
-            return round(max(0, $calculated), 2);
+        }
+
+        $amount = round((float) ($promotion['bonus_amount'] ?? 0), 2);
+        if ($amount > 0) {
+            return $amount;
         }
 
         if ($ruleValue > 0) {
             return round($ruleValue, 2);
-        }
-
-        if ($latestDepositAmount > 0) {
-            $title = strtolower((string) ($promotion['title'] ?? ''));
-            if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/u', $title, $m) || preg_match('/(\d+(?:[\.,]\d+)?)\s*(?:ilk\s*)?yatirim/u', $title, $m)) {
-                $percent = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
-                if ($percent > 0) {
-                    return round(($latestDepositAmount * $percent) / 100, 2);
-                }
-            }
         }
 
         return 0.0;
