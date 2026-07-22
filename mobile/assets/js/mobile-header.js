@@ -95,6 +95,17 @@
         });
     }
 
+    function initSiteLogoNavigation() {
+        document.addEventListener('click', function (e) {
+            var link = e.target.closest('a[data-site-logo-link]');
+            if (!link) return;
+            if (typeof window.__openMobileHomeWithCurrentPage === 'function' && window.__openMobileHomeWithCurrentPage()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
+    }
+
     function initNavScrollStart() {
         var nav = document.querySelector(
             '.hdr-navigation-scrollable-bc-holder[data-mobile-nav-strip] .hdr-navigation-scrollable-content'
@@ -138,6 +149,7 @@
         initAdditionalToggle();
         initProfileButton();
         initMobileAvatarProfileModal();
+        initSiteLogoNavigation();
         initNavScrollStart();
         initBackToTopLayout();
         observeHeaderHeight();
