@@ -76,6 +76,44 @@ echo '</div>';
 ?>
 <script>
 (function () {
+    function canonicalMobileProfileUrl(account, page, extras) {
+        var params = new URLSearchParams();
+        params.set('profile', 'open');
+        params.set('account', account);
+        params.set('page', page);
+        if (extras && typeof extras === 'object') {
+            Object.keys(extras).forEach(function (key) {
+                if (extras[key] == null || extras[key] === '') return;
+                params.set(key, String(extras[key]));
+            });
+        }
+        return '/mobile/profile?' + params.toString();
+    }
+
+    function canonicalizeLegacyMobilePath() {
+        var path = (window.location.pathname || '').replace(/\/+$/, '');
+        var search = new URLSearchParams(window.location.search || '');
+        if (path === '/profile/deposit-withdraw-history') {
+            window.location.replace(canonicalMobileProfileUrl('balance', 'history'));
+            return true;
+        }
+        if (path === '/profile/deposit-withdraw') {
+            if (search.get('bilgi') === '1') {
+                window.location.replace(canonicalMobileProfileUrl('balance', 'info'));
+                return true;
+            }
+            if (search.get('openDepositPanel') === '1' || search.get('tab') === 'deposit') {
+                window.location.replace(canonicalMobileProfileUrl('balance', 'deposit'));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    if (canonicalizeLegacyMobilePath()) {
+        return;
+    }
+
     function mobileProfileUrl(account, page, extras) {
         var params = new URLSearchParams();
         params.set('profile', 'open');
