@@ -652,12 +652,70 @@ final class AdminUserController extends AdminController
             }
 
             $context = array_merge($payload, ['detail' => $detailData]);
+            $rows[$index]['amount'] = $this->resolveSportsbookDisplayAmount($row, $context);
             $rows[$index]['processed_coupon'] = $this->couponSummaryFromContext($context, $row);
             $rows[$index]['match_result'] = $this->matchResultFromContext($context, $row);
             unset($rows[$index]['detail'], $rows[$index]['raw_payload']);
         }
 
         return $rows;
+    }
+
+    private function resolveSportsbookDisplayAmount(array $row, array $context): float
+    {
+        $storedAmount = (float) ($row['amount'] ?? 0);
+        $txnType = strtolower(trim((string) ($row['txn_type'] ?? '')));
+        if (abs($storedAmount) > 0.000001) {
+            return $storedAmount;
+        }
+
+        // Some provider settlements do not move wallet balance but still include
+        // payout/refund in detail/raw payload; use those as display fallback.
+        if ($txnType === 'win') {
+            $winAmount = $this->extractFirstNumeric($context, [
+                'win_amount',
+                'winAmount',
+                'get_amount',
+                'getAmount',
+                'payout',
+                'payout_amount',
+                'payoutAmount',
+                'settlement_amount',
+                'settlementAmount',
+                'credit_amount',
+                'creditAmount',
+                'return_amount',
+                'returnAmount',
+                'paid_amount',
+                'paidAmount',
+            ]);
+            if ($winAmount !== null) {
+                return abs($winAmount);
+            }
+        }
+
+        if ($txnType === 'cancel') {
+            $refundAmount = $this->extractFirstNumeric($context, [
+                'refund_amount',
+                'refundAmount',
+                'cancel_amount',
+                'cancelAmount',
+                'rollback_amount',
+                'rollbackAmount',
+                'return_amount',
+                'returnAmount',
+                'stake',
+                'stake_amount',
+                'stakeAmount',
+                'bet_amount',
+                'betAmount',
+            ]);
+            if ($refundAmount !== null) {
+                return abs($refundAmount);
+            }
+        }
+
+        return $storedAmount;
     }
 
     private function decodeJsonArray(mixed $raw): array
@@ -774,6 +832,54 @@ final class AdminUserController extends AdminController
         }
 
         return '';
+    }
+
+    private function extractFirstNumeric(mixed $data, array $keys): ?float
+    {
+        if (is_array($data)) {
+            foreach ($keys as $key) {
+                if (!array_key_exists($key, $data)) {
+                    continue;
+                }
+                $value = $this->toNumeric($data[$key]);
+                if ($value !== null) {
+                    return $value;
+                }
+            }
+
+            foreach ($data as $value) {
+                $nested = $this->extractFirstNumeric($value, $keys);
+                if ($nested !== null) {
+                    return $nested;
+                }
+            }
+
+            return null;
+        }
+
+        return $this->toNumeric($data);
+    }
+
+    private function toNumeric(mixed $value): ?float
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $normalized = trim($value);
+        if ($normalized === '') {
+            return null;
+        }
+
+        $normalized = str_replace([',', ' '], ['.', ''], $normalized);
+        if (!is_numeric($normalized)) {
+            return null;
+        }
+
+        return (float) $normalized;
     }
 
     private function translateSportsbookTxnType(string $type): string
