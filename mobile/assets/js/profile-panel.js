@@ -78,6 +78,7 @@
     }
     if (params.get('profile') !== 'open' || params.get('account') !== 'balance') return '';
     var page = params.get('page') || 'deposit';
+    if (page === 'history') return 'deposit';
     return ['deposit', 'withdraw', 'history', 'info', 'withdraws'].indexOf(page) !== -1 ? page : 'deposit';
   }
 
@@ -921,7 +922,7 @@
     var panel = getPanel();
     transactionHistoryLoaded = false;
     closePaymentModal();
-    showBalancePage(panel, 'history');
+    showBalancePage(panel, 'deposit');
   }
 
   function pollMobileDepositStatus(trx, attempt) {

@@ -42,6 +42,11 @@ $profilePageMap = [
 ];
 
 $targetKey = $queryAccount . '|' . $queryPage;
+$isBalanceHistoryRequest = ($queryProfileOpen === 'open' && $queryAccount === 'balance' && $queryPage === 'history');
+if ($isBalanceHistoryRequest) {
+    header('Location: /mobile/profile?' . http_build_query(['profile' => 'open', 'account' => 'balance', 'page' => 'deposit', 'openDepositPanel' => '1']));
+    exit;
+}
 $targetEntry = $profilePageMap[$targetKey] ?? $profilePageMap['profile|details'];
 $targetProfileFile = (string) ($targetEntry['file'] ?? 'details.php');
 $targetExtraGet = is_array($targetEntry['extra_get'] ?? null) ? $targetEntry['extra_get'] : [];
@@ -94,7 +99,7 @@ echo '</div>';
         var path = (window.location.pathname || '').replace(/\/+$/, '');
         var search = new URLSearchParams(window.location.search || '');
         if (path === '/profile/deposit-withdraw-history') {
-            window.location.replace(canonicalMobileProfileUrl('balance', 'history'));
+            window.location.replace(canonicalMobileProfileUrl('balance', 'deposit', { openDepositPanel: '1' }));
             return true;
         }
         if (path === '/profile/deposit-withdraw') {
@@ -145,7 +150,7 @@ echo '</div>';
             if (q.get('bilgi') === '1') return mobileProfileUrl('balance', 'info');
             return mobileProfileUrl('balance', 'withdraw');
         }
-        if (p === '/profile/deposit-withdraw-history') return mobileProfileUrl('balance', 'history');
+        if (p === '/profile/deposit-withdraw-history') return mobileProfileUrl('balance', 'deposit', { openDepositPanel: '1' });
         if (p === '/profile/withdrawal-status') return mobileProfileUrl('balance', 'withdraws');
 
         if (p === '/profile/bet-history') {
