@@ -9,6 +9,59 @@
 /** @var callable $memberUserById */
 /** @var callable $memberRequireLogin */
 
+if (!function_exists('memberApprovedDepositTotalV2')) {
+    /**
+     * Kullanıcının onaylı yatırım toplamını aktif/legacy tablolardan okur.
+     */
+    function memberApprovedDepositTotalV2(PDO $pdo, int $userId): float
+    {
+        $sum = 0.0;
+
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions
+                 WHERE user_id = :user_id AND type = 'deposit' AND status IN ('confirmed', 'approved', 'success', 'completed', 'onay')"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            $sum = (float) $stmt->fetchColumn();
+        } catch (Throwable) {
+            $sum = 0.0;
+        }
+        if ($sum > 0) {
+            return round($sum, 2);
+        }
+
+        // Legacy callback tablosu (kullanici odemeleri) fallback.
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT COALESCE(SUM(miktar), 0) FROM para_yatirma_islemleri
+                 WHERE uye = :user_id AND (durum IN (0, 2) OR LOWER(COALESCE(aciklama, '')) IN ('onay', 'approved', 'success', 'completed', 'confirmed'))"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            $sum = (float) $stmt->fetchColumn();
+        } catch (Throwable) {
+            $sum = 0.0;
+        }
+        if ($sum > 0) {
+            return round($sum, 2);
+        }
+
+        // Olası ara geçiş tablosu fallback.
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT COALESCE(SUM(amount), 0) FROM deposit_transactions
+                 WHERE user_id = :user_id AND LOWER(COALESCE(status, '')) IN ('confirmed', 'approved', 'success', 'completed', 'onay')"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            $sum = (float) $stmt->fetchColumn();
+        } catch (Throwable) {
+            $sum = 0.0;
+        }
+
+        return round(max(0, $sum), 2);
+    }
+}
+
 if (!function_exists('memberPromotionResolveClaimAmountV2')) {
     /**
      * Talep tutarını promosyon kaydı + bonus_rules + son onaylı yatırım üzerinden hesaplar.
@@ -46,23 +99,15 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
             $rule = $rules[0];
         }
 
-        $approvedDepositTotal = 0.0;
-        try {
-            $depositTotalStmt = $pdo->prepare(
-                "SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions
-                 WHERE user_id = :user_id AND type = 'deposit' AND status IN ('confirmed', 'approved', 'success', 'completed')
-                "
-            );
-            $depositTotalStmt->execute(['user_id' => $userId]);
-            $approvedDepositTotal = (float) $depositTotalStmt->fetchColumn();
-        } catch (Throwable) {
-            $approvedDepositTotal = 0.0;
-        }
+        $approvedDepositTotal = memberApprovedDepositTotalV2($pdo, $userId);
 
         $ruleType = strtolower((string) ($rule['type'] ?? $bonusType));
         $ruleValue = (float) ($rule['value'] ?? $rule['amount'] ?? 0);
         $titlePercent = 0.0;
         if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/u', $title, $m)) {
+            $titlePercent = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
+        }
+        if ($titlePercent <= 0 && preg_match('/(\d+(?:[\.,]\d+)?)\s*(?:hosgeldin|hoşgeldin|ilk\s*yatirim|ilk\s*yatırım|yatirim\s*bonusu|yatırım\s*bonusu)/u', $title, $m)) {
             $titlePercent = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
         }
 
