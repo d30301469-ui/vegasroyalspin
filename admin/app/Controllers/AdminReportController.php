@@ -25,7 +25,7 @@ final class AdminReportController extends AdminController
             'crumbs' => 'Raporlar | Grafikler',
             'stats' => [
                 'users' => $this->scalar('SELECT COUNT(*) FROM users'),
-                'deposits' => $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'confirmed'"),
+                'deposits' => $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'deposit' AND status IN ('confirmed','approved')"),
                 'withdrawals' => $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'withdraw'"),
                 'games' => $this->scalar('SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1'),
                 'visits' => $this->scalar('SELECT COUNT(*) FROM visitor_logs'),
@@ -69,10 +69,10 @@ final class AdminReportController extends AdminController
         try {
             $stmt = $pdo->prepare(
                 "SELECT $dateExpr AS period,
-                    SUM(CASE WHEN type='deposit'  AND status IN ('confirmed','success','completed') THEN amount ELSE 0 END) AS deposits,
-                    SUM(CASE WHEN type='withdraw' AND status IN ('confirmed','success','completed') THEN amount ELSE 0 END) AS withdrawals,
-                    SUM(CASE WHEN type='deposit'  AND status IN ('confirmed','success','completed') THEN amount
-                             WHEN type='withdraw' AND status IN ('confirmed','success','completed') THEN -amount ELSE 0 END) AS net,
+                    SUM(CASE WHEN type='deposit'  AND status IN ('confirmed','approved','success','completed') THEN amount ELSE 0 END) AS deposits,
+                    SUM(CASE WHEN type='withdraw' AND status IN ('confirmed','approved','success','completed') THEN amount ELSE 0 END) AS withdrawals,
+                    SUM(CASE WHEN type='deposit'  AND status IN ('confirmed','approved','success','completed') THEN amount
+                             WHEN type='withdraw' AND status IN ('confirmed','approved','success','completed') THEN -amount ELSE 0 END) AS net,
                     COUNT(CASE WHEN type='deposit'  THEN 1 END) AS deposit_count,
                     COUNT(CASE WHEN type='withdraw' THEN 1 END) AS withdrawal_count
                  FROM megapayz_transactions
@@ -84,8 +84,8 @@ final class AdminReportController extends AdminController
 
             $totStmt = $pdo->prepare(
                 "SELECT
-                    COALESCE(SUM(CASE WHEN type='deposit'  AND status IN ('confirmed','success','completed') THEN amount ELSE 0 END), 0) AS total_deposits,
-                    COALESCE(SUM(CASE WHEN type='withdraw' AND status IN ('confirmed','success','completed') THEN amount ELSE 0 END), 0) AS total_withdrawals
+                    COALESCE(SUM(CASE WHEN type='deposit'  AND status IN ('confirmed','approved','success','completed') THEN amount ELSE 0 END), 0) AS total_deposits,
+                    COALESCE(SUM(CASE WHEN type='withdraw' AND status IN ('confirmed','approved','success','completed') THEN amount ELSE 0 END), 0) AS total_withdrawals
                  FROM megapayz_transactions WHERE created_at BETWEEN :from AND :to"
             );
             $totStmt->execute(['from' => $fromDt, 'to' => $toDt]);

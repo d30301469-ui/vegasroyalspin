@@ -361,6 +361,7 @@ return [
             'items' => [
                 ['key' => 'reports-financial', 'text' => 'Finansal Rapor', 'url' => '/reports/financial', 'active' => 'reports-financial', 'permission' => 'deposits', 'icon' => '<path d="M3 3v18h18"/><path d="M7 15h3v3H7zM11 11h3v7h-3zM15 7h3v11h-3z"/>'],
                 ['key' => 'reports-charts', 'text' => 'Grafikler', 'url' => '/reports/charts', 'active' => 'reports-charts', 'permission' => 'dashboard', 'icon' => '<path d="M12 20V10M18 20V4M6 20v-4"/>'],
+                ['key' => 'reports-geomap', 'text' => 'Oyuncu Haritası', 'url' => '/reports/geomap', 'active' => 'maps', 'permission' => 'dashboard', 'icon' => '<circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20M2 12h20"/><circle cx="12" cy="12" r="3"/>'],
                 ['key' => 'reports-calendar', 'text' => 'Operasyon Takvimi', 'url' => '/reports/calendar', 'active' => 'reports-calendar', 'permission' => 'dashboard', 'icon' => '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'],
             ],
         ],

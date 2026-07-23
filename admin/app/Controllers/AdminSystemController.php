@@ -36,8 +36,45 @@ final class AdminSystemController extends AdminController
 
     public function googleMaps(): void
     {
-        $this->requireAuth();
-        $this->redirect(AdminAuth::url('/reports/charts'));
+        $this->requirePermission('dashboard');
+
+        $pdo = AdminDatabase::pdo();
+        try {
+            $countryData = $pdo->query(
+                "SELECT country_name, country_code, COUNT(*) AS visitors, COALESCE(AVG(lat), 0) AS lat, COALESCE(AVG(lon), 0) AS lon
+                 FROM visitor_logs
+                 WHERE country_name IS NOT NULL AND country_name != ''
+                 GROUP BY country_name, country_code
+                 ORDER BY visitors DESC
+                 LIMIT 50"
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            $recentVisitors = $pdo->query(
+                "SELECT ip_address, country_name, city, region, lat, lon, user_agent, created_at
+                 FROM visitor_logs
+                 WHERE country_name IS NOT NULL AND country_name != ''
+                 ORDER BY created_at DESC
+                 LIMIT 100"
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            $totalVisitors = (int) $pdo->query("SELECT COUNT(*) FROM visitor_logs")->fetchColumn();
+            $uniqueCountries = (int) $pdo->query("SELECT COUNT(DISTINCT country_name) FROM visitor_logs WHERE country_name IS NOT NULL AND country_name != ''")->fetchColumn();
+        } catch (Throwable) {
+            $countryData = [];
+            $recentVisitors = [];
+            $totalVisitors = 0;
+            $uniqueCountries = 0;
+        }
+
+        $this->view('system/maps', [
+            'title' => 'Oyuncu Haritası',
+            'active' => 'maps',
+            'crumbs' => 'Raporlar | Oyuncu Haritası',
+            'countryData' => $countryData,
+            'recentVisitors' => $recentVisitors,
+            'totalVisitors' => $totalVisitors,
+            'uniqueCountries' => $uniqueCountries,
+        ]);
     }
 
     public function vectorMaps(): void
