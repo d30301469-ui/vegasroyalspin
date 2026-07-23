@@ -19,13 +19,14 @@ final class AdminDashboardController extends AdminController
         $activeBonusWhere = $this->dateCondition('created_at', $dateRange);
         $adjustWhere = $this->dateCondition('created_at', $dateRange);
         $userCount = $this->scalar('SELECT COUNT(*) FROM users');
-        $depositTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'confirmed' AND {$txWhere}");
-        $todayDepositTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'confirmed' AND {$this->dateCondition('created_at', ['start' => new DateTimeImmutable('today'), 'end' => (new DateTimeImmutable('today'))->setTime(23, 59, 59)])}");
+        $depositTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'deposit' AND status IN ('confirmed','approved') AND {$txWhere}");
+        $todayDepositTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'deposit' AND status IN ('confirmed','approved') AND {$this->dateCondition('created_at', ['start' => new DateTimeImmutable('today'), 'end' => (new DateTimeImmutable('today'))->setTime(23, 59, 59)])}");
         $pendingDeposits = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'pending'");
-        $withdrawTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'confirmed' AND {$txWhere}");
+        $withdrawTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'withdraw' AND status IN ('confirmed','approved') AND {$txWhere}");
         $pendingWithdrawals = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'pending'");
         $activeGames = $this->scalar('SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1');
         $todayVisits = $this->scalar("SELECT COUNT(*) FROM visitor_logs WHERE {$this->dateCondition('created_at', $dateRange)}");
+        $newUsersInRange = $this->scalar("SELECT COUNT(*) FROM users WHERE {$userWhere}");
         $todayUsers = $this->scalar("SELECT COUNT(*) FROM users WHERE {$this->dateCondition('created_at', ['start' => new DateTimeImmutable('today'), 'end' => (new DateTimeImmutable('today'))->setTime(23, 59, 59)])}");
         $verifiedUsers = $this->scalar('SELECT COUNT(*) FROM users WHERE is_verified = 1');
         $bannedUsers = $this->scalar('SELECT COUNT(*) FROM users WHERE banned = 1');
@@ -48,12 +49,12 @@ final class AdminDashboardController extends AdminController
         $activeUsers = $this->scalar('SELECT COUNT(*) FROM users WHERE COALESCE(banned, 0) = 0');
 
         $kpiCards = [
-            ['label' => 'Toplam Yatırım', 'value' => $depositTotal, 'type' => 'money', 'count' => $this->scalar("SELECT COUNT(DISTINCT user_id) FROM megapayz_transactions WHERE type = 'deposit' AND {$txWhere}"), 'status' => 'success', 'icon' => 'deposit'],
-            ['label' => 'Toplam Çekim', 'value' => $withdrawTotal, 'type' => 'money', 'count' => $this->scalar("SELECT COUNT(DISTINCT user_id) FROM megapayz_transactions WHERE type = 'withdraw' AND {$txWhere}"), 'status' => 'danger', 'icon' => 'withdraw'],
+            ['label' => 'Toplam Yatırım', 'value' => $depositTotal, 'type' => 'money', 'count' => $this->scalar("SELECT COUNT(DISTINCT user_id) FROM megapayz_transactions WHERE type = 'deposit' AND status IN ('confirmed','approved') AND {$txWhere}"), 'status' => 'success', 'icon' => 'deposit'],
+            ['label' => 'Toplam Çekim', 'value' => $withdrawTotal, 'type' => 'money', 'count' => $this->scalar("SELECT COUNT(DISTINCT user_id) FROM megapayz_transactions WHERE type = 'withdraw' AND status IN ('confirmed','approved') AND {$txWhere}"), 'status' => 'danger', 'icon' => 'withdraw'],
             ['label' => 'Hesap Düzelt (YUKARI)', 'value' => $adjustUp, 'type' => 'money', 'count' => $this->scalar("SELECT COUNT(DISTINCT user_id) FROM admin_balance_adjustments WHERE action = 'add' AND {$adjustWhere}"), 'status' => 'primary', 'icon' => 'adjust-up'],
             ['label' => 'Hesap Düzelt (AŞAĞI)', 'value' => -1 * $adjustDown, 'type' => 'money', 'count' => $this->scalar("SELECT COUNT(DISTINCT user_id) FROM admin_balance_adjustments WHERE action = 'subtract' AND {$adjustWhere}"), 'status' => 'warning', 'icon' => 'adjust-down'],
             ['label' => 'Toplam Oyuncu', 'value' => $userCount, 'type' => 'number', 'count' => $userCount, 'status' => 'purple', 'icon' => 'players'],
-            ['label' => 'Yeni Kayıt Oyuncular', 'value' => $todayUsers, 'type' => 'number', 'count' => $todayUsers, 'status' => 'info', 'icon' => 'new-players'],
+            ['label' => 'Yeni Kayıt Oyuncular', 'value' => $newUsersInRange, 'type' => 'number', 'count' => $newUsersInRange, 'status' => 'info', 'icon' => 'new-players'],
             ['label' => 'Giriş Yapan Kullanıcılar', 'value' => $loginUsers, 'type' => 'number', 'count' => $loginUsers, 'status' => 'purple', 'icon' => 'login-users'],
             ['label' => 'Toplam Aktif Oyuncu', 'value' => $activeUsers, 'type' => 'number', 'count' => $activeUsers, 'status' => 'success', 'icon' => 'active-players'],
             ['label' => 'Toplam Oyuncu Bakiyesi', 'value' => $totalPlayerBalance, 'type' => 'money', 'count' => $userCount, 'status' => 'info', 'icon' => 'wallet', 'wide' => true],
