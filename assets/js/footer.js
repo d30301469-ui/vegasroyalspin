@@ -143,6 +143,14 @@
     }
 
     function redirectToDeposit() {
+        // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — önce native mobil bakiye paneli.
+        if (document.body.classList.contains("mobile-site")) {
+            if (typeof window.__openMobileBalancePage === "function" && window.__openMobileBalancePage("deposit")) {
+                return;
+            }
+            window.location.href = "/?profile=open&account=balance&page=deposit";
+            return;
+        }
         // Footer / header deposit butonu ile uyumlu: paneli otomatik aç.
         if (typeof window.__openProfileModalUrl === "function" && window.__openProfileModalUrl("/profile/deposit-withdraw?openDepositPanel=1")) {
             return;
@@ -392,6 +400,13 @@
         if (betHistoryBtn) {
             betHistoryBtn.addEventListener("click", function (event) {
                 handleSmartPanelAction(event, function () {
+                    if (document.body.classList.contains("mobile-site")) {
+                        if (typeof window.__openMobileBetHistoryPage === "function" && window.__openMobileBetHistoryPage("bets")) {
+                            return;
+                        }
+                        window.location.href = "/?profile=open&account=history&page=bets";
+                        return;
+                    }
                     if (typeof window.__openProfileModalUrl === "function" && window.__openProfileModalUrl("/profile/bet-history")) {
                         return;
                     }

@@ -26,6 +26,23 @@
     }
 
     function openMemberFlowFromRegisterTrigger(isDepositTrigger) {
+        var isMobileSite = document.body.classList.contains('mobile-site');
+        if (isMobileSite) {
+            // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — native mobil panel.
+            if (isDepositTrigger) {
+                if (typeof window.__openMobileBalancePage === 'function' && window.__openMobileBalancePage('deposit')) {
+                    return;
+                }
+                window.location.href = '/?profile=open&account=balance&page=deposit';
+                return;
+            }
+            if (typeof window.__openMobileProfilePanel === 'function' && document.getElementById('mprofilePanel')) {
+                window.__openMobileProfilePanel();
+                return;
+            }
+            window.location.href = '/mobile/profile?profile=open&account=profile&page=details';
+            return;
+        }
         if (isDepositTrigger && typeof window.redirectToDeposit === 'function') {
             window.redirectToDeposit();
             return;

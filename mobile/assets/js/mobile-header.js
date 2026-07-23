@@ -72,12 +72,8 @@
                 window.__closeMobileNavMenu();
             }
 
-            // Öncelik: aynı ekranda profil modalını aç.
-            if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/details')) {
-                return;
-            }
-
-            // Fallback: modal hazır değilse mobil profile sayfasına geç.
+            // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — native panel
+            // DOM'da yoksa doğrudan mobil profil sayfasına geç.
             window.location.href = '/mobile/profile?profile=open&account=profile&page=details';
         }
 
