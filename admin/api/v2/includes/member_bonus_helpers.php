@@ -185,8 +185,8 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
         }
 
         // --- bonus_amount sabit değer (yatırım toplamını aşamaz) ---
-        // bonus_type tanımlanmamışsa, başlıktan akıllı tespit dene
-        if ($bonusType === '') {
+        // bonus_type tanımlanmamışsa veya eski 'fixed' değerindeyse, başlıktan akıllı tespit dene
+        if ($bonusType === '' || $bonusType === 'fixed') {
             $title = strtolower((string) ($promotion['title'] ?? ''));
             $titleClean = preg_replace('/\s+/u', ' ', $title);
 
