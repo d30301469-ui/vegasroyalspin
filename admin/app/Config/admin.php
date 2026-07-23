@@ -430,6 +430,7 @@ return [
             'items' => [
                 ['key' => 'compliance-aml', 'text' => 'AML Uyarıları', 'url' => '/compliance/aml-alerts', 'active' => 'datatable', 'module' => 'compliance-aml', 'icon' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/>'],
                 ['key' => 'compliance-risk', 'text' => 'Risk Uyarıları', 'url' => '/compliance/risk-alerts', 'active' => 'datatable', 'module' => 'compliance-risk', 'icon' => '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>'],
+                ['key' => 'risk-analysis', 'text' => 'Risk Analizi', 'url' => '/compliance/risk-analysis', 'active' => 'risk-analysis', 'permission' => 'deposits', 'icon' => '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/><path d="M12 2a10 10 0 0 1 0 20"/>'],
                 ['key' => 'compliance-audit', 'text' => 'Denetim Logu', 'url' => '/compliance/audit-log', 'active' => 'compliance-audit', 'permission' => 'logs', 'icon' => '<path d="M3 3v18h18"/><path d="M7 8h10M7 12h10M7 16h6"/>'],
             ],
         ],
