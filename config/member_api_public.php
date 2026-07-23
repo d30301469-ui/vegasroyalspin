@@ -219,6 +219,9 @@ if (!function_exists('metropol_frontend_clear_member_session')) {
         ] as $key) {
             unset($_SESSION[$key]);
         }
+        if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
+            metropol_frontend_clear_member_restore_cookie();
+        }
     }
 }
 

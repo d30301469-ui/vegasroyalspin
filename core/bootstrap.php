@@ -94,7 +94,10 @@ if (!$isApiRequest) {
     }
     $_SESSION['csrf_token'] = $_SESSION[$csrfKey];
 
-    $frontendJwtCookie = trim((string) ($_COOKIE['metropol_member_jwt'] ?? ''));
+    $frontendRestoreCookieName = function_exists('metropol_frontend_member_restore_cookie_name')
+        ? metropol_frontend_member_restore_cookie_name()
+        : 'metropol_member_restore';
+    $frontendJwtCookie = trim((string) ($_COOKIE[$frontendRestoreCookieName] ?? $_COOKIE['metropol_member_jwt'] ?? ''));
     $frontendNeedsRestore = $frontendJwtCookie !== ''
         && (
             empty($_SESSION['loggedin'])
@@ -114,17 +117,9 @@ if (!$isApiRequest) {
                         metropol_frontend_clear_member_session();
                     }
                 }
-                $cookieDomain = function_exists('deploy_session_cookie_domain_for_host')
-                    ? deploy_session_cookie_domain_for_host((string) ($_SERVER['HTTP_HOST'] ?? ''))
-                    : '';
-                setcookie('metropol_member_jwt', '', [
-                    'expires' => time() - 3600,
-                    'path' => '/',
-                    'domain' => $cookieDomain,
-                    'secure' => function_exists('metropol_request_is_https') ? metropol_request_is_https() : true,
-                    'httponly' => false,
-                    'samesite' => 'Lax',
-                ]);
+                if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
+                    metropol_frontend_clear_member_restore_cookie();
+                }
             }
         } catch (Throwable) {
             // Keep rendering as guest if backend restore is temporarily unavailable.

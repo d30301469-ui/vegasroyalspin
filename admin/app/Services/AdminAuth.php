@@ -84,6 +84,15 @@ final class AdminAuth
         self::setPersistentCookie($encoded . '.' . $sig, $expiresAt);
     }
 
+    private static function refreshPersistentCookieForCurrentUser(): void
+    {
+        $user = self::user();
+        if (empty($user['id']) || empty($user['email'])) {
+            return;
+        }
+        self::issuePersistentCookie($user);
+    }
+
     public static function restorePersistentLogin(): bool
     {
         if (self::check()) {
@@ -155,6 +164,7 @@ final class AdminAuth
         }
 
         $_SESSION['admin_last_activity'] = time();
+        self::refreshPersistentCookieForCurrentUser();
 
         self::ensureSuperAdminHasAllPermissions();
 

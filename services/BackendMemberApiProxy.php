@@ -635,6 +635,9 @@ final class BackendMemberApiProxy
         }
         if (!empty($_SESSION['member_jwt'])) {
             $_SESSION['__member_jwt_proxy_synced'] = true;
+            if (function_exists('metropol_frontend_set_member_restore_cookie')) {
+                metropol_frontend_set_member_restore_cookie((string) $_SESSION['member_jwt']);
+            }
             try {
                 session_regenerate_id(true);
             } catch (Throwable) {
@@ -696,6 +699,9 @@ final class BackendMemberApiProxy
         }
         if ($ref !== null) {
             $_SESSION['referral_code'] = $ref;
+        }
+        if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
+            metropol_frontend_clear_member_restore_cookie();
         }
         metropol_frontend_session_write_close();
     }
