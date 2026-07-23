@@ -76,9 +76,12 @@ try {
     
     $pdo->commit();
     
-    // ALTER TABLE causes implicit commit — run outside transaction
-    $pdo->exec('ALTER TABLE megapayz_transactions AUTO_INCREMENT = 1');
-    echo "  Reset megapayz_transactions AUTO_INCREMENT to 1\n";
+    // Renumber remaining rows + reset AUTO_INCREMENT
+    $pdo->exec("SET @new_id = 0");
+    $pdo->exec("UPDATE megapayz_transactions SET id = (@new_id := @new_id + 1) ORDER BY id");
+    $maxId = (int) $pdo->query("SELECT COALESCE(MAX(id), 0) FROM megapayz_transactions")->fetchColumn();
+    $pdo->exec("ALTER TABLE megapayz_transactions AUTO_INCREMENT = " . ($maxId + 1));
+    echo "  Renumbered IDs starting from 1, AUTO_INCREMENT set to " . ($maxId + 1) . "\n";
     
     $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
     echo "  Reset megapayz_callbacks AUTO_INCREMENT to 1\n";
