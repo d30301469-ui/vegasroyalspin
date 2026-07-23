@@ -201,6 +201,14 @@
         if (csrf) {
             h['X-CSRF-Token'] = csrf;
         }
+        // When the PHP session doesn't persist (e.g. session_regenerate_id
+        // across server instances), the proxy can't build trust headers.
+        // Send the JWT from localStorage as a fallback so the backend can
+        // still authenticate the request via Bearer token.
+        var jwt = Shared.getMemberJwt();
+        if (jwt) {
+            h['X-Metropol-Member-Jwt'] = jwt;
+        }
         return h;
     }
 
@@ -707,6 +715,7 @@
                 // JWT or trust the frontend proxy headers.
                 Shared.hydrateMemberJwt().then(function (token) {
                     if (token !== '') {
+                        w.__USER_LOGGED_IN__ = true;
                         w.__HAS_MEMBER_JWT__ = true;
                         if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
                             w.MetropolMemberConsole.fetchAll();
