@@ -202,6 +202,7 @@ final class BackendMemberApiProxy
 
                 try {
                     self::maybeApplyAuthSession($route, $method, $result);
+                    self::maybeSyncSessionFromAuthCheck($route, $method, $result);
                     self::maybeClearAuthSession($route, $method, $result);
                 } catch (Throwable $sessionError) {
                     error_log('[BackendMemberApiProxy] session sync: ' . $sessionError->getMessage());
@@ -647,6 +648,77 @@ final class BackendMemberApiProxy
         if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
+        metropol_frontend_session_write_close();
+    }
+
+    /**
+     * `auth/session` (heartbeat/hydrate) ve `auth/refresh` yanıtları backend'de JWT'nin
+     * hâlâ geçerli olduğunu doğrular, ancak bu route'lar `maybeApplyAuthSession()`
+     * kapsamına (yalnızca login/register) girmediği için frontend'in kendi
+     * $_SESSION['loggedin']/user_id'si asla geri yüklenmiyordu. Sonuç: JS tarafı
+     * (localStorage JWT) kullanıcıyı giriş yapılmış sanırken, $_SESSION['loggedin']'e
+     * bakan sayfalar (profil vb.) oturumu düşmüş görüp '/' adresine yönlendiriyor —
+     * "oturum yenileme döngüsü durduruldu" uyarılarının kök nedeni buydu. Bu metod
+     * backend'in doğruladığı üyeliği frontend PHP session'ına senkronlar.
+     *
+     * @param array{status: int, body: string, content_type: string|null, transport_error?: bool} $result
+     */
+    private static function maybeSyncSessionFromAuthCheck(string $route, string $method, array $result): void
+    {
+        if (!empty($result['transport_error'])) {
+            return;
+        }
+
+        $normalized = strtolower(trim($route, '/'));
+        $isSessionCheck = $method === 'GET' && in_array($normalized, ['auth/session', 'session.php'], true);
+        $isRefresh = $method === 'POST' && in_array($normalized, ['auth/refresh', 'refresh.php'], true);
+        if (!$isSessionCheck && !$isRefresh) {
+            return;
+        }
+
+        $status = (int) ($result['status'] ?? 0);
+        if ($status < 200 || $status >= 300) {
+            return;
+        }
+
+        $decoded = json_decode((string) ($result['body'] ?? ''), true);
+        if (!is_array($decoded) || empty($decoded['success'])) {
+            return;
+        }
+
+        $data = is_array($decoded['data'] ?? null) ? $decoded['data'] : [];
+        $userId = (int) ($data['user_id'] ?? 0);
+        if ($userId <= 0) {
+            return;
+        }
+
+        self::ensureFrontendSession();
+        metropol_frontend_session_start();
+
+        $_SESSION['loggedin'] = true;
+        $_SESSION['user_id'] = $userId;
+
+        $user = is_array($data['user'] ?? null) ? $data['user'] : [];
+        if (isset($user['username'])) {
+            $_SESSION['username'] = (string) $user['username'];
+        }
+        if (isset($user['email'])) {
+            $_SESSION['email'] = (string) $user['email'];
+        }
+
+        $token = trim((string) ($data['token'] ?? ''));
+        if ($token !== '') {
+            $_SESSION['member_jwt'] = $token;
+            if (function_exists('metropol_frontend_set_member_restore_cookie')) {
+                metropol_frontend_set_member_restore_cookie($token);
+            }
+        }
+
+        if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $_SESSION['__member_jwt_proxy_synced'] = true;
+
         metropol_frontend_session_write_close();
     }
 
