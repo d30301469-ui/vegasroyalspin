@@ -6,9 +6,9 @@ require_once __DIR__ . '/Core/AdminPaths.php';
 admin_paths_bootstrap();
 
 if (session_status() === PHP_SESSION_NONE) {
-    $adminSessionName = trim((string) (getenv('ADMIN_SESSION_NAME') ?: 'ADMINSESSID'));
+    $adminSessionName = trim((string) (getenv('ADMIN_SESSION_NAME') ?: 'VRSADMINSESSID'));
     if ($adminSessionName === '') {
-        $adminSessionName = 'ADMINSESSID';
+        $adminSessionName = 'VRSADMINSESSID';
     }
     if (session_name() !== $adminSessionName) {
         session_name($adminSessionName);

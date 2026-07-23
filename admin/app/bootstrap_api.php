@@ -19,7 +19,10 @@ if (session_status() === PHP_SESSION_NONE
     && !(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
     ini_set('session.use_strict_mode', '1');
     // Match admin panel session name so AdminAuth::check() works across all paths
-    $__apiSessionName = trim((string) (getenv('ADMIN_SESSION_NAME') ?: 'ADMINSESSID'));
+    $__apiSessionName = trim((string) (getenv('ADMIN_SESSION_NAME') ?: 'VRSADMINSESSID'));
+    if ($__apiSessionName === '') {
+        $__apiSessionName = 'VRSADMINSESSID';
+    }
     if (session_name() !== $__apiSessionName) {
         session_name($__apiSessionName);
     }
