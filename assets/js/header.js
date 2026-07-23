@@ -430,6 +430,107 @@
         codeSpan.textContent = LANG_CODES[lang] || 'TUR';
     }
 
+    function runtimeLoggedIn() {
+        if (window.__USER_LOGGED_IN__ === true) {
+            return true;
+        }
+        if (window.__MEMBER_BOOTSTRAP_STATE__ && window.__MEMBER_BOOTSTRAP_STATE__.logged_in === true) {
+            return true;
+        }
+        return !!(Shared.getMemberJwt && Shared.getMemberJwt());
+    }
+
+    function mobileUserHeaderMarkup() {
+        return ''
+            + '<div class="user-balance-dropdown">'
+            + '  <a class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" href="/profile/deposit-withdraw?openDepositPanel=1" aria-label="Bakiye" role="button" aria-expanded="false" aria-haspopup="true" onclick="event.preventDefault(); if (typeof window.__openMobileBalancePage === \'function\' && window.__openMobileBalancePage(\'deposit\')) return false; if (typeof redirectToDeposit === \'function\') redirectToDeposit(); return false;">'
+            + '    <div class="hdr-user-info-content-bc">'
+            + '      <div class="hdr-user-info-texts-bc ext-1 ellipsis" data-header-balance-main>'
+            + '        <p class="balanceAmount"><span id="headerBalanceMain" data-balance-target="headerBalanceMain">0</span><span class="currencySymbol"> ₺</span></p>'
+            + '      </div>'
+            + '    </div>'
+            + '  </a>'
+            + '</div>'
+            + '<div class="profileDetails" id="playerCol">'
+            + '  <button type="button" class="userBtn nav-menu-item" id="toggleButton" aria-expanded="false" aria-label="Profil menüsü" onclick="event.preventDefault(); event.stopPropagation(); if (typeof window.__openProfileModalUrl === \'function\' && window.__openProfileModalUrl(\'/profile/details\')) return false; window.location.href=\'/mobile/profile?profile=open&account=profile&page=details\'; return false;">'
+            + '    <i class="hdr-user-avatar-icon-bc bc-i-user" aria-hidden="true"></i><span class="backFace" aria-hidden="true"></span>'
+            + '  </button>'
+            + '</div>';
+    }
+
+    function desktopUserNavMarkup() {
+        return ''
+            + '<div class="nav-menu-container header-user-nav">'
+            + '  <ul class="nav-menu-other hdr-balance-nav">'
+            + '    <li id="depositBalanceWrap">'
+            + '      <a href="/profile/deposit-withdraw?openDepositPanel=1" class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" role="button" aria-expanded="false" aria-haspopup="true" onclick="event.preventDefault(); if (typeof redirectToDeposit === \'function\') redirectToDeposit(); return false;">'
+            + '        <div class="hdr-user-info-content-bc"><span class="hdr-user-info-texts-bc ext-1 ellipsis"><span class="balanceAmount"><span id="headerBalanceMain" data-balance-target="headerBalanceMain">0</span><span class="currencySymbol">&#8239;₺</span></span></span></div>'
+            + '      </a>'
+            + '    </li>'
+            + '  </ul>'
+            + '  <ul class="nav-menu-other profileDetails">'
+            + '    <li><div class="user-nav-icon playerCol" id="playerCol">'
+            + '      <button class="userBtn nav-menu-item" id="toggleButton" type="button" aria-expanded="false" aria-label="Profil menüsü" onclick="event.preventDefault(); event.stopPropagation(); if (typeof window.__openProfileModalUrl === \'function\' && window.__openProfileModalUrl(\'/profile/details\')) return false; window.location.href=\'/profile/details\'; return false;">'
+            + '        <span class="avatarHolderImg"><i class="bc-i-user hdr-user-avatar-icon-bc" aria-hidden="true"></i></span>'
+            + '      </button>'
+            + '    </div></li>'
+            + '  </ul>'
+            + '</div>';
+    }
+
+    function upgradeGuestHeaderIfNeeded() {
+        if (!runtimeLoggedIn()) {
+            return false;
+        }
+
+        var guestLoginBtn = document.getElementById('Giris');
+        var guestRegisterBtn = document.getElementById('openRegister');
+        if (!guestLoginBtn && !guestRegisterBtn) {
+            return false;
+        }
+
+        var header = document.querySelector('.header-bc');
+        if (header) {
+            header.classList.remove('hdr-auth-guest');
+            header.classList.add('hdr-auth-user');
+        }
+
+        if (document.body.classList.contains('mobile-site')) {
+            var mobileUserWrap = document.querySelector('.mobile-bc-header .hdr-user-bc');
+            if (mobileUserWrap) {
+                mobileUserWrap.innerHTML = mobileUserHeaderMarkup();
+            }
+            var guestShortcuts = document.querySelector('.mobile-bc-header .hdr-guest-shortcuts');
+            if (guestShortcuts) {
+                guestShortcuts.parentNode.removeChild(guestShortcuts);
+            }
+        } else {
+            if (guestLoginBtn && guestLoginBtn.parentNode) {
+                guestLoginBtn.parentNode.removeChild(guestLoginBtn);
+            }
+            if (guestRegisterBtn && guestRegisterBtn.parentNode) {
+                guestRegisterBtn.parentNode.removeChild(guestRegisterBtn);
+            }
+            if (!document.querySelector('.header-user-nav')) {
+                var loginCol = document.querySelector('.loginCol.hdr-user-bc, .hdr-user-bc');
+                var langSelect = document.getElementById('langDropdown');
+                if (loginCol) {
+                    var navWrap = document.createElement('div');
+                    navWrap.innerHTML = desktopUserNavMarkup();
+                    loginCol.insertBefore(navWrap.firstChild, langSelect || null);
+                }
+            }
+        }
+
+        initDepositMenu();
+        initPlayerMenu();
+        if (typeof window.__refreshHeaderBalance === 'function') {
+            window.__refreshHeaderBalance();
+        }
+
+        return true;
+    }
+
     function initSmartPanel() {
         var panel   = document.getElementById('smartPanelFixed');
         var toggle  = document.getElementById('smart-panel-holder');
@@ -911,6 +1012,7 @@
     }
 
     ready(function () {
+        upgradeGuestHeaderIfNeeded();
         initToastr();
         initDepositMenu();
         initPlayerMenu();
@@ -921,6 +1023,10 @@
         initMainMenuScroll();
         initMainMenuActive();
         initSearchPanel();
+
+        window.addEventListener('metropol:member-jwt-ready', function () {
+            upgradeGuestHeaderIfNeeded();
+        });
     });
 })();
 
