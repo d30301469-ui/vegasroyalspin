@@ -256,35 +256,37 @@ final class AdminDashboardController extends AdminController
     private function bonusStats(array $dateRange): array
     {
         $activeBonusWhere = $this->dateCondition('created_at', $dateRange);
-        $claimWhere = $this->dateCondition('created_at', $dateRange);
-        $adjustWhere = $this->dateCondition('created_at', $dateRange);
-        $campaignWhere = $this->dateCondition('created_at', $dateRange);
-        $depositBonus = $this->scalar("SELECT COALESCE(SUM(current_bonus_balance), 0) FROM user_active_bonuses WHERE {$activeBonusWhere} AND (LOWER(COALESCE(category, name, '')) LIKE '%deposit%' OR LOWER(COALESCE(name, '')) LIKE '%yatırım%')");
-        $lossBonus = $this->scalar("SELECT COALESCE(SUM(requested_amount), 0) FROM bonus_claim_requests WHERE {$claimWhere} AND (LOWER(COALESCE(bonus_name, '')) LIKE '%loss%' OR LOWER(COALESCE(bonus_name, '')) LIKE '%kayıp%')");
-        $cashBonus = $this->scalar("SELECT COALESCE(SUM(current_bonus_balance), 0) FROM user_active_bonuses WHERE {$activeBonusWhere} AND (LOWER(COALESCE(category, name, '')) LIKE '%cash%' OR LOWER(COALESCE(name, '')) LIKE '%nakit%')");
-        $manualDiscount = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM admin_balance_adjustments WHERE wallet = 'bonus_balance' AND action = 'add' AND {$adjustWhere}");
-        $manualFreespin = 0;
-        $freespinBonus = $this->scalar("SELECT COALESCE(SUM(current_bonus_balance), 0) FROM user_active_bonuses WHERE {$activeBonusWhere} AND LOWER(COALESCE(category, name, '')) LIKE '%freespin%'");
+        $claimWhere       = $this->dateCondition('created_at', $dateRange);
+        $adjustWhere      = $this->dateCondition('created_at', $dateRange);
 
-        $labels = ['Bonus Tutarı', 'Oyuncu Adedi', 'Bonus Adedi', 'Spin Adedi', 'Aktarılan Tutar', 'Aktarılan Hesap Oyuncu', 'Aktif Bonus Adedi'];
-        $formats = ['money', 'number', 'number', 'number', 'money', 'number', 'number'];
-        $activePlayers = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM user_active_bonuses WHERE {$activeBonusWhere}");
-        $activeCount = $this->scalar("SELECT COUNT(*) FROM user_active_bonuses WHERE {$activeBonusWhere}");
+        $depositBonus    = $this->scalar("SELECT COALESCE(SUM(current_bonus_balance), 0) FROM user_active_bonuses WHERE {$activeBonusWhere} AND (LOWER(COALESCE(category, name, '')) LIKE '%deposit%' OR LOWER(COALESCE(name, '')) LIKE '%yatırım%')");
+        $lossBonus       = $this->scalar("SELECT COALESCE(SUM(requested_amount), 0) FROM bonus_claim_requests WHERE {$claimWhere} AND (LOWER(COALESCE(bonus_name, '')) LIKE '%loss%' OR LOWER(COALESCE(bonus_name, '')) LIKE '%kayıp%')");
+        $cashBonus       = $this->scalar("SELECT COALESCE(SUM(current_bonus_balance), 0) FROM user_active_bonuses WHERE {$activeBonusWhere} AND (LOWER(COALESCE(category, name, '')) LIKE '%cash%' OR LOWER(COALESCE(name, '')) LIKE '%nakit%')");
+        $manualDiscount  = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM admin_balance_adjustments WHERE wallet = 'bonus_balance' AND action = 'add' AND {$adjustWhere}");
+        $freespinBonus   = $this->scalar("SELECT COALESCE(SUM(current_bonus_balance), 0) FROM user_active_bonuses WHERE {$activeBonusWhere} AND LOWER(COALESCE(category, name, '')) LIKE '%freespin%'");
+        $activePlayers   = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM user_active_bonuses WHERE {$activeBonusWhere}");
+        $activeCount     = $this->scalar("SELECT COUNT(*) FROM user_active_bonuses WHERE {$activeBonusWhere}");
         $transferPlayers = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM admin_balance_adjustments WHERE wallet = 'bonus_balance' AND {$adjustWhere}");
         $totalActiveCount = $this->scalar("SELECT COUNT(*) FROM user_active_bonuses WHERE status IN ('active', 'pending') AND {$activeBonusWhere}");
-        $datasets = [
-            'Yatırım Bonusları' => $this->statsDataset($labels, $formats, [$depositBonus, $activePlayers, $activeCount, 0, 0, 0, $totalActiveCount], [['label' => 'Yatırım', 'value' => $depositBonus, 'color' => '#3b82f6']]),
-            'Discount Bonusları' => $this->statsDataset($labels, $formats, [$lossBonus, $activePlayers, $activeCount, 0, 0, 0, $totalActiveCount], [['label' => 'Discount', 'value' => $lossBonus, 'color' => '#f59e0b']]),
-            'Nakit Bonusları' => $this->statsDataset($labels, $formats, [$cashBonus, $activePlayers, $activeCount, 0, 0, 0, $totalActiveCount], [['label' => 'Nakit', 'value' => $cashBonus, 'color' => '#22c55e']]),
-            'Manuel Discount' => $this->statsDataset($labels, $formats, [$manualDiscount, 0, 0, 0, $manualDiscount, $transferPlayers, $totalActiveCount], [['label' => 'Manual', 'value' => $manualDiscount, 'color' => '#8b5cf6']]),
-            'Manuel Freespin' => $this->statsDataset($labels, $formats, [0, 0, 0, $manualFreespin, 0, 0, $totalActiveCount], [['label' => 'Manuel Freespin', 'value' => $manualFreespin, 'color' => '#ef4444']]),
-            'Freespin Bonusları' => $this->statsDataset($labels, $formats, [$freespinBonus, $activePlayers, $activeCount, $manualFreespin, 0, 0, $totalActiveCount], [['label' => 'Freespin', 'value' => $freespinBonus, 'color' => '#06b6d4']]),
+
+        $totalBonus = $depositBonus + $lossBonus + $cashBonus + $manualDiscount + $freespinBonus;
+
+        // Multi-segment donut legend: one segment per bonus category
+        $legend = [
+            ['label' => 'Yatırım',     'value' => $depositBonus,   'color' => '#3b82f6'],
+            ['label' => 'Discount',    'value' => $lossBonus,      'color' => '#f59e0b'],
+            ['label' => 'Nakit',       'value' => $cashBonus,      'color' => '#22c55e'],
+            ['label' => 'Manual',      'value' => $manualDiscount, 'color' => '#8b5cf6'],
+            ['label' => 'Freespin',    'value' => $freespinBonus,  'color' => '#06b6d4'],
         ];
 
-        return $datasets['Yatırım Bonusları'] + [
-            'tabs' => array_keys($datasets),
-            'active_tab' => 'Yatırım Bonusları',
-            'datasets' => $datasets,
+        $labels  = ['Toplam Bonus', 'Oyuncu Adedi', 'Bonus Adedi', 'Manuel Aktarım', 'Aktarılan Oyuncu', 'Aktif Bonus'];
+        $formats = ['money', 'number', 'number', 'money', 'number', 'number'];
+        $values  = [$totalBonus, $activePlayers, $activeCount, $manualDiscount, $transferPlayers, $totalActiveCount];
+
+        return $this->statsDataset($labels, $formats, $values, $legend) + [
+            'tabs'       => ['Genel'],
+            'active_tab' => 'Genel',
             'module_url' => '/module?key=active-bonuses',
         ];
     }
