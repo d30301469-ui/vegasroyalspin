@@ -20,6 +20,12 @@ $mobileAssetVer = static function (string $relativePath): string {
 	return (string) ((is_file($fullPath) ? filemtime($fullPath) : '1') . '-' . (is_file($fullPath) ? filesize($fullPath) : '0'));
 };
 
+$mobileVersionedUrl = static function (string $path, string $version): string {
+	$baseUrl = asset_url($path);
+	$sep = (strpos($baseUrl, '?') !== false) ? '&' : '?';
+	return $baseUrl . $sep . 'v=' . rawurlencode($version);
+};
+
 $mobileAuthSharedVer = $mobileAssetVer('assets/js/auth-shared.js');
 $mobileHeaderSharedVer = $mobileAssetVer('assets/js/header.js');
 $mobileFooterSharedVer = $mobileAssetVer('assets/js/footer.js');
@@ -29,12 +35,12 @@ $mobileProfilePanelVer = $mobileAssetVer('mobile/assets/js/profile-panel.js');
 ?>
 <script src="<?= htmlspecialchars(asset_url('assets/js/global.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/modal-polyfill.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js') . '?v=' . rawurlencode($mobileAuthSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/auth-shared.js', $mobileAuthSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/game-wallet-picker.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/member-api-console.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/site-settings-hydrate.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/toastify-helper.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/header.js') . '?v=' . rawurlencode($mobileHeaderSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/header.js', $mobileHeaderSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/header-balance-poll.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/session-heartbeat.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile-api.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
@@ -47,11 +53,11 @@ $mobileProfilePanelVer = $mobileAssetVer('mobile/assets/js/profile-panel.js');
 <script src="/assets/js/login.js?v=<?= rawurlencode($mobileLoginJsVer) ?>"></script>
 <script src="/assets/js/register.js?v=<?= rawurlencode($mobileRegisterJsVer) ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/mobile-right-sheet.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/footer.js') . '?v=' . rawurlencode($mobileFooterSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/footer.js', $mobileFooterSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/footer-bc.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/favorites-drawer.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/game-favorites.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('mobile/assets/js/betslip-mobile.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('mobile/assets/js/navigation.js') . '?v=' . rawurlencode($mobileNavigationVer), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('mobile/assets/js/mobile-header.js') . '?v=' . rawurlencode($mobileHeaderVer), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('mobile/assets/js/profile-panel.js') . '?v=' . rawurlencode($mobileProfilePanelVer), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('mobile/assets/js/navigation.js', $mobileNavigationVer), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('mobile/assets/js/mobile-header.js', $mobileHeaderVer), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('mobile/assets/js/profile-panel.js', $mobileProfilePanelVer), ENT_QUOTES, 'UTF-8') ?>"></script>
