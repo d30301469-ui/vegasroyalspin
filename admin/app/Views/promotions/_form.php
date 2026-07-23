@@ -222,4 +222,9 @@ function toggleBonusRules() {
     var checked = document.getElementById('promoBonusRulesToggle').checked;
     document.getElementById('promoBonusRulesField').style.display = checked ? '' : 'none';
 }
+
+// Sayfa yuklendiginde ve bonus tipi degistiginde formu guncelle
+document.addEventListener('DOMContentLoaded', function() {
+    updateBonusForm();
+});
 </script>
