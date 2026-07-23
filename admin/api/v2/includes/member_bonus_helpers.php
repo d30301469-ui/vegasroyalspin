@@ -78,12 +78,15 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
      * Hesaplama önceliği:
      * 1. bonus_rules JSON içinde ilk eşleşen kural (applies_to: first_deposit|deposit|any)
      * 2. bonus_type alanı: 'first_deposit_pct' → ilk yatırım × %, 'percentage' → toplam yatırım × %
-     * 3. bonus_amount sabit değeri
-     * 4. 0 (hesaplanamaz)
+     * 3. bonus_amount sabit değeri (onaylı yatırım toplamını aşamaz)
+     *
+     * KRİTİK KURAL: Hesaplanan bonus tutarı hiçbir zaman kullanıcının
+     * onaylı yatırım toplamından fazla olamaz.
      */
     function memberPromotionResolveClaimAmountV2(PDO $pdo, int $userId, array $promotion): float
     {
         $bonusType = strtolower(trim((string) ($promotion['bonus_type'] ?? '')));
+        $totalDeposit = memberApprovedDepositTotalV2($pdo, $userId);
 
         // --- bonus_rules JSON parse ---
         $rules = [];
@@ -129,19 +132,28 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
             if ($isRulePct) {
                 $baseAmount = $isFirstDeposit
                     ? memberFirstApprovedDepositAmountV2($pdo, $userId)
-                    : memberApprovedDepositTotalV2($pdo, $userId);
+                    : $totalDeposit;
 
                 if ($baseAmount > 0) {
                     $calculated = round(($baseAmount * $ruleValue) / 100, 2);
                     if ($ruleMaxAmount !== null && $ruleMaxAmount > 0) {
                         $calculated = min($calculated, round($ruleMaxAmount, 2));
                     }
+                    // Bonus yatırım toplamını aşamaz
+                    if ($totalDeposit > 0) {
+                        $calculated = min($calculated, $totalDeposit);
+                    }
 
                     return $calculated;
                 }
             } else {
-                // fixed tipi kural
-                return round($ruleValue, 2);
+                // fixed tipi kural: yatırım toplamını aşamaz
+                $fixed = round($ruleValue, 2);
+                if ($totalDeposit > 0) {
+                    $fixed = min($fixed, $totalDeposit);
+                }
+
+                return $fixed;
             }
         }
 
@@ -151,31 +163,33 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
             if ($firstDeposit > 0) {
                 $pct = (float) ($promotion['bonus_amount'] ?? 0);
                 if ($pct > 0 && $pct <= 200) {
-                    return round(($firstDeposit * $pct) / 100, 2);
-                }
-                // bonus_amount yüzde değilse başlıktan % oku
-                $title = strtolower((string) ($promotion['title'] ?? ''));
-                if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/u', $title, $m)) {
-                    $titlePct = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
-                    if ($titlePct > 0 && $titlePct <= 200) {
-                        return round(($firstDeposit * $titlePct) / 100, 2);
+                    $calculated = round(($firstDeposit * $pct) / 100, 2);
+                    if ($totalDeposit > 0) {
+                        $calculated = min($calculated, $totalDeposit);
                     }
+
+                    return $calculated;
                 }
             }
         }
 
         if ($bonusType === 'percentage') {
-            $totalDeposit = memberApprovedDepositTotalV2($pdo, $userId);
             if ($totalDeposit > 0) {
                 $pct = (float) ($promotion['bonus_amount'] ?? 0);
                 if ($pct > 0 && $pct <= 200) {
-                    return round(($totalDeposit * $pct) / 100, 2);
+                    $calculated = round(($totalDeposit * $pct) / 100, 2);
+
+                    return min($calculated, $totalDeposit);
                 }
             }
         }
 
-        // --- bonus_amount sabit değer ---
+        // --- bonus_amount sabit değer (yatırım toplamını aşamaz) ---
         $amount = round((float) ($promotion['bonus_amount'] ?? 0), 2);
+        if ($amount > 0 && $totalDeposit > 0) {
+            // Sabit bonus, onaylı yatırım toplamından fazla olamaz
+            $amount = min($amount, $totalDeposit);
+        }
         if ($amount > 0) {
             return $amount;
         }
