@@ -85,8 +85,11 @@ try {
     $deletedCallbacks = $pdo->exec('DELETE FROM megapayz_callbacks');
     $pdo->commit();
     
-    // ALTER TABLE causes implicit commit — run outside transaction
-    $pdo->exec('ALTER TABLE megapayz_transactions AUTO_INCREMENT = 1');
+    // Renumber remaining approved rows to start from 1
+    $pdo->exec("SET @new_id = 0");
+    $pdo->exec("UPDATE megapayz_transactions SET id = (@new_id := @new_id + 1) ORDER BY id");
+    $maxId = (int) $pdo->query("SELECT COALESCE(MAX(id), 0) FROM megapayz_transactions")->fetchColumn();
+    $pdo->exec("ALTER TABLE megapayz_transactions AUTO_INCREMENT = " . ($maxId + 1));
     $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
     
     header('Content-Type: text/plain; charset=utf-8');
