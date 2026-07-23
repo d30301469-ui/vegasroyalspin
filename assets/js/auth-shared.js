@@ -647,6 +647,7 @@
             ? w.__MEMBER_JWT_BOOTSTRAP__.trim()
             : '';
         var phpLoggedIn = phpSessionLoggedIn();
+        w.__USER_LOGGED_IN__ = phpLoggedIn;
         var storedJwt = Shared.getMemberJwt();
 
         if (bootstrapJwt !== '' && phpLoggedIn) {

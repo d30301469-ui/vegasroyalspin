@@ -442,13 +442,10 @@
     }
 
     function runtimeLoggedIn() {
-        if (window.__USER_LOGGED_IN__ === true) {
-            return true;
+        if (window.__MEMBER_BOOTSTRAP_STATE__ && typeof window.__MEMBER_BOOTSTRAP_STATE__ === 'object') {
+            return window.__MEMBER_BOOTSTRAP_STATE__.logged_in === true;
         }
-        if (window.__MEMBER_BOOTSTRAP_STATE__ && window.__MEMBER_BOOTSTRAP_STATE__.logged_in === true) {
-            return true;
-        }
-        return false;
+        return window.__USER_LOGGED_IN__ === true;
     }
 
     function desktopUserNavMarkup() {
