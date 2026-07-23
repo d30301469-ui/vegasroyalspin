@@ -208,6 +208,80 @@ if (!function_exists('memberSendResetMail')) {
     }
 }
 
+if (!function_exists('memberEnsureUserTableColumns')) {
+    /**
+     * Auto-create any missing columns on the users table to prevent login failures.
+     * Runs before every login attempt — idempotent via IF NOT EXISTS / SHOW COLUMNS check.
+     */
+    function memberEnsureUserTableColumns(PDO $pdo): void
+    {
+        static $ensured = false;
+        if ($ensured) {
+            return;
+        }
+        $ensured = true;
+
+        try {
+            $existing = array_column(
+                $pdo->query('SHOW COLUMNS FROM `users`')->fetchAll(PDO::FETCH_ASSOC),
+                'Field'
+            );
+        } catch (Throwable) {
+            // Table doesn't exist yet — migration will handle it
+            return;
+        }
+
+        $needed = [
+            'name'             => 'VARCHAR(100) NOT NULL DEFAULT \'\'',
+            'surname'          => 'VARCHAR(100) NOT NULL DEFAULT \'\'',
+            'identity_number'  => 'VARCHAR(32) NULL',
+            'gender'           => 'VARCHAR(16) NULL',
+            'dob'              => 'DATE NULL',
+            'phone'            => 'VARCHAR(32) NULL',
+            'city'             => 'VARCHAR(100) NULL',
+            'country'          => 'VARCHAR(8) NOT NULL DEFAULT \'TR\'',
+            'address'          => 'VARCHAR(500) NULL',
+            'bonus_code'       => 'VARCHAR(60) NULL',
+            'referral_code'    => 'VARCHAR(40) NULL',
+            'balance'          => 'DECIMAL(15,2) NOT NULL DEFAULT 0.00',
+            'bonus_balance'    => 'DECIMAL(15,2) NOT NULL DEFAULT 0.00',
+            'is_verified'      => 'TINYINT(1) NOT NULL DEFAULT 0',
+            'is_test'          => 'TINYINT(1) NOT NULL DEFAULT 0',
+            'verify_token'     => 'VARCHAR(128) NULL',
+            'last_login_at'    => 'DATETIME NULL',
+            'password_changed_at' => 'DATETIME NULL',
+            'updated_at'       => 'TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+        ];
+
+        foreach ($needed as $col => $def) {
+            if (in_array($col, $existing, true)) {
+                continue;
+            }
+            try {
+                $pdo->exec("ALTER TABLE `users` ADD COLUMN `{$col}` {$def}");
+                error_log('[memberEnsureUserTableColumns] Added missing column: users.' . $col);
+            } catch (Throwable $e) {
+                error_log('[memberEnsureUserTableColumns] Failed to add ' . $col . ': ' . $e->getMessage());
+            }
+        }
+
+        // Ensure critical indices exist
+        $indexes = [
+            'idx_users_last_login' => 'ALTER TABLE `users` ADD INDEX `idx_users_last_login` (`last_login_at`)',
+        ];
+        foreach ($indexes as $idx => $sql) {
+            try {
+                $existingIdx = $pdo->query("SHOW INDEX FROM `users` WHERE Key_name = " . $pdo->quote($idx))->fetchColumn();
+                if ($existingIdx === false) {
+                    $pdo->exec($sql);
+                }
+            } catch (Throwable) {
+                // Index may already exist or column not yet available
+            }
+        }
+    }
+}
+
 if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
     $input = $memberInput($payload);
     $login = trim((string) ($input['login'] ?? $input['username'] ?? $input['email'] ?? ''));
@@ -216,6 +290,8 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
         $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Kullanıcı adı/e-posta ve şifre zorunludur.']);
     }
     $pdo = AdminDatabase::pdo();
+    // Auto-migrate: ensure all required columns exist before query
+    memberEnsureUserTableColumns($pdo);
     try {
         $stmt = $pdo->prepare('SELECT id, username, email, password, name, surname FROM users WHERE username = :username OR email = :email LIMIT 1');
         $stmt->execute(['username' => $login, 'email' => $login]);
@@ -224,7 +300,20 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
         if (str_contains($e->getMessage(), '42S02')) {
             $memberEnvelope(503, ['success' => false, 'code' => 503, 'message' => 'Üye servisi henüz kurulmadı. Lütfen migration çalıştırın.']);
         }
-        throw $e;
+        // Also catch unknown column errors (42S22) and auto-fix
+        if (str_contains($e->getMessage(), '42S22')) {
+            memberEnsureUserTableColumns($pdo);
+            try {
+                $stmt = $pdo->prepare('SELECT id, username, email, password, name, surname FROM users WHERE username = :username OR email = :email LIMIT 1');
+                $stmt->execute(['username' => $login, 'email' => $login]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            } catch (PDOException $e2) {
+                error_log('[member_auth/login] DB error after auto-fix: ' . $e2->getMessage());
+                throw $e2;
+            }
+        } else {
+            throw $e;
+        }
     }
     if (!is_array($user)) {
         $memberEnvelope(401, ['success' => false, 'code' => 401, 'message' => 'Kullanıcı adı veya şifre hatalı.']);

@@ -555,6 +555,9 @@
         var loginModalEl = document.getElementById('login2');
         if (!loginForm || !loginModalEl) return;
 
+        // Signal that the AJAX submit handler is active — prevents traditional form submit
+        window.__loginAjaxReady = true;
+
         var submitBtn = loginForm.querySelector('.login-btn');
         var btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
         var btnLoading = submitBtn ? submitBtn.querySelector('.loading') : null;
@@ -848,5 +851,42 @@
         initForgotPasswordForm();
         alignLoginFieldErrorsToInputs();
         window.addEventListener('resize', alignLoginFieldErrorsToInputs);
+
+        // MutationObserver fallback: if the login form is added to DOM dynamically
+        // after the initial page load, re-attach submit handlers and field bindings.
+        if (typeof MutationObserver !== 'undefined') {
+            var observerAttached = false;
+            var domObserver = new MutationObserver(function () {
+                var form = document.getElementById('loginForm');
+                var modal = document.getElementById('login2');
+                if (form && modal && !observerAttached) {
+                    observerAttached = true;
+                    initLoginForm();
+                    initLoginAjaxSubmit();
+                    initForgotPasswordForm();
+                    alignLoginFieldErrorsToInputs();
+                }
+            });
+            domObserver.observe(document.documentElement || document.body, {
+                childList: true,
+                subtree: true
+            });
+            // Re-check on modal show in case the observer missed it
+            document.addEventListener('click', function (e) {
+                var target = e.target;
+                if (target && (target.id === 'Giris' || (target.closest && target.closest('#Giris')))) {
+                    window.setTimeout(function () {
+                        var f = document.getElementById('loginForm');
+                        if (f && !observerAttached) {
+                            observerAttached = true;
+                            initLoginForm();
+                            initLoginAjaxSubmit();
+                            initForgotPasswordForm();
+                            alignLoginFieldErrorsToInputs();
+                        }
+                    }, 300);
+                }
+            }, true);
+        }
     });
 })();
