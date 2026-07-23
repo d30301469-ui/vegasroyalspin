@@ -42,9 +42,16 @@ $loginJsPath = BASE_PATH . '/assets/js/login.js';
 $loginJsVer = (string) ((is_file($loginJsPath) ? filemtime($loginJsPath) : '1') . '-' . (is_file($loginJsPath) ? filesize($loginJsPath) : '0'));
 $registerJsPath = BASE_PATH . '/assets/js/register.js';
 $registerJsVer = (string) ((is_file($registerJsPath) ? filemtime($registerJsPath) : '1') . '-' . (is_file($registerJsPath) ? filesize($registerJsPath) : '0'));
+$assetVersion = static function (string $relativePath): string {
+    $fullPath = BASE_PATH . '/' . ltrim($relativePath, '/');
+    return (string) ((is_file($fullPath) ? filemtime($fullPath) : '1') . '-' . (is_file($fullPath) ? filesize($fullPath) : '0'));
+};
+$versionedAsset = static function (string $path) use ($assetVersion): string {
+    return asset_url($path) . '?v=' . rawurlencode($assetVersion($path));
+};
 ?>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/global.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script defer src="<?= htmlspecialchars($versionedAsset('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/game-wallet-picker.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/member-api-console.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php
@@ -58,22 +65,18 @@ $headerJsPath = BASE_PATH . '/assets/js/header.js';
 $headerJsVer = (string) ((is_file($headerJsPath) ? filemtime($headerJsPath) : '1') . '-' . (is_file($headerJsPath) ? filesize($headerJsPath) : '0'));
 ?>
 <script defer src="/assets/js/header.js?v=<?= rawurlencode($headerJsVer) ?>"></script>
-<?php
-$headerBalancePollPath = BASE_PATH . '/assets/js/header-balance-poll.js';
-$headerBalancePollVer = (string) (is_file($headerBalancePollPath) ? filemtime($headerBalancePollPath) : '1');
-?>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/header-balance-poll.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/session-heartbeat.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script defer src="<?= htmlspecialchars($versionedAsset('assets/js/header-balance-poll.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script defer src="<?= htmlspecialchars($versionedAsset('assets/js/session-heartbeat.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-api.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-account.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-payments.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-history.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-bonus.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-kyc.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/profile.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script defer src="<?= htmlspecialchars($versionedAsset('assets/js/profile.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="/assets/js/login.js?v=<?= rawurlencode($loginJsVer) ?>"></script>
 <script defer src="/assets/js/register.js?v=<?= rawurlencode($registerJsVer) ?>"></script>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/footer.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script defer src="<?= htmlspecialchars($versionedAsset('assets/js/footer.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/footer-bc.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php
 $favDrawerPath = BASE_PATH . '/assets/js/favorites-drawer.js';

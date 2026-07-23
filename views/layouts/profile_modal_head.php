@@ -6,6 +6,9 @@
 $assetCssDir = defined('BASE_PATH') ? BASE_PATH . '/assets/css' : (__DIR__ . '/../../assets/css');
 $assetVer = (string)(file_exists($assetCssDir . '/global.css') ? filemtime($assetCssDir . '/global.css') : 0) ?: '1';
 $profileCssVer = (string)(file_exists($assetCssDir . '/profile.css') ? filemtime($assetCssDir . '/profile.css') : $assetVer);
+$assetJsDir = defined('BASE_PATH') ? BASE_PATH . '/assets/js' : (__DIR__ . '/../../assets/js');
+$authSharedVer = (string)((file_exists($assetJsDir . '/auth-shared.js') ? filemtime($assetJsDir . '/auth-shared.js') : 1) . '-' . (file_exists($assetJsDir . '/auth-shared.js') ? filesize($assetJsDir . '/auth-shared.js') : 0));
+$profileJsVer = (string)((file_exists($assetJsDir . '/profile.js') ? filemtime($assetJsDir . '/profile.js') : 1) . '-' . (file_exists($assetJsDir . '/profile.js') ? filesize($assetJsDir . '/profile.js') : 0));
 ?>
 <!doctype html>
 <html lang="tr">
@@ -28,9 +31,9 @@ $profileCssVer = (string)(file_exists($assetCssDir . '/profile.css') ? filemtime
 <script src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>
 <!-- Profil davranışları (sidebar/bakiye/vega işlemleri) -->
 <?php include __DIR__ . '/../partials/member-api-layout-script.php'; ?>
-<script src="/assets/js/auth-shared.js"></script>
+<script src="/assets/js/auth-shared.js?v=<?= rawurlencode($authSharedVer) ?>"></script>
 <script src="/assets/js/toastify-helper.js?v=<?= $assetVer ?>"></script>
-<script src="/assets/js/profile.js"></script>
+<script src="/assets/js/profile.js?v=<?= rawurlencode($profileJsVer) ?>"></script>
 </head>
 <body class="profile-modal-body">
 <div class="centerWrap porfileWrap">

@@ -32,6 +32,9 @@ $mobileFooterSharedVer = $mobileAssetVer('assets/js/footer.js');
 $mobileNavigationVer = $mobileAssetVer('mobile/assets/js/navigation.js');
 $mobileHeaderVer = $mobileAssetVer('mobile/assets/js/mobile-header.js');
 $mobileProfilePanelVer = $mobileAssetVer('mobile/assets/js/profile-panel.js');
+$mobileHeaderBalancePollVer = $mobileAssetVer('assets/js/header-balance-poll.js');
+$mobileSessionHeartbeatVer = $mobileAssetVer('assets/js/session-heartbeat.js');
+$mobileProfileJsVer = $mobileAssetVer('assets/js/profile.js');
 ?>
 <script src="<?= htmlspecialchars(asset_url('assets/js/global.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/modal-polyfill.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
@@ -41,15 +44,15 @@ $mobileProfilePanelVer = $mobileAssetVer('mobile/assets/js/profile-panel.js');
 <script src="<?= htmlspecialchars(asset_url('assets/js/site-settings-hydrate.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/toastify-helper.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/header.js', $mobileHeaderSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/header-balance-poll.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/session-heartbeat.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/header-balance-poll.js', $mobileHeaderBalancePollVer), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/session-heartbeat.js', $mobileSessionHeartbeatVer), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile-api.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile-account.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile-payments.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile-history.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile-bonus.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/profile-kyc.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/profile.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/profile.js', $mobileProfileJsVer), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="/assets/js/login.js?v=<?= rawurlencode($mobileLoginJsVer) ?>"></script>
 <script src="/assets/js/register.js?v=<?= rawurlencode($mobileRegisterJsVer) ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/mobile-right-sheet.js'), ENT_QUOTES, 'UTF-8') ?>"></script>

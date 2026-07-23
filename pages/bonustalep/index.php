@@ -21,6 +21,10 @@ $fullName = trim($firstName . ' ' . $surname);
 if ($fullName === '') {
     $fullName = 'Belirtilmemis';
 }
+$authSharedJsPath = dirname(__DIR__, 2) . '/assets/js/auth-shared.js';
+$authSharedJsVer = (string) ((is_file($authSharedJsPath) ? filemtime($authSharedJsPath) : '1') . '-' . (is_file($authSharedJsPath) ? filesize($authSharedJsPath) : '0'));
+$toastifyHelperJsPath = dirname(__DIR__, 2) . '/assets/js/toastify-helper.js';
+$toastifyHelperJsVer = (string) ((is_file($toastifyHelperJsPath) ? filemtime($toastifyHelperJsPath) : '1') . '-' . (is_file($toastifyHelperJsPath) ? filesize($toastifyHelperJsPath) : '0'));
 ?>
 <?php require VIEW_PATH . '/layouts/head.php'; ?>
 <?php include VIEW_PATH . '/partials/header.php'; ?>
@@ -94,9 +98,9 @@ if ($fullName === '') {
     </div>
 </div>
 
-<script src="/assets/js/auth-shared.js"></script>
+<script src="/assets/js/auth-shared.js?v=<?= rawurlencode($authSharedJsVer) ?>"></script>
 <script src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>
-<script src="/assets/js/toastify-helper.js"></script>
+<script src="/assets/js/toastify-helper.js?v=<?= rawurlencode($toastifyHelperJsVer) ?>"></script>
 <script>
 let selectedBonus = null;
 let selectedPromotionId = 0;
