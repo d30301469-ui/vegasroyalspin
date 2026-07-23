@@ -487,6 +487,16 @@
         }
 
         if (document.body.classList.contains('mobile-site')) {
+            try {
+                var mobileUrl = new URL(window.location.href);
+                if (mobileUrl.searchParams.has('_mp_sync') && window.history && typeof window.history.replaceState === 'function') {
+                    mobileUrl.searchParams.delete('_mp_sync');
+                    var cleaned = mobileUrl.pathname + (mobileUrl.searchParams.toString() ? ('?' + mobileUrl.searchParams.toString()) : '') + mobileUrl.hash;
+                    window.history.replaceState({}, '', cleaned || '/');
+                }
+            } catch (eMobileUrl) {
+                /* ignore */
+            }
             var mobilePanel = document.getElementById('mprofilePanel');
             if (!mobilePanel) {
                 // Login sonrası race durumunda (JWT hazır, SSR panel henüz guest render),
@@ -501,13 +511,15 @@
                 } catch (eSync) {
                     /* ignore */
                 }
-            }
-            try {
-                if (window.sessionStorage) {
-                    window.sessionStorage.removeItem('__mobile_panel_sync_reload_once');
+                return false;
+            } else {
+                try {
+                    if (window.sessionStorage) {
+                        window.sessionStorage.removeItem('__mobile_panel_sync_reload_once');
+                    }
+                } catch (eSyncClear) {
+                    /* ignore */
                 }
-            } catch (eSyncClear) {
-                /* ignore */
             }
             // Mobil başlık işaretleme/bağlama tamamen mobile/assets/js/mobile-header.js
             // dosyasına ait — masaüstü header.js bu mantığı barındırmaz, sadece tetikler.
