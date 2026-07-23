@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-            if (function_exists('metropol_frontend_set_member_restore_cookie')) {
-                metropol_frontend_set_member_restore_cookie((string) $_SESSION['member_jwt']);
-            }
 require_once __DIR__ . '/BackendApiClient.php';
 
 /**
