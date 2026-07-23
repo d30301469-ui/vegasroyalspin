@@ -4,9 +4,128 @@ declare(strict_types=1);
 
 final class AdminAuth
 {
+    private const PERSIST_COOKIE = 'vrs_admin_auth';
+
     private static function config(): array
     {
         return require ADMIN_APP_PATH . '/Config/admin.php';
+    }
+
+    private static function persistentCookieName(): string
+    {
+        $name = trim((string) (getenv('ADMIN_AUTH_PERSIST_COOKIE') ?: self::PERSIST_COOKIE));
+        return $name !== '' ? $name : self::PERSIST_COOKIE;
+    }
+
+    private static function persistentCookieSecret(): string
+    {
+        $secret = trim((string) (getenv('ADMIN_AUTH_COOKIE_SECRET') ?: ''));
+        if ($secret === '') {
+            $secret = trim((string) (getenv('APP_KEY') ?: getenv('MEMBER_JWT_SECRET') ?: 'vegasroyalspin-admin-auth'));
+        }
+        return hash('sha256', $secret . '|admin-persist');
+    }
+
+    private static function base64UrlEncode(string $value): string
+    {
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    }
+
+    private static function base64UrlDecode(string $value): ?string
+    {
+        $pad = strlen($value) % 4;
+        if ($pad > 0) {
+            $value .= str_repeat('=', 4 - $pad);
+        }
+        $decoded = base64_decode(strtr($value, '-_', '+/'), true);
+        return is_string($decoded) ? $decoded : null;
+    }
+
+    private static function setPersistentCookie(string $value, int $expiresAt): void
+    {
+        $params = session_get_cookie_params();
+        setcookie(self::persistentCookieName(), $value, [
+            'expires' => $expiresAt,
+            'path' => (string) ($params['path'] ?? '/'),
+            'domain' => (string) ($params['domain'] ?? ''),
+            'secure' => (bool) ($params['secure'] ?? true),
+            'httponly' => true,
+            'samesite' => (string) ($params['samesite'] ?? 'Lax'),
+        ]);
+    }
+
+    private static function clearPersistentCookie(): void
+    {
+        $params = session_get_cookie_params();
+        setcookie(self::persistentCookieName(), '', [
+            'expires' => time() - 3600,
+            'path' => (string) ($params['path'] ?? '/'),
+            'domain' => (string) ($params['domain'] ?? ''),
+            'secure' => (bool) ($params['secure'] ?? true),
+            'httponly' => true,
+            'samesite' => (string) ($params['samesite'] ?? 'Lax'),
+        ]);
+    }
+
+    private static function issuePersistentCookie(array $admin): void
+    {
+        $timeoutMinutes = (int) (getenv('ADMIN_SESSION_TIMEOUT_MINUTES') ?: self::SESSION_TIMEOUT_MINUTES);
+        $expiresAt = time() + max(300, $timeoutMinutes * 60);
+        $payload = json_encode([
+            'id' => (int) ($admin['id'] ?? 0),
+            'email' => (string) ($admin['email'] ?? ''),
+            'exp' => $expiresAt,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (!is_string($payload) || $payload === '') {
+            return;
+        }
+        $encoded = self::base64UrlEncode($payload);
+        $sig = hash_hmac('sha256', $encoded, self::persistentCookieSecret());
+        self::setPersistentCookie($encoded . '.' . $sig, $expiresAt);
+    }
+
+    public static function restorePersistentLogin(): bool
+    {
+        if (self::check()) {
+            return true;
+        }
+
+        $raw = trim((string) ($_COOKIE[self::persistentCookieName()] ?? ''));
+        if ($raw === '' || !str_contains($raw, '.')) {
+            return false;
+        }
+
+        [$encoded, $sig] = explode('.', $raw, 2);
+        $expected = hash_hmac('sha256', $encoded, self::persistentCookieSecret());
+        if ($sig === '' || !hash_equals($expected, $sig)) {
+            self::clearPersistentCookie();
+            return false;
+        }
+
+        $json = self::base64UrlDecode($encoded);
+        $payload = is_string($json) ? json_decode($json, true) : null;
+        if (!is_array($payload) || (int) ($payload['exp'] ?? 0) < time()) {
+            self::clearPersistentCookie();
+            return false;
+        }
+
+        $admin = self::findAdminByIdAndEmail((int) ($payload['id'] ?? 0), (string) ($payload['email'] ?? ''));
+        if ($admin === null) {
+            self::clearPersistentCookie();
+            return false;
+        }
+
+        $config = self::config();
+        $_SESSION[(string) $config['session_key']] = [
+            'id' => (int) ($admin['id'] ?? 0),
+            'username' => (string) ($admin['username'] ?? $payload['email'] ?? ''),
+            'email' => (string) ($admin['email'] ?? ''),
+            'role' => (string) ($admin['role'] ?? 'admin'),
+            'login_at' => time(),
+        ];
+        $_SESSION['admin_last_activity'] = time();
+
+        return true;
     }
 
     /** Admin oturum hareketsizlik zaman aşımı (dakika). Değiştirmek için env: ADMIN_SESSION_TIMEOUT_MINUTES */
@@ -294,6 +413,7 @@ final class AdminAuth
             'role' => (string) ($admin['role'] ?? 'admin'),
             'login_at' => time(),
         ];
+        self::issuePersistentCookie($admin);
         self::ensureAdminTables();
         self::recordSession();
         self::writeLog((string) ($admin['username'] ?? $email), 'login', 'auth', 'success');
@@ -308,6 +428,7 @@ final class AdminAuth
         self::writeLog((string) ($user['username'] ?? ''), 'logout', 'auth', 'success');
         self::deactivateSession();
         unset($_SESSION[(string) $config['session_key']]);
+        self::clearPersistentCookie();
         session_regenerate_id(true);
     }
 
@@ -400,6 +521,38 @@ final class AdminAuth
             error_log('Admin login DB lookup failed: ' . $exception->getMessage());
             $_SESSION['admin_login_error'] = 'Veritabanı bağlantısı kurulamadı. .env içindeki DB_* ayarlarını kontrol edin.';
 
+            return null;
+        }
+    }
+
+    private static function findAdminByIdAndEmail(int $id, string $email): ?array
+    {
+        if ($id <= 0 || trim($email) === '') {
+            return null;
+        }
+
+        try {
+            $pdo = AdminDatabase::pdo();
+            $hasActiveColumn = false;
+            try {
+                $check = $pdo->query("SHOW COLUMNS FROM admins LIKE 'is_active'");
+                $hasActiveColumn = $check !== false && $check->fetchColumn() !== false;
+            } catch (Throwable) {
+                $hasActiveColumn = false;
+            }
+
+            $sql = $hasActiveColumn
+                ? 'SELECT * FROM admins WHERE id = :id AND LOWER(email) = LOWER(:email) AND is_active = 1 LIMIT 1'
+                : 'SELECT * FROM admins WHERE id = :id AND LOWER(email) = LOWER(:email) LIMIT 1';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                'id' => $id,
+                'email' => $email,
+            ]);
+            $admin = $stmt->fetch();
+
+            return is_array($admin) ? $admin : null;
+        } catch (Throwable) {
             return null;
         }
     }

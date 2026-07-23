@@ -210,6 +210,41 @@
         return h;
     }
 
+    function memberJwtCookieDomain() {
+        var state = w.__MEMBER_BOOTSTRAP_STATE__ && typeof w.__MEMBER_BOOTSTRAP_STATE__ === 'object'
+            ? w.__MEMBER_BOOTSTRAP_STATE__
+            : null;
+        var domain = state && typeof state.session_cookie_domain === 'string'
+            ? state.session_cookie_domain.trim()
+            : '';
+        if (domain) {
+            return domain;
+        }
+        var host = String(w.location.hostname || '').trim();
+        if (!host || host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+            return '';
+        }
+        return host.indexOf('.') !== -1 ? host : '';
+    }
+
+    function persistMemberJwtCookie(token) {
+        var value = String(token || '').trim();
+        var parts = ['metropol_member_jwt=' + encodeURIComponent(value), 'Path=/', 'SameSite=Lax'];
+        if (w.location.protocol === 'https:') {
+            parts.push('Secure');
+        }
+        var domain = memberJwtCookieDomain();
+        if (domain) {
+            parts.push('Domain=' + domain);
+        }
+        if (value === '') {
+            parts.push('Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+        } else {
+            parts.push('Max-Age=2592000');
+        }
+        document.cookie = parts.join('; ');
+    }
+
     function emitJwtReady() {
         try {
             w.dispatchEvent(new CustomEvent('metropol:member-jwt-ready', {
@@ -241,10 +276,12 @@
                 if (t === '') {
                     w.localStorage.removeItem(JWT_KEY);
                     w.__HAS_MEMBER_JWT__ = false;
+                    persistMemberJwtCookie('');
                 } else {
                     w.localStorage.setItem(JWT_KEY, t);
                     w.__MEMBER_LOGIN_AT__ = Date.now();
                     w.__HAS_MEMBER_JWT__ = true;
+                    persistMemberJwtCookie(t);
                     if (phpSessionLoggedIn()) {
                         w.__USER_LOGGED_IN__ = true;
                     }

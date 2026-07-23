@@ -67,6 +67,10 @@ if (function_exists('admin_register_autoloader')) {
     admin_register_autoloader(ADMIN_APP_PATH, defined('METROPOL_ROOT') ? METROPOL_ROOT : admin_project_root());
 }
 
+if (class_exists('AdminAuth', true)) {
+    AdminAuth::restorePersistentLogin();
+}
+
 // Admin/backend host: panel ve API her zaman açılabilmeli. Provider secret'ları panelden
 // yönetildiği için bootstrap sırasında (config/app.php) zorunlu secret assertion'ları atlanır;
 // gerçek doğrulama ilgili callback handler'larında (imza/secret) çalışmaya devam eder.

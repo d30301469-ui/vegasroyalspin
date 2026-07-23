@@ -66,6 +66,7 @@ try {
 
 require_once CONFIG_PATH . '/db.php';
 require_once SERVICE_PATH . '/BackendApiClient.php';
+require_once SERVICE_PATH . '/MemberLoginService.php';
 require_once API_PATH . '/bootstrap.php';
 require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/helpers.php';
@@ -92,6 +93,43 @@ if (!$isApiRequest) {
             : bin2hex(random_bytes(32));
     }
     $_SESSION['csrf_token'] = $_SESSION[$csrfKey];
+
+    $frontendJwtCookie = trim((string) ($_COOKIE['metropol_member_jwt'] ?? ''));
+    $frontendNeedsRestore = $frontendJwtCookie !== ''
+        && (
+            empty($_SESSION['loggedin'])
+            || (int) ($_SESSION['user_id'] ?? 0) <= 0
+            || empty($_SESSION['member_jwt'])
+        );
+    if ($frontendNeedsRestore) {
+        try {
+            $restore = MemberLoginService::backendSession($frontendJwtCookie);
+            if (MemberLoginService::succeeded($restore)) {
+                MemberLoginService::applySession($restore, '');
+                $_SESSION['member_jwt'] = $frontendJwtCookie;
+            } else {
+                if (is_readable(CONFIG_PATH . '/member_api_public.php')) {
+                    require_once CONFIG_PATH . '/member_api_public.php';
+                    if (function_exists('metropol_frontend_clear_member_session')) {
+                        metropol_frontend_clear_member_session();
+                    }
+                }
+                $cookieDomain = function_exists('deploy_session_cookie_domain_for_host')
+                    ? deploy_session_cookie_domain_for_host((string) ($_SERVER['HTTP_HOST'] ?? ''))
+                    : '';
+                setcookie('metropol_member_jwt', '', [
+                    'expires' => time() - 3600,
+                    'path' => '/',
+                    'domain' => $cookieDomain,
+                    'secure' => function_exists('metropol_request_is_https') ? metropol_request_is_https() : true,
+                    'httponly' => false,
+                    'samesite' => 'Lax',
+                ]);
+            }
+        } catch (Throwable) {
+            // Keep rendering as guest if backend restore is temporarily unavailable.
+        }
+    }
 }
 
 // Bu değişkenler view katmanında global olarak okunuyor (ör. core/Controller::view()

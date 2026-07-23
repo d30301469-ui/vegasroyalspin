@@ -70,6 +70,10 @@ if (function_exists('admin_register_autoloader')) {
     admin_register_autoloader(ADMIN_APP_PATH, defined('METROPOL_ROOT') ? METROPOL_ROOT : admin_project_root());
 }
 
+if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION) && class_exists('AdminAuth', true)) {
+    AdminAuth::restorePersistentLogin();
+}
+
 $rootConfig = admin_project_path('config/bootstrap_api.php');
 if (!admin_is_readable_file($rootConfig)) {
     $rootConfig = admin_project_path('config/app.php');
