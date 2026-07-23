@@ -5,6 +5,7 @@ $summary = is_array($summary ?? null) ? $summary : [];
 $liveMetrics = is_array($liveMetrics ?? null) ? $liveMetrics : [];
 $referenceScreens = is_array($referenceScreens ?? null) ? $referenceScreens : [];
 $number = static fn ($value): string => number_format((float) $value, 0, ',', '.');
+$money = static fn ($value): string => '₺' . number_format((float) $value, 2, ',', '.');
 $statusClass = static fn (string $status): string => match ($status) {
     'ready' => 'ok',
     'partial' => 'warn',
@@ -110,9 +111,10 @@ $statusClass = static fn (string $status): string => match ($status) {
             </div>
             <div class="suite-list">
                 <?php foreach ($liveMetrics as $metric): ?>
+                    <?php $fmt = ($metric['format'] ?? '') === 'money' ? $money($metric['value'] ?? 0) : $number($metric['value'] ?? 0); ?>
                     <div class="suite-list-item">
                         <div class="suite-list-name"><?= htmlspecialchars((string) ($metric['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-                        <div class="suite-list-meta"><?= htmlspecialchars($number($metric['value'] ?? 0), ENT_QUOTES, 'UTF-8') ?></div>
+                        <div class="suite-list-meta"><?= htmlspecialchars($fmt, ENT_QUOTES, 'UTF-8') ?></div>
                     </div>
                 <?php endforeach; ?>
             </div>
