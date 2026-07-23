@@ -297,6 +297,37 @@
         });
     }
 
+    function bindGlobalProfileIconCapture() {
+        document.addEventListener('click', function (e) {
+            var target = e.target && e.target.closest ? e.target.closest('#toggleButton') : null;
+            if (!target) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) {
+                e.stopImmediatePropagation();
+            }
+            if (toggleMobileProfilePanelSafely()) {
+                return;
+            }
+            window.location.href = '/?profile=open&account=profile&page=details';
+        }, true);
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            var active = document.activeElement;
+            if (!active || active.id !== 'toggleButton') return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) {
+                e.stopImmediatePropagation();
+            }
+            if (toggleMobileProfilePanelSafely()) {
+                return;
+            }
+            window.location.href = '/?profile=open&account=profile&page=details';
+        }, true);
+    }
+
     function initSiteLogoNavigation() {
         document.addEventListener('click', function (e) {
             var link = e.target.closest('a[data-site-logo-link]');
@@ -351,6 +382,7 @@
         initAdditionalToggle();
         initProfileButton();
         initMobileAvatarProfileModal();
+        bindGlobalProfileIconCapture();
         initSiteLogoNavigation();
         initNavScrollStart();
         initBackToTopLayout();
