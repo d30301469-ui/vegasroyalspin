@@ -149,7 +149,7 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
     </script>
     <script defer src="<?= htmlspecialchars(AdminAuth::url('/runtime.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
     <script defer src="<?= htmlspecialchars(AdminAuth::url('/vendor-fullcalendar.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-    <script defer src="<?= htmlspecialchars(AdminAuth::url('/vendor-chartjs.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script defer src="<?= htmlspecialchars(AdminAuth::url('/vendors.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
     <script defer src="<?= htmlspecialchars(AdminAuth::url('/2026.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
     <script defer src="<?= htmlspecialchars(AdminAuth::url('/admin-ui.js?v=' . $adminUiVersion), ENT_QUOTES, 'UTF-8') ?>"></script>
