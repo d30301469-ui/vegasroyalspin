@@ -12,12 +12,15 @@
     # Kurulum sihirbazı
     RewriteRule ^install(?:/.*)?$ index.php [L,QSA]
 
+    # Tek seferlik temizlik scripti (kullandıktan sonra silin!)
+    RewriteRule ^cleanup-pending-tx-standalone\.php$ - [L]
+
     # Admin CMS uploads: /uploads/* → storage/uploads/*
     # IMPORTANT: use END so rewritten /storage/uploads/* does not hit private-path deny rules.
     RewriteRule ^uploads/(.*)$ storage/uploads/$1 [END]
 
     # Eksik kurulum koruması
-    RewriteCond %{REQUEST_URI} !^/(?:index\.php|install-status\.php|ping\.php|health\.php)(?:/|$) [NC]
+    RewriteCond %{REQUEST_URI} !^/(?:index\.php|install-status\.php|ping\.php|health\.php|cleanup-pending-tx-standalone\.php)(?:/|$) [NC]
     RewriteCond %{DOCUMENT_ROOT}/index.php !-f
     RewriteRule ^ - [R=503,L]
 
