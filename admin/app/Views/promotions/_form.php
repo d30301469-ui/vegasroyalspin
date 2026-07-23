@@ -81,38 +81,18 @@ $currentImage = (string) ($promotion['image_url'] ?? '');
             <label class="field-label" for="promoBonusType">Bonus tipi <span style="color:var(--danger)">*</span></label>
             <select id="promoBonusType" class="select" name="bonus_type" onchange="updateBonusForm()">
                 <option value="">Sabit tutar — promosyona özel TL miktarı</option>
-                <option value="percentage"<?= ($displayBonusType === 'percentage' ? ' selected' : '') ?>>Yüzdesel — toplam onaylı yatırımın % değeri</option>
-                <option value="first_deposit_pct"<?= ($displayBonusType === 'first_deposit_pct' ? ' selected' : '') ?>>İlk Yatırım Yüzdesi — sadece ilk yatırımın % değeri</option>
+                <option value="percentage">Yüzdesel — toplam onaylı yatırımın % değeri</option>
+                <option value="first_deposit_pct">İlk Yatırım Yüzdesi — sadece ilk yatırımın % değeri</option>
             </select>
-            <small id="promoBonusTypeHint" style="display:block;margin-top:6px;color:#667085">
-                <?php if ($displayBonusType === 'first_deposit_pct'): ?>
-                Kullanıcının ilk onaylı yatırımı × yüzde. Örn: 500 TL yatırdıysa %100 = 500 TL bonus.
-                <?php elseif ($displayBonusType === 'percentage'): ?>
-                Kullanıcının tüm onaylı yatırımlarının toplamı × yüzde. Örn: 1000 TL toplam yatırım × %50 = 500 TL bonus.
-                <?php else: ?>
-                Doğrudan TL cinsinden bonus miktarı. Kullanıcının onaylı yatırım toplamından fazla olamaz.
-                <?php endif; ?>
-            </small>
+            <small id="promoBonusTypeHint" style="display:block;margin-top:6px;color:#667085"></small>
         </div>
 
         <div class="field">
             <label class="field-label" for="promoBonusAmount">
-                <span id="promoBonusAmountLabel">
-                    <?php if ($displayBonusType === 'first_deposit_pct' || $displayBonusType === 'percentage'): ?>
-                    Bonus yüzdesi (%)
-                    <?php else: ?>
-                    Bonus tutarı (TL)
-                    <?php endif; ?>
-                </span>
+                <span id="promoBonusAmountLabel"></span>
             </label>
             <input id="promoBonusAmount" class="input" type="number" name="bonus_amount" value="<?= $val('bonus_amount', '0') ?>" min="0" step="0.01">
-            <small id="promoBonusAmountHint" style="display:block;margin-top:6px;color:#667085">
-                <?php if ($displayBonusType === 'first_deposit_pct' || $displayBonusType === 'percentage'): ?>
-                Yüzde değeri girin (1-200). Örn: 100 = %100.
-                <?php else: ?>
-                TL cinsinden sabit bonus miktarı. Onaylı yatırım toplamını aşamaz.
-                <?php endif; ?>
-            </small>
+            <small id="promoBonusAmountHint" style="display:block;margin-top:6px;color:#667085"></small>
         </div>
 
         <div class="field">
@@ -197,6 +177,9 @@ $currentImage = (string) ($promotion['image_url'] ?? '');
 </form>
 
 <script>
+// Bonus tipi icin kayitli deger (PHP'den gelir)
+var savedBonusType = <?= json_encode($displayBonusType) ?>;
+
 function updateBonusForm() {
     var type = document.getElementById('promoBonusType').value;
     var label = document.getElementById('promoBonusAmountLabel');
@@ -223,8 +206,12 @@ function toggleBonusRules() {
     document.getElementById('promoBonusRulesField').style.display = checked ? '' : 'none';
 }
 
-// Sayfa yuklendiginde ve bonus tipi degistiginde formu guncelle
-document.addEventListener('DOMContentLoaded', function() {
+// Kayitli degeri dropdown'a uygula ve formu guncelle
+(function() {
+    var sel = document.getElementById('promoBonusType');
+    if (savedBonusType) {
+        sel.value = savedBonusType;
+    }
     updateBonusForm();
-});
+})();
 </script>
