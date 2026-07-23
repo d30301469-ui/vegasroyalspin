@@ -489,8 +489,6 @@
         if (document.body.classList.contains('mobile-site')) {
             var mobilePanel = document.getElementById('mprofilePanel');
             if (!mobilePanel) {
-                // Mobilde native panel DOM'u yokken guest->user yükseltmesi yapma.
-                // Aksi halde kullanıcı başlığı user görünür ama profil paneli hiç açılmaz.
                 // Login sonrası race durumunda (JWT hazır, SSR panel henüz guest render),
                 // bir kere hard refresh ile panel/oturum işaretlemesini senkronla.
                 try {
@@ -503,7 +501,6 @@
                 } catch (eSync) {
                     /* ignore */
                 }
-                return false;
             }
             try {
                 if (window.sessionStorage) {
