@@ -171,28 +171,30 @@ final class AdminDashboardController extends AdminController
 
     private function sportStats(array $dateRange): array
     {
-        $labels = ['Bahis', 'Ödeme', 'İptal', 'İade', 'Net', 'Bahis Adedi', 'Oyuncu Adedi', 'RTP'];
+        $where = $this->dateCondition('created_at', $dateRange);
+        $betTotal   = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM sportsbook_transactions WHERE txn_type = 'bet' AND {$where}");
+        $winTotal   = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM sportsbook_transactions WHERE txn_type = 'win' AND {$where}");
+        $cancelTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM sportsbook_transactions WHERE txn_type = 'cancel' AND {$where}");
+        $net = $betTotal - $winTotal - $cancelTotal;
+        $betCount   = $this->scalar("SELECT COUNT(*) FROM sportsbook_transactions WHERE txn_type = 'bet' AND {$where}");
+        $playerCount = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM sportsbook_transactions WHERE {$where}");
+        $rtp = $betTotal > 0 ? ($winTotal / $betTotal) * 100 : 0;
+
+        $labels  = ['Bahis', 'Ödeme', 'İptal', 'İade', 'Net', 'Bahis Adedi', 'Oyuncu Adedi', 'RTP'];
         $formats = ['money', 'money', 'money', 'money', 'money', 'number', 'number', 'percent'];
-        $empty = $this->statsDataset($labels, $formats, [0, 0, 0, 0, 0, 0, 0, 0], [
-            ['label' => 'Bahis', 'value' => 0, 'color' => '#3b82f6'],
-            ['label' => 'Ödeme', 'value' => 0, 'color' => '#22c55e'],
-            ['label' => 'İptal', 'value' => 0, 'color' => '#f59e0b'],
+        $values  = [$betTotal, $winTotal, $cancelTotal, 0, $net, $betCount, $playerCount, $rtp];
+        $legend  = [
+            ['label' => 'Bahis', 'value' => $betTotal, 'color' => '#3b82f6'],
+            ['label' => 'Ödeme', 'value' => $winTotal, 'color' => '#22c55e'],
+            ['label' => 'İptal', 'value' => $cancelTotal, 'color' => '#f59e0b'],
             ['label' => 'İade', 'value' => 0, 'color' => '#94a3b8'],
-            ['label' => 'Net', 'value' => 0, 'color' => '#ef4444'],
-        ]);
-        $datasets = [
-            'Maç Öncesi' => $empty,
-            'Canlı' => $empty,
-            'Toplam' => $empty,
+            ['label' => 'Net', 'value' => $net, 'color' => '#ef4444'],
         ];
 
-        // Sports provider does not persist bet records in this project yet; keep the widget interactive and explicit.
-        return $datasets['Toplam'] + [
-            'tabs' => array_keys($datasets),
+        return $this->statsDataset($labels, $formats, $values, $legend) + [
+            'tabs'    => ['Toplam'],
             'active_tab' => 'Toplam',
-            'datasets' => $datasets,
-            'module_url' => '/module?key=logs',
-            'empty_message' => 'Spor bahis veri kaynağı bağlandığında bu panel canlı veri gösterecek.',
+            'module_url' => '/module?key=sportsbook-transactions',
         ];
     }
 

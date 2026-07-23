@@ -36,11 +36,13 @@ $chartColors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 
 $buildDonutSeries = static function (array $stats) use (&$chartColors): array {
     $series = [];
-    $labels = (array) ($stats['labels'] ?? []);
-    $values = array_map('floatval', (array) ($stats['values'] ?? []));
-    $colors = (array) ($stats['donut_colors'] ?? $chartColors);
-    foreach ($labels as $i => $label) {
-        $series[] = (float) ($values[$i] ?? 0);
+    $labels = [];
+    $colors = [];
+    $legend = (array) ($stats['legend'] ?? []);
+    foreach ($legend as $item) {
+        $labels[] = (string) ($item['label'] ?? '');
+        $series[] = (float) ($item['value'] ?? 0);
+        $colors[] = (string) ($item['color'] ?? $chartColors[count($colors) % count($chartColors)]);
     }
     return ['series' => $series, 'labels' => $labels, 'colors' => $colors];
 };
