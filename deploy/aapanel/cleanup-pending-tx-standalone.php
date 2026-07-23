@@ -83,9 +83,11 @@ try {
     $pdo->beginTransaction();
     $deletedTx = $pdo->exec("DELETE FROM megapayz_transactions WHERE status IN ({$targetStatuses})");
     $deletedCallbacks = $pdo->exec('DELETE FROM megapayz_callbacks');
+    $pdo->commit();
+    
+    // ALTER TABLE causes implicit commit — run outside transaction
     $pdo->exec('ALTER TABLE megapayz_transactions AUTO_INCREMENT = 1');
     $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
-    $pdo->commit();
     
     header('Content-Type: text/plain; charset=utf-8');
     echo "=== CLEANUP COMPLETE ===\n";

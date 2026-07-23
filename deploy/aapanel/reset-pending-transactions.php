@@ -74,13 +74,14 @@ try {
     $deletedCallbacks = $pdo->exec('DELETE FROM megapayz_callbacks');
     echo "  Deleted callbacks: {$deletedCallbacks}\n";
     
+    $pdo->commit();
+    
+    // ALTER TABLE causes implicit commit — run outside transaction
     $pdo->exec('ALTER TABLE megapayz_transactions AUTO_INCREMENT = 1');
     echo "  Reset megapayz_transactions AUTO_INCREMENT to 1\n";
     
     $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
     echo "  Reset megapayz_callbacks AUTO_INCREMENT to 1\n";
-    
-    $pdo->commit();
     
     echo "\n=== DONE ===\n";
     echo "All pending/failed/rejected transactions cleared. IDs reset to 1.\n";
