@@ -218,6 +218,7 @@ $router->post('/promocode-request/reject', [AdminPromocodeRequestController::cla
 $router->post('/bonus-claim/approve', [AdminBonusClaimController::class, 'approve']);
 $router->post('/bonus-claim/reject', [AdminBonusClaimController::class, 'reject']);
 $router->post('/bonus-claim/reset-all', [AdminBonusClaimController::class, 'resetAll']);
+$router->post('/module/reset-pending-transactions', [AdminModuleController::class, 'resetPendingTransactions']);
 $router->get('/reports/financial', [AdminReportController::class, 'financial']);
 $router->get('/compliance/audit-log', [AdminComplianceController::class, 'auditLog']);
 $router->get('/permissions', [AdminPermissionController::class, 'index']);

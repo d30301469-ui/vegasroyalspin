@@ -103,4 +103,49 @@ final class AdminModuleController extends AdminController
 
         return $message;
     }
+
+    /**
+     * Bekleyen/basarisiz tum yatirim-cekim islemlerini temizler, ID'leri sifirlar.
+     * POST /module/reset-pending-transactions
+     */
+    public function resetPendingTransactions(): void
+    {
+        $this->requirePermission('deposits');
+
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+
+        $confirm = trim((string) ($_POST['confirm'] ?? ''));
+        if ($confirm !== 'RESET_ALL_PENDING_TX') {
+            $_SESSION['admin_flash'] = 'Onay kodu gerekli. Lütfen "RESET_ALL_PENDING_TX" yazın.';
+            $this->redirect(AdminAuth::url('/module?key=deposits'));
+            return;
+        }
+
+        $pdo = AdminDatabase::pdo();
+        $adminUsername = AdminAuth::userName();
+
+        try {
+            $pdo->beginTransaction();
+            $targetStatuses = "'pending','failed','rejected'";
+            $deletedTx = $pdo->exec("DELETE FROM megapayz_transactions WHERE status IN ({$targetStatuses})");
+            $deletedCallbacks = $pdo->exec('DELETE FROM megapayz_callbacks');
+            $pdo->exec('ALTER TABLE megapayz_transactions AUTO_INCREMENT = 1');
+            $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
+            $pdo->commit();
+
+            AdminAuth::writeLog($adminUsername, 'reset_pending_transactions', 'system', 'success');
+            $_SESSION['admin_flash'] = "Tüm bekleyen ve başarısız işlemler temizlendi. ({$deletedTx} işlem, {$deletedCallbacks} callback silindi, ID'ler sıfırlandı)";
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            $_SESSION['admin_flash'] = 'Hata: ' . $e->getMessage();
+        }
+
+        $this->redirect(AdminAuth::url('/module?key=deposits'));
+    }
 }

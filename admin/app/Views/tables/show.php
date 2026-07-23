@@ -607,6 +607,16 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                 </button>
             </form>
             <?php endif; ?>
+            <?php if (in_array($moduleKey, ['deposits', 'withdrawals'], true)): ?>
+            <form method="post" action="<?= htmlspecialchars(AdminAuth::url('/module/reset-pending-transactions'), ENT_QUOTES, 'UTF-8') ?>" onsubmit="var c = prompt('TÜM bekleyen ve başarısız yatırım/çekim işlemlerini SİLMEK için kodu yazın:\\n\\nRESET_ALL_PENDING_TX'); if (c !== 'RESET_ALL_PENDING_TX') { alert('İptal edildi.'); return false; } document.getElementById('reset_tx_confirm_input').value = c; return true;" style="display:inline">
+                <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="confirm" id="reset_tx_confirm_input" value="">
+                <button class="admin-action-btn" style="background:var(--danger);color:#fff" type="submit">
+                    <svg viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14"/></svg>
+                    Bekleyenleri Temizle
+                </button>
+            </form>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>
