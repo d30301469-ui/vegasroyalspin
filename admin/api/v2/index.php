@@ -127,6 +127,96 @@ if ($normalizedRoute === 'internal/reset-bonus-claims') {
     exit;
 }
 
+// Pending/failed/rejected transaction cleanup (internal admin endpoint)
+if ($normalizedRoute === 'internal/reset-pending-transactions') {
+    $authorized = false;
+    if (AdminAuth::check()) {
+        $authorized = true;
+    } else {
+        $purgeSecret = trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: ''));
+        $provided = trim((string) ($_SERVER['HTTP_X_RESET_SECRET'] ?? ''));
+        if ($purgeSecret !== '' && $provided !== '' && hash_equals($purgeSecret, $provided)) {
+            $authorized = true;
+        }
+    }
+
+    if (!$authorized) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'code' => 401, 'message' => 'Admin oturumu veya X-Reset-Secret header gerekli.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $pdo = AdminDatabase::pdo();
+
+    if ($method === 'GET') {
+        $counts = [];
+        $targetStatuses = "'pending','failed','rejected'";
+        $counts['deposit_pending'] = (int) $pdo->query("SELECT COUNT(*) FROM megapayz_transactions WHERE type='deposit' AND status IN ({$targetStatuses})")->fetchColumn();
+        $counts['withdraw_pending'] = (int) $pdo->query("SELECT COUNT(*) FROM megapayz_transactions WHERE type='withdraw' AND status IN ({$targetStatuses})")->fetchColumn();
+        $counts['callbacks'] = (int) $pdo->query("SELECT COUNT(*) FROM megapayz_callbacks")->fetchColumn();
+        $counts['total_remaining'] = (int) $pdo->query("SELECT COUNT(*) FROM megapayz_transactions WHERE status NOT IN ({$targetStatuses})")->fetchColumn();
+
+        echo json_encode([
+            'success' => true,
+            'code' => 200,
+            'message' => 'Mevcut bekleyen/basarisiz islem durumu.',
+            'data' => $counts,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($method === 'POST') {
+        $body = json_decode(file_get_contents('php://input') ?: '', true) ?: [];
+        $confirm = trim((string) ($body['confirm'] ?? ''));
+
+        if ($confirm !== 'RESET_ALL_PENDING_TX') {
+            http_response_code(422);
+            echo json_encode([
+                'success' => false,
+                'code' => 422,
+                'message' => 'Onay kodu gerekli. Body: {"confirm": "RESET_ALL_PENDING_TX"}',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+            $targetStatuses = "'pending','failed','rejected'";
+            $deletedTx = $pdo->exec("DELETE FROM megapayz_transactions WHERE status IN ({$targetStatuses})");
+            $deletedCallbacks = $pdo->exec('DELETE FROM megapayz_callbacks');
+            $pdo->exec('ALTER TABLE megapayz_transactions AUTO_INCREMENT = 1');
+            $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
+            $pdo->commit();
+
+            AdminAuth::writeLog(AdminAuth::userName(), 'reset_pending_transactions', 'system', 'success');
+            echo json_encode([
+                'success' => true,
+                'code' => 200,
+                'message' => 'Tum bekleyen ve basarisiz islemler temizlendi, IDler sifirlandi.',
+                'data' => [
+                    'deleted_transactions' => $deletedTx,
+                    'deleted_callbacks' => $deletedCallbacks,
+                ],
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'code' => 500,
+                'message' => 'Hata: ' . $e->getMessage(),
+            ], JSON_UNESCAPED_UNICODE);
+        }
+        exit;
+    }
+
+    http_response_code(405);
+    echo json_encode(['success' => false, 'code' => 405, 'message' => 'Method not allowed.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // Provider callbacks can arrive via /api/v2/sportsbook-wallet aliases.
 // Handle them here before member/admin route module dispatch to avoid 404.
 if ($method === 'POST' && in_array($route, ['sportsbook-wallet', 'sportsbook_wallet', 'sportsbook-wallet.php', 'sportsbook_callback', 'sportsbook-callback'], true)) {
