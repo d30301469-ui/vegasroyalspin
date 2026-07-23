@@ -214,6 +214,13 @@ final class WageringService
     private static function applyBonusDelta(PDO $pdo, int $userId, float $delta): void
     {
         try {
+            // Canlı bonus_balance değerini oku (BgamingService tarafından
+            // bet/win sonrası users.bonus_balance güncellenmiştir).
+            $liveBonusBalance = 0.0;
+            $balanceStmt = $pdo->prepare('SELECT bonus_balance FROM users WHERE id = :id LIMIT 1');
+            $balanceStmt->execute(['id' => $userId]);
+            $liveBonusBalance = round((float) $balanceStmt->fetchColumn(), 2);
+
             $stmt = $pdo->prepare(
                 "SELECT id, wagering_target, total_bet_amount, current_bonus_balance FROM user_active_bonuses
                  WHERE user_id = :user_id AND status = 'active'"
@@ -233,33 +240,38 @@ final class WageringService
                     $anyStillActive = true;
                 }
 
-                $pdo->prepare(
-                    "UPDATE user_active_bonuses
-                     SET total_bet_amount = :total,
-                         is_complete = :is_complete,
-                         status = CASE WHEN :is_complete_status = 1 THEN 'completed' ELSE status END,
-                         completed_at = CASE WHEN :is_complete_at = 1 THEN NOW() ELSE completed_at END,
-                         current_bonus_balance = CASE WHEN :is_complete_zero = 1 THEN 0 ELSE current_bonus_balance END
-                     WHERE id = :id"
-                )->execute([
-                    'total' => number_format($newTotal, 2, '.', ''),
-                    'is_complete' => $isComplete ? 1 : 0,
-                    'is_complete_status' => $isComplete ? 1 : 0,
-                    'is_complete_at' => $isComplete ? 1 : 0,
-                    'is_complete_zero' => $isComplete ? 1 : 0,
-                    'id' => $bonusId,
-                ]);
+                // Tamamlanma anında current_bonus_balance sıfırlanır,
+                // tamamlanmadıysa canlı bonus_balance ile senkronize edilir.
+                if ($isComplete) {
+                    $pdo->prepare(
+                        "UPDATE user_active_bonuses
+                         SET total_bet_amount = :total,
+                             is_complete = 1,
+                             status = 'completed',
+                             completed_at = NOW(),
+                             current_bonus_balance = 0
+                         WHERE id = :id"
+                    )->execute([
+                        'total' => number_format($newTotal, 2, '.', ''),
+                        'id' => $bonusId,
+                    ]);
+                } else {
+                    $pdo->prepare(
+                        "UPDATE user_active_bonuses
+                         SET total_bet_amount = :total,
+                             current_bonus_balance = :live_balance
+                         WHERE id = :id"
+                    )->execute([
+                        'total' => number_format($newTotal, 2, '.', ''),
+                        'live_balance' => number_format($liveBonusBalance, 2, '.', ''),
+                        'id' => $bonusId,
+                    ]);
+                }
             }
 
-            // Gerçek oynanış artık (mod='bonus' iken) doğrudan bonus_balance
-            // üzerinden yürüdüğü için (bkz. walletSourceColumn + BgamingService
-            // applyActions/webhookBet), tamamlanma anındaki tutar
-            // artık kazanç/kayıplarla değişmiş olabilir — bu yüzden STATİK
-            // current_bonus_balance yerine CANLI bonus_balance aktarılır.
-            // Kullanıcının TÜM aktif bonusları tamamlandıysa (bu bonus da dahil),
-            // kalan bonus_balance çekilebilir balance'a taşınır, bonus_balance
-            // sıfırlanır ve kullanıcı otomatik ana bakiye moduna döner (artık
-            // işlenecek aktif bir bonus hedefi yok).
+            // TÜM aktif bonuslar tamamlandıysa, kalan bonus_balance çekilebilir
+            // balance'a taşınır, bonus_balance sıfırlanır ve kullanıcı otomatik
+            // ana bakiye moduna döner.
             if ($rows !== [] && !$anyStillActive) {
                 $pdo->prepare(
                     'UPDATE users
