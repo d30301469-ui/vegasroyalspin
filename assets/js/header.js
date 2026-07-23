@@ -491,7 +491,26 @@
             if (!mobilePanel) {
                 // Mobilde native panel DOM'u yokken guest->user yükseltmesi yapma.
                 // Aksi halde kullanıcı başlığı user görünür ama profil paneli hiç açılmaz.
+                // Login sonrası race durumunda (JWT hazır, SSR panel henüz guest render),
+                // bir kere hard refresh ile panel/oturum işaretlemesini senkronla.
+                try {
+                    var syncKey = '__mobile_panel_sync_reload_once';
+                    if (window.sessionStorage && !window.sessionStorage.getItem(syncKey)) {
+                        window.sessionStorage.setItem(syncKey, '1');
+                        window.location.replace('/?_mp_sync=' + Date.now());
+                        return false;
+                    }
+                } catch (eSync) {
+                    /* ignore */
+                }
                 return false;
+            }
+            try {
+                if (window.sessionStorage) {
+                    window.sessionStorage.removeItem('__mobile_panel_sync_reload_once');
+                }
+            } catch (eSyncClear) {
+                /* ignore */
             }
             // Mobil başlık işaretleme/bağlama tamamen mobile/assets/js/mobile-header.js
             // dosyasına ait — masaüstü header.js bu mantığı barındırmaz, sadece tetikler.
