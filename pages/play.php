@@ -65,6 +65,8 @@ if ($demoFlag) {
 
 $playJsPath = BASE_PATH . '/assets/js/play-page.js';
 $playJsVer  = is_readable($playJsPath) ? (string) filemtime($playJsPath) : '1';
+$playAuthSharedPath = BASE_PATH . '/assets/js/auth-shared.js';
+$playAuthSharedVer = (string) ((is_file($playAuthSharedPath) ? filemtime($playAuthSharedPath) : '1') . '-' . (is_file($playAuthSharedPath) ? filesize($playAuthSharedPath) : '0'));
 $playMobileUa = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
 $playUaIsMobile = $playMobileUa !== '' && preg_match('/android|iphone|ipad|ipod|mobile|windows phone|opera mini|iemobile/', $playMobileUa) === 1;
 $playBypassShell = $playRequestedOpenMode === 'redirect' || (function_exists('isMobile') && isMobile()) || $playUaIsMobile;
@@ -101,7 +103,7 @@ if ($playBypassShell) {
   window.__MEMBER_API_BASE__ = <?= json_encode((string) ($memberApiLayout['__MEMBER_API_BASE__'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
   window.__FRONTEND_DIRECT_MEMBER_API__ = <?= !empty($memberApiLayout['__FRONTEND_DIRECT_MEMBER_API__']) ? 'true' : 'false' ?>;
   </script>
-  <script src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+  <script src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js') . '?v=' . rawurlencode($playAuthSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
   <script src="/assets/js/play-page.js?v=<?= htmlspecialchars($playJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>
@@ -365,7 +367,7 @@ window.__CSRF_TOKEN__ = <?= json_encode((string) ($_SESSION['csrf_token'] ?? '')
 window.__MEMBER_API_BASE__ = <?= json_encode((string) ($memberApiLayout['__MEMBER_API_BASE__'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 window.__FRONTEND_DIRECT_MEMBER_API__ = <?= !empty($memberApiLayout['__FRONTEND_DIRECT_MEMBER_API__']) ? 'true' : 'false' ?>;
 </script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars(asset_url('assets/js/auth-shared.js') . '?v=' . rawurlencode($playAuthSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/site-settings-hydrate.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="/assets/js/play-page.js?v=<?= htmlspecialchars($playJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
