@@ -180,6 +180,85 @@
         return false;
     }
 
+    function runtimeSessionLoggedIn() {
+        if (isLogoutLanding()) {
+            return false;
+        }
+        return phpSessionLoggedIn();
+    }
+
+    function normalizePagePath(pathname) {
+        var p = String(pathname || '').trim();
+        if (p === '') {
+            return '/';
+        }
+        if (p.charAt(0) !== '/') {
+            p = '/' + p;
+        }
+        if (p.length > 1) {
+            p = p.replace(/\/+$/, '');
+        }
+        return p.toLowerCase();
+    }
+
+    function parseSameOriginUrl(urlLike) {
+        try {
+            var parsed = new URL(String(urlLike || ''), w.location.origin);
+            if (parsed.origin !== w.location.origin) {
+                return null;
+            }
+            return parsed;
+        } catch (eUrl) {
+            return null;
+        }
+    }
+
+    function sessionRequiredPage(urlLike) {
+        var parsed = parseSameOriginUrl(urlLike);
+        if (!parsed) {
+            return false;
+        }
+        var path = normalizePagePath(parsed.pathname);
+        if (path.indexOf('/profile/') === 0 || path === '/mobile/profile') {
+            return true;
+        }
+        if (path === '/deposit' || path === '/withdraw') {
+            return true;
+        }
+        if (path === '/') {
+            var profile = (parsed.searchParams.get('profile') || '').toLowerCase();
+            var account = (parsed.searchParams.get('account') || '').toLowerCase();
+            if (profile === 'open' && account !== '') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function showLoginPrompt() {
+        try {
+            if (typeof w.__openLoginModal === 'function') {
+                w.__openLoginModal();
+                return;
+            }
+            if (w.MaltabetAuth && typeof w.MaltabetAuth.showLoginModal === 'function') {
+                w.MaltabetAuth.showLoginModal();
+                return;
+            }
+            if (typeof w.showLoginWarning === 'function') {
+                w.showLoginWarning();
+                return;
+            }
+            var loginBtn = document.getElementById('Giris');
+            if (loginBtn && typeof loginBtn.click === 'function') {
+                loginBtn.click();
+                return;
+            }
+        } catch (eLogin) {
+            /* ignore */
+        }
+    }
+
     function sessionHintActive() {
         if (isLogoutLanding()) {
             return false;
@@ -350,6 +429,18 @@
         },
         hasMemberJwt: function () {
             return this.getMemberJwt() !== '';
+        },
+        runtimeSessionLoggedIn: runtimeSessionLoggedIn,
+        isSessionRequiredPage: sessionRequiredPage,
+        ensureSessionForPage: function (urlLike) {
+            if (!sessionRequiredPage(urlLike)) {
+                return true;
+            }
+            if (runtimeSessionLoggedIn()) {
+                return true;
+            }
+            showLoginPrompt();
+            return false;
         },
         isLogoutLanding: isLogoutLanding,
         phpSessionLoggedIn: phpSessionLoggedIn,

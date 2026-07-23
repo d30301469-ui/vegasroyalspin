@@ -212,6 +212,7 @@
 
     function bindMobileUserHeaderActions(scope) {
         if (!scope) return;
+        var profileTarget = '/?profile=open&account=profile&page=details';
 
         var balanceTrigger = scope.querySelector('#balanceTrigger');
         if (balanceTrigger) {
@@ -231,6 +232,9 @@
             toggleBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
+                if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(profileTarget)) {
+                    return;
+                }
                 if (toggleMobileProfilePanelSafely()) {
                     return;
                 }
@@ -239,7 +243,7 @@
                 // kendi açtığı sorgu formatıyla dön: /mobile/profile değil, /?profile=open...
                 // çünkü /mobile/profile oturum senkronu henüz tamamlanmamışsa anında / adresine
                 // geri yönlendirir (bkz. pages/mobile/profile.php loggedin guardı).
-                window.location.href = '/?profile=open&account=profile&page=details';
+                window.location.href = profileTarget;
             });
         }
     }
@@ -263,8 +267,12 @@
     function initMobileAvatarProfileModal() {
         var btn = document.getElementById('toggleButton');
         if (!btn) return;
+        var profileTarget = '/?profile=open&account=profile&page=details';
 
         function openProfileFromAvatar() {
+            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(profileTarget)) {
+                return;
+            }
             if (typeof window.__closeSmartPanel === 'function') {
                 window.__closeSmartPanel();
             }
@@ -280,7 +288,7 @@
             // DOM'da yoksa doğrudan mobil profil sayfasına geç (panelin kendi
             // /?profile=open... formatı; /mobile/profile oturum senkronu
             // tamamlanmadıysa anında / adresine geri yönlendirir).
-            window.location.href = '/?profile=open&account=profile&page=details';
+            window.location.href = profileTarget;
         }
 
         btn.addEventListener('click', function (e) {
@@ -298,6 +306,7 @@
     }
 
     function bindGlobalProfileIconCapture() {
+        var profileTarget = '/?profile=open&account=profile&page=details';
         document.addEventListener('click', function (e) {
             var target = e.target && e.target.closest ? e.target.closest('#toggleButton') : null;
             if (!target) return;
@@ -306,10 +315,13 @@
             if (e.stopImmediatePropagation) {
                 e.stopImmediatePropagation();
             }
+            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(profileTarget)) {
+                return;
+            }
             if (toggleMobileProfilePanelSafely()) {
                 return;
             }
-            window.location.href = '/?profile=open&account=profile&page=details';
+            window.location.href = profileTarget;
         }, true);
 
         document.addEventListener('keydown', function (e) {
@@ -321,10 +333,13 @@
             if (e.stopImmediatePropagation) {
                 e.stopImmediatePropagation();
             }
+            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(profileTarget)) {
+                return;
+            }
             if (toggleMobileProfilePanelSafely()) {
                 return;
             }
-            window.location.href = '/?profile=open&account=profile&page=details';
+            window.location.href = profileTarget;
         }, true);
     }
 

@@ -1762,6 +1762,9 @@
         }
 
         function openProfileModalFromHeader() {
+            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage('/profile/details')) {
+                return false;
+            }
             hideProfileHeaderFlyouts();
             var nextUrl = getInitialProfileUrl();
             openModal();
@@ -1770,10 +1773,14 @@
                 isFullPage: false,
                 loadingOverlay: loadingEl
             });
+            return true;
         }
 
         function openProfileModalUrl(rawUrl) {
             if (!rawUrl) return false;
+            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(rawUrl)) {
+                return true;
+            }
             var parsed;
             try {
                 parsed = new URL(rawUrl, window.location.origin);
