@@ -12,14 +12,28 @@ require_once __DIR__ . '/../includes/member_bonus_helpers.php';
 if ($method === 'GET' && $route === 'active_bonus.php') {
     $userId = $memberRequireLogin();
     $pdo = AdminDatabase::pdo();
+
+    // Canlı bonus bakiyesi (users.bonus_balance — oyun içi bet/win ile güncellenir)
+    $liveBonusBalance = 0.0;
+    try {
+        $liveStmt = $pdo->prepare('SELECT bonus_balance FROM users WHERE id = :id LIMIT 1');
+        $liveStmt->execute(['id' => $userId]);
+        $liveBonusBalance = round((float) $liveStmt->fetchColumn(), 2);
+    } catch (Throwable) {
+        $liveBonusBalance = 0.0;
+    }
+
     try {
         $stmt = $pdo->prepare("SELECT id, name, category, initial_amount, current_bonus_balance, wagering_requirement, wagering_target, total_bet_amount, is_complete, status, granted_at, deadline
                                FROM user_active_bonuses
                                WHERE user_id = :user_id AND status = 'active'
                                ORDER BY id DESC");
         $stmt->execute(['user_id' => $userId]);
-        $items = array_map(static function (array $row): array {
-            $current = (float) ($row['current_bonus_balance'] ?? $row['initial_amount'] ?? 0);
+        $items = array_map(static function (array $row) use ($liveBonusBalance): array {
+            $initial = (float) ($row['initial_amount'] ?? 0);
+            // current_bonus_balance: her bet sonrası WageringService tarafından
+            // canlı users.bonus_balance ile senkronize edilir.
+            $currentBonus = (float) ($row['current_bonus_balance'] ?? $initial);
             $target = (float) ($row['wagering_target'] ?? 0);
             $bet = (float) ($row['total_bet_amount'] ?? 0);
             $progress = $target > 0 ? min(100, max(0, ($bet / $target) * 100)) : null;
@@ -28,9 +42,10 @@ if ($method === 'GET' && $route === 'active_bonus.php') {
                 'name' => (string) ($row['name'] ?? ''),
                 'displayName' => (string) ($row['name'] ?? ''),
                 'category' => (string) ($row['category'] ?? ''),
-                'amount' => (float) ($row['initial_amount'] ?? 0),
-                'initialAmount' => (float) ($row['initial_amount'] ?? 0),
-                'currentBonusBalance' => $current,
+                'amount' => $initial,
+                'initialAmount' => $initial,
+                'currentBonusBalance' => $currentBonus,
+                'liveBonusBalance' => $liveBonusBalance,
                 'wageringRequirement' => (float) ($row['wagering_requirement'] ?? 0),
                 'wageringRequirementLabel' => rtrim(rtrim(number_format((float) ($row['wagering_requirement'] ?? 0), 2, '.', ''), '0'), '.') . 'x',
                 'wageringTarget' => $target,
@@ -55,6 +70,7 @@ if ($method === 'GET' && $route === 'active_bonus.php') {
             'items' => $items,
             'hasActiveBonus' => $activeBonus !== null,
             'bonus' => $activeBonus,
+            'liveBonusBalance' => $liveBonusBalance,
         ],
     ]);
 }

@@ -20,6 +20,31 @@ if ($method === 'GET' && ($route === 'balance.php' || $route === 'account/balanc
         return number_format($amount, 2, ',', '.') . ' ₺';
     };
     $wagering = WageringService::accountProgress($pdo, $userId);
+
+    // Bonus seviyesi çevrim özeti — aktif bonus varsa wagering hedefini göster
+    $bonusWagering = null;
+    try {
+        $bwStmt = $pdo->prepare(
+            "SELECT SUM(wagering_target) AS total_target, SUM(total_bet_amount) AS total_bet
+             FROM user_active_bonuses
+             WHERE user_id = :user_id AND status = 'active'"
+        );
+        $bwStmt->execute(['user_id' => $userId]);
+        $bwRow = $bwStmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($bwRow) && ((float) ($bwRow['total_target'] ?? 0)) > 0) {
+            $bwTarget = round((float) $bwRow['total_target'], 2);
+            $bwBet = round((float) $bwRow['total_bet'], 2);
+            $bonusWagering = [
+                'target' => $bwTarget,
+                'progress' => $bwBet,
+                'remaining' => max(0, $bwTarget - $bwBet),
+                'percent' => $bwTarget > 0 ? min(100, round(($bwBet / $bwTarget) * 100, 2)) : 100,
+            ];
+        }
+    } catch (Throwable) {
+        $bonusWagering = null;
+    }
+
     $memberEnvelope(200, [
         'success' => true,
         'code' => 200,
@@ -53,6 +78,7 @@ if ($method === 'GET' && ($route === 'balance.php' || $route === 'account/balanc
                 'remaining_formatted' => $formatBalance($wagering['remaining']),
             ],
             'active_wallet_mode' => WageringService::activeWalletMode($pdo, $userId),
+            'bonus_wagering' => $bonusWagering,
         ],
     ]);
 }
