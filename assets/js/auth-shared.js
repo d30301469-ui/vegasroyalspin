@@ -473,7 +473,11 @@
                 if (!recentLogin && self.getMemberJwt() === '') {
                     self.clearMemberJwt();
                 }
-                if (!recentLogin) {
+                // If we have a stored JWT (e.g. from a login that just happened
+                // before page reload), always try the session API to validate
+                // it — don't bail out just because __MEMBER_LOGIN_AT__ was lost
+                // across the reload.
+                if (!recentLogin && self.getMemberJwt() === '') {
                     return Promise.resolve('');
                 }
             }
@@ -618,9 +622,18 @@
             ? w.__MEMBER_JWT_BOOTSTRAP__.trim()
             : '';
         var phpLoggedIn = phpSessionLoggedIn();
+        var storedJwt = Shared.getMemberJwt();
 
         if (bootstrapJwt !== '' && phpLoggedIn) {
             Shared.setMemberJwt(bootstrapJwt);
+            w.__HAS_MEMBER_JWT__ = true;
+            return;
+        }
+
+        // Preserve localStorage JWT across page reloads — the onReady handler
+        // will validate it via /auth/session. Do NOT clear a valid-looking
+        // token just because the PHP session flag hasn't been bootstrapped yet.
+        if (storedJwt !== '') {
             w.__HAS_MEMBER_JWT__ = true;
             return;
         }
@@ -682,7 +695,39 @@
             handleLogoutQuery();
             return;
         }
+
+        var storedJwt = Shared.getMemberJwt();
+
+        // If no session flag yet but we have a stored JWT (e.g. just logged in
+        // and page reloaded), try to validate it via the session API instead of
+        // giving up immediately.
         if (!phpSessionLoggedIn()) {
+            if (storedJwt !== '') {
+                // Attempt session restoration — the backend can validate the
+                // JWT or trust the frontend proxy headers.
+                Shared.hydrateMemberJwt().then(function (token) {
+                    if (token !== '') {
+                        w.__HAS_MEMBER_JWT__ = true;
+                        if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
+                            w.MetropolMemberConsole.fetchAll();
+                        }
+                        return;
+                    }
+                    // Hydration failed — clear stale token
+                    w.__USER_LOGGED_IN__ = false;
+                    w.__HAS_MEMBER_JWT__ = false;
+                    Shared.clearMemberJwt();
+                    if (w.MetropolMemberConsole && w.MetropolMemberConsole.dump) {
+                        w.MetropolMemberConsole.dump();
+                    }
+                }).catch(function () {
+                    w.__USER_LOGGED_IN__ = false;
+                    w.__HAS_MEMBER_JWT__ = false;
+                    Shared.clearMemberJwt();
+                });
+                return;
+            }
+
             w.__USER_LOGGED_IN__ = false;
             w.__HAS_MEMBER_JWT__ = false;
             Shared.clearMemberJwt();

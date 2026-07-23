@@ -398,9 +398,24 @@
         if (Shared.isLogoutLanding && Shared.isLogoutLanding()) {
             return;
         }
+
+        // If __USER_LOGGED_IN__ is not set yet but we have a stored JWT (e.g.
+        // just logged in and page reloaded), try hydration first — the
+        // auth-shared onReady handler may not have run yet.
         if (window.__USER_LOGGED_IN__ !== true) {
+            var storedJwt = Shared.getMemberJwt ? Shared.getMemberJwt() : '';
+            if (storedJwt !== '' && Shared.hydrateMemberJwt) {
+                Shared.hydrateMemberJwt().then(function (token) {
+                    if (token !== '') {
+                        window.__USER_LOGGED_IN__ = true;
+                        window.__HAS_MEMBER_JWT__ = true;
+                    }
+                }).finally(start);
+                return;
+            }
             return;
         }
+
         if (Shared.hydrateMemberJwt) {
             Shared.hydrateMemberJwt().finally(start);
             return;
