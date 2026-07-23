@@ -486,20 +486,30 @@
             return false;
         }
 
-        var header = document.querySelector('.header-bc');
-        if (header) {
-            header.classList.remove('hdr-auth-guest');
-            header.classList.add('hdr-auth-user');
-        }
-
         if (document.body.classList.contains('mobile-site')) {
+            var mobilePanel = document.getElementById('mprofilePanel');
+            if (!mobilePanel) {
+                // Mobilde native panel DOM'u yokken guest->user yükseltmesi yapma.
+                // Aksi halde kullanıcı başlığı user görünür ama profil paneli hiç açılmaz.
+                return false;
+            }
             // Mobil başlık işaretleme/bağlama tamamen mobile/assets/js/mobile-header.js
             // dosyasına ait — masaüstü header.js bu mantığı barındırmaz, sadece tetikler.
             // Böylece mobil ve masaüstü akışları arasında hiçbir kod paylaşımı/çakışma olmaz.
             if (typeof window.__mobileUpgradeUserHeader === 'function') {
                 window.__mobileUpgradeUserHeader();
             }
+            var mobileHeader = document.querySelector('.header-bc');
+            if (mobileHeader) {
+                mobileHeader.classList.remove('hdr-auth-guest');
+                mobileHeader.classList.add('hdr-auth-user');
+            }
         } else {
+            var header = document.querySelector('.header-bc');
+            if (header) {
+                header.classList.remove('hdr-auth-guest');
+                header.classList.add('hdr-auth-user');
+            }
             if (guestLoginBtn && guestLoginBtn.parentNode) {
                 guestLoginBtn.parentNode.removeChild(guestLoginBtn);
             }
