@@ -185,6 +185,46 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
         }
 
         // --- bonus_amount sabit değer (yatırım toplamını aşamaz) ---
+        // bonus_type tanımlanmamışsa, başlıktan akıllı tespit dene
+        if ($bonusType === '') {
+            $title = strtolower((string) ($promotion['title'] ?? ''));
+            $titleClean = preg_replace('/\s+/u', ' ', $title);
+
+            // Başlıkta % var mı?
+            $titlePct = 0.0;
+            if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/u', $titleClean, $m)) {
+                $titlePct = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
+            }
+
+            if ($titlePct > 0 && $titlePct <= 200) {
+                // İlk yatırım ifadesi var mı?
+                $isFirstDepositTitle = preg_match(
+                    '/(?:ilk\s*yat[ıi]r[ıi]m|ho[sş]geldin|ilk\s*para\s*yat[ıi]rma|first\s*deposit)/u',
+                    $titleClean
+                ) === 1;
+
+                if ($isFirstDepositTitle) {
+                    $firstDeposit = memberFirstApprovedDepositAmountV2($pdo, $userId);
+                    if ($firstDeposit > 0) {
+                        $calculated = round(($firstDeposit * $titlePct) / 100, 2);
+                        if ($totalDeposit > 0) {
+                            $calculated = min($calculated, $totalDeposit);
+                        }
+
+                        return $calculated;
+                    }
+                }
+
+                // Genel yüzdesel (toplam yatırım üzerinden)
+                if ($totalDeposit > 0) {
+                    $calculated = round(($totalDeposit * $titlePct) / 100, 2);
+
+                    return min($calculated, $totalDeposit);
+                }
+            }
+        }
+
+        // --- bonus_amount sabit değer (yatırım toplamını aşamaz) ---
         $amount = round((float) ($promotion['bonus_amount'] ?? 0), 2);
         if ($amount > 0 && $totalDeposit > 0) {
             // Sabit bonus, onaylı yatırım toplamından fazla olamaz
