@@ -133,9 +133,11 @@ final class AdminModuleController extends AdminController
             $targetStatuses = "'pending','failed','rejected'";
             $deletedTx = $pdo->exec("DELETE FROM megapayz_transactions WHERE status IN ({$targetStatuses})");
             $deletedCallbacks = $pdo->exec('DELETE FROM megapayz_callbacks');
+            $pdo->commit();
+
+            // ALTER TABLE causes implicit commit in MySQL — must run outside transaction
             $pdo->exec('ALTER TABLE megapayz_transactions AUTO_INCREMENT = 1');
             $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
-            $pdo->commit();
 
             AdminAuth::writeLog($adminUsername, 'reset_pending_transactions', 'system', 'success');
             $_SESSION['admin_flash'] = "Tüm bekleyen ve başarısız işlemler temizlendi. ({$deletedTx} işlem, {$deletedCallbacks} callback silindi, ID'ler sıfırlandı)";

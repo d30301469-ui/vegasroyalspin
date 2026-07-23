@@ -184,9 +184,11 @@ if ($normalizedRoute === 'internal/reset-pending-transactions') {
             $targetStatuses = "'pending','failed','rejected'";
             $deletedTx = $pdo->exec("DELETE FROM megapayz_transactions WHERE status IN ({$targetStatuses})");
             $deletedCallbacks = $pdo->exec('DELETE FROM megapayz_callbacks');
+            $pdo->commit();
+
+            // ALTER TABLE causes implicit commit in MySQL — must run outside transaction
             $pdo->exec('ALTER TABLE megapayz_transactions AUTO_INCREMENT = 1');
             $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
-            $pdo->commit();
 
             AdminAuth::writeLog(AdminAuth::userName(), 'reset_pending_transactions', 'system', 'success');
             echo json_encode([
