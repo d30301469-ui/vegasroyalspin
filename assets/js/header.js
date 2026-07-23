@@ -9,8 +9,19 @@
     var PLAYER_MENU_CLOSE_DELAY_MS = 300;
     var RESIZE_DEBOUNCE_MS = 150;
     var Shared = window.BetcoAuthShared || {};
+    function resolveShared() {
+        return window.BetcoAuthShared || Shared || {};
+    }
+    function readStoredMemberJwt() {
+        try {
+            return String(window.localStorage.getItem('metropol_member_jwt') || '').trim();
+        } catch (eJwt) {
+            return '';
+        }
+    }
     function apiUrl(path) {
-        return Shared.apiUrl ? Shared.apiUrl(path) : path;
+        var dynamicShared = resolveShared();
+        return dynamicShared.apiUrl ? dynamicShared.apiUrl(path) : path;
     }
 
     /** Hover menüleri: dışarıdan kapatırken scheduleClose zamanlayıcılarını temizlemek için */
@@ -437,7 +448,11 @@
         if (window.__MEMBER_BOOTSTRAP_STATE__ && window.__MEMBER_BOOTSTRAP_STATE__.logged_in === true) {
             return true;
         }
-        return !!(Shared.getMemberJwt && Shared.getMemberJwt());
+        var dynamicShared = resolveShared();
+        if (dynamicShared.getMemberJwt && dynamicShared.getMemberJwt()) {
+            return true;
+        }
+        return readStoredMemberJwt() !== '';
     }
 
     function mobileUserHeaderMarkup() {
@@ -1013,6 +1028,11 @@
 
     ready(function () {
         upgradeGuestHeaderIfNeeded();
+        // In some templates auth-shared may initialize after header.js.
+        // Retry a few times to avoid stale guest header after successful login.
+        window.setTimeout(upgradeGuestHeaderIfNeeded, 180);
+        window.setTimeout(upgradeGuestHeaderIfNeeded, 750);
+        window.setTimeout(upgradeGuestHeaderIfNeeded, 1500);
         initToastr();
         initDepositMenu();
         initPlayerMenu();
@@ -1025,6 +1045,9 @@
         initSearchPanel();
 
         window.addEventListener('metropol:member-jwt-ready', function () {
+            upgradeGuestHeaderIfNeeded();
+        });
+        window.addEventListener('load', function () {
             upgradeGuestHeaderIfNeeded();
         });
     });
