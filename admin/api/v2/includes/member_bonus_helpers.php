@@ -194,3 +194,89 @@ if (!function_exists('memberPromotionsSelectColumnsV2')) {
                 bonus_type, bonus_amount, bonus_rules, wagering_multiplier, general_rules';
     }
 }
+
+if (!function_exists('memberApprovedDepositCountV2')) {
+    /**
+     * Kullanıcının onaylı yatırım sayısını döndürür.
+     * Her onaylı yatırım, promosyon başına 1 talep hakkı verir.
+     */
+    function memberApprovedDepositCountV2(PDO $pdo, int $userId): int
+    {
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM megapayz_transactions
+                 WHERE user_id = :user_id AND type = 'deposit' AND status IN ('confirmed', 'approved', 'success', 'completed')"
+            );
+            $stmt->execute(['user_id' => $userId]);
+
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+}
+
+if (!function_exists('memberApprovedClaimCountForPromotionV2')) {
+    /**
+     * Kullanıcının belirli bir promosyondan onaylanmış talep sayısını döndürür.
+     */
+    function memberApprovedClaimCountForPromotionV2(PDO $pdo, int $userId, int $promotionId): int
+    {
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM bonus_claim_requests
+                 WHERE user_id = :user_id AND promotion_id = :promotion_id AND status = 'approved'"
+            );
+            $stmt->execute(['user_id' => $userId, 'promotion_id' => $promotionId]);
+
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+}
+
+if (!function_exists('memberCheckPromotionClaimLimitV2')) {
+    /**
+     * Kullanıcının bu promosyondan kaç kez daha faydalanabileceğini kontrol eder.
+     *
+     * Kural: Her onaylı yatırım = 1 talep hakkı.
+     * Örnek: 3 onaylı yatırım, 2 onaylı talep → 1 hak kaldı.
+     *
+     * @return array{canClaim: bool, approvedDeposits: int, approvedClaims: int, remainingRights: int, message: string}
+     */
+    function memberCheckPromotionClaimLimitV2(PDO $pdo, int $userId, int $promotionId): array
+    {
+        $approvedDeposits = memberApprovedDepositCountV2($pdo, $userId);
+        $approvedClaims = memberApprovedClaimCountForPromotionV2($pdo, $userId, $promotionId);
+        $remaining = max(0, $approvedDeposits - $approvedClaims);
+
+        if ($approvedDeposits <= 0) {
+            return [
+                'canClaim' => false,
+                'approvedDeposits' => 0,
+                'approvedClaims' => $approvedClaims,
+                'remainingRights' => 0,
+                'message' => 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.',
+            ];
+        }
+
+        if ($remaining <= 0) {
+            return [
+                'canClaim' => false,
+                'approvedDeposits' => $approvedDeposits,
+                'approvedClaims' => $approvedClaims,
+                'remainingRights' => 0,
+                'message' => 'Bu promosyondan tüm yatırımlarınız için zaten faydalandınız.',
+            ];
+        }
+
+        return [
+            'canClaim' => true,
+            'approvedDeposits' => $approvedDeposits,
+            'approvedClaims' => $approvedClaims,
+            'remainingRights' => $remaining,
+            'message' => "Bu promosyondan $remaining kez daha faydalanabilirsiniz.",
+        ];
+    }
+}

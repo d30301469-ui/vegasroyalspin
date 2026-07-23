@@ -375,14 +375,37 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
         $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'Promosyon bulunamadı.']);
     }
     $claimPromotionId = (int) ($promo['id'] ?? 0);
+
+    // Her onaylı yatırım = 1 talep hakkı kontrolü
+    $claimLimit = memberCheckPromotionClaimLimitV2($pdo, $userId, $claimPromotionId);
+    if (!$claimLimit['canClaim']) {
+        $memberEnvelope(409, [
+            'success' => false,
+            'code' => 409,
+            'message' => $claimLimit['message'],
+            'data' => [
+                'claimPolicy' => [
+                    'requiresConfirmedDeposit' => true,
+                    'maxClaimsPerDeposit' => 1,
+                    'depositRequiredMessage' => $depositRequiredMessage,
+                ],
+                'limit' => $claimLimit,
+            ],
+        ]);
+    }
+
+    // Mevcut pending talep varsa replace et
+    $replacedPending = false;
     if ($claimPromotionId > 0) {
         $existingClaim = $pdo->prepare("SELECT id FROM bonus_claim_requests WHERE user_id = :user_id AND promotion_id = :promotion_id AND status = 'pending' LIMIT 1");
         $existingClaim->execute(['user_id' => $userId, 'promotion_id' => $claimPromotionId]);
         $existingClaimRow = $existingClaim->fetch(PDO::FETCH_ASSOC);
         if (is_array($existingClaimRow)) {
             $pdo->prepare('DELETE FROM bonus_claim_requests WHERE id = :id')->execute(['id' => (int) $existingClaimRow['id']]);
+            $replacedPending = true;
         }
     }
+
     $insert = $pdo->prepare(
         "INSERT INTO bonus_claim_requests
         (user_id, promotion_id, bonus_name, category, promotion_type, requested_amount, wagering_multiplier, user_message, status, created_at)
@@ -403,5 +426,15 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
         'wagering_multiplier' => number_format((float) ($promo['wagering_multiplier'] ?? 1), 2, '.', ''),
         'user_message' => trim((string) ($input['message'] ?? '')) ?: null,
     ]);
-    $memberEnvelope(200, ['success' => true, 'code' => 200, 'message' => 'Bonus talebi oluşturuldu', 'data' => ['requestId' => (string) $pdo->lastInsertId()]]);
+    $memberEnvelope(200, [
+        'success' => true,
+        'code' => 200,
+        'message' => 'Bonus talebi oluşturuldu',
+        'data' => [
+            'requestId' => (string) $pdo->lastInsertId(),
+            'requestedAmount' => $requestedAmount,
+            'replacedPending' => $replacedPending,
+            'limit' => $claimLimit,
+        ],
+    ]);
 }

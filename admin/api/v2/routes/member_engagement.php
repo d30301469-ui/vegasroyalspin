@@ -138,6 +138,26 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
             ];
         }
         $hasConfirmedDeposit = $viewerUserId > 0 ? memberHasConfirmedDepositV2($pdo, (int) $viewerUserId) : false;
+
+        // Her promosyon için kullanıcının kalan talep hakkını hesapla
+        $promotionClaimRights = [];
+        if ($viewerUserId > 0 && $hasConfirmedDeposit) {
+            $approvedDeposits = memberApprovedDepositCountV2($pdo, (int) $viewerUserId);
+            foreach ($promotions as $p) {
+                $promoId = (int) ($p['id'] ?? 0);
+                if ($promoId > 0) {
+                    $approvedClaims = memberApprovedClaimCountForPromotionV2($pdo, (int) $viewerUserId, $promoId);
+                    $remaining = max(0, $approvedDeposits - $approvedClaims);
+                    $promotionClaimRights[$promoId] = [
+                        'approvedDeposits' => $approvedDeposits,
+                        'approvedClaims' => $approvedClaims,
+                        'remainingRights' => $remaining,
+                        'canClaim' => $remaining > 0,
+                    ];
+                }
+            }
+        }
+
         $memberEnvelope(200, [
             'success' => true,
             'code' => 200,
@@ -148,9 +168,14 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
                 'promotions' => $promotions,
                 'claimPolicy' => [
                     'requiresConfirmedDeposit' => true,
+                    'maxClaimsPerDeposit' => 1,
                     'depositRequiredMessage' => 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.',
+                    'maxClaimsMessage' => 'Her onaylı yatırımınız için bu promosyondan 1 kez faydalanabilirsiniz.',
                 ],
-                'viewer' => ['hasConfirmedDeposit' => $hasConfirmedDeposit],
+                'viewer' => [
+                    'hasConfirmedDeposit' => $hasConfirmedDeposit,
+                    'claimRights' => $promotionClaimRights,
+                ],
             ],
         ]);
     }
@@ -183,6 +208,26 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
     if (!is_array($promotion)) {
         $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'Promosyon bulunamadı.']);
     }
+
+    // Her onaylı yatırım = 1 talep hakkı kontrolü
+    $claimLimit = memberCheckPromotionClaimLimitV2($pdo, $userId, $promotionId);
+    if (!$claimLimit['canClaim']) {
+        $memberEnvelope(409, [
+            'success' => false,
+            'code' => 409,
+            'message' => $claimLimit['message'],
+            'data' => [
+                'claimPolicy' => [
+                    'requiresConfirmedDeposit' => true,
+                    'maxClaimsPerDeposit' => 1,
+                    'depositRequiredMessage' => $depositRequiredMessage,
+                ],
+                'limit' => $claimLimit,
+            ],
+        ]);
+    }
+
+    // Mevcut pending talep varsa replace et
     $existing = $pdo->prepare("SELECT id FROM bonus_claim_requests WHERE user_id = :user_id AND promotion_id = :promotion_id AND status = 'pending' LIMIT 1");
     $existing->execute(['user_id' => $userId, 'promotion_id' => $promotionId]);
     $existingRow = $existing->fetch(PDO::FETCH_ASSOC);
@@ -222,6 +267,7 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
             'requestedAmount' => $requestedAmount,
             'message' => 'Bonus talebiniz alındı, incelenmeyi bekliyor.',
             'replacedPending' => $replacedPending,
+            'limit' => $claimLimit,
         ],
     ]);
 }
