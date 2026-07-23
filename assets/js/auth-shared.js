@@ -725,8 +725,14 @@
             if (Shared.getMemberJwt() !== '') {
                 Shared.hydrateMemberJwt().then(function (token) {
                     if (token !== '') {
-                        w.__USER_LOGGED_IN__ = true;
+                        // JWT tek başına oturum anlamına gelmez; PHP session doğrulanana
+                        // kadar UI'yi "logged in" moduna zorlamayız.
+                        w.__USER_LOGGED_IN__ = false;
                         w.__HAS_MEMBER_JWT__ = true;
+                        if (w.__MEMBER_BOOTSTRAP_STATE__ && typeof w.__MEMBER_BOOTSTRAP_STATE__ === 'object') {
+                            w.__MEMBER_BOOTSTRAP_STATE__.logged_in = false;
+                            w.__MEMBER_BOOTSTRAP_STATE__.has_session_jwt = true;
+                        }
                         if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
                             w.MetropolMemberConsole.fetchAll();
                         }
