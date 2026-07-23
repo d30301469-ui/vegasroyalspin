@@ -3,6 +3,42 @@
     var $jq = window.jQuery || window.$;
     var Shared = window.BetcoAuthShared || {};
 
+    function resolveShared() {
+        return window.BetcoAuthShared || Shared || {};
+    }
+
+    function runtimeMemberLoggedIn() {
+        if (window.__USER_LOGGED_IN__ === true) {
+            return true;
+        }
+        if (window.__MEMBER_BOOTSTRAP_STATE__ && window.__MEMBER_BOOTSTRAP_STATE__.logged_in === true) {
+            return true;
+        }
+        var dynamicShared = resolveShared();
+        if (dynamicShared.getMemberJwt && dynamicShared.getMemberJwt()) {
+            return true;
+        }
+        try {
+            return String(window.localStorage.getItem('metropol_member_jwt') || '').trim() !== '';
+        } catch (eJwt) {
+            return false;
+        }
+    }
+
+    function openMemberFlowFromRegisterTrigger(isDepositTrigger) {
+        if (isDepositTrigger && typeof window.redirectToDeposit === 'function') {
+            window.redirectToDeposit();
+            return;
+        }
+        if (typeof window.__openProfileModalInitial === 'function') {
+            window.__openProfileModalInitial();
+            return;
+        }
+        window.location.href = isDepositTrigger
+            ? '/profile/deposit-withdraw?openDepositPanel=1'
+            : '/profile/details';
+    }
+
     function getJq() {
         return window.jQuery || window.$ || $jq;
     }
@@ -316,6 +352,11 @@
 
         if (registerBtn) {
             registerBtn.addEventListener('click', function (e) {
+                if (runtimeMemberLoggedIn()) {
+                    e.preventDefault();
+                    openMemberFlowFromRegisterTrigger(false);
+                    return;
+                }
                 if (e.defaultPrevented) return;
                 e.preventDefault();
                 showModalByElement(registerModal);
@@ -332,8 +373,17 @@
 
         document.addEventListener('click', function (e) {
             var t = e.target;
-            if (t && (t.id === 'openRegister' || (t.closest && t.closest('#openRegister')) ||
-                      t.id === 'openRegister2' || (t.closest && t.closest('#openRegister2')))) {
+            var isRegisterTrigger = !!(t && (t.id === 'openRegister' || (t.closest && t.closest('#openRegister')) ||
+                      t.id === 'openRegister2' || (t.closest && t.closest('#openRegister2'))));
+            if (isRegisterTrigger) {
+                var isDepositTrigger = !!(t && (t.id === 'openRegister2' || (t.closest && t.closest('#openRegister2'))));
+                if (runtimeMemberLoggedIn()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                    openMemberFlowFromRegisterTrigger(isDepositTrigger);
+                    return;
+                }
                 e.preventDefault();
                 showModalByElement(registerModal);
             }
