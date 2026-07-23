@@ -487,44 +487,6 @@
         }
 
         if (document.body.classList.contains('mobile-site')) {
-            try {
-                var mobileUrl = new URL(window.location.href);
-                if (mobileUrl.searchParams.has('_mp_sync') && window.history && typeof window.history.replaceState === 'function') {
-                    mobileUrl.searchParams.delete('_mp_sync');
-                    var cleaned = mobileUrl.pathname + (mobileUrl.searchParams.toString() ? ('?' + mobileUrl.searchParams.toString()) : '') + mobileUrl.hash;
-                    window.history.replaceState({}, '', cleaned || '/');
-                }
-            } catch (eMobileUrl) {
-                /* ignore */
-            }
-            var mobilePanel = document.getElementById('mprofilePanel');
-            if (!mobilePanel) {
-                // Login sonrası race durumunda (JWT hazır, SSR panel henüz guest render),
-                // bir kere hard refresh ile panel/oturum işaretlemesini senkronla.
-                try {
-                    var syncKey = '__mobile_panel_sync_reload_once';
-                    if (window.sessionStorage && !window.sessionStorage.getItem(syncKey)) {
-                        window.sessionStorage.setItem(syncKey, '1');
-                        window.location.replace('/?_mp_sync=' + Date.now());
-                        return false;
-                    }
-                    // Tek denemeden sonra panel hâlâ yoksa user-header yükseltmesini
-                    // engelleme; aksi halde login başarılı olsa bile header guest kalır.
-                    if (window.sessionStorage) {
-                        window.sessionStorage.removeItem(syncKey);
-                    }
-                } catch (eSync) {
-                    /* ignore */
-                }
-            } else {
-                try {
-                    if (window.sessionStorage) {
-                        window.sessionStorage.removeItem('__mobile_panel_sync_reload_once');
-                    }
-                } catch (eSyncClear) {
-                    /* ignore */
-                }
-            }
             // Mobil başlık işaretleme/bağlama tamamen mobile/assets/js/mobile-header.js
             // dosyasına ait — masaüstü header.js bu mantığı barındırmaz, sadece tetikler.
             // Böylece mobil ve masaüstü akışları arasında hiçbir kod paylaşımı/çakışma olmaz.
