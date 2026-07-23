@@ -7,135 +7,7 @@
 /** @var callable $memberInput */
 /** @var callable $memberEnvelope */
 
-if (!function_exists('memberApprovedDepositTotalV2')) {
-    /**
-     * Kullanıcının onaylı yatırım toplamını aktif/legacy tablolardan okur.
-     */
-    function memberApprovedDepositTotalV2(PDO $pdo, int $userId): float
-    {
-        $sum = 0.0;
-
-        try {
-            $stmt = $pdo->prepare(
-                "SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions
-                 WHERE user_id = :user_id AND type = 'deposit' AND status IN ('confirmed', 'approved', 'success', 'completed', 'onay')"
-            );
-            $stmt->execute(['user_id' => $userId]);
-            $sum = (float) $stmt->fetchColumn();
-        } catch (Throwable) {
-            $sum = 0.0;
-        }
-        if ($sum > 0) {
-            return round($sum, 2);
-        }
-
-        // Legacy callback tablosu (kullanici odemeleri) fallback.
-        try {
-            $stmt = $pdo->prepare(
-                "SELECT COALESCE(SUM(miktar), 0) FROM para_yatirma_islemleri
-                 WHERE uye = :user_id AND (durum IN (0, 2) OR LOWER(COALESCE(aciklama, '')) IN ('onay', 'approved', 'success', 'completed', 'confirmed'))"
-            );
-            $stmt->execute(['user_id' => $userId]);
-            $sum = (float) $stmt->fetchColumn();
-        } catch (Throwable) {
-            $sum = 0.0;
-        }
-        if ($sum > 0) {
-            return round($sum, 2);
-        }
-
-        // Olası ara geçiş tablosu fallback.
-        try {
-            $stmt = $pdo->prepare(
-                "SELECT COALESCE(SUM(amount), 0) FROM deposit_transactions
-                 WHERE user_id = :user_id AND LOWER(COALESCE(status, '')) IN ('confirmed', 'approved', 'success', 'completed', 'onay')"
-            );
-            $stmt->execute(['user_id' => $userId]);
-            $sum = (float) $stmt->fetchColumn();
-        } catch (Throwable) {
-            $sum = 0.0;
-        }
-
-        return round(max(0, $sum), 2);
-    }
-}
-
-if (!function_exists('memberPromotionResolveClaimAmountV2')) {
-    /**
-     * Talep tutarını promosyon kaydı + bonus_rules + son onaylı yatırım üzerinden hesaplar.
-     */
-    function memberPromotionResolveClaimAmountV2(PDO $pdo, int $userId, array $promotion): float
-    {
-        $bonusType = strtolower(trim((string) ($promotion['bonus_type'] ?? '')));
-        $title = strtolower((string) ($promotion['title'] ?? ''));
-        $rules = [];
-        $rawRules = $promotion['bonus_rules'] ?? null;
-        if (is_string($rawRules) && trim($rawRules) !== '') {
-            $decoded = json_decode($rawRules, true);
-            if (is_array($decoded)) {
-                if (array_is_list($decoded)) {
-                    foreach ($decoded as $rule) {
-                        if (is_array($rule)) {
-                            $rules[] = $rule;
-                        }
-                    }
-                } else {
-                    $rules[] = $decoded;
-                }
-            }
-        }
-
-        $rule = null;
-        foreach ($rules as $candidate) {
-            $appliesTo = strtolower((string) ($candidate['applies_to'] ?? ''));
-            if (in_array($appliesTo, ['', 'any', 'all', 'deposit', 'first_deposit', 'firstdeposit'], true)) {
-                $rule = $candidate;
-                break;
-            }
-        }
-        if ($rule === null && isset($rules[0]) && is_array($rules[0])) {
-            $rule = $rules[0];
-        }
-
-        $approvedDepositTotal = memberApprovedDepositTotalV2($pdo, $userId);
-
-        $ruleType = strtolower((string) ($rule['type'] ?? $bonusType));
-        $ruleValue = (float) ($rule['value'] ?? $rule['amount'] ?? 0);
-        $titlePercent = 0.0;
-        if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/u', $title, $m)) {
-            $titlePercent = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
-        }
-        if ($titlePercent <= 0 && preg_match('/(\d+(?:[\.,]\d+)?)\s*(?:hosgeldin|hoşgeldin|ilk\s*yatirim|ilk\s*yatırım|yatirim\s*bonusu|yatırım\s*bonusu)/u', $title, $m)) {
-            $titlePercent = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
-        }
-
-        $isPercentagePromo = $ruleType === 'percentage' || $bonusType === 'percentage' || $titlePercent > 0;
-
-        if ($isPercentagePromo && $approvedDepositTotal > 0) {
-            $percent = 0.0;
-            if ($titlePercent > 0) {
-                $percent = $titlePercent;
-            } elseif ($ruleValue > 0 && $ruleValue <= 200) {
-                $percent = $ruleValue;
-            }
-
-            if ($percent > 0) {
-                return round(($approvedDepositTotal * $percent) / 100, 2);
-            }
-        }
-
-        $amount = round((float) ($promotion['bonus_amount'] ?? 0), 2);
-        if ($amount > 0) {
-            return $amount;
-        }
-
-        if ($ruleValue > 0) {
-            return round($ruleValue, 2);
-        }
-
-        return 0.0;
-    }
-}
+require_once __DIR__ . '/../includes/member_bonus_helpers.php';
 
 if ($method === 'GET' && $route === 'active_bonus.php') {
     $userId = $memberRequireLogin();
@@ -443,16 +315,8 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
     $promotionId = (int) ($input['promotionId'] ?? $input['promotion_id'] ?? 0);
     $pdo = AdminDatabase::pdo();
     $depositRequiredMessage = 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.';
-    $hasConfirmedDeposit = false;
-    try {
-        MegaPayzService::bootstrap($pdo);
-        $depositCheck = $pdo->prepare("SELECT COUNT(*) FROM megapayz_transactions WHERE user_id = :user_id AND type = 'deposit' AND status IN ('confirmed', 'approved', 'success', 'completed')");
-        $depositCheck->execute(['user_id' => $userId]);
-        $hasConfirmedDeposit = (int) $depositCheck->fetchColumn() > 0;
-    } catch (Throwable) {
-        $hasConfirmedDeposit = false;
-    }
-    if (!$hasConfirmedDeposit) {
+
+    if (!memberHasConfirmedDepositV2($pdo, $userId)) {
         $memberEnvelope(403, [
             'success' => false,
             'code' => 403,
@@ -468,7 +332,7 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
     }
     $promo = null;
     if ($promotionId > 0) {
-        $promotion = $pdo->prepare("SELECT id, title, type, bonus_type, bonus_amount, bonus_rules, wagering_multiplier FROM promotions WHERE id = :id AND status = 'active' LIMIT 1");
+        $promotion = $pdo->prepare("SELECT " . memberPromotionsSelectColumnsV2() . " FROM promotions WHERE id = :id AND status = 'active' LIMIT 1");
         $promotion->execute(['id' => $promotionId]);
         $promo = $promotion->fetch(PDO::FETCH_ASSOC);
     } else {
@@ -483,7 +347,7 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
             return preg_replace('/[^a-z0-9%]+/u', '', $value) ?: '';
         };
         $wantedTitle = $normalizeTitle($title);
-        $promotion = $pdo->query("SELECT id, title, type, bonus_type, bonus_amount, bonus_rules, wagering_multiplier FROM promotions WHERE status = 'active' ORDER BY sort_order ASC, id ASC");
+        $promotion = $pdo->query("SELECT " . memberPromotionsSelectColumnsV2() . " FROM promotions WHERE status = 'active' ORDER BY sort_order ASC, id ASC");
         foreach ($promotion->fetchAll(PDO::FETCH_ASSOC) as $row) {
             if ($wantedTitle !== '' && $normalizeTitle((string) ($row['title'] ?? '')) === $wantedTitle) {
                 $promo = $row;

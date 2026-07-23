@@ -61,6 +61,7 @@ final class PromotionMediaGuard
         try {
             self::ensureColumn($pdo, 'link_url', 'VARCHAR(700) NULL AFTER image_url');
             self::ensureColumn($pdo, 'category', 'VARCHAR(60) NULL AFTER type');
+            self::ensureColumn($pdo, 'bonus_rules', 'TEXT NULL AFTER bonus_amount');
             self::widenVarcharColumn($pdo, 'image_url', 700);
             self::widenVarcharColumn($pdo, 'link_url', 700);
         } catch (Throwable) {
