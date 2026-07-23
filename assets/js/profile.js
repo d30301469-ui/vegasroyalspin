@@ -747,6 +747,25 @@
     }
 
     function fetchProfilePage(targetUrl) {
+        var recoveryAttempted = false;
+
+        function tryRecoverAuthOnce(err) {
+            if (!err || !err.authRequired || recoveryAttempted) {
+                return Promise.reject(err);
+            }
+            recoveryAttempted = true;
+            if (!Shared || typeof Shared.handleMemberAuthFailure !== 'function') {
+                return Promise.reject(err);
+            }
+            return Promise.resolve(Shared.handleMemberAuthFailure())
+                .then(function(ok) {
+                    if (!ok) {
+                        throw err;
+                    }
+                    return true;
+                });
+        }
+
         function parseProfileResponse(r) {
             if (r.redirected) {
                 try {
@@ -774,13 +793,23 @@
             .then(parseProfileResponse)
             .catch(function(primaryErr) {
                 if (primaryErr && primaryErr.authRequired) {
-                    throw primaryErr;
+                    return tryRecoverAuthOnce(primaryErr).then(function() {
+                        return fetch(resolved, { credentials: 'same-origin' }).then(parseProfileResponse);
+                    });
                 }
                 if (!direct || direct === resolved) {
                     throw primaryErr;
                 }
                 return fetch(direct, { credentials: 'same-origin' })
-                    .then(parseProfileResponse);
+                    .then(parseProfileResponse)
+                    .catch(function(directErr) {
+                        if (directErr && directErr.authRequired) {
+                            return tryRecoverAuthOnce(directErr).then(function() {
+                                return fetch(direct, { credentials: 'same-origin' }).then(parseProfileResponse);
+                            });
+                        }
+                        throw directErr;
+                    });
             });
     }
 
