@@ -732,12 +732,26 @@
         return parsed.pathname + parsed.search;
     }
 
+    function isAuthRedirectTarget(urlObj) {
+        if (!urlObj) return false;
+        var path = (urlObj.pathname || '').toLowerCase();
+        if (path === '/login') return true;
+        if (path !== '/') return false;
+
+        // Mobile/profile canonical redirects can legitimately land on
+        // /?profile=open&... while the session is still valid.
+        var profileState = (urlObj.searchParams.get('profile') || '').toLowerCase();
+        if (profileState === 'open') return false;
+
+        return true;
+    }
+
     function fetchProfilePage(targetUrl) {
         function parseProfileResponse(r) {
             if (r.redirected) {
                 try {
                     var finalUrl = new URL(r.url, window.location.origin);
-                    if (finalUrl.origin === window.location.origin && (finalUrl.pathname === '/' || finalUrl.pathname === '/login')) {
+                    if (finalUrl.origin === window.location.origin && isAuthRedirectTarget(finalUrl)) {
                         var authErr = new Error('Profil oturumu doğrulanamadı');
                         authErr.authRequired = true;
                         throw authErr;
