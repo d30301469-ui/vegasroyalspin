@@ -2,8 +2,10 @@
 
 require_once __DIR__ . '/database.php';
 
+$profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
+
 $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
-if ($host !== '' && str_starts_with($host, 'm.')) {
+if ($host !== '' && str_starts_with($host, 'm.') && !$profile_modal) {
     header('Location: /?' . http_build_query(['profile' => 'open', 'account' => 'balance', 'page' => 'history']));
     exit();
 }
@@ -26,7 +28,6 @@ $user_info = array_merge(
 );
 $initial = strtoupper(substr($username, 0, 2));
 $profileActiveTab = 'deposit-withdraw-history';
-$profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 ?>
 
 <?php if (!$profile_modal): ?>
