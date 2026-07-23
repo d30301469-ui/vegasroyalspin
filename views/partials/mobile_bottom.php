@@ -42,7 +42,7 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
                 <span class="mobFooter-label"><?= $h($label) ?></span>
             </a>
         <?php elseif ($type === 'menu'): ?>
-            <a class="mobFooter-item" id="<?= $h($elementId !== '' ? $elementId : 'menu-toggle') ?>" href="#" aria-label="<?= $h($aria) ?>">
+            <a class="mobFooter-item" id="<?= $h($elementId !== '' ? $elementId : 'menu-toggle') ?>" data-mobile-menu-toggle="1" href="#" aria-label="<?= $h($aria) ?>">
                 <?php if ($icon !== ''): ?>
                     <span class="CMSIconSVGWrapper"><i class="<?= $h($icon) ?>"></i></span>
                 <?php endif; ?>

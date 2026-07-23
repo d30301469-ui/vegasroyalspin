@@ -46,6 +46,7 @@ $mobileMenuClass = static function (string $value): string {
     <?php elseif ($type === 'menu'): ?>
       <div class="tab-nav-item-bc menu"
            id="<?= htmlspecialchars($elementId !== '' ? $elementId : 'menu-toggle', ENT_QUOTES, 'UTF-8') ?>"
+           data-mobile-menu-toggle="1"
            role="button"
            tabindex="0"
            aria-label="<?= htmlspecialchars($aria, ENT_QUOTES, 'UTF-8') ?>"
