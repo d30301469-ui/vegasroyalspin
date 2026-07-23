@@ -399,7 +399,9 @@ final class AdminDashboardController extends AdminController
             $value = AdminDatabase::pdo()->query($sql)->fetchColumn();
 
             return (float) $value;
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            error_log('[AdminDashboard] scalar query failed: ' . $e->getMessage() . ' | SQL: ' . $sql);
+
             return 0.0;
         }
     }
