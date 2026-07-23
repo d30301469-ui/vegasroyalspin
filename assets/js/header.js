@@ -458,7 +458,7 @@
     function mobileUserHeaderMarkup() {
         return ''
             + '<div class="user-balance-dropdown">'
-            + '  <a class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" href="/profile/deposit-withdraw?openDepositPanel=1" aria-label="Bakiye" role="button" aria-expanded="false" aria-haspopup="true" onclick="event.preventDefault(); if (typeof window.__openMobileBalancePage === \'function\' && window.__openMobileBalancePage(\'deposit\')) return false; if (typeof redirectToDeposit === \'function\') redirectToDeposit(); return false;">'
+            + '  <a class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" href="/profile/deposit-withdraw?openDepositPanel=1" aria-label="Bakiye" role="button" aria-expanded="false" aria-haspopup="true">'
             + '    <div class="hdr-user-info-content-bc">'
             + '      <div class="hdr-user-info-texts-bc ext-1 ellipsis" data-header-balance-main>'
             + '        <p class="balanceAmount"><span id="headerBalanceMain" data-balance-target="headerBalanceMain">0</span><span class="currencySymbol"> ₺</span></p>'
@@ -467,10 +467,55 @@
             + '  </a>'
             + '</div>'
             + '<div class="profileDetails" id="playerCol">'
-            + '  <button type="button" class="userBtn nav-menu-item" id="toggleButton" aria-expanded="false" aria-label="Profil menüsü" onclick="event.preventDefault(); event.stopPropagation(); if (typeof window.__openProfileModalUrl === \'function\' && window.__openProfileModalUrl(\'/profile/details\')) return false; window.location.href=\'/mobile/profile?profile=open&account=profile&page=details\'; return false;">'
+            + '  <button type="button" class="userBtn nav-menu-item" id="toggleButton" aria-expanded="false" aria-label="Profil menüsü">'
             + '    <i class="hdr-user-avatar-icon-bc bc-i-user" aria-hidden="true"></i><span class="backFace" aria-hidden="true"></span>'
             + '  </button>'
             + '</div>';
+    }
+
+    // Mobil avatar/bakiye butonlarına, gerçek sunucu tarafı işaretlemede olduğu gibi
+    // davranan tıklama bağla: önce native mobil profil paneli (mobile/assets/js/profile-panel.js),
+    // yalnızca panel DOM'da yoksa masaüstü tarzı profil modaline düş. Daha önce buradaki
+    // onclick="...__openProfileModalUrl..." doğrudan masaüstü modalini açıyordu ve mobil
+    // panel tamamen devre dışı kalıyordu — bu fonksiyon o regresyonu düzeltir.
+    function bindMobileUserHeaderActions(scope) {
+        if (!scope) return;
+
+        var balanceTrigger = scope.querySelector('#balanceTrigger');
+        if (balanceTrigger) {
+            balanceTrigger.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (typeof window.__openMobileBalancePage === 'function' && window.__openMobileBalancePage('deposit')) {
+                    return;
+                }
+                if (typeof window.redirectToDeposit === 'function') {
+                    window.redirectToDeposit();
+                }
+            });
+        }
+
+        var toggleBtn = scope.querySelector('#toggleButton');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function (e) {
+                var panel = document.getElementById('mprofilePanel');
+                if (panel && typeof window.__openMobileProfilePanel === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (panel.classList.contains('is-open') && typeof window.__closeMobileProfilePanel === 'function') {
+                        window.__closeMobileProfilePanel();
+                    } else {
+                        window.__openMobileProfilePanel();
+                    }
+                    return;
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/details')) {
+                    return;
+                }
+                window.location.href = '/mobile/profile?profile=open&account=profile&page=details';
+            });
+        }
     }
 
     function desktopUserNavMarkup() {
@@ -514,6 +559,7 @@
             var mobileUserWrap = document.querySelector('.mobile-bc-header .hdr-user-bc');
             if (mobileUserWrap) {
                 mobileUserWrap.innerHTML = mobileUserHeaderMarkup();
+                bindMobileUserHeaderActions(mobileUserWrap);
             }
             var guestShortcuts = document.querySelector('.mobile-bc-header .hdr-guest-shortcuts');
             if (guestShortcuts) {
