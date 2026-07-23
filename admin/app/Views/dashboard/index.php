@@ -333,17 +333,19 @@ $showFlashModal = $flash !== '';
                         <?php foreach ((array) $table['rows'] as $row): ?>
                             <?php
                             $fullname = trim((string) ($row['fullname'] ?? ''));
-                            $parts = preg_split('/\s+/', $fullname) ?: [];
-                            $surname = count($parts) > 1 ? end($parts) : '-';
+                            $parts = array_values(array_filter(preg_split('/\s+/', $fullname) ?: [], static fn (string $p): bool => $p !== ''));
+                            $firstName = $parts[0] ?? '-';
+                            $lastName = $parts[1] ?? '';
+                            $displayName = $firstName . ($lastName !== '' ? ' ' . $lastName : '');
                             $status = strtolower((string) ($row['status'] ?? ''));
                             ?>
                             <tr>
                                 <td><?= htmlspecialchars((string) ($row['created_at'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars((string) ($row['method'] ?? 'System'), ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><span class="bw-link"><?= htmlspecialchars((string) ($row['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span></td>
-                                <td><?= htmlspecialchars((string) $surname, ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><span class="bw-link"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></span></td>
+                                <td><?= htmlspecialchars($lastName !== '' ? $lastName : '-', ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($shortMoney($row['amount'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><span class="<?= in_array($status, ['confirmed', 'completed', 'success', 'tamamlandı'], true) ? 'bw-status-ok' : 'bw-status-bad' ?>"><?= htmlspecialchars((string) ($row['status'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span></td>
+                                <td><span class="<?= in_array($status, ['confirmed', 'completed', 'success', 'tamamlandı', 'approved'], true) ? 'bw-status-ok' : 'bw-status-bad' ?>"><?= htmlspecialchars((string) ($row['status'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span></td>
                             </tr>
                         <?php endforeach; ?>
                         <?php if ((array) $table['rows'] === []): ?>
