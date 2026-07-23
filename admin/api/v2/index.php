@@ -27,6 +27,94 @@ if (in_array($normalizedRoute, ['internal/cms-cache-purge', 'internal/cms_cache_
     exit;
 }
 
+// Bonus tablo sifirlama (internal admin endpoint)
+if ($normalizedRoute === 'internal/reset-bonus-claims') {
+    // Sadece admin oturumu ile erisilebilir
+    if (!AdminAuth::check()) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'code' => 401, 'message' => 'Admin oturumu gerekli.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $pdo = AdminDatabase::pdo();
+
+    if ($method === 'GET') {
+        $counts = [];
+        foreach (['bonus_claim_requests', 'user_active_bonuses', 'promocode_requests'] as $t) {
+            try {
+                $counts[$t] = (int) $pdo->query("SELECT COUNT(*) FROM `$t`")->fetchColumn();
+            } catch (Throwable) {
+                $counts[$t] = -1;
+            }
+        }
+        try {
+            $counts['users_bonus_balance'] = (int) $pdo->query('SELECT COUNT(*) FROM users WHERE bonus_balance > 0')->fetchColumn();
+        } catch (Throwable) {
+            $counts['users_bonus_balance'] = -1;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'code' => 200,
+            'message' => 'Mevcut bonus tablo durumu',
+            'data' => $counts,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($method === 'POST') {
+        $body = json_decode(file_get_contents('php://input') ?: '', true) ?: [];
+        $confirm = trim((string) ($body['confirm'] ?? ''));
+
+        if ($confirm !== 'RESET_ALL_BONUS_CLAIMS') {
+            http_response_code(422);
+            echo json_encode([
+                'success' => false,
+                'code' => 422,
+                'message' => 'Onay kodu gerekli. Body: {"confirm": "RESET_ALL_BONUS_CLAIMS"}',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+            $pdo->exec('TRUNCATE TABLE bonus_claim_requests');
+            $pdo->exec('TRUNCATE TABLE user_active_bonuses');
+            $pdo->exec('TRUNCATE TABLE promocode_requests');
+            $updated = $pdo->exec("UPDATE users SET bonus_balance = 0, active_wallet_mode = 'main' WHERE bonus_balance > 0 OR active_wallet_mode = 'bonus'");
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+            $pdo->commit();
+
+            AdminAuth::writeLog(AdminAuth::userName(), 'reset_bonus_claims', 'system', 'success');
+            echo json_encode([
+                'success' => true,
+                'code' => 200,
+                'message' => 'Tum bonus talepleri sifirlandi.',
+                'data' => [
+                    'tables_cleared' => ['bonus_claim_requests', 'user_active_bonuses', 'promocode_requests'],
+                    'users_updated' => $updated,
+                ],
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'code' => 500,
+                'message' => 'Hata: ' . $e->getMessage(),
+            ], JSON_UNESCAPED_UNICODE);
+        }
+        exit;
+    }
+
+    http_response_code(405);
+    echo json_encode(['success' => false, 'code' => 405, 'message' => 'Method not allowed.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // Provider callbacks can arrive via /api/v2/sportsbook-wallet aliases.
 // Handle them here before member/admin route module dispatch to avoid 404.
 if ($method === 'POST' && in_array($route, ['sportsbook-wallet', 'sportsbook_wallet', 'sportsbook-wallet.php', 'sportsbook_callback', 'sportsbook-callback'], true)) {
