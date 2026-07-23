@@ -551,7 +551,38 @@ $memberJwtValidate = static function (PDO $pdo, string $jwt) use ($memberJwtEnsu
     ];
 };
 
-$memberJwtRequireUserId = static function (PDO $pdo) use ($memberEnvelope, $memberJwtExtractBearer, $memberJwtValidate, $memberJwtHasBearerHeader, $memberFrontendTrustUserId): int {
+/**
+ * Bearer/JWT ile doğrulanan istekte PHP session'ı ('loggedin', 'user_id', 'username',
+ * 'email') senkron tutar. Bu olmadan JS tarafı (localStorage JWT) kullanıcıyı
+ * "giriş yapılmış" sanırken, $_SESSION['loggedin']'e bakan sayfalar (profil vb.)
+ * oturumu düşmüş görüp '/' adresine yönlendiriyor — döngüsel "oturum yenileme"
+ * uyarılarının kök nedeni buydu.
+ */
+$memberJwtSyncPhpSession = static function (PDO $pdo, int $userId) use ($memberUserById): void {
+    if (defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION) {
+        return;
+    }
+    if ($userId <= 0) {
+        return;
+    }
+    $alreadySynced = !empty($_SESSION['loggedin']) && (int) ($_SESSION['user_id'] ?? 0) === $userId;
+    if ($alreadySynced) {
+        return;
+    }
+    $_SESSION['loggedin'] = true;
+    $_SESSION['user_id'] = $userId;
+    try {
+        $user = $memberUserById($pdo, $userId);
+    } catch (Throwable) {
+        $user = null;
+    }
+    if (is_array($user)) {
+        $_SESSION['username'] = (string) ($user['username'] ?? ($_SESSION['username'] ?? ''));
+        $_SESSION['email'] = (string) ($user['email'] ?? ($_SESSION['email'] ?? ''));
+    }
+};
+
+$memberJwtRequireUserId = static function (PDO $pdo) use ($memberEnvelope, $memberJwtExtractBearer, $memberJwtValidate, $memberJwtHasBearerHeader, $memberFrontendTrustUserId, $memberJwtSyncPhpSession): int {
     $token = $memberJwtExtractBearer();
     $bearerProvided = $memberJwtHasBearerHeader();
     $sessionUserId = !empty($_SESSION['loggedin']) ? (int) ($_SESSION['user_id'] ?? 0) : 0;
@@ -575,6 +606,7 @@ $memberJwtRequireUserId = static function (PDO $pdo) use ($memberEnvelope, $memb
             if (!headers_sent()) {
                 header('X-Metropol-Auth-Mode: frontend-trust');
             }
+            $memberJwtSyncPhpSession($pdo, $trustedUid);
 
             return $trustedUid;
         }
@@ -595,10 +627,11 @@ $memberJwtRequireUserId = static function (PDO $pdo) use ($memberEnvelope, $memb
     if ($token !== '' && !(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
         $_SESSION['member_jwt'] = $token;
     }
+    $memberJwtSyncPhpSession($pdo, (int) $auth['user_id']);
     return (int) $auth['user_id'];
 };
 
-$memberJwtOptionalUserId = static function (PDO $pdo) use ($memberJwtExtractBearer, $memberJwtValidate, $memberJwtHasBearerHeader): ?int {
+$memberJwtOptionalUserId = static function (PDO $pdo) use ($memberJwtExtractBearer, $memberJwtValidate, $memberJwtHasBearerHeader, $memberJwtSyncPhpSession): ?int {
     $token = $memberJwtExtractBearer();
     if ($token !== '' || $memberJwtHasBearerHeader()) {
         if ($token === '') {
@@ -616,6 +649,7 @@ $memberJwtOptionalUserId = static function (PDO $pdo) use ($memberJwtExtractBear
         if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
             $_SESSION['member_jwt'] = $token;
         }
+        $memberJwtSyncPhpSession($pdo, $userId);
 
         return $userId;
     }
