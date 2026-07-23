@@ -142,6 +142,46 @@ final class AdminBonusClaimController extends AdminController
         $this->redirect(AdminAuth::url('/module?key=bonus-claims'));
     }
 
+    /**
+     * Tüm bonus tablolarını sıfırlar (canlı yayın öncesi temizlik).
+     * POST /bonus-claim/reset-all
+     */
+    public function resetAll(): void
+    {
+        $this->requirePermission('bonus-claims');
+        $this->ensurePost();
+
+        $confirm = trim((string) ($_POST['confirm'] ?? ''));
+        if ($confirm !== 'RESET_ALL_BONUS_CLAIMS') {
+            $this->flash('Onay kodu gerekli. Lütfen "RESET_ALL_BONUS_CLAIMS" yazın.');
+            $this->redirect(AdminAuth::url('/module?key=bonus-claims'));
+        }
+
+        $pdo = AdminDatabase::pdo();
+        $adminUsername = AdminAuth::userName();
+
+        try {
+            $pdo->beginTransaction();
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+            $pdo->exec('TRUNCATE TABLE bonus_claim_requests');
+            $pdo->exec('TRUNCATE TABLE user_active_bonuses');
+            $pdo->exec('TRUNCATE TABLE promocode_requests');
+            $updated = $pdo->exec("UPDATE users SET bonus_balance = 0, active_wallet_mode = 'main' WHERE bonus_balance > 0 OR active_wallet_mode = 'bonus'");
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+            $pdo->commit();
+
+            AdminAuth::writeLog($adminUsername, 'reset_all_bonus_claims', 'system', 'success');
+            $this->flash("Tüm bonus talepleri sıfırlandı. ($updated kullanıcı etkilendi)");
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            $this->flash('Hata: ' . $e->getMessage());
+        }
+
+        $this->redirect(AdminAuth::url('/module?key=bonus-claims'));
+    }
+
     private function ensurePost(): void
     {
         if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
