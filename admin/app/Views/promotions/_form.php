@@ -65,46 +65,88 @@ $currentImage = (string) ($promotion['image_url'] ?? '');
             <label class="field-label" for="promoSortOrder">Sıralama</label>
             <input id="promoSortOrder" class="input" type="number" name="sort_order" value="<?= $val('sort_order', '0') ?>" min="0">
         </div>
+    </div>
 
-        <div class="field">
-            <label class="field-label" for="promoBonusAmount">Bonus tutarı (TL)</label>
-            <input id="promoBonusAmount" class="input" type="number" name="bonus_amount" value="<?= $val('bonus_amount', '0') ?>" min="0" step="0.01">
-        </div>
+    <!-- Bonus Yapılandırması -->
+    <div style="grid-column:1/-1;margin-top:10px;padding-top:10px;border-top:2px solid var(--border);">
+        <h3 style="margin:0 0 10px 0;font-size:15px;font-weight:700">🎁 Bonus Yapılandırması</h3>
+    </div>
 
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:4px 0">
+        <?php
+        $currentBonusType = (string) ($promotion['bonus_type'] ?? '');
+        $displayBonusType = ($currentBonusType === 'fixed') ? '' : $currentBonusType;
+        ?>
         <div class="field">
-            <label class="field-label" for="promoBonusType">Bonus tipi</label>
-            <select id="promoBonusType" class="select" name="bonus_type">
-                <?php
-                $currentBonusType = (string) ($promotion['bonus_type'] ?? '');
-                // 'fixed' eski değerini 'Sabit tutar' olarak göster
-                $displayBonusType = ($currentBonusType === 'fixed') ? '' : $currentBonusType;
-                $bonusTypeOptions = [
-                    '' => 'Sabit tutar (bonus_amount)',
-                    'percentage' => 'Yüzdesel (onaylı yatırım × %)',
-                    'first_deposit_pct' => 'İlk Yatırım Yüzdesi',
-                ];
-                foreach ($bonusTypeOptions as $btVal => $btLabel): ?>
-                    <option value="<?= $text($btVal) ?>"<?= ($displayBonusType === $btVal ? ' selected' : '') ?>><?= $text($btLabel) ?></option>
-                <?php endforeach; ?>
+            <label class="field-label" for="promoBonusType">Bonus tipi <span style="color:var(--danger)">*</span></label>
+            <select id="promoBonusType" class="select" name="bonus_type" onchange="updateBonusForm()">
+                <option value="">Sabit tutar — promosyona özel TL miktarı</option>
+                <option value="percentage"<?= ($displayBonusType === 'percentage' ? ' selected' : '') ?>>Yüzdesel — toplam onaylı yatırımın % değeri</option>
+                <option value="first_deposit_pct"<?= ($displayBonusType === 'first_deposit_pct' ? ' selected' : '') ?>>İlk Yatırım Yüzdesi — sadece ilk yatırımın % değeri</option>
             </select>
-            <small style="display:block;margin-top:6px;color:#667085">Yüzdesel: onaylı yatırım toplamının yüzdesi. İlk Yatırım: sadece ilk onaylı yatırım.</small>
-        </div>
-
-        <div class="field">
-            <label class="field-label" for="promoWagering">Cevrim carpani</label>
-            <input id="promoWagering" class="input" type="number" name="wagering_multiplier" value="<?= $val('wagering_multiplier', '0') ?>" min="0" step="0.1">
-        </div>
-
-        <div class="field" style="grid-column:1/-1">
-            <label class="field-label" for="promoBonusRules">Bonus kurallari (JSON, opsiyonel)</label>
-            <textarea id="promoBonusRules" class="input" name="bonus_rules" rows="6" style="resize:vertical;font-family:monospace;font-size:12px" placeholder='[
-  {"applies_to": "first_deposit", "type": "percentage", "value": 100, "max_amount": 500},
-  {"applies_to": "deposit", "type": "percentage", "value": 50, "max_amount": 250}
-]'><?= $val('bonus_rules') ?></textarea>
-            <small style="display:block;margin-top:6px;color:#667085">
-                applies_to: first_deposit | deposit | any. type: percentage | fixed. value: yüzde veya TL. max_amount: üst limit (opsiyonel).
+            <small id="promoBonusTypeHint" style="display:block;margin-top:6px;color:#667085">
+                <?php if ($displayBonusType === 'first_deposit_pct'): ?>
+                Kullanıcının ilk onaylı yatırımı × yüzde. Örn: 500 TL yatırdıysa %100 = 500 TL bonus.
+                <?php elseif ($displayBonusType === 'percentage'): ?>
+                Kullanıcının tüm onaylı yatırımlarının toplamı × yüzde. Örn: 1000 TL toplam yatırım × %50 = 500 TL bonus.
+                <?php else: ?>
+                Doğrudan TL cinsinden bonus miktarı. Kullanıcının onaylı yatırım toplamından fazla olamaz.
+                <?php endif; ?>
             </small>
         </div>
+
+        <div class="field">
+            <label class="field-label" for="promoBonusAmount">
+                <span id="promoBonusAmountLabel">
+                    <?php if ($displayBonusType === 'first_deposit_pct' || $displayBonusType === 'percentage'): ?>
+                    Bonus yüzdesi (%)
+                    <?php else: ?>
+                    Bonus tutarı (TL)
+                    <?php endif; ?>
+                </span>
+            </label>
+            <input id="promoBonusAmount" class="input" type="number" name="bonus_amount" value="<?= $val('bonus_amount', '0') ?>" min="0" step="0.01">
+            <small id="promoBonusAmountHint" style="display:block;margin-top:6px;color:#667085">
+                <?php if ($displayBonusType === 'first_deposit_pct' || $displayBonusType === 'percentage'): ?>
+                Yüzde değeri girin (1-200). Örn: 100 = %100.
+                <?php else: ?>
+                TL cinsinden sabit bonus miktarı. Onaylı yatırım toplamını aşamaz.
+                <?php endif; ?>
+            </small>
+        </div>
+
+        <div class="field">
+            <label class="field-label" for="promoWagering">Çevrim çarpanı</label>
+            <input id="promoWagering" class="input" type="number" name="wagering_multiplier" value="<?= $val('wagering_multiplier', '1') ?>" min="0" step="0.1">
+            <small style="display:block;margin-top:6px;color:#667085">Bonus × çevrim = çevrilmesi gereken toplam tutar. Örn: 500 TL bonus × 5x = 2.500 TL.</small>
+        </div>
+
+        <div class="field">
+            <label class="field-label" for="promoBonusRulesToggle" style="display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="promoBonusRulesToggle" onchange="toggleBonusRules()" style="width:auto" <?= (trim($val('bonus_rules')) !== '' ? 'checked' : '') ?>>
+                Gelişmiş bonus kuralları (JSON)
+            </label>
+        </div>
+
+        <div class="field" id="promoBonusRulesField" style="grid-column:1/-1;<?= (trim($val('bonus_rules')) !== '' ? '' : 'display:none') ?>">
+            <textarea id="promoBonusRules" class="input" name="bonus_rules" rows="6" style="resize:vertical;font-family:monospace;font-size:12px" placeholder='[
+  {"applies_to": "first_deposit", "type": "percentage", "value": 100, "max_amount": 500}
+]'><?= $val('bonus_rules') ?></textarea>
+            <small style="display:block;margin-top:6px;color:#667085">
+                <strong>applies_to:</strong> first_deposit | deposit | any &nbsp;|&nbsp;
+                <strong>type:</strong> percentage | fixed &nbsp;|&nbsp;
+                <strong>value:</strong> yüzde veya TL &nbsp;|&nbsp;
+                <strong>max_amount:</strong> üst limit (opsiyonel)
+            </small>
+        </div>
+    </div>
+
+    <!-- Görsel -->
+    <div style="grid-column:1/-1;margin-top:10px;padding-top:10px;border-top:2px solid var(--border);">
+        <h3 style="margin:0 0 10px 0;font-size:15px;font-weight:700">🖼️ Görsel</h3>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:4px 0">
 
         <div class="field" style="grid-column:1/-1">
             <label class="field-label" for="promoImageLibrary">Kütüphaneden görsel seç</label>
@@ -153,3 +195,31 @@ $currentImage = (string) ($promotion['image_url'] ?? '');
         <button class="btn btn--primary" type="submit"><?= $isEdit ? 'Guncelle' : 'Kaydet' ?></button>
     </div>
 </form>
+
+<script>
+function updateBonusForm() {
+    var type = document.getElementById('promoBonusType').value;
+    var label = document.getElementById('promoBonusAmountLabel');
+    var hint = document.getElementById('promoBonusAmountHint');
+    var typeHint = document.getElementById('promoBonusTypeHint');
+
+    if (type === 'first_deposit_pct') {
+        label.textContent = 'Bonus yüzdesi (%)';
+        hint.textContent = 'Yüzde değeri girin (1-200). Örn: 100 = %100. İlk yatırım × yüzde = bonus.';
+        typeHint.textContent = 'Kullanıcının ilk onaylı yatırımı × yüzde. Örn: 500 TL yatırdıysa %100 = 500 TL bonus.';
+    } else if (type === 'percentage') {
+        label.textContent = 'Bonus yüzdesi (%)';
+        hint.textContent = 'Yüzde değeri girin (1-200). Örn: 50 = %50. Toplam yatırım × yüzde = bonus.';
+        typeHint.textContent = 'Kullanıcının tüm onaylı yatırımlarının toplamı × yüzde. Örn: 1000 TL toplam yatırım × %50 = 500 TL bonus.';
+    } else {
+        label.textContent = 'Bonus tutarı (TL)';
+        hint.textContent = 'TL cinsinden sabit bonus miktarı. Onaylı yatırım toplamını aşamaz.';
+        typeHint.textContent = 'Doğrudan TL cinsinden bonus miktarı. Kullanıcının onaylı yatırım toplamından fazla olamaz.';
+    }
+}
+
+function toggleBonusRules() {
+    var checked = document.getElementById('promoBonusRulesToggle').checked;
+    document.getElementById('promoBonusRulesField').style.display = checked ? '' : 'none';
+}
+</script>
