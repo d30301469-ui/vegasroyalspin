@@ -7,8 +7,10 @@
         return document.getElementById('mobileMenu');
     }
 
-    function getToggle() {
-        return document.getElementById('menu-toggle');
+    function getToggles() {
+        return Array.prototype.slice.call(document.querySelectorAll(
+            '#menu-toggle, [data-mobile-menu-toggle], .tab-nav-item-bc.menu[aria-controls="mobileMenu"], .mobFooter-item.menu[aria-controls="mobileMenu"]'
+        ));
     }
 
     function getRoot() {
@@ -17,7 +19,7 @@
 
     function setMenuOpenState(isOpen) {
         var menu = getMenu();
-        var toggle = getToggle();
+        var toggles = getToggles();
         var root = getRoot();
 
         menuOpen = isOpen;
@@ -40,10 +42,10 @@
             root.classList.toggle('navigation-is-visible', isOpen);
         }
 
-        if (toggle) {
+        toggles.forEach(function (toggle) {
             toggle.classList.toggle('is-open', isOpen);
             toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        }
+        });
 
         if (typeof window.__syncHeaderStickyTop === 'function') {
             window.requestAnimationFrame(function () {
@@ -55,6 +57,9 @@
     function openMenu(evt) {
         if (evt && typeof evt.preventDefault === 'function') {
             evt.preventDefault();
+        }
+        if (evt && typeof evt.stopPropagation === 'function') {
+            evt.stopPropagation();
         }
         if (menuOpen) {
             return;
@@ -99,19 +104,23 @@
     }
 
     function init() {
-        var toggle = getToggle();
+        var toggles = getToggles();
         var closeBtn = document.getElementById('mobileMenu-close');
         var menu = getMenu();
 
-        if (toggle) {
-            toggle.addEventListener('click', toggleMenu);
+        toggles.forEach(function (toggle) {
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleMenu(e);
+            });
             toggle.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     toggleMenu(e);
                 }
             });
-        }
+        });
         if (closeBtn) {
             closeBtn.addEventListener('click', closeMenu);
         }
