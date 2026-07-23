@@ -18,6 +18,12 @@ admin_paths_bootstrap();
 if (session_status() === PHP_SESSION_NONE
     && !(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
     ini_set('session.use_strict_mode', '1');
+    // Match admin panel session name so AdminAuth::check() works across all paths
+    $__apiSessionName = trim((string) (getenv('ADMIN_SESSION_NAME') ?: 'ADMINSESSID'));
+    if (session_name() !== $__apiSessionName) {
+        session_name($__apiSessionName);
+    }
+    unset($__apiSessionName);
     $cloudflareConfig = admin_project_path('config/cloudflare.php');
     if (admin_is_readable_file($cloudflareConfig)) {
         require_once $cloudflareConfig;
