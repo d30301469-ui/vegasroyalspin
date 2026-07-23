@@ -2440,6 +2440,13 @@
     showBalancePage(panel, sectionName || 'deposit');
     return true;
   };
+  window.__openMobileBetHistoryPage = function (pageName) {
+    var panel = getPanel();
+    if (!panel) return false;
+    if (!openPanel()) return false;
+    showBetHistoryPage(panel, pageName || 'bets');
+    return true;
+  };
   window.__closeMobileProfilePanel = closePanel;
 
   function bind() {

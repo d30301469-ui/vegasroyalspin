@@ -497,10 +497,10 @@
         var toggleBtn = scope.querySelector('#toggleButton');
         if (toggleBtn) {
             toggleBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
                 var panel = document.getElementById('mprofilePanel');
                 if (panel && typeof window.__openMobileProfilePanel === 'function') {
-                    e.preventDefault();
-                    e.stopPropagation();
                     if (panel.classList.contains('is-open') && typeof window.__closeMobileProfilePanel === 'function') {
                         window.__closeMobileProfilePanel();
                     } else {
@@ -508,11 +508,8 @@
                     }
                     return;
                 }
-                e.preventDefault();
-                e.stopPropagation();
-                if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/details')) {
-                    return;
-                }
+                // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — native panel
+                // DOM'da yoksa doğrudan mobil profil sayfasına geç.
                 window.location.href = '/mobile/profile?profile=open&account=profile&page=details';
             });
         }
