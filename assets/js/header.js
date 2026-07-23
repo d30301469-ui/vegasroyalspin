@@ -508,10 +508,14 @@
                         window.location.replace('/?_mp_sync=' + Date.now());
                         return false;
                     }
+                    // Tek denemeden sonra panel hâlâ yoksa user-header yükseltmesini
+                    // engelleme; aksi halde login başarılı olsa bile header guest kalır.
+                    if (window.sessionStorage) {
+                        window.sessionStorage.removeItem(syncKey);
+                    }
                 } catch (eSync) {
                     /* ignore */
                 }
-                return false;
             } else {
                 try {
                     if (window.sessionStorage) {
