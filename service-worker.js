@@ -1,5 +1,5 @@
 /* vegasroyalspin PWA service worker */
-const SW_VERSION = 'v5-maltabet-purge';
+const SW_VERSION = 'v6-mobile-auth-flow-fix';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -62,6 +62,11 @@ function isAuthAppAsset(requestUrl) {
 
   return (
     requestUrl.pathname.startsWith('/assets/js/auth-') ||
+    requestUrl.pathname.startsWith('/assets/js/header') ||
+    requestUrl.pathname.startsWith('/assets/js/footer') ||
+    requestUrl.pathname.startsWith('/mobile/assets/js/mobile-header') ||
+    requestUrl.pathname.startsWith('/mobile/assets/js/profile-panel') ||
+    requestUrl.pathname.startsWith('/mobile/assets/js/navigation') ||
     requestUrl.pathname.startsWith('/assets/js/login') ||
     requestUrl.pathname.startsWith('/assets/js/register') ||
     requestUrl.pathname.startsWith('/assets/js/pwa-register') ||
