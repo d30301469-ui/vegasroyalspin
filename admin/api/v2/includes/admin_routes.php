@@ -892,8 +892,8 @@ $routes = [
         };
         $pdo = AdminDatabase::pdo();
         $stmt = $pdo->prepare(
-            'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, link_url, bonus_amount, wagering_multiplier)
-             VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :link_url, :bonus_amount, :wagering_multiplier)'
+            'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, link_url, bonus_type, bonus_amount, bonus_rules, wagering_multiplier)
+             VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :link_url, :bonus_type, :bonus_amount, :bonus_rules, :wagering_multiplier)'
         );
         $stmt->execute([
             'title' => $title,
@@ -904,7 +904,9 @@ $routes = [
             'sort_order' => (int) ($body['sort_order'] ?? 0),
             'image_url' => $normalizePromotionImageUrl((string) ($body['image_url'] ?? '')),
             'link_url' => $normalizePromotionLinkUrl((string) ($body['link_url'] ?? '')),
+            'bonus_type' => trim((string) ($body['bonus_type'] ?? '')),
             'bonus_amount' => (float) ($body['bonus_amount'] ?? 0),
+            'bonus_rules' => trim((string) ($body['bonus_rules'] ?? '')),
             'wagering_multiplier' => (float) ($body['wagering_multiplier'] ?? 0),
         ]);
         $success(['id' => (int) $pdo->lastInsertId(), 'created' => true]);
@@ -967,7 +969,7 @@ $routes = [
 
             return '/' . ltrim($linkUrl, '/');
         };
-        $fields = ['title', 'description', 'type', 'category', 'status', 'image_url', 'link_url'];
+        $fields = ['title', 'description', 'type', 'category', 'status', 'image_url', 'link_url', 'bonus_type', 'bonus_rules'];
         $sets = [];
         $bind = ['id' => $id];
         foreach ($fields as $field) {

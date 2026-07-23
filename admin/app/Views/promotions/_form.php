@@ -72,8 +72,39 @@ $currentImage = (string) ($promotion['image_url'] ?? '');
         </div>
 
         <div class="field">
+            <label class="field-label" for="promoBonusType">Bonus tipi</label>
+            <select id="promoBonusType" class="select" name="bonus_type">
+                <?php
+                $currentBonusType = (string) ($promotion['bonus_type'] ?? '');
+                $bonusTypeOptions = [
+                    '' => 'Sabit tutar (bonus_amount)',
+                    'percentage' => 'Yüzdesel (onaylı yatırım × %)',
+                    'first_deposit_pct' => 'İlk Yatırım Yüzdesi',
+                ];
+                foreach ($bonusTypeOptions as $btVal => $btLabel): ?>
+                    <option value="<?= $text($btVal) ?>"<?= ($currentBonusType === $btVal ? ' selected' : '') ?>><?= $text($btLabel) ?></option>
+                <?php endforeach; ?>
+                <?php if ($currentBonusType !== '' && !array_key_exists($currentBonusType, $bonusTypeOptions)): ?>
+                    <option value="<?= $text($currentBonusType) ?>" selected><?= $text($currentBonusType) ?> (eski)</option>
+                <?php endif; ?>
+            </select>
+            <small style="display:block;margin-top:6px;color:#667085">Yüzdesel: onaylı yatırım toplamının yüzdesi. İlk Yatırım: sadece ilk onaylı yatırım.</small>
+        </div>
+
+        <div class="field">
             <label class="field-label" for="promoWagering">Cevrim carpani</label>
             <input id="promoWagering" class="input" type="number" name="wagering_multiplier" value="<?= $val('wagering_multiplier', '0') ?>" min="0" step="0.1">
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
+            <label class="field-label" for="promoBonusRules">Bonus kurallari (JSON, opsiyonel)</label>
+            <textarea id="promoBonusRules" class="input" name="bonus_rules" rows="6" style="resize:vertical;font-family:monospace;font-size:12px" placeholder='[
+  {"applies_to": "first_deposit", "type": "percentage", "value": 100, "max_amount": 500},
+  {"applies_to": "deposit", "type": "percentage", "value": 50, "max_amount": 250}
+]'><?= $val('bonus_rules') ?></textarea>
+            <small style="display:block;margin-top:6px;color:#667085">
+                applies_to: first_deposit | deposit | any. type: percentage | fixed. value: yüzde veya TL. max_amount: üst limit (opsiyonel).
+            </small>
         </div>
 
         <div class="field" style="grid-column:1/-1">

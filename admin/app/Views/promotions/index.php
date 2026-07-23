@@ -55,6 +55,7 @@ $badgeClass = static function (string $v): string {
                     <th>Tip</th>
                     <th>Kategori</th>
                     <th>Durum</th>
+                    <th>Bonus Tipi</th>
                     <th>Bonus</th>
                     <th>Çevrim</th>
                     <th>Sıra</th>
@@ -63,7 +64,7 @@ $badgeClass = static function (string $v): string {
             </thead>
             <tbody>
             <?php if ($promotions === []): ?>
-                <tr><td colspan="9">Promosyon bulunamadı.</td></tr>
+                <tr><td colspan="10">Promosyon bulunamadı.</td></tr>
             <?php else: ?>
                 <?php foreach ($promotions as $promo): ?>
                     <tr>
@@ -78,6 +79,15 @@ $badgeClass = static function (string $v): string {
                         <td><?= $text($promo['type'] ?? '-') ?></td>
                         <td><?= $text($promo['category'] ?? '-') ?></td>
                         <td><span class="badge <?= $text($badgeClass((string) ($promo['status'] ?? ''))) ?>"><?= $text($promo['status'] ?? '') ?></span></td>
+                        <td><?php
+                            $bt = (string) ($promo['bonus_type'] ?? '');
+                            $btLabel = match ($bt) {
+                                'percentage' => 'Yüzdesel',
+                                'first_deposit_pct' => 'İlk Yatırım %',
+                                default => ($bt !== '' ? $text($bt) : 'Sabit')
+                            };
+                            echo $text($btLabel);
+                        ?></td>
                         <td><span class="data-cell-mono"><?= $text($money($promo['bonus_amount'] ?? 0)) ?></span></td>
                         <td><?= $text($promo['wagering_multiplier'] ?? 0) ?>x</td>
                         <td><?= $text($promo['sort_order'] ?? 0) ?></td>

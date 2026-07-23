@@ -110,8 +110,8 @@ final class AdminPromotionController extends AdminController
             $imageUrl = $uploadedImageUrl ?? self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
             $linkUrl = self::normalizePromotionLinkUrl((string) ($_POST['link_url'] ?? ''));
             AdminDatabase::pdo()->prepare(
-                'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, link_url, bonus_amount, wagering_multiplier, created_at, updated_at)
-                 VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :link_url, :bonus_amount, :wagering_multiplier, NOW(), NOW())'
+                'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, link_url, bonus_type, bonus_amount, bonus_rules, wagering_multiplier, created_at, updated_at)
+                 VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :link_url, :bonus_type, :bonus_amount, :bonus_rules, :wagering_multiplier, NOW(), NOW())'
             )->execute([
                 'title' => $title,
                 'description' => trim((string) ($_POST['description'] ?? '')),
@@ -121,7 +121,9 @@ final class AdminPromotionController extends AdminController
                 'sort_order' => (int) ($_POST['sort_order'] ?? 0),
                 'image_url' => $imageUrl,
                 'link_url' => $linkUrl,
+                'bonus_type' => trim((string) ($_POST['bonus_type'] ?? '')),
                 'bonus_amount' => (float) ($_POST['bonus_amount'] ?? 0),
+                'bonus_rules' => trim((string) ($_POST['bonus_rules'] ?? '')),
                 'wagering_multiplier' => (float) ($_POST['wagering_multiplier'] ?? 0),
             ]);
             AdminAuth::writeLog(AdminAuth::userName(), 'promotion_create', 'promotions', 'success');
@@ -196,7 +198,8 @@ final class AdminPromotionController extends AdminController
             AdminDatabase::pdo()->prepare(
                 'UPDATE promotions SET title = :title, description = :description, type = :type, category = :category,
                  status = :status, sort_order = :sort_order, image_url = :image_url, link_url = :link_url,
-                 bonus_amount = :bonus_amount, wagering_multiplier = :wagering_multiplier, updated_at = NOW()
+                 bonus_type = :bonus_type, bonus_amount = :bonus_amount, bonus_rules = :bonus_rules,
+                 wagering_multiplier = :wagering_multiplier, updated_at = NOW()
                  WHERE id = :id'
             )->execute([
                 'title' => $title,
@@ -207,7 +210,9 @@ final class AdminPromotionController extends AdminController
                 'sort_order' => (int) ($_POST['sort_order'] ?? 0),
                 'image_url' => $imageUrl,
                 'link_url' => $linkUrl,
+                'bonus_type' => trim((string) ($_POST['bonus_type'] ?? '')),
                 'bonus_amount' => (float) ($_POST['bonus_amount'] ?? 0),
+                'bonus_rules' => trim((string) ($_POST['bonus_rules'] ?? '')),
                 'wagering_multiplier' => (float) ($_POST['wagering_multiplier'] ?? 0),
                 'id' => $id,
             ]);
