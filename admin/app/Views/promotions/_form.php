@@ -76,17 +76,16 @@ $currentImage = (string) ($promotion['image_url'] ?? '');
             <select id="promoBonusType" class="select" name="bonus_type">
                 <?php
                 $currentBonusType = (string) ($promotion['bonus_type'] ?? '');
+                // 'fixed' eski değerini 'Sabit tutar' olarak göster
+                $displayBonusType = ($currentBonusType === 'fixed') ? '' : $currentBonusType;
                 $bonusTypeOptions = [
                     '' => 'Sabit tutar (bonus_amount)',
                     'percentage' => 'Yüzdesel (onaylı yatırım × %)',
                     'first_deposit_pct' => 'İlk Yatırım Yüzdesi',
                 ];
                 foreach ($bonusTypeOptions as $btVal => $btLabel): ?>
-                    <option value="<?= $text($btVal) ?>"<?= ($currentBonusType === $btVal ? ' selected' : '') ?>><?= $text($btLabel) ?></option>
+                    <option value="<?= $text($btVal) ?>"<?= ($displayBonusType === $btVal ? ' selected' : '') ?>><?= $text($btLabel) ?></option>
                 <?php endforeach; ?>
-                <?php if ($currentBonusType !== '' && !array_key_exists($currentBonusType, $bonusTypeOptions)): ?>
-                    <option value="<?= $text($currentBonusType) ?>" selected><?= $text($currentBonusType) ?> (eski)</option>
-                <?php endif; ?>
             </select>
             <small style="display:block;margin-top:6px;color:#667085">Yüzdesel: onaylı yatırım toplamının yüzdesi. İlk Yatırım: sadece ilk onaylı yatırım.</small>
         </div>
