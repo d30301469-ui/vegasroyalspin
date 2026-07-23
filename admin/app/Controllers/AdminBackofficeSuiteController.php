@@ -150,7 +150,7 @@ final class AdminBackofficeSuiteController extends AdminController
                 'reference' => 'domains-management.webp',
                 'localRoute' => '/site-settings',
                 'localLabel' => 'Site ayarları',
-                'nextStep' => 'SSL sertifika durumu ve Cloudflare entegrasyon kontrolü eklenebilir.',,
+                'nextStep' => 'SSL sertifika durumu ve Cloudflare entegrasyon kontrolü eklenebilir.',
             ],
         ];
     }
