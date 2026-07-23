@@ -246,6 +246,7 @@ $router->post('/compliance/risk/resolve', [AdminComplianceController::class, 're
 $router->get('/reports/calendar', [AdminReportController::class, 'calendar']);
 $router->get('/reports/charts', [AdminReportController::class, 'charts']);
 $router->get('/reports/geomap', [AdminSystemController::class, 'googleMaps']);
+$router->get('/compliance/risk-analysis', [AdminRiskController::class, 'index']);
 $router->get('/signin', [AdminAuthController::class, 'login']);
 
 $path = AdminRequest::path();
