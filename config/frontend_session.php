@@ -68,3 +68,67 @@ if (!function_exists('metropol_frontend_session_write_close')) {
         }
     }
 }
+
+if (!function_exists('metropol_frontend_member_restore_cookie_name')) {
+    function metropol_frontend_member_restore_cookie_name(): string
+    {
+        $name = trim((string) (getenv('FRONTEND_MEMBER_RESTORE_COOKIE') ?: 'metropol_member_restore'));
+
+        return $name !== '' ? $name : 'metropol_member_restore';
+    }
+}
+
+if (!function_exists('metropol_frontend_member_restore_cookie_options')) {
+    /** @return array{expires:int,path:string,domain:string,secure:bool,httponly:bool,samesite:string} */
+    function metropol_frontend_member_restore_cookie_options(int $expiresAt): array
+    {
+        $params = session_get_cookie_params();
+
+        return [
+            'expires' => $expiresAt,
+            'path' => (string) ($params['path'] ?? '/'),
+            'domain' => (string) ($params['domain'] ?? ''),
+            'secure' => (bool) ($params['secure'] ?? true),
+            'httponly' => true,
+            'samesite' => (string) ($params['samesite'] ?? 'Lax'),
+        ];
+    }
+}
+
+if (!function_exists('metropol_frontend_set_member_restore_cookie')) {
+    function metropol_frontend_set_member_restore_cookie(string $jwt, int $ttl = 2592000): void
+    {
+        $token = trim($jwt);
+        if ($token === '') {
+            metropol_frontend_clear_member_restore_cookie();
+            return;
+        }
+
+        setcookie(
+            metropol_frontend_member_restore_cookie_name(),
+            $token,
+            metropol_frontend_member_restore_cookie_options(time() + max(300, $ttl))
+        );
+    }
+}
+
+if (!function_exists('metropol_frontend_clear_member_restore_cookie')) {
+    function metropol_frontend_clear_member_restore_cookie(): void
+    {
+        setcookie(
+            metropol_frontend_member_restore_cookie_name(),
+            '',
+            metropol_frontend_member_restore_cookie_options(time() - 3600)
+        );
+
+        // Cleanup older JS-managed fallback cookie too.
+        setcookie('metropol_member_jwt', '', [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'domain' => (string) (session_get_cookie_params()['domain'] ?? ''),
+            'secure' => (bool) (session_get_cookie_params()['secure'] ?? true),
+            'httponly' => false,
+            'samesite' => (string) (session_get_cookie_params()['samesite'] ?? 'Lax'),
+        ]);
+    }
+}
