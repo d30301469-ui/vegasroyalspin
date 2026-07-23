@@ -57,6 +57,39 @@
         btn.style.color = 'inherit';
     }
 
+    function toggleMobileProfilePanelSafely() {
+        var panel = document.getElementById('mprofilePanel');
+        var overlay = document.getElementById('mprofileOverlay');
+        if (!panel || !overlay) {
+            return false;
+        }
+
+        var isOpen = panel.classList.contains('is-open');
+        if (isOpen) {
+            if (typeof window.__closeMobileProfilePanel === 'function') {
+                window.__closeMobileProfilePanel();
+                return true;
+            }
+            overlay.classList.remove('is-open');
+            panel.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+            panel.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('mprofile-open', 'overlay-sliding-is-visible', 'overlaySlidingIsVisible');
+            return true;
+        }
+
+        if (typeof window.__openMobileProfilePanel === 'function') {
+            return !!window.__openMobileProfilePanel();
+        }
+
+        overlay.classList.add('is-open');
+        panel.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        panel.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('mprofile-open', 'overlay-sliding-is-visible', 'overlaySlidingIsVisible');
+        return true;
+    }
+
     // Mobil kullanıcı başlığı (avatar + bakiye) işaretlemesi ve bağlama mantığı.
     // Bu tamamen mobile-header.js'e ait — masaüstü assets/js/header.js sadece
     // window.__mobileUpgradeUserHeader() üzerinden tetikler, hiçbir mobil DOM/markup
@@ -101,13 +134,7 @@
             toggleBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
-                var panel = document.getElementById('mprofilePanel');
-                if (panel && typeof window.__openMobileProfilePanel === 'function') {
-                    if (panel.classList.contains('is-open') && typeof window.__closeMobileProfilePanel === 'function') {
-                        window.__closeMobileProfilePanel();
-                    } else {
-                        window.__openMobileProfilePanel();
-                    }
+                if (toggleMobileProfilePanelSafely()) {
                     return;
                 }
                 // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — native panel henüz
@@ -140,15 +167,16 @@
         var btn = document.getElementById('toggleButton');
         if (!btn) return;
 
-        // Mobile-native profil paneli varsa (profile-panel.js) avatar davranışını o yönetir.
-        if (document.getElementById('mprofilePanel')) return;
-
         function openProfileFromAvatar() {
             if (typeof window.__closeSmartPanel === 'function') {
                 window.__closeSmartPanel();
             }
             if (typeof window.__closeMobileNavMenu === 'function') {
                 window.__closeMobileNavMenu();
+            }
+
+            if (toggleMobileProfilePanelSafely()) {
+                return;
             }
 
             // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — native panel
