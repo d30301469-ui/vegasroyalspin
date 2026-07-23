@@ -494,14 +494,6 @@ final class BackendMemberApiProxy
             $headers[] = 'X-CSRF-Token: ' . $csrf;
         }
 
-        // Forward JWT from the incoming browser request when the PHP session
-        // doesn't persist across instances (common in split-deploy setups).
-        // The JS sends X-Metropol-Member-Jwt from localStorage as a fallback.
-        $browserJwt = trim((string) ($_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? ''));
-        if ($browserJwt !== '') {
-            $headers[] = 'X-Metropol-Member-Jwt: ' . $browserJwt;
-        }
-
         if ($routeNorm !== '' && self::isMemberAuthProxyRoute($routeNorm)) {
             $headers = array_merge($headers, self::buildFrontendProxyTrustHeaders());
         }

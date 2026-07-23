@@ -48,8 +48,14 @@ if (!function_exists('metropol_frontend_session_start')) {
             require_once $cloudflare;
         }
         metropol_frontend_configure_session_security();
-        // Varsayılan PHPSESSID — çoğu sayfa doğrudan session_start() kullanıyor; özel isim
-        // (METROPOL_SID) proxy ile sayfa oturumunu ayırır ve balance 401 üretir.
+        // Use a dedicated session name so frontend and admin sessions never
+        // collide. Admin uses ADMINSESSID; frontend uses FRONTSESSID.
+        // Without this, both share the same cookie on .vegasroyalspin.com
+        // and login state from one overwrites the other.
+        $frontendSessionName = trim((string) (getenv('FRONTEND_SESSION_NAME') ?: 'FRONTSESSID'));
+        if (session_name() !== $frontendSessionName) {
+            session_name($frontendSessionName);
+        }
         session_start();
     }
 }
