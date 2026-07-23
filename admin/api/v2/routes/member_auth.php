@@ -251,6 +251,13 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
         $_SESSION['email'] = (string) ($user['email'] ?? '');
         unset($_SESSION['login_error']);
     }
+    // Track last login time for dashboard stats
+    try {
+        $pdo->prepare('UPDATE users SET last_login_at = NOW() WHERE id = :id')
+            ->execute(['id' => (int) ($user['id'] ?? 0)]);
+    } catch (Throwable) {
+        // Non-critical — don't block login
+    }
     $jwt = '';
     try {
         $jwt = $memberJwtIssue($pdo, $user);
