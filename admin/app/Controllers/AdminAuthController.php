@@ -4,6 +4,26 @@ declare(strict_types=1);
 
 final class AdminAuthController extends AdminController
 {
+    private function loginRequestHasTrustedOrigin(): bool
+    {
+        $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        if ($host === '') {
+            return false;
+        }
+
+        foreach ([(string) ($_SERVER['HTTP_ORIGIN'] ?? ''), (string) ($_SERVER['HTTP_REFERER'] ?? '')] as $candidate) {
+            if ($candidate === '') {
+                continue;
+            }
+            $candidateHost = strtolower((string) (parse_url($candidate, PHP_URL_HOST) ?: ''));
+            if ($candidateHost !== '' && hash_equals($host, $candidateHost)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function login(): void
     {
         if (AdminAuth::check()) {
@@ -26,7 +46,13 @@ final class AdminAuthController extends AdminController
 
     public function authenticate(): void
     {
-        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+        if (!AdminRequest::isPost()) {
+            $_SESSION['admin_login_error'] = 'Oturum doğrulaması başarısız. Lütfen tekrar deneyin.';
+            $this->redirect(AdminAuth::url('/login'));
+        }
+
+        $csrfOk = AdminAuth::verifyCsrf($_POST['_token'] ?? null);
+        if (!$csrfOk && !$this->loginRequestHasTrustedOrigin()) {
             $_SESSION['admin_login_error'] = 'Oturum doğrulaması başarısız. Lütfen tekrar deneyin.';
             $this->redirect(AdminAuth::url('/login'));
         }
