@@ -14,15 +14,7 @@
         if (window.__MEMBER_BOOTSTRAP_STATE__ && window.__MEMBER_BOOTSTRAP_STATE__.logged_in === true) {
             return true;
         }
-        var dynamicShared = resolveShared();
-        if (dynamicShared.getMemberJwt && dynamicShared.getMemberJwt()) {
-            return true;
-        }
-        try {
-            return String(window.localStorage.getItem('metropol_member_jwt') || '').trim() !== '';
-        } catch (eJwt) {
-            return false;
-        }
+        return false;
     }
 
     function openMemberFlowFromRegisterTrigger(isDepositTrigger) {

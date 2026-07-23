@@ -448,11 +448,7 @@
         if (window.__MEMBER_BOOTSTRAP_STATE__ && window.__MEMBER_BOOTSTRAP_STATE__.logged_in === true) {
             return true;
         }
-        var dynamicShared = resolveShared();
-        if (dynamicShared.getMemberJwt && dynamicShared.getMemberJwt()) {
-            return true;
-        }
-        return readStoredMemberJwt() !== '';
+        return false;
     }
 
     function desktopUserNavMarkup() {
