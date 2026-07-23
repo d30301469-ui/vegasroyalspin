@@ -29,10 +29,22 @@ if (in_array($normalizedRoute, ['internal/cms-cache-purge', 'internal/cms_cache_
 
 // Bonus tablo sifirlama (internal admin endpoint)
 if ($normalizedRoute === 'internal/reset-bonus-claims') {
-    // Sadece admin oturumu ile erisilebilir
-    if (!AdminAuth::check()) {
+    // Admin oturumu VEYA shared secret ile erisilebilir
+    $authorized = false;
+    if (AdminAuth::check()) {
+        $authorized = true;
+    } else {
+        // Shared secret header kontrolu
+        $purgeSecret = trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: ''));
+        $provided = trim((string) ($_SERVER['HTTP_X_RESET_SECRET'] ?? ''));
+        if ($purgeSecret !== '' && $provided !== '' && hash_equals($purgeSecret, $provided)) {
+            $authorized = true;
+        }
+    }
+
+    if (!$authorized) {
         http_response_code(401);
-        echo json_encode(['success' => false, 'code' => 401, 'message' => 'Admin oturumu gerekli.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => false, 'code' => 401, 'message' => 'Admin oturumu veya X-Reset-Secret header gerekli.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
