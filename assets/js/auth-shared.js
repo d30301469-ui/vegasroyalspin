@@ -456,6 +456,11 @@
         },
         hydrateMemberJwt: function () {
             var self = this;
+            // Dedup: if a hydration is already in flight, chain onto it
+            // instead of firing duplicate /auth/session requests.
+            if (self.__hydratePromise) {
+                return self.__hydratePromise;
+            }
             if (isLogoutLanding()) {
                 self.clearMemberJwt();
                 w.__USER_LOGGED_IN__ = false;
@@ -487,7 +492,7 @@
             }
 
             var sessionUrl = self.proxyApiUrl('/auth/session');
-            return w.fetch(sessionUrl, {
+            self.__hydratePromise = w.fetch(sessionUrl, {
                 method: 'GET',
                 credentials: 'same-origin',
                 headers: self.memberSessionHeaders({ Accept: 'application/json' })
@@ -516,7 +521,11 @@
                 });
             }).catch(function () {
                 return self.getMemberJwt();
+            }).then(function (result) {
+                self.__hydratePromise = null;
+                return result;
             });
+            return self.__hydratePromise;
         },
         setSubmitButtonLoading: function (submitBtn, loading) {
             if (!submitBtn) {

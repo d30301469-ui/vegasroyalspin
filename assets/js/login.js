@@ -608,16 +608,23 @@
 
         loginForm.addEventListener('submit', function (e) {
             e.preventDefault();
+            // Prevent double-submit from MutationObserver or onclick handlers
+            if (window.__loginSubmitting) {
+                return;
+            }
+            window.__loginSubmitting = true;
             alignLoginFieldErrorsToInputs();
             var username = (loginForm.querySelector('[name="username"]') || {}).value || '';
             var password = (loginForm.querySelector('[name="password"]') || {}).value || '';
             var turnstileToken = loginTurnstileToken();
             if (!username.trim() || !password) {
+                window.__loginSubmitting = false;
                 return;
             }
             if (Shared.hasTurnstile && Shared.hasTurnstile() && !turnstileToken) {
                 showError('Cloudflare doğrulamasını tamamlayın.');
                 ensureLoginTurnstileWidget();
+                window.__loginSubmitting = false;
                 return;
             }
 
@@ -669,6 +676,7 @@
                             ? Shared.applyLoginEnvelope(data)
                             : false;
                         if (!tokenOk) {
+                            window.__loginSubmitting = false;
                             showError('Giriş başarılı ancak oturum token\'ı alınamadı. Sayfayı yenileyip tekrar deneyin.');
                             return;
                         }
@@ -706,11 +714,13 @@
                         }, 1200);
                         return;
                     } else {
+                        window.__loginSubmitting = false;
                         showError(data.message || 'Giriş başarısız.');
                         resetLoginTurnstileWidget();
                     }
                 })
                 .catch(function () {
+                    window.__loginSubmitting = false;
                     setLoading(false);
                     showError(Shared.MSG_CONN || 'Bağlantı hatası. Lütfen tekrar deneyin.');
                     resetLoginTurnstileWidget();
