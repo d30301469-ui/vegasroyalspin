@@ -57,6 +57,85 @@
         btn.style.color = 'inherit';
     }
 
+    // Mobil kullanıcı başlığı (avatar + bakiye) işaretlemesi ve bağlama mantığı.
+    // Bu tamamen mobile-header.js'e ait — masaüstü assets/js/header.js sadece
+    // window.__mobileUpgradeUserHeader() üzerinden tetikler, hiçbir mobil DOM/markup
+    // masaüstü dosyasında bulunmaz. Sunucu tarafı SSR misafir başlığı render edip
+    // istemci JS geçerli bir JWT tespit ettiğinde çalışır (guest→user yükseltmesi).
+    function mobileUserHeaderMarkup() {
+        return ''
+            + '<div class="user-balance-dropdown">'
+            + '  <a class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" href="/profile/deposit-withdraw?openDepositPanel=1" aria-label="Bakiye" role="button" aria-expanded="false" aria-haspopup="true">'
+            + '    <div class="hdr-user-info-content-bc">'
+            + '      <div class="hdr-user-info-texts-bc ext-1 ellipsis" data-header-balance-main>'
+            + '        <p class="balanceAmount"><span id="headerBalanceMain" data-balance-target="headerBalanceMain">0</span><span class="currencySymbol"> ₺</span></p>'
+            + '      </div>'
+            + '    </div>'
+            + '  </a>'
+            + '</div>'
+            + '<div class="profileDetails" id="playerCol">'
+            + '  <button type="button" class="userBtn nav-menu-item" id="toggleButton" aria-expanded="false" aria-label="Profil menüsü">'
+            + '    <i class="hdr-user-avatar-icon-bc bc-i-user" aria-hidden="true"></i><span class="backFace" aria-hidden="true"></span>'
+            + '  </button>'
+            + '</div>';
+    }
+
+    function bindMobileUserHeaderActions(scope) {
+        if (!scope) return;
+
+        var balanceTrigger = scope.querySelector('#balanceTrigger');
+        if (balanceTrigger) {
+            balanceTrigger.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (typeof window.__openMobileBalancePage === 'function' && window.__openMobileBalancePage('deposit')) {
+                    return;
+                }
+                if (typeof window.redirectToDeposit === 'function') {
+                    window.redirectToDeposit();
+                }
+            });
+        }
+
+        var toggleBtn = scope.querySelector('#toggleButton');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var panel = document.getElementById('mprofilePanel');
+                if (panel && typeof window.__openMobileProfilePanel === 'function') {
+                    if (panel.classList.contains('is-open') && typeof window.__closeMobileProfilePanel === 'function') {
+                        window.__closeMobileProfilePanel();
+                    } else {
+                        window.__openMobileProfilePanel();
+                    }
+                    return;
+                }
+                // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — native panel henüz
+                // DOM'da yoksa (ör. oturum senkronu tamamlanmadı), ana sayfaya panelin
+                // kendi açtığı sorgu formatıyla dön: /mobile/profile değil, /?profile=open...
+                // çünkü /mobile/profile oturum senkronu henüz tamamlanmamışsa anında / adresine
+                // geri yönlendirir (bkz. pages/mobile/profile.php loggedin guardı).
+                window.location.href = '/?profile=open&account=profile&page=details';
+            });
+        }
+    }
+
+    // Sunucu SSR misafir başlığı render etti ama istemci JS geçerli JWT tespit ettiğinde
+    // (assets/js/header.js upgradeGuestHeaderIfNeeded()) çağırır. Tüm mobil DOM/markup ve
+    // olay bağlama burada, mobile-header.js'de kalır.
+    window.__mobileUpgradeUserHeader = function () {
+        var mobileUserWrap = document.querySelector('.mobile-bc-header .hdr-user-bc');
+        if (mobileUserWrap) {
+            mobileUserWrap.innerHTML = mobileUserHeaderMarkup();
+            bindMobileUserHeaderActions(mobileUserWrap);
+            initProfileButton();
+        }
+        var guestShortcuts = document.querySelector('.mobile-bc-header .hdr-guest-shortcuts');
+        if (guestShortcuts && guestShortcuts.parentNode) {
+            guestShortcuts.parentNode.removeChild(guestShortcuts);
+        }
+    };
+
     function initMobileAvatarProfileModal() {
         var btn = document.getElementById('toggleButton');
         if (!btn) return;
@@ -73,8 +152,10 @@
             }
 
             // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — native panel
-            // DOM'da yoksa doğrudan mobil profil sayfasına geç.
-            window.location.href = '/mobile/profile?profile=open&account=profile&page=details';
+            // DOM'da yoksa doğrudan mobil profil sayfasına geç (panelin kendi
+            // /?profile=open... formatı; /mobile/profile oturum senkronu
+            // tamamlanmadıysa anında / adresine geri yönlendirir).
+            window.location.href = '/?profile=open&account=profile&page=details';
         }
 
         btn.addEventListener('click', function (e) {

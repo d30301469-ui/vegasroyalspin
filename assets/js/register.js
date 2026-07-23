@@ -40,7 +40,10 @@
                 window.__openMobileProfilePanel();
                 return;
             }
-            window.location.href = '/mobile/profile?profile=open&account=profile&page=details';
+            // Panel henüz DOM'da yoksa (ör. oturum senkronu tamamlanmadı), /mobile/profile
+            // değil ana sayfaya panelin kendi sorgu formatıyla dön — /mobile/profile,
+            // oturum henüz senkronlanmadıysa anında / adresine geri yönlendirir.
+            window.location.href = '/?profile=open&account=profile&page=details';
             return;
         }
         if (isDepositTrigger && typeof window.redirectToDeposit === 'function') {
