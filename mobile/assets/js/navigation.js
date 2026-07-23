@@ -2,6 +2,7 @@
     'use strict';
 
     var menuOpen = false;
+    var Shared = window.BetcoAuthShared || {};
 
     function getMenu() {
         return document.getElementById('mobileMenu');
@@ -131,9 +132,33 @@
                 if (!link || link.getAttribute('href') === '#') {
                     return;
                 }
+                var href = link.getAttribute('href') || '';
+                if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(href)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
                 closeMenu();
             });
         }
+
+        document.addEventListener('click', function (e) {
+            var link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+            if (!link) {
+                return;
+            }
+            var href = (link.getAttribute('href') || '').trim();
+            if (!href || href === '#' || href.indexOf('javascript:') === 0) {
+                return;
+            }
+            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(href)) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.stopImmediatePropagation) {
+                    e.stopImmediatePropagation();
+                }
+            }
+        }, true);
 
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {

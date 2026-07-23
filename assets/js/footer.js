@@ -143,19 +143,27 @@
     }
 
     function redirectToDeposit() {
+        var mobileTarget = "/?profile=open&account=balance&page=deposit";
+        var desktopTarget = "/profile/deposit-withdraw?openDepositPanel=1";
         // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — önce native mobil bakiye paneli.
         if (document.body.classList.contains("mobile-site")) {
+            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(mobileTarget)) {
+                return;
+            }
             if (typeof window.__openMobileBalancePage === "function" && window.__openMobileBalancePage("deposit")) {
                 return;
             }
-            window.location.href = "/?profile=open&account=balance&page=deposit";
+            window.location.href = mobileTarget;
+            return;
+        }
+        if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(desktopTarget)) {
             return;
         }
         // Footer / header deposit butonu ile uyumlu: paneli otomatik aç.
-        if (typeof window.__openProfileModalUrl === "function" && window.__openProfileModalUrl("/profile/deposit-withdraw?openDepositPanel=1")) {
+        if (typeof window.__openProfileModalUrl === "function" && window.__openProfileModalUrl(desktopTarget)) {
             return;
         }
-        window.location.href = "/profile/deposit-withdraw?openDepositPanel=1";
+        window.location.href = desktopTarget;
     }
 
     function openGame(gameId) {
@@ -401,16 +409,24 @@
             betHistoryBtn.addEventListener("click", function (event) {
                 handleSmartPanelAction(event, function () {
                     if (document.body.classList.contains("mobile-site")) {
+                        var mobileHistoryTarget = "/?profile=open&account=history&page=bets";
+                        if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(mobileHistoryTarget)) {
+                            return;
+                        }
                         if (typeof window.__openMobileBetHistoryPage === "function" && window.__openMobileBetHistoryPage("bets")) {
                             return;
                         }
-                        window.location.href = "/?profile=open&account=history&page=bets";
+                        window.location.href = mobileHistoryTarget;
                         return;
                     }
-                    if (typeof window.__openProfileModalUrl === "function" && window.__openProfileModalUrl("/profile/bet-history")) {
+                    var desktopHistoryTarget = "/profile/bet-history";
+                    if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(desktopHistoryTarget)) {
                         return;
                     }
-                    window.location.href = "/profile/bet-history";
+                    if (typeof window.__openProfileModalUrl === "function" && window.__openProfileModalUrl(desktopHistoryTarget)) {
+                        return;
+                    }
+                    window.location.href = desktopHistoryTarget;
                 });
             }, true);
         }

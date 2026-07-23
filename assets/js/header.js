@@ -139,11 +139,15 @@
     }
 
     function redirectToDeposit() {
-        // Header'daki "CÜZDANA BAĞLAN" tıklanınca deposit paneli otomatik açılsın.
-        if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl('/profile/deposit-withdraw?openDepositPanel=1')) {
+        var target = '/profile/deposit-withdraw?openDepositPanel=1';
+        if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(target)) {
             return;
         }
-        window.location.href = '/profile/deposit-withdraw?openDepositPanel=1';
+        // Header'daki "CÜZDANA BAĞLAN" tıklanınca deposit paneli otomatik açılsın.
+        if (typeof window.__openProfileModalUrl === 'function' && window.__openProfileModalUrl(target)) {
+            return;
+        }
+        window.location.href = target;
     }
     window.redirectToDeposit = redirectToDeposit;
 
