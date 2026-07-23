@@ -38,7 +38,9 @@ final class AdminRouter
         $method = strtoupper($method);
         $handler = $this->routes[$method][$path] ?? null;
         if ($handler === null) {
-            http_response_code(404);
+            if (!headers_sent()) {
+                http_response_code(404);
+            }
             (new AdminController())->view('errors/404', ['title' => 'Sayfa bulunamadı'], 'app');
             return;
         }
@@ -48,13 +50,17 @@ final class AdminRouter
         try {
             $controller->$action();
         } catch (InvalidArgumentException $exception) {
-            http_response_code(404);
+            if (!headers_sent()) {
+                http_response_code(404);
+            }
             (new AdminController())->view('errors/404', [
                 'title' => 'Sayfa bulunamadı',
                 'errorMessage' => $exception->getMessage(),
             ], 'app');
         } catch (Throwable $exception) {
-            http_response_code(500);
+            if (!headers_sent()) {
+                http_response_code(500);
+            }
             (new AdminController())->view('errors/500', [
                 'title' => 'Sunucu hatası',
                 'errorMessage' => $exception->getMessage(),
