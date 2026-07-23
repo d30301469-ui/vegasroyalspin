@@ -29,7 +29,9 @@
         if (Shared.isLogoutLanding && Shared.isLogoutLanding()) {
             return false;
         }
-        return window.__USER_LOGGED_IN__ === true;
+        return Shared.phpSessionLoggedIn
+            ? Shared.phpSessionLoggedIn()
+            : window.__USER_LOGGED_IN__ === true;
     }
 
     function shouldRunHeartbeat() {
@@ -169,8 +171,7 @@
             var storedJwt = Shared.getMemberJwt ? Shared.getMemberJwt() : '';
             if (storedJwt !== '' && Shared.hydrateMemberJwt) {
                 Shared.hydrateMemberJwt().then(function (token) {
-                    if (token !== '') {
-                        window.__USER_LOGGED_IN__ = true;
+                    if (token !== '' && phpSessionActive()) {
                         window.__HAS_MEMBER_JWT__ = true;
                     }
                 }).finally(start);

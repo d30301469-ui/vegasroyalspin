@@ -398,14 +398,13 @@
         if (Shared.isLogoutLanding && Shared.isLogoutLanding()) {
             return;
         }
-        if (window.__USER_LOGGED_IN__ !== true) {
+        if (!memberLoggedIn()) {
             // PHP session may not persist in load-balanced setups.
             // If we have a JWT in localStorage, try hydration first.
             var storedJwt = Shared.getMemberJwt ? Shared.getMemberJwt() : '';
             if (storedJwt !== '' && Shared.hydrateMemberJwt) {
                 Shared.hydrateMemberJwt().then(function (token) {
-                    if (token !== '') {
-                        window.__USER_LOGGED_IN__ = true;
+                    if (token !== '' && memberLoggedIn()) {
                         window.__HAS_MEMBER_JWT__ = true;
                     }
                 }).finally(start);
