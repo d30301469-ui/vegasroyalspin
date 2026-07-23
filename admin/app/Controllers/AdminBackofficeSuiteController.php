@@ -27,11 +27,14 @@ final class AdminBackofficeSuiteController extends AdminController
             ],
             'liveMetrics' => [
                 ['label' => 'Toplam üye', 'value' => $this->scalar('SELECT COUNT(*) FROM users')],
+                ['label' => 'Bekleyen yatırım', 'value' => $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'pending'")],
                 ['label' => 'Bekleyen çekim', 'value' => $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'pending'")],
                 ['label' => 'Bekleyen KYC', 'value' => $this->scalar("SELECT COUNT(*) FROM kyc_requests WHERE status = 'pending'")],
                 ['label' => 'Açık destek', 'value' => $this->scalar("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','answered')")],
                 ['label' => 'AML uyarısı', 'value' => $this->scalar("SELECT COUNT(*) FROM aml_alerts WHERE status = 'open'")],
+                ['label' => 'Bonus talebi', 'value' => $this->scalar("SELECT COUNT(*) FROM bonus_claim_requests WHERE status IN ('pending','requested','waiting')")],
                 ['label' => 'Aktif içerik', 'value' => $this->scalar("SELECT COUNT(*) FROM promotions WHERE status IN ('active', 'published', '1')") + $this->scalar("SELECT COUNT(*) FROM sliders WHERE status IN ('active', 'published', '1')")],
+                ['label' => 'Toplam bakiye', 'value' => (float) $this->scalar('SELECT COALESCE(SUM(balance), 0) FROM users'), 'format' => 'money'],
             ],
         ]);
     }
