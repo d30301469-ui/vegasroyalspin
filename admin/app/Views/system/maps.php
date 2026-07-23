@@ -108,26 +108,3 @@ foreach ($countryData as $c) {
     </div>
 </div>
 </section>
-            </div>
-        </div>
-    </section>
-    <section class="col-4 card">
-        <div class="card-head">
-            <div class="card-title-wrap">
-                <span class="eyebrow">Top locations</span>
-                <h2 class="card-title">Visitor logs</h2>
-            </div>
-        </div>
-        <table class="table">
-            <thead><tr><th>Konum</th><th style="text-align:right">Ziyaret</th></tr></thead>
-            <tbody>
-            <?php foreach ($locations as $location): ?>
-                <tr>
-                    <td class="cell-name"><?= htmlspecialchars((string) ($location['country_name'] ?? '') . ' · ' . (string) ($location['city'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td class="cell-price pos"><?= (int) ($location['total'] ?? 0) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </section>
-</div>
