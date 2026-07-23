@@ -352,11 +352,17 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
         $jwt = $memberJwtIssue($pdo, $user);
         if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
             $_SESSION['member_jwt'] = $jwt;
+            if (function_exists('metropol_frontend_set_member_restore_cookie')) {
+                metropol_frontend_set_member_restore_cookie($jwt);
+            }
         }
     } catch (Throwable $jwtError) {
         error_log('[member_auth/login] JWT issue failed: ' . $jwtError->getMessage());
         if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
             unset($_SESSION['member_jwt']);
+            if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
+                metropol_frontend_clear_member_restore_cookie();
+            }
         }
     }
     if ($jwt === '') {
@@ -551,11 +557,17 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
         ]);
         if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
             $_SESSION['member_jwt'] = $jwt;
+            if (function_exists('metropol_frontend_set_member_restore_cookie')) {
+                metropol_frontend_set_member_restore_cookie($jwt);
+            }
         }
     } catch (Throwable $jwtError) {
         error_log('[member_auth/register] JWT issue failed: ' . $jwtError->getMessage());
         if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
             unset($_SESSION['member_jwt']);
+            if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
+                metropol_frontend_clear_member_restore_cookie();
+            }
         }
     }
     if ($jwt === '') {
@@ -598,6 +610,9 @@ if ($method === 'GET' && ($route === 'session.php' || $route === 'auth/session')
                     'email' => (string) ($_SESSION['email'] ?? ''),
                 ]);
                 $_SESSION['member_jwt'] = $sessionToken;
+                if (function_exists('metropol_frontend_set_member_restore_cookie')) {
+                    metropol_frontend_set_member_restore_cookie($sessionToken);
+                }
             } catch (Throwable) {
                 $sessionToken = '';
             }
@@ -657,6 +672,9 @@ if ($method === 'POST' && $route === 'auth/refresh') {
     $jwt = $memberJwtIssue($pdo, $user);
     if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
         $_SESSION['member_jwt'] = $jwt;
+        if (function_exists('metropol_frontend_set_member_restore_cookie')) {
+            metropol_frontend_set_member_restore_cookie($jwt);
+        }
     }
     $memberEnvelope(200, [
         'success' => true,
@@ -735,6 +753,9 @@ if ($method === 'POST' && ($route === 'logout.php' || $route === 'auth/logout'))
     }
     if ($ref !== null) {
         $_SESSION['referral_code'] = $ref;
+    }
+    if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
+        metropol_frontend_clear_member_restore_cookie();
     }
     $memberEnvelope(200, [
         'success' => true,
