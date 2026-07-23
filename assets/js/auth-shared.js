@@ -201,6 +201,12 @@
         if (csrf) {
             h['X-CSRF-Token'] = csrf;
         }
+        // Send JWT from localStorage as fallback for split-deploy setups
+        // where the PHP session may not persist across server instances.
+        var jwt = Shared.getMemberJwt();
+        if (jwt) {
+            h['X-Metropol-Member-Jwt'] = jwt;
+        }
         return h;
     }
 
@@ -473,7 +479,9 @@
                 if (!recentLogin && self.getMemberJwt() === '') {
                     self.clearMemberJwt();
                 }
-                if (!recentLogin) {
+                // Only bail out if we have no JWT at all; if we have one
+                // (e.g. just stored by login before reload), try /auth/session.
+                if (!recentLogin && self.getMemberJwt() === '') {
                     return Promise.resolve('');
                 }
             }
@@ -618,9 +626,17 @@
             ? w.__MEMBER_JWT_BOOTSTRAP__.trim()
             : '';
         var phpLoggedIn = phpSessionLoggedIn();
+        var storedJwt = Shared.getMemberJwt();
 
         if (bootstrapJwt !== '' && phpLoggedIn) {
             Shared.setMemberJwt(bootstrapJwt);
+            w.__HAS_MEMBER_JWT__ = true;
+            return;
+        }
+
+        // Preserve JWT from localStorage across page reloads — the PHP
+        // session may not persist in load-balanced deployments.
+        if (storedJwt !== '') {
             w.__HAS_MEMBER_JWT__ = true;
             return;
         }
@@ -683,6 +699,28 @@
             return;
         }
         if (!phpSessionLoggedIn()) {
+            // If we have a stored JWT (e.g. just logged in before reload),
+            // try to validate it via /auth/session instead of giving up.
+            if (Shared.getMemberJwt() !== '') {
+                Shared.hydrateMemberJwt().then(function (token) {
+                    if (token !== '') {
+                        w.__USER_LOGGED_IN__ = true;
+                        w.__HAS_MEMBER_JWT__ = true;
+                        if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
+                            w.MetropolMemberConsole.fetchAll();
+                        }
+                        return;
+                    }
+                    w.__USER_LOGGED_IN__ = false;
+                    w.__HAS_MEMBER_JWT__ = false;
+                    Shared.clearMemberJwt();
+                }).catch(function () {
+                    w.__USER_LOGGED_IN__ = false;
+                    w.__HAS_MEMBER_JWT__ = false;
+                    Shared.clearMemberJwt();
+                });
+                return;
+            }
             w.__USER_LOGGED_IN__ = false;
             w.__HAS_MEMBER_JWT__ = false;
             Shared.clearMemberJwt();
