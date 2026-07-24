@@ -92,72 +92,72 @@ $siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding 
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/sagaming/logo.png"
-                                                            alt="undefined" id="img-0"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/amigogaming/logo.png"
-                                                            alt="undefined" id="img-1"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/evolution/logo.png"
-                                                            alt="undefined" id="img-2"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/betgames/logo.png"
-                                                            alt="undefined" id="img-3"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/vivogaming/logo.png"
-                                                            alt="undefined" id="img-4"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/lottoinstantwin/logo.png"
-                                                            alt="undefined" id="img-5"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/mascot/logo.png"
-                                                            alt="undefined" id="img-6"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/redtiger/logo.png"
-                                                            alt="undefined" id="img-7"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/superspadegames/logo.png"
-                                                            alt="undefined" id="img-8"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/iconic21/logo.png"
-                                                            alt="undefined" id="img-9"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/pragmaticplaylive/logo.png"
-                                                            alt="undefined" id="img-10"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/xprogaming/logo.png"
-                                                            alt="undefined" id="img-11"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/pgsoft/logo.png"
-                                                            alt="undefined" id="img-12"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/ezugi/logo.png"
-                                                            alt="undefined" id="img-13"></a></li>
+                                                            alt="undefined"></a></li>
                                             </ul>
                                         </div>
                                     </div>
@@ -173,162 +173,162 @@ $siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding 
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/pragmaticplay/logo.png"
-                                                            alt="undefined" id="img-0"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/349420.png"
-                                                            alt="undefined" id="img-1"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/103729.png"
-                                                            alt="undefined" id="img-2"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/spribe/logo.png"
-                                                            alt="undefined" id="img-3"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/aviatrix/logo.png"
-                                                            alt="undefined" id="img-4"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/blueprint/logo.png"
-                                                            alt="undefined" id="img-5"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/revolvergaming/logo.png"
-                                                            alt="undefined" id="img-6"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/bgaming/logo.png"
-                                                            alt="undefined" id="img-7"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/729161.png"
-                                                            alt="undefined" id="img-8"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/apparat/logo.png"
-                                                            alt="undefined" id="img-9"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/triplecherry/logo.png"
-                                                            alt="undefined" id="img-10"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/gamebeat/logo.png"
-                                                            alt="undefined" id="img-12"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/682736.png"
-                                                            alt="undefined" id="img-13"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/842539.png"
-                                                            alt="undefined" id="img-14"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/640474.png"
-                                                            alt="undefined" id="img-15"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/87676.png"
-                                                            alt="undefined" id="img-16"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/zeusplay/logo.png"
-                                                            alt="undefined" id="img-17"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/netent/logo.png"
-                                                            alt="undefined" id="img-18"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/23632.png"
-                                                            alt="undefined" id="img-19"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/onetouch/logo.png"
-                                                            alt="undefined" id="img-20"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/elbet/logo.png"
-                                                            alt="undefined" id="img-21"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/755954.png"
-                                                            alt="undefined" id="img-22"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/539140.png"
-                                                            alt="undefined" id="img-23"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/quickspin/logo.png"
-                                                            alt="undefined" id="img-24"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/234813.png"
-                                                            alt="undefined" id="img-25"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/prod/v2-dashboard-pi/casino-provider/20230822/711467.png"
-                                                            alt="undefined" id="img-26"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/betsoft/logo.png"
-                                                            alt="undefined" id="img-27"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/belatragames/logo.png"
-                                                            alt="undefined" id="img-28"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/threeoaks/logo.png"
-                                                            alt="undefined" id="img-29"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/igrosoft/logo.png"
-                                                            alt="undefined" id="img-30"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/spadegaming/logo.png"
-                                                            alt="undefined" id="img-31"></a></li>
+                                                            alt="undefined"></a></li>
                                                 <li><a
  href="javascript:void(0)"><img
  loading="lazy"
                                                             src="https://s3.ap-south-1.amazonaws.com/assets.iceexchange.com/pi-casino-df-img/slg/turbogames/logo.png"
-                                                            alt="undefined" id="img-32"></a></li>
+                                                            alt="undefined"></a></li>
                                             </ul>
                                         </div>
                                     </div>
