@@ -418,6 +418,11 @@ final class ApiSliders
     {
         $apiOnly = function_exists('frontend_is_api_only') && frontend_is_api_only();
         $local = $apiOnly ? [] : self::fetchFromDatabase($query);
+        if (!$apiOnly && (defined('METROPOL_ADMIN_PANEL') && METROPOL_ADMIN_PANEL)) {
+            // Admin/backend host: slider kaynagi her zaman lokal DB olsun.
+            // Remote fallback yeni admin kayitlarini stale upstream ile ezmesin.
+            return $local;
+        }
         if (!$apiOnly && $local !== []) {
             return $local;
         }
