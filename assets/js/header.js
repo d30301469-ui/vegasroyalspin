@@ -205,20 +205,8 @@
             if (!wrap.contains(e.relatedTarget)) scheduleClose();
         });
 
-        /* CÜZDANA BAĞLAN butonu tıklamasıyla da aç/kapat */
-        if (trigger) {
-            trigger.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                nav.classList.contains('hidesection') ? show() : hide();
-            });
-            trigger.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    nav.classList.contains('hidesection') ? show() : hide();
-                }
-            });
-        }
+        /* CÜZDANA BAĞLAN tiklamasi inline onclick (redirectToDeposit) tarafindan yonetilir.
+           Burada sadece hover ile dropdown acma/kapama yapilir, cakisma onlenir. */
 
         window.addEventListener('resize', debounce(function () {
             if (!nav.classList.contains('hidesection')) positionMenu();
@@ -293,11 +281,8 @@
         window.addEventListener('resize', debounce(function () {
             if (!nav.classList.contains('hidesection')) positionNav();
         }, 150));
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            nav.classList.contains('hidesection') ? show() : hide();
-        });
+        // #toggleButton tiklama islemi inline onclick (profil modali) tarafindan yonetilir.
+        // Burada sadece hover ile dropdown acma/kapama yapilir, cakisma onlenir.
         document.addEventListener('click', function (e) {
             if (hoverZone.contains(e.target) || nav.contains(e.target)) return;
             hide();
@@ -457,14 +442,14 @@
             + '<div class="nav-menu-container header-user-nav">'
             + '  <ul class="nav-menu-other hdr-balance-nav">'
             + '    <li id="depositBalanceWrap">'
-            + '      <a href="/profile/deposit-withdraw?openDepositPanel=1" class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" role="button" aria-expanded="false" aria-haspopup="true" onclick="event.preventDefault(); if (typeof redirectToDeposit === \'function\') redirectToDeposit(); return false;">'
+            + '      <a href="/profile/deposit-withdraw?openDepositPanel=1" class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" role="button" aria-expanded="false" aria-haspopup="true" onclick="event.preventDefault(); (function tryOpen(){if(typeof redirectToDeposit===\'function\'){redirectToDeposit();return;}if(typeof window.__openProfileModalUrl===\'function\'&&window.__openProfileModalUrl(\'/profile/deposit-withdraw?openDepositPanel=1\'))return;var a=this;if(!a._retries)a._retries=0;if(++a._retries<5){setTimeout(function(){tryOpen.call(a);},200);return;}window.location.href=a.getAttribute(\'href\')||\'/profile/deposit-withdraw?openDepositPanel=1\';}).call(this); return false;">'
             + '        <div class="hdr-user-info-content-bc"><span class="hdr-user-info-texts-bc ext-1 ellipsis"><span class="balanceAmount"><span id="headerBalanceMain" data-balance-target="headerBalanceMain">0</span><span class="currencySymbol">&#8239;₺</span></span></span></div>'
             + '      </a>'
             + '    </li>'
             + '  </ul>'
             + '  <ul class="nav-menu-other profileDetails">'
             + '    <li><div class="user-nav-icon playerCol" id="playerCol">'
-            + '      <button class="userBtn nav-menu-item" id="toggleButton" type="button" aria-expanded="false" aria-label="Profil menüsü" onclick="event.preventDefault(); event.stopPropagation(); if (typeof window.__openProfileModalUrl === \'function\' && window.__openProfileModalUrl(\'/profile/details\')) return false; window.location.href=\'/profile/details\'; return false;">'
+            + '      <button class="userBtn nav-menu-item" id="toggleButton" type="button" aria-expanded="false" aria-label="Profil menüsü" onclick="event.preventDefault();event.stopPropagation();(function tryOpen(){if(typeof window.__openProfileModalUrl===\'function\'&&window.__openProfileModalUrl(\'/profile/details\'))return;var b=this;if(!b._retries)b._retries=0;if(++b._retries<8){setTimeout(function(){tryOpen.call(b);},250);return;}window.location.href=\'/profile/details\';}).call(this);return false;">'
             + '        <span class="avatarHolderImg"><i class="bc-i-user hdr-user-avatar-icon-bc" aria-hidden="true"></i></span>'
             + '      </button>'
             + '    </div></li>'
