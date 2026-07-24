@@ -1,5 +1,5 @@
 /* vegasroyalspin PWA service worker */
-const SW_VERSION = 'v11-mobile-flow-consistency-pack';
+const SW_VERSION = 'v12-mobile-root-fix-hard-cache-clear';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -25,7 +25,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key.startsWith('vrs-static-') && key !== STATIC_CACHE)
+          .filter((key) => key !== STATIC_CACHE)
           .map((key) => caches.delete(key))
       )
     )
@@ -64,6 +64,8 @@ function isAuthAppAsset(requestUrl) {
     requestUrl.pathname.startsWith('/assets/js/auth-') ||
     requestUrl.pathname.startsWith('/assets/js/header') ||
     requestUrl.pathname.startsWith('/assets/js/footer') ||
+    requestUrl.pathname.startsWith('/assets/js/slot') ||
+    requestUrl.pathname.startsWith('/assets/js/play-page') ||
     requestUrl.pathname.startsWith('/mobile/assets/js/mobile-header') ||
     requestUrl.pathname.startsWith('/mobile/assets/js/profile-panel') ||
     requestUrl.pathname.startsWith('/mobile/assets/js/navigation') ||
@@ -75,6 +77,22 @@ function isAuthAppAsset(requestUrl) {
     requestUrl.pathname.startsWith('/mobile/assets/css/auth-modals')
   );
 }
+
+self.addEventListener('message', (event) => {
+  if (!event || !event.data || event.data.type !== 'CLEAR_ALL_CACHES') {
+    return;
+  }
+
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+      .then(() => self.clients.matchAll({ includeUncontrolled: true }))
+      .then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'CACHES_CLEARED', version: SW_VERSION });
+        });
+      })
+  );
+});
 
 function isCriticalModalAsset(requestUrl) {
   if (requestUrl.origin !== self.location.origin) {
