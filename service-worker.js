@@ -1,5 +1,5 @@
 /* vegasroyalspin PWA service worker */
-const SW_VERSION = 'v15-mobile-same-tab-launch-fix';
+const SW_VERSION = 'v16-mobile-launch-path-parity';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -64,6 +64,8 @@ function isAuthAppAsset(requestUrl) {
     requestUrl.pathname.startsWith('/assets/js/auth-') ||
     requestUrl.pathname.startsWith('/assets/js/header') ||
     requestUrl.pathname.startsWith('/assets/js/footer') ||
+    requestUrl.pathname.startsWith('/assets/js/home') ||
+    requestUrl.pathname.startsWith('/assets/js/favorites-drawer') ||
     requestUrl.pathname.startsWith('/assets/js/slot') ||
     requestUrl.pathname.startsWith('/assets/js/play-page') ||
     requestUrl.pathname.startsWith('/mobile/assets/js/mobile-header') ||

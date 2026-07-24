@@ -1957,7 +1957,7 @@
     list.innerHTML = tabs + '<div class="mprofile-freespin-list">' + rows.map(function (row) {
       var gameIdentifier = String(row.game_identifier || '').trim();
       var launchGameId = gameIdentifier && gameIdentifier.indexOf('bgaming:') !== 0 ? 'bgaming:' + gameIdentifier : gameIdentifier;
-      var launchUrl = launchGameId ? '/play?game_id=' + encodeURIComponent(launchGameId) + '&mode=real&wallet=main' : '';
+      var launchUrl = launchGameId ? '/play?game_id=' + encodeURIComponent(launchGameId) + '&mode=real&wallet=main&open_mode=redirect' : '';
       var rowStatus = String(row.status || '').toLowerCase();
       var playable = launchUrl && (rowStatus === 'active' || rowStatus === 'new');
       return '<article class="mprofile-freespin-card">'

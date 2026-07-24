@@ -169,13 +169,32 @@
     function openGame(gameId) {
         if (!gameId) return;
         var url = "/play?game_id=" + encodeURIComponent(gameId) + "&mode=real&wallet=main";
+        var isMobileSite = !!(document.body && document.body.classList.contains("mobile-site"));
+        if (!isMobileSite) {
+            var hasTouch = (navigator.maxTouchPoints || 0) > 0;
+            var narrowViewport = !!(window.matchMedia && window.matchMedia('(max-width: 1024px)').matches);
+            isMobileSite = hasTouch && narrowViewport;
+        }
+        function normalizePlayLaunchUrl(targetUrl) {
+            var finalUrl = String(targetUrl || "");
+            if (!isMobileSite) {
+                return finalUrl;
+            }
+            try {
+                var parsed = new URL(finalUrl, window.location.origin);
+                parsed.searchParams.set('open_mode', 'redirect');
+                return parsed.pathname + parsed.search + parsed.hash;
+            } catch (e) {
+                return finalUrl + (finalUrl.indexOf('?') === -1 ? '?' : '&') + 'open_mode=redirect';
+            }
+        }
         if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === "function") {
             window.MaltabetWalletPicker.launch(url, function (finalUrl) {
-                window.location.href = finalUrl;
+                window.location.href = normalizePlayLaunchUrl(finalUrl);
             });
             return;
         }
-        window.location.href = url;
+        window.location.href = normalizePlayLaunchUrl(url);
     }
 
     function initFooterLanguageDropdown() {

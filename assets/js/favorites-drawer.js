@@ -21,6 +21,30 @@
         return !!window.__USER_LOGGED_IN__;
     }
 
+    function isMobileLaunchMode() {
+        var hasMobileClass = !!(document.body && document.body.classList.contains('mobile-site'));
+        if (hasMobileClass) {
+            return true;
+        }
+        var hasTouch = (navigator.maxTouchPoints || 0) > 0;
+        var narrowViewport = !!(window.matchMedia && window.matchMedia('(max-width: 1024px)').matches);
+        return hasTouch && narrowViewport;
+    }
+
+    function normalizePlayLaunchUrl(url) {
+        var targetUrl = String(url || '');
+        if (!isMobileLaunchMode()) {
+            return targetUrl;
+        }
+        try {
+            var parsed = new URL(targetUrl, window.location.origin);
+            parsed.searchParams.set('open_mode', 'redirect');
+            return parsed.pathname + parsed.search + parsed.hash;
+        } catch (e) {
+            return targetUrl + (targetUrl.indexOf('?') === -1 ? '?' : '&') + 'open_mode=redirect';
+        }
+    }
+
     function getDrawerRoot() {
         return document.getElementById("favoritesDrawer");
     }
@@ -119,13 +143,13 @@
             if (code) {
                 var play = document.createElement("a");
                 play.className = "favorites-game-row__play";
-                play.href = "/play?game_id=" + encodeURIComponent(code) + "&mode=real&wallet=main";
+                play.href = normalizePlayLaunchUrl("/play?game_id=" + encodeURIComponent(code) + "&mode=real&wallet=main");
                 play.textContent = "Oyna";
                 play.addEventListener("click", function (e) {
                     if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === "function") {
                         e.preventDefault();
                         window.MaltabetWalletPicker.launch(play.href, function (finalUrl) {
-                            window.location.href = finalUrl;
+                            window.location.href = normalizePlayLaunchUrl(finalUrl);
                         });
                     }
                 });
