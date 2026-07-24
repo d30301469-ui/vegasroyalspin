@@ -366,6 +366,36 @@
         clearMemberJwt: function () {
             this.setMemberJwt('');
         },
+        logout: function () {
+            var self = this;
+            var savedJwt = self.getMemberJwt();
+            var logoutUrl = self.proxyApiUrl('/auth/logout');
+            var headers = self.memberSessionHeaders({
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            });
+            if (savedJwt) {
+                headers['X-Metropol-Member-Jwt'] = savedJwt;
+                headers.Authorization = 'Bearer ' + savedJwt;
+            }
+
+            self.clearMemberJwt();
+            w.__USER_LOGGED_IN__ = false;
+            w.__HAS_MEMBER_JWT__ = false;
+            w.__MEMBER_JWT_BOOTSTRAP__ = '';
+
+            return w.fetch(logoutUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: headers,
+                body: '{}'
+            }).catch(function () {
+                return null;
+            }).then(function () {
+                w.location.href = '/?logout=1';
+                return true;
+            });
+        },
         memberApiBase: memberApiBase,
         isBootstrapRoute: isBootstrapRoute,
         proxyApiUrl: function (path) {
@@ -848,6 +878,19 @@
     }
 
     Shared.onReady(function () {
+        document.addEventListener('click', function (e) {
+            var logoutLink = e.target && e.target.closest ? e.target.closest('a[href="/logout"], .pl-link-logout, .userLogoutBtn') : null;
+            if (!logoutLink) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) {
+                e.stopImmediatePropagation();
+            }
+            Shared.logout();
+        }, true);
+
         if (isLogoutLanding()) {
             handleLogoutQuery();
             return;
