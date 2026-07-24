@@ -505,6 +505,18 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
             });
         }
         http_response_code(200);
+        $dbDiag = null;
+        try {
+            if (class_exists('AdminDatabase', false)) {
+                $diagPdo = AdminDatabase::pdo();
+                $dbDiag = [
+                    'db' => (string) $diagPdo->query('SELECT DATABASE()')->fetchColumn(),
+                    'raw_count' => (int) $diagPdo->query('SELECT COUNT(*) FROM sliders')->fetchColumn(),
+                    'raw_rows' => $diagPdo->query('SELECT id, title, category, status, is_active, start_date, starts_at, end_date, ends_at FROM sliders ORDER BY id DESC LIMIT 15')->fetchAll(PDO::FETCH_ASSOC),
+                ];
+            }
+        } catch (Throwable) {}
+
         echo json_encode([
             'success' => true,
             'code' => 200,
@@ -516,6 +528,7 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
                 'total' => count($sliders),
                 'sliders' => $sliders,
             ],
+            '_db' => $dbDiag,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     } catch (Throwable $exception) {

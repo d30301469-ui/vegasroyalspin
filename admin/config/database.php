@@ -22,12 +22,12 @@ return static function (): array {
 
     $isProduction = in_array(strtolower($env(['APP_ENV'], 'development')), ['production', 'prod'], true);
     $config = [
-        'host' => $env(['DB_HOST', 'DATABASE_HOST', 'ADMIN_DB_HOST'], '127.0.0.1'),
-        'port' => (int) $env(['DB_PORT', 'DATABASE_PORT', 'ADMIN_DB_PORT'], '3306'),
-        'database' => $env(['DB_NAME', 'DB_DATABASE', 'DATABASE_NAME', 'DATABASE_DATABASE', 'ADMIN_DB_DATABASE'], ''),
-        'username' => $env(['DB_USER', 'DB_USERNAME', 'DATABASE_USERNAME', 'ADMIN_DB_USERNAME'], 'root'),
-        'password' => $env(['DB_PASS', 'DB_PASSWORD', 'DATABASE_PASSWORD', 'ADMIN_DB_PASSWORD'], ''),
-        'charset' => $env(['DB_CHARSET', 'DATABASE_CHARSET', 'ADMIN_DB_CHARSET'], 'utf8mb4'),
+        'host' => $env(['ADMIN_DB_HOST', 'DB_HOST', 'DATABASE_HOST'], '127.0.0.1'),
+        'port' => (int) $env(['ADMIN_DB_PORT', 'DB_PORT', 'DATABASE_PORT'], '3306'),
+        'database' => $env(['ADMIN_DB_DATABASE', 'DB_DATABASE', 'DATABASE_NAME', 'DATABASE_DATABASE', 'DB_NAME'], ''),
+        'username' => $env(['ADMIN_DB_USERNAME', 'DB_USERNAME', 'DATABASE_USERNAME', 'DB_USER'], 'root'),
+        'password' => $env(['ADMIN_DB_PASSWORD', 'DB_PASSWORD', 'DATABASE_PASSWORD', 'DB_PASS'], ''),
+        'charset' => $env(['ADMIN_DB_CHARSET', 'DB_CHARSET', 'DATABASE_CHARSET'], 'utf8mb4'),
     ];
 
     if ($isProduction) {
