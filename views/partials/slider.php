@@ -74,7 +74,7 @@ function slider_make_media(string $url, bool $isVideo, string $title, string $cl
  */
 function slider_item_has_media(array $slider): bool
 {
-    $dPath = (string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? $slider['image_url'] ?? '');
+    $dPath = (string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? '');
     $mPath = (string) ($slider['mobileImageUrl'] ?? $slider['mobile_image_url'] ?? $slider['mobile_path'] ?? '');
     if ($mPath === '') {
         $mPath = $dPath;
@@ -99,14 +99,6 @@ if (!isset($sliderMobileBc) || $sliderMobileBc === false) {
 }
 $sliders             = ApiSliders::fetchForCategory($sliderApiCategory);
 $sliders             = array_values(array_filter($sliders, 'slider_item_has_media'));
-if ($sliders === []) {
-    $sliders = [[
-        'title' => 'Home',
-        'desktopImageUrl' => 'assets/games-img/sweet-bonanza-1000.svg',
-        'mobileImageUrl' => 'assets/games-img/sweet-bonanza-1000.svg',
-        'sliderLink' => '/slot',
-    ]];
-}
 ?>
 <?php if (!empty($sliders)): ?>
 <?php if ($sliderMobileBc): ?>
@@ -121,7 +113,7 @@ if ($sliders === []) {
             <div class="slides">
                 <?php foreach ($sliders as $sliderIndex => $slider): ?>
                 <?php
-                $dPath = (string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? $slider['image_url'] ?? '');
+                $dPath = (string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? '');
                 $mPath = (string) ($slider['mobileImageUrl'] ?? $slider['mobile_image_url'] ?? $slider['mobile_path'] ?? '');
                 if ($mPath === '') {
                     $mPath = $dPath;

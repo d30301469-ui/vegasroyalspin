@@ -259,14 +259,11 @@ final class ApiSliders
                 isset($columns['title']) ? 'title' : "'' AS title",
                 isset($columns['subtitle']) ? 'subtitle' : "'' AS subtitle",
                 isset($columns['description']) ? 'description' : "'' AS description",
-                isset($columns['image_url']) ? 'image_url' : "'' AS image_url",
                 isset($columns['desktop_path'])
                     ? 'desktop_path'
                     : (isset($columns['desktop_image_url'])
                         ? 'desktop_image_url AS desktop_path'
-                        : (isset($columns['image_url'])
-                            ? 'image_url AS desktop_path'
-                            : "'' AS desktop_path")),
+                        : "'' AS desktop_path"),
                 isset($columns['mobile_image_url']) ? 'mobile_image_url' : "'' AS mobile_image_url",
                 isset($columns['mobile_path'])
                     ? 'mobile_path'
@@ -329,7 +326,7 @@ final class ApiSliders
             if (!is_array($row)) {
                 continue;
             }
-            $desktop = trim((string) ($row['image_url'] ?? $row['desktop_path'] ?? $row['desktop_image_url'] ?? ''));
+            $desktop = trim((string) ($row['desktop_path'] ?? $row['desktop_image_url'] ?? ''));
             $mobile = trim((string) ($row['mobile_image_url'] ?? $row['mobile_path'] ?? ''));
             if ($desktop === '' && $mobile === '') {
                 continue;
