@@ -152,6 +152,7 @@
     window.redirectToDeposit = redirectToDeposit;
 
     function initDepositMenu() {
+        if (document.body.classList.contains('mobile-site')) return;
         var wrap = document.getElementById('depositBalanceWrap');
         var trigger = document.getElementById('balanceTrigger');
         var nav = document.getElementById('depositNav');
@@ -205,8 +206,20 @@
             if (!wrap.contains(e.relatedTarget)) scheduleClose();
         });
 
-        /* CÜZDANA BAĞLAN tiklamasi inline onclick (redirectToDeposit) tarafindan yonetilir.
-           Burada sadece hover ile dropdown acma/kapama yapilir, cakisma onlenir. */
+        /* Masaüstünde bakiye ikonu dropdown açar; modal akışı dropdown linklerinden ilerler. */
+        if (trigger) {
+            trigger.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                nav.classList.contains('hidesection') ? show() : hide();
+            });
+            trigger.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    nav.classList.contains('hidesection') ? show() : hide();
+                }
+            });
+        }
 
         window.addEventListener('resize', debounce(function () {
             if (!nav.classList.contains('hidesection')) positionMenu();
@@ -226,6 +239,7 @@
     }
 
     function initPlayerMenu() {
+        if (document.body.classList.contains('mobile-site')) return;
         var btn = document.getElementById('toggleButton');
         var col = document.getElementById('playerCol') || (btn && btn.closest('.playerCol')) || (btn && btn.closest('.user-nav-icon'));
         var hoverZone = (btn && btn.closest('.profileDetails')) || col;
@@ -281,8 +295,18 @@
         window.addEventListener('resize', debounce(function () {
             if (!nav.classList.contains('hidesection')) positionNav();
         }, 150));
-        // #toggleButton tiklama islemi inline onclick (profil modali) tarafindan yonetilir.
-        // Burada sadece hover ile dropdown acma/kapama yapilir, cakisma onlenir.
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            nav.classList.contains('hidesection') ? show() : hide();
+        });
+        btn.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                nav.classList.contains('hidesection') ? show() : hide();
+            }
+        });
         document.addEventListener('click', function (e) {
             if (hoverZone.contains(e.target) || nav.contains(e.target)) return;
             hide();
@@ -442,16 +466,28 @@
             + '<div class="nav-menu-container header-user-nav">'
             + '  <ul class="nav-menu-other hdr-balance-nav">'
             + '    <li id="depositBalanceWrap">'
-            + '      <a href="/profile/deposit-withdraw?openDepositPanel=1" class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" role="button" aria-expanded="false" aria-haspopup="true" onclick="event.preventDefault(); (function tryOpen(){if(typeof redirectToDeposit===\'function\'){redirectToDeposit();return;}if(typeof window.__openProfileModalUrl===\'function\'&&window.__openProfileModalUrl(\'/profile/deposit-withdraw?openDepositPanel=1\'))return;var a=this;if(!a._retries)a._retries=0;if(++a._retries<5){setTimeout(function(){tryOpen.call(a);},200);return;}window.location.href=a.getAttribute(\'href\')||\'/profile/deposit-withdraw?openDepositPanel=1\';}).call(this); return false;">'
+            + '      <a href="/profile/deposit-withdraw?openDepositPanel=1" class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" role="button" aria-expanded="false" aria-haspopup="true">'
             + '        <div class="hdr-user-info-content-bc"><span class="hdr-user-info-texts-bc ext-1 ellipsis"><span class="balanceAmount"><span id="headerBalanceMain" data-balance-target="headerBalanceMain">0</span><span class="currencySymbol">&#8239;₺</span></span></span></div>'
             + '      </a>'
             + '    </li>'
             + '  </ul>'
             + '  <ul class="nav-menu-other profileDetails">'
             + '    <li><div class="user-nav-icon playerCol" id="playerCol">'
-            + '      <button class="userBtn nav-menu-item" id="toggleButton" type="button" aria-expanded="false" aria-label="Profil menüsü" onclick="event.preventDefault();event.stopPropagation();(function tryOpen(){try{if(typeof window.__openProfileModalUrl===\'function\'&&window.__openProfileModalUrl(\'/profile/details\'))return;}catch(e){}var b=this;if(!b._retries)b._retries=0;if(++b._retries<8){setTimeout(function(){tryOpen.call(b);},250);return;}window.location.href=\'/profile/details\';}).call(this);return false;">'
+            + '      <button class="userBtn nav-menu-item" id="toggleButton" type="button" aria-expanded="false" aria-label="Profil menüsü">'
             + '        <span class="avatarHolderImg"><i class="bc-i-user hdr-user-avatar-icon-bc" aria-hidden="true"></i></span>'
             + '      </button>'
+            + '      <div class="playerNav hidesection" id="playerNav" role="menu">'
+            + '        <div class="playerNav-body">'
+            + '          <a class="pl-link" href="#" id="profileLinkModal" role="menuitem"><i class="pl-link-icon bc-i-user" aria-hidden="true"></i> PROFİLİM</a>'
+            + '          <a class="pl-link" href="/profile/deposit-withdraw" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-deposit" aria-hidden="true"></i> BAKİYE YÖNETİMİ</a>'
+            + '          <a class="pl-link" href="/profile/bet-history" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-bet-history" aria-hidden="true"></i> BAHİS GEÇMİŞİ</a>'
+            + '          <a class="pl-link" href="/profile/bonus-spor" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-promotions-3" aria-hidden="true"></i> BONUSLAR</a>'
+            + '          <a class="pl-link" href="/profile/messages" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-message" aria-hidden="true"></i> MESAJLAR</a>'
+            + '        </div>'
+            + '        <div class="playerNav-footer">'
+            + '          <a class="pl-link pl-link-logout" href="/logout" data-nav-mode="page" role="menuitem"><i class="pl-link-icon bc-i-logout" aria-hidden="true"></i> ÇIKIŞ YAP</a>'
+            + '        </div>'
+            + '      </div>'
             + '    </div></li>'
             + '  </ul>'
             + '</div>';

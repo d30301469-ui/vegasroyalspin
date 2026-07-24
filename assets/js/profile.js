@@ -815,12 +815,12 @@
                 if (!direct || direct === resolved) {
                     throw primaryErr;
                 }
-                return fetch(direct, { credentials: 'same-origin' })
+                return fetch(direct, fetchOptions)
                     .then(parseProfileResponse)
                     .catch(function(directErr) {
                         if (directErr && directErr.authRequired) {
                             return tryRecoverAuthOnce(directErr).then(function() {
-                                return fetch(direct, { credentials: 'same-origin' }).then(parseProfileResponse);
+                                return fetch(direct, fetchOptions).then(parseProfileResponse);
                             });
                         }
                         throw directErr;
