@@ -3,6 +3,8 @@
         history.scrollRestoration = 'manual';
     }
 
+    var Shared = window.BetcoAuthShared || {};
+
     function syncHeaderLayout() {
         if (typeof window.__syncHeaderStickyTop === 'function') {
             window.__syncHeaderStickyTop();
