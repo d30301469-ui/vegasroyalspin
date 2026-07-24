@@ -59,6 +59,34 @@
         btn.style.color = 'inherit';
     }
 
+    /** Ensure guest login/register buttons always open modals — fallback if login.js hasn't bound yet. */
+    function initGuestAuthButtons() {
+        var loginBtn = document.getElementById('Giris');
+        var registerBtn = document.getElementById('openRegister');
+        if (loginBtn && !loginBtn.getAttribute('data-mobile-auth-bound')) {
+            loginBtn.setAttribute('data-mobile-auth-bound', '1');
+            loginBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (typeof window.__openLoginModal === 'function') {
+                    window.__openLoginModal();
+                } else if (window.MaltabetAuth && typeof window.MaltabetAuth.showLoginModal === 'function') {
+                    window.MaltabetAuth.showLoginModal();
+                }
+            });
+        }
+        if (registerBtn && !registerBtn.getAttribute('data-mobile-auth-bound')) {
+            registerBtn.setAttribute('data-mobile-auth-bound', '1');
+            registerBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (typeof window.__openRegisterModal === 'function') {
+                    window.__openRegisterModal();
+                } else if (window.MaltabetAuth && typeof window.MaltabetAuth.showRegisterModal === 'function') {
+                    window.MaltabetAuth.showRegisterModal();
+                }
+            });
+        }
+    }
+
     function ensureFallbackMobileProfilePanel() {
         var panel = document.getElementById('mprofilePanel');
         var overlay = document.getElementById('mprofileOverlay');
@@ -403,6 +431,7 @@
 
         initAdditionalToggle();
         initProfileButton();
+        initGuestAuthButtons();
         initMobileAvatarProfileModal();
         initSiteLogoNavigation();
         initNavScrollStart();
