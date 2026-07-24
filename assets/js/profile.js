@@ -27,7 +27,17 @@
         }
         var msg = String(message || '').trim();
         if (!msg) return;
-        alert(title ? title + ': ' + msg : msg);
+        if (typeof window.MaltabetToast !== 'undefined' && window.MaltabetToast) {
+            var m = window.MaltabetToast;
+            if (type === 'error' && m.error) { m.error(msg, title); return; }
+            if (type === 'warning' && m.warning) { m.warning(msg, title); return; }
+            if (type === 'success' && m.success) { m.success(msg, title); return; }
+            if (m.show) { m.show(msg, { type: type || 'info', title: title }); return; }
+        }
+        // MaltabetToast yoksa alert gosterme, sessizce console'a yaz
+        if (typeof console !== 'undefined' && console.warn) {
+            console.warn('[Profile] ' + (title ? title + ': ' : '') + msg);
+        }
     }
     var TR_LOCALE = 'tr-TR';
     var DEFAULT_LIMITS = { min: 0, max: 999999 };
@@ -1968,8 +1978,8 @@
             var msg = message || (ok ? 'Değişiklikler kaydedildi.' : 'Kayıt sırasında hata oluştu.');
             if (window.MaltabetToast) {
                 toastNotify(ok ? 'success' : 'error', msg);
-            } else {
-                alert(msg);
+            } else if (typeof console !== 'undefined' && console.warn) {
+                console.warn('[ProfileForm] ' + msg);
             }
         }
 

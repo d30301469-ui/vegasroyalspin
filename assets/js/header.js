@@ -449,7 +449,7 @@
             + '  </ul>'
             + '  <ul class="nav-menu-other profileDetails">'
             + '    <li><div class="user-nav-icon playerCol" id="playerCol">'
-            + '      <button class="userBtn nav-menu-item" id="toggleButton" type="button" aria-expanded="false" aria-label="Profil menüsü" onclick="event.preventDefault();event.stopPropagation();(function tryOpen(){if(typeof window.__openProfileModalUrl===\'function\'&&window.__openProfileModalUrl(\'/profile/details\'))return;var b=this;if(!b._retries)b._retries=0;if(++b._retries<8){setTimeout(function(){tryOpen.call(b);},250);return;}window.location.href=\'/profile/details\';}).call(this);return false;">'
+            + '      <button class="userBtn nav-menu-item" id="toggleButton" type="button" aria-expanded="false" aria-label="Profil menüsü" onclick="event.preventDefault();event.stopPropagation();(function tryOpen(){try{if(typeof window.__openProfileModalUrl===\'function\'&&window.__openProfileModalUrl(\'/profile/details\'))return;}catch(e){}var b=this;if(!b._retries)b._retries=0;if(++b._retries<8){setTimeout(function(){tryOpen.call(b);},250);return;}window.location.href=\'/profile/details\';}).call(this);return false;">'
             + '        <span class="avatarHolderImg"><i class="bc-i-user hdr-user-avatar-icon-bc" aria-hidden="true"></i></span>'
             + '      </button>'
             + '    </div></li>'
