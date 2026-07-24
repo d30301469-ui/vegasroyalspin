@@ -1196,6 +1196,13 @@ class ApiAuthController
             MemberLoginService::backendLogout((string) $_SESSION['member_jwt']);
         }
 
+        if (is_readable(CONFIG_PATH . '/member_api_public.php')) {
+            require_once CONFIG_PATH . '/member_api_public.php';
+        }
+        if (function_exists('metropol_frontend_clear_member_session')) {
+            metropol_frontend_clear_member_session();
+        }
+
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $params = session_get_cookie_params();
