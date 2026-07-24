@@ -2828,6 +2828,10 @@
         var logoutButton = target.closest('.userLogoutBtn');
         if (logoutButton) {
           e.preventDefault();
+          if (Shared.logout && typeof Shared.logout === 'function') {
+            Shared.logout();
+            return;
+          }
           window.location.href = '/logout';
           return;
         }
