@@ -594,6 +594,39 @@ final class ApiSliders
 
         $list = self::fetch(['category' => $category, 'surface' => $surface]);
 
+        $hasUsableMediaForSurface = static function (array $items, string $targetSurface): bool {
+            foreach ($items as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $selected = trim((string) ($item['imageUrl'] ?? $item['image_url'] ?? ''));
+                $desktop = trim((string) ($item['desktopImageUrl'] ?? $item['desktop_image_url'] ?? $item['desktop_path'] ?? ''));
+                $mobile = trim((string) ($item['mobileImageUrl'] ?? $item['mobile_image_url'] ?? $item['mobile_path'] ?? ''));
+
+                if ($selected !== '') {
+                    return true;
+                }
+
+                if ($targetSurface === 'mobile' && ($mobile !== '' || $desktop !== '')) {
+                    return true;
+                }
+                if ($targetSurface === 'desktop' && ($desktop !== '' || $mobile !== '')) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        // Uzak servis surface parametresinde eksik medya dondurebilirse,
+        // category bazli surface'siz ikinci deneme ile gecerli kayitlari al.
+        if (!$hasUsableMediaForSurface($list, $surface)) {
+            $fallbackList = self::fetch(['category' => $category]);
+            if ($hasUsableMediaForSurface($fallbackList, $surface)) {
+                $list = $fallbackList;
+            }
+        }
+
         return array_values(array_filter(
             $list,
             static function (array $slider) use ($category): bool {
