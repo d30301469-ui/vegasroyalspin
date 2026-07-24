@@ -463,14 +463,47 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
         admin_require_project_file('api/bootstrap.php');
         $category = ApiSliders::normalizeCategory((string) ($_GET['category'] ?? $_GET['page'] ?? ''));
         $surface = ApiSliders::normalizeSurface((string) ($_GET['surface'] ?? 'all'));
-        $query = [];
+        $sliders = [];
         if ($category !== '') {
-            $query['category'] = $category;
+            $query = ['category' => $category];
+            if ($surface !== 'all') {
+                $query['surface'] = $surface;
+            }
+            $sliders = ApiSliders::fetch($query);
+        } else {
+            $seen = [];
+            foreach (array_keys(ApiSliders::categories()) as $knownCategory) {
+                $query = ['category' => $knownCategory];
+                if ($surface !== 'all') {
+                    $query['surface'] = $surface;
+                }
+                foreach (ApiSliders::fetch($query) as $slider) {
+                    $id = (int) ($slider['id'] ?? 0);
+                    $dedupeKey = $id > 0
+                        ? ('id:' . $id)
+                        : (
+                            (string) ($slider['category'] ?? '')
+                            . '|' . (string) ($slider['title'] ?? '')
+                            . '|' . (string) ($slider['desktopImageUrl'] ?? '')
+                            . '|' . (string) ($slider['mobileImageUrl'] ?? '')
+                        );
+                    if (isset($seen[$dedupeKey])) {
+                        continue;
+                    }
+                    $seen[$dedupeKey] = true;
+                    $sliders[] = $slider;
+                }
+            }
+
+            usort($sliders, static function (array $left, array $right): int {
+                $orderCompare = ((int) ($left['order'] ?? 0)) <=> ((int) ($right['order'] ?? 0));
+                if ($orderCompare !== 0) {
+                    return $orderCompare;
+                }
+
+                return ((int) ($right['id'] ?? 0)) <=> ((int) ($left['id'] ?? 0));
+            });
         }
-        if ($surface !== 'all') {
-            $query['surface'] = $surface;
-        }
-        $sliders = ApiSliders::fetch($query);
         http_response_code(200);
         echo json_encode([
             'success' => true,
