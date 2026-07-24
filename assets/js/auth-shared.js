@@ -184,7 +184,13 @@
         if (isLogoutLanding()) {
             return false;
         }
-        return phpSessionLoggedIn();
+        if (phpSessionLoggedIn()) {
+            return true;
+        }
+        if (Shared.getMemberJwt && Shared.getMemberJwt() !== '') {
+            return true;
+        }
+        return typeof w.__MEMBER_JWT_BOOTSTRAP__ === 'string' && w.__MEMBER_JWT_BOOTSTRAP__.trim() !== '';
     }
 
     function normalizePagePath(pathname) {

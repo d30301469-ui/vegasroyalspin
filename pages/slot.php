@@ -387,13 +387,10 @@ $slotDemoHref = static function (array $game): string {
                             ENT_QUOTES,
                             'UTF-8'
                         );
-                        $mobileOpenPlayJsBody = 'var m=(document.body&&document.body.classList.contains(&quot;mobile-site&quot;))||(((navigator.maxTouchPoints||0)&gt;0)&&window.matchMedia&&window.matchMedia(&quot;(max-width: 1024px)&quot;).matches);if(m){try{var p=new URL(nu,window.location.origin);p.searchParams.set(&quot;open_mode&quot;,&quot;redirect&quot;);nu=p.pathname+p.search+p.hash;}catch(e){nu+=(nu.indexOf(&quot;?&quot;)===-1?&quot;?&quot;:&quot;&amp;&quot;)+&quot;open_mode=redirect&quot;;}var a=document.createElement(&quot;a&quot;);a.href=nu;a.target=&quot;_blank&quot;;a.rel=&quot;noopener noreferrer&quot;;a.style.display=&quot;none&quot;;document.body.appendChild(a);a.click();a.remove();if(document.visibilityState===&quot;hidden&quot;){return;}}window.location.href=nu;';
-                        // Play navigation is routed through MaltabetWalletPicker (main/bonus wallet choice modal)
-                        // when available, falling back to direct navigation otherwise.
-                        $mobileOpenPlayJs = 'var u=' . $playHrefJson . ';function __navPlay(nu){' . $mobileOpenPlayJsBody . '}if(window.MaltabetWalletPicker&&typeof window.MaltabetWalletPicker.launch===&quot;function&quot;){window.MaltabetWalletPicker.launch(u,__navPlay);}else{__navPlay(u);}';
                         $openLoginJs = 'if (typeof window.__openLoginModal === &quot;function&quot;) { window.__openLoginModal(); } else { var loginBtn = document.getElementById(&quot;Giris&quot;); if (loginBtn) loginBtn.click(); }';
+                        $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{' . $openLoginJs . '}';
                         ?>
-                        <div class="casinoGameItemContent " data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $loggedIn ? $mobileOpenPlayJs : $openLoginJs ?>">
+                        <div class="casinoGameItemContent " data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $runtimePlayIntentJs ?>">
                             <span class="providerBadgeBlock " data-badge=""></span>
                             <div class="casinoGameItem ">
                                 <img alt="<?= htmlspecialchars($game['game_name'], ENT_QUOTES); ?>"
@@ -411,7 +408,7 @@ $slotDemoHref = static function (array $game): string {
                                         <p class="game-title-text"><?= htmlspecialchars((string) ($game['game_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                                     </div>
                                     <div class="game-actions">
-                                        <a class="play-btn" href="<?= htmlspecialchars($playHref, ENT_QUOTES, 'UTF-8') ?>" onclick="event.stopPropagation();<?= $loggedIn ? ' event.preventDefault(); ' . $mobileOpenPlayJs : ' event.preventDefault(); ' . $openLoginJs ?>">OYNA</a>
+                                        <a class="play-btn" href="<?= htmlspecialchars($playHref, ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $runtimePlayIntentJs ?>">OYNA</a>
                                         <a class="demo-btn" href="<?= htmlspecialchars($demoHref, ENT_QUOTES, 'UTF-8') ?>" onclick="event.stopPropagation()">DEMO</a>
                                     </div>
                                 </div>
