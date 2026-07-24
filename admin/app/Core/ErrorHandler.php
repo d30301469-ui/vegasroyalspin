@@ -174,7 +174,7 @@ final class ErrorHandler
             $line = $exception->getLine();
             $exceptionClass = get_class($exception);
 
-            echo <<<html lang="tr"
+            echo <<<HTML
             <!DOCTYPE html>
             <html lang="tr">
             <head>
@@ -204,7 +204,7 @@ final class ErrorHandler
             </html>
             HTML;
         } else {
-            echo <<<html lang="tr"
+            echo <<<HTML
             <!DOCTYPE html>
             <html lang="tr">
             <head>
