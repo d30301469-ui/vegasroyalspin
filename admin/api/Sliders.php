@@ -223,22 +223,74 @@ final class ApiSliders
 
         try {
             $pdo = self::pdo();
+            $columns = self::tableColumns($pdo);
+            if ($columns === []) {
+                return [];
+            }
             $category = self::normalizeCategory((string) ($query['category'] ?? $query['page'] ?? ''));
             $surface = self::normalizeSurface((string) ($query['surface'] ?? 'all'));
             $today = date('Y-m-d');
 
-            $where = ["CAST(status AS CHAR) IN ('1', 'active', 'published')"];
+            $where = [];
+            if (isset($columns['status'])) {
+                $where[] = "LOWER(TRIM(CAST(status AS CHAR))) IN ('1', 'active', 'published', 'on', 'true')";
+            } elseif (isset($columns['is_active'])) {
+                $where[] = "LOWER(TRIM(CAST(is_active AS CHAR))) IN ('1', 'active', 'published', 'on', 'true')";
+            }
+
             $params = [
                 'today_start' => $today,
                 'today_end' => $today,
             ];
-            // Tarih aralığı: gün bazında (admin’de saat seçilse bile o gün boyunca yayında)
-            $where[] = '(start_date IS NULL OR DATE(start_date) <= :today_start)';
-            $where[] = '(end_date IS NULL OR DATE(end_date) >= :today_end)';
 
-            $sql = 'SELECT id, title, subtitle, description, desktop_path, mobile_path, button_link, `order`, category
+            if (isset($columns['start_date'])) {
+                $where[] = '(start_date IS NULL OR DATE(start_date) <= :today_start)';
+            } elseif (isset($columns['starts_at'])) {
+                $where[] = '(starts_at IS NULL OR DATE(starts_at) <= :today_start)';
+            }
+            if (isset($columns['end_date'])) {
+                $where[] = '(end_date IS NULL OR DATE(end_date) >= :today_end)';
+            } elseif (isset($columns['ends_at'])) {
+                $where[] = '(ends_at IS NULL OR DATE(ends_at) >= :today_end)';
+            }
+
+            $select = [
+                isset($columns['id']) ? 'id' : '0 AS id',
+                isset($columns['title']) ? 'title' : "'' AS title",
+                isset($columns['subtitle']) ? 'subtitle' : "'' AS subtitle",
+                isset($columns['description']) ? 'description' : "'' AS description",
+                isset($columns['image_url']) ? 'image_url' : "'' AS image_url",
+                isset($columns['desktop_path'])
+                    ? 'desktop_path'
+                    : (isset($columns['desktop_image_url'])
+                        ? 'desktop_image_url AS desktop_path'
+                        : (isset($columns['image_url'])
+                            ? 'image_url AS desktop_path'
+                            : "'' AS desktop_path")),
+                isset($columns['mobile_image_url']) ? 'mobile_image_url' : "'' AS mobile_image_url",
+                isset($columns['mobile_path'])
+                    ? 'mobile_path'
+                    : (isset($columns['mobile_image_url'])
+                        ? 'mobile_image_url AS mobile_path'
+                        : "'' AS mobile_path"),
+                isset($columns['link_url']) ? 'link_url' : "'' AS link_url",
+                isset($columns['button_link'])
+                    ? 'button_link'
+                    : (isset($columns['slider_link'])
+                        ? 'slider_link AS button_link'
+                        : (isset($columns['link'])
+                            ? '`link` AS button_link'
+                            : "'' AS button_link")),
+                isset($columns['sort_order']) ? 'sort_order' : '0 AS sort_order',
+                isset($columns['order']) ? '`order`' : '0 AS `order`',
+                isset($columns['category']) ? 'category' : "'' AS category",
+            ];
+
+            $whereSql = $where !== [] ? implode(' AND ', $where) : '1=1';
+
+            $sql = 'SELECT ' . implode(', ', $select) . '
                     FROM sliders
-                    WHERE ' . implode(' AND ', $where) . '
+                    WHERE ' . $whereSql . '
                     ORDER BY `order` ASC, id DESC';
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
@@ -277,8 +329,8 @@ final class ApiSliders
             if (!is_array($row)) {
                 continue;
             }
-            $desktop = trim((string) ($row['desktop_path'] ?? ''));
-            $mobile = trim((string) ($row['mobile_path'] ?? ''));
+            $desktop = trim((string) ($row['image_url'] ?? $row['desktop_path'] ?? $row['desktop_image_url'] ?? ''));
+            $mobile = trim((string) ($row['mobile_image_url'] ?? $row['mobile_path'] ?? ''));
             if ($desktop === '' && $mobile === '') {
                 continue;
             }
@@ -291,12 +343,12 @@ final class ApiSliders
                 'subtitle' => (string) ($row['subtitle'] ?? ''),
                 'description' => (string) ($row['description'] ?? ''),
                 'category' => self::normalizeCategory((string) ($row['category'] ?? '')),
-                'order' => (int) ($row['order'] ?? 0),
+                'order' => (int) ($row['sort_order'] ?? $row['order'] ?? 0),
                 'desktopImageUrl' => $desktop,
                 'mobileImageUrl' => $mobile !== '' ? $mobile : $desktop,
                 'imageUrl' => $selected,
                 'surface' => $surface,
-                'sliderLink' => (string) ($row['button_link'] ?? ''),
+                'sliderLink' => (string) ($row['link_url'] ?? $row['button_link'] ?? $row['slider_link'] ?? $row['link'] ?? ''),
             ];
         }
 
@@ -540,5 +592,27 @@ final class ApiSliders
         ]);
 
         return (int) $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    private static function tableColumns(PDO $pdo): array
+    {
+        try {
+            $stmt = $pdo->query('SHOW COLUMNS FROM sliders');
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            $columns = [];
+            foreach ($rows as $row) {
+                $name = strtolower((string) ($row['Field'] ?? ''));
+                if ($name !== '') {
+                    $columns[$name] = true;
+                }
+            }
+
+            return $columns;
+        } catch (Throwable) {
+            return [];
+        }
     }
 }
