@@ -9,8 +9,8 @@ final class SqlSeedImporter
 {
     public const SEED_FILENAME = 'metropolcasino.sql';
 
-    /** Minimum complete dump size (~20 MB); truncated uploads are typically ~8 MB. */
-    private const MIN_COMPLETE_BYTES = 15_000_000;
+    /** Minimum complete dump size (actual dump is ~4.5 MB compressed). */
+    private const MIN_COMPLETE_BYTES = 3_500_000;
 
     public static function seedPath(string $root): string
     {
