@@ -398,12 +398,12 @@ final class ApiSliders
      */
     public static function fetch(array $query): array
     {
-        $local = self::fetchFromDatabase($query);
-        if ($local !== []) {
+        $apiOnly = function_exists('frontend_is_api_only') && frontend_is_api_only();
+        $local = $apiOnly ? [] : self::fetchFromDatabase($query);
+        if (!$apiOnly && $local !== []) {
             return $local;
         }
 
-        $apiOnly = function_exists('frontend_is_api_only') && frontend_is_api_only();
         $cacheKey = ApiCmsRemote::cacheKey('sliders', $query);
         $timeout = function_exists('frontend_cms_http_timeout')
             ? frontend_cms_http_timeout()
