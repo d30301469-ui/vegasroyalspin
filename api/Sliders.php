@@ -307,7 +307,7 @@ final class ApiSliders
                 return $list;
             }
 
-            return array_values(array_filter(
+            $filtered = array_values(array_filter(
                 $list,
                 static function (array $slider) use ($category): bool {
                     $sliderCategory = self::normalizeCategory((string) ($slider['category'] ?? ''));
@@ -316,6 +316,38 @@ final class ApiSliders
                     }
 
                     return $sliderCategory === $category;
+                }
+            ));
+
+            if ($filtered !== []) {
+                return $filtered;
+            }
+
+            // Kategoriye ait kayıtlar strict status/tarih filtresine takildiginda,
+            // en guncel satiri (kategori bazli) yine de dondur.
+            $relaxedParams = [];
+            $relaxedWhere = [];
+            if (isset($columns['category'])) {
+                $relaxedWhere[] = 'LOWER(TRIM(CAST(category AS CHAR))) = :relaxed_category';
+                $relaxedParams['relaxed_category'] = $category;
+            }
+
+            $relaxedSql = 'SELECT ' . implode(', ', $select) . '
+                    FROM sliders';
+            if ($relaxedWhere !== []) {
+                $relaxedSql .= ' WHERE ' . implode(' AND ', $relaxedWhere);
+            }
+            $relaxedSql .= ' ORDER BY id DESC LIMIT 20';
+
+            $relaxedStmt = $pdo->prepare($relaxedSql);
+            $relaxedStmt->execute($relaxedParams);
+            $relaxedRows = $relaxedStmt->fetchAll(PDO::FETCH_ASSOC);
+            $relaxedList = self::mapRows(is_array($relaxedRows) ? $relaxedRows : [], $surface);
+
+            return array_values(array_filter(
+                $relaxedList,
+                static function (array $slider) use ($category): bool {
+                    return self::normalizeCategory((string) ($slider['category'] ?? '')) === $category;
                 }
             ));
         } catch (Throwable) {
