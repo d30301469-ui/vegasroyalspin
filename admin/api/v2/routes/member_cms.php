@@ -513,11 +513,17 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
             }
             if (class_exists('AdminDatabase', false)) {
                 $diagPdo = AdminDatabase::pdo();
-                $dbDiag = [
-                    'db' => (string) $diagPdo->query('SELECT DATABASE()')->fetchColumn(),
-                    'raw_count' => (int) $diagPdo->query('SELECT COUNT(*) FROM sliders')->fetchColumn(),
-                    'raw_rows' => $diagPdo->query('SELECT id, title, category, status, is_active, start_date, starts_at, end_date, ends_at FROM sliders ORDER BY id DESC LIMIT 15')->fetchAll(PDO::FETCH_ASSOC),
-                ];
+                $dbName = (string) $diagPdo->query('SELECT DATABASE()')->fetchColumn();
+                $rawCount = (int) $diagPdo->query('SELECT COUNT(*) FROM sliders')->fetchColumn();
+                $cols = [];
+                try { $cStmt = $diagPdo->query('SHOW COLUMNS FROM sliders'); $cols = $cStmt ? $cStmt->fetchAll(PDO::FETCH_COLUMN) : []; } catch (Throwable) {}
+                $rawRows = [];
+                try {
+                    $rawRows = $diagPdo->query('SELECT id, title, category, status, start_date, end_date FROM sliders ORDER BY id DESC LIMIT 15')->fetchAll(PDO::FETCH_ASSOC);
+                } catch (Throwable $re) {
+                    $rawRows = ['error' => $re->getMessage()];
+                }
+                $dbDiag = ['db' => $dbName, 'raw_count' => $rawCount, 'columns' => $cols, 'raw_rows' => $rawRows];
             } else {
                 $dbDiag = ['error' => 'AdminDatabase class could not be loaded', 'dbFile' => $dbFile];
             }
@@ -528,7 +534,7 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
         echo json_encode([
             'success' => true,
             'code' => 200,
-            'message' => 'Slider listesi v936',
+            'message' => 'Slider listesi v939',
             'data' => [
                 'category' => $category !== '' ? $category : null,
                 'surface' => $surface,
