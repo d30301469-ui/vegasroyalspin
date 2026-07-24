@@ -149,6 +149,102 @@
         // tek kanaldan yonetilir — burada ayrica bind etme.
     }
 
+    function mobileUserAdditionalInfoMarkup() {
+        // SSR render edilmiş misafir sayfasındaki canlı destek linkinden URL'i oku.
+        var supportUrl = '';
+        var guestCallLink = document.querySelector('.mobile-bc-header .hdr-guest-shortcuts .callPanel');
+        if (guestCallLink) {
+            var onclick = guestCallLink.getAttribute('onclick') || '';
+            var match = onclick.match(/window\.open\((['"])([^'"]+)\1/);
+            if (match && match[2]) {
+                supportUrl = match[2];
+            }
+        }
+        if (!supportUrl) {
+            supportUrl = (typeof window.__mobileSupportUrl === 'string' && window.__mobileSupportUrl)
+                || (typeof LIVE_SUPPORT_URL !== 'undefined' ? LIVE_SUPPORT_URL : '');
+        }
+        var supportUrlEnc = supportUrl.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        return ''
+            + '<div class="hdr-additional-info">'
+            + '  <a class="loyaltyBonusHeader"'
+            + '    href="/?profile=open&amp;account=bonuses&amp;page=loyalty-points"'
+            + '    title="Bronze"'
+            + '    data-loyalty-badge'
+            + '    data-loyalty-code="bronze">'
+            + '    <p class="loyaltyBonusHeaderShadow" aria-hidden="true"></p>'
+            + '    <p class="loyaltyBonusHeaderBackground" aria-hidden="true"></p>'
+            + '    <p class="loyaltyBonusHeaderText ellipsis" data-loyalty-level-name>Bronze</p>'
+            + '    <img class="loyaltyBonusImg"'
+            + '         src="/assets/images/loyalty/badges/bronze.png"'
+            + '         alt=""'
+            + '         width="24"'
+            + '         height="24"'
+            + '         loading="lazy"'
+            + '         data-loyalty-level-icon'
+            + '         onerror="this.style.display=\'none\'">'
+            + '  </a>'
+            + '  <div class="hdr-user-bc hasLoyaltyLevel" data-hdr-shortcuts-strip>'
+            + '    <div class="headerExpanded"'
+            + '         data-hdr-additional-toggle'
+            + '         role="button"'
+            + '         tabindex="0"'
+            + '         aria-expanded="false"'
+            + '         aria-label="Kısayolları genişlet">'
+            + '      <span class="hdr-expanded-label">KAPAT</span>'
+            + '      <p class="headerExpandedIcons headerExpandedIcons--collapsed" aria-hidden="true">'
+            + '        <i class="bc-i-small-arrow-left"></i>'
+            + '        <i class="bc-i-small-arrow-left"></i>'
+            + '      </p>'
+            + '      <p class="headerExpandedIcons headerExpandedIcons--open" aria-hidden="true">'
+            + '        <i class="bc-i-small-arrow-right"></i>'
+            + '        <i class="bc-i-small-arrow-right"></i>'
+            + '      </p>'
+            + '    </div>'
+            + '    <div class="hdr-shortcuts-icons">'
+            + '      <a href="/profile/deposit-withdraw?openDepositPanel=1"'
+            + '         class="user-nav-icon bc-i-wallet"'
+            + '         onclick="event.preventDefault(); if (typeof window.__openMobileBalancePage === \'function\' && window.__openMobileBalancePage(\'deposit\')) return false; if (typeof redirectToDeposit === \'function\') redirectToDeposit(); return false;"'
+            + '         title="Para Yatır"'
+            + '         aria-label="Para Yatır"></a>'
+            + '      <a href="#"'
+            + '         class="user-nav-icon bc-i-call callPanel"'
+            + '         onclick="window.open(\'' + supportUrlEnc + '\',\'_blank\'); return false;"'
+            + '         title="Canlı Destek"'
+            + '         aria-label="Canlı Destek"></a>'
+            + '      <a href="/ortaklik"'
+            + '         class="user-nav-icon bc-i-standings"'
+            + '         title="Ortaklık"'
+            + '         aria-label="Ortaklık"></a>'
+            + '      <a href="/promotions"'
+            + '         class="user-nav-icon bc-i-x50-wheel hdr-shortcut-wheel"'
+            + '         title="Çark"'
+            + '         aria-label="Çark"></a>'
+            + '    </div>'
+            + '  </div>'
+            + '</div>';
+    }
+
+    function insertMobileUserAdditionalInfo() {
+        var headerBc = document.querySelector('.mobile-bc-header .header-bc');
+        if (!headerBc) return;
+        // Zaten varsa tekrar ekleme.
+        if (headerBc.querySelector('.hdr-additional-info')) return;
+
+        var mainContent = headerBc.querySelector('.hdr-main-content-bc');
+        var navMenu = headerBc.querySelector('.hdr-navigation-scrollable-bc-holder, .nav-content-bc');
+        var insertBefore = navMenu || null;
+        var tempDiv = document.createElement('div');
+        tempDiv.innerHTML = mobileUserAdditionalInfoMarkup();
+        var additionalInfo = tempDiv.firstChild;
+        if (additionalInfo && mainContent) {
+            headerBc.insertBefore(additionalInfo, insertBefore);
+            initAdditionalToggle();
+            syncHeaderLayout();
+        }
+    }
+
     // Sunucu SSR misafir başlığı render etti ama istemci JS geçerli JWT tespit ettiğinde
     // (assets/js/header.js upgradeGuestHeaderIfNeeded()) çağırır. Tüm mobil DOM/markup ve
     // olay bağlama burada, mobile-header.js'de kalır.
@@ -162,8 +258,10 @@
         }
         var guestShortcuts = document.querySelector('.mobile-bc-header .hdr-guest-shortcuts');
         if (guestShortcuts && guestShortcuts.parentNode) {
+            // Canlı destek URL'ini guest linkinden oku (silmeden önce).
             guestShortcuts.parentNode.removeChild(guestShortcuts);
         }
+        insertMobileUserAdditionalInfo();
     };
 
     function openProfileFromAvatarTap(event) {
@@ -281,7 +379,28 @@
         window.addEventListener('orientationchange', syncHeaderLayout, { passive: true });
     }
 
+    function repairStaleHeader() {
+        // header.js, mobile-header.js yüklenmeden önce upgradeGuestHeaderIfNeeded()
+        // çağrısı yapmış olabilir. Bu durumda .header-bc sınıfı hdr-auth-user olarak
+        // değişmiş ama DOM içeriği hala misafir (giriş/kayıt butonları) kalmıştır.
+        var headerBc = document.querySelector('.mobile-bc-header .header-bc');
+        if (!headerBc) return;
+        if (!headerBc.classList.contains('hdr-auth-user')) return;
+
+        // hdr-auth-user var ama DOM hala misafir mi?
+        var guestLogin = document.getElementById('Giris');
+        var balanceEl = document.getElementById('headerBalanceMain');
+        if (guestLogin && !balanceEl) {
+            // Yarım kalmış yükseltme: sınıf user ama içerik guest.
+            // __mobileUpgradeUserHeader() zaten tanımlı, tekrar çağır.
+            window.__mobileUpgradeUserHeader();
+        }
+    }
+
     function boot() {
+        // Önce yarım kalmış header yükseltmesini onar.
+        repairStaleHeader();
+
         initAdditionalToggle();
         initProfileButton();
         initMobileAvatarProfileModal();
