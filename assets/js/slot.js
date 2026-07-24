@@ -407,6 +407,19 @@
             launchPlayUrl(url);
             return;
         }
+        var Shared = window.BetcoAuthShared || {};
+        if (Shared && typeof Shared.hydrateMemberJwt === 'function') {
+            Shared.hydrateMemberJwt().then(function () {
+                if (runtimeMemberLoggedIn()) {
+                    launchPlayUrl(url);
+                    return;
+                }
+                openLoginModal();
+            }).catch(function () {
+                openLoginModal();
+            });
+            return;
+        }
         openLoginModal();
     }
 

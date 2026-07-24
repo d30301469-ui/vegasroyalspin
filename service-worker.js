@@ -1,5 +1,5 @@
 /* vegasroyalspin PWA service worker */
-const SW_VERSION = 'v12-mobile-root-fix-hard-cache-clear';
+const SW_VERSION = 'v13-mobile-hydrate-before-login-gate';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
