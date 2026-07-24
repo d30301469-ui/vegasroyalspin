@@ -72,7 +72,47 @@
         setMenuOpenState(isOpen);
         if (!isOpen) {
             clearStaleProfileLocks();
+            recoverLegacyMenuScrollLock();
         }
+    }
+
+    function hasAnyBlockingOverlayOpen() {
+        var ids = [
+            'rightSidebarOverlay',
+            'betslipPanelOverlay',
+            'profileModalOverlay',
+            'searchOverlay',
+            'appFeedbackDialogOverlay',
+            'bonus-detail-modal-overlay'
+        ];
+        for (var i = 0; i < ids.length; i += 1) {
+            var el = document.getElementById(ids[i]);
+            if (el && el.classList && el.classList.contains('is-open')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function recoverLegacyMenuScrollLock() {
+        var menu = getMenu();
+        var menuOpenNow = !!(menu && menu.classList.contains('is-open'));
+        var profilePanel = document.getElementById('mprofilePanel');
+        var profileOpen = !!(profilePanel && profilePanel.classList.contains('is-open'));
+        if (menuOpenNow || profileOpen || hasAnyBlockingOverlayOpen()) {
+            return;
+        }
+
+        var body = document.body;
+        body.classList.remove('mobileMenu-locked', 'body-scroll-locked');
+        body.style.position = '';
+        body.style.top = '';
+        body.style.left = '';
+        body.style.right = '';
+        body.style.width = '';
+        body.style.overflow = '';
+        body.style.touchAction = '';
+        body.style.paddingRight = '';
     }
 
     function openMenu(evt) {
@@ -136,40 +176,56 @@
 
         normalizeMenuState();
 
-        toggles.forEach(function (toggle) {
-            function handleToggleIntent(e) {
-                var now = Date.now();
-                var lastTap = Number(toggle.getAttribute('data-mobile-menu-lasttap') || '0');
-                if (!isNaN(lastTap) && (now - lastTap) < 350) {
-                    if (e && typeof e.preventDefault === 'function') {
-                        e.preventDefault();
-                    }
-                    return;
+        function findToggleTarget(target) {
+            if (!target || !target.closest) return null;
+            return target.closest('#menu-toggle, [data-mobile-menu-toggle], .tab-nav-item-bc.menu[aria-controls="mobileMenu"], .mobFooter-item.menu[aria-controls="mobileMenu"]');
+        }
+
+        function handleToggleIntent(e, toggle) {
+            if (!toggle) return;
+            var now = Date.now();
+            var lastTap = Number(toggle.getAttribute('data-mobile-menu-lasttap') || '0');
+            if (!isNaN(lastTap) && (now - lastTap) < 350) {
+                if (e && typeof e.preventDefault === 'function') {
+                    e.preventDefault();
                 }
-                toggle.setAttribute('data-mobile-menu-lasttap', String(now));
+                return;
+            }
+            toggle.setAttribute('data-mobile-menu-lasttap', String(now));
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMenu(e);
+        }
+
+        ['click', 'touchend', 'pointerup'].forEach(function (eventName) {
+            document.addEventListener(eventName, function (e) {
+                var toggle = findToggleTarget(e.target);
+                if (!toggle) return;
+                handleToggleIntent(e, toggle);
+            }, true);
+        });
+
+        document.addEventListener('keydown', function (e) {
+            var toggle = findToggleTarget(e.target);
+            if (!toggle) return;
+            if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                e.stopPropagation();
                 toggleMenu(e);
             }
+        }, true);
 
-            toggle.addEventListener('click', function (e) {
-                handleToggleIntent(e);
-            });
-            toggle.addEventListener('touchend', function (e) {
-                handleToggleIntent(e);
-            }, { passive: false });
-            toggle.addEventListener('pointerup', function (e) {
-                handleToggleIntent(e);
-            });
-            toggle.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    toggleMenu(e);
-                }
-            });
-        });
+        document.addEventListener('click', function (e) {
+            var closeTarget = e.target && e.target.closest ? e.target.closest('#mobileMenu-close') : null;
+            if (!closeTarget) return;
+            e.preventDefault();
+            e.stopPropagation();
+            closeMenu(true);
+        }, true);
+
         if (closeBtn) {
-            closeBtn.addEventListener('click', closeMenu);
+            closeBtn.addEventListener('click', function () {
+                closeMenu(true);
+            });
         }
 
         if (menu) {
@@ -221,6 +277,14 @@
                 normalizeMenuState();
             }
         });
+
+        window.__openMobileNavMenu = function () {
+            openMenu();
+        };
+
+        window.setTimeout(function () {
+            normalizeMenuState();
+        }, 0);
 
         highlightActiveTab();
     }
