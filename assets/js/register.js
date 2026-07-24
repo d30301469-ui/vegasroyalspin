@@ -8,6 +8,16 @@
     }
 
     function runtimeMemberLoggedIn() {
+        var shared = resolveShared();
+        if (shared && typeof shared.runtimeSessionLoggedIn === 'function' && shared.runtimeSessionLoggedIn()) {
+            return true;
+        }
+        if (shared && typeof shared.getMemberJwt === 'function' && shared.getMemberJwt() !== '') {
+            return true;
+        }
+        if (window.__HAS_MEMBER_JWT__ === true) {
+            return true;
+        }
         if (window.__MEMBER_BOOTSTRAP_STATE__ && typeof window.__MEMBER_BOOTSTRAP_STATE__ === 'object') {
             return window.__MEMBER_BOOTSTRAP_STATE__.logged_in === true;
         }

@@ -388,7 +388,7 @@ $slotDemoHref = static function (array $game): string {
                             'UTF-8'
                         );
                         $openLoginJs = 'if (typeof window.__openLoginModal === &quot;function&quot;) { window.__openLoginModal(); } else { var loginBtn = document.getElementById(&quot;Giris&quot;); if (loginBtn) loginBtn.click(); }';
-                        $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{' . $openLoginJs . '}';
+                        $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{var __shared=window.BetcoAuthShared||{};var __runtimeIn=(typeof __shared.runtimeSessionLoggedIn===&quot;function&quot;&amp;&amp;__shared.runtimeSessionLoggedIn())||(typeof __shared.getMemberJwt===&quot;function&quot;&amp;&amp;__shared.getMemberJwt()!==&quot;&quot;)||window.__USER_LOGGED_IN__===true||window.__HAS_MEMBER_JWT__===true;if(__runtimeIn){window.location.href=' . $playHrefJson . ';}else{' . $openLoginJs . '}}';
                         ?>
                         <div class="casinoGameItemContent " data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $runtimePlayIntentJs ?>">
                             <span class="providerBadgeBlock " data-badge=""></span>

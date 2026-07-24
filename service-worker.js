@@ -1,5 +1,5 @@
 /* vegasroyalspin PWA service worker */
-const SW_VERSION = 'v10-mobile-bgaming-runtime-session-guard';
+const SW_VERSION = 'v11-mobile-flow-consistency-pack';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
