@@ -249,6 +249,79 @@ if (!function_exists('metropol_frontend_sanitize_member_session')) {
     }
 }
 
+if (!function_exists('metropol_frontend_restore_member_session_from_request')) {
+    function metropol_frontend_restore_member_session_from_request(): bool
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            if (!is_readable(__DIR__ . '/frontend_session.php')) {
+                return false;
+            }
+            require_once __DIR__ . '/frontend_session.php';
+            metropol_frontend_session_start();
+        }
+
+        if (!empty($_SESSION['loggedin']) && (((int) ($_SESSION['user_id'] ?? 0)) > 0 || !empty($_SESSION['member_jwt']))) {
+            return true;
+        }
+
+        if (!class_exists('MemberLoginService', false)) {
+            $servicePath = dirname(__DIR__) . '/services/MemberLoginService.php';
+            if (!is_readable($servicePath)) {
+                return false;
+            }
+            require_once $servicePath;
+        }
+
+        $restoreCookieName = function_exists('metropol_frontend_member_restore_cookie_name')
+            ? metropol_frontend_member_restore_cookie_name()
+            : 'metropol_member_restore';
+        $cookieJwt = trim((string) ($_COOKIE[$restoreCookieName] ?? $_COOKIE['metropol_member_jwt'] ?? ''));
+        $headerJwt = trim((string) ($_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? ''));
+        $authHeader = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? ''));
+
+        if ($authHeader === '' && function_exists('getallheaders')) {
+            $headers = getallheaders();
+            if (is_array($headers)) {
+                $authHeader = trim((string) ($headers['Authorization'] ?? $headers['authorization'] ?? ''));
+                if ($headerJwt === '') {
+                    $headerJwt = trim((string) ($headers['X-Metropol-Member-Jwt'] ?? $headers['x-metropol-member-jwt'] ?? ''));
+                }
+            }
+        }
+
+        if ($headerJwt === '' && preg_match('/^\s*Bearer\s+(.+)\s*$/i', $authHeader, $matches) === 1) {
+            $headerJwt = trim((string) ($matches[1] ?? ''));
+        }
+
+        $restoreJwt = $cookieJwt !== '' ? $cookieJwt : $headerJwt;
+        if ($restoreJwt === '') {
+            return false;
+        }
+
+        try {
+            $restore = MemberLoginService::backendSession($restoreJwt);
+            if (!MemberLoginService::succeeded($restore)) {
+                if (function_exists('metropol_frontend_clear_member_session')) {
+                    metropol_frontend_clear_member_session();
+                }
+                return false;
+            }
+
+            MemberLoginService::applySession($restore, '');
+            if (empty($_SESSION['member_jwt'])) {
+                $_SESSION['member_jwt'] = $restoreJwt;
+            }
+            $_SESSION['__member_jwt_proxy_synced'] = true;
+            if (function_exists('metropol_frontend_set_member_restore_cookie') && !empty($_SESSION['member_jwt'])) {
+                metropol_frontend_set_member_restore_cookie((string) $_SESSION['member_jwt']);
+            }
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+}
+
 if (!function_exists('metropol_member_api_layout_vars')) {
     /** @return array<string, mixed> */
     function metropol_member_api_layout_vars(): array
