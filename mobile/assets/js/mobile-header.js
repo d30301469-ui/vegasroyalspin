@@ -227,25 +227,8 @@
             });
         }
 
-        var toggleBtn = scope.querySelector('#toggleButton');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(profileTarget)) {
-                    return;
-                }
-                if (toggleMobileProfilePanelSafely()) {
-                    return;
-                }
-                // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — native panel henüz
-                // DOM'da yoksa (ör. oturum senkronu tamamlanmadı), ana sayfaya panelin
-                // kendi açtığı sorgu formatıyla dön: /mobile/profile değil, /?profile=open...
-                // çünkü /mobile/profile oturum senkronu henüz tamamlanmamışsa anında / adresine
-                // geri yönlendirir (bkz. pages/mobile/profile.php loggedin guardı).
-                window.location.href = profileTarget;
-            });
-        }
+        // #toggleButton profili initMobileAvatarProfileModal() uzerinden
+        // tek kanaldan yonetilir — burada ayrica bind etme.
     }
 
     // Sunucu SSR misafir başlığı render etti ama istemci JS geçerli JWT tespit ettiğinde
@@ -257,6 +240,7 @@
             mobileUserWrap.innerHTML = mobileUserHeaderMarkup();
             bindMobileUserHeaderActions(mobileUserWrap);
             initProfileButton();
+            initMobileAvatarProfileModal();
         }
         var guestShortcuts = document.querySelector('.mobile-bc-header .hdr-guest-shortcuts');
         if (guestShortcuts && guestShortcuts.parentNode) {
@@ -303,44 +287,6 @@
             e.stopPropagation();
             openProfileFromAvatar();
         });
-    }
-
-    function bindGlobalProfileIconCapture() {
-        var profileTarget = '/?profile=open&account=profile&page=details';
-        document.addEventListener('click', function (e) {
-            var target = e.target && e.target.closest ? e.target.closest('#toggleButton') : null;
-            if (!target) return;
-            e.preventDefault();
-            e.stopPropagation();
-            if (e.stopImmediatePropagation) {
-                e.stopImmediatePropagation();
-            }
-            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(profileTarget)) {
-                return;
-            }
-            if (toggleMobileProfilePanelSafely()) {
-                return;
-            }
-            window.location.href = profileTarget;
-        }, true);
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key !== 'Enter' && e.key !== ' ') return;
-            var active = document.activeElement;
-            if (!active || active.id !== 'toggleButton') return;
-            e.preventDefault();
-            e.stopPropagation();
-            if (e.stopImmediatePropagation) {
-                e.stopImmediatePropagation();
-            }
-            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(profileTarget)) {
-                return;
-            }
-            if (toggleMobileProfilePanelSafely()) {
-                return;
-            }
-            window.location.href = profileTarget;
-        }, true);
     }
 
     function initSiteLogoNavigation() {
@@ -397,7 +343,6 @@
         initAdditionalToggle();
         initProfileButton();
         initMobileAvatarProfileModal();
-        bindGlobalProfileIconCapture();
         initSiteLogoNavigation();
         initNavScrollStart();
         initBackToTopLayout();

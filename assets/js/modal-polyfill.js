@@ -43,10 +43,22 @@
     modalEl.style.display = 'none';
     modalEl.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('modal-open');
-    var parent = modalEl.parentNode;
-    if (parent) {
-      var backdrops = parent.querySelectorAll('[data-modal-backdrop]');
-      for (var i = 0; i < backdrops.length; i++) backdrops[i].remove();
+    // Yalnizca bu modala ait backdrop'u kaldir — diger modal'lara dokunma.
+    var prev = modalEl.previousElementSibling;
+    if (prev && prev.hasAttribute && prev.getAttribute('data-modal-backdrop') !== null) {
+      prev.remove();
+    } else {
+      // Geriye donuk: eger backdrop modal'dan once degilse, parent'ta eslesen ilk backdrop'u bul
+      var parent = modalEl.parentNode;
+      if (parent) {
+        var backdrops = parent.querySelectorAll('[data-modal-backdrop]');
+        for (var i = 0; i < backdrops.length; i++) {
+          if (backdrops[i].nextElementSibling === modalEl) {
+            backdrops[i].remove();
+            break;
+          }
+        }
+      }
     }
     if (typeof window.jQuery !== 'undefined') {
       window.jQuery(modalEl).trigger('hidden.bs.modal');
