@@ -232,7 +232,9 @@ final class ApiSliders
             $today = date('Y-m-d');
 
             $where = [];
-            if (isset($columns['status'])) {
+            if (isset($columns['status']) && isset($columns['is_active'])) {
+                $where[] = "(LOWER(TRIM(CAST(status AS CHAR))) IN ('1', 'active', 'published', 'on', 'true') OR LOWER(TRIM(CAST(is_active AS CHAR))) IN ('1', 'active', 'published', 'on', 'true'))";
+            } elseif (isset($columns['status'])) {
                 $where[] = "LOWER(TRIM(CAST(status AS CHAR))) IN ('1', 'active', 'published', 'on', 'true')";
             } elseif (isset($columns['is_active'])) {
                 $where[] = "LOWER(TRIM(CAST(is_active AS CHAR))) IN ('1', 'active', 'published', 'on', 'true')";
@@ -243,12 +245,16 @@ final class ApiSliders
                 'today_end' => $today,
             ];
 
-            if (isset($columns['start_date'])) {
+            if (isset($columns['start_date']) && isset($columns['starts_at'])) {
+                $where[] = '((start_date IS NULL AND starts_at IS NULL) OR DATE(COALESCE(start_date, starts_at)) <= :today_start)';
+            } elseif (isset($columns['start_date'])) {
                 $where[] = '(start_date IS NULL OR DATE(start_date) <= :today_start)';
             } elseif (isset($columns['starts_at'])) {
                 $where[] = '(starts_at IS NULL OR DATE(starts_at) <= :today_start)';
             }
-            if (isset($columns['end_date'])) {
+            if (isset($columns['end_date']) && isset($columns['ends_at'])) {
+                $where[] = '((end_date IS NULL AND ends_at IS NULL) OR DATE(COALESCE(end_date, ends_at)) >= :today_end)';
+            } elseif (isset($columns['end_date'])) {
                 $where[] = '(end_date IS NULL OR DATE(end_date) >= :today_end)';
             } elseif (isset($columns['ends_at'])) {
                 $where[] = '(ends_at IS NULL OR DATE(ends_at) >= :today_end)';
