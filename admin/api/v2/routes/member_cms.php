@@ -507,6 +507,9 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
         http_response_code(200);
         $dbDiag = null;
         try {
+            if (!class_exists('AdminDatabase', false) && is_file(admin_panel_paths()['panel_app'] . '/Core/AdminDatabase.php')) {
+                require_once admin_panel_paths()['panel_app'] . '/Core/AdminDatabase.php';
+            }
             if (class_exists('AdminDatabase', false)) {
                 $diagPdo = AdminDatabase::pdo();
                 $dbDiag = [
