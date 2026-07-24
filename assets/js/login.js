@@ -108,11 +108,24 @@
         });
     }
 
-    function showLoginModal() {
-        // Mobil profil paneli aciksa kapat, body state cakismasini onle
+    function closeMobileSurfacesBeforeAuthModal() {
+        if (!document.body || !document.body.classList.contains('mobile-site')) {
+            return;
+        }
         if (typeof window.__closeMobileProfilePanel === 'function') {
             window.__closeMobileProfilePanel();
         }
+        if (typeof window.__closeMobileNavMenu === 'function') {
+            window.__closeMobileNavMenu();
+        }
+        if (typeof window.__closeSmartPanel === 'function') {
+            window.__closeSmartPanel();
+        }
+    }
+
+    function showLoginModal() {
+        // Mobil katmanlari kapat, body lock/state cakismasini onle.
+        closeMobileSurfacesBeforeAuthModal();
         var el = document.getElementById('login2');
         if (!el) return;
         if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
@@ -154,6 +167,7 @@
     }
 
     function showRegisterModal() {
+        closeMobileSurfacesBeforeAuthModal();
         var el = document.getElementById('registerModal');
         if (!el) return;
         if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
