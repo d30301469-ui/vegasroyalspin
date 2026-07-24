@@ -260,6 +260,13 @@ if (!function_exists('metropol_frontend_restore_member_session_from_request')) {
             metropol_frontend_session_start();
         }
 
+        if (isset($_GET['logout']) && (string) $_GET['logout'] === '1') {
+            if (function_exists('metropol_frontend_clear_member_session')) {
+                metropol_frontend_clear_member_session();
+            }
+            return false;
+        }
+
         if (!empty($_SESSION['loggedin']) && (((int) ($_SESSION['user_id'] ?? 0)) > 0 || !empty($_SESSION['member_jwt']))) {
             return true;
         }
