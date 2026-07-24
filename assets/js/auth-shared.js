@@ -474,13 +474,20 @@
                 return Promise.resolve(false);
             }
             memberAuthFailureInFlight = true;
+            // localStorage JWT'yi temizlemeden ONCE kaydet — /auth/session
+            // isteginde bu JWT'yi gonder ki sunucu oturumu dogrulayabilsin.
+            var savedJwt = self.getMemberJwt();
             self.clearMemberJwt();
 
             var sessionUrl = self.proxyApiUrl('/auth/session');
+            var headers = self.memberSessionHeaders({ Accept: 'application/json' });
+            if (savedJwt) {
+                headers['X-Metropol-Member-Jwt'] = savedJwt;
+            }
             return w.fetch(sessionUrl, {
                 method: 'GET',
                 credentials: 'same-origin',
-                headers: self.memberSessionHeaders({ Accept: 'application/json' })
+                headers: headers
             }).then(function (res) {
                 return res.text().then(function (text) {
                     var data = null;
