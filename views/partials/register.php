@@ -349,12 +349,12 @@ if (class_exists('ApiMediaUrl', false)) {
                                 <input type="checkbox" name="terms_accepted" id="modal_terms_accepted" required class="register-terms-checkbox">
                                 <span class="register-terms-text">
                                     18 yaşından büyüğüm, Genel Kurallar ve Şartları okudum ve kabul ediyorum.
-                                    <a href="/gizlilik-politikasi" target="_blank">Gizlilik Politikası</a>
+                                    <a href="/gizlilik-politikasi" target="_blank" rel="noopener noreferrer">Gizlilik Politikası</a>
                                     ve
-                                    <a href="/genel-sartlar" target="_blank">Genel Şartlar ve Koşullar</a>
+                                    <a href="/genel-sartlar" target="_blank" rel="noopener noreferrer">Genel Şartlar ve Koşullar</a>
                                 </span>
                             </label>
-                            <a href="/gizlilik-politikasi" target="_blank" class="register-terms-secondary-link">
+                            <a href="/gizlilik-politikasi" target="_blank" rel="noopener noreferrer" class="register-terms-secondary-link">
                                 <span class="register-terms-icon" aria-hidden="true"></span>
                                 Gizlilik Politikası ve Kullanım Şartları
                             </a>

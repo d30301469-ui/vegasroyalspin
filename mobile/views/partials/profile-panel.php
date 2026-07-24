@@ -122,7 +122,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
         <a class="logo" href="/" data-site-logo-link>
           <?php if ($panelLogoUrl !== ''): ?><img class="hdr-logo-bc" src="<?= htmlspecialchars($panelLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
         </a>
-        <a href="https://affiliates.my/" target="_blank" class=" header-icon"><img alt="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" decoding="async" src="https://cms.casinomilyon615.com/storage/medias/casinomilyon-18755179/media_18755179_1617883267cb571ec980e925adbb0427.gif"></a>
+        <a href="https://affiliates.my/" target="_blank" rel="noopener noreferrer" class=" header-icon"><img alt="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" decoding="async" src="https://cms.casinomilyon615.com/storage/medias/casinomilyon-18755179/media_18755179_1617883267cb571ec980e925adbb0427.gif"></a>
       </div>
       <i class="hdr-user-close bc-i-close-remove"></i>
     </div>
