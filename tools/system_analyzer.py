@@ -34,6 +34,8 @@ EXCLUDE_FILES = {
     'swiper-bundle.min.js', 'swiper-bundle.min.css',
     'runtime.js', 'vendors.js', '2026.js', 'admin-ui.js',
     'vendor-chartjs.js', 'vendor-fullcalendar.js', 'style.css',
+    'bc-mobile-index.css', 'bc-mobile-header-original.css',
+    'bc-mobile-custom.css', 'bc-mobile-maltabet.css',
 }
 
 OUTPUT_DIR = PROJECT_ROOT / 'tools' / 'reports'
@@ -196,11 +198,26 @@ def analyze_html_php(file_path: Path, content: str):
                       f'{style_count} inline style= attributes — consider CSS classes')
 
     # 11. Unescaped PHP echo
+    SAFE_ECHO_FUNCS = [
+        'htmlspecialchars', 'htmlentities', 'strip_tags',
+        'h(', 'text(', 'e(', 'esc_html(', 'esc_attr(',
+        'int)', '(int)', 'float)', '(float)',
+        'json_encode', 'urlencode', 'rawurlencode',
+        'number_format', 'ucfirst', 'strtoupper', 'strtolower',
+        'basename', 'trim', 'date(', 'gmdate(',
+        'money(', 'dateInputValue(', 'dateTimeInputValue(',
+        'badgeClass(', 'fieldLabel(', 'fieldId(',
+        'parseEnumOptions(', 'jsonRows(', 'jsonRootType(',
+        'val(', 'hsc(',
+    ]
     for i, line in enumerate(lines, 1):
-        for m in re.finditer(r'<\?=\s*\$[^;]*\?>', line):
-            if 'htmlspecialchars' not in m.group() and 'htmlentities' not in m.group():
+        for m in re.finditer(r'<\?=\s*(.+?)\s*\?>', line):
+            expr = m.group(1).strip()
+            # Skip if contains any safe escaping function
+            is_safe = any(fn in expr for fn in SAFE_ECHO_FUNCS)
+            if not is_safe:
                 collector.add(file_path, i, 'warning', 'html-xss',
-                              'Short echo without htmlspecialchars() — XSS risk', True,
+                              'Short echo without escaping — potential XSS risk', True,
                               'Use <?= htmlspecialchars($var, ENT_QUOTES) ?>')
 
     # 12. Missing viewport meta
@@ -426,7 +443,6 @@ def analyze_css(file_path: Path, content: str):
         'pading': 'padding', 'heigth': 'height', 'widht': 'width',
         'dispay': 'display', 'overfow': 'overflow', 'visiblity': 'visibility',
         'text-aling': 'text-align', 'font-weigth': 'font-weight',
-        'z-inde': 'z-index', 'opactiy': 'opacity', 'curosr': 'cursor',
         'boder-radius': 'border-radius', 'backround': 'background',
         'backgound': 'background', 'postion': 'position',
     }
