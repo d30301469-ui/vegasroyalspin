@@ -15,7 +15,9 @@ foreach ($sliders as $slider) {
         continue;
     }
     $mPath = trim((string) ($slider['mobileImageUrl'] ?? $slider['mobile_image_url'] ?? $slider['mobile_path'] ?? ''));
-    $imgUrl = slider_build_url($mPath);
+    $dPath = trim((string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? ''));
+    $imgPath = $mPath !== '' ? $mPath : $dPath;
+    $imgUrl = slider_build_url($imgPath);
     if ($imgUrl === '') {
         continue;
     }
