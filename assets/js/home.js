@@ -133,17 +133,6 @@ function openPlayUrl(url) {
     } catch (e) {
       targetUrl += (targetUrl.indexOf('?') === -1 ? '?' : '&') + 'open_mode=redirect';
     }
-    var a = document.createElement('a');
-    a.href = targetUrl;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    if (document.visibilityState === 'hidden') {
-      return;
-    }
   }
   window.location.href = targetUrl;
 }

@@ -394,18 +394,7 @@
                 parsed.searchParams.set('open_mode', 'redirect');
                 url = parsed.pathname + parsed.search + parsed.hash;
             } catch (e) {
-                url += '&open_mode=redirect';
-            }
-            var a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            if (document.visibilityState === 'hidden') {
-                return;
+                url += (url.indexOf('?') === -1 ? '?' : '&') + 'open_mode=redirect';
             }
         }
         window.location.href = url;
