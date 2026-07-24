@@ -732,12 +732,10 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                         $playHref = $slotPlayTarget($game);
                         $demoHref = $slotDemoHref($game);
                         $playHrefJson = htmlspecialchars(json_encode($playHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
-                        // Play navigation is routed through MaltabetWalletPicker (main/bonus wallet choice modal)
-                        // when available, falling back to direct navigation otherwise.
-                        $playNavJs = 'var u=' . $playHrefJson . ';function __navPlay(nu){window.location.href=nu;}if(window.MaltabetWalletPicker&&typeof window.MaltabetWalletPicker.launch===&quot;function&quot;){window.MaltabetWalletPicker.launch(u,__navPlay);}else{__navPlay(u);}';
                         $openLoginJs = 'if (typeof window.__openLoginModal === &quot;function&quot;) { window.__openLoginModal(); } else { var loginBtn = document.getElementById(&quot;Giris&quot;); if (loginBtn) loginBtn.click(); }';
+                        $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{var __shared=window.BetcoAuthShared||{};var __runtimeIn=(typeof __shared.runtimeSessionLoggedIn===&quot;function&quot;&amp;&amp;__shared.runtimeSessionLoggedIn())||(typeof __shared.getMemberJwt===&quot;function&quot;&amp;&amp;__shared.getMemberJwt()!==&quot;&quot;)||window.__USER_LOGGED_IN__===true||window.__HAS_MEMBER_JWT__===true;if(__runtimeIn){window.location.href=' . $playHrefJson . ';}else{' . $openLoginJs . '}}';
                         ?>
-                        <div class="casinoGameItemContent " data-favorite-kind="<?= htmlspecialchars($slotFavoriteKind, ENT_QUOTES, 'UTF-8') ?>" data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $loggedIn ? $playNavJs : $openLoginJs ?>">
+                        <div class="casinoGameItemContent " data-favorite-kind="<?= htmlspecialchars($slotFavoriteKind, ENT_QUOTES, 'UTF-8') ?>" data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $runtimePlayIntentJs ?>">
                             <span class="providerBadgeBlock " data-badge=""></span>
                             <div class="casinoGameItem ">
                                 <img alt="<?= htmlspecialchars($game['game_name'], ENT_QUOTES); ?>"
@@ -756,7 +754,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                                             <p class="game-title-text"><?= htmlspecialchars((string) ($game['game_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                                         </div>
                                         <div class="game-actions">
-                                            <a class="play-btn" href="<?= htmlspecialchars($playHref, ENT_QUOTES, 'UTF-8') ?>" onclick="event.stopPropagation();event.preventDefault();<?= $loggedIn ? $playNavJs : $openLoginJs ?>">OYNA</a>
+                                            <a class="play-btn" href="<?= htmlspecialchars($playHref, ENT_QUOTES, 'UTF-8') ?>" onclick="<?= $runtimePlayIntentJs ?>">OYNA</a>
                                             <a class="demo-btn" href="<?= htmlspecialchars($demoHref, ENT_QUOTES, 'UTF-8') ?>" onclick="event.stopPropagation()">DEMO</a>
                                         </div>
                                     </div>
