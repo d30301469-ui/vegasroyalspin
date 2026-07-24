@@ -260,6 +260,7 @@ final class ApiSliders
                 isset($columns['title']) ? 'title' : "'' AS title",
                 isset($columns['subtitle']) ? 'subtitle' : "'' AS subtitle",
                 isset($columns['description']) ? 'description' : "'' AS description",
+                isset($columns['image_url']) ? 'image_url' : "'' AS image_url",
                 isset($columns['desktop_path'])
                     ? 'desktop_path'
                     : (isset($columns['desktop_image_url'])
@@ -271,6 +272,7 @@ final class ApiSliders
                     : (isset($columns['mobile_image_url'])
                         ? 'mobile_image_url AS mobile_path'
                         : "'' AS mobile_path"),
+                isset($columns['surface']) ? 'surface' : "'all' AS surface",
                 isset($columns['link_url']) ? 'link_url' : "'' AS link_url",
                 isset($columns['button_link'])
                     ? 'button_link'
@@ -329,6 +331,24 @@ final class ApiSliders
             }
             $desktop = trim((string) ($row['desktop_path'] ?? $row['desktop_image_url'] ?? ''));
             $mobile = trim((string) ($row['mobile_image_url'] ?? $row['mobile_path'] ?? ''));
+            $singleImage = trim((string) ($row['image_url'] ?? ''));
+            $rowSurface = self::normalizeSurface((string) ($row['surface'] ?? 'all'));
+
+            if ($singleImage !== '') {
+                if ($rowSurface === 'mobile' && $mobile === '') {
+                    $mobile = $singleImage;
+                } elseif ($rowSurface === 'desktop' && $desktop === '') {
+                    $desktop = $singleImage;
+                } elseif ($rowSurface === 'all') {
+                    if ($desktop === '') {
+                        $desktop = $singleImage;
+                    }
+                    if ($mobile === '') {
+                        $mobile = $singleImage;
+                    }
+                }
+            }
+
             if ($desktop === '' && $mobile === '') {
                 continue;
             }
@@ -549,7 +569,12 @@ final class ApiSliders
             return [];
         }
 
-        $list = self::fetch(['category' => $category]);
+        $surface = 'desktop';
+        if ((defined('SURFACE') && SURFACE === 'mobile') || (isset($_SERVER['HTTP_HOST']) && strpos(strtolower((string) $_SERVER['HTTP_HOST']), 'm.') === 0)) {
+            $surface = 'mobile';
+        }
+
+        $list = self::fetch(['category' => $category, 'surface' => $surface]);
 
         return array_values(array_filter(
             $list,
