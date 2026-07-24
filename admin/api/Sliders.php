@@ -328,8 +328,25 @@ final class ApiSliders
             if (!is_array($row)) {
                 continue;
             }
-            $desktop = trim((string) ($row['desktop_path'] ?? $row['desktop_image_url'] ?? ''));
-            $mobile = trim((string) ($row['mobile_image_url'] ?? $row['mobile_path'] ?? ''));
+            $pickFirstNonEmpty = static function (array $values): string {
+                foreach ($values as $value) {
+                    $candidate = trim((string) $value);
+                    if ($candidate !== '') {
+                        return $candidate;
+                    }
+                }
+
+                return '';
+            };
+
+            $desktop = $pickFirstNonEmpty([
+                $row['desktop_path'] ?? '',
+                $row['desktop_image_url'] ?? '',
+            ]);
+            $mobile = $pickFirstNonEmpty([
+                $row['mobile_path'] ?? '',
+                $row['mobile_image_url'] ?? '',
+            ]);
             $singleImage = trim((string) ($row['image_url'] ?? ''));
             $rowSurface = self::normalizeSurface((string) ($row['surface'] ?? 'all'));
 
@@ -353,7 +370,9 @@ final class ApiSliders
             }
             $desktop = ApiMediaUrl::resolve($desktop);
             $mobile = ApiMediaUrl::resolve($mobile);
-            $selected = $surface === 'mobile' ? $mobile : $desktop;
+            $selected = $surface === 'mobile'
+                ? ($mobile !== '' ? $mobile : $desktop)
+                : ($desktop !== '' ? $desktop : $mobile);
             $sliders[] = [
                 'id' => (int) ($row['id'] ?? 0),
                 'title' => (string) ($row['title'] ?? ''),
