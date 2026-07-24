@@ -24,9 +24,9 @@ $env = static function (array $keys, string $default = ''): string {
 $db = [
     'host' => $env(['ADMIN_DB_HOST', 'DATABASE_HOST', 'DB_HOST'], '127.0.0.1'),
     'port' => (int) $env(['ADMIN_DB_PORT', 'DATABASE_PORT', 'DB_PORT'], '3306'),
-    'database' => $env(['ADMIN_DB_DATABASE', 'DATABASE_NAME', 'DATABASE_DATABASE', 'DB_DATABASE'], 'vegasroyalspin'),
-    'username' => $env(['ADMIN_DB_USERNAME', 'DATABASE_USERNAME', 'DB_USERNAME'], 'root'),
-    'password' => $env(['ADMIN_DB_PASSWORD', 'DATABASE_PASSWORD', 'DB_PASSWORD'], ''),
+    'database' => $env(['ADMIN_DB_DATABASE', 'DATABASE_NAME', 'DATABASE_DATABASE', 'DB_DATABASE', 'DB_NAME'], 'vegasroyalspin'),
+    'username' => $env(['ADMIN_DB_USERNAME', 'DATABASE_USERNAME', 'DB_USERNAME', 'DB_USER'], 'root'),
+    'password' => $env(['ADMIN_DB_PASSWORD', 'DATABASE_PASSWORD', 'DB_PASSWORD', 'DB_PASS'], ''),
     'charset' => $env(['ADMIN_DB_CHARSET', 'DATABASE_CHARSET', 'DB_CHARSET'], 'utf8mb4'),
 ];
 

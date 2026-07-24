@@ -24,9 +24,9 @@ return static function (): array {
     $config = [
         'host' => $env(['ADMIN_DB_HOST', 'DB_HOST', 'DATABASE_HOST'], '127.0.0.1'),
         'port' => (int) $env(['ADMIN_DB_PORT', 'DB_PORT', 'DATABASE_PORT'], '3306'),
-        'database' => $env(['ADMIN_DB_DATABASE', 'DB_DATABASE', 'DATABASE_NAME', 'DATABASE_DATABASE'], ''),
-        'username' => $env(['ADMIN_DB_USERNAME', 'DB_USERNAME', 'DATABASE_USERNAME'], 'root'),
-        'password' => $env(['ADMIN_DB_PASSWORD', 'DB_PASSWORD', 'DATABASE_PASSWORD'], ''),
+        'database' => $env(['ADMIN_DB_DATABASE', 'DB_DATABASE', 'DATABASE_NAME', 'DATABASE_DATABASE', 'DB_NAME'], ''),
+        'username' => $env(['ADMIN_DB_USERNAME', 'DB_USERNAME', 'DATABASE_USERNAME', 'DB_USER'], 'root'),
+        'password' => $env(['ADMIN_DB_PASSWORD', 'DB_PASSWORD', 'DATABASE_PASSWORD', 'DB_PASS'], ''),
         'charset' => $env(['ADMIN_DB_CHARSET', 'DB_CHARSET', 'DATABASE_CHARSET'], 'utf8mb4'),
     ];
 

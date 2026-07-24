@@ -186,9 +186,9 @@ if (!function_exists('frontend_has_database_credentials')) {
     {
         foreach ([
             'DB_HOST', 'DATABASE_HOST', 'ADMIN_DB_HOST',
-            'DB_DATABASE', 'DATABASE_NAME', 'ADMIN_DB_DATABASE',
-            'DB_USERNAME', 'DATABASE_USERNAME', 'ADMIN_DB_USERNAME',
-            'DB_PASSWORD', 'DATABASE_PASSWORD', 'ADMIN_DB_PASSWORD',
+            'DB_DATABASE', 'DATABASE_NAME', 'ADMIN_DB_DATABASE', 'DB_NAME',
+            'DB_USERNAME', 'DATABASE_USERNAME', 'ADMIN_DB_USERNAME', 'DB_USER',
+            'DB_PASSWORD', 'DATABASE_PASSWORD', 'ADMIN_DB_PASSWORD', 'DB_PASS',
         ] as $key) {
             if (trim(frontend_env_string($key)) !== '') {
                 return true;
