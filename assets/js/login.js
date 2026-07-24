@@ -109,6 +109,10 @@
     }
 
     function showLoginModal() {
+        // Mobil profil paneli aciksa kapat, body state cakismasini onle
+        if (typeof window.__closeMobileProfilePanel === 'function') {
+            window.__closeMobileProfilePanel();
+        }
         var el = document.getElementById('login2');
         if (!el) return;
         if ($jq && $jq.fn && typeof $jq.fn.modal === 'function') {
@@ -214,7 +218,13 @@
         if (!container) return;
 
         // Modal gorunur degilken render denemesi widget'i yarim birakabiliyor.
+        // Mobilde CSS transition/animasyon sirasinda getClientRects() bos donebilir;
+        // bu durumda gecikmeli tekrar dene, aninda vazgecme.
         if (!container.offsetParent && container.getClientRects().length === 0) {
+            var isMobileSite = !!(document.body && document.body.classList.contains('mobile-site'));
+            if (isMobileSite) {
+                window.setTimeout(ensureLoginTurnstileWidget, 200);
+            }
             return;
         }
 
@@ -314,6 +324,10 @@
         var main = inLoginScope(scope, 'loginFormScreen');
         var forg = inLoginScope(scope, 'forgotPasswordScreen');
         var forgotForm = forg ? forg.querySelector('.login-form') : null;
+        // Toast bildirimlerini geri ac
+        if (typeof window.__restoreForgotToast === 'function') {
+            window.__restoreForgotToast();
+        }
         if (hdr) {
             hdr.classList.remove('d-none');
         }
@@ -352,17 +366,21 @@
         if (forg) {
             forg.classList.remove('d-none');
         }
+        // Toast bildirimlerini gecici olarak sustur (mobil toast overlay sorunu)
+        if (typeof window.__disableForgotToast === 'function') {
+            window.__disableForgotToast();
+        }
         if (forgotForm) {
             if (isMobileSite) {
                 if (forg) {
                     forg.style.justifyContent = 'flex-start';
-                    forg.style.paddingTop = '390px';
+                    forg.style.paddingTop = 'clamp(330px, 46vh, 410px)';
                     forg.style.paddingBottom = '12px';
                     forg.style.width = 'calc(100% - 24px)';
                     forg.style.margin = '0 12px';
                 }
                 forgotForm.style.flex = '0 0 auto';
-                forgotForm.style.marginTop = '18px';
+                forgotForm.style.marginTop = '16px';
                 forgotForm.style.justifyContent = '';
             } else {
                 forgotForm.style.flex = '0 0 auto';
@@ -421,15 +439,6 @@
                 showLoginModal();
             });
         }
-
-        document.addEventListener('click', function (e) {
-            var t = e.target;
-            if (t && (t.id === 'Giris' || (t.closest && t.closest('#Giris')))) {
-                e.preventDefault();
-                e.stopPropagation();
-                showLoginModal();
-            }
-        }, true);
 
         if (openRegisterFromLogin && registerModalEl) {
             openRegisterFromLogin.addEventListener('click', function (e) {
@@ -679,8 +688,7 @@
                             window.__loginSubmitting = false;
                             showError('Giriş başarılı ancak oturum token\'ı alınamadı. Sayfayı yenileyip tekrar deneyin.');
                             return;
-                        }
-                        window.__USER_LOGGED_IN__ = true;
+                        }                        window.__loginSubmitting = false;                        window.__USER_LOGGED_IN__ = true;
                         window.__HAS_MEMBER_JWT__ = true;
                         window.__MEMBER_LOGIN_AT__ = Date.now();
                         notify('success', data.message || 'Giriş başarılı.', 'Giriş');

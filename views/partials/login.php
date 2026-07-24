@@ -386,7 +386,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                 </form>
 
                                 <div class="login-forgot">
-                                    <a href="#" id="openForgotPassword" onclick="return window.__openForgotPasswordInline ? window.__openForgotPasswordInline(this) : false;">ŞİFRENİZİ Mİ UNUTTUNUZ?</a>
+                                    <a href="#" id="openForgotPassword">ŞİFRENİZİ Mİ UNUTTUNUZ?</a>
                                 </div>
                             </div>
 
@@ -416,7 +416,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                         <span>Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.</span>
                                     </div>
                                     <div class="login-forgot login-back-row">
-                                        <a href="#" id="backToLoginFromForgot" onclick="return window.__backToLoginInline ? window.__backToLoginInline(this) : false;">Girişe dön</a>
+                                        <a href="#" id="backToLoginFromForgot">Girişe dön</a>
                                     </div>
                                 </form>
                             </div>

@@ -254,6 +254,22 @@
                 loginBtn.click();
                 return;
             }
+            // Son care: login.js henuz yuklenmediyse gecikmeli tekrar dene.
+            // MutationObserver ile DOM'da #login2 modalini bekle, gelince ac.
+            if (!document.getElementById('login2')) {
+                if (typeof MutationObserver !== 'undefined' && !w.__loginPromptObserverAttached) {
+                    w.__loginPromptObserverAttached = true;
+                    var observer = new MutationObserver(function () {
+                        if (typeof w.__openLoginModal === 'function') {
+                            observer.disconnect();
+                            w.__openLoginModal();
+                        }
+                    });
+                    observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+                    // Guvenlik supabi: 5 saniye sonra observer'i temizle
+                    window.setTimeout(function () { observer.disconnect(); w.__loginPromptObserverAttached = false; }, 5000);
+                }
+            }
         } catch (eLogin) {
             /* ignore */
         }

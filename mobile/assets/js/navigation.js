@@ -136,6 +136,7 @@
                 if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(href)) {
                     e.preventDefault();
                     e.stopPropagation();
+                    closeMenu();
                     return;
                 }
                 closeMenu();
@@ -154,9 +155,6 @@
             if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(href)) {
                 e.preventDefault();
                 e.stopPropagation();
-                if (e.stopImmediatePropagation) {
-                    e.stopImmediatePropagation();
-                }
             }
         }, true);
 
