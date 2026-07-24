@@ -63,27 +63,34 @@
     function initGuestAuthButtons() {
         var loginBtn = document.getElementById('Giris');
         var registerBtn = document.getElementById('openRegister');
+
+        function openLogin(e) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof window.__openLoginModal === 'function') {
+                window.__openLoginModal();
+            } else if (window.MaltabetAuth && typeof window.MaltabetAuth.showLoginModal === 'function') {
+                window.MaltabetAuth.showLoginModal();
+            }
+        }
+
+        function openRegister(e) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof window.__openRegisterModal === 'function') {
+                window.__openRegisterModal();
+            } else if (window.MaltabetAuth && typeof window.MaltabetAuth.showRegisterModal === 'function') {
+                window.MaltabetAuth.showRegisterModal();
+            }
+        }
+
         if (loginBtn && !loginBtn.getAttribute('data-mobile-auth-bound')) {
             loginBtn.setAttribute('data-mobile-auth-bound', '1');
-            loginBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                if (typeof window.__openLoginModal === 'function') {
-                    window.__openLoginModal();
-                } else if (window.MaltabetAuth && typeof window.MaltabetAuth.showLoginModal === 'function') {
-                    window.MaltabetAuth.showLoginModal();
-                }
-            });
+            loginBtn.addEventListener('click', openLogin);
+            loginBtn.addEventListener('touchend', function (e) { openLogin(e); }, { passive: false });
         }
         if (registerBtn && !registerBtn.getAttribute('data-mobile-auth-bound')) {
             registerBtn.setAttribute('data-mobile-auth-bound', '1');
-            registerBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                if (typeof window.__openRegisterModal === 'function') {
-                    window.__openRegisterModal();
-                } else if (window.MaltabetAuth && typeof window.MaltabetAuth.showRegisterModal === 'function') {
-                    window.MaltabetAuth.showRegisterModal();
-                }
-            });
+            registerBtn.addEventListener('click', openRegister);
+            registerBtn.addEventListener('touchend', function (e) { openRegister(e); }, { passive: false });
         }
     }
 
