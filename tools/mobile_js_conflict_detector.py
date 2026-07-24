@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-VegasRoyalSpin Mobile JS Conflict Detector & Fixer
+VegasRoyalSpin Mobile Full Design Scanner & Fixer
 ===================================================
-Detects JavaScript conflicts in the mobile version:
-- Duplicate script loads
-- Menu toggle conflicts
-- Game open failures
-- Scroll lock conflicts
-- Event listener duplication
-- Panel overlay conflicts
+Comprehensive mobile design analysis:
+- JS conflicts (duplicate loads, menu binding, scroll locks)
+- CSS issues (z-index stacking, mobile-specific files, redundancy)
+- HTML structure (missing ARIA, viewport, orphan overlays)
+- Performance (CSS file count, large inline SVGs)
+- Layout risks (fixed positioning conflicts, touch-action issues)
 
 Usage:
   python tools/mobile_js_conflict_detector.py          # detect only
@@ -468,30 +467,276 @@ class JSConflictDetector:
     # ── 7. Generate comprehensive report ──────────────────────────
     def run_all_checks(self) -> List[Dict]:
         print("=" * 70)
-        print("  VegasRoyalSpin Mobile JS Conflict Detector")
+        print("  VegasRoyalSpin Mobile Full Design Scanner")
         print("=" * 70)
         print()
 
-        print("[1/6] Detecting duplicate script loads...")
+        print("[1/9] Detecting duplicate script loads...")
         self.detect_duplicate_scripts()
 
-        print("[2/6] Detecting cross-layout duplicates...")
+        print("[2/9] Detecting cross-layout duplicates...")
         self.detect_cross_layout_duplicates()
 
-        print("[3/6] Scanning JS files for conflict patterns...")
+        print("[3/9] Scanning JS files for conflict patterns...")
         self.scan_js_conflicts()
 
-        print("[4/6] Checking IIFE isolation...")
+        print("[4/9] Checking IIFE isolation...")
         self.detect_iife_isolation()
 
-        print("[5/6] Checking slot.js vs bgaming.js conflict...")
+        print("[5/9] Checking slot.js vs bgaming.js conflict...")
         self.detect_slot_bgaming_conflict()
 
-        print("[6/6] Checking inline script conflicts...")
+        print("[6/9] Checking inline script conflicts...")
         self.detect_inline_script_conflicts()
+
+        print("[7/9] Scanning mobile CSS for issues...")
+        self.scan_mobile_css()
+
+        print("[8/9] Checking mobile HTML structure...")
+        self.check_mobile_html_structure()
+
+        print("[9/9] Checking mobile layout/performance...")
+        self.check_mobile_performance()
 
         print()
         return self.issues
+
+    # ── 8. Mobile CSS checks ──────────────────────────────────────
+    CSS_FILES_CHECK = [
+        "mobile/assets/css/base.css",
+        "mobile/assets/css/header.css",
+        "mobile/assets/css/menu.css",
+        "mobile/assets/css/home.css",
+        "mobile/assets/css/home-widgets.css",
+        "mobile/assets/css/slots.css",
+        "mobile/assets/css/bottom-bar.css",
+        "mobile/assets/css/footer.css",
+        "mobile/assets/css/auth-modals.css",
+        "mobile/assets/css/profile-panel.css",
+    ]
+
+    def scan_mobile_css(self):
+        """Check mobile CSS files for issues."""
+        # Check if each mobile CSS file exists
+        for css_file in self.CSS_FILES_CHECK:
+            content = self.read_file(css_file)
+            if not content:
+                self.issues.append({
+                    "type": "missing_mobile_css",
+                    "file": css_file,
+                    "severity": "high",
+                    "detail": f"Mobile CSS file '{css_file}' is missing"
+                })
+                continue
+
+            # Check for z-index values that could conflict
+            z_indices = re.findall(r'z-index\s*:\s*(\d+)', content, re.IGNORECASE)
+            if z_indices:
+                high_z = [int(z) for z in z_indices if int(z) > 99990]
+                if high_z:
+                    self.issues.append({
+                        "type": "high_z_index_risk",
+                        "file": css_file,
+                        "values": sorted(set(high_z)),
+                        "severity": "low",
+                        "detail": f"High z-index values in {Path(css_file).name}: {sorted(set(high_z))} — may overlap with other overlays"
+                    })
+
+            # Check for !important abuse
+            important_count = len(re.findall(r'!important', content, re.IGNORECASE))
+            if important_count > 10:
+                self.issues.append({
+                    "type": "css_important_abuse",
+                    "file": css_file,
+                    "count": important_count,
+                    "severity": "medium",
+                    "detail": f"{important_count} !important declarations in {Path(css_file).name} — may cause specificity wars"
+                })
+
+            # Check for position:fixed without z-index
+            fixed_no_z = re.findall(
+                r'position\s*:\s*fixed[^}]*?(?=\})',
+                content, re.IGNORECASE | re.DOTALL
+            )
+            for block in fixed_no_z:
+                if 'z-index' not in block.lower():
+                    self.issues.append({
+                        "type": "fixed_no_zindex",
+                        "file": css_file,
+                        "severity": "low",
+                        "detail": f"position:fixed without z-index in {Path(css_file).name} — stacking order not defined"
+                    })
+                    break  # one per file is enough
+
+            # Check for overflow:hidden on body (scroll prevention)
+            if 'body' in content and 'overflow' in content and 'hidden' in content:
+                self.issues.append({
+                    "type": "body_overflow_hidden",
+                    "file": css_file,
+                    "severity": "medium",
+                    "detail": f"body overflow:hidden found in {Path(css_file).name} — may block scrolling"
+                })
+
+    # ── 9. Mobile HTML structure checks ──────────────────────────
+    def check_mobile_html_structure(self):
+        """Check mobile PHP view files for structural issues."""
+        mobile_head = self.read_file("mobile/views/layouts/head.php")
+        mobile_footer = self.read_file("mobile/views/partials/footer.php")
+
+        if mobile_head:
+            # Check viewport meta
+            if 'viewport' not in mobile_head.lower():
+                self.issues.append({
+                    "type": "missing_viewport_meta",
+                    "file": "mobile/views/layouts/head.php",
+                    "severity": "high",
+                    "detail": "Viewport meta tag missing from mobile head"
+                })
+
+            # Check base href
+            if '<base href="/">' not in mobile_head and '<base href=' not in mobile_head:
+                self.issues.append({
+                    "type": "missing_base_href",
+                    "file": "mobile/views/layouts/head.php",
+                    "severity": "medium",
+                    "detail": "Base href tag may be missing from mobile head"
+                })
+
+            # Check theme-color
+            if 'theme-color' not in mobile_head:
+                self.issues.append({
+                    "type": "missing_theme_color",
+                    "file": "mobile/views/layouts/head.php",
+                    "severity": "low",
+                    "detail": "theme-color meta tag missing"
+                })
+
+        # Check bottom bar file
+        bottom_bar = self.read_file("mobile/views/partials/bottom-bar.php")
+        if bottom_bar:
+            # Check for aria attributes on navigation
+            if 'aria-label' not in bottom_bar and 'aria-label' not in (self.read_file("mobile/views/partials/bc-navigation.php") or ""):
+                self.issues.append({
+                    "type": "missing_aria_nav",
+                    "file": "mobile/views/partials/bottom-bar.php",
+                    "severity": "low",
+                    "detail": "Bottom navigation bar missing aria-label"
+                })
+
+            # Check mobileMenu has aria-hidden
+            # mobileMenu has aria-hidden in bottom-bar.php (included by bc-navigation.php)
+            mobile_menu = self.read_file("mobile/views/partials/bottom-bar.php")
+            if mobile_menu and 'aria-hidden' not in mobile_menu:
+                self.issues.append({
+                    "type": "missing_aria_hidden_menu",
+                    "file": "mobile/views/partials/bc-navigation.php",
+                    "severity": "low",
+                    "detail": "Mobile menu missing aria-hidden attribute"
+                })
+
+        # Check for orphan overlay IDs (defined in HTML but not referenced in JS)
+        overlay_ids_in_html = set()
+        for pf in PHP_VIEW_FILES:
+            content = self.read_file(pf)
+            if not content:
+                continue
+            for overlay_id in [
+                "mprofileOverlay", "mprofilePanel", "rightSidebarOverlay",
+                "betslipPanelOverlay", "profileModalOverlay", "searchOverlay",
+                "appFeedbackDialogOverlay", "bonus-detail-modal-overlay",
+                "mobileMenu-overlay",
+            ]:
+                if f'id="{overlay_id}"' in content or f"id='{overlay_id}'" in content:
+                    overlay_ids_in_html.add(overlay_id)
+
+        overlay_ids_in_js = set()
+        for js_file in JS_FILES:
+            content = self.read_file(js_file)
+            if not content:
+                continue
+            for overlay_id in overlay_ids_in_html:
+                if overlay_id in content:
+                    overlay_ids_in_js.add(overlay_id)
+
+        orphan_overlays = overlay_ids_in_html - overlay_ids_in_js
+        if orphan_overlays:
+            self.issues.append({
+                "type": "orphan_overlay_elements",
+                "overlays": sorted(orphan_overlays),
+                "severity": "low",
+                "detail": f"Overlay elements defined in HTML but not referenced in any JS: {', '.join(sorted(orphan_overlays))}"
+            })
+
+    # ── 10. Mobile performance checks ────────────────────────────
+    def check_mobile_performance(self):
+        """Check mobile performance issues."""
+        mobile_head = self.read_file("mobile/views/layouts/head.php")
+        mobile_lah = self.read_file("mobile/views/partials/layout-after-header.php")
+
+        # Count total CSS files loaded on mobile
+        css_count = 0
+        for pf in ["mobile/views/layouts/head.php", "mobile/views/partials/layout-after-header.php"]:
+            content = self.read_file(pf)
+            if not content:
+                continue
+            css_links = re.findall(r'<link[^>]*stylesheet[^>]*>', content, re.IGNORECASE)
+            css_count += len(css_links)
+
+        if css_count > 30:
+            self.issues.append({
+                "type": "too_many_css_files",
+                "count": css_count,
+                "severity": "medium",
+                "detail": f"{css_count} CSS files loaded on mobile — consider bundling"
+            })
+
+        # Count JS files loaded
+        js_count = 0
+        for pf in ["mobile/views/layouts/head.php", "mobile/views/partials/layout-after-header.php"]:
+            content = self.read_file(pf)
+            if not content:
+                continue
+            js_links = re.findall(r'<script\s[^>]*src\s*=\s*["\'][^"\']+\.js', content, re.IGNORECASE)
+            js_count += len(js_links)
+
+        if js_count > 20:
+            self.issues.append({
+                "type": "too_many_js_files",
+                "count": js_count,
+                "severity": "medium",
+                "detail": f"{js_count} JS files loaded on mobile — consider bundling/deferring"
+            })
+
+        # Check for large inline SVGs in slot.php (heavy page)
+        slot_view = self.read_file("views/pages/slot.php")
+        if slot_view:
+            svg_blocks = re.findall(r'<svg[^>]*>.*?</svg>', slot_view, re.DOTALL | re.IGNORECASE)
+            large_svgs = [s for s in svg_blocks if len(s) > 3000]
+            if large_svgs:
+                self.issues.append({
+                    "type": "large_inline_svgs",
+                    "count": len(large_svgs),
+                    "total_chars": sum(len(s) for s in large_svgs),
+                    "severity": "medium",
+                    "detail": f"{len(large_svgs)} large inline SVGs in slot.php (total {sum(len(s) for s in large_svgs)} chars) — move to external SVG sprite"
+                })
+
+        # Check for CDN-loaded resources (blocking)
+        cdn_count = 0
+        for pf in ["mobile/views/layouts/head.php", "mobile/views/partials/layout-after-header.php"]:
+            content = self.read_file(pf)
+            if not content:
+                continue
+            cdn_links = re.findall(r'(?:src|href)\s*=\s*["\']https?://(?:cdn|unpkg|cdnjs)[^"\']+', content, re.IGNORECASE)
+            cdn_count += len(cdn_links)
+
+        if cdn_count > 0:
+            self.issues.append({
+                "type": "cdn_dependencies",
+                "count": cdn_count,
+                "severity": "info",
+                "detail": f"{cdn_count} CDN-hosted resources — ensure local fallback exists"
+            })
 
     def print_report(self):
         """Print a formatted report of all issues."""
