@@ -272,6 +272,20 @@
     };
     var slotLoggedIn = !!config.loggedIn;
 
+    function runtimeMemberLoggedIn() {
+        var Shared = window.BetcoAuthShared || {};
+        if (Shared && typeof Shared.runtimeSessionLoggedIn === 'function' && Shared.runtimeSessionLoggedIn()) {
+            return true;
+        }
+        if (Shared && typeof Shared.getMemberJwt === 'function' && Shared.getMemberJwt() !== '') {
+            return true;
+        }
+        if (window.__USER_LOGGED_IN__ === true || window.__HAS_MEMBER_JWT__ === true) {
+            return true;
+        }
+        return slotLoggedIn;
+    }
+
     /* ── DOM refs (oyun arama: .slot-page-root içinde — header panellerindeki aynı id’lerle çakışmasın) ── */
     const slotPageRoot       = document.querySelector('.slot-page-root');
     const searchInput        = getSlotSearchInput(slotPageRoot);
@@ -331,8 +345,7 @@
 
     function playTargetUrl(gameId) {
         var play = playUrlReal(gameId);
-        if (slotLoggedIn) return play;
-        return '#login';
+        return play;
     }
 
     function isMobilePlayLaunchMode() {
@@ -385,6 +398,18 @@
         }
     }
 
+    function handlePlayIntent(event, url) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        if (runtimeMemberLoggedIn()) {
+            launchPlayUrl(url);
+            return;
+        }
+        openLoginModal();
+    }
+
     function applyMobileActionButtonSizing() {
         if (!document.body.classList.contains('mobile-site')) return;
         var buttons = document.querySelectorAll('.slot-page-root .play-btn, .slot-page-root .demo-btn, .slots-games-container .play-btn, .slots-games-container .demo-btn, .casinoCategoryGames .play-btn, .casinoCategoryGames .demo-btn');
@@ -400,10 +425,7 @@
     }
 
     function realPlayClickJs(gameUrlJs) {
-        if (slotLoggedIn) {
-            return "window.__slotLaunchPlayUrl&&window.__slotLaunchPlayUrl('" + gameUrlJs + "')";
-        }
-        return "if(event){event.preventDefault();event.stopPropagation();}window.__slotOpenLoginModal&&window.__slotOpenLoginModal()";
+        return "if(event){event.preventDefault();event.stopPropagation();}window.__slotHandlePlayIntent&&window.__slotHandlePlayIntent(event,'" + gameUrlJs + "')";
     }
 
     function launchPlayUrl(url) {
@@ -427,12 +449,13 @@
         window.__slotOpenLoginModal = openLoginModal;
         window.__slotOpenPlayUrl = openPlayUrl;
         window.__slotLaunchPlayUrl = launchPlayUrl;
+        window.__slotHandlePlayIntent = handlePlayIntent;
         const actionsHtml = ACTION_BUTTONS ? (
             '<div class="game-overlay">' +
             '<div class="game-overlay-top"></div>' +
             '<div class="game-title-wrap"><p class="game-title-text">' + name + '</p></div>' +
             '<div class="game-actions">' +
-            '<a class="play-btn" href="' + escapeHtml(gameUrl) + '" onclick="' + (slotLoggedIn ? ('event.preventDefault();event.stopPropagation();window.__slotLaunchPlayUrl&&window.__slotLaunchPlayUrl(\'' + gameUrlJs + '\')') : 'event.preventDefault();event.stopPropagation();window.__slotOpenLoginModal&&window.__slotOpenLoginModal()') + '">OYNA</a>' +
+            '<a class="play-btn" href="' + escapeHtml(gameUrl) + '" onclick="' + realPlayClickJs(gameUrlJs) + '">OYNA</a>' +
             '<a class="demo-btn" href="' + escapeHtml(demoUrl) + '" onclick="event.stopPropagation()">DEMO</a>' +
             '</div>' +
             '</div>'
@@ -454,6 +477,8 @@
         div.textContent = str;
         return div.innerHTML;
     }
+
+    window.__slotHandlePlayIntent = handlePlayIntent;
 
     function renderEmptyState() {
         return (
