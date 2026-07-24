@@ -517,6 +517,13 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
             }
         }
 
+        // Purge frontend slider cache so mobile/desktop always see fresh data
+        try {
+            if (class_exists('ApiCmsRemote', false) && method_exists('ApiCmsRemote', 'purgeCache')) {
+                ApiCmsRemote::purgeCache('sliders');
+            }
+        } catch (Throwable) {}
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
