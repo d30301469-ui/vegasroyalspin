@@ -248,44 +248,49 @@
         }
     };
 
+    function openProfileFromAvatarTap(event) {
+        if (event && typeof event.preventDefault === 'function') {
+            event.preventDefault();
+        }
+        if (event && typeof event.stopPropagation === 'function') {
+            event.stopPropagation();
+        }
+
+        var profileTarget = '/?profile=open&account=profile&page=details';
+        if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(profileTarget)) {
+            return false;
+        }
+        if (typeof window.__closeSmartPanel === 'function') {
+            window.__closeSmartPanel();
+        }
+        if (typeof window.__closeMobileNavMenu === 'function') {
+            window.__closeMobileNavMenu();
+        }
+
+        if (toggleMobileProfilePanelSafely()) {
+            return false;
+        }
+
+        // Native panel DOM'u yoksa aynı query formatıyla tam sayfaya geç.
+        window.location.href = profileTarget;
+        return false;
+    }
+
+    window.__mobileProfileIconTap = openProfileFromAvatarTap;
+
     function initMobileAvatarProfileModal() {
         var btn = document.getElementById('toggleButton');
         if (!btn) return;
-        var profileTarget = '/?profile=open&account=profile&page=details';
-
-        function openProfileFromAvatar() {
-            if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(profileTarget)) {
-                return;
-            }
-            if (typeof window.__closeSmartPanel === 'function') {
-                window.__closeSmartPanel();
-            }
-            if (typeof window.__closeMobileNavMenu === 'function') {
-                window.__closeMobileNavMenu();
-            }
-
-            if (toggleMobileProfilePanelSafely()) {
-                return;
-            }
-
-            // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — native panel
-            // DOM'da yoksa doğrudan mobil profil sayfasına geç (panelin kendi
-            // /?profile=open... formatı; /mobile/profile oturum senkronu
-            // tamamlanmadıysa anında / adresine geri yönlendirir).
-            window.location.href = profileTarget;
-        }
+        if (btn.getAttribute('data-mobile-profile-bound') === '1') return;
+        btn.setAttribute('data-mobile-profile-bound', '1');
 
         btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            openProfileFromAvatar();
+            openProfileFromAvatarTap(e);
         });
 
         btn.addEventListener('keydown', function (e) {
             if (e.key !== 'Enter' && e.key !== ' ') return;
-            e.preventDefault();
-            e.stopPropagation();
-            openProfileFromAvatar();
+            openProfileFromAvatarTap(e);
         });
     }
 
