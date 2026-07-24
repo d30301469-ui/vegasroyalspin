@@ -147,7 +147,7 @@ $brandingDataJson = json_encode($brandingData);
                             <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M9 11h6v6H9z"/></svg>
                             Kopyala
                         </button>
-                        <a href="${fullUrl}" target="_blank" class="branding-item-btn" style="flex: 1;">
+                        <a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="branding-item-btn" style="flex: 1;">
                             <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
                             Aç
                         </a>

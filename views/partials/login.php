@@ -422,7 +422,7 @@ if (class_exists('ApiMediaUrl', false)) {
                             </div>
 
                             <div class="login-support reg-form-footer-bc">
-                                <a href="<?= htmlspecialchars((string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : '')), ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="live-chat-adviser-bc">
+                                <a href="<?= htmlspecialchars((string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : '')), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="live-chat-adviser-bc">
                                     <i class="bc-i-live-chat" aria-hidden="true"></i>
                                     <span>CANLI DESTEK İLE İLETİŞİME GEÇİN</span>
                                 </a>

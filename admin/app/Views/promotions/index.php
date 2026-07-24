@@ -127,3 +127,4 @@ $badgeClass = static function (string $v): string {
     </div>
     <?php endif; ?>
 </section>
+</section>
