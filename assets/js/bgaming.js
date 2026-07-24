@@ -33,8 +33,8 @@
 
     /* ── DOM refs ── */
     var gameGrid       = document.querySelector('#casino_games_container .casinoCategoryGames');
-    var searchInput    = document.getElementById('searchModalInput') || document.querySelector('.games-search-input');
-    var searchClearBtn = document.getElementById('searchClearBtn');
+    var searchInput    = document.querySelector('.games-search-input');
+    var searchClearBtn = document.getElementById('gamesFilterSearchClearBtn');
     var loadMoreSentinel = document.getElementById('load-more-sentinel');
     var randomGameBtn  = document.getElementById('randomGameBtn');
     var searchDebounceTimer = null;
