@@ -2450,16 +2450,10 @@
   window.__closeMobileProfilePanel = closePanel;
 
   function bind() {
-    var avatar = document.getElementById('toggleButton');
-    if (avatar) {
-      avatar.addEventListener('click', function (e) {
-        var panel = getPanel();
-        if (!panel) return; // panel yoksa (misafir) varsayılan davranış
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        isOpen ? closePanel() : openPanel();
-      }, true);
-    }
+    // #toggleButton tiklamasi mobile-header.js initMobileAvatarProfileModal()
+    // tarafindan yonetilir (session kontrolu + panel acma). Burada capture handler
+    // ile stopImmediatePropagation yapmak mobile-header.js'in calismasini engeller.
+    // Sadece overlay, klavye ve ilk yukleme mantigi profile-panel.js'te kalir.
 
     var overlay = getOverlay();
     if (overlay) overlay.addEventListener('click', closePanel);
