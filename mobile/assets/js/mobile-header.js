@@ -456,7 +456,6 @@
         boot();
     }
 })();
-
 // SCROLL LOCK RECOVERY: Emergency cleanup if body gets stuck locked
 (function() {
     var RECOVERY_INTERVAL = 3000; // check every 3s
