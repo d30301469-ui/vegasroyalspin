@@ -55,6 +55,26 @@
         }
     }
 
+    function clearStaleProfileLocks() {
+        var panel = document.getElementById('mprofilePanel');
+        var overlay = document.getElementById('mprofileOverlay');
+        var panelOpen = !!(panel && panel.classList.contains('is-open'));
+        var overlayOpen = !!(overlay && overlay.classList.contains('is-open'));
+
+        if (!panelOpen && !overlayOpen) {
+            document.body.classList.remove('mprofile-open', 'overlay-sliding-is-visible', 'overlaySlidingIsVisible');
+        }
+    }
+
+    function normalizeMenuState() {
+        var menu = getMenu();
+        var isOpen = !!(menu && menu.classList.contains('is-open'));
+        setMenuOpenState(isOpen);
+        if (!isOpen) {
+            clearStaleProfileLocks();
+        }
+    }
+
     function openMenu(evt) {
         if (evt && typeof evt.preventDefault === 'function') {
             evt.preventDefault();
@@ -62,17 +82,22 @@
         if (evt && typeof evt.stopPropagation === 'function') {
             evt.stopPropagation();
         }
+        if (typeof window.__closeMobileProfilePanel === 'function') {
+            window.__closeMobileProfilePanel();
+        }
+        clearStaleProfileLocks();
         if (menuOpen) {
             return;
         }
         setMenuOpenState(true);
     }
 
-    function closeMenu() {
-        if (!menuOpen) {
+    function closeMenu(force) {
+        if (!menuOpen && !force) {
             return;
         }
         setMenuOpenState(false);
+        clearStaleProfileLocks();
     }
 
     function toggleMenu(evt) {
@@ -109,11 +134,32 @@
         var closeBtn = document.getElementById('mobileMenu-close');
         var menu = getMenu();
 
+        normalizeMenuState();
+
         toggles.forEach(function (toggle) {
-            toggle.addEventListener('click', function (e) {
+            function handleToggleIntent(e) {
+                var now = Date.now();
+                var lastTap = Number(toggle.getAttribute('data-mobile-menu-lasttap') || '0');
+                if (!isNaN(lastTap) && (now - lastTap) < 350) {
+                    if (e && typeof e.preventDefault === 'function') {
+                        e.preventDefault();
+                    }
+                    return;
+                }
+                toggle.setAttribute('data-mobile-menu-lasttap', String(now));
                 e.preventDefault();
                 e.stopPropagation();
                 toggleMenu(e);
+            }
+
+            toggle.addEventListener('click', function (e) {
+                handleToggleIntent(e);
+            });
+            toggle.addEventListener('touchend', function (e) {
+                handleToggleIntent(e);
+            }, { passive: false });
+            toggle.addEventListener('pointerup', function (e) {
+                handleToggleIntent(e);
             });
             toggle.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -164,6 +210,18 @@
             }
         });
 
+        window.addEventListener('pageshow', function () {
+            // BFCache donuslerinde stale kilit class'larini temizle.
+            closeMenu(true);
+            normalizeMenuState();
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') {
+                normalizeMenuState();
+            }
+        });
+
         highlightActiveTab();
     }
 
@@ -202,7 +260,9 @@
         initMainMenuScrollHide();
     }
 
-    window.__closeMobileNavMenu = closeMenu;
+    window.__closeMobileNavMenu = function () {
+        closeMenu(true);
+    };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot);
