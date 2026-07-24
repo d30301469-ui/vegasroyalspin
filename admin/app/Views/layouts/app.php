@@ -1339,7 +1339,7 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
                         $navIconIndex++;
                         ?>
                         <a class="nav-link<?= htmlspecialchars($activeClass, ENT_QUOTES, 'UTF-8') ?>" style="--nav-icon-color:<?= htmlspecialchars($navColor, ENT_QUOTES, 'UTF-8') ?>;--nav-icon-bg:<?= htmlspecialchars($navColor, ENT_QUOTES, 'UTF-8') ?>22" href="<?= htmlspecialchars(AdminAuth::url($url), ENT_QUOTES, 'UTF-8') ?>">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><?= htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') ?></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><?= $icon ?></svg>
                             <span class="nav-link-text"><?= htmlspecialchars((string) ($item['text'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                             <?php if ($badge !== ''): ?>
                                 <span class="nav-badge"><?= htmlspecialchars($badge, ENT_QUOTES, 'UTF-8') ?></span>
