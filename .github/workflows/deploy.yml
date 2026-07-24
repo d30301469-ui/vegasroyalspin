@@ -24,6 +24,7 @@ jobs:
             php tools/update_tabbar_v1.php || true
             php deploy/aapanel/remove-legacy-provider-integration.php || true
             php -r "if(function_exists('opcache_reset')) opcache_reset(); echo 'opcache cleared\n';"
+             php tools/reset_sliders_table.php --once-lock=/www/wwwroot/vegasroyalspin.com/storage/reset_sliders_once.lock || true
 
       # Cloudflare edge caches /service-worker.js and the webmanifest for hours
       # (observed cf-cache-status: HIT, max-age=14400) regardless of origin
