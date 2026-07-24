@@ -303,6 +303,12 @@ final class ApiSliders
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $list = self::mapRows(is_array($rows) ? $rows : [], $surface);
+            // DIAG: store SQL/rows for route handler (_sliderDiag in response)
+            $GLOBALS['__slider_diag_fdb'] = [
+                'sql' => $sql, 'params' => $params,
+                'raw_count' => count($rows), 'raw_ids' => array_column($rows, 'id'),
+                'list_count' => count($list), 'category_in' => $category,
+            ];
             if ($category === '') {
                 return $list;
             }

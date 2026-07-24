@@ -530,11 +530,14 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
         } catch (Throwable $e) {
             $dbDiag = ['error' => $e->getMessage()];
         }
+        if (isset($GLOBALS['__slider_diag_fdb']) && is_array($GLOBALS['__slider_diag_fdb'])) {
+            $dbDiag = is_array($dbDiag) ? array_merge($dbDiag, ['fdb' => $GLOBALS['__slider_diag_fdb']]) : $dbDiag;
+        }
 
         echo json_encode([
             'success' => true,
             'code' => 200,
-            'message' => 'Slider listesi v939',
+            'message' => 'Slider listesi v940',
             'data' => [
                 'category' => $category !== '' ? $category : null,
                 'surface' => $surface,
