@@ -1,6 +1,11 @@
 (function () {
     'use strict';
 
+// GUARD: prevent double initialization
+if (window.__MOBILE_NAV_INITIALIZED__) { return; }
+window.__MOBILE_NAV_INITIALIZED__ = true;
+
+
     var menuOpen = false;
     var Shared = window.BetcoAuthShared || {};
 
@@ -56,6 +61,13 @@
     }
 
     function clearStaleProfileLocks() {
+        // Delegate to profile panel's own close function if available
+        if (typeof window.__closeMobileProfilePanel === 'function') {
+            var panel = document.getElementById('mprofilePanel');
+            if (panel && panel.classList.contains('is-open')) {
+                window.__closeMobileProfilePanel();
+            }
+        }
         var panel = document.getElementById('mprofilePanel');
         var overlay = document.getElementById('mprofileOverlay');
         var panelOpen = !!(panel && panel.classList.contains('is-open'));
@@ -67,6 +79,14 @@
     }
 
     function forceCloseCompetingPanels() {
+        // First, use proper close functions for panels that have them
+        if (typeof window.__closeMobileProfilePanel === 'function') {
+            window.__closeMobileProfilePanel();
+        }
+        if (typeof window.__closeMobileBetslipPanel === 'function') {
+            window.__closeMobileBetslipPanel();
+        }
+
         var ids = [
             'mprofileOverlay',
             'mprofilePanel',
@@ -358,6 +378,9 @@
     window.__closeMobileNavMenu = function () {
         closeMenu(true);
     };
+
+    // Signal to mobile_bottom.js that navigation.js handles menu — prevents double-binding
+    window.__MOBILE_NAV_ACTIVE__ = true;
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot);
