@@ -332,8 +332,8 @@ final class ApiSliders
                 continue;
             }
             $desktop = ApiMediaUrl::resolve($desktop);
-            $mobile = ApiMediaUrl::resolve($mobile !== '' ? $mobile : $desktop);
-            $selected = $surface === 'mobile' ? ($mobile !== '' ? $mobile : $desktop) : ($desktop !== '' ? $desktop : $mobile);
+            $mobile = ApiMediaUrl::resolve($mobile);
+            $selected = $surface === 'mobile' ? $mobile : $desktop;
             $sliders[] = [
                 'id' => (int) ($row['id'] ?? 0),
                 'title' => (string) ($row['title'] ?? ''),
@@ -342,7 +342,7 @@ final class ApiSliders
                 'category' => self::normalizeCategory((string) ($row['category'] ?? '')),
                 'order' => (int) ($row['sort_order'] ?? $row['order'] ?? 0),
                 'desktopImageUrl' => $desktop,
-                'mobileImageUrl' => $mobile !== '' ? $mobile : $desktop,
+                'mobileImageUrl' => $mobile,
                 'imageUrl' => $selected,
                 'surface' => $surface,
                 'sliderLink' => (string) ($row['link_url'] ?? $row['button_link'] ?? $row['slider_link'] ?? $row['link'] ?? ''),

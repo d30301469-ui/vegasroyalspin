@@ -76,17 +76,15 @@ function slider_item_has_media(array $slider): bool
 {
     $dPath = (string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? '');
     $mPath = (string) ($slider['mobileImageUrl'] ?? $slider['mobile_image_url'] ?? $slider['mobile_path'] ?? '');
-    if ($mPath === '') {
-        $mPath = $dPath;
-    }
 
     $dUrl = slider_build_url($dPath);
     $mUrl = slider_build_url($mPath);
-    if (slider_is_supported_media_url($dUrl) || slider_is_supported_media_url($mUrl)) {
-        return true;
+    $isMobileSurface = defined('SURFACE') && SURFACE === 'mobile';
+    if ($isMobileSurface) {
+        return slider_is_supported_media_url($mUrl);
     }
 
-    return false;
+    return slider_is_supported_media_url($dUrl);
 }
 
 $sliderApiCategory = $sliderApiCategory ?? 'home';
@@ -115,29 +113,13 @@ $sliders             = array_values(array_filter($sliders, 'slider_item_has_medi
                 <?php
                 $dPath = (string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? '');
                 $mPath = (string) ($slider['mobileImageUrl'] ?? $slider['mobile_image_url'] ?? $slider['mobile_path'] ?? '');
-                if ($mPath === '') {
-                    $mPath = $dPath;
-                }
-
                 $dUrl = slider_build_url($dPath);
-                $mUrl = slider_build_url($mPath);
-
                 $dMediaOk = slider_is_supported_media_url($dUrl);
-                $mMediaOk = slider_is_supported_media_url($mUrl);
-                if (!$dMediaOk && $mMediaOk) {
-                    $dUrl = $mUrl;
-                    $dMediaOk = true;
-                }
-                if (!$mMediaOk && $dMediaOk) {
-                    $mUrl = $dUrl;
-                    $mMediaOk = true;
-                }
-                if (!$dMediaOk && !$mMediaOk) {
+                if (!$dMediaOk) {
                     continue;
                 }
 
                 $dVid = slider_is_webm($dUrl);
-                $mVid = slider_is_webm($mUrl);
 
                 $title = htmlspecialchars($slider['title'] ?? 'Slider görseli', ENT_QUOTES, 'UTF-8');
                 $linkRaw = trim((string) ($slider['sliderLink'] ?? $slider['slider_link'] ?? $slider['link'] ?? ''));
@@ -154,19 +136,11 @@ $sliders             = array_values(array_filter($sliders, 'slider_item_has_medi
                 }
                 $link = $linkSafe !== '' ? htmlspecialchars($linkSafe, ENT_QUOTES, 'UTF-8') : null;
 
-                if ($dVid !== $mVid && $dUrl !== '' && $mUrl !== '') {
-                    $media = slider_make_media($dUrl, $dVid, $title, 'slider-desktop-media')
-                           . slider_make_media($mUrl, $mVid, $title, 'slider-mobile-media');
-                } else {
-                    $def  = $dUrl !== '' ? $dUrl : $mUrl;
-                    $dEsc = htmlspecialchars($dUrl, ENT_QUOTES, 'UTF-8');
-                    $mEsc = htmlspecialchars($mUrl, ENT_QUOTES, 'UTF-8');
-                    $src  = htmlspecialchars($def, ENT_QUOTES, 'UTF-8');
-                    $tag  = $dVid ? 'video' : 'img';
-                    $attr = $dVid ? 'autoplay muted loop playsinline aria-label="' . $title . '"' : 'alt="' . $title . '"';
-                    $imgAttrs = $dVid ? '' : ' ';
-                    $media = "<$tag class=\"sdr-image-bc\" src=\"$src\" data-desktop=\"$dEsc\" data-mobile=\"$mEsc\"$imgAttrs $attr>" . ($dVid ? '</video>' : '');
-                }
+                $src  = htmlspecialchars($dUrl, ENT_QUOTES, 'UTF-8');
+                $tag  = $dVid ? 'video' : 'img';
+                $attr = $dVid ? 'autoplay muted loop playsinline aria-label="' . $title . '"' : 'alt="' . $title . '"';
+                $imgAttrs = $dVid ? '' : ' ';
+                $media = "<$tag class=\"sdr-image-bc\" src=\"$src\"$imgAttrs $attr>" . ($dVid ? '</video>' : '');
                 ?>
                 <div class="sdr-item-holder-bc slide-item<?= ((int) $sliderIndex === 0) ? ' active' : '' ?>">
                     <?php if ($link): ?>
