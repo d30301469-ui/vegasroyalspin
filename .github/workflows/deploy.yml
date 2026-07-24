@@ -24,3 +24,24 @@ jobs:
             php tools/update_tabbar_v1.php || true
             php deploy/aapanel/remove-legacy-provider-integration.php || true
             php -r "if(function_exists('opcache_reset')) opcache_reset(); echo 'opcache cleared\n';"
+
+      # Cloudflare edge caches /service-worker.js and the webmanifest for hours
+      # (observed cf-cache-status: HIT, max-age=14400) regardless of origin
+      # Cache-Control. Without this purge, real mobile devices keep running a
+      # stale PWA service worker long after a fix is deployed, while direct/
+      # uncached test requests already see the new version — the exact
+      # "works when I test it, still broken on real mobile" gap.
+      # No-op until CLOUDFLARE_API_TOKEN + CLOUDFLARE_ZONE_ID secrets are set.
+      - name: Purge Cloudflare cache for PWA-critical files
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ZONE_ID" ]; then
+            echo "Cloudflare secrets not configured, skipping purge."
+            exit 0
+          fi
+          curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"files":["https://vegasroyalspin.com/service-worker.js","https://m.vegasroyalspin.com/service-worker.js","https://vegasroyalspin.com/assets/images/favicons/site.webmanifest","https://m.vegasroyalspin.com/assets/images/favicons/site.webmanifest"]}'
