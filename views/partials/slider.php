@@ -81,7 +81,12 @@ function slider_item_has_media(array $slider): bool
     $mUrl = slider_build_url($mPath);
     $isMobileSurface = defined('SURFACE') && SURFACE === 'mobile';
     if ($isMobileSurface) {
-        return slider_is_supported_media_url($mUrl);
+        if (slider_is_supported_media_url($mUrl)) {
+            return true;
+        }
+
+        // Mobile kayitta yalnizca desktop_path dolu olabilir; ayni kaydi dusurmemek icin fallback.
+        return slider_is_supported_media_url($dUrl);
     }
 
     return slider_is_supported_media_url($dUrl);
