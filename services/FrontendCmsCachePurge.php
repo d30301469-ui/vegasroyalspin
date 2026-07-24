@@ -9,6 +9,8 @@ final class FrontendCmsCachePurge
 {
     public static function notify(?string $prefix = null): void
     {
+        self::purgeLocalCaches($prefix);
+
         if (!function_exists('frontend_env_string')) {
             return;
         }
@@ -49,6 +51,44 @@ final class FrontendCmsCachePurge
             }
             curl_exec($ch);
             curl_close($ch);
+        }
+
+        self::purgeLocalCaches($prefix);
+    }
+
+    private static function purgeLocalCaches(?string $prefix = null): void
+    {
+        $cmsRemote = (defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__)) . '/api/CmsRemote.php';
+        if (!is_readable($cmsRemote)) {
+            $cmsRemote = dirname(__DIR__) . '/api/CmsRemote.php';
+        }
+        if (is_readable($cmsRemote)) {
+            require_once $cmsRemote;
+        }
+        if (class_exists('ApiCmsRemote', false)) {
+            try {
+                ApiCmsRemote::purgeCache($prefix !== null && trim($prefix) !== '' ? trim($prefix) : null);
+            } catch (Throwable) {
+                // Best-effort local fallback purge.
+            }
+        }
+
+        // Proxy cache keys are sha1(route|query), so prefix targeting is not practical.
+        // Remove all proxy cache entries to avoid stale CMS payloads after admin updates.
+        $proxyDir = (defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__)) . '/storage/cache/public_api_proxy';
+        if (!is_dir($proxyDir)) {
+            return;
+        }
+
+        foreach (glob($proxyDir . '/*') ?: [] as $file) {
+            if (!is_string($file) || !is_file($file)) {
+                continue;
+            }
+            $base = basename($file);
+            if (!str_ends_with($base, '.json') && !str_ends_with($base, '.json.refresh.lock')) {
+                continue;
+            }
+            @unlink($file);
         }
     }
 
