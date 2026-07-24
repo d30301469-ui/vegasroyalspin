@@ -468,7 +468,8 @@
         scheduleNewTabFallback(url);
     }
 
-    function launchGame(payload) {
+    function launchGame(payload, attempt) {
+        var launchAttempt = Number(attempt || 0);
         var loader = document.getElementById('playLoader');
         var frame = document.getElementById('playFrame');
         clearNewTabFallback();
@@ -527,6 +528,20 @@
                     loader.hidden = true;
                 }
                 if (x.status === 401) {
+                    if (launchAttempt < 1 && Shared && typeof Shared.handleMemberAuthFailure === 'function') {
+                        Shared.handleMemberAuthFailure().then(function (recovered) {
+                            if (recovered) {
+                                launchGame(payload, launchAttempt + 1);
+                                return;
+                            }
+                            var here = window.location.pathname + window.location.search;
+                            window.location.href = apiUrl('/login') + '?next=' + encodeURIComponent(here);
+                        }).catch(function () {
+                            var here = window.location.pathname + window.location.search;
+                            window.location.href = apiUrl('/login') + '?next=' + encodeURIComponent(here);
+                        });
+                        return;
+                    }
                     var here = window.location.pathname + window.location.search;
                     window.location.href = apiUrl('/login') + '?next=' + encodeURIComponent(here);
                     return;

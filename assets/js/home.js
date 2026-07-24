@@ -152,7 +152,19 @@ function handlePlay(gameId) {
   if (!gameId) {
     return;
   }
-  if (!window.__USER_LOGGED_IN__) {
+
+  function memberLoggedInRuntime() {
+    var Shared = window.BetcoAuthShared || {};
+    if (Shared && typeof Shared.runtimeSessionLoggedIn === 'function' && Shared.runtimeSessionLoggedIn()) {
+      return true;
+    }
+    if (Shared && typeof Shared.getMemberJwt === 'function' && Shared.getMemberJwt() !== '') {
+      return true;
+    }
+    return window.__USER_LOGGED_IN__ === true || window.__HAS_MEMBER_JWT__ === true;
+  }
+
+  function openLoginGate() {
     if (typeof window.__openLoginModal === 'function') {
       window.__openLoginModal();
       return;
@@ -164,15 +176,38 @@ function handlePlay(gameId) {
     var loginBtn = document.getElementById('Giris');
     if (loginBtn) {
       loginBtn.click();
-      return;
     }
   }
+
   var url = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=real&wallet=main';
-  if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === 'function') {
-    window.MaltabetWalletPicker.launch(url, openPlayUrl);
+
+  function launch() {
+    if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === 'function') {
+      window.MaltabetWalletPicker.launch(url, openPlayUrl);
+      return;
+    }
+    openPlayUrl(url);
+  }
+
+  if (!memberLoggedInRuntime()) {
+    var Shared = window.BetcoAuthShared || {};
+    if (Shared && typeof Shared.hydrateMemberJwt === 'function') {
+      Shared.hydrateMemberJwt().then(function () {
+        if (memberLoggedInRuntime()) {
+          launch();
+          return;
+        }
+        openLoginGate();
+      }).catch(function () {
+        openLoginGate();
+      });
+      return;
+    }
+    openLoginGate();
     return;
   }
-  openPlayUrl(url);
+
+  launch();
 }
 
 function handleDemo(gameId) {
