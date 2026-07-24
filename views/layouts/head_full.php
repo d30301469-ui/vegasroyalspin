@@ -50,7 +50,7 @@ if (class_exists('ApiMediaUrl', false)) {
     $headFaviconPath = ApiMediaUrl::resolve($headFaviconPath);
     $headOgImageUrl = ApiMediaUrl::resolve($headOgImageUrl);
 }
-$headFaviconUrl = $headFaviconPath . '?v=' . (int)(filemtime(BASE_PATH . '/assets/images/favicons/favicon.svg') ?: time());
+$headFaviconUrl = $headFaviconPath . '?v=' . (int)(@filemtime(BASE_PATH . '/assets/images/favicons/favicon.svg') ?: time());
 $headKeywords = (string) ($headMeta['keywords'] ?? '');
 $headRobots = (string) ($headMeta['robots'] ?? 'index, follow');
 $headLanguage = (string) ($headMeta['language'] ?? 'tr');

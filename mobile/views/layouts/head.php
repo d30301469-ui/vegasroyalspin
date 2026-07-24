@@ -19,10 +19,12 @@ $assetVersion = static function (string $path): string {
 
   $hash = @md5_file($path);
   if ($hash !== false) {
-    return substr($hash, 0, 12) . '-' . (string) filesize($path);
+    return substr($hash, 0, 12) . '-' . (string) @filesize($path);
   }
 
-  return (string) filemtime($path) . '-' . (string) filesize($path);
+  $mtime = @filemtime($path);
+  $fsize = @filesize($path);
+  return (string) ($mtime !== false ? $mtime : 0) . '-' . (string) ($fsize !== false ? $fsize : 0);
 };
 
 $ver = $assetVersion;

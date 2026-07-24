@@ -52,6 +52,13 @@ if (str_starts_with($frontendPath, '/api/')) {
     metropol_handle_public_api_request((string) ($_SERVER['REQUEST_URI'] ?? '/'));
 }
 
+// Start output buffering early to prevent "headers already sent"
+// when views (head.php) output before redirects or header modifications.
+if (!defined('METROPOL_OUTPUT_BUFFERING_STARTED')) {
+    define('METROPOL_OUTPUT_BUFFERING_STARTED', true);
+    ob_start();
+}
+
 try {
     require_once __DIR__ . '/core/bootstrap.php';
 } catch (Throwable $bootstrapException) {
