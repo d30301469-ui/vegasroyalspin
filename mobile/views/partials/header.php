@@ -3,7 +3,7 @@
  * Mobil header — m.casinomilyon591 DOM yapısı (layout-header-holder-bc > hdr-dynamic + header-bc)
  */
 require_once VIEW_PATH . '/partials/header-init.php';
-$loggedIn = isset($loggedIn) ? (bool) $loggedIn : false;
+$loggedIn = !empty($loggedIn) ? true : (function_exists('metropol_frontend_member_logged_in') ? metropol_frontend_member_logged_in() : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true));
 $ayar = isset($ayar) && is_array($ayar) ? $ayar : [];
 $siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
 $siteContactLinks = isset($siteContactLinks) && is_array($siteContactLinks) ? $siteContactLinks : [];

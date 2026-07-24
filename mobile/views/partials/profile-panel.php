@@ -3,9 +3,9 @@
  * Mobile-native profil paneli (slide-in overlay) — masaüstü profil modalinden bağımsız.
  * Yalnızca giriş yapmış üyeler için header.php içinde include edilir.
  */
-$panelLoggedIn = isset($loggedIn)
-  ? (bool) $loggedIn
-  : (function_exists('metropol_frontend_member_logged_in') ? metropol_frontend_member_logged_in() : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true));
+$panelLoggedIn = (!empty($loggedIn))
+    || (function_exists('metropol_frontend_member_logged_in') && metropol_frontend_member_logged_in())
+    || (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true);
 if (!$panelLoggedIn) {
     return;
 }
