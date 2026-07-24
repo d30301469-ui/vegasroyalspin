@@ -43,6 +43,7 @@ $bgamingJsVer  = (string) ((is_file($bgamingJsPath) ? filemtime($bgamingJsPath) 
                             <div class="ds-textfield__text">
                                 <input type="text"
                                        class="ds-textfield__input searchInput games-search-input"
+                                       id="gamesFilterSearchInput"
                                        placeholder="BGaming oyun ara..."
                                        aria-label="BGaming oyun ara"
                                        value="<?= htmlspecialchars($searchTerm, ENT_QUOTES); ?>"
@@ -50,6 +51,7 @@ $bgamingJsVer  = (string) ((is_file($bgamingJsPath) ? filemtime($bgamingJsPath) 
                             </div>
                             <div class="ds-textfield__right">
                                 <span class="CMSIconSVGWrapper ds-textfield__icon ds-textfield__icon--right searchInputIcon games-search-icon-btn"
+                                      id="gamesFilterSearchClearBtn"
                                       title="Aramayi temizle" aria-label="Aramayi temizle" role="button" tabindex="0">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M15.0001 9.1665C15.0001 5.94484 12.3884 3.33317 9.16675 3.33317C5.94509 3.33317 3.33341 5.94484 3.33341 9.1665C3.33341 12.3882 5.94509 14.9998 9.16675 14.9998C10.7418 14.9998 12.1699 14.3745 13.2195 13.36C13.2398 13.3342 13.2624 13.3098 13.2862 13.286C13.31 13.2622 13.3344 13.2396 13.3603 13.2192C14.3748 12.1697 15.0001 10.7415 15.0001 9.1665ZM16.6667 9.1665C16.6667 10.9373 16.0516 12.5636 15.0253 13.8467L18.0893 16.9106L18.1462 16.9741C18.4132 17.3014 18.3944 17.7839 18.0893 18.089C17.7842 18.3941 17.3017 18.413 16.9744 18.146L16.9109 18.089L13.8469 15.0251C12.5639 16.0514 10.9376 16.6665 9.16675 16.6665C5.02461 16.6665 1.66675 13.3086 1.66675 9.1665C1.66675 5.02437 5.02461 1.6665 9.16675 1.6665C13.3089 1.6665 16.6667 5.02437 16.6667 9.1665Z"></path></svg>
                                 </span>
@@ -65,7 +67,7 @@ $bgamingJsVer  = (string) ((is_file($bgamingJsPath) ? filemtime($bgamingJsPath) 
             </div>
         </div>
 
-        <div class="casinoProviderRow casinoProviderRow--no-providers">
+        <div class="casinoProviderRow casinoProviderRow--mobile-inline casinoProviderRow--no-providers">
             <p class="casinoGameListTitle">BGAMING OYUNLARI</p>
             <span class="casinoGameListAllLink"><?= (int)$totalSlots ?> oyun</span>
         </div>
