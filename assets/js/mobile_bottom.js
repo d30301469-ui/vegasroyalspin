@@ -83,15 +83,16 @@
         var menu = document.getElementById('mobileMenu');
         var overlay = document.getElementById('mobileMenu-overlay');
         var toggle = document.getElementById('menu-toggle');
-        if (!menu || !overlay) return;
+        if (!menu) return;
 
         // Mevcut scroll konumunu sakla ve gövdeyi sabitle
         scrollY = window.scrollY || window.pageYOffset || 0;
         getSharedScrollLock().lock();
         document.body.classList.add('mobileMenu-locked');
 
-        overlay.classList.add('is-open');
+        if (overlay) overlay.classList.add('is-open');
         menu.classList.add('is-open');
+        menu.setAttribute('aria-hidden', 'false');
         if (toggle) toggle.classList.add('is-open');
     }
 
@@ -99,10 +100,11 @@
         var menu = document.getElementById('mobileMenu');
         var overlay = document.getElementById('mobileMenu-overlay');
         var toggle = document.getElementById('menu-toggle');
-        if (!menu || !overlay) return;
+        if (!menu) return;
 
         menu.classList.remove('is-open');
-        overlay.classList.remove('is-open');
+        menu.setAttribute('aria-hidden', 'true');
+        if (overlay) overlay.classList.remove('is-open');
         if (toggle) toggle.classList.remove('is-open');
 
         // Body sabitlenmeden önceki scroll konumuna anlık (animasyonsuz) dön
@@ -126,7 +128,19 @@
         var closeBtn = document.getElementById('mobileMenu-close');
         var overlay = document.getElementById('mobileMenu-overlay');
 
-        if (toggle) toggle.addEventListener('click', openMenu);
+        if (toggle) {
+            ['click', 'touchend', 'pointerup'].forEach(function (eventName) {
+                toggle.addEventListener(eventName, function (e) {
+                    if (e && typeof e.preventDefault === 'function') {
+                        e.preventDefault();
+                    }
+                    if (e && typeof e.stopPropagation === 'function') {
+                        e.stopPropagation();
+                    }
+                    openMenu();
+                }, true);
+            });
+        }
         if (closeBtn) closeBtn.addEventListener('click', closeMenu);
         if (overlay) overlay.addEventListener('click', closeMenu);
 

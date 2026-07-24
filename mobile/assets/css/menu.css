@@ -14,7 +14,7 @@ body.mobile-site .hdr-nav-menu-holder-bc {
   right: 0;
   top: var(--mobile-promo-sheet-top, calc(var(--mobile-header-main-section-height, 46px) + env(safe-area-inset-top, 0px)));
   bottom: calc(var(--tab-navigation-height, 48px) + env(safe-area-inset-bottom, 0px));
-  z-index: 949;
+  z-index: 1081;
   height: auto;
   padding: 0;
   box-sizing: border-box;
@@ -29,6 +29,7 @@ body.mobile-site .hdr-nav-menu-holder-bc {
 
 /* Açık: orijinal BC hareketi (alttan yukarı) */
 body.mobile-site .hdr-nav-menu-holder-bc.is-open {
+  z-index: 1082;
   visibility: visible;
   pointer-events: auto;
   transform: translate3d(0, 0, 0);

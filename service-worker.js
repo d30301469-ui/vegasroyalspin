@@ -1,5 +1,5 @@
 /* vegasroyalspin PWA service worker */
-const SW_VERSION = 'v16-mobile-launch-path-parity';
+const SW_VERSION = 'v17-mobile-menu-overlay-stack-fix';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -66,6 +66,7 @@ function isAuthAppAsset(requestUrl) {
     requestUrl.pathname.startsWith('/assets/js/footer') ||
     requestUrl.pathname.startsWith('/assets/js/home') ||
     requestUrl.pathname.startsWith('/assets/js/favorites-drawer') ||
+    requestUrl.pathname.startsWith('/assets/js/mobile_bottom') ||
     requestUrl.pathname.startsWith('/assets/js/slot') ||
     requestUrl.pathname.startsWith('/assets/js/play-page') ||
     requestUrl.pathname.startsWith('/mobile/assets/js/mobile-header') ||
@@ -76,6 +77,7 @@ function isAuthAppAsset(requestUrl) {
     requestUrl.pathname.startsWith('/assets/js/pwa-register') ||
     requestUrl.pathname.startsWith('/assets/css/login') ||
     requestUrl.pathname.startsWith('/assets/css/register') ||
+    requestUrl.pathname.startsWith('/assets/css/mobile_bottom') ||
     requestUrl.pathname.startsWith('/mobile/assets/css/auth-modals')
   );
 }

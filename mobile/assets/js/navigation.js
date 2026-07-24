@@ -66,6 +66,36 @@
         }
     }
 
+    function forceCloseCompetingPanels() {
+        var ids = [
+            'mprofileOverlay',
+            'mprofilePanel',
+            'rightSidebarOverlay',
+            'betslipPanelOverlay',
+            'profileModalOverlay',
+            'searchOverlay',
+            'appFeedbackDialogOverlay',
+            'bonus-detail-modal-overlay',
+            'mobileMenu-overlay'
+        ];
+
+        for (var i = 0; i < ids.length; i += 1) {
+            var el = document.getElementById(ids[i]);
+            if (!el || !el.classList) {
+                continue;
+            }
+            el.classList.remove('is-open');
+            el.setAttribute('aria-hidden', 'true');
+        }
+
+        var panel = document.getElementById('mprofilePanel');
+        if (panel) {
+            panel.style.transform = '';
+        }
+
+        document.body.classList.remove('mprofile-open', 'overlay-sliding-is-visible', 'overlaySlidingIsVisible');
+    }
+
     function normalizeMenuState() {
         var menu = getMenu();
         var isOpen = !!(menu && menu.classList.contains('is-open'));
@@ -125,6 +155,7 @@
         if (typeof window.__closeMobileProfilePanel === 'function') {
             window.__closeMobileProfilePanel();
         }
+        forceCloseCompetingPanels();
         clearStaleProfileLocks();
         if (menuOpen) {
             return;
