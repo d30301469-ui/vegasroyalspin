@@ -476,6 +476,7 @@
             memberAuthFailureInFlight = true;
             // localStorage JWT'yi temizlemeden ONCE kaydet — /auth/session
             // isteginde bu JWT'yi gonder ki sunucu oturumu dogrulayabilsin.
+            // Recovery basarisiz olursa JWT'yi geri yukle.
             var savedJwt = self.getMemberJwt();
             self.clearMemberJwt();
 
@@ -507,12 +508,19 @@
             }).then(function (ok) {
                 memberAuthFailureInFlight = false;
                 if (!ok) {
+                    // Recovery basarisiz — JWT'yi geri yukle ki sonraki
+                    // sayfa yuklemesi (shouldAttemptProfileAuthReload) veya
+                    // tekrar deneme sirasinda localStorage'da bulunsun.
+                    if (savedJwt) {
+                        self.setMemberJwt(savedJwt);
+                    }
                     w.__USER_LOGGED_IN__ = false;
                     w.__HAS_MEMBER_JWT__ = false;
                     try {
                         w.dispatchEvent(new CustomEvent('metropol:member-auth-lost'));
                     } catch (eEv) {
                         /* ignore */
+                    }
                     }
                 }
                 return ok;

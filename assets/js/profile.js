@@ -799,12 +799,17 @@
             direct = '/' + direct;
         }
 
-        return fetch(resolved, { credentials: 'same-origin' })
+        var fetchOptions = {
+            credentials: 'same-origin',
+            headers: Shared.memberAuthHeaders ? Shared.memberAuthHeaders({ Accept: 'text/html' }) : undefined
+        };
+
+        return fetch(resolved, fetchOptions)
             .then(parseProfileResponse)
             .catch(function(primaryErr) {
                 if (primaryErr && primaryErr.authRequired) {
                     return tryRecoverAuthOnce(primaryErr).then(function() {
-                        return fetch(resolved, { credentials: 'same-origin' }).then(parseProfileResponse);
+                        return fetch(resolved, fetchOptions).then(parseProfileResponse);
                     });
                 }
                 if (!direct || direct === resolved) {
