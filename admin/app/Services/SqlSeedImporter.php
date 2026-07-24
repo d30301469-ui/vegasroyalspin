@@ -163,6 +163,7 @@ final class SqlSeedImporter
                         str_contains($message, 'Duplicate key name')
                         || str_contains($message, 'already exists')
                         || str_contains($message, 'Duplicate entry')
+                        || str_contains($message, 'Base table or view not found')
                     ) {
                         $skipped++;
                         continue;
