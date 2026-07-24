@@ -507,8 +507,9 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
         http_response_code(200);
         $dbDiag = null;
         try {
-            if (!class_exists('AdminDatabase', false) && is_file(admin_panel_paths()['panel_app'] . '/Core/AdminDatabase.php')) {
-                require_once admin_panel_paths()['panel_app'] . '/Core/AdminDatabase.php';
+            $dbFile = (defined('ADMIN_APP_PATH') ? rtrim((string) ADMIN_APP_PATH, '/\\') : '') . '/Core/AdminDatabase.php';
+            if (!class_exists('AdminDatabase', false) && is_file($dbFile)) {
+                require_once $dbFile;
             }
             if (class_exists('AdminDatabase', false)) {
                 $diagPdo = AdminDatabase::pdo();
@@ -517,8 +518,12 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
                     'raw_count' => (int) $diagPdo->query('SELECT COUNT(*) FROM sliders')->fetchColumn(),
                     'raw_rows' => $diagPdo->query('SELECT id, title, category, status, is_active, start_date, starts_at, end_date, ends_at FROM sliders ORDER BY id DESC LIMIT 15')->fetchAll(PDO::FETCH_ASSOC),
                 ];
+            } else {
+                $dbDiag = ['error' => 'AdminDatabase class could not be loaded', 'dbFile' => $dbFile];
             }
-        } catch (Throwable) {}
+        } catch (Throwable $e) {
+            $dbDiag = ['error' => $e->getMessage()];
+        }
 
         echo json_encode([
             'success' => true,
