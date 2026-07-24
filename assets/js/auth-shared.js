@@ -279,11 +279,13 @@
         if (isLogoutLanding()) {
             return false;
         }
-        if (!phpSessionLoggedIn()) {
-            return false;
-        }
+        // localStorage'daki JWT, PHP session'dan bagimsiz olarak gecerli olabilir.
+        // Once localStorage kontrol et, sonra PHP session'a bak.
         if (Shared.getMemberJwt && Shared.getMemberJwt() !== '') {
             return true;
+        }
+        if (!phpSessionLoggedIn()) {
+            return false;
         }
         return typeof w.__MEMBER_JWT_BOOTSTRAP__ === 'string' && w.__MEMBER_JWT_BOOTSTRAP__.trim() !== '';
     }
@@ -833,8 +835,19 @@
             if (Shared.getMemberJwt() !== '') {
                 Shared.hydrateMemberJwt().then(function (token) {
                     if (token !== '') {
-                        // JWT tek başına oturum anlamına gelmez; PHP session doğrulanana
-                        // kadar UI'yi "logged in" moduna zorlamayız.
+                        // hydrateMemberJwt /auth/session uzerinden oturumu
+                        // dogruladiysa applyLoginEnvelope __USER_LOGGED_IN__=true
+                        // yapmis olabilir. O durumda ezme, koru.
+                        if (phpSessionLoggedIn()) {
+                            w.__HAS_MEMBER_JWT__ = true;
+                            // Tetikle: header upgrade ve balance yenileme
+                            try { w.dispatchEvent(new CustomEvent('metropol:member-jwt-ready', { detail: { token: token } })); } catch (eEv) {}
+                            if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
+                                w.MetropolMemberConsole.fetchAll();
+                            }
+                            return;
+                        }
+                        // Oturum dogrulanamadi ama JWT var — UI'yi zorlama
                         w.__USER_LOGGED_IN__ = false;
                         w.__HAS_MEMBER_JWT__ = true;
                         if (w.__MEMBER_BOOTSTRAP_STATE__ && typeof w.__MEMBER_BOOTSTRAP_STATE__ === 'object') {
