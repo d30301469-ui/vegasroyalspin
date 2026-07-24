@@ -302,7 +302,7 @@ if (class_exists('ApiMediaUrl', false)) {
                             </div>
 
                             <div id="loginFormScreen">
-                                <form method="POST" action="#" novalidate class="login-form entrance-form-bc sign-in popup" id="loginForm" onsubmit="if(window.__loginAjaxReady)return true;alert('Giriş formu henüz hazır değil. Lütfen sayfayı yenileyip tekrar deneyin.');return false;">
+                                <form method="POST" action="#" novalidate class="login-form entrance-form-bc sign-in popup" id="loginForm" onsubmit="if(!window.__loginAjaxReady){console.warn('Login form not ready');return false;}return true;">
                                     <input type="hidden" name="next" id="loginFormNext" value="<?= htmlspecialchars($login_next_safe, ENT_QUOTES, 'UTF-8') ?>">
                                     <div class="entrance-form-content-bc single-side step-0">
                                         <div class="sg-n-text-row-1-bc login-text-block" id="loginScreenHeader">Hesabınız var mı?</div>
