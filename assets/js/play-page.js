@@ -180,14 +180,33 @@
         var mode = (payload.mode || 'real').toLowerCase();
         var isDemo = payload.demo === true || payload.isDemo === true;
         if (isDemo || mode === 'fun' || mode === 'demo') {
-            return true;
+            return Promise.resolve(true);
         }
+        if (memberLoggedIn()) {
+            return Promise.resolve(true);
+        }
+
+        if (Shared && typeof Shared.hydrateMemberJwt === 'function') {
+            return Shared.hydrateMemberJwt().then(function () {
+                if (memberLoggedIn()) {
+                    return true;
+                }
+                var here = window.location.pathname + window.location.search;
+                window.location.href = apiUrl('/login') + '?next=' + encodeURIComponent(here);
+                return false;
+            }).catch(function () {
+                var here = window.location.pathname + window.location.search;
+                window.location.href = apiUrl('/login') + '?next=' + encodeURIComponent(here);
+                return false;
+            });
+        }
+
         if (!memberLoggedIn()) {
             var here = window.location.pathname + window.location.search;
             window.location.href = apiUrl('/login') + '?next=' + encodeURIComponent(here);
-            return false;
+            return Promise.resolve(false);
         }
-        return true;
+        return Promise.resolve(true);
     }
 
     function showFatal(msg) {
@@ -647,22 +666,24 @@
         }
         bindChrome();
         bindProviderEvents();
-        if (!gateLoginIfNeeded(payload)) {
-            return;
-        }
-        tickBalance();
-        window.setInterval(function () {
-            if (!document.hidden) {
-                tickBalance();
+        gateLoginIfNeeded(payload).then(function (allowed) {
+            if (!allowed) {
+                return;
             }
-        }, 2000);
-        window.addEventListener('focus', tickBalance);
-        document.addEventListener('visibilitychange', function () {
-            if (!document.hidden) {
-                tickBalance();
-            }
+            tickBalance();
+            window.setInterval(function () {
+                if (!document.hidden) {
+                    tickBalance();
+                }
+            }, 2000);
+            window.addEventListener('focus', tickBalance);
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden) {
+                    tickBalance();
+                }
+            });
+            launchGame(payload);
         });
-        launchGame(payload);
     }
 
     if (document.readyState === 'loading') {
