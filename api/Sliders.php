@@ -329,22 +329,11 @@ final class ApiSliders
             if (!is_array($row)) {
                 continue;
             }
-            $pickFirstNonEmpty = static function (array $values): string {
-                foreach ($values as $value) {
-                    $candidate = trim((string) $value);
-                    if ($candidate !== '') {
-                        return $candidate;
-                    }
-                }
-
-                return '';
-            };
-
-            $desktop = $pickFirstNonEmpty([
+            $desktop = self::pickFirstNonEmptyString([
                 $row['desktop_path'] ?? '',
                 $row['desktop_image_url'] ?? '',
             ]);
-            $mobile = $pickFirstNonEmpty([
+            $mobile = self::pickFirstNonEmptyString([
                 $row['mobile_path'] ?? '',
                 $row['mobile_image_url'] ?? '',
             ]);
@@ -397,6 +386,35 @@ final class ApiSliders
      * @return list<array<string, mixed>>
      */
     public static function fetch(array $query): array
+    {
+        $surface = self::normalizeSurface((string) ($query['surface'] ?? 'all'));
+        $list = self::fetchRaw($query);
+
+        if ($surface === 'all') {
+            return $list;
+        }
+
+        $surfaceAdjusted = self::alignSurfacePayload($list, $surface);
+        if (self::hasUsableMediaForSurface($surfaceAdjusted, $surface)) {
+            return $surfaceAdjusted;
+        }
+
+        $fallbackQuery = $query;
+        unset($fallbackQuery['surface']);
+        $fallback = self::fetchRaw($fallbackQuery);
+        $fallbackAdjusted = self::alignSurfacePayload($fallback, $surface);
+        if (self::hasUsableMediaForSurface($fallbackAdjusted, $surface)) {
+            return $fallbackAdjusted;
+        }
+
+        return $surfaceAdjusted;
+    }
+
+    /**
+     * @param array<string, string|int|float|bool|null> $query
+     * @return list<array<string, mixed>>
+     */
+    private static function fetchRaw(array $query): array
     {
         $apiOnly = function_exists('frontend_is_api_only') && frontend_is_api_only();
         $local = $apiOnly ? [] : self::fetchFromDatabase($query);
@@ -595,39 +613,6 @@ final class ApiSliders
 
         $list = self::fetch(['category' => $category, 'surface' => $surface]);
 
-        $hasUsableMediaForSurface = static function (array $items, string $targetSurface): bool {
-            foreach ($items as $item) {
-                if (!is_array($item)) {
-                    continue;
-                }
-                $selected = trim((string) ($item['imageUrl'] ?? $item['image_url'] ?? ''));
-                $desktop = trim((string) ($item['desktopImageUrl'] ?? $item['desktop_image_url'] ?? $item['desktop_path'] ?? ''));
-                $mobile = trim((string) ($item['mobileImageUrl'] ?? $item['mobile_image_url'] ?? $item['mobile_path'] ?? ''));
-
-                if ($selected !== '') {
-                    return true;
-                }
-
-                if ($targetSurface === 'mobile' && $mobile !== '') {
-                    return true;
-                }
-                if ($targetSurface === 'desktop' && $desktop !== '') {
-                    return true;
-                }
-            }
-
-            return false;
-        };
-
-        // Uzak servis surface parametresinde eksik medya dondurebilirse,
-        // category bazli surface'siz ikinci deneme ile gecerli kayitlari al.
-        if (!$hasUsableMediaForSurface($list, $surface)) {
-            $fallbackList = self::fetch(['category' => $category]);
-            if ($hasUsableMediaForSurface($fallbackList, $surface)) {
-                $list = $fallbackList;
-            }
-        }
-
         return array_values(array_filter(
             $list,
             static function (array $slider) use ($category): bool {
@@ -653,6 +638,122 @@ final class ApiSliders
     private static function pdo(): PDO
     {
         return ApiCmsRemote::pdo();
+    }
+
+    /**
+     * @param list<mixed> $values
+     */
+    private static function pickFirstNonEmptyString(array $values): string
+    {
+        foreach ($values as $value) {
+            $candidate = trim((string) $value);
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     */
+    private static function hasUsableMediaForSurface(array $items, string $surface): bool
+    {
+        $surface = self::normalizeSurface($surface);
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $desktop = self::pickFirstNonEmptyString([
+                $item['desktopImageUrl'] ?? '',
+                $item['desktop_image_url'] ?? '',
+                $item['desktop_path'] ?? '',
+            ]);
+            $mobile = self::pickFirstNonEmptyString([
+                $item['mobileImageUrl'] ?? '',
+                $item['mobile_image_url'] ?? '',
+                $item['mobile_path'] ?? '',
+            ]);
+            $selected = self::pickFirstNonEmptyString([
+                $item['imageUrl'] ?? '',
+                $item['image_url'] ?? '',
+            ]);
+
+            if ($surface === 'mobile' && ($mobile !== '' || $selected !== '')) {
+                return true;
+            }
+            if ($surface === 'desktop' && ($desktop !== '' || $selected !== '')) {
+                return true;
+            }
+            if ($surface === 'all' && ($desktop !== '' || $mobile !== '' || $selected !== '')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     * @return list<array<string, mixed>>
+     */
+    private static function alignSurfacePayload(array $items, string $surface): array
+    {
+        $surface = self::normalizeSurface($surface);
+        if ($surface === 'all') {
+            return $items;
+        }
+
+        $normalized = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $desktop = self::pickFirstNonEmptyString([
+                $item['desktopImageUrl'] ?? '',
+                $item['desktop_image_url'] ?? '',
+                $item['desktop_path'] ?? '',
+            ]);
+            $mobile = self::pickFirstNonEmptyString([
+                $item['mobileImageUrl'] ?? '',
+                $item['mobile_image_url'] ?? '',
+                $item['mobile_path'] ?? '',
+            ]);
+            $selected = self::pickFirstNonEmptyString([
+                $item['imageUrl'] ?? '',
+                $item['image_url'] ?? '',
+            ]);
+
+            if ($surface === 'mobile') {
+                if ($mobile === '') {
+                    $mobile = $selected;
+                }
+                if ($selected === '') {
+                    $selected = $mobile !== '' ? $mobile : $desktop;
+                }
+            } else {
+                if ($desktop === '') {
+                    $desktop = $selected;
+                }
+                if ($selected === '') {
+                    $selected = $desktop !== '' ? $desktop : $mobile;
+                }
+            }
+
+            if ($desktop === '' && $mobile === '' && $selected === '') {
+                continue;
+            }
+
+            $item['desktopImageUrl'] = ApiMediaUrl::resolve($desktop);
+            $item['mobileImageUrl'] = ApiMediaUrl::resolve($mobile);
+            $item['imageUrl'] = ApiMediaUrl::resolve($selected);
+            $item['surface'] = $surface;
+            $normalized[] = $item;
+        }
+
+        return $normalized;
     }
 
     private static function columnExists(PDO $pdo, string $column): bool
