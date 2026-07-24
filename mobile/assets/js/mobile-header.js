@@ -286,8 +286,27 @@
         if (btn.getAttribute('data-mobile-profile-bound') === '1') return;
         btn.setAttribute('data-mobile-profile-bound', '1');
 
-        btn.addEventListener('click', function (e) {
+        function handleTap(e) {
+            var now = Date.now();
+            var lastTap = Number(btn.getAttribute('data-mobile-profile-lasttap') || '0');
+            if (!isNaN(lastTap) && (now - lastTap) < 350) {
+                if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                return;
+            }
+            btn.setAttribute('data-mobile-profile-lasttap', String(now));
             openProfileFromAvatarTap(e);
+        }
+
+        btn.addEventListener('click', function (e) {
+            handleTap(e);
+        });
+
+        btn.addEventListener('touchend', function (e) {
+            handleTap(e);
+        }, { passive: false });
+
+        btn.addEventListener('pointerup', function (e) {
+            handleTap(e);
         });
 
         btn.addEventListener('keydown', function (e) {
