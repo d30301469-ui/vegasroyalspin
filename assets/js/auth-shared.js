@@ -464,7 +464,17 @@
         phpSessionLoggedIn: phpSessionLoggedIn,
         handleMemberAuthFailure: function () {
             var self = this;
-            if (isLogoutLanding() || !phpSessionLoggedIn()) {
+            var savedJwt = self.getMemberJwt();
+            var bootstrapJwt = typeof w.__MEMBER_JWT_BOOTSTRAP__ === 'string'
+                ? w.__MEMBER_JWT_BOOTSTRAP__.trim()
+                : '';
+            if (isLogoutLanding()) {
+                self.clearMemberJwt();
+                w.__USER_LOGGED_IN__ = false;
+                w.__HAS_MEMBER_JWT__ = false;
+                return Promise.resolve(false);
+            }
+            if (!phpSessionLoggedIn() && savedJwt === '' && bootstrapJwt === '') {
                 self.clearMemberJwt();
                 w.__USER_LOGGED_IN__ = false;
                 w.__HAS_MEMBER_JWT__ = false;
@@ -477,7 +487,6 @@
             // localStorage JWT'yi temizlemeden ONCE kaydet — /auth/session
             // isteginde bu JWT'yi gonder ki sunucu oturumu dogrulayabilsin.
             // Recovery basarisiz olursa JWT'yi geri yukle.
-            var savedJwt = self.getMemberJwt();
             self.clearMemberJwt();
 
             var sessionUrl = self.proxyApiUrl('/auth/session');
@@ -963,7 +972,7 @@
                         res
                         && res.status === 401
                         && !isLogoutLanding()
-                        && phpSessionLoggedIn()
+                        && (phpSessionLoggedIn() || (Shared.getMemberJwt && Shared.getMemberJwt() !== '') || (typeof w.__MEMBER_JWT_BOOTSTRAP__ === 'string' && w.__MEMBER_JWT_BOOTSTRAP__.trim() !== ''))
                         && typeof url === 'string'
                         && needsMemberAuth(url.indexOf(base) === 0 ? url.slice(base.length) : url)
                     ) {
