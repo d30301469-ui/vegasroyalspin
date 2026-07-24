@@ -456,3 +456,41 @@
         boot();
     }
 })();
+
+// SCROLL LOCK RECOVERY: Emergency cleanup if body gets stuck locked
+(function() {
+    var RECOVERY_INTERVAL = 3000; // check every 3s
+    var lastRecoveryCheck = 0;
+
+    function isBodyStuckLocked() {
+        var body = document.body;
+        var menuOpen = document.getElementById('mobileMenu');
+        var menuIsOpen = menuOpen && menuOpen.classList.contains('is-open');
+        var profileOpen = document.getElementById('mprofilePanel');
+        var profileIsOpen = profileOpen && profileOpen.classList.contains('is-open');
+        var hasLock = body.classList.contains('mobileMenu-locked') || body.classList.contains('body-scroll-locked');
+        // If lock is present but neither menu nor profile is open, body is stuck
+        return hasLock && !menuIsOpen && !profileIsOpen;
+    }
+
+    function recoverScrollLock() {
+        var body = document.body;
+        body.classList.remove('mobileMenu-locked', 'body-scroll-locked', 'navigation-is-visible', 'mprofile-open', 'overlay-sliding-is-visible', 'overlaySlidingIsVisible');
+        body.style.position = '';
+        body.style.top = '';
+        body.style.left = '';
+        body.style.right = '';
+        body.style.width = '';
+        body.style.overflow = '';
+        body.style.touchAction = '';
+        body.style.paddingRight = '';
+    }
+
+    setInterval(function() {
+        if (isBodyStuckLocked()) {
+            console.warn('[ScrollLockRecovery] Detected stuck scroll lock — recovering');
+            recoverScrollLock();
+        }
+    }, RECOVERY_INTERVAL);
+})();
+

@@ -1,4 +1,45 @@
 (function () {
+    // If mobile navigation.js is already managing the menu, delegate to it
+    // to avoid double-binding and scroll lock races.
+    if (window.__MOBILE_NAV_ACTIVE__) {
+        // Still run highlightActiveTab and scroll behavior, but skip menu binding
+        function highlightActiveTab() {
+            var path = window.location.pathname;
+            var items = document.querySelectorAll('.mobFooter-item[href]');
+            items.forEach(function (item) {
+                var href = item.getAttribute('href');
+                if (href && href !== '#' && path.indexOf(href) === 0) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        function initMobileScrollBehavior() {
+            var mql = window.matchMedia('(max-width: 992px)');
+            if (!mql.matches) return;
+
+            var mainMenu = document.querySelector('.mainMenu');
+            if (mainMenu) {
+                mainMenu.classList.remove('header-hidden');
+            }
+
+            if (typeof window.__syncHeaderStickyTop === 'function') {
+                window.__syncHeaderStickyTop();
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                highlightActiveTab();
+                initMobileScrollBehavior();
+            });
+        } else {
+            highlightActiveTab();
+            initMobileScrollBehavior();
+        }
+        return;
+    }
+
     var scrollY = 0;
 
     function getSharedScrollLock() {
