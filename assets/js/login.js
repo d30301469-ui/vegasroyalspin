@@ -248,6 +248,7 @@
             }
         }
 
+        if (typeof Shared.renderTurnstileWidget !== 'function') return;
         Shared.renderTurnstileWidget(container, { theme: 'dark', action: 'login' });
         syncLoginTurnstileWrapState(container);
     }
@@ -255,6 +256,7 @@
     function resetLoginTurnstileWidget() {
         var container = loginTurnstileContainer();
         if (!container) return;
+        if (typeof Shared.resetTurnstileWidget !== 'function') return;
         Shared.resetTurnstileWidget(container);
         syncLoginTurnstileWrapState(container);
     }
@@ -262,6 +264,7 @@
     function loginTurnstileToken() {
         var container = loginTurnstileContainer();
         if (!container) return '';
+        if (typeof Shared.turnstileTokenFromContainer !== 'function') return '';
         return Shared.turnstileTokenFromContainer(container);
     }
 

@@ -521,7 +521,6 @@
                     } catch (eEv) {
                         /* ignore */
                     }
-                    }
                 }
                 return ok;
             });
