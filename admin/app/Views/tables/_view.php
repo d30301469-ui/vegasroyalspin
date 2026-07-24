@@ -65,7 +65,7 @@ $fieldLabel = static function (string $name) use ($moduleKey): string {
         $value = $formatValue($name, $rawValue);
         $spanClass = strlen($value) > 120 ? ' span-2' : '';
         ?>
-        <div class="field<?= $spanClass ?>">
+        <div class="field<?= htmlspecialchars($spanClass, ENT_QUOTES, 'UTF-8') ?>">
             <label class="field-label"><?= $text($fieldLabel($name)) ?></label>
             <?php if ($dataType === 'json'): ?>
                 <?php

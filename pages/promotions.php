@@ -193,7 +193,7 @@ $kategoriler = [
         <div class="promo-categories-inner" data-promo-cats-scroll>
             <?php foreach ($kategoriler as $kat): ?>
             <button type="button" class="promo-cat-btn <?= !empty($kat['active']) ? 'active' : '' ?>" data-category="<?= htmlspecialchars($kat['id']) ?>" onclick="if(window.__promoInlineRunFilter){window.__promoInlineRunFilter(this,event);}" ontouchend="if(window.__promoInlineRunFilter){window.__promoInlineRunFilter(this,event);} return false;" onpointerup="if(window.__promoInlineRunFilter){window.__promoInlineRunFilter(this,event);}">
-                <i class="promo-cat-icon <?= $kat['icon'] ?>" aria-hidden="true"></i>
+                <i class="promo-cat-icon <?= htmlspecialchars($kat['icon'], ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
                 <span><?= htmlspecialchars($kat['label']) ?></span>
             </button>
             <?php endforeach; ?>

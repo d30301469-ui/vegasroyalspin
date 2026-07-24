@@ -1,6 +1,7 @@
 /**
  * Slot karti yildizi: game_id (data-game-id) ile favori API.
  */
+'use strict';
 (function () {
     var Shared = window.BetcoAuthShared || {};
     function apiUrl(path) {

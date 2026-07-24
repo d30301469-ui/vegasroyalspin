@@ -15,7 +15,7 @@ $statusLabel = static fn (string $value): string => match ($value) {
 ?>
 <section class="hero">
     <div class="hero-text">
-        <span class="eyebrow">Destek · #<?= $ticketId ?></span>
+        <span class="eyebrow">Destek · #<?= htmlspecialchars($ticketId, ENT_QUOTES, 'UTF-8') ?></span>
         <h1 class="hero-title"><?= $text($ticket['subject'] ?? 'Destek Talebi') ?></h1>
         <p class="hero-sub">
             <?= $text($ticket['username'] ?? '') ?>
@@ -28,7 +28,7 @@ $statusLabel = static fn (string $value): string => match ($value) {
         <?php if (!$isClosed): ?>
             <form method="post" action="<?= $text(AdminAuth::url('/support/close')) ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
-                <input type="hidden" name="ticket_id" value="<?= $ticketId ?>">
+                <input type="hidden" name="ticket_id" value="<?= htmlspecialchars($ticketId, ENT_QUOTES, 'UTF-8') ?>">
                 <button class="btn btn--ghost" type="submit">Talebi Kapat</button>
             </form>
         <?php endif; ?>
@@ -64,7 +64,7 @@ $statusLabel = static fn (string $value): string => match ($value) {
     <div class="card-head"><h2 class="card-title">Yanıt Yaz</h2></div>
     <form method="post" action="<?= $text(AdminAuth::url('/support/reply')) ?>">
         <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
-        <input type="hidden" name="ticket_id" value="<?= $ticketId ?>">
+        <input type="hidden" name="ticket_id" value="<?= htmlspecialchars($ticketId, ENT_QUOTES, 'UTF-8') ?>">
         <div class="field" style="margin-bottom:14px">
             <label class="field-label" for="message">Mesaj</label>
             <textarea id="message" class="input textarea" name="message" rows="5" required placeholder="Üyeye gönderilecek yanıt..."></textarea>

@@ -1,4 +1,5 @@
 (function () {
+    'use strict'; () {
   function getScrollY() {
     return window.pageYOffset
       || document.documentElement.scrollTop

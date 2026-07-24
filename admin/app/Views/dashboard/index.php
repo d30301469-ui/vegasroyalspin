@@ -165,7 +165,7 @@ $showFlashModal = $flash !== '';
         <h1 class="db-title">Gösterge Paneli</h1>
         <div class="db-filters">
             <?php foreach (['yesterday' => 'Dün', 'today' => 'Bugün', 'week' => 'Bu Hafta', 'month' => 'Bu Ay', 'prev_month' => 'Geçen Ay'] as $p => $l): ?>
-                <a class="db-filter <?= $selectedPeriod === $p ? 'is-on' : '' ?>" href="<?= htmlspecialchars($periodUrl($p)) ?>"><?= $l ?></a>
+                <a class="db-filter <?= $selectedPeriod === $p ? 'is-on' : '' ?>" href="<?= htmlspecialchars($periodUrl($p)) ?>"><?= htmlspecialchars($l, ENT_QUOTES, 'UTF-8') ?></a>
             <?php endforeach; ?>
             <form method="get" action="<?= htmlspecialchars(AdminAuth::url('/dashboard')) ?>" style="display:flex;gap:5px;align-items:center">
                 <input type="hidden" name="period" value="custom">
@@ -189,7 +189,7 @@ $showFlashModal = $flash !== '';
         <div class="db-kpi <?= !empty($card['wide']) ? 'wide' : '' ?>">
             <div class="db-kpi-top">
                 <span class="db-kpi-label">
-                    <span class="db-kpi-icon" style="background:<?= $c['bg'] ?>;color:<?= $c['fg'] ?>">
+                    <span class="db-kpi-icon" style="background:<?= htmlspecialchars($c['bg'], ENT_QUOTES, 'UTF-8') ?>;color:<?= htmlspecialchars($c['fg'], ENT_QUOTES, 'UTF-8') ?>">
                         <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
                     </span>
                     <?= htmlspecialchars((string) ($card['label'] ?? '')) ?>
@@ -204,9 +204,9 @@ $showFlashModal = $flash !== '';
     <!-- Charts Row: Sport + Casino -->
     <div class="db-col2">
         <?php foreach (['sport' => 'Spor', 'casino' => 'Casino'] as $key => $title): $d = $chartData[$key]; ?>
-        <div class="db-panel" data-chart-panel="<?= $key ?>">
+        <div class="db-panel" data-chart-panel="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>">
             <div class="db-panel-head">
-                <h2 class="db-panel-title"><?= $title ?> İstatistikleri</h2>
+                <h2 class="db-panel-title"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?> İstatistikleri</h2>
                 <a class="db-link" href="<?= htmlspecialchars(AdminAuth::url($d['module'])) ?>">Modül →</a>
             </div>
             <?php if ($d['empty']): ?><div class="db-empty"><?= htmlspecialchars($d['empty']) ?></div><?php endif; ?>
@@ -217,7 +217,7 @@ $showFlashModal = $flash !== '';
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
-            <div class="db-chart-wrap" id="db-<?= $key ?>-donut"></div>
+            <div class="db-chart-wrap" id="db-<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>-donut"></div>
             <?php if (!empty($d['bars']['labels'])): ?>
             <?php $maxVal = max(array_map('floatval', $d['bars']['values'])) ?: 1; ?>
             <?php foreach ($d['bars']['labels'] as $i => $label): $v = (float) ($d['bars']['values'][$i] ?? 0); $f = (string) ($d['bars']['formats'][$i] ?? 'money'); ?>
@@ -301,7 +301,7 @@ $showFlashModal = $flash !== '';
         <?php foreach ([['title'=>'Son Yatırımlar','rows'=>$depositRows,'url'=>'/module?key=deposits'],['title'=>'Son Çekimler','rows'=>$withdrawRows,'url'=>'/module?key=withdrawals']] as $tbl): ?>
         <div class="db-panel">
             <div class="db-panel-head">
-                <h2 class="db-panel-title"><?= $tbl['title'] ?></h2>
+                <h2 class="db-panel-title"><?= htmlspecialchars($tbl['title'], ENT_QUOTES, 'UTF-8') ?></h2>
                 <a class="db-link" href="<?= htmlspecialchars(AdminAuth::url($tbl['url'])) ?>">Tümü →</a>
             </div>
             <div style="overflow-x:auto">

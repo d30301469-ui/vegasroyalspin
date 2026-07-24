@@ -61,26 +61,26 @@ $totalSlides = count($renderedSlides);
             <div class="swiper-slide" data-swiper-slide-index="<?= (int) $idx ?>">
               <div class="sdr-item-holder-bc" style="aspect-ratio: 16 / 9;">
                 <a class="sdr-item-bc"
-                   href="<?= $linkHref ?>"
+                   href="<?= htmlspecialchars($linkHref, ENT_QUOTES, 'UTF-8') ?>"
                    <?= $linkRaw === '' ? ' role="button" aria-disabled="true"' : '' ?>
-                   target="<?= $linkTarget ?>"
-                   aria-label="<?= $title ?>"<?= $linkRel ?>>
+                   target="<?= htmlspecialchars($linkTarget, ENT_QUOTES, 'UTF-8') ?>"
+                   aria-label="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"<?= htmlspecialchars($linkRel, ENT_QUOTES, 'UTF-8') ?>>
                   <?php if ($isVideo): ?>
                   <video class="sdr-image-bc"
-                         src="<?= $imgSrc ?>"
+                         src="<?= htmlspecialchars($imgSrc, ENT_QUOTES, 'UTF-8') ?>"
                          autoplay
                          muted
                          loop
                          playsinline
-                         aria-label="<?= $title ?>"></video>
+                         aria-label="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"></video>
                   <?php else: ?>
                   <img class="sdr-image-bc"
-                       alt="<?= $title ?>"
-                       title="<?= $title ?>"
-                       loading="<?= $loading ?>"
-                       fetchpriority="<?= $fetchPriority ?>"
+                       alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"
+                       title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"
+                       loading="<?= htmlspecialchars($loading, ENT_QUOTES, 'UTF-8') ?>"
+                       fetchpriority="<?= htmlspecialchars($fetchPriority, ENT_QUOTES, 'UTF-8') ?>"
                        decoding="async"
-                       src="<?= $imgSrc ?>">
+                       src="<?= htmlspecialchars($imgSrc, ENT_QUOTES, 'UTF-8') ?>">
                   <?php endif; ?>
                 </a>
               </div>

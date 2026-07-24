@@ -78,46 +78,46 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <?php include __DIR__ . '/../partials/mobile-redirect-script.php'; ?>
   <?php if ($isPromosyonlar || $isPromotions): ?>
-  <link rel="preload" href="/assets/css/promosyonlar.css?v=<?= $promoVer ?>" as="style">
-  <link rel="preload" href="/assets/css/bonus-detail-modal.css?v=<?= $bonusModalVer ?>" as="style">
+  <link rel="preload" href="/assets/css/promosyonlar.css?v=<?= htmlspecialchars($promoVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
+  <link rel="preload" href="/assets/css/bonus-detail-modal.css?v=<?= htmlspecialchars($bonusModalVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
   <?php endif; ?>
-  <link href="/assets/css/bootstrap-utils.css?v=<?= $assetVer ?>" rel="stylesheet">
+  <link href="/assets/css/bootstrap-utils.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast/dist/css/iziToast.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
   <link rel="stylesheet" href="/assets/sports-icon.css">
-  <link href="/assets/css/global.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/header.css?v=<?= $headerCssVer ?>" rel="stylesheet">
-  <link href="/assets/css/sidebar.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/components.css?v=<?= $assetVer ?>" rel="stylesheet">
-    <link href="/assets/css/profile.css?v=<?= $profileCssVer ?>" rel="stylesheet">
-  <link href="/assets/css/modal.css?v=<?= $modalCssVer ?>" rel="stylesheet">
-  <link href="/assets/css/responsive.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/footer-bc.css?v=<?= $footerBcCssVer ?>" rel="stylesheet">
-  <link href="/assets/css/mobile_bottom.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/register.css?v=<?= $registerCssVer ?>" rel="stylesheet">
-  <link href="/assets/css/login.css?v=<?= $loginCssVer ?>" rel="stylesheet">
-    <link href="/assets/css/register-modal.css?v=<?= $registerModalCssVer ?>" rel="stylesheet">
-    <link href="/assets/css/login-modal.css?v=<?= $loginModalCssVer ?>" rel="stylesheet">
-  <link href="/assets/css/daterangepicker.css?v=<?= $assetVer ?>" rel="stylesheet">
+  <link href="/assets/css/global.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/header.css?v=<?= htmlspecialchars($headerCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/sidebar.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/components.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+    <link href="/assets/css/profile.css?v=<?= htmlspecialchars($profileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/modal.css?v=<?= htmlspecialchars($modalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/responsive.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/footer-bc.css?v=<?= htmlspecialchars($footerBcCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/mobile_bottom.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/register.css?v=<?= htmlspecialchars($registerCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/login.css?v=<?= htmlspecialchars($loginCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+    <link href="/assets/css/register-modal.css?v=<?= htmlspecialchars($registerModalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+    <link href="/assets/css/login-modal.css?v=<?= htmlspecialchars($loginModalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/daterangepicker.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php if ($requestPath === '/' || $scriptName === 'index.php'): ?>
-  <link href="/assets/css/home.css?v=<?= $homeCssVer ?>" rel="stylesheet">
-  <link href="/assets/css/jackpot.css?v=<?= $assetVer ?>" rel="stylesheet">
+  <link href="/assets/css/home.css?v=<?= htmlspecialchars($homeCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/jackpot.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>
   <?php if ($requestPath === '/slot' || $requestPath === '/livecasino' || $requestPath === '/bgaming' || $requestPath === '/sanal-sporlar' || $scriptName === 'slot.php' || $scriptName === 'livecasino.php' || $scriptName === 'bgaming.php' || $scriptName === 'sanal-sporlar.php'): ?>
-  <link href="/assets/css/slots.css?v=<?= $slotsCssVer ?>" rel="stylesheet">
-  <link href="/assets/css/jackpot.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/winners.css?v=<?= $assetVer ?>" rel="stylesheet">
+  <link href="/assets/css/slots.css?v=<?= htmlspecialchars($slotsCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/jackpot.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/winners.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>
   <?php if ($requestPath === '/beni-ara' || $scriptName === 'beni-ara.php'): ?>
-  <link href="/assets/css/beni-ara.css?v=<?= $assetVer ?>" rel="stylesheet">
+  <link href="/assets/css/beni-ara.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>
   <?php if ($requestPath === '/jackpot' || $scriptName === 'jackpot.php'): ?>
-  <link href="/assets/css/jackpot.css?v=<?= $assetVer ?>" rel="stylesheet">
+  <link href="/assets/css/jackpot.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>
   <?php if ($isPromosyonlar || $isPromotions): ?>
-  <link href="/assets/css/promosyonlar.css?v=<?= $promoVer ?>" rel="stylesheet">
-  <link href="/assets/css/bonus-detail-modal.css?v=<?= $bonusModalVer ?>" rel="stylesheet">
+  <link href="/assets/css/promosyonlar.css?v=<?= htmlspecialchars($promoVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/bonus-detail-modal.css?v=<?= htmlspecialchars($bonusModalVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.min.css">
@@ -167,7 +167,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   </script>
   <script src="https://cdn.jsdelivr.net/npm/izitoast/dist/js/iziToast.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>
-  <script src="/assets/js/toastify-helper.js?v=<?= $assetVer ?>"></script>
+  <script src="/assets/js/toastify-helper.js?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>"></script>
     <script src="/assets/js/pwa-register.js?v=<?= rawurlencode($pwaRegisterVer) ?>"></script>
   <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 </head>

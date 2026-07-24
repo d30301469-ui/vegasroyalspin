@@ -1,6 +1,7 @@
 /**
  * Smart menü Favoriler: /api/v2/favorite-slots ve /api/v2/favorite-live-casino (oturum çerezi; JWT sunucuda).
  */
+'use strict';
 (function () {
     var Shared = window.BetcoAuthShared || {};
     function apiUrl(path) {

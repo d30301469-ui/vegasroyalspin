@@ -17,12 +17,12 @@ $profileJsVer = (string)((file_exists($assetJsDir . '/profile.js') ? filemtime($
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Profil</title>
-  <link href="/assets/css/bootstrap-utils.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/global.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/components.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/profile.css?v=<?= $profileCssVer ?>" rel="stylesheet">
-  <link href="/assets/css/sidebar.css?v=<?= $assetVer ?>" rel="stylesheet">
-  <link href="/assets/css/responsive.css?v=<?= $assetVer ?>" rel="stylesheet">
+  <link href="/assets/css/bootstrap-utils.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/global.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/components.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/profile.css?v=<?= htmlspecialchars($profileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/sidebar.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/responsive.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- Toast (modal iframe içinde hata/başarı bildirimleri için) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
@@ -32,7 +32,7 @@ $profileJsVer = (string)((file_exists($assetJsDir . '/profile.js') ? filemtime($
 <!-- Profil davranışları (sidebar/bakiye/vega işlemleri) -->
 <?php include __DIR__ . '/../partials/member-api-layout-script.php'; ?>
 <script src="/assets/js/auth-shared.js?v=<?= rawurlencode($authSharedVer) ?>"></script>
-<script src="/assets/js/toastify-helper.js?v=<?= $assetVer ?>"></script>
+<script src="/assets/js/toastify-helper.js?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="/assets/js/profile.js?v=<?= rawurlencode($profileJsVer) ?>"></script>
 </head>
 <body class="profile-modal-body">

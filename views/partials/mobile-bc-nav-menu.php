@@ -18,12 +18,12 @@ $mobileNavItems = [
         $badgeClass = isset($item['badgeClass']) ? htmlspecialchars($item['badgeClass'], ENT_QUOTES, 'UTF-8') : '';
         $linkClass = 'hdr-navigation-link-bc' . ($badgeClass ? ' ' . $badgeClass : '');
         ?>
-      <a href="<?= $href ?>"
-         class="<?= $linkClass ?>"
+      <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>"
+         class="<?= htmlspecialchars($linkClass, ENT_QUOTES, 'UTF-8') ?>"
          target="_self"
-         aria-label="<?= $label ?>"
+         aria-label="<?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>"
          <?= $badge ? ' data-badge="' . $badge . '"' : '' ?>>
-        <span class="nav-menu-title"><?= $label ?></span>
+        <span class="nav-menu-title"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></span>
       </a>
       <?php endforeach; ?>
     </nav>

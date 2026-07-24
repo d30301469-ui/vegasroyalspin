@@ -249,8 +249,8 @@ try {
   $src = headerBannerImageSrc($bannerBase, (string) $b['img']);
   $onclick = isset($b['onclick']) && $b['onclick'] ? ' onclick="' . htmlspecialchars($b['onclick'], ENT_QUOTES, 'UTF-8') . '"' : '';
 ?>
-  <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="<?= $aria ?>" href="<?= $href ?>"<?= $onclick ?>>
-    <img alt="<?= $alt ?>" loading="lazy" src="<?= $src ?>" class="product-banner-img-bc" width="400" height="200" />
+  <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="<?= htmlspecialchars($aria, ENT_QUOTES, 'UTF-8') ?>" href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>"<?= htmlspecialchars($onclick, ENT_QUOTES, 'UTF-8') ?>>
+    <img alt="<?= htmlspecialchars($alt, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" src="<?= htmlspecialchars($src, ENT_QUOTES, 'UTF-8') ?>" class="product-banner-img-bc" width="400" height="200" />
   </a>
 <?php endforeach; ?>
 </div>

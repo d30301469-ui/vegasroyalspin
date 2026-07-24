@@ -38,7 +38,7 @@ $badgeClass = static function (string $v): string {
     <div class="card-head">
         <div class="card-title-wrap">
             <span class="eyebrow">Liste</span>
-            <h2 class="card-title">Tüm promosyonlar <span class="badge primary"><?= $total ?></span></h2>
+            <h2 class="card-title">Tüm promosyonlar <span class="badge primary"><?= htmlspecialchars($total, ENT_QUOTES, 'UTF-8') ?></span></h2>
         </div>
         <form method="get" action="<?= $text(AdminAuth::url('/promotions')) ?>" style="display:flex;gap:8px;align-items:center">
             <input class="input" type="search" name="search" value="<?= $text($search) ?>" placeholder="Başlık, tip veya kategori..." style="min-width:240px">
@@ -121,7 +121,7 @@ $badgeClass = static function (string $v): string {
         <div style="display:flex;gap:4px">
             <?php for ($p = max(1, $page - 3); $p <= min($totalPages, $page + 3); $p++): ?>
                 <a href="<?= $text(AdminAuth::url('/promotions?page=' . $p . ($search !== '' ? '&search=' . rawurlencode($search) : ''))) ?>"
-                   style="padding:4px 8px;border-radius:6px;<?= $p === $page ? 'background:var(--accent);color:#fff;font-weight:700' : '' ?>"><?= $p ?></a>
+                   style="padding:4px 8px;border-radius:6px;<?= $p === $page ? 'background:var(--accent);color:#fff;font-weight:700' : '' ?>"><?= htmlspecialchars($p, ENT_QUOTES, 'UTF-8') ?></a>
             <?php endfor; ?>
         </div>
     </div>

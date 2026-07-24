@@ -47,7 +47,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
     </div>
   </div>
 
-  <div class="header-bc<?= $hdrAuthClass ?>">
+  <div class="header-bc<?= htmlspecialchars($hdrAuthClass, ENT_QUOTES, 'UTF-8') ?>">
     <div class="hdr-main-content-bc">
       <div class="logo-container">
         <a class="logo" href="/" data-site-logo-link title="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
@@ -155,7 +155,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
              aria-label="Para Yatır"></a>
           <a href="#"
              class="user-nav-icon bc-i-call callPanel"
-             onclick="window.open(<?= $mobileHeaderSupportUrlJs ?>,'_blank'); return false;"
+             onclick="window.open(<?= htmlspecialchars($mobileHeaderSupportUrlJs, ENT_QUOTES, 'UTF-8') ?>,'_blank'); return false;"
              title="Canlı Destek"
              aria-label="Canlı Destek"></a>
           <a href="/ortaklik"
@@ -179,7 +179,7 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
          aria-label="Promosyonlar"></a>
       <a href="#"
          class="guest-shortcut-icon bc-i-call callPanel"
-         onclick="window.open(<?= $mobileHeaderSupportUrlJs ?>,'_blank'); return false;"
+         onclick="window.open(<?= htmlspecialchars($mobileHeaderSupportUrlJs, ENT_QUOTES, 'UTF-8') ?>,'_blank'); return false;"
          title="Canlı Destek"
          aria-label="Canlı Destek"></a>
       <button type="button"

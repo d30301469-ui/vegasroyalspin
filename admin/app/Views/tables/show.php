@@ -422,13 +422,13 @@ $userColumns = [
         <div class="players-foot">
             <div class="players-page-size">
                 <?php foreach ([12, 25, 50, 100, 200] as $size): ?>
-                    <a class="<?= $perPage === $size ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users&search=' . rawurlencode($search) . '&per_page=' . $size), ENT_QUOTES, 'UTF-8') ?>"><?= $size ?></a>
+                    <a class="<?= $perPage === $size ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users&search=' . rawurlencode($search) . '&per_page=' . $size), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($size, ENT_QUOTES, 'UTF-8') ?></a>
                 <?php endforeach; ?>
             </div>
             <div class="players-pager">
-                <span>Sayfa #<?= $page ?>. Toplam Sayfa: <?= $totalPages ?> (<?= $total ?> Adet İçerik)</span>
+                <span>Sayfa #<?= htmlspecialchars($page, ENT_QUOTES, 'UTF-8') ?>. Toplam Sayfa: <?= htmlspecialchars($totalPages, ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($total, ENT_QUOTES, 'UTF-8') ?> Adet İçerik)</span>
                 <?php for ($i = max(1, $page - 1); $i <= min($totalPages, $page + 3); $i++): ?>
-                    <a class="<?= $i === $page ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users&search=' . rawurlencode($search) . '&per_page=' . $perPage . '&page=' . $i), ENT_QUOTES, 'UTF-8') ?>"><?= $i ?></a>
+                    <a class="<?= $i === $page ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users&search=' . rawurlencode($search) . '&per_page=' . $perPage . '&page=' . $i), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($i, ENT_QUOTES, 'UTF-8') ?></a>
                 <?php endfor; ?>
             </div>
         </div>
@@ -631,7 +631,7 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
 
     <div class="admin-actionbar">
         <form method="get" action="<?= htmlspecialchars(AdminAuth::url($listPath), ENT_QUOTES, 'UTF-8') ?>" class="admin-actionbar-left">
-            <input type="hidden" name="<?= $listIdentityName ?>" value="<?= htmlspecialchars($listIdentityValue, ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" name="<?= htmlspecialchars($listIdentityName, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($listIdentityValue, ENT_QUOTES, 'UTF-8') ?>">
             <input type="hidden" name="per_page" value="<?= htmlspecialchars((string) $perPage, ENT_QUOTES, 'UTF-8') ?>">
             <button class="admin-action-btn" type="submit"><svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtre <span class="badge primary"><?= $search !== '' ? '1' : '0' ?></span></button>
             <input class="admin-filter-input admin-search-lg" type="search" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars((string) ($module['search_placeholder'] ?? 'Tabloda ara...'), ENT_QUOTES, 'UTF-8') ?>" data-admin-compact-global-filter>
@@ -640,11 +640,11 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
         <div class="admin-actionbar-right">
             <button class="admin-action-btn" type="button" data-admin-compact-export data-export-name="<?= htmlspecialchars($moduleKey !== '' ? $moduleKey : $table, ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Excel İndir</button>
             <form method="get" action="<?= htmlspecialchars(AdminAuth::url($listPath), ENT_QUOTES, 'UTF-8') ?>">
-                <input type="hidden" name="<?= $listIdentityName ?>" value="<?= htmlspecialchars($listIdentityValue, ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="<?= htmlspecialchars($listIdentityName, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($listIdentityValue, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>">
                 <select class="select admin-select-compact" name="per_page" onchange="this.form.submit()">
                     <?php foreach ([10, 25, 50, 100] as $option): ?>
-                        <option value="<?= $option ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= $option ?> / sayfa</option>
+                        <option value="<?= htmlspecialchars($option, ENT_QUOTES, 'UTF-8') ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= htmlspecialchars($option, ENT_QUOTES, 'UTF-8') ?> / sayfa</option>
                     <?php endforeach; ?>
                 </select>
             </form>
@@ -691,7 +691,7 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                         ? 'date'
                         : (in_array($filterColumnType, ['int', 'bigint', 'smallint', 'mediumint', 'decimal', 'float', 'double'], true) ? 'number' : 'text');
                     ?>
-                    <th><input class="admin-filter-input" type="<?= $filterInputType ?>" aria-label="<?= htmlspecialchars($columnLabel($filterColumnName), ENT_QUOTES, 'UTF-8') ?>" data-admin-compact-column-filter="<?= $filterIndex + 1 ?>"></th>
+                    <th><input class="admin-filter-input" type="<?= htmlspecialchars($filterInputType, ENT_QUOTES, 'UTF-8') ?>" aria-label="<?= htmlspecialchars($columnLabel($filterColumnName), ENT_QUOTES, 'UTF-8') ?>" data-admin-compact-column-filter="<?= $filterIndex + 1 ?>"></th>
                 <?php endforeach; ?>
                 <?php if ($showActiveBonusProgress): ?>
                     <th></th>
@@ -845,18 +845,18 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
     <div class="admin-compact-foot">
         <div class="admin-page-size">
             <?php foreach ([10, 25, 50, 100] as $size): ?>
-                <a class="<?= $perPage === $size ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . '&per_page=' . $size), ENT_QUOTES, 'UTF-8') ?>"><?= $size ?></a>
+                <a class="<?= $perPage === $size ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . '&per_page=' . $size), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($size, ENT_QUOTES, 'UTF-8') ?></a>
             <?php endforeach; ?>
         </div>
         <div class="admin-compact-pager">
-            <span><?= $pageStart ?>-<?= $pageEnd ?> / <?= $total ?></span>
+            <span><?= htmlspecialchars($pageStart, ENT_QUOTES, 'UTF-8') ?>-<?= htmlspecialchars($pageEnd, ENT_QUOTES, 'UTF-8') ?> / <?= htmlspecialchars($total, ENT_QUOTES, 'UTF-8') ?></span>
             <span class="badge solid"><?= htmlspecialchars($table, ENT_QUOTES, 'UTF-8') ?></span>
             <?php if ($page > 1): ?>
                 <a href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . '&per_page=' . $perPage . '&page=' . ($page - 1)), ENT_QUOTES, 'UTF-8') ?>" aria-label="Previous">‹</a>
             <?php endif; ?>
-            <span class="active"><?= $page ?></span>
+            <span class="active"><?= htmlspecialchars($page, ENT_QUOTES, 'UTF-8') ?></span>
             <span>/</span>
-            <span><?= $totalPages ?></span>
+            <span><?= htmlspecialchars($totalPages, ENT_QUOTES, 'UTF-8') ?></span>
             <?php if ($page < $totalPages): ?>
                 <a href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . '&per_page=' . $perPage . '&page=' . ($page + 1)), ENT_QUOTES, 'UTF-8') ?>" aria-label="Next">›</a>
             <?php endif; ?>

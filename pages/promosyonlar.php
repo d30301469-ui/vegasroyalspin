@@ -114,7 +114,7 @@ if (empty($promosyonlar)) {
             <div class="promo-categories-inner">
                 <?php foreach ($kategoriler as $kat): ?>
                 <button type="button" class="promo-cat-btn <?= !empty($kat['active']) ? 'active' : '' ?>" data-category="<?= htmlspecialchars($kat['id']) ?>">
-                    <i class="promo-cat-icon <?= $kat['icon'] ?>" aria-hidden="true"></i>
+                    <i class="promo-cat-icon <?= htmlspecialchars($kat['icon'], ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
                     <span><?= htmlspecialchars($kat['label']) ?></span>
                 </button>
                 <?php endforeach; ?>

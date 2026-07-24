@@ -1,3 +1,4 @@
+'use strict';
 document.addEventListener('DOMContentLoaded', function () {
   /* Ana sayfa (mobil): JACKPOT | KAZANANLAR — slot sayfası ile aynı sekme davranışı */
   (function initHomeJackpotHeroTabs() {
@@ -71,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(function (data) {
           if (console && console.log && data && (data.success === true || data.ok === true)) {
-            console.log('Ziyaretçi kaydedildi', data);
+            // [DEV] console.log('Ziyaretçi kaydedildi', data);
           }
         })
         .catch(function (err) {

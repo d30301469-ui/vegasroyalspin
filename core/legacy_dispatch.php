@@ -173,6 +173,7 @@ if (count($segments) === 1 && $segments[0] !== '') {
 
 http_response_code(404);
 header('Content-Type: text/html; charset=UTF-8');
-echo '<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>404</title></head><body>';
+echo '<!doctype html><html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>404</title></head><body>';
 echo '<h1>404 - Sayfa bulunamadÄ±</h1>';
 echo '</body></html>';

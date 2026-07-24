@@ -30,7 +30,7 @@ $severityClass = static fn (string $value): string => match ($value) {
                     <?php $id = (int) ($alert['id'] ?? 0); ?>
                     <?php $isOpen = (string) ($alert['status'] ?? '') === 'open'; ?>
                     <tr>
-                        <td>#<?= $id ?></td>
+                        <td>#<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
                             <strong><?= $text($alert['title'] ?? '') ?></strong>
                             <?php if (!empty($alert['description'])): ?>
@@ -52,13 +52,13 @@ $severityClass = static fn (string $value): string => match ($value) {
                             'ignored'  => 'primary',
                             default    => 'primary',
                         };
-                        ?><td><span class="badge <?= $alertStatusClass ?>"><?= $text($alert['status'] ?? '') ?></span></td>
+                        ?><td><span class="badge <?= htmlspecialchars($alertStatusClass, ENT_QUOTES, 'UTF-8') ?>"><?= $text($alert['status'] ?? '') ?></span></td>
                         <td><?= $text($alert['created_at'] ?? '') ?></td>
                         <td>
                             <?php if ($isOpen && $resolveUrl !== ''): ?>
                                 <form method="post" action="<?= $text($resolveUrl) ?>" style="display:flex;gap:6px;align-items:center">
                                     <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
-                                    <input type="hidden" name="id" value="<?= $id ?>">
+                                    <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
                                     <input class="input" type="text" name="note" placeholder="Not" maxlength="500" style="max-width:140px;min-height:30px;padding:4px 8px;font-size:11px">
                                     <button class="btn btn--ghost btn--sm" type="submit">Çöz</button>
                                 </form>

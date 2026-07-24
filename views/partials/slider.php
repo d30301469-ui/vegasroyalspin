@@ -158,7 +158,7 @@ $sliders             = array_values(array_filter($sliders, 'slider_item_has_medi
                 ?>
                 <div class="sdr-item-holder-bc slide-item<?= ((int) $sliderIndex === 0) ? ' active' : '' ?>">
                     <?php if ($link): ?>
-                        <a href="<?= $link ?>" class="sdr-item-bc" target="_blank" rel="noopener noreferrer" aria-label="<?= $title ?>"><?= $media ?></a>
+                        <a href="<?= htmlspecialchars($link, ENT_QUOTES, 'UTF-8') ?>" class="sdr-item-bc" target="_blank" rel="noopener noreferrer" aria-label="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"><?= $media ?></a>
                     <?php else: ?>
                         <div class="sdr-item-bc"><?= $media ?></div>
                     <?php endif; ?>
@@ -167,7 +167,7 @@ $sliders             = array_values(array_filter($sliders, 'slider_item_has_medi
             </div>
             <div class="carousel-count-arrow-container with-count">
                 <button class="swiper-button-prev home-hero-slider-counter-prev" type="button" aria-label="Önceki görsel"></button>
-                <div class="swiper-pagination home-hero-slider-counter-text">1/<?= $totalSlides ?></div>
+                <div class="swiper-pagination home-hero-slider-counter-text">1/<?= htmlspecialchars($totalSlides, ENT_QUOTES, 'UTF-8') ?></div>
                 <button class="swiper-button-next home-hero-slider-counter-next" type="button" aria-label="Sonraki görsel"></button>
             </div>
         </div>
@@ -185,7 +185,7 @@ if (!$sliderMobileBc && !defined('SLIDER_ASSETS_IN_HEAD')) {
         file_exists($sliderJs) ? filemtime($sliderJs) : 0
     ) ?: '1';
 ?>
-<link href="/assets/css/slider.css?v=<?= $sliderVer ?>" rel="stylesheet">
-<script defer src="/assets/js/slider.js?v=<?= $sliderVer ?>"></script>
+<link href="/assets/css/slider.css?v=<?= htmlspecialchars($sliderVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+<script defer src="/assets/js/slider.js?v=<?= htmlspecialchars($sliderVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php } ?>
 <?php endif; ?>

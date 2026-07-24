@@ -13,8 +13,8 @@ if (empty($headerBanners)) {
         ? ' onclick="' . htmlspecialchars($b['onclick'], ENT_QUOTES, 'UTF-8') . '"'
         : '';
 ?>
-  <a target="_self" class="product-banner-info-bc product-banner-bc" role="listitem" aria-label="<?= $aria ?>" href="<?= $href ?>"<?= $onclick ?>>
-    <img alt="<?= $alt ?>" loading="lazy" src="<?= htmlspecialchars($src, ENT_QUOTES, 'UTF-8') ?>" class="product-banner-img-bc" width="400" height="200" />
+  <a target="_self" class="product-banner-info-bc product-banner-bc" role="listitem" aria-label="<?= htmlspecialchars($aria, ENT_QUOTES, 'UTF-8') ?>" href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>"<?= htmlspecialchars($onclick, ENT_QUOTES, 'UTF-8') ?>>
+    <img alt="<?= htmlspecialchars($alt, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" src="<?= htmlspecialchars($src, ENT_QUOTES, 'UTF-8') ?>" class="product-banner-img-bc" width="400" height="200" />
   </a>
 <?php endforeach; ?>
 </div>

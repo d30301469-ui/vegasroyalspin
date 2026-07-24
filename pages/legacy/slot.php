@@ -139,7 +139,7 @@ sort($allUniqueProviders);
                     $jsProvider = json_encode($provider, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
                 ?>
                     <button type="button" class="sidebar-provider-item <?= in_array($provider, $selectedProviders, true) ? 'active' : '' ?>"
-                            onclick='toggleProvider(<?= $jsProvider ?>)'
+                            onclick='toggleProvider(<?= htmlspecialchars($jsProvider, ENT_QUOTES, 'UTF-8') ?>)'
                             data-provider="<?= htmlspecialchars($provider, ENT_QUOTES, 'UTF-8') ?>">
                         <span class="provider-list-row"><?= htmlspecialchars($provider) ?></span>
                         <?php if (!empty($badges)): ?>

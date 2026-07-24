@@ -23,7 +23,7 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
 <?php endif; ?>
 
 <section class="card">
-    <div class="card-head"><h2 class="card-title"><?= $total ?> kayıt · <?= $text($status !== '' ? $status : 'all') ?></h2></div>
+    <div class="card-head"><h2 class="card-title"><?= htmlspecialchars($total, ENT_QUOTES, 'UTF-8') ?> kayıt · <?= $text($status !== '' ? $status : 'all') ?></h2></div>
     <?php
     $resolveUrl = AdminAuth::url('/compliance/aml/resolve');
     require __DIR__ . '/_alerts-table.php';

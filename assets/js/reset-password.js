@@ -1,6 +1,7 @@
 /**
  * /reset-password — POST /api/v2/auth/password-reset (action: confirm; token from URL veya gizli alan).
  */
+'use strict';
 (function () {
     var BetcoInputs = window.BetcoInputs;
     var Shared = window.BetcoAuthShared || {};

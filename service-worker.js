@@ -1,4 +1,5 @@
 /* vegasroyalspin PWA service worker */
+'use strict';
 const SW_VERSION = 'v17-mobile-menu-overlay-stack-fix';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 

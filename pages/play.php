@@ -85,7 +85,7 @@ if ($playBypassShell) {
   <meta charset="utf-8">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title><?= $playTitle ?></title>
+  <title><?= htmlspecialchars($playTitle, ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="icon" type="image/svg+xml" href="/assets/images/favicons/favicon.svg">
   <style>
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0f0522; color: #fff; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
@@ -117,7 +117,7 @@ if ($playBypassShell) {
   <meta charset="utf-8">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title><?= $playTitle ?> — Oyun</title>
+  <title><?= htmlspecialchars($playTitle, ENT_QUOTES, 'UTF-8') ?> — Oyun</title>
   <link rel="icon" type="image/svg+xml" href="/assets/images/favicons/favicon.svg">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
 <style>

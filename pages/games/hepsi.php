@@ -84,8 +84,8 @@ $initialOffset = $initialLimit;
 <br><br><br>
 <script>
 (function() {
-    const type = '<?= $type ?>';
-    let offset = <?= $initialOffset ?>;
+    const type = '<?= htmlspecialchars($type, ENT_QUOTES, 'UTF-8') ?>';
+    let offset = <?= htmlspecialchars($initialOffset, ENT_QUOTES, 'UTF-8') ?>;
     const limit = 20;
     let loading = false;
     const loadMoreUrl = '/api/v2/games?game_type=' + (type === 'live' ? '1' : '0');

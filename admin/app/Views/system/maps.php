@@ -75,7 +75,7 @@ foreach ($countryData as $c) {
                     <div class="geomap-bar-flag"><?= htmlspecialchars((string) ($c['country_code'] ?? '🌍'), ENT_QUOTES, 'UTF-8') ?></div>
                     <div class="geomap-bar-label"><?= htmlspecialchars((string) ($c['country_name'] ?? 'Bilinmiyor'), ENT_QUOTES, 'UTF-8') ?></div>
                     <div class="geomap-bar-track">
-                        <div class="geomap-bar-fill" style="width:<?= $pct ?>%"></div>
+                        <div class="geomap-bar-fill" style="width:<?= htmlspecialchars($pct, ENT_QUOTES, 'UTF-8') ?>%"></div>
                     </div>
                     <div class="geomap-bar-value"><?= htmlspecialchars($number($v), ENT_QUOTES, 'UTF-8') ?></div>
                 </div>

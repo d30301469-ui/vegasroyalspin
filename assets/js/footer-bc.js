@@ -1,4 +1,5 @@
 (function () {
+    'use strict'; () {
   function initFooterClock() {
     var el = document.getElementById('footerClockWidget');
     if (!el) return;

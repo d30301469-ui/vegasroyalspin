@@ -500,7 +500,8 @@ if (!function_exists('metropol_render_frontend_boot_error')) {
             'Frontend .env içinde DB_* satırı olmamalı.',
         ];
 
-        echo '<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Site yapılandırma hatası</title>';
+        echo '<!doctype html><html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Site yapılandırma hatası</title>';
         echo '<style>body{font-family:Inter,Segoe UI,sans-serif;background:#0f172a;margin:0;padding:24px;color:#e2e8f0}';
         echo '.card{max-width:720px;margin:0 auto;background:#fff;color:#111827;border-radius:14px;padding:24px}';
         echo 'h1{margin:0 0 12px;font-size:20px;color:#dc2626}pre{background:#f3f4f6;padding:12px;border-radius:8px;white-space:pre-wrap;font-size:13px}';

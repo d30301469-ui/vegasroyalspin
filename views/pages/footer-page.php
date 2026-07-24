@@ -10,7 +10,7 @@ $pageContent = (string) ($footerPage['content'] ?? '');
     <main class="footerPageContainer">
         <h1><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
         <div class="footerPageBody">
-            <?= $pageContent ?>
+            <?= htmlspecialchars($pageContent, ENT_QUOTES, 'UTF-8') ?>
         </div>
     </main>
 </div>

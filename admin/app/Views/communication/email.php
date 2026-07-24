@@ -9,7 +9,7 @@ $unread = count(array_filter($messages, static fn (array $row): bool => !empty($
 <div class="hero mail-hero">
     <div class="hero-text">
         <span class="eyebrow" id="heroDate"><?= htmlspecialchars(date('l · F d · Y'), ENT_QUOTES, 'UTF-8') ?></span>
-        <h1 class="hero-title">Gelen Kutusu · <span class="accent"><?= $unread ?> aktif</span></h1>
+        <h1 class="hero-title">Gelen Kutusu · <span class="accent"><?= htmlspecialchars($unread, ENT_QUOTES, 'UTF-8') ?> aktif</span></h1>
         <p class="hero-sub">Üye gelen kutusu, outbound mail logları ve SMTP ayarları tek iletişim ekranında görüntülenir.</p>
     </div>
     <div class="hero-actions">
@@ -37,7 +37,7 @@ $unread = count(array_filter($messages, static fn (array $row): bool => !empty($
 
     <section class="mail-list">
         <div class="mail-list-head">
-            <div class="mail-list-toptools"><div class="mail-list-title">Gelen Kutusu<span class="meta"><?= $unread ?> AKTİF · <?= count($messages) ?> TOPLAM</span></div></div>
+            <div class="mail-list-toptools"><div class="mail-list-title">Gelen Kutusu<span class="meta"><?= htmlspecialchars($unread, ENT_QUOTES, 'UTF-8') ?> AKTİF · <?= count($messages) ?> TOPLAM</span></div></div>
             <div class="mail-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg> <input type="text" placeholder="Mesaj ara..."></div>
         </div>
         <div class="mail-tabs"><a class="mail-tab is-active" href="#">Birincil <span class="num"><?= count($messages) ?></span></a> <a class="mail-tab" href="#">Gönderim <span class="num"><?= count($mailLogs) ?></span></a></div>

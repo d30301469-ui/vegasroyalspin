@@ -99,7 +99,7 @@ $bgamingJsVer  = (string) ((is_file($bgamingJsPath) ? filemtime($bgamingJsPath) 
                              data-favorite-kind="bgaming"
                              data-catalog-id="<?= htmlspecialchars($gCatId, ENT_QUOTES, 'UTF-8') ?>"
                              data-game-id="<?= htmlspecialchars($gId, ENT_QUOTES, 'UTF-8') ?>"
-                             onclick="<?= $gIntent ?>">
+                             onclick="<?= htmlspecialchars($gIntent, ENT_QUOTES, 'UTF-8') ?>">
                             <span class="providerBadgeBlock" data-badge=""></span>
                             <div class="casinoGameItem">
                                 <img alt="<?= htmlspecialchars($gName, ENT_QUOTES); ?>"
@@ -118,7 +118,7 @@ $bgamingJsVer  = (string) ((is_file($bgamingJsPath) ? filemtime($bgamingJsPath) 
                                     </div>
                                     <div class="game-actions">
                                         <a class="play-btn" href="<?= htmlspecialchars($gPlay, ENT_QUOTES, 'UTF-8') ?>"
-                                           onclick="<?= $gIntent ?>">OYNA</a>
+                                           onclick="<?= htmlspecialchars($gIntent, ENT_QUOTES, 'UTF-8') ?>">OYNA</a>
                                         <a class="demo-btn" href="<?= htmlspecialchars($gDemo, ENT_QUOTES, 'UTF-8') ?>"
                                            onclick="event.stopPropagation()">DEMO</a>
                                     </div>

@@ -625,16 +625,16 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
                     // Tarih formatı
                     $dateText = $transaction['created_at'] ? date('d.m.Y H:i:s', strtotime($transaction['created_at'])) : 'N/A';
                 ?>    
-                <tr class="transaction-row" data-bet-type="<?= $betType ?>" data-transaction-id="<?= $transaction['id'] ?>">    
+                <tr class="transaction-row" data-bet-type="<?= htmlspecialchars($betType, ENT_QUOTES, 'UTF-8') ?>" data-transaction-id="<?= htmlspecialchars($transaction['id'], ENT_QUOTES, 'UTF-8') ?>">    
                     <td data-label="ID"><?= $counter++ ?></td>    
-                    <td data-label="Tür"><span style="<?= $badgeStyle ?>"><?= $typeText ?></span></td>    
+                    <td data-label="Tür"><span style="<?= htmlspecialchars($badgeStyle, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($typeText, ENT_QUOTES, 'UTF-8') ?></span></td>    
                     <td data-label="Oyun Adı"><?= htmlspecialchars($gameName) ?></td>    
                     <td data-label="İşlem"><?= htmlspecialchars($islemText) ?></td>    
-                    <td data-label="Miktar" class="<?= $amountColor ?> fw-bold"><?= $amountSign ?><?= number_format((float)$amountValue, 2) ?> ₺</td>    
+                    <td data-label="Miktar" class="<?= htmlspecialchars($amountColor, ENT_QUOTES, 'UTF-8') ?> fw-bold"><?= htmlspecialchars($amountSign, ENT_QUOTES, 'UTF-8') ?><?= number_format((float)$amountValue, 2) ?> ₺</td>    
                     <td data-label="Detaylar">
-                        <?= $detailsHtml ?>
+                        <?= htmlspecialchars($detailsHtml, ENT_QUOTES, 'UTF-8') ?>
                     </td>    
-                    <td data-label="Tarih"><?= $dateText ?></td>    
+                    <td data-label="Tarih"><?= htmlspecialchars($dateText, ENT_QUOTES, 'UTF-8') ?></td>    
                 </tr>    
                 <?php endforeach; ?>    
                     </tbody>    

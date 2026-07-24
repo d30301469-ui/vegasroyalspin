@@ -1,3 +1,4 @@
+'use strict';
 // Kayıt sayfası / kayıt modalı betikleri (sayfaya özel)
 (function () {
     var $jq = window.jQuery || window.$;

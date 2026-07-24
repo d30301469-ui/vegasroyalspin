@@ -72,11 +72,11 @@ $badgeClass = static function (string $v): string {
     </div>
     <?php if ($totalPages > 1): ?>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;font-size:12px;color:var(--t-light)">
-        <span><?= number_format($total) ?> kayıt · sayfa <?= $page ?>/<?= $totalPages ?></span>
+        <span><?= number_format($total) ?> kayıt · sayfa <?= htmlspecialchars($page, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($totalPages, ENT_QUOTES, 'UTF-8') ?></span>
         <div style="display:flex;gap:4px">
             <?php for ($p = max(1, $page - 3); $p <= min($totalPages, $page + 3); $p++): ?>
                 <a href="<?= $text(AdminAuth::url('/compliance/audit-log?page=' . $p)) ?>"
-                   style="padding:4px 8px;border-radius:6px;<?= $p === $page ? 'background:var(--accent);color:#fff;font-weight:700' : '' ?>"><?= $p ?></a>
+                   style="padding:4px 8px;border-radius:6px;<?= $p === $page ? 'background:var(--accent);color:#fff;font-weight:700' : '' ?>"><?= htmlspecialchars($p, ENT_QUOTES, 'UTF-8') ?></a>
             <?php endfor; ?>
         </div>
     </div>

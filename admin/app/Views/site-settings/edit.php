@@ -210,7 +210,7 @@ $brandingDataJson = json_encode($brandingData);
                     $span = in_array($type, ['textarea', 'checkbox'], true) || ($field['span'] ?? null) === 2 ? ' span-2' : '';
                     $value = $fieldValue($field);
                     ?>
-                    <div class="field<?= $span ?>">
+                    <div class="field<?= htmlspecialchars($span, ENT_QUOTES, 'UTF-8') ?>">
                         <?php if ($type === 'checkbox'): ?>
                             <label class="switch">
                                 <input type="checkbox" name="<?= $h($name) ?>" value="1" <?= $value === '1' ? 'checked' : '' ?>>

@@ -163,14 +163,14 @@ $action = $isEdit ? '/table/update?name=' . rawurlencode($table) : '/table/store
             $required = (!$nullable && !$isEdit && $type !== 'tinyint') ? ' required' : '';
             $spanClass = in_array($type, ['text', 'tinytext', 'mediumtext', 'longtext', 'json'], true) ? ' span-2' : '';
             ?>
-            <div class="field<?= $spanClass ?>">
+            <div class="field<?= htmlspecialchars($spanClass, ENT_QUOTES, 'UTF-8') ?>">
                 <label class="field-label" for="<?= $text($fieldId) ?>">
                     <?= $text($fieldLabel($name)) ?>
                     <?php if (!$nullable): ?><span class="req">*</span><?php endif; ?>
                 </label>
 
                 <?php if ($table === 'sliders' && $name === 'category'): ?>
-                    <select id="<?= $text($fieldId) ?>" class="select" name="<?= $text($name) ?>"<?= $required ?>>
+                    <select id="<?= $text($fieldId) ?>" class="select" name="<?= $text($name) ?>"<?= htmlspecialchars($required, ENT_QUOTES, 'UTF-8') ?>>
                         <?php foreach ($sliderCategoryOptions as $optionValue => $optionLabel): ?>
                             <option value="<?= $text($optionValue) ?>" <?= ((string) $value === $optionValue) ? 'selected' : '' ?>>
                                 <?= $text($optionLabel) ?>
@@ -186,7 +186,7 @@ $action = $isEdit ? '/table/update?name=' . rawurlencode($table) : '/table/store
                     </label>
                 <?php elseif ($type === 'enum'): ?>
                     <?php $options = $parseEnumOptions($columnType); ?>
-                    <select id="<?= $text($fieldId) ?>" class="select" name="<?= $text($name) ?>"<?= $required ?>>
+                    <select id="<?= $text($fieldId) ?>" class="select" name="<?= $text($name) ?>"<?= htmlspecialchars($required, ENT_QUOTES, 'UTF-8') ?>>
                         <?php if ($nullable): ?><option value="">Boş</option><?php endif; ?>
                         <?php foreach ($options as $option): ?>
                             <option value="<?= $text($option) ?>" <?= ((string) $value === $option) ? 'selected' : '' ?>><?= $text($option) ?></option>
@@ -230,19 +230,19 @@ $action = $isEdit ? '/table/update?name=' . rawurlencode($table) : '/table/store
                         </div>
                     </div>
                 <?php elseif (in_array($type, ['int', 'bigint', 'smallint', 'mediumint'], true)): ?>
-                    <input id="<?= $text($fieldId) ?>" class="input" type="number" name="<?= $text($name) ?>" value="<?= $text($value) ?>"<?= $required ?>>
+                    <input id="<?= $text($fieldId) ?>" class="input" type="number" name="<?= $text($name) ?>" value="<?= $text($value) ?>"<?= htmlspecialchars($required, ENT_QUOTES, 'UTF-8') ?>>
                 <?php elseif (in_array($type, ['decimal', 'float', 'double'], true)): ?>
-                    <input id="<?= $text($fieldId) ?>" class="input" type="number" step="0.01" name="<?= $text($name) ?>" value="<?= $text($value) ?>"<?= $required ?>>
+                    <input id="<?= $text($fieldId) ?>" class="input" type="number" step="0.01" name="<?= $text($name) ?>" value="<?= $text($value) ?>"<?= htmlspecialchars($required, ENT_QUOTES, 'UTF-8') ?>>
                 <?php elseif ($type === 'date'): ?>
-                    <input id="<?= $text($fieldId) ?>" class="input admin-date-input" type="date" name="<?= $text($name) ?>" value="<?= $text($dateInputValue($value)) ?>"<?= $required ?>>
+                    <input id="<?= $text($fieldId) ?>" class="input admin-date-input" type="date" name="<?= $text($name) ?>" value="<?= $text($dateInputValue($value)) ?>"<?= htmlspecialchars($required, ENT_QUOTES, 'UTF-8') ?>>
                 <?php elseif (in_array($type, ['datetime', 'timestamp'], true)): ?>
-                    <input id="<?= $text($fieldId) ?>" class="input admin-date-input" type="datetime-local" name="<?= $text($name) ?>" value="<?= $text($dateTimeInputValue($value)) ?>"<?= $required ?>>
+                    <input id="<?= $text($fieldId) ?>" class="input admin-date-input" type="datetime-local" name="<?= $text($name) ?>" value="<?= $text($dateTimeInputValue($value)) ?>"<?= htmlspecialchars($required, ENT_QUOTES, 'UTF-8') ?>>
                 <?php elseif (preg_match('/password/i', $name) === 1): ?>
                     <input id="<?= $text($fieldId) ?>" class="input" type="password" name="<?= $text($name) ?>" autocomplete="new-password"<?= $isEdit ? '' : $required ?>>
                     <div class="field-help"><?= $isEdit ? 'Boş bırakırsanız mevcut değer korunur.' : 'En az 6 karakter girin.' ?></div>
                 <?php else: ?>
                     <?php $inputType = preg_match('/email/i', $name) === 1 ? 'email' : (preg_match('/(^|_)url$|url$/i', $name) === 1 ? 'url' : 'text'); ?>
-                    <input id="<?= $text($fieldId) ?>" class="input" type="<?= $text($inputType) ?>" name="<?= $text($name) ?>" value="<?= $text($value) ?>"<?= $required ?>>
+                    <input id="<?= $text($fieldId) ?>" class="input" type="<?= $text($inputType) ?>" name="<?= $text($name) ?>" value="<?= $text($value) ?>"<?= htmlspecialchars($required, ENT_QUOTES, 'UTF-8') ?>>
                 <?php endif; ?>
 
                 <div class="field-help"><?= $text($fieldHelp[$name] ?? $columnType) ?><?= $nullable ? ' · nullable' : '' ?></div>

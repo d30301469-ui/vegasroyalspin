@@ -1,6 +1,7 @@
 /**
  * Login / register + member API client (direct api.bo-nexthub.site + same-origin proxy for session).
  */
+'use strict';
 (function (w) {
     var JWT_KEY = 'metropol_member_jwt';
 

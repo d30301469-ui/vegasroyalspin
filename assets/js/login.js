@@ -1,6 +1,7 @@
 /**
  * Login modal (#login2) – açma, kapatma. jQuery yoksa modal-polyfill (showModalById/hideModalById) kullanılır.
  */
+'use strict';
 (function () {
     var $jq = window.jQuery || window.$;
     var BetcoInputs = window.BetcoInputs;

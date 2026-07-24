@@ -50,7 +50,7 @@ $netColor = (float) ($summary['net_revenue'] ?? 0) >= 0 ? 'var(--success)' : 'va
     </div>
     <div class="card admin-compact-card" style="padding:18px">
         <div style="color:var(--t-light);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Net Gelir</div>
-        <div style="font-size:22px;font-weight:900;color:<?= $netColor ?>"><?= $text($money($summary['net_revenue'] ?? 0)) ?></div>
+        <div style="font-size:22px;font-weight:900;color:<?= htmlspecialchars($netColor, ENT_QUOTES, 'UTF-8') ?>"><?= $text($money($summary['net_revenue'] ?? 0)) ?></div>
     </div>
 </div>
 

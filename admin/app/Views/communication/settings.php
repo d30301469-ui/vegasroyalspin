@@ -46,7 +46,7 @@ $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
             <strong>Kayitli SMTP bilgileri (dogrulama icin):</strong><br>
             Host: <code><?= htmlspecialchars($storedHost !== '' ? $storedHost : '(bos)', ENT_QUOTES, 'UTF-8') ?></code><br>
             Kullanici (tam e-posta olmali): <code><?= htmlspecialchars($storedUser !== '' ? $storedUser : '(bos)', ENT_QUOTES, 'UTF-8') ?></code><br>
-            Sifre: <code><?= htmlspecialchars($storedPassMask, ENT_QUOTES, 'UTF-8') ?></code> (<?= $storedPassLen ?> karakter)
+            Sifre: <code><?= htmlspecialchars($storedPassMask, ENT_QUOTES, 'UTF-8') ?></code> (<?= htmlspecialchars($storedPassLen, ENT_QUOTES, 'UTF-8') ?> karakter)
         </div>
 
         <?php if ($flash !== ''): ?>

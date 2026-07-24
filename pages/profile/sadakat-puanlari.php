@@ -151,10 +151,10 @@ $formatDate = static function (string $value): string {
             <div class="lp-progress-wrap" aria-label="Sadakat ilerlemesi">
                 <div class="lp-progress-head">
                     <span>Seviye İlerlemesi</span>
-                    <span>%<?= $progressPercent ?></span>
+                    <span>%<?= htmlspecialchars($progressPercent, ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
-                <div class="lp-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= $progressPercent ?>">
-                    <span class="lp-progress-fill" style="width: <?= $progressPercent ?>%"></span>
+                <div class="lp-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= htmlspecialchars($progressPercent, ENT_QUOTES, 'UTF-8') ?>">
+                    <span class="lp-progress-fill" style="width: <?= htmlspecialchars($progressPercent, ENT_QUOTES, 'UTF-8') ?>%"></span>
                 </div>
                 <p class="lp-progress-note">
                     <?php if ($nextLevelName !== null && $nextLevelName !== ''): ?>

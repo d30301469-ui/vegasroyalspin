@@ -1,4 +1,5 @@
 (function () {
+    'use strict'; () {
     if (!document.body.classList.contains("mobile-site")) return;
 
     function ready(fn) {

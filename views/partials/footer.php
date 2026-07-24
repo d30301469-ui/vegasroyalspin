@@ -14,4 +14,4 @@ if (function_exists('isMobile') && isMobile() && defined('MOBILE_PATH')) {
 $backToTopJsPath = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/assets/js/back-to-top.js';
 $backToTopJsVer = (string) (is_file($backToTopJsPath) ? filemtime($backToTopJsPath) : '1');
 ?>
-<script src="<?= htmlspecialchars(asset_url('assets/js/back-to-top.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= $backToTopJsVer ?>"></script>
+<script src="<?= htmlspecialchars(asset_url('assets/js/back-to-top.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= htmlspecialchars($backToTopJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>

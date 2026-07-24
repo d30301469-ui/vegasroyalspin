@@ -31,9 +31,9 @@ foreach ($events as $event) {
         <div class="cal-rail-card">
             <div class="cal-rail-head"><div class="cal-rail-title"><?= htmlspecialchars($monthName . ' ' . $year, ENT_QUOTES, 'UTF-8') ?></div></div>
             <div class="mini-cal-grid">
-                <?php foreach (['P','S','Ç','P','C','C','P'] as $wd): ?><div class="mini-cal-wd"><?= $wd ?></div><?php endforeach; ?>
+                <?php foreach (['P','S','Ç','P','C','C','P'] as $wd): ?><div class="mini-cal-wd"><?= htmlspecialchars($wd, ENT_QUOTES, 'UTF-8') ?></div><?php endforeach; ?>
                 <?php for ($day = 1; $day <= (int) date('t'); $day++): ?>
-                    <div class="mini-cal-day <?= $day === $today ? 'is-today' : '' ?> <?= isset($eventDays[$day]) ? 'has-event' : '' ?>"><?= $day ?></div>
+                    <div class="mini-cal-day <?= $day === $today ? 'is-today' : '' ?> <?= isset($eventDays[$day]) ? 'has-event' : '' ?>"><?= htmlspecialchars($day, ENT_QUOTES, 'UTF-8') ?></div>
                 <?php endfor; ?>
             </div>
         </div>
@@ -41,7 +41,7 @@ foreach ($events as $event) {
             <div class="cal-rail-head"><div class="cal-rail-title">Takvimlerim</div></div>
             <div class="cal-list">
                 <?php foreach (['Promosyon', 'Duyuru', 'KYC', 'Yatırım'] as $index => $name): ?>
-                    <div class="cal-list-item"><span class="cal-list-check" style="color:var(--<?= ['purple','primary','success','info'][$index] ?>)"></span> <span class="cal-list-name"><?= $name ?></span> <span class="cal-list-count"><?= count(array_filter($events, static fn (array $event): bool => ($event['kind'] ?? '') === $name)) ?></span></div>
+                    <div class="cal-list-item"><span class="cal-list-check" style="color:var(--<?= ['purple','primary','success','info'][$index] ?>)"></span> <span class="cal-list-name"><?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?></span> <span class="cal-list-count"><?= count(array_filter($events, static fn (array $event): bool => ($event['kind'] ?? '') === $name)) ?></span></div>
                 <?php endforeach; ?>
             </div>
         </div>

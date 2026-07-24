@@ -1,6 +1,7 @@
 /**
  * Beni Ara sayfası — floating label ve form doğrulama (BetcoInputs kullanır)
  */
+'use strict';
 (function () {
     const onReady = (fn) => {
         document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', fn) : fn();

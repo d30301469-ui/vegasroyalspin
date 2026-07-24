@@ -1,3 +1,4 @@
+'use strict';
 // Header ve mobil menü ile ilgili tüm JS fonksiyonları
 (function () {
     var Shared = window.BetcoAuthShared || {};

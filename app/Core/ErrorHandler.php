@@ -174,11 +174,12 @@ final class ErrorHandler
             $line = $exception->getLine();
             $exceptionClass = get_class($exception);
 
-            echo <<<HTML
+            echo <<<html lang="tr"
             <!DOCTYPE html>
-            <html>
+            <html lang="tr">
             <head>
                 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>{$title}</title>
                 <style>
                     body { font-family: sans-serif; margin: 40px; background: #f5f5f5; }
@@ -203,9 +204,9 @@ final class ErrorHandler
             </html>
             HTML;
         } else {
-            echo <<<HTML
+            echo <<<html lang="tr"
             <!DOCTYPE html>
-            <html>
+            <html lang="tr">
             <head>
                 <meta charset="UTF-8">
                 <title>{$title}</title>

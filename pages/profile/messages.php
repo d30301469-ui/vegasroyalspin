@@ -261,7 +261,7 @@ $new_msg_action = $currentPageUrl;
                                 <button type="button" class="inbox-item-expand" aria-expanded="false" aria-label="İçeriği göster"><i class="fa-solid fa-chevrons-down" aria-hidden="true"></i></button>
                             </div>
                             <div class="inbox-item-body" hidden>
-                                <div class="inbox-item-bodyrichtext"><?= $msg['body'] ?></div>
+                                <div class="inbox-item-bodyrichtext"><?= htmlspecialchars($msg['body'], ENT_QUOTES, 'UTF-8') ?></div>
                                 <?php if (!empty($msg['link_url'])): ?>
                                 <p class="inbox-item-link-wrap"><a href="<?= htmlspecialchars($msg['link_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer">Bağlantıya git</a></p>
                                 <?php endif; ?>

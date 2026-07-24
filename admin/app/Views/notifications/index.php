@@ -94,7 +94,7 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
                                 default   => 'info',
                             };
                             ?>
-                            <td><span class="badge <?= $notifBadge ?>"><?= $text($row['type'] ?? 'info') ?></span></td>
+                            <td><span class="badge <?= htmlspecialchars($notifBadge, ENT_QUOTES, 'UTF-8') ?>"><?= $text($row['type'] ?? 'info') ?></span></td>
                             <td><?= $text($row['title'] ?? '') ?></td>
                             <td><?= !empty($row['is_read']) ? '<span class="badge success">Evet</span>' : '<span class="badge">Hayır</span>' ?></td>
                             <td><?= $text($row['created_at'] ?? '') ?></td>

@@ -40,7 +40,7 @@ $promoId = (string) ($promotion['id'] ?? '');
 <section class="card admin-compact-card">
     <div class="card-head">
         <div class="card-title-wrap">
-            <h2 class="card-title">Talepler <span class="badge primary"><?= $total ?></span></h2>
+            <h2 class="card-title">Talepler <span class="badge primary"><?= htmlspecialchars($total, ENT_QUOTES, 'UTF-8') ?></span></h2>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
             <?php foreach (['', 'active', 'completed', 'revoked', 'expired'] as $s): ?>
@@ -105,7 +105,7 @@ $promoId = (string) ($promotion['id'] ?? '');
         <div style="display:flex;gap:4px">
             <?php for ($p = max(1, $page - 3); $p <= min($totalPages, $page + 3); $p++): ?>
                 <a href="<?= $text(AdminAuth::url('/promotion/claims?id=' . rawurlencode($promoId) . '&page=' . $p . ($statusFilter !== '' ? '&status=' . rawurlencode($statusFilter) : ''))) ?>"
-                   style="padding:4px 8px;border-radius:6px;<?= $p === $page ? 'background:var(--accent);color:#fff;font-weight:700' : '' ?>"><?= $p ?></a>
+                   style="padding:4px 8px;border-radius:6px;<?= $p === $page ? 'background:var(--accent);color:#fff;font-weight:700' : '' ?>"><?= htmlspecialchars($p, ENT_QUOTES, 'UTF-8') ?></a>
             <?php endfor; ?>
         </div>
     </div>

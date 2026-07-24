@@ -13,4 +13,4 @@ include __DIR__ . '/../views/partials/header.php';
 <?php
 $jackpotJsVer = (string) (file_exists(__DIR__ . '/../assets/js/jackpot.js') ? filemtime(__DIR__ . '/../assets/js/jackpot.js') : 1);
 ?>
-<script src="/assets/js/jackpot.js?v=<?= $jackpotJsVer ?>"></script>
+<script src="/assets/js/jackpot.js?v=<?= htmlspecialchars($jackpotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>

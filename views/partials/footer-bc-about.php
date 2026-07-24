@@ -14,22 +14,22 @@ $awardsTitle = (string) ($footerAbout['awards_title'] ?? 'ÖDÜLLERİMİZ');
         <div class="container">
             <div class="footerAboutCards col-2 m-t-10">
                 <div class="column">
-                    <h3 style="<?= $h3Style ?>"><?= htmlspecialchars($historyTitle) ?></h3>
-                    <div class="footerAboutCard" style="<?= $boxStyle ?>">
+                    <h3 style="<?= htmlspecialchars($h3Style, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($historyTitle) ?></h3>
+                    <div class="footerAboutCard" style="<?= htmlspecialchars($boxStyle, ENT_QUOTES, 'UTF-8') ?>">
                         <p><?= htmlspecialchars($historyText) ?></p>
                     </div>
                 </div>
                 <div class="column">
-                    <h3 style="<?= $h3Style ?>"><?= htmlspecialchars($futureTitle) ?></h3>
-                    <div class="footerAboutCard" style="<?= $boxStyle ?>">
+                    <h3 style="<?= htmlspecialchars($h3Style, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($futureTitle) ?></h3>
+                    <div class="footerAboutCard" style="<?= htmlspecialchars($boxStyle, ENT_QUOTES, 'UTF-8') ?>">
                         <p><?= htmlspecialchars($futureText) ?></p>
                     </div>
                 </div>
             </div>
 
             <div class="footerAwardsBlock m-t-15">
-                <h3 style="<?= $h3Style ?>margin-bottom:14px;"><?= htmlspecialchars($awardsTitle) ?></h3>
-                <div class="footerAwardsPanel" style="<?= $boxStyle ?>padding:18px 14px;">
+                <h3 style="<?= htmlspecialchars($h3Style, ENT_QUOTES, 'UTF-8') ?>margin-bottom:14px;"><?= htmlspecialchars($awardsTitle) ?></h3>
+                <div class="footerAwardsPanel" style="<?= htmlspecialchars($boxStyle, ENT_QUOTES, 'UTF-8') ?>padding:18px 14px;">
                     <div class="footerAwardsGrid col-3">
                         <?php foreach ($footerAwards as $award): ?>
                             <?php

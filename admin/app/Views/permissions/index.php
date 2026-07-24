@@ -79,8 +79,8 @@ foreach ($permissionGroups as $group) {
                 <select id="adminPermissionSelect" class="select" name="admin_id" onchange="this.form.submit()">
                     <?php foreach ($admins as $admin): ?>
                         <?php $adminId = (int) ($admin['id'] ?? 0); ?>
-                        <option value="<?= $adminId ?>" <?= $adminId === $selectedAdminId ? 'selected' : '' ?>>
-                            #<?= $adminId ?> · <?= $text($admin['username'] ?? 'Admin') ?> · <?= $text($admin['email'] ?? '') ?>
+                        <option value="<?= htmlspecialchars($adminId, ENT_QUOTES, 'UTF-8') ?>" <?= $adminId === $selectedAdminId ? 'selected' : '' ?>>
+                            #<?= htmlspecialchars($adminId, ENT_QUOTES, 'UTF-8') ?> · <?= $text($admin['username'] ?? 'Admin') ?> · <?= $text($admin['email'] ?? '') ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -92,7 +92,7 @@ foreach ($permissionGroups as $group) {
 
     <section class="permissions-summary">
         <div class="permissions-stat"><span>Seçili admin</span><strong><?= $text($selectedAdmin['username'] ?? 'Admin seçilmedi') ?></strong></div>
-        <div class="permissions-stat"><span>Açık yetki</span><strong><?= $grantedCount ?> / <?= $totalPermissions ?></strong></div>
+        <div class="permissions-stat"><span>Açık yetki</span><strong><?= htmlspecialchars($grantedCount, ENT_QUOTES, 'UTF-8') ?> / <?= htmlspecialchars($totalPermissions, ENT_QUOTES, 'UTF-8') ?></strong></div>
         <div class="permissions-stat"><span>Yetki grubu</span><strong><?= count($permissionGroups) ?></strong></div>
     </section>
 
