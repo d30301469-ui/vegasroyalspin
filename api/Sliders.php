@@ -246,9 +246,13 @@ final class ApiSliders
             // Tarih aralığı: gün bazında (admin’de saat seçilse bile o gün boyunca yayında)
             if (isset($columns['start_date'])) {
                 $where[] = '(start_date IS NULL OR DATE(start_date) <= :today_start)';
+            } elseif (isset($columns['starts_at'])) {
+                $where[] = '(starts_at IS NULL OR DATE(starts_at) <= :today_start)';
             }
             if (isset($columns['end_date'])) {
                 $where[] = '(end_date IS NULL OR DATE(end_date) >= :today_end)';
+            } elseif (isset($columns['ends_at'])) {
+                $where[] = '(ends_at IS NULL OR DATE(ends_at) >= :today_end)';
             }
 
             $select = [
@@ -256,6 +260,7 @@ final class ApiSliders
                 isset($columns['title']) ? 'title' : "'' AS title",
                 isset($columns['subtitle']) ? 'subtitle' : "'' AS subtitle",
                 isset($columns['description']) ? 'description' : "'' AS description",
+                isset($columns['image_url']) ? 'image_url' : "'' AS image_url",
                 isset($columns['desktop_path'])
                     ? 'desktop_path'
                     : (isset($columns['desktop_image_url'])
@@ -263,11 +268,13 @@ final class ApiSliders
                         : (isset($columns['image_url'])
                             ? 'image_url AS desktop_path'
                             : "'' AS desktop_path")),
+                isset($columns['mobile_image_url']) ? 'mobile_image_url' : "'' AS mobile_image_url",
                 isset($columns['mobile_path'])
                     ? 'mobile_path'
                     : (isset($columns['mobile_image_url'])
                         ? 'mobile_image_url AS mobile_path'
                         : "'' AS mobile_path"),
+                isset($columns['link_url']) ? 'link_url' : "'' AS link_url",
                 isset($columns['button_link'])
                     ? 'button_link'
                     : (isset($columns['slider_link'])
@@ -275,6 +282,7 @@ final class ApiSliders
                         : (isset($columns['link'])
                             ? '`link` AS button_link'
                             : "'' AS button_link")),
+                isset($columns['sort_order']) ? 'sort_order' : '0 AS sort_order',
                 isset($columns['order']) ? '`order`' : '0 AS `order`',
                 isset($columns['category']) ? 'category' : "'' AS category",
             ];
@@ -322,8 +330,8 @@ final class ApiSliders
             if (!is_array($row)) {
                 continue;
             }
-            $desktop = trim((string) ($row['desktop_path'] ?? $row['desktop_image_url'] ?? $row['image_url'] ?? ''));
-            $mobile = trim((string) ($row['mobile_path'] ?? $row['mobile_image_url'] ?? ''));
+            $desktop = trim((string) ($row['image_url'] ?? $row['desktop_path'] ?? $row['desktop_image_url'] ?? ''));
+            $mobile = trim((string) ($row['mobile_image_url'] ?? $row['mobile_path'] ?? ''));
             if ($desktop === '' && $mobile === '') {
                 continue;
             }
@@ -336,12 +344,12 @@ final class ApiSliders
                 'subtitle' => (string) ($row['subtitle'] ?? ''),
                 'description' => (string) ($row['description'] ?? ''),
                 'category' => self::normalizeCategory((string) ($row['category'] ?? '')),
-                'order' => (int) ($row['order'] ?? 0),
+                'order' => (int) ($row['sort_order'] ?? $row['order'] ?? 0),
                 'desktopImageUrl' => $desktop,
                 'mobileImageUrl' => $mobile !== '' ? $mobile : $desktop,
                 'imageUrl' => $selected,
                 'surface' => $surface,
-                'sliderLink' => (string) ($row['button_link'] ?? ''),
+                'sliderLink' => (string) ($row['link_url'] ?? $row['button_link'] ?? $row['slider_link'] ?? $row['link'] ?? ''),
             ];
         }
 
