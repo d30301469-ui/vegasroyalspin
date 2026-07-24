@@ -607,10 +607,10 @@ final class ApiSliders
                     return true;
                 }
 
-                if ($targetSurface === 'mobile' && ($mobile !== '' || $desktop !== '')) {
+                if ($targetSurface === 'mobile' && $mobile !== '') {
                     return true;
                 }
-                if ($targetSurface === 'desktop' && ($desktop !== '' || $mobile !== '')) {
+                if ($targetSurface === 'desktop' && $desktop !== '') {
                     return true;
                 }
             }
