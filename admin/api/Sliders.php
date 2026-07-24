@@ -246,18 +246,18 @@ final class ApiSliders
             ];
 
             if (isset($columns['start_date']) && isset($columns['starts_at'])) {
-                $where[] = '((start_date IS NULL AND starts_at IS NULL) OR DATE(COALESCE(start_date, starts_at)) <= :today_start)';
+                $where[] = "(NULLIF(DATE(COALESCE(start_date, starts_at)), '0000-00-00') IS NULL OR DATE(COALESCE(start_date, starts_at)) <= :today_start)";
             } elseif (isset($columns['start_date'])) {
-                $where[] = '(start_date IS NULL OR DATE(start_date) <= :today_start)';
+                $where[] = "(NULLIF(DATE(start_date), '0000-00-00') IS NULL OR DATE(start_date) <= :today_start)";
             } elseif (isset($columns['starts_at'])) {
-                $where[] = '(starts_at IS NULL OR DATE(starts_at) <= :today_start)';
+                $where[] = "(NULLIF(DATE(starts_at), '0000-00-00') IS NULL OR DATE(starts_at) <= :today_start)";
             }
             if (isset($columns['end_date']) && isset($columns['ends_at'])) {
-                $where[] = '((end_date IS NULL AND ends_at IS NULL) OR DATE(COALESCE(end_date, ends_at)) >= :today_end)';
+                $where[] = "(NULLIF(DATE(COALESCE(end_date, ends_at)), '0000-00-00') IS NULL OR DATE(COALESCE(end_date, ends_at)) >= :today_end)";
             } elseif (isset($columns['end_date'])) {
-                $where[] = '(end_date IS NULL OR DATE(end_date) >= :today_end)';
+                $where[] = "(NULLIF(DATE(end_date), '0000-00-00') IS NULL OR DATE(end_date) >= :today_end)";
             } elseif (isset($columns['ends_at'])) {
-                $where[] = '(ends_at IS NULL OR DATE(ends_at) >= :today_end)';
+                $where[] = "(NULLIF(DATE(ends_at), '0000-00-00') IS NULL OR DATE(ends_at) >= :today_end)";
             }
 
             $select = [
