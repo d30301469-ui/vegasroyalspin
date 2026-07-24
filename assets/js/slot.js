@@ -519,6 +519,8 @@
                 source: game.source || ''
             };
         }).filter(function(game) {
+            // On the dedicated bgaming page, keep all bgaming games.
+            if (FAVORITE_KIND === 'bgaming') return true;
             return !isBgamingGame(game);
         });
         var page = Number(pagination.page || 1);
