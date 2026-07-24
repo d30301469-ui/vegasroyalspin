@@ -7,7 +7,9 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
 require_once (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/services/ProfileApiHelper.php';
 
-$isLoggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
+$isLoggedIn = function_exists('metropol_frontend_member_logged_in')
+    ? metropol_frontend_member_logged_in()
+    : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true);
 $username   = $isLoggedIn ? $_SESSION['username'] : '';
 
 if (!$isLoggedIn) {

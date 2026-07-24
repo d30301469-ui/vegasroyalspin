@@ -15,6 +15,8 @@ if (session_status() === PHP_SESSION_NONE) {
     metropol_frontend_session_start();
 }
 
+require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
+
 $csrfKey = 'vegasroyalspin_csrf_token';
 if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
     $_SESSION[$csrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
@@ -27,7 +29,9 @@ $_SESSION['csrf_token'] = $_SESSION[$csrfKey];
 // Tüm yöntem, limit, yatırım ve çekim işlemleri yalnızca /api/v2 endpointleri ile alınır.
 
 // ========== KULLANICI KONTROLÜ ==========
-$isLoggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
+$isLoggedIn = function_exists('metropol_frontend_member_logged_in')
+    ? metropol_frontend_member_logged_in()
+    : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true);
 $username = $isLoggedIn ? $_SESSION['username'] : '';
 
 if (!$isLoggedIn) {
