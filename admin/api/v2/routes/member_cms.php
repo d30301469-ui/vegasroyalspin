@@ -461,56 +461,68 @@ if ($method === 'GET' && ($route === 'content/auth-sliders' || $route === 'auth_
 if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.php')) {
     try {
         admin_require_project_file('api/bootstrap.php');
+        
+        // Ensure AdminDatabase is loaded
+        $dbFile = (defined('ADMIN_APP_PATH') ? rtrim((string) ADMIN_APP_PATH, '/\\') : '') . '/Core/AdminDatabase.php';
+        if (!class_exists('AdminDatabase', false) && is_file($dbFile)) {
+            require_once $dbFile;
+        }
+        
         $category = ApiSliders::normalizeCategory((string) ($_GET['category'] ?? $_GET['page'] ?? ''));
         $surface = ApiSliders::normalizeSurface((string) ($_GET['surface'] ?? 'all'));
+
+        // Direct DB query — bypass ApiSliders::fetch() which may use stale/wrong code
         $sliders = [];
-        if ($category !== '') {
-            $query = ['category' => $category];
-            if ($surface !== 'all') {
-                $query['surface'] = $surface;
-            }
-            $sliders = ApiSliders::fetch($query);
-        } else {
-            $seen = [];
-            foreach (array_keys(ApiSliders::categories()) as $knownCategory) {
-                $query = ['category' => $knownCategory];
-                if ($surface !== 'all') {
-                    $query['surface'] = $surface;
-                }
-                foreach (ApiSliders::fetch($query) as $slider) {
-                    $id = (int) ($slider['id'] ?? 0);
-                    $dedupeKey = $id > 0
-                        ? ('id:' . $id)
-                        : (
-                            (string) ($slider['category'] ?? '')
-                            . '|' . (string) ($slider['title'] ?? '')
-                            . '|' . (string) ($slider['desktopImageUrl'] ?? '')
-                            . '|' . (string) ($slider['mobileImageUrl'] ?? '')
-                        );
-                    if (isset($seen[$dedupeKey])) {
-                        continue;
-                    }
-                    $seen[$dedupeKey] = true;
-                    $sliders[] = $slider;
-                }
+        if (class_exists('AdminDatabase', false)) {
+            $pdo = AdminDatabase::pdo();
+            $columns = [];
+            try { $cStmt = $pdo->query('SHOW COLUMNS FROM sliders'); $columns = $cStmt ? array_map('strtolower', $cStmt->fetchAll(PDO::FETCH_COLUMN) ?: []) : []; } catch (Throwable) {}
+
+            $where = [];
+            $params = [];
+            if ($category !== '') {
+                $where[] = 'LOWER(TRIM(CAST(category AS CHAR))) = :category';
+                $params['category'] = $category;
             }
 
-            usort($sliders, static function (array $left, array $right): int {
-                $orderCompare = ((int) ($left['order'] ?? 0)) <=> ((int) ($right['order'] ?? 0));
-                if ($orderCompare !== 0) {
-                    return $orderCompare;
-                }
+            $sql = 'SELECT * FROM sliders';
+            if ($where !== []) {
+                $sql .= ' WHERE ' . implode(' AND ', $where);
+            }
+            $sql .= ' ORDER BY `order` ASC, id DESC';
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                return ((int) ($right['id'] ?? 0)) <=> ((int) ($left['id'] ?? 0));
-            });
+            foreach ($rows as $row) {
+                if (!is_array($row)) continue;
+                $desktop = trim((string) ($row['desktop_path'] ?? $row['desktop_image_url'] ?? ''));
+                $mobile  = trim((string) ($row['mobile_path'] ?? $row['mobile_image_url'] ?? ''));
+                if ($desktop === '' && $mobile === '') continue;
+                if (class_exists('ApiMediaUrl', false)) {
+                    $desktop = ApiMediaUrl::resolve($desktop);
+                    $mobile  = ApiMediaUrl::resolve($mobile);
+                }
+                $sliders[] = [
+                    'id'             => (int) ($row['id'] ?? 0),
+                    'title'          => (string) ($row['title'] ?? ''),
+                    'subtitle'       => (string) ($row['subtitle'] ?? ''),
+                    'description'    => (string) ($row['description'] ?? ''),
+                    'category'       => ApiSliders::normalizeCategory((string) ($row['category'] ?? '')),
+                    'order'          => (int) ($row['order'] ?? $row['sort_order'] ?? 0),
+                    'desktopImageUrl' => $desktop,
+                    'mobileImageUrl' => $mobile,
+                    'imageUrl'       => $surface === 'mobile' ? ($mobile !== '' ? $mobile : $desktop) : ($desktop !== '' ? $desktop : $mobile),
+                    'surface'        => $surface,
+                    'sliderLink'     => (string) ($row['link_url'] ?? $row['button_link'] ?? $row['slider_link'] ?? $row['link'] ?? ''),
+                ];
+            }
         }
+
         http_response_code(200);
         $dbDiag = null;
         try {
-            $dbFile = (defined('ADMIN_APP_PATH') ? rtrim((string) ADMIN_APP_PATH, '/\\') : '') . '/Core/AdminDatabase.php';
-            if (!class_exists('AdminDatabase', false) && is_file($dbFile)) {
-                require_once $dbFile;
-            }
             if (class_exists('AdminDatabase', false)) {
                 $diagPdo = AdminDatabase::pdo();
                 $dbName = (string) $diagPdo->query('SELECT DATABASE()')->fetchColumn();
@@ -537,7 +549,7 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
         echo json_encode([
             'success' => true,
             'code' => 200,
-            'message' => 'Slider listesi v940',
+            'message' => 'Slider listesi v942',
             'data' => [
                 'category' => $category !== '' ? $category : null,
                 'surface' => $surface,
