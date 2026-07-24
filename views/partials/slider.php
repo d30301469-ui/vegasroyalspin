@@ -74,19 +74,28 @@ function slider_make_media(string $url, bool $isVideo, string $title, string $cl
  */
 function slider_item_has_media(array $slider): bool
 {
+    $primaryPath = (string) ($slider['imageUrl'] ?? $slider['image_url'] ?? '');
     $dPath = (string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? '');
     $mPath = (string) ($slider['mobileImageUrl'] ?? $slider['mobile_image_url'] ?? $slider['mobile_path'] ?? '');
 
+    $primaryUrl = slider_build_url($primaryPath);
     $dUrl = slider_build_url($dPath);
     $mUrl = slider_build_url($mPath);
     $isMobileSurface = defined('SURFACE') && SURFACE === 'mobile';
     if ($isMobileSurface) {
+        if (slider_is_supported_media_url($primaryUrl)) {
+            return true;
+        }
         if (slider_is_supported_media_url($mUrl)) {
             return true;
         }
 
         // Mobile kayitta yalnizca desktop_path dolu olabilir; ayni kaydi dusurmemek icin fallback.
         return slider_is_supported_media_url($dUrl);
+    }
+
+    if (slider_is_supported_media_url($primaryUrl)) {
+        return true;
     }
 
     return slider_is_supported_media_url($dUrl);
