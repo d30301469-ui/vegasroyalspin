@@ -98,7 +98,22 @@ if (!$isApiRequest) {
         ? metropol_frontend_member_restore_cookie_name()
         : 'metropol_member_restore';
     $frontendJwtCookie = trim((string) ($_COOKIE[$frontendRestoreCookieName] ?? $_COOKIE['metropol_member_jwt'] ?? ''));
-    $frontendNeedsRestore = $frontendJwtCookie !== ''
+    $frontendJwtHeader = trim((string) ($_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? ''));
+    $frontendAuthHeader = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? ''));
+    if ($frontendAuthHeader === '' && function_exists('getallheaders')) {
+        $frontendHeaders = getallheaders();
+        if (is_array($frontendHeaders)) {
+            $frontendAuthHeader = trim((string) ($frontendHeaders['Authorization'] ?? $frontendHeaders['authorization'] ?? ''));
+            if ($frontendJwtHeader === '') {
+                $frontendJwtHeader = trim((string) ($frontendHeaders['X-Metropol-Member-Jwt'] ?? $frontendHeaders['x-metropol-member-jwt'] ?? ''));
+            }
+        }
+    }
+    if ($frontendJwtHeader === '' && preg_match('/^\s*Bearer\s+(.+)\s*$/i', $frontendAuthHeader, $frontendAuthMatch) === 1) {
+        $frontendJwtHeader = trim((string) ($frontendAuthMatch[1] ?? ''));
+    }
+    $frontendRestoreJwt = $frontendJwtCookie !== '' ? $frontendJwtCookie : $frontendJwtHeader;
+    $frontendNeedsRestore = $frontendRestoreJwt !== ''
         && (
             empty($_SESSION['loggedin'])
             || (int) ($_SESSION['user_id'] ?? 0) <= 0
@@ -106,10 +121,15 @@ if (!$isApiRequest) {
         );
     if ($frontendNeedsRestore) {
         try {
-            $restore = MemberLoginService::backendSession($frontendJwtCookie);
+            $restore = MemberLoginService::backendSession($frontendRestoreJwt);
             if (MemberLoginService::succeeded($restore)) {
                 MemberLoginService::applySession($restore, '');
-                $_SESSION['member_jwt'] = $frontendJwtCookie;
+                if (empty($_SESSION['member_jwt'])) {
+                    $_SESSION['member_jwt'] = $frontendRestoreJwt;
+                }
+                if (function_exists('metropol_frontend_set_member_restore_cookie') && !empty($_SESSION['member_jwt'])) {
+                    metropol_frontend_set_member_restore_cookie((string) $_SESSION['member_jwt']);
+                }
             } else {
                 if (is_readable(CONFIG_PATH . '/member_api_public.php')) {
                     require_once CONFIG_PATH . '/member_api_public.php';
