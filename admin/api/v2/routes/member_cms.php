@@ -520,7 +520,7 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
         echo json_encode([
             'success' => true,
             'code' => 200,
-            'message' => 'Slider listesi',
+            'message' => 'Slider listesi v936',
             'data' => [
                 'category' => $category !== '' ? $category : null,
                 'surface' => $surface,
