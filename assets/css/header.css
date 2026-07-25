@@ -928,6 +928,14 @@
   display: block;
 }
 
+.search-panel__game-thumb-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: none;
+  pointer-events: none;
+}
+
 .search-panel__game-thumb-fallback {
   color: rgba(255, 255, 255, 0.8);
   font-size: 15px;

@@ -817,7 +817,13 @@
                 html += '<button type="button" class="search-panel__game" data-game-id="' + escapeHtml(gameId) + '">';
                 html += '<span class="search-panel__game-thumb">';
                 if (safeImage !== '') {
-                    html += '<img src="' + safeImage + '" alt="' + escapeHtml(name) + '" loading="lazy">';
+                    if (safeImage.toLowerCase().indexOf('.svg') > -1) {
+                        html += '<object data="' + safeImage + '" type="image/svg+xml" class="search-panel__game-thumb-svg" aria-label="' + escapeHtml(name) + '">';
+                        html += '<span class="search-panel__game-thumb-fallback">' + initials + '</span>';
+                        html += '</object>';
+                    } else {
+                        html += '<img src="' + safeImage + '" alt="' + escapeHtml(name) + '" loading="lazy">';
+                    }
                 } else {
                     html += '<span class="search-panel__game-thumb-fallback">' + initials + '</span>';
                 }

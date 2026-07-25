@@ -1789,6 +1789,12 @@ button.providers-games-label:hover {
     transition: filter 0.25s ease, transform 0.25s ease;
 }
 
+.casinoCategoryGames .casinoGameItemImage--svg {
+    pointer-events: none;
+    border: none;
+    object-fit: fill;
+}
+
 .casinoCategoryGames .casinoGameItemContent:hover .casinoGameItemImage {
     filter: blur(2px) brightness(0.78);
     transform: scale(1.04);

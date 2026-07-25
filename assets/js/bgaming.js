@@ -189,7 +189,11 @@
             '<div class="casinoGameItemContent " data-favorite-kind="bgaming" data-game-id="' + gameIdEsc + '"' + catalogAttr + ' onclick="' + realPlayClickJs(gameUrlJs) + '">' +
             '<span class="providerBadgeBlock " data-badge=""></span>' +
             '<div class="casinoGameItem ">' +
-            '<img alt="' + name + '" loading="lazy" src="' + cover + '" data-src="' + cover + '" class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onerror="this.src=\'' + PLACEHOLDER_IMG + '\'">' +
+            (cover.toLowerCase().indexOf('.svg') > -1
+                ? '<object data="' + cover + '" type="image/svg+xml" class="casinoGameItemImage casinoGameItemImage--svg" title="' + name + '" style="aspect-ratio: 44 / 31;" aria-label="' + name + '">' +
+                  '<img alt="' + name + '" loading="lazy" src="' + PLACEHOLDER_IMG + '" class="casinoGameItemImage" style="aspect-ratio: 44 / 31;">' +
+                  '</object>'
+                : '<img alt="' + name + '" loading="lazy" src="' + cover + '" data-src="' + cover + '" class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onerror="this.src=\'' + PLACEHOLDER_IMG + '\'">') +
             '<i class="casinoGameItemFavBc bc-i-favorite "></i>' +
             '<div class="game-overlay">' +
             '<div class="game-overlay-top"></div>' +
