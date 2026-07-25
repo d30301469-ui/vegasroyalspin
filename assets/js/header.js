@@ -818,9 +818,7 @@
                 html += '<span class="search-panel__game-thumb">';
                 if (safeImage !== '') {
                     if (safeImage.toLowerCase().indexOf('.svg') > -1) {
-                        html += '<object data="' + safeImage + '" type="image/svg+xml" class="search-panel__game-thumb-svg" aria-label="' + escapeHtml(name) + '">';
-                        html += '<span class="search-panel__game-thumb-fallback">' + initials + '</span>';
-                        html += '</object>';
+                        html += '<iframe src="' + safeImage + '" class="search-panel__game-thumb-svg" style="border:none;pointer-events:none;overflow:hidden;" scrolling="no" frameborder="0" allowtransparency="true" aria-label="' + escapeHtml(name) + '"></iframe>';
                     } else {
                         html += '<img src="' + safeImage + '" alt="' + escapeHtml(name) + '" loading="lazy">';
                     }

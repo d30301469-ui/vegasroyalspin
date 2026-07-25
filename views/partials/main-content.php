@@ -180,7 +180,7 @@ if (!function_exists('homeRenderGameCard')) {
         ?>
         <div class="<?= homeSectionH($class) ?>"<?= $onclick !== '' ? ' onclick="' . homeSectionH($onclick) . '"' : '' ?>>
             <?php if ($isSvg): ?>
-            <object data="<?= homeSectionH($image) ?>" type="image/svg+xml" aria-label="<?= homeSectionH($alt) ?>" style="<?= homeSectionH($imageFitStyle) ?>; pointer-events: none; border: none; overflow: hidden;"></object>
+            <iframe src="<?= homeSectionH($image) ?>" title="<?= homeSectionH($alt) ?>" style="<?= homeSectionH($imageFitStyle) ?>; pointer-events: none; border: none; overflow: hidden;" scrolling="no" frameborder="0" allowtransparency="true"></iframe>
             <?php else: ?>
             <img loading="lazy" decoding="async" src="<?= homeSectionH($image) ?>" alt="<?= homeSectionH($alt) ?>" width="200" height="200" style="<?= homeSectionH($imageFitStyle) ?>;">
             <?php endif; ?>

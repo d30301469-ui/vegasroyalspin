@@ -1794,6 +1794,7 @@ button.providers-games-label:hover {
     border: none;
     object-fit: fill;
     overflow: hidden;
+    display: block;
 }
 
 .casinoCategoryGames .casinoGameItemContent:hover .casinoGameItemImage {
