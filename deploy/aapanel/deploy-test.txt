@@ -1,0 +1,3 @@
+GitHub Actions deploy test
+Created: 2026-07-25
+Expected path: /www/wwwroot/vegasroyalspin.com/deploy/aapanel/deploy-test.txt
