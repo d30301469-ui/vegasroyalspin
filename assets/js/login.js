@@ -722,13 +722,6 @@
                         if (window.MetropolMemberConsole && window.MetropolMemberConsole.fetchAll) {
                             window.MetropolMemberConsole.fetchAll();
                         }
-                        if (Shared.hydrateMemberJwt) {
-                            Shared.hydrateMemberJwt().finally(function () {
-                                if (typeof window.__refreshHeaderBalance === 'function') {
-                                    window.__refreshHeaderBalance();
-                                }
-                            });
-                        }
                         var nextEl = document.getElementById('loginFormNext');
                         var nextVal = nextEl && nextEl.value ? String(nextEl.value).trim() : '';
                         window.setTimeout(function () {
