@@ -193,13 +193,10 @@ $renderProviderBtn = function ($provider) use ($providerBadges, $selectedProvide
 };
 
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
-$slotPlayTarget = static function (array $game) use ($loggedIn): string {
+$slotPlayTarget = static function (array $game): string {
     $gid = (string) ($game['game_id'] ?? '');
-    $play = '/play?game_id=' . rawurlencode($gid) . '&mode=real&wallet=main';
-    if ($loggedIn) {
-        return $play;
-    }
-    return '#login';
+
+    return '/play?game_id=' . rawurlencode($gid) . '&mode=real&wallet=main';
 };
 $slotDemoHref = static function (array $game): string {
     $gid = (string) ($game['game_id'] ?? '');
@@ -382,12 +379,10 @@ $slotDemoHref = static function (array $game): string {
                         <?php
                         $playHref = $slotPlayTarget($game);
                         $demoHref = $slotDemoHref($game);
-                        $playHrefJson = htmlspecialchars(
-                            json_encode($playHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES),
-                            ENT_QUOTES,
-                            'UTF-8'
+                        $playHrefJson = (string) json_encode(
+                            $playHref,
+                            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES
                         );
-                        $openLoginJs = 'if (typeof window.__openLoginModal === &quot;function&quot;) { window.__openLoginModal(); } else { var loginBtn = document.getElementById(&quot;Giris&quot;); if (loginBtn) loginBtn.click(); }';
                         $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{window.location.href=' . $playHrefJson . ';}';
                         ?>
                         <div class="casinoGameItemContent " data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= htmlspecialchars($runtimePlayIntentJs, ENT_QUOTES, 'UTF-8') ?>">
