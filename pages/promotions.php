@@ -147,6 +147,27 @@ if (empty($demoBonuses)) {
 $rows = !empty($apiRows) ? $apiRows : $demoBonuses;
 $promotionImageFallback = '/assets/images/bonuses/20sabitkayipbonusu.webp';
 
+// Admin kaynaklı bozuk görsel URL'lerini güvenli fallback'e çevir
+// (ör: admin.vegasroyalspin.com/uploads/promotions/... dosyası yok → 404/ORB)
+foreach ($rows as $i => $row) {
+    $img = isset($row['image_url']) ? (string) $row['image_url'] : '';
+    if ($img === '' || $img === '/') {
+        $rows[$i]['image_url'] = $promotionImageFallback;
+        continue;
+    }
+    // API'dan gelen mutlak admin URL'si /uploads/promotions/ patterni taşıyorsa
+    // (bu dosyalar mevcut olmadığından doğrudan fallback kullan)
+    if (preg_match('#^https?://[^/]+/uploads/promotions/#i', $img)) {
+        $rows[$i]['image_url'] = $promotionImageFallback;
+        continue;
+    }
+    // /uploads/promotions/ ile başlayan göreli yollar için de aynı
+    if (preg_match('#^/uploads/promotions/#i', $img)) {
+        $rows[$i]['image_url'] = $promotionImageFallback;
+        continue;
+    }
+}
+
 // Bonus detay modalı için accordion bölümleri (demo / eski kaynak)
 $defaultSections = [
     ['title' => 'BONUSTAN NASIL FAYDALANABİLİRİM', 'content' => '<p>İlgili bonusu almak için hesabınıza giriş yapın, kampanya sayfasından bu bonusu seçin ve "Katıl" butonuna tıklayın.</p>'],
