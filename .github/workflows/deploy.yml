@@ -17,9 +17,17 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 22
           script: |
+            set -eu
             cd /www/wwwroot/vegasroyalspin.com
             git fetch origin main
             git reset --hard origin/main
+            DEPLOYED_SHA="$(git rev-parse HEAD)"
+            EXPECTED_SHA="${{ github.sha }}"
+            if [ "$DEPLOYED_SHA" != "$EXPECTED_SHA" ]; then
+              echo "Deploy verification failed: expected $EXPECTED_SHA, got $DEPLOYED_SHA"
+              exit 1
+            fi
+            echo "Deploy verified: $DEPLOYED_SHA"
             php tools/update_menu_bgaming_v2.php || true
             php tools/update_tabbar_v1.php || true
             php deploy/aapanel/remove-legacy-provider-integration.php || true
