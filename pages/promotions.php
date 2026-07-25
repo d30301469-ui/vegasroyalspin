@@ -145,6 +145,7 @@ if (empty($demoBonuses)) {
 }
 
 $rows = !empty($apiRows) ? $apiRows : $demoBonuses;
+$promotionImageFallback = '/assets/images/bonuses/20sabitkayipbonusu.webp';
 
 // Bonus detay modalı için accordion bölümleri (demo / eski kaynak)
 $defaultSections = [
@@ -204,7 +205,7 @@ if (!empty($rows)) {
             $image_url = '/' . ltrim($image_url, '/');
         }
         echo '<div class="bonus-image">';
-        echo '<img src="' . htmlspecialchars($image_url) . '" alt="' . htmlspecialchars($bonus['title']) . '" loading="lazy" decoding="async">';
+        echo '<img src="' . htmlspecialchars($image_url) . '" alt="' . htmlspecialchars($bonus['title']) . '" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' . htmlspecialchars($promotionImageFallback, ENT_QUOTES, 'UTF-8') . '\';">';
         echo '</div>';
         echo '<h3 class="bonus-card-title">' . htmlspecialchars($bonus['title']) . '</h3>';
         echo '</div>';
@@ -236,6 +237,7 @@ foreach ($rows as $i => $b) {
     $promoListForModal[] = [
         'title'       => isset($b['title']) ? $b['title'] : '',
         'image_url'   => $img,
+        'image_fallback_url' => $promotionImageFallback,
         'link_url'    => isset($b['link_url']) ? (string) $b['link_url'] : '',
         'sections'    => isset($b['sections']) ? $b['sections'] : $defaultSections,
         'promotionId' => $pid,
@@ -262,6 +264,7 @@ if (typeof window.__openPromoModalByIndex !== 'function') {
         var payload = {
             title: promo.title || '',
             imageUrl: imageUrl,
+            imageFallbackUrl: promo.image_fallback_url || '',
             linkUrl: promo.link_url || '',
             sections: promo.sections || [],
             promotionId: typeof promo.promotionId === 'number' ? promo.promotionId : (parseInt(promo.promotionId, 10) || 0),

@@ -399,6 +399,10 @@
         if (titleEl) titleEl.textContent = data.title || '';
         if (imgEl) {
             imgEl.decoding = 'async';
+            imgEl.onerror = function () {
+                imgEl.onerror = null;
+                if (data.imageFallbackUrl) imgEl.src = data.imageFallbackUrl;
+            };
             imgEl.src = data.imageUrl || '';
             imgEl.alt = data.title || 'Bonus görseli';
         }
@@ -511,6 +515,7 @@
             payload = {
                 title: data.title,
                 imageUrl: data.imageUrl,
+                imageFallbackUrl: data.imageFallbackUrl,
                 linkUrl: data.linkUrl,
                 sections: data.sections,
                 promotionId: typeof data.promotionId === 'number' ? data.promotionId : parseInt(data.promotionId, 10) || 0,
