@@ -32,6 +32,14 @@ if ($normalizedRoute === 'internal/reset-bonus-claims') {
     // Admin oturumu VEYA shared secret ile erisilebilir
     $authorized = false;
     if (AdminAuth::check()) {
+        if (!AdminAuth::can('bonus-claims')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'code' => 403, 'message' => 'Bonus talepleri yetkisi gerekli.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if ($method === 'POST') {
+            $validateCsrf($payload);
+        }
         $authorized = true;
     } else {
         // Shared secret header kontrolu
@@ -75,8 +83,7 @@ if ($normalizedRoute === 'internal/reset-bonus-claims') {
     }
 
     if ($method === 'POST') {
-        $body = json_decode(file_get_contents('php://input') ?: '', true) ?: [];
-        $confirm = trim((string) ($body['confirm'] ?? ''));
+        $confirm = trim((string) ($payload['body']['confirm'] ?? ''));
 
         if ($confirm !== 'RESET_ALL_BONUS_CLAIMS') {
             http_response_code(422);
@@ -89,13 +96,12 @@ if ($normalizedRoute === 'internal/reset-bonus-claims') {
         }
 
         try {
-            $pdo->beginTransaction();
             $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-            $pdo->exec('TRUNCATE TABLE bonus_claim_requests');
-            $pdo->exec('TRUNCATE TABLE user_active_bonuses');
-            $pdo->exec('TRUNCATE TABLE promocode_requests');
+            $pdo->beginTransaction();
+            $pdo->exec('DELETE FROM bonus_claim_requests');
+            $pdo->exec('DELETE FROM user_active_bonuses');
+            $pdo->exec('DELETE FROM promocode_requests');
             $updated = $pdo->exec("UPDATE users SET bonus_balance = 0, active_wallet_mode = 'main' WHERE bonus_balance > 0 OR active_wallet_mode = 'bonus'");
-            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
             $pdo->commit();
 
             AdminAuth::writeLog(AdminAuth::userName(), 'reset_bonus_claims', 'system', 'success');
@@ -118,6 +124,8 @@ if ($normalizedRoute === 'internal/reset-bonus-claims') {
                 'code' => 500,
                 'message' => 'Hata: ' . $e->getMessage(),
             ], JSON_UNESCAPED_UNICODE);
+        } finally {
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
         }
         exit;
     }
@@ -131,6 +139,14 @@ if ($normalizedRoute === 'internal/reset-bonus-claims') {
 if ($normalizedRoute === 'internal/reset-pending-transactions') {
     $authorized = false;
     if (AdminAuth::check()) {
+        if (!AdminAuth::can('deposits') || !AdminAuth::can('withdrawals')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'code' => 403, 'message' => 'Yatırım ve çekim yetkileri gerekli.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if ($method === 'POST') {
+            $validateCsrf($payload);
+        }
         $authorized = true;
     } else {
         $purgeSecret = trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: ''));
@@ -166,8 +182,7 @@ if ($normalizedRoute === 'internal/reset-pending-transactions') {
     }
 
     if ($method === 'POST') {
-        $body = json_decode(file_get_contents('php://input') ?: '', true) ?: [];
-        $confirm = trim((string) ($body['confirm'] ?? ''));
+        $confirm = trim((string) ($payload['body']['confirm'] ?? ''));
 
         if ($confirm !== 'RESET_ALL_PENDING_TX') {
             http_response_code(422);
@@ -186,19 +201,11 @@ if ($normalizedRoute === 'internal/reset-pending-transactions') {
             $deletedCallbacks = $pdo->exec('DELETE FROM megapayz_callbacks');
             $pdo->commit();
 
-            // ALTER TABLE causes implicit commit in MySQL — must run outside transaction
-            // Renumber remaining approved rows to start from 1
-            $pdo->exec("SET @new_id = 0");
-            $pdo->exec("UPDATE megapayz_transactions SET id = (@new_id := @new_id + 1) ORDER BY id");
-            $maxId = (int) $pdo->query("SELECT COALESCE(MAX(id), 0) FROM megapayz_transactions")->fetchColumn();
-            $pdo->exec("ALTER TABLE megapayz_transactions AUTO_INCREMENT = " . ($maxId + 1));
-            $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
-
             AdminAuth::writeLog(AdminAuth::userName(), 'reset_pending_transactions', 'system', 'success');
             echo json_encode([
                 'success' => true,
                 'code' => 200,
-                'message' => 'Tum bekleyen ve basarisiz islemler temizlendi, IDler sifirlandi.',
+                'message' => 'Tum bekleyen ve basarisiz islemler temizlendi.',
                 'data' => [
                     'deleted_transactions' => $deletedTx,
                     'deleted_callbacks' => $deletedCallbacks,
@@ -208,11 +215,12 @@ if ($normalizedRoute === 'internal/reset-pending-transactions') {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
+            error_log('[reset-pending-transactions] cleanup failed: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'code' => 500,
-                'message' => 'Hata: ' . $e->getMessage(),
+                'message' => 'İşlem temizleme tamamlanamadı.',
             ], JSON_UNESCAPED_UNICODE);
         }
         exit;

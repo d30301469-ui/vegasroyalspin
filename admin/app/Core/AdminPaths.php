@@ -345,4 +345,16 @@ if (!function_exists('admin_paths_bootstrap')) {
 
         return $prefix = $detected;
     }
+
+    function admin_session_cookie_domain(): string
+    {
+        $configured = trim(admin_env('SESSION_COOKIE_DOMAIN', ''));
+        $domain = ltrim(strtolower($configured), '.');
+        $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
+        if ($domain === '' || $host === '') {
+            return '';
+        }
+
+        return $host === $domain || str_ends_with($host, '.' . $domain) ? $configured : '';
+    }
 }

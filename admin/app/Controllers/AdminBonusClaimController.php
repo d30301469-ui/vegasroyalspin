@@ -161,13 +161,12 @@ final class AdminBonusClaimController extends AdminController
         $adminUsername = AdminAuth::userName();
 
         try {
-            $pdo->beginTransaction();
             $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-            $pdo->exec('TRUNCATE TABLE bonus_claim_requests');
-            $pdo->exec('TRUNCATE TABLE user_active_bonuses');
-            $pdo->exec('TRUNCATE TABLE promocode_requests');
+            $pdo->beginTransaction();
+            $pdo->exec('DELETE FROM bonus_claim_requests');
+            $pdo->exec('DELETE FROM user_active_bonuses');
+            $pdo->exec('DELETE FROM promocode_requests');
             $updated = $pdo->exec("UPDATE users SET bonus_balance = 0, active_wallet_mode = 'main' WHERE bonus_balance > 0 OR active_wallet_mode = 'bonus'");
-            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
             $pdo->commit();
 
             AdminAuth::writeLog($adminUsername, 'reset_all_bonus_claims', 'system', 'success');
@@ -177,6 +176,8 @@ final class AdminBonusClaimController extends AdminController
                 $pdo->rollBack();
             }
             $this->flash('Hata: ' . $e->getMessage());
+        } finally {
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
         }
 
         $this->redirect(AdminAuth::url('/module?key=bonus-claims'));

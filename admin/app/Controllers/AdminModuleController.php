@@ -105,12 +105,13 @@ final class AdminModuleController extends AdminController
     }
 
     /**
-     * Bekleyen/basarisiz tum yatirim-cekim islemlerini temizler, ID'leri sifirlar.
+    * Bekleyen/basarisiz tum yatirim-cekim islemlerini temizler.
      * POST /module/reset-pending-transactions
      */
     public function resetPendingTransactions(): void
     {
         $this->requirePermission('deposits');
+        $this->requirePermission('withdrawals');
 
         if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
             http_response_code(419);
@@ -135,21 +136,14 @@ final class AdminModuleController extends AdminController
             $deletedCallbacks = $pdo->exec('DELETE FROM megapayz_callbacks');
             $pdo->commit();
 
-            // ALTER TABLE causes implicit commit in MySQL — must run outside transaction
-            // Renumber remaining approved rows to start from 1
-            $pdo->exec("SET @new_id = 0");
-            $pdo->exec("UPDATE megapayz_transactions SET id = (@new_id := @new_id + 1) ORDER BY id");
-            $maxId = (int) $pdo->query("SELECT COALESCE(MAX(id), 0) FROM megapayz_transactions")->fetchColumn();
-            $pdo->exec("ALTER TABLE megapayz_transactions AUTO_INCREMENT = " . ($maxId + 1));
-            $pdo->exec('ALTER TABLE megapayz_callbacks AUTO_INCREMENT = 1');
-
             AdminAuth::writeLog($adminUsername, 'reset_pending_transactions', 'system', 'success');
-            $_SESSION['admin_flash'] = "Tüm bekleyen ve başarısız işlemler temizlendi. ({$deletedTx} işlem, {$deletedCallbacks} callback silindi, ID'ler sıfırlandı)";
+            $_SESSION['admin_flash'] = "Tüm bekleyen ve başarısız işlemler temizlendi. ({$deletedTx} işlem, {$deletedCallbacks} callback silindi)";
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
-            $_SESSION['admin_flash'] = 'Hata: ' . $e->getMessage();
+            error_log('[AdminModuleController] pending transaction cleanup failed: ' . $e->getMessage());
+            $_SESSION['admin_flash'] = 'İşlem temizleme tamamlanamadı.';
         }
 
         $this->redirect(AdminAuth::url('/module?key=deposits'));

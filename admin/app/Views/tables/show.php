@@ -609,7 +609,7 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
             <?php endif; ?>
         </div>
         <?php endif; ?>
-        <?php if (in_array($moduleKey, ['deposits', 'withdrawals'], true)): ?>
+        <?php if (in_array($moduleKey, ['deposits', 'withdrawals'], true) && AdminAuth::can('deposits') && AdminAuth::can('withdrawals')): ?>
         <div class="hero-actions" style="margin-top:12px">
             <form method="post" action="<?= htmlspecialchars(AdminAuth::url('/module/reset-pending-transactions'), ENT_QUOTES, 'UTF-8') ?>" onsubmit="var c = prompt('TÜM bekleyen ve başarısız yatırım/çekim işlemlerini SİLMEK için kodu yazın:\\n\\nRESET_ALL_PENDING_TX'); if (c !== 'RESET_ALL_PENDING_TX') { alert('İptal edildi.'); return false; } document.getElementById('reset_tx_confirm_input').value = c; return true;" style="display:inline">
                 <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">

@@ -10,7 +10,6 @@ $result = [
     'role' => 'backend',
     'php' => PHP_VERSION,
     'time' => gmdate('c'),
-    'document_root' => (string) ($_SERVER['DOCUMENT_ROOT'] ?? ''),
     'checks' => [],
     'hints' => [],
 ];
@@ -18,6 +17,9 @@ $result = [
 $root = __DIR__;
 $envFile = $root . '/.env';
 $result['checks']['env_file'] = is_readable($envFile) ? 'ok' : 'missing';
+if (!is_readable($envFile)) {
+    $result['ok'] = false;
+}
 
 $dbOk = false;
 $dbError = '';
@@ -61,16 +63,17 @@ if (is_readable($envFile)) {
             ]);
             $dbOk = (int) $pdo->query('SELECT 1')->fetchColumn() === 1;
         } catch (Throwable $e) {
-            $dbError = $e->getMessage();
+            $dbError = 'database_unavailable';
+            error_log('[admin health] database check failed: ' . $e->getMessage());
         }
     } else {
-        $dbError = 'DB_DATABASE not configured';
+        $dbError = 'database_not_configured';
     }
 }
 
 $result['checks']['database'] = $dbOk ? 'ok' : ($dbError !== '' ? 'error' : 'skipped');
 if ($dbError !== '') {
-    $result['checks']['database_error'] = $dbError;
+    $result['checks']['database_code'] = $dbError;
 }
 if (!$dbOk && is_readable($envFile)) {
     $result['ok'] = false;

@@ -58,12 +58,23 @@ final class AdminRouter
                 'errorMessage' => $exception->getMessage(),
             ], 'app');
         } catch (Throwable $exception) {
+            error_log(sprintf(
+                '[AdminRouter] %s::%s failed: %s in %s:%d',
+                $controllerClass,
+                $action,
+                $exception->getMessage(),
+                $exception->getFile(),
+                $exception->getLine()
+            ));
             if (!headers_sent()) {
                 http_response_code(500);
             }
+            $isProduction = in_array(strtolower(trim((string) getenv('APP_ENV'))), ['production', 'prod'], true);
             (new AdminController())->view('errors/500', [
                 'title' => 'Sunucu hatası',
-                'errorMessage' => $exception->getMessage(),
+                'errorMessage' => $isProduction
+                    ? 'Admin panel isteği işlenirken hata oluştu.'
+                    : $exception->getMessage(),
             ], 'app');
         }
     }

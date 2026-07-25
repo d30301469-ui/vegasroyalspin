@@ -51,7 +51,7 @@ final class ErrorHandler
             return false;
         }
 
-        $isProduction = strtolower((string) getenv('APP_ENV')) === 'production';
+        $isProduction = self::isProduction();
 
         $errorMessage = sprintf(
             "[%s] %s in %s on line %d",
@@ -82,7 +82,7 @@ final class ErrorHandler
      */
     public static function handleException(Throwable $exception): void
     {
-        $isProduction = strtolower((string) getenv('APP_ENV')) === 'production';
+        $isProduction = self::isProduction();
         $isDev = !$isProduction;
 
         // Log the exception
@@ -117,7 +117,7 @@ final class ErrorHandler
             return;
         }
 
-        $isProduction = strtolower((string) getenv('APP_ENV')) === 'production';
+        $isProduction = self::isProduction();
         $errorMessage = sprintf(
             "[SHUTDOWN] %s in %s on line %d",
             $error['message'],
@@ -142,7 +142,9 @@ final class ErrorHandler
         $response = [
             'success' => false,
             'code' => $httpCode,
-            'message' => $exception->getMessage() ?: 'An error occurred',
+            'message' => $isDev
+                ? ($exception->getMessage() ?: 'An error occurred')
+                : 'An error occurred. Please try again later.',
         ];
 
         if ($isDev) {
@@ -258,6 +260,11 @@ final class ErrorHandler
         }
 
         return self::DEFAULT_HTTP_CODE;
+    }
+
+    private static function isProduction(): bool
+    {
+        return in_array(strtolower(trim((string) getenv('APP_ENV'))), ['production', 'prod'], true);
     }
 
     /**

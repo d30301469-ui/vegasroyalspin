@@ -73,6 +73,19 @@ $chartData = [
         'module' => (string) ($bonusStats['module_url'] ?? '/module?key=active-bonuses'),
     ],
 ];
+foreach ((array) ($casinoStats['datasets'] ?? []) as $tab => $dataset) {
+    if (!is_array($dataset)) {
+        continue;
+    }
+    $chartData['casino']['datasets'][(string) $tab] = [
+        'donut' => $buildDonutSeries($dataset),
+        'bars' => [
+            'labels' => (array) ($dataset['labels'] ?? []),
+            'values' => array_map('floatval', (array) ($dataset['values'] ?? [])),
+            'formats' => (array) ($dataset['formats'] ?? []),
+        ],
+    ];
+}
 
 $formatStatValue = static function (float $value, string $format) use ($shortMoney, $number): string {
     return match ($format) {
@@ -213,7 +226,7 @@ $showFlashModal = $flash !== '';
             <?php if (!empty($d['tabs'])): ?>
             <div class="db-tabs">
                 <?php foreach ($d['tabs'] as $tab): ?>
-                <button class="db-tab <?= $tab === $d['active'] ? 'on' : '' ?>" data-tab="<?= htmlspecialchars($tab) ?>"><?= htmlspecialchars($tab) ?></button>
+                <button type="button" class="db-tab <?= $tab === $d['active'] ? 'on' : '' ?>" data-tab="<?= htmlspecialchars($tab) ?>"><?= htmlspecialchars($tab) ?></button>
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
@@ -386,6 +399,49 @@ $showFlashModal = $flash !== '';
 
     var data = <?= json_encode($chartData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 
+    var formatValue = function(value, format) {
+        var number = Number(value || 0);
+        if (format === 'number') {
+            return number.toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+        }
+        if (format === 'percent') {
+            return number.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+        }
+        return '₺' + number.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    var updateBars = function(panel, bars) {
+        var rows = panel ? panel.querySelectorAll('.db-bar') : [];
+        var values = Array.isArray(bars.values) ? bars.values.map(Number) : [];
+        var maxValue = Math.max.apply(Math, values.concat([1]));
+        rows.forEach(function(row, index) {
+            var value = Number(values[index] || 0);
+            var label = row.querySelector('.db-bar-label');
+            var fill = row.querySelector('.db-bar-fill');
+            var output = row.querySelector('.db-bar-val');
+            if (label) {
+                label.textContent = String((bars.labels || [])[index] || '');
+                label.title = label.textContent;
+            }
+            if (fill) fill.style.width = Math.max(1, Math.min(100, (value / maxValue) * 100)) + '%';
+            if (output) output.textContent = formatValue(value, String((bars.formats || [])[index] || 'money'));
+        });
+    };
+
+    document.querySelectorAll('[data-chart-panel]').forEach(function(panel) {
+        panel.querySelectorAll('[data-tab]').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var key = String(panel.getAttribute('data-chart-panel') || '');
+                var tab = String(button.getAttribute('data-tab') || '');
+                var dataset = data[key] && data[key].datasets ? data[key].datasets[tab] : null;
+                if (!dataset) return;
+                panel.querySelectorAll('[data-tab]').forEach(function(item) { item.classList.toggle('on', item === button); });
+                renderChart('db-' + key + '-donut', dataset.donut.series, dataset.donut.labels, dataset.donut.colors);
+                updateBars(panel, dataset.bars);
+            });
+        });
+    });
+
     var initCharts = function() {
         ['sport', 'casino', 'bonus'].forEach(function(key) {
             var d = data[key];
@@ -394,18 +450,24 @@ $showFlashModal = $flash !== '';
         });
     };
 
-    var boot = function() {
+    var boot = function(attempt) {
         if (typeof ApexCharts === 'undefined') {
-            setTimeout(boot, 100);
+            if (attempt >= 50) {
+                document.querySelectorAll('.db-chart-wrap').forEach(function(el) {
+                    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--t-muted);font-size:12px;font-weight:700">Grafik yüklenemedi</div>';
+                });
+                return;
+            }
+            setTimeout(function() { boot(attempt + 1); }, 100);
             return;
         }
         initCharts();
     };
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot);
+        document.addEventListener('DOMContentLoaded', function() { boot(0); });
     } else {
-        boot();
+        boot(0);
     }
 })();
 </script>

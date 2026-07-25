@@ -26,7 +26,7 @@ final class AdminAuthController extends AdminController
 
     public function authenticate(): void
     {
-        if (!AdminRequest::isPost()) {
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
             $_SESSION['admin_login_error'] = 'Oturum doğrulaması başarısız. Lütfen tekrar deneyin.';
             $this->redirect(AdminAuth::url('/login'));
         }

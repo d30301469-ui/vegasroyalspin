@@ -41,6 +41,9 @@ if (!function_exists('metropol_is_backend_host')) {
 $trimmedUri = rtrim($uri, '/');
 $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
 $isBackendHost = metropol_is_backend_host($host);
+if (!$isBackendHost && preg_match('/^(?:admin|api)\.(?:localhost|[^.]+\.(?:test|local))$/', $host) === 1) {
+    $isBackendHost = true;
+}
 if (str_starts_with($trimmedUri, '/admin/api/v2') && !$isBackendHost) {
     http_response_code(404);
     echo '404 Not Found';
@@ -50,6 +53,28 @@ if (str_starts_with($trimmedUri, '/admin/api/v2') && !$isBackendHost) {
 // API isteklerinde public ve backend yÃ¼zeyleri ayrÄ± front controller kullanÄ±r.
 if (strpos($uri, '/api/v2') === 0 || strpos($uri, '/api/member/') === 0 || strpos($uri, '/api/content/') === 0) {
     require $isBackendHost ? __DIR__ . '/admin/index.php' : __DIR__ . '/public/index.php';
+    return true;
+}
+
+if ($isBackendHost) {
+    $adminStaticFile = __DIR__ . '/admin' . $uri;
+    if (is_file($adminStaticFile) && strtolower(pathinfo($adminStaticFile, PATHINFO_EXTENSION)) !== 'php') {
+        $contentType = function_exists('mime_content_type') ? mime_content_type($adminStaticFile) : false;
+        if (is_string($contentType) && $contentType !== '') {
+            header('Content-Type: ' . $contentType);
+        }
+        readfile($adminStaticFile);
+        return true;
+    }
+
+    require __DIR__ . '/admin/index.php';
+    return true;
+}
+
+if (($trimmedUri === '/admin' || str_starts_with($trimmedUri, '/admin/'))
+    && !file_exists(__DIR__ . $uri)
+) {
+    require __DIR__ . '/admin/index.php';
     return true;
 }
 // Eski api-gates callback URL'i â†’ front controller (casino callback)

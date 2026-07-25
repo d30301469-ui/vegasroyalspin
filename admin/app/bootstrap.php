@@ -28,10 +28,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
                     || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
             $params = session_get_cookie_params();
-            $sessionDomain = trim((string) (getenv('SESSION_COOKIE_DOMAIN') ?: ''));
-            if ($sessionDomain === '' && function_exists('admin_env')) {
-                $sessionDomain = trim(admin_env('SESSION_COOKIE_DOMAIN', ''));
-            }
+            $sessionDomain = admin_session_cookie_domain();
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path' => (string) ($params['path'] ?? '/'),
@@ -46,10 +43,7 @@ if (session_status() === PHP_SESSION_NONE) {
     maltabet_configure_session_security();
     session_start();
 
-    $canonicalSessionDomain = trim((string) (getenv('SESSION_COOKIE_DOMAIN') ?: ''));
-    if ($canonicalSessionDomain === '' && function_exists('admin_env')) {
-        $canonicalSessionDomain = trim(admin_env('SESSION_COOKIE_DOMAIN', ''));
-    }
+    $canonicalSessionDomain = admin_session_cookie_domain();
     if ($canonicalSessionDomain !== '' && empty($_SESSION['admin_cookie_domain_migrated'])) {
         $cookieParams = session_get_cookie_params();
         $cookieOptions = [
