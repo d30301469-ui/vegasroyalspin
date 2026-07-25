@@ -28,10 +28,14 @@ if (session_status() === PHP_SESSION_NONE) {
                 : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
                     || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
             $params = session_get_cookie_params();
+            $sessionDomain = trim((string) (getenv('SESSION_COOKIE_DOMAIN') ?: ''));
+            if ($sessionDomain === '' && function_exists('admin_env')) {
+                $sessionDomain = trim(admin_env('SESSION_COOKIE_DOMAIN', ''));
+            }
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path' => (string) ($params['path'] ?? '/'),
-                'domain' => (string) ($params['domain'] ?? ''),
+                'domain' => $sessionDomain !== '' ? $sessionDomain : (string) ($params['domain'] ?? ''),
                 'secure' => $isHttps,
                 'httponly' => true,
                 'samesite' => 'Lax',
@@ -45,6 +49,8 @@ if (session_status() === PHP_SESSION_NONE) {
 
 if (!headers_sent()) {
     header('Content-Type: text/html; charset=UTF-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
