@@ -643,55 +643,105 @@ body.mobile-site .bonus-accordion-content-inner {
     gap: 12px;
 }
 
+/* Desktop: CTA butonları yan yana, eşit genişlik */
+.bonus-modal-claim-actions:last-of-type {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
 .bonus-modal-claim-submit {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 46px;
-    padding: 0 22px;
+    flex: 1;
+    min-width: 0;
+    min-height: 52px;
+    padding: 12px 24px;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     font-family: var(--font-sans);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     cursor: pointer;
-    background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
+    background: rgb(155, 89, 182);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
-    transition: filter 0.2s, transform 0.15s;
+    box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 
 .bonus-modal-claim-submit:hover:not(:disabled) {
-    filter: brightness(1.06);
+    background: rgb(165, 100, 192);
+    box-shadow: 0 4px 16px rgba(155, 89, 182, 0.45);
+    transform: translateY(-1px);
+}
+
+.bonus-modal-claim-submit:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(155, 89, 182, 0.25);
 }
 
 .bonus-modal-claim-submit:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
 .bonus-modal-claim-login {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 46px;
-    padding: 0 20px;
-    border-radius: 6px;
-    font-size: 15px;
-    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    min-height: 52px;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     text-decoration: none;
-    border: 1px solid rgba(139, 92, 246, 0.5);
-    color: #e9d5ff;
-    background: rgba(109, 40, 217, 0.2);
+    border: none;
+    color: #fff;
+    background: rgb(155, 89, 182);
+    box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 
 .bonus-modal-claim-login:hover {
-    background: rgba(109, 40, 217, 0.35);
+    background: rgb(165, 100, 192);
+    box-shadow: 0 4px 16px rgba(155, 89, 182, 0.45);
     color: #fff;
+    transform: translateY(-1px);
+}
+
+.bonus-modal-claim-login:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(155, 89, 182, 0.25);
 }
 
 .bonus-modal-claim-login[hidden] {
     display: none !important;
+}
+
+/* "Promosyona git" link butonu — farklı stil */
+#bonus-modal-link.bonus-modal-claim-login,
+.bonus-modal-link {
+    flex: 0 1 auto;
+    min-height: 44px;
+    background: transparent;
+    border: 1px solid rgba(155, 89, 182, 0.5);
+    color: #e9d5ff;
+    box-shadow: none;
+}
+
+#bonus-modal-link.bonus-modal-claim-login:hover,
+.bonus-modal-link:hover {
+    background: rgba(155, 89, 182, 0.2);
+    color: #fff;
+    box-shadow: none;
 }
 
 .bonus-modal-claim-status {
@@ -709,7 +759,7 @@ body.mobile-site .bonus-accordion-content-inner {
     color: #fca5a5;
 }
 
-/* Orijinal gibi CTA butonlar yan yana, eşit genişlikte, büyük harf, koyu mor */
+/* ========== Mobil — mevcut stiller korunuyor ========== */
 body.mobile-site .bonus-modal-claim-actions:last-of-type {
     display: flex;
     flex-direction: row;
@@ -720,22 +770,33 @@ body.mobile-site .bonus-modal-claim-login {
     flex: 1;
     width: auto;
     min-width: 0;
+    min-height: 44px;
     justify-content: center;
     text-align: center;
     text-transform: uppercase;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.04em;
-    min-height: 44px;
     border-radius: 10px;
     padding: 10px 8px;
+    box-shadow: none;
+    transform: none;
 }
 body.mobile-site .bonus-modal-claim-submit {
     background: rgb(155, 89, 182);
+}
+body.mobile-site .bonus-modal-claim-submit:hover:not(:disabled) {
+    background: rgb(155, 89, 182);
+    transform: none;
     box-shadow: none;
 }
 body.mobile-site .bonus-modal-claim-login:not([id="bonus-modal-link"]) {
     background: rgb(155, 89, 182);
     border: none;
     color: #fff;
+}
+body.mobile-site .bonus-modal-claim-login:hover {
+    background: rgb(155, 89, 182);
+    transform: none;
+    box-shadow: none;
 }
