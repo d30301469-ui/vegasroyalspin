@@ -223,6 +223,7 @@ final class ApiMediaUrl
         return str_starts_with($lower, '/uploads/')
             || str_starts_with($lower, '/storage/uploads/')
             || str_starts_with($lower, '/admin/uploads/')
+            || str_starts_with($lower, '/admin/legacy_provider/')
             || str_starts_with($lower, '/upload/');
     }
 
@@ -367,6 +368,12 @@ final class ApiMediaUrl
         }
         if (str_starts_with($lower, '/admin/uploads/')) {
             return '/uploads/' . ltrim(substr($normalized, strlen('/admin/uploads/')), '/');
+        }
+        if (str_starts_with($lower, '/admin/assets/')) {
+            return '/assets/' . ltrim(substr($normalized, strlen('/admin/assets/')), '/');
+        }
+        if (str_starts_with($lower, '/admin/legacy_provider/')) {
+            return $normalized;
         }
 
         if (str_starts_with($lower, '/storage/medias/')) {
