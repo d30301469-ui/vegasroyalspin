@@ -2755,8 +2755,8 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 #mprofilePanel [data-mbalance-section="info"] [data-mbalance-info-list] .description-c-row-column-bc.pay-logo {
   position: static !important;
-  flex: 0 1 150px !important;
-  width: 150px !important;
+  flex: 0 1 180px !important;
+  width: 180px !important;
   height: auto !important;
   min-width: 0 !important;
   margin: 0 !important;
