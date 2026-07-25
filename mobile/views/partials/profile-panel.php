@@ -1,15 +1,9 @@
 <?php
 /**
  * Mobile-native profil paneli (slide-in overlay) — masaüstü profil modalinden bağımsız.
- * Yalnızca giriş yapmış üyeler için header.php içinde include edilir.
+ * SSR guest olsa bile render edilir; istemci JWT restorasyonu header'ı sonradan
+ * user durumuna yükseltebilir ve panel açılışını API oturum kontrolü korur.
  */
-$panelLoggedIn = (!empty($loggedIn))
-    || (function_exists('metropol_frontend_member_logged_in') && metropol_frontend_member_logged_in())
-    || (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true);
-if (!$panelLoggedIn) {
-    return;
-}
-
 $panelUsername = trim((string) ($_SESSION['username'] ?? ''));
 $panelUserId = (string) ($_SESSION['user_id'] ?? '');
 $panelInitial = strtoupper(mb_substr($panelUsername !== '' ? $panelUsername : 'U', 0, 2));
