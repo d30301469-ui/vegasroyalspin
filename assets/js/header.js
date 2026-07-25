@@ -614,9 +614,14 @@
             
             panel.style.setProperty('position', 'fixed', 'important');
             panel.style.setProperty('bottom', 'auto', 'important');
-            panel.style.setProperty('left', 'auto', 'important');
             panel.style.setProperty('top', computedTop + 'px', 'important');
-            panel.style.setProperty('right', Math.max(8, Math.round(window.innerWidth - rect.right)) + 'px', 'important');
+            if (isMobile) {
+                panel.style.setProperty('left', 'auto', 'important');
+                panel.style.setProperty('right', Math.max(8, Math.round(window.innerWidth - rect.right)) + 'px', 'important');
+            } else {
+                panel.style.setProperty('left', Math.round(rect.left + (rect.width / 2)) + 'px', 'important');
+                panel.style.setProperty('right', 'auto', 'important');
+            }
         }
 
         function openPanel() {
