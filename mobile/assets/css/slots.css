@@ -1254,13 +1254,6 @@ body.mobile-site .sidebar-overlay {
     border-radius: 8px;
   }
 
-  body.mobile-site .slot-page-root .casinoGameItemImage--svg {
-    pointer-events: none;
-    border: none;
-    overflow: hidden;
-    display: block;
-  }
-
   body.mobile-site .slot-page-root .game-overlay,
   body.mobile-site .slot-page-root .game-actions,
   body.mobile-site .slot-page-root .game-title-wrap,
@@ -1528,14 +1521,6 @@ body.mobile-site .sidebar-overlay {
     aspect-ratio: 44 / 31;
     object-fit: cover;
     background: #171b25;
-  }
-
-  body.mobile-site .slot-page-root.slot-page-root--unified .casinoGameItemImage--svg {
-    pointer-events: none;
-    border: none;
-    object-fit: fill;
-    overflow: hidden;
-    display: block;
   }
 }
 

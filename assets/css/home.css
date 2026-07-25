@@ -516,9 +516,7 @@
 }
 
 .game-cta img,
-.game-cta iframe,
-.game-item img,
-.game-item iframe {
+.game-item img {
   display: block;
   width: 100%;
   height: 100%;
@@ -526,13 +524,10 @@
   background: #130922;
   transform: scale(var(--home-image-scale, 1));
   transition: filter 0.3s ease, transform 0.3s ease;
-  overflow: hidden;
 }
 
 .game-item:hover img,
-.game-item:hover iframe,
-.game-cta:hover img,
-.game-cta:hover iframe {
+.game-cta:hover img {
   filter: blur(6px);
   transform: scale(calc(var(--home-image-scale, 1) * 1.05));
 }
