@@ -162,7 +162,7 @@ if ($playBypassShell) {
   gap: 10px;
 }
 .play-topbar-logo { display: flex; align-items: center; text-decoration: none; }
-.play-topbar-logo img { display: block; height: 42px; width: auto; }
+.play-topbar-logo img { display: block; height: 30px; width: auto; }
 .play-topbar-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .play-topbar-balance {
   display: none;
