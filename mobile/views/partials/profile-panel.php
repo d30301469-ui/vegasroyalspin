@@ -310,6 +310,96 @@ $_SESSION['csrf_token'] = $_SESSION[$panelCsrfKey];
     </div>
   </div>
 </aside>
+<script id="mprofileEarlySnapshotPaint">
+(function () {
+  var panel = document.getElementById('mprofilePanel');
+  if (!panel) return;
+  try {
+    var token = String(localStorage.getItem('metropol_member_jwt') || '');
+    var identity = '';
+    if (token) {
+      var encoded = token.split('.')[1] || '';
+      var normalized = encoded.replace(/-/g, '+').replace(/_/g, '/');
+      while (normalized.length % 4) normalized += '=';
+      var payload = JSON.parse(decodeURIComponent(Array.prototype.map.call(atob(normalized), function (character) {
+        return '%' + ('00' + character.charCodeAt(0).toString(16)).slice(-2);
+      }).join('')));
+      var tokenId = payload.sub || payload.user_id || payload.uid || payload.member_id;
+      if (tokenId != null && String(tokenId) !== '') identity = 'member:' + String(tokenId);
+    }
+    if (!identity && window.__MEMBER_BOOTSTRAP_STATE__ && Number(window.__MEMBER_BOOTSTRAP_STATE__.user_id || 0) > 0) {
+      identity = 'member:' + String(window.__MEMBER_BOOTSTRAP_STATE__.user_id);
+    }
+    var snapshot = JSON.parse(sessionStorage.getItem('vrs:mprofile:v2') || 'null');
+    if (!identity || !snapshot || snapshot.version !== 2 || snapshot.identity !== identity || !snapshot.entries) return;
+
+    function entry(name, ttl) {
+      var item = snapshot.entries[name];
+      return item && item.data && item.storedAt && Date.now() - item.storedAt <= ttl ? item.data : null;
+    }
+    function input(name, value) {
+      var element = panel.querySelector('[data-mprofile-section="details"] [name="' + name + '"]');
+      if (element) element.value = value == null ? '' : String(value);
+    }
+    function money(value) {
+      return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value || 0));
+    }
+
+    var profile = entry('profile', 600000);
+    if (profile) {
+      var user = profile.user || profile;
+      var username = String(user.username || '');
+      var userId = user.id != null ? user.id : user.user_id;
+      var usernameElement = panel.querySelector('[data-mprofile-username]');
+      var avatar = panel.querySelector('[data-mprofile-avatar]');
+      var userIdWrap = panel.querySelector('[data-mprofile-user-id-wrap]');
+      var userIdElement = panel.querySelector('[data-mprofile-user-id]');
+      var copy = panel.querySelector('[data-mprofile-user-id-wrap] [data-user-id]');
+      if (usernameElement) usernameElement.textContent = username || '—';
+      if (avatar) avatar.textContent = (username.slice(0, 2) || 'U').toLowerCase();
+      if (userIdWrap) userIdWrap.hidden = userId == null || String(userId) === '';
+      if (userIdElement) userIdElement.textContent = userId == null ? '' : String(userId);
+      if (copy) copy.setAttribute('data-user-id', userId == null ? '' : String(userId));
+      input('username', username);
+      input('first_name', user.first_name || '');
+      input('last_name', user.surname || '');
+      input('birth_date', user.dob || '');
+      input('gender', user.gender || '');
+      input('city', user.city || '');
+      input('address', user.address || '');
+      var country = panel.querySelector('[data-mprofile-country]');
+      if (country) country.textContent = user.country || '';
+      var iframe = panel.querySelector('[data-mbonus-iframe]');
+      if (iframe && username) iframe.src = (iframe.getAttribute('data-base-url') || '') + '?username=' + encodeURIComponent(username);
+    }
+
+    var balance = entry('balance', 60000);
+    if (balance) {
+      var amounts = balance.balance || balance;
+      panel.querySelectorAll('[data-balance-target="mprofileMain"]').forEach(function (target) { target.textContent = money(amounts.balance); });
+      panel.querySelectorAll('[data-balance-target="mprofileBonus"]').forEach(function (target) { target.textContent = money(amounts.bonus_balance); });
+    }
+
+    var loyalty = entry('loyalty', 300000);
+    var loyaltyImage = panel.querySelector('[data-mprofile-loyalty-icon]');
+    if (loyalty && loyaltyImage && loyalty.level && loyalty.level.icon_url) {
+      loyaltyImage.src = loyalty.level.icon_url;
+      loyaltyImage.hidden = false;
+    }
+
+    var twofa = entry('twofa', 300000);
+    if (twofa) {
+      var toggle = panel.querySelector('#mprofileTwofaToggle');
+      var status = panel.querySelector('#mprofile-twofa-status');
+      if (toggle) { toggle.checked = !!twofa.enabled; toggle.disabled = false; }
+      if (status) status.textContent = twofa.enabled ? 'İki faktörlü kimlik doğrulama etkin.' : 'İki faktörlü kimlik doğrulama kapatıldı';
+    }
+    panel.setAttribute('data-snapshot-painted', 'true');
+  } catch (error) {
+    /* Cold or unavailable storage falls through to API hydration. */
+  }
+})();
+</script>
 <script id="mprofilePaymentModalFallback">
 (function(){
   if (window.__mprofilePaymentModalFallbackBound) return;
