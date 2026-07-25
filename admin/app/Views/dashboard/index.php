@@ -136,8 +136,9 @@ $showFlashModal = $flash !== '';
 .db-panel-title { color:var(--t-base); font-size:13px; font-weight:900; margin:0; }
 .db-link { color:var(--primary); font-size:11px; font-weight:800; text-decoration:none; }
 .db-link:hover { text-decoration:underline; }
-.db-chart-wrap { min-height:220px; }
-.db-chart-wrap.tall { min-height:260px; }
+.db-chart-wrap { height:220px; min-height:220px; position:relative; }
+.db-chart-wrap.tall { height:260px; min-height:260px; }
+.db-chart-wrap canvas { height:100% !important; width:100% !important; }
 .db-empty { background:var(--bg-muted); border:1px dashed var(--border); border-radius:8px; color:var(--t-muted); font-size:11px; font-weight:700; margin-bottom:10px; padding:10px 12px; }
 .db-tabs { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
 .db-tab { background:transparent; border:0; border-radius:5px; color:var(--t-muted); cursor:pointer; font-size:10px; font-weight:800; padding:5px 8px; transition:.14s; }
@@ -230,7 +231,7 @@ $showFlashModal = $flash !== '';
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
-            <div class="db-chart-wrap" id="db-<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>-donut"></div>
+            <div class="db-chart-wrap"><canvas id="db-<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>-donut"></canvas></div>
             <?php if (!empty($d['bars']['labels'])): ?>
             <?php $maxVal = max(array_map('floatval', $d['bars']['values'])) ?: 1; ?>
             <?php foreach ($d['bars']['labels'] as $i => $label): $v = (float) ($d['bars']['values'][$i] ?? 0); $f = (string) ($d['bars']['formats'][$i] ?? 'money'); ?>
@@ -256,11 +257,11 @@ $showFlashModal = $flash !== '';
             <?php if (!empty($chartData['bonus']['tabs'])): ?>
             <div class="db-tabs">
                 <?php foreach ($chartData['bonus']['tabs'] as $tab): ?>
-                <button class="db-tab <?= $tab === $chartData['bonus']['active'] ? 'on' : '' ?>" data-tab="<?= htmlspecialchars($tab) ?>"><?= htmlspecialchars($tab) ?></button>
+                <button type="button" class="db-tab <?= $tab === $chartData['bonus']['active'] ? 'on' : '' ?>" data-tab="<?= htmlspecialchars($tab) ?>"><?= htmlspecialchars($tab) ?></button>
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
-            <div class="db-chart-wrap tall" id="db-bonus-donut"></div>
+            <div class="db-chart-wrap tall"><canvas id="db-bonus-donut"></canvas></div>
         </div>
 
         <div class="db-panel">
@@ -352,49 +353,55 @@ $showFlashModal = $flash !== '';
         return theme() === 'dark' ? '#f1f5f9' : '#0f172a';
     };
 
-    var apexOptions = function(series, labels, colors) {
+    var chartOptions = function(isEmpty) {
         return {
-            series: series,
-            chart: {
-                type: 'donut',
-                height: 240,
-                toolbar: { show: false },
-                animations: { enabled: true, speed: 500 }
-            },
-            labels: labels,
-            colors: colors,
-            stroke: { width: 2, colors: [theme() === 'dark' ? '#1e293b' : '#ffffff'] },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '62%',
-                        labels: {
-                            show: true,
-                            name: { show: true, fontSize: '12px', fontWeight: 700, color: labelColor() },
-                            value: { show: true, fontSize: '18px', fontWeight: 900, color: textColor() },
-                            total: { show: true, showAlways: true, fontSize: '13px', fontWeight: 800, label: 'Toplam', color: labelColor() }
-                        }
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            animation: { duration: 500 },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        color: labelColor(),
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        padding: 14,
+                        usePointStyle: true,
+                        font: { size: 11, weight: '700' }
                     }
-                }
-            },
-            legend: { show: false },
-            dataLabels: { enabled: false },
-            tooltip: { theme: theme(), style: { fontSize: '12px' } },
-            noData: { text: 'Veri yok', style: { color: labelColor(), fontSize: '14px' } }
+                },
+                tooltip: { enabled: !isEmpty }
+            }
         };
     };
 
     var renderChart = function(elId, series, labels, colors) {
-        var el = document.getElementById(elId);
-        if (!el) return;
-        var total = series.reduce(function(a,b){ return a+b; }, 0);
-        if (total === 0) {
-            el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--t-muted);font-size:12px;font-weight:700">Henüz veri yok</div>';
-            return;
+        var canvas = document.getElementById(elId);
+        if (!canvas || typeof Chart !== 'function') return;
+        var values = Array.isArray(series) ? series.map(function(value) { return Math.max(0, Number(value || 0)); }) : [];
+        var isEmpty = values.reduce(function(sum, value) { return sum + value; }, 0) <= 0;
+        if (isEmpty) {
+            values = [1];
+            labels = ['Veri yok'];
+            colors = ['rgba(148, 163, 184, .35)'];
         }
-        if (el._apex) { el._apex.destroy(); }
-        el._apex = new ApexCharts(el, apexOptions(series, labels, colors));
-        el._apex.render();
+        if (canvas._chart) canvas._chart.destroy();
+        canvas._chart = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: theme() === 'dark' ? '#1e293b' : '#ffffff',
+                    borderWidth: 2,
+                    hoverOffset: isEmpty ? 0 : 4
+                }]
+            },
+            options: chartOptions(isEmpty)
+        });
     };
 
     var data = <?= json_encode($chartData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
@@ -451,10 +458,10 @@ $showFlashModal = $flash !== '';
     };
 
     var boot = function(attempt) {
-        if (typeof ApexCharts === 'undefined') {
+        if (typeof Chart === 'undefined') {
             if (attempt >= 50) {
                 document.querySelectorAll('.db-chart-wrap').forEach(function(el) {
-                    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--t-muted);font-size:12px;font-weight:700">Grafik yüklenemedi</div>';
+                    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--t-muted);font-size:12px;font-weight:700">Grafik yüklenemedi</div>';
                 });
                 return;
             }
