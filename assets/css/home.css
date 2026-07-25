@@ -526,6 +526,7 @@
   background: #130922;
   transform: scale(var(--home-image-scale, 1));
   transition: filter 0.3s ease, transform 0.3s ease;
+  overflow: hidden;
 }
 
 .game-item:hover img,

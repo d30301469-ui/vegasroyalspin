@@ -1257,6 +1257,7 @@ body.mobile-site .sidebar-overlay {
   body.mobile-site .slot-page-root .casinoGameItemImage--svg {
     pointer-events: none;
     border: none;
+    overflow: hidden;
   }
 
   body.mobile-site .slot-page-root .game-overlay,
@@ -1532,6 +1533,7 @@ body.mobile-site .sidebar-overlay {
     pointer-events: none;
     border: none;
     object-fit: fill;
+    overflow: hidden;
   }
 }
 

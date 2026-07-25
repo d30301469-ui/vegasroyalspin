@@ -934,6 +934,7 @@
   display: block;
   border: none;
   pointer-events: none;
+  overflow: hidden;
 }
 
 .search-panel__game-thumb-fallback {
