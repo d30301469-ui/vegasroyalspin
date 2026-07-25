@@ -7,10 +7,110 @@ window.__MOBILE_NAV_INITIALIZED__ = true;
 
 
     var menuOpen = false;
+    var desktopScrollLocked = false;
     var Shared = window.BetcoAuthShared || {};
 
     function getMenu() {
         return document.getElementById('mobileMenu');
+    }
+
+    function getOverlay() {
+        return document.getElementById('mobileMenu-overlay');
+    }
+
+    // Paylasilan govde kilidi: scroll konumunu koruyarak kilitler (desktop dar
+    // gorunum icin gerekli; mobil yuzey CSS sinifi ile kilitlenir).
+    function getSharedScrollLock() {
+        if (window.__BodyScrollLock && typeof window.__BodyScrollLock.lock === 'function' && typeof window.__BodyScrollLock.unlock === 'function') {
+            return window.__BodyScrollLock;
+        }
+
+        var state = {
+            count: 0,
+            scrollY: 0,
+            prev: null
+        };
+
+        function lock() {
+            state.count += 1;
+            if (state.count > 1) return;
+
+            var body = document.body;
+            var docEl = document.documentElement;
+            state.scrollY = window.scrollY || window.pageYOffset || 0;
+            state.prev = {
+                position: body.style.position,
+                top: body.style.top,
+                left: body.style.left,
+                right: body.style.right,
+                width: body.style.width,
+                overflow: body.style.overflow,
+                touchAction: body.style.touchAction,
+                paddingRight: body.style.paddingRight
+            };
+
+            var scrollbarWidth = Math.max(0, window.innerWidth - docEl.clientWidth);
+            if (scrollbarWidth > 0) {
+                body.style.paddingRight = scrollbarWidth + 'px';
+            }
+
+            body.style.position = 'fixed';
+            body.style.top = -state.scrollY + 'px';
+            body.style.left = '0';
+            body.style.right = '0';
+            body.style.width = '100%';
+            body.style.overflow = 'hidden';
+            body.style.touchAction = 'none';
+            body.classList.add('body-scroll-locked');
+        }
+
+        function unlock() {
+            if (state.count <= 0) return;
+            state.count -= 1;
+            if (state.count > 0) return;
+
+            var body = document.body;
+            var restoreY = state.scrollY;
+            var prev = state.prev || {};
+
+            body.style.position = prev.position || '';
+            body.style.top = prev.top || '';
+            body.style.left = prev.left || '';
+            body.style.right = prev.right || '';
+            body.style.width = prev.width || '';
+            body.style.overflow = prev.overflow || '';
+            body.style.touchAction = prev.touchAction || '';
+            body.style.paddingRight = prev.paddingRight || '';
+            body.classList.remove('body-scroll-locked');
+
+            var html = document.documentElement;
+            var previousBehavior = html.style.scrollBehavior;
+            html.style.scrollBehavior = 'auto';
+            window.scrollTo(0, restoreY);
+            html.style.scrollBehavior = previousBehavior || '';
+        }
+
+        window.__BodyScrollLock = {
+            lock: lock,
+            unlock: unlock
+        };
+
+        return window.__BodyScrollLock;
+    }
+
+    function syncDesktopScrollLock(isOpen) {
+        // Mobil yuzey (body.mobile-site) kilidi CSS siniflariyla yonetir;
+        // desktop dar gorunumde scroll konumunu koruyan JS kilidi kullanilir.
+        if (document.body.classList.contains('mobile-site')) {
+            return;
+        }
+        if (isOpen && !desktopScrollLocked) {
+            desktopScrollLocked = true;
+            getSharedScrollLock().lock();
+        } else if (!isOpen && desktopScrollLocked) {
+            desktopScrollLocked = false;
+            getSharedScrollLock().unlock();
+        }
     }
 
     function getToggles() {
@@ -25,6 +125,7 @@ window.__MOBILE_NAV_INITIALIZED__ = true;
 
     function setMenuOpenState(isOpen) {
         var menu = getMenu();
+        var overlay = getOverlay();
         var toggles = getToggles();
         var root = getRoot();
 
@@ -41,6 +142,13 @@ window.__MOBILE_NAV_INITIALIZED__ = true;
             menu.classList.toggle('is-open', isOpen);
             menu.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
         }
+
+        if (overlay) {
+            overlay.classList.toggle('is-open', isOpen);
+            overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+        }
+
+        syncDesktopScrollLock(isOpen);
 
         document.body.classList.toggle('navigation-is-visible', isOpen);
         document.body.classList.toggle('mobileMenu-locked', isOpen);
@@ -273,6 +381,13 @@ window.__MOBILE_NAV_INITIALIZED__ = true;
             closeMenu(true);
         }, true);
 
+        document.addEventListener('click', function (e) {
+            var overlayTarget = e.target && e.target.closest ? e.target.closest('#mobileMenu-overlay') : null;
+            if (!overlayTarget) return;
+            e.preventDefault();
+            closeMenu(true);
+        }, true);
+
         if (closeBtn) {
             closeBtn.addEventListener('click', function () {
                 closeMenu(true);
@@ -340,8 +455,36 @@ window.__MOBILE_NAV_INITIALIZED__ = true;
         highlightActiveTab();
     }
 
+    // Desktop yuzeyde dar gorunum: header'i gorunur tut ve sticky offset'i esitle
+    // (eski assets/js/mobile_bottom.js davranisi buraya tasindi).
+    function initDesktopNarrowHeaderBehavior() {
+        var mql = window.matchMedia('(max-width: 992px)');
+
+        function apply() {
+            if (!mql.matches) {
+                return;
+            }
+            var mainMenu = document.querySelector('.mainMenu');
+            if (mainMenu) {
+                mainMenu.classList.remove('header-hidden');
+            }
+            if (typeof window.__syncHeaderStickyTop === 'function') {
+                window.__syncHeaderStickyTop();
+            }
+        }
+
+        apply();
+
+        if (typeof mql.addEventListener === 'function') {
+            mql.addEventListener('change', apply);
+        } else if (typeof mql.addListener === 'function') {
+            mql.addListener(apply);
+        }
+    }
+
     function initMainMenuScrollHide() {
         if (!document.body.classList.contains('mobile-site')) {
+            initDesktopNarrowHeaderBehavior();
             return;
         }
 
@@ -379,7 +522,8 @@ window.__MOBILE_NAV_INITIALIZED__ = true;
         closeMenu(true);
     };
 
-    // Signal to mobile_bottom.js that navigation.js handles menu — prevents double-binding
+    // Tek menu motoru: mobile_bottom.js (legacy shim) bu bayragi gorunce
+    // hicbir sey yapmaz — cift baglama/kilit yarisi engellenir.
     window.__MOBILE_NAV_ACTIVE__ = true;
 
     if (document.readyState === 'loading') {

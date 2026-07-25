@@ -86,4 +86,5 @@ $gameFavVer = (string) (is_file($gameFavPath) ? filemtime($gameFavPath) : '1');
 ?>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/favorites-drawer.js') . '?v=' . rawurlencode($favDrawerVer), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/game-favorites.js') . '?v=' . rawurlencode($gameFavVer), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/mobile_bottom.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php /* Menü mantığı tek dosyada: mobile/assets/js/navigation.js (mobile_bottom.js kaldırıldı) */ ?>
+<script defer src="<?= htmlspecialchars($versionedAsset('mobile/assets/js/navigation.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
