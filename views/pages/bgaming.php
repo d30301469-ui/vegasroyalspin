@@ -90,9 +90,8 @@ $bgamingJsVer  = (string) ((is_file($bgamingJsPath) ? filemtime($bgamingJsPath) 
         $gCover   = (string) ($game['cover'] ?? '');
         $gCatId   = (string) ($game['id'] ?? '');
         $gPlay    = '/play?game_id=' . rawurlencode($gId) . '&mode=real&wallet=main';
-        if (!$loggedIn) $gPlay = '#login';
         $gDemo    = '/play?game_id=' . rawurlencode($gId) . '&mode=fun';
-        $gPlayJs  = htmlspecialchars(json_encode($gPlay, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+        $gPlayJs  = (string) json_encode($gPlay, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
         $gIntent  = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__bgamingHandlePlayIntent){window.__bgamingHandlePlayIntent(event,' . $gPlayJs . ');}else{window.location.href=' . $gPlayJs . ';}';
 ?>
                         <div class="casinoGameItemContent"
