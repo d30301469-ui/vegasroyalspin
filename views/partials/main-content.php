@@ -175,9 +175,15 @@ if (!function_exists('homeRenderGameCard')) {
         $demoOnclick = $gameId > 0
             ? 'handleDemo(' . $gameId . '); return false;'
             : 'event.stopPropagation(); return false;';
+        $isSvg = preg_match('/\.svg(\?|$)/i', $image);
+        $imageFitStyle = 'object-fit: ' . $imageFit . '; --home-image-scale: ' . $imageScale;
         ?>
         <div class="<?= homeSectionH($class) ?>"<?= $onclick !== '' ? ' onclick="' . homeSectionH($onclick) . '"' : '' ?>>
-            <img loading="lazy" decoding="async" src="<?= homeSectionH($image) ?>" alt="<?= homeSectionH($alt) ?>" width="200" height="200" style="object-fit: <?= homeSectionH($imageFit) ?>; --home-image-scale: <?= homeSectionH((string) $imageScale) ?>;">
+            <?php if ($isSvg): ?>
+            <object data="<?= homeSectionH($image) ?>" type="image/svg+xml" aria-label="<?= homeSectionH($alt) ?>" width="200" height="200" style="<?= homeSectionH($imageFitStyle) ?>; pointer-events: none; border: none;"></object>
+            <?php else: ?>
+            <img loading="lazy" decoding="async" src="<?= homeSectionH($image) ?>" alt="<?= homeSectionH($alt) ?>" width="200" height="200" style="<?= homeSectionH($imageFitStyle) ?>;">
+            <?php endif; ?>
             <div class="game-overlay">
                 <div class="game-overlay-top">
                     <span class="game-fav"><i class="far fa-star"></i></span>

@@ -516,7 +516,9 @@
 }
 
 .game-cta img,
-.game-item img {
+.game-cta object,
+.game-item img,
+.game-item object {
   display: block;
   width: 100%;
   height: 100%;
@@ -527,7 +529,9 @@
 }
 
 .game-item:hover img,
-.game-cta:hover img {
+.game-item:hover object,
+.game-cta:hover img,
+.game-cta:hover object {
   filter: blur(6px);
   transform: scale(calc(var(--home-image-scale, 1) * 1.05));
 }
