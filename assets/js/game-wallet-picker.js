@@ -27,10 +27,16 @@
     }
 
     function isLoggedIn() {
-        if (typeof global.__USER_LOGGED_IN__ !== 'undefined') {
-            return !!global.__USER_LOGGED_IN__;
+        if (Shared && typeof Shared.runtimeSessionLoggedIn === 'function') {
+            return Shared.runtimeSessionLoggedIn();
         }
-        return !!(Shared.getMemberJwt && Shared.getMemberJwt());
+        if (global.__USER_LOGGED_IN__ === true || global.__HAS_MEMBER_JWT__ === true) {
+            return true;
+        }
+        if (typeof global.__MEMBER_JWT_BOOTSTRAP__ === 'string' && global.__MEMBER_JWT_BOOTSTRAP__.trim() !== '') {
+            return true;
+        }
+        return !!(Shared.getMemberJwt && Shared.getMemberJwt() !== '');
     }
 
     function getScrollLock() {

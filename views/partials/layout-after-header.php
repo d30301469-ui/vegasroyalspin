@@ -52,7 +52,7 @@ $versionedAsset = static function (string $path) use ($assetVersion): string {
 ?>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/global.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars($versionedAsset('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script defer src="<?= htmlspecialchars(asset_url('assets/js/game-wallet-picker.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script defer src="<?= htmlspecialchars($versionedAsset('assets/js/game-wallet-picker.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/member-api-console.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php
 $siteSettingsHydratePath = BASE_PATH . '/assets/js/site-settings-hydrate.js';

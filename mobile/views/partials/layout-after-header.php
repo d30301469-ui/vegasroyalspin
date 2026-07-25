@@ -27,6 +27,7 @@ $mobileVersionedUrl = static function (string $path, string $version): string {
 };
 
 $mobileAuthSharedVer = $mobileAssetVer('assets/js/auth-shared.js');
+$mobileWalletPickerVer = $mobileAssetVer('assets/js/game-wallet-picker.js');
 $mobileHeaderSharedVer = $mobileAssetVer('assets/js/header.js');
 $mobileFooterSharedVer = $mobileAssetVer('assets/js/footer.js');
 $mobileNavigationVer = $mobileAssetVer('mobile/assets/js/navigation.js');
@@ -39,7 +40,7 @@ $mobileProfileJsVer = $mobileAssetVer('assets/js/profile.js');
 <script src="<?= htmlspecialchars(asset_url('assets/js/global.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/modal-polyfill.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/auth-shared.js', $mobileAuthSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>
-<script src="<?= htmlspecialchars(asset_url('assets/js/game-wallet-picker.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/game-wallet-picker.js', $mobileWalletPickerVer), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/member-api-console.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/site-settings-hydrate.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/toastify-helper.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
