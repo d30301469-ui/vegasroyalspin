@@ -44,6 +44,8 @@
   var activePaymentModal = null;
   var paymentModalSubmitting = false;
   var activePaymentStatusPoll = null;
+  var profilePanelHydratedAt = 0;
+  var profilePanelHydration = null;
 
   function apiUrl(path) {
     return Shared.apiUrl ? Shared.apiUrl(path) : path;
@@ -55,6 +57,158 @@
     var csrf = (window.__CSRF_TOKEN__ || '').trim();
     if (csrf) headers['X-CSRF-Token'] = csrf;
     return headers;
+  }
+
+  function memberCredentials() {
+    return Shared.memberCredentials ? Shared.memberCredentials() : 'same-origin';
+  }
+
+  function fetchMemberData(path) {
+    return fetch(apiUrl(path), {
+      credentials: memberCredentials(),
+      headers: memberAuthHeaders({ Accept: 'application/json' })
+    }).then(function (response) {
+      return response.json().then(function (envelope) {
+        if (!response.ok || !envelope || envelope.success !== true) {
+          throw new Error((envelope && envelope.message) || 'API request failed');
+        }
+        return envelope.data || {};
+      });
+    });
+  }
+
+  function normalizeProfileDate(value) {
+    var match = String(value || '').match(/^\d{4}-\d{2}-\d{2}/);
+    return match ? match[0] : String(value || '');
+  }
+
+  function normalizeProfileGender(value) {
+    var gender = String(value || '').trim().toLowerCase();
+    if (['male', 'm', 'erkek'].indexOf(gender) !== -1) return 'Erkek';
+    if (['female', 'f', 'kadın', 'kadin'].indexOf(gender) !== -1) return 'Kadın';
+    if (['other', 'o', 'diğer', 'diger'].indexOf(gender) !== -1) return 'Diğer';
+    return String(value || '').trim();
+  }
+
+  function normalizeProfileCountry(value) {
+    var country = String(value || '').trim();
+    return ['TR', 'TUR', 'TURKEY'].indexOf(country.toUpperCase()) !== -1 ? 'Türkiye' : country;
+  }
+
+  function setProfileInput(panel, name, value) {
+    var input = panel.querySelector('[data-mprofile-section="details"] [name="' + name + '"]');
+    if (input) input.value = value == null ? '' : String(value);
+  }
+
+  function applyProfileData(panel, data) {
+    var user = data && data.user ? data.user : data || {};
+    var username = String(user.username || '').trim();
+    var userId = user.id != null ? user.id : user.user_id;
+    var avatar = panel.querySelector('[data-mprofile-avatar]');
+    var usernameEl = panel.querySelector('[data-mprofile-username]');
+    var userIdWrap = panel.querySelector('[data-mprofile-user-id-wrap]');
+    var userIdEl = panel.querySelector('[data-mprofile-user-id]');
+    var copy = panel.querySelector('[data-mprofile-user-id-wrap] [data-user-id]');
+    if (avatar) avatar.textContent = (username.slice(0, 2) || 'U').toLowerCase();
+    if (usernameEl) usernameEl.textContent = username || '—';
+    if (userIdWrap) userIdWrap.hidden = userId == null || String(userId) === '';
+    if (userIdEl) userIdEl.textContent = userId == null ? '' : String(userId);
+    if (copy) copy.setAttribute('data-user-id', userId == null ? '' : String(userId));
+
+    setProfileInput(panel, 'username', username);
+    setProfileInput(panel, 'first_name', user.first_name || user.name || '');
+    setProfileInput(panel, 'last_name', user.surname || user.last_name || '');
+    setProfileInput(panel, 'birth_date', normalizeProfileDate(user.dob || user.birth_date || ''));
+    setProfileInput(panel, 'gender', normalizeProfileGender(user.gender));
+    setProfileInput(panel, 'city', user.city || '');
+    setProfileInput(panel, 'address', user.address || '');
+
+    var country = normalizeProfileCountry(user.country);
+    var countryEl = panel.querySelector('[data-mprofile-country]');
+    var countryFlag = panel.querySelector('[data-mprofile-country-flag]');
+    if (countryEl) countryEl.textContent = country;
+    if (countryFlag) countryFlag.classList.toggle('turkey', country === 'Türkiye');
+
+    var bonusIframe = panel.querySelector('[data-mbonus-iframe]');
+    if (bonusIframe && username) {
+      var baseUrl = bonusIframe.getAttribute('data-base-url') || '';
+      bonusIframe.src = baseUrl + '?username=' + encodeURIComponent(username);
+    }
+  }
+
+  function applyBalanceData(panel, data) {
+    var balance = data && data.balance && typeof data.balance === 'object' ? data.balance : data || {};
+    var main = balance.balance != null ? balance.balance : data.ana_bakiye;
+    var bonus = balance.bonus_balance != null ? balance.bonus_balance : (data.bonus_bakiye != null ? data.bonus_bakiye : data.toplam_bonus);
+    panel.querySelectorAll('[data-balance-target="mprofileMain"]').forEach(function (target) {
+      target.textContent = moneyText(main || 0).replace(/\s*₺$/, '');
+    });
+    panel.querySelectorAll('[data-balance-target="mprofileBonus"]').forEach(function (target) {
+      target.textContent = moneyText(bonus || 0).replace(/\s*₺$/, '');
+    });
+  }
+
+  function applyLoyaltySummary(panel, data) {
+    loyaltyPayload = data || {};
+    loyaltyLoaded = true;
+    var level = loyaltyPayload.level || loyaltyPayload.badge || {};
+    var icon = loyaltyIcon(level);
+    var image = panel.querySelector('[data-mprofile-loyalty-icon]');
+    if (image && icon) {
+      image.src = icon;
+      image.hidden = false;
+    }
+  }
+
+  function applyTwofaData(panel, data) {
+    var enabled = !!(data && data.enabled);
+    var toggle = panel.querySelector('#mprofileTwofaToggle');
+    if (toggle) {
+      toggle.checked = enabled;
+      toggle.disabled = false;
+    }
+    setTwofaMessage(panel, '', enabled ? 'İki faktörlü kimlik doğrulama etkin.' : 'İki faktörlü kimlik doğrulama kapatıldı');
+  }
+
+  function hydrateProfilePanel(panel, force) {
+    panel = panel || getPanel();
+    if (!panel) return Promise.resolve(false);
+    if (!force && profilePanelHydratedAt && Date.now() - profilePanelHydratedAt < 15000) {
+      return Promise.resolve(true);
+    }
+    if (profilePanelHydration) return profilePanelHydration;
+
+    panel.setAttribute('aria-busy', 'true');
+    var requests = [
+      fetchMemberData('/api/v2/profile/detail').then(function (data) { applyProfileData(panel, data); }).catch(function (error) {
+        var username = panel.querySelector('[data-mprofile-username]');
+        var avatar = panel.querySelector('[data-mprofile-avatar]');
+        if (username) username.textContent = 'Profil bilgileri yüklenemedi';
+        if (avatar) avatar.textContent = '—';
+        throw error;
+      }),
+      fetchMemberData('/api/v2/balance').then(function (data) { applyBalanceData(panel, data); }).catch(function (error) {
+        panel.querySelectorAll('[data-balance-target="mprofileMain"], [data-balance-target="mprofileBonus"]').forEach(function (target) {
+          target.textContent = '—';
+        });
+        throw error;
+      }),
+      fetchMemberData('/api/v2/loyalty.php').then(function (data) { applyLoyaltySummary(panel, data); }),
+      fetchMemberData('/api/v2/two-factor').then(function (data) { applyTwofaData(panel, data); }).catch(function (error) {
+        setTwofaMessage(panel, 'error', 'İki faktörlü kimlik doğrulama durumu yüklenemedi.');
+        throw error;
+      })
+    ];
+    var succeeded = 0;
+    profilePanelHydration = Promise.all(requests.map(function (request) {
+      return request.then(function () { succeeded += 1; }).catch(function () { return null; });
+    })).then(function () {
+      if (succeeded === requests.length) profilePanelHydratedAt = Date.now();
+      panel.removeAttribute('aria-busy');
+      profilePanelHydration = null;
+      return succeeded > 0;
+    });
+    return profilePanelHydration;
   }
 
   function requestedProfileSection() {
@@ -264,7 +418,7 @@
     document.body.classList.add('mprofile-open');
     document.body.classList.add('overlay-sliding-is-visible', 'overlaySlidingIsVisible');
     isOpen = true;
-    syncBalance();
+    hydrateProfilePanel(panel);
     syncBalanceRail(panel);
     var messagesSection = requestedMessagesSection();
     if (messagesSection) {

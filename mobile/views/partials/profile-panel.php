@@ -4,76 +4,6 @@
  * SSR guest olsa bile render edilir; istemci JWT restorasyonu header'ı sonradan
  * user durumuna yükseltebilir ve panel açılışını API oturum kontrolü korur.
  */
-$panelUsername = trim((string) ($_SESSION['username'] ?? ''));
-$panelUserId = (string) ($_SESSION['user_id'] ?? '');
-$panelInitial = strtoupper(mb_substr($panelUsername !== '' ? $panelUsername : 'U', 0, 2));
-
-$panelNormalizeDateInput = static function (string $value): string {
-  $value = trim($value);
-  if ($value === '') {
-    return '';
-  }
-  if (preg_match('/^\d{4}-\d{2}-\d{2}/', $value, $match) === 1) {
-    return (string) ($match[0] ?? '');
-  }
-  $timestamp = strtotime($value);
-  return $timestamp !== false ? date('Y-m-d', $timestamp) : '';
-};
-$panelNormalizeGenderLabel = static function (string $value): string {
-  $gender = strtolower(trim($value));
-  return match ($gender) {
-    'male', 'm', 'erkek' => 'Erkek',
-    'female', 'f', 'kadın', 'kadin' => 'Kadın',
-    'other', 'o', 'diğer', 'diger' => 'Diğer',
-    default => trim($value),
-  };
-};
-$panelNormalizeCountryLabel = static function (string $value): string {
-  $country = strtoupper(trim($value));
-  if ($country === 'TR' || $country === 'TUR' || $country === 'TURKEY') {
-    return 'Türkiye';
-  }
-  return trim($value);
-};
-$panelProfile = [];
-if (!class_exists('MemberViewDataService', false) && defined('BASE_PATH') && is_readable(BASE_PATH . '/services/MemberViewDataService.php')) {
-  require_once BASE_PATH . '/services/MemberViewDataService.php';
-}
-if (class_exists('MemberViewDataService')) {
-  $panelProfile = MemberViewDataService::profileForSession();
-}
-$panelProfileUsername = trim((string) ($panelProfile['username'] ?? $panelUsername));
-if ($panelProfileUsername === '') {
-  $panelProfileUsername = $panelUsername;
-}
-$panelFirstName = trim((string) ($panelProfile['name'] ?? $panelProfile['first_name'] ?? ''));
-$panelSurname = trim((string) ($panelProfile['surname'] ?? $panelProfile['last_name'] ?? ''));
-$panelDob = $panelNormalizeDateInput((string) ($panelProfile['dob'] ?? $panelProfile['birth_date'] ?? ''));
-$panelGender = $panelNormalizeGenderLabel((string) ($panelProfile['gender'] ?? ''));
-$panelCountry = $panelNormalizeCountryLabel((string) ($panelProfile['country'] ?? ''));
-$panelCountry = $panelCountry !== '' ? $panelCountry : 'Türkiye';
-$panelCity = trim((string) ($panelProfile['city'] ?? ''));
-$panelAddress = trim((string) ($panelProfile['address'] ?? ''));
-
-$panelBadge = isset($headerLoyaltyBadge) && is_array($headerLoyaltyBadge) ? $headerLoyaltyBadge : [];
-$panelLoyaltyName = (string) ($panelBadge['name'] ?? 'Bronze');
-$panelLoyaltyIconMap = [
-  'bronze' => '/assets/images/loyalty/badges/bronze.png',
-  'silver' => '/assets/images/loyalty/badges/silver.svg',
-  'gold' => '/assets/images/loyalty/badges/gold.svg',
-  'platinum' => '/assets/images/loyalty/badges/platinum.svg',
-  'diamond' => '/assets/images/loyalty/badges/diamond.svg',
-];
-$panelLoyaltySource = strtolower((string) ($panelBadge['code'] ?? '') . ' ' . $panelLoyaltyName . ' ' . (string) ($panelBadge['icon_url'] ?? ''));
-$panelLoyaltyCode = 'bronze';
-foreach (array_keys($panelLoyaltyIconMap) as $panelLoyaltyLevelCode) {
-    if (str_contains($panelLoyaltySource, $panelLoyaltyLevelCode)) {
-        $panelLoyaltyCode = $panelLoyaltyLevelCode;
-        break;
-    }
-}
-$panelLoyaltyIcon = $panelLoyaltyIconMap[$panelLoyaltyCode] ?? '/assets/images/loyalty/badges/bronze.png';
-$panelInitialLower = mb_strtolower($panelInitial);
 $panelBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
 $panelSettings = isset($ayar) && is_array($ayar) ? $ayar : [];
 $panelSiteName = (string) ($panelBranding['site_name'] ?? $panelSettings['site_adi'] ?? 'VegasRoyalSpin');
@@ -81,7 +11,7 @@ $panelLogoUrl = (string) ($panelBranding['logo_animated_url'] ?? $panelSettings[
 if (class_exists('ApiMediaUrl', false)) {
     $panelLogoUrl = ApiMediaUrl::resolve($panelLogoUrl);
 }
-$panelBonusIframeUrl = 'https://jjbonusmilyon.com/?username=' . rawurlencode($panelUsername);
+$panelBonusIframeBaseUrl = 'https://jjbonusmilyon.com/';
 $panelCsrfKey = 'vegasroyalspin_csrf_token';
 if (empty($_SESSION[$panelCsrfKey]) || !is_string($_SESSION[$panelCsrfKey])) {
   $_SESSION[$panelCsrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
@@ -89,7 +19,6 @@ if (empty($_SESSION[$panelCsrfKey]) || !is_string($_SESSION[$panelCsrfKey])) {
     : bin2hex(random_bytes(32));
 }
 $_SESSION['csrf_token'] = $_SESSION[$panelCsrfKey];
-$panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
 ?>
 <style id="mprofileInfoTabsStyle">
   #mprofilePanel .description-container-bc .second-tabs-bc{height:33px;min-height:33px;padding:0!important;gap:2px!important;column-gap:2px!important;background:rgba(5,7,38,.9)!important;border-radius:2px!important;overflow:hidden}
@@ -132,7 +61,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
                       <div class="total-balance-r-bc">
                         <div class="u-i-p-a-user-balance">
                           <span class="u-i-p-a-title-bc ellipsis">ANA BAKİYE</span>
-                          <b class="u-i-p-a-amount-bc"><span data-balance-target="mprofileMain">0</span> ₺</b>
+                          <b class="u-i-p-a-amount-bc"><span data-balance-target="mprofileMain">...</span> ₺</b>
                         </div>
                         <i class="u-i-p-a-c-icon-bc bc-i-eye" aria-hidden="true"></i>
                       </div>
@@ -147,8 +76,8 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
                   <div class="u-i-p-amounts-bc bonuses">
                     <div class="u-i-p-a-content-bc">
                       <span class="u-i-p-a-title-bc ellipsis">TOPLAM BONUS PARA</span>
-                      <span class="u-i-p-a-amount-bc"><span data-balance-target="mprofileBonus">0.00</span> ₺</span>
-                      <div class="bonus-info-section"><div><span class="ellipsis">TOPLAM BONUS PARA</span><b><span data-balance-target="mprofileBonus">0.00</span> ₺</b></div></div>
+                      <span class="u-i-p-a-amount-bc"><span data-balance-target="mprofileBonus">...</span> ₺</span>
+                      <div class="bonus-info-section"><div><span class="ellipsis">TOPLAM BONUS PARA</span><b><span data-balance-target="mprofileBonus">...</span> ₺</b></div></div>
                     </div>
                   </div>
                 </div>
@@ -157,10 +86,10 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
             </div>
           </div>
         </div>
-        <a class="u-i-p-a-loyaltyPoint-bc" href="/?profile=open&amp;account=bonuses&amp;page=loyalty-points"><div class="loyaltyBonusHeader"><img class="loyaltyBonusImg" src="<?= htmlspecialchars($panelLoyaltyIcon, ENT_QUOTES, 'UTF-8') ?>" alt="" onerror="this.style.display='none'"></div><p class="u-i-p-a-loyaltyPointText-bc ellipsis">Sadakat Puanları</p></a>
+        <a class="u-i-p-a-loyaltyPoint-bc" href="/?profile=open&amp;account=bonuses&amp;page=loyalty-points"><div class="loyaltyBonusHeader"><img class="loyaltyBonusImg" alt="" data-mprofile-loyalty-icon hidden onerror="this.hidden=true"></div><p class="u-i-p-a-loyaltyPointText-bc ellipsis">Sadakat Puanları</p></a>
         <div class="u-i-p-p-u-i-edit-button-bc">
-          <p class="u-i-p-p-u-i-avatar-holder-bc"><?= htmlspecialchars($panelInitialLower, ENT_QUOTES, 'UTF-8') ?></p>
-          <p class="u-i-p-p-u-i-identifiers-bc"><span class="u-i-p-p-u-i-d-username-bc ellipsis"><?= htmlspecialchars($panelUsername, ENT_QUOTES, 'UTF-8') ?></span><?php if ($panelUserId !== ''): ?><span class="u-i-p-p-u-i-d-user-id-bc ellipsis"><?= htmlspecialchars($panelUserId, ENT_QUOTES, 'UTF-8') ?><i class="u-i-p-p-u-i-d-user-id-copy-bc bc-i-copy" data-user-id="<?= htmlspecialchars($panelUserId, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i></span><?php endif; ?></p>
+          <p class="u-i-p-p-u-i-avatar-holder-bc" data-mprofile-avatar>...</p>
+          <p class="u-i-p-p-u-i-identifiers-bc"><span class="u-i-p-p-u-i-d-username-bc ellipsis" data-mprofile-username>Yükleniyor...</span><span class="u-i-p-p-u-i-d-user-id-bc ellipsis" data-mprofile-user-id-wrap hidden><span data-mprofile-user-id></span><i class="u-i-p-p-u-i-d-user-id-copy-bc bc-i-copy" data-user-id="" aria-hidden="true"></i></span></p>
           <a class="u-i-p-l-h-icon-bc right bc-i-small-arrow-right" aria-label="Profile Details" href="/?profile=open&amp;account=profile&amp;page=details"></a>
         </div>
         <div class="u-i-p-links-lists-holder-bc">
@@ -291,7 +220,7 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
           <div class="mprofile-bonus-request-list" data-mbonus-promotions-list><p class="profile-active-bonus-loading" role="status">Bonuslar yükleniyor...</p></div>
           <p class="profile-bonus-claim-status" data-mbonus-claim-status role="status" aria-live="polite"></p>
         </div>
-        <iframe class="iframe-widget" data-mbonus-iframe title="https://jjbonusmilyon.com/?username={username}" src="<?= htmlspecialchars($panelBonusIframeUrl, ENT_QUOTES, 'UTF-8') ?>" allow="clipboard-write" style="height: 100%; width: 100%;" hidden></iframe>
+        <iframe class="iframe-widget" data-mbonus-iframe data-base-url="<?= htmlspecialchars($panelBonusIframeBaseUrl, ENT_QUOTES, 'UTF-8') ?>" title="Bonuslar" src="about:blank" allow="clipboard-write" style="height: 100%; width: 100%;" hidden></iframe>
       </div>
       <div class="mprofile-messages-view" data-mprofile-view="messages" aria-hidden="true">
         <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">MESAJLAR</span></div>
@@ -316,14 +245,14 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
           <form onsubmit="return false;">
             <div class="userProfile-content" data-scroll-lock-scrollable>
               <div class="userProfileWrapper-bc userProfileSection-0">
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="username" readonly step="0" value="<?= htmlspecialchars($panelProfileUsername, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Kullanıcı adı *</span></label></div></div>
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="first_name" readonly step="0" value="<?= htmlspecialchars($panelFirstName, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Adı *</span></label></div></div>
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="last_name" readonly step="0" value="<?= htmlspecialchars($panelSurname, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Soyadı *</span></label></div></div>
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="birth_date" readonly step="0" value="<?= htmlspecialchars($panelDob, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Doğum tarihi *</span></label></div><i class="dropdownIcon-bc bc-i-datepicker disabled" aria-hidden="true"></i></div>
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon focused valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="gender" readonly step="0" value="<?= htmlspecialchars($panelGender, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Cinsiyet *</span></label></div></div>
-                <div class="u-i-p-control-item-holder-bc dropdownArrowParent-bc"><div class="form-controls-field-bc country-code"><label class="form-control-label-bc form-control-select-bc inputs"><i class="ftr-lang-bar-flag-bc flag-bc turkey" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Ülke</span><?= htmlspecialchars($panelCountry, ENT_QUOTES, 'UTF-8') ?></label></div></div>
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="city" step="0" value="<?= htmlspecialchars($panelCity, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Şehir</span></label></div></div>
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="address" step="0" value="<?= htmlspecialchars($panelAddress, ENT_QUOTES, 'UTF-8') ?>"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Adres</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="username" readonly step="0" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Kullanıcı adı *</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="first_name" readonly step="0" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Adı *</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="last_name" readonly step="0" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Soyadı *</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="birth_date" readonly step="0" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Doğum tarihi *</span></label></div><i class="dropdownIcon-bc bc-i-datepicker disabled" aria-hidden="true"></i></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc select has-icon focused valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="gender" readonly step="0" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Cinsiyet *</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc dropdownArrowParent-bc"><div class="form-controls-field-bc country-code"><label class="form-control-label-bc form-control-select-bc inputs"><i class="ftr-lang-bar-flag-bc flag-bc" data-mprofile-country-flag aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Ülke</span><span data-mprofile-country></span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="city" step="0" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Şehir</span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="address" step="0" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis">Adres</span></label></div></div>
               </div>
               <div class="userProfileWrapper-bc userProfileSection-1">
                 <div class="u-i-p-control-item-holder-bc"><hr class="passwordAboveSeparator"></div>
@@ -347,14 +276,14 @@ $panelTwofaEnabled = !empty($_SESSION['twofa_enabled']);
         </div>
         <div class="u-i-e-p-p-content-bc u-i-common-content user-profile mprofile-twofa-section" data-mprofile-section="two-factor-authentication" data-scroll-lock-scrollable hidden>
           <div class="profile-security-single profile-security-single--twofa" id="mprofileTwoFactor">
-            <p class="twofa-status" id="mprofile-twofa-status"><?= $panelTwofaEnabled ? 'İki faktörlü kimlik doğrulama etkin.' : 'İki faktörlü kimlik doğrulama kapatıldı' ?></p>
+            <p class="twofa-status" id="mprofile-twofa-status">İki faktörlü kimlik doğrulama durumu yükleniyor...</p>
             <div class="twofa-activate-row">
               <div class="twofa-left-col">
                 <div class="twofa-icon-wrap"><span class="twofa-icon" aria-hidden="true" title="Google Authenticator"><svg class="twofa-icon-ga" viewBox="0 0 48 48" width="28" height="28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" role="img"><title>Google Authenticator</title><path fill="#4285F4" d="M24 24V4A20 20 0 0 1 44 24H24z"/><path fill="#EA4335" d="M24 24h20a20 20 0 0 1-20 20V24z"/><path fill="#FBBC04" d="M24 24v20A20 20 0 0 1 4 24h20z"/><path fill="#34A853" d="M24 24H4A20 20 0 0 1 24 4v20z"/><circle cx="24" cy="24" r="7" fill="#fff"/></svg></span></div>
                 <span class="twofa-activate-label">İKİ FAKTÖRLÜ DOĞRULAMAYI ETKİNLEŞTİR</span>
               </div>
               <label class="twofa-toggle">
-                <input type="checkbox" class="twofa-toggle-input" id="mprofileTwofaToggle" data-csrf-token="<?= htmlspecialchars((string) $_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>" <?= $panelTwofaEnabled ? 'checked' : '' ?> aria-describedby="mprofile-twofa-status">
+                <input type="checkbox" class="twofa-toggle-input" id="mprofileTwofaToggle" data-csrf-token="<?= htmlspecialchars((string) $_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>" disabled aria-describedby="mprofile-twofa-status">
                 <span class="twofa-toggle-slider"></span>
               </label>
             </div>
