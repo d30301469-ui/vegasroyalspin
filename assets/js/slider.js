@@ -1,5 +1,5 @@
 (function () {
-    'use strict'; () {
+    'use strict';
     var MOBILE_BP = 768;
     var AUTO_SLIDE_MS = 6000;
     var sliderBootstrapped = false;
