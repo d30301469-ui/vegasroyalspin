@@ -255,7 +255,7 @@ body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc::afte
 }
 
 /* Guest before-login row: target header shows quick icons, not wallet-connect. */
-body.mobile-site .header-bc.hdr-auth-guest .hdr-guest-shortcuts {
+body.mobile-site .header-bc .hdr-guest-shortcuts {
   display: flex !important;
   align-items: center;
   justify-content: flex-start;
@@ -268,7 +268,7 @@ body.mobile-site .header-bc.hdr-auth-guest .hdr-guest-shortcuts {
   background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
 }
 
-body.mobile-site .header-bc.hdr-auth-guest .guest-shortcut-icon {
+body.mobile-site .header-bc .guest-shortcut-icon {
   width: 22px;
   height: 22px;
   min-width: 22px;
@@ -286,24 +286,24 @@ body.mobile-site .header-bc.hdr-auth-guest .guest-shortcut-icon {
   appearance: none;
 }
 
-body.mobile-site .header-bc.hdr-auth-guest .guest-shortcut-icon::before {
+body.mobile-site .header-bc .guest-shortcut-icon::before {
   font-size: 14px;
   line-height: 1;
 }
 
-body.mobile-site .header-bc.hdr-auth-guest .guest-shortcut-icon.bc-i-wallet {
+body.mobile-site .header-bc .guest-shortcut-icon.bc-i-wallet {
   background: #105431 !important;
   box-shadow: 0 0 6px rgba(22, 255, 0, 0.42);
 }
 
-body.mobile-site .header-bc.hdr-auth-guest .guest-shortcut-wheel {
+body.mobile-site .header-bc .guest-shortcut-wheel {
   border-radius: 50%;
   background:
     url("https://uploads.onecompiler.io/43kt7pygm/43qjwc624/media_18755179_0837470962ad0ff75ac4535e349a57df.gif")
     center / contain no-repeat !important;
 }
 
-body.mobile-site .header-bc.hdr-auth-guest .guest-shortcut-wheel::before {
+body.mobile-site .header-bc .guest-shortcut-wheel::before {
   color: transparent !important;
 }
 
