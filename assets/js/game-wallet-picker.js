@@ -166,9 +166,13 @@
         if (!isLoggedIn()) {
             return Promise.resolve('main');
         }
-        return fetchActiveBonus().then(function (bonus) {
-            return showPicker(bonus);
+        var choice = showPicker(null);
+        fetchActiveBonus().then(function (bonus) {
+            if (bonus && summaryEl && overlay && overlay.style.display === 'flex') {
+                summaryEl.textContent = formatBonusSummary(bonus);
+            }
         });
+        return choice;
     }
 
     function patchWalletParam(url, wallet) {
