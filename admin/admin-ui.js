@@ -219,9 +219,18 @@
                 '<header class="admin-modal-head"><h2></h2><button type="button" class="admin-modal-close" data-admin-modal-close aria-label="Kapat">×</button></header>' +
                 '<div class="admin-modal-body"></div></section>';
             activeModal.querySelector('h2').textContent = title || 'İşlem';
-            activeModal.querySelector('.admin-modal-body').innerHTML = html;
+            var modalBody = activeModal.querySelector('.admin-modal-body');
+            modalBody.innerHTML = html;
             document.body.appendChild(activeModal);
             document.body.classList.add('has-admin-modal');
+            Array.prototype.slice.call(modalBody.querySelectorAll('script')).forEach(function (script) {
+                var executable = document.createElement('script');
+                Array.prototype.slice.call(script.attributes).forEach(function (attribute) {
+                    executable.setAttribute(attribute.name, attribute.value);
+                });
+                executable.text = script.textContent || '';
+                script.parentNode.replaceChild(executable, script);
+            });
         }
 
         document.addEventListener('click', function (event) {

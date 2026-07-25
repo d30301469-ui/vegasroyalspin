@@ -61,7 +61,11 @@ final class PromotionMediaGuard
         try {
             self::ensureColumn($pdo, 'link_url', 'VARCHAR(700) NULL AFTER image_url');
             self::ensureColumn($pdo, 'category', 'VARCHAR(60) NULL AFTER type');
+            self::ensureColumn($pdo, 'long_description', 'MEDIUMTEXT NULL AFTER description');
+            self::ensureColumn($pdo, 'terms', 'MEDIUMTEXT NULL AFTER long_description');
+            self::ensureColumn($pdo, 'general_rules', 'MEDIUMTEXT NULL AFTER terms');
             self::ensureColumn($pdo, 'bonus_rules', 'TEXT NULL AFTER bonus_amount');
+            self::ensureBonusTypeColumn($pdo);
             self::widenVarcharColumn($pdo, 'image_url', 700);
             self::widenVarcharColumn($pdo, 'link_url', 700);
         } catch (Throwable) {
@@ -406,6 +410,25 @@ final class PromotionMediaGuard
         }
 
         $pdo->exec("ALTER TABLE promotions MODIFY COLUMN {$column} VARCHAR({$minLength}) NULL");
+    }
+
+    private static function ensureBonusTypeColumn(PDO $pdo): void
+    {
+        $stmt = $pdo->query(
+            "SELECT DATA_TYPE FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions' AND COLUMN_NAME = 'bonus_type'
+             LIMIT 1"
+        );
+        $dataType = strtolower((string) ($stmt ? $stmt->fetchColumn() : ''));
+        if ($dataType === 'varchar') {
+            return;
+        }
+        if ($dataType === '') {
+            self::ensureColumn($pdo, 'bonus_type', 'VARCHAR(60) NULL AFTER link_url');
+            return;
+        }
+
+        $pdo->exec('ALTER TABLE promotions MODIFY COLUMN bonus_type VARCHAR(60) NULL');
     }
 
     private static function normalizeToUploadsRelative(string $path): string

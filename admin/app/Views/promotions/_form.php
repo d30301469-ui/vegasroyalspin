@@ -33,20 +33,24 @@ $currentImage = (string) ($promotion['image_url'] ?? '');
             <textarea id="promoDesc" class="input" name="description" rows="4" style="resize:vertical;height:100px"><?= $val('description') ?></textarea>
         </div>
 
+        <div style="grid-column:1/-1;margin-top:6px;padding-top:12px;border-top:2px solid var(--border)">
+            <h3 style="margin:0 0 4px;font-size:15px;font-weight:700">Frontend Bonus Detayları</h3>
+            <small style="color:#667085">Bu üç alan frontend promosyon detayında ayrı başlıklar altında gösterilir.</small>
+        </div>
+
         <div class="field" style="grid-column:1/-1">
-            <label class="field-label" for="promoLongDescription">Bonustan nasıl faydalanabilirim?</label>
+            <label class="field-label" for="promoLongDescription">1. Bonustan nasıl faydalanabilirim?</label>
             <textarea id="promoLongDescription" class="input" name="long_description" rows="4" style="resize:vertical;height:100px"><?= $val('long_description') ?></textarea>
         </div>
 
         <div class="field" style="grid-column:1/-1">
-            <label class="field-label" for="promoTerms">Bonus çevrim şartı</label>
+            <label class="field-label" for="promoTerms">2. Bonus çevrim şartı</label>
             <textarea id="promoTerms" class="input" name="terms" rows="4" style="resize:vertical;height:100px"><?= $val('terms') ?></textarea>
         </div>
 
         <div class="field" style="grid-column:1/-1">
-            <label class="field-label" for="promoGeneralRules">Bonus genel kuralları</label>
+            <label class="field-label" for="promoGeneralRules">3. Bonus genel kuralları</label>
             <textarea id="promoGeneralRules" class="input" name="general_rules" rows="4" style="resize:vertical;height:100px"><?= $val('general_rules') ?></textarea>
-            <small style="display:block;margin-top:6px;color:#667085">Bu üç alan frontend promosyon detayında ayrı başlıklar altında gösterilir.</small>
         </div>
 
         <div class="field">
@@ -91,14 +95,14 @@ $currentImage = (string) ($promotion['image_url'] ?? '');
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:4px 0">
         <?php
         $currentBonusType = (string) ($promotion['bonus_type'] ?? '');
-        $displayBonusType = ($currentBonusType === 'fixed') ? '' : $currentBonusType;
+        $displayBonusType = $currentBonusType !== '' ? $currentBonusType : 'fixed';
         ?>
         <div class="field">
             <label class="field-label" for="promoBonusType">Bonus tipi <span style="color:var(--danger)">*</span></label>
             <select id="promoBonusType" class="select" name="bonus_type" onchange="updateBonusForm()">
-                <option value="">Sabit tutar — promosyona özel TL miktarı</option>
-                <option value="percentage">Yüzdesel — toplam onaylı yatırımın % değeri</option>
-                <option value="first_deposit_pct">İlk Yatırım Yüzdesi — sadece ilk yatırımın % değeri</option>
+                <option value="fixed"<?= ($displayBonusType === 'fixed' ? ' selected' : '') ?>>Sabit tutar — promosyona özel TL miktarı</option>
+                <option value="percentage"<?= ($displayBonusType === 'percentage' ? ' selected' : '') ?>>Yüzdesel — toplam onaylı yatırımın % değeri</option>
+                <option value="first_deposit_pct"<?= ($displayBonusType === 'first_deposit_pct' ? ' selected' : '') ?>>İlk Yatırım Yüzdesi — sadece ilk yatırımın % değeri</option>
             </select>
             <small id="promoBonusTypeHint" style="display:block;margin-top:6px;color:#667085"></small>
         </div>

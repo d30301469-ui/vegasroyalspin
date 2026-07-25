@@ -81,7 +81,7 @@ final class AdminPromotionController extends AdminController
     {
         $this->requirePermission('promotions');
         self::ensurePromotionSchema();
-        $this->view('promotions/form', [
+        $data = [
             'title' => 'Promosyon Ekle',
             'active' => 'promotions',
             'crumbs' => 'Marketing | Promotions | Ekle',
@@ -90,7 +90,15 @@ final class AdminPromotionController extends AdminController
             'categoryOptions' => self::CATEGORY_OPTIONS,
             'libraryImages' => PromotionMediaGuard::listLibraryImages(),
             'flash' => $this->pullFlash(),
-        ]);
+        ];
+
+        if ($this->isModalRequest()) {
+            $data['isModal'] = true;
+            $this->partial('promotions/_form', $data);
+            return;
+        }
+
+        $this->view('promotions/form', $data);
     }
 
     public function store(): void
@@ -124,7 +132,7 @@ final class AdminPromotionController extends AdminController
                 'sort_order' => (int) ($_POST['sort_order'] ?? 0),
                 'image_url' => $imageUrl,
                 'link_url' => $linkUrl,
-                'bonus_type' => trim((string) ($_POST['bonus_type'] ?? '')) === 'fixed' ? '' : trim((string) ($_POST['bonus_type'] ?? '')),
+                'bonus_type' => self::normalizeBonusType((string) ($_POST['bonus_type'] ?? 'fixed')),
                 'bonus_amount' => (float) ($_POST['bonus_amount'] ?? 0),
                 'bonus_rules' => trim((string) ($_POST['bonus_rules'] ?? '')),
                 'wagering_multiplier' => (float) ($_POST['wagering_multiplier'] ?? 0),
@@ -217,7 +225,7 @@ final class AdminPromotionController extends AdminController
                 'sort_order' => (int) ($_POST['sort_order'] ?? 0),
                 'image_url' => $imageUrl,
                 'link_url' => $linkUrl,
-                'bonus_type' => trim((string) ($_POST['bonus_type'] ?? '')) === 'fixed' ? '' : trim((string) ($_POST['bonus_type'] ?? '')),
+                'bonus_type' => self::normalizeBonusType((string) ($_POST['bonus_type'] ?? 'fixed')),
                 'bonus_amount' => (float) ($_POST['bonus_amount'] ?? 0),
                 'bonus_rules' => trim((string) ($_POST['bonus_rules'] ?? '')),
                 'wagering_multiplier' => (float) ($_POST['wagering_multiplier'] ?? 0),
@@ -262,6 +270,15 @@ final class AdminPromotionController extends AdminController
         }
 
         return $imageUrl;
+    }
+
+    private static function normalizeBonusType(string $bonusType): string
+    {
+        $bonusType = trim($bonusType);
+
+        return in_array($bonusType, ['fixed', 'percentage', 'first_deposit_pct'], true)
+            ? $bonusType
+            : 'fixed';
     }
 
     /**

@@ -7,6 +7,11 @@ $perPage = (int) ($perPage ?? 25);
 $totalPages = (int) ($totalPages ?? 1);
 $search = (string) ($search ?? '');
 $flash = trim((string) ($flash ?? ''));
+$flashIsError = str_contains($flash, 'başarısız')
+    || str_contains($flash, 'Geçersiz')
+    || str_contains($flash, 'eklenemedi')
+    || str_contains($flash, 'güncellenemedi')
+    || str_contains($flash, 'zorunludur');
 
 $text = static fn (mixed $v): string => htmlspecialchars((string) ($v ?? ''), ENT_QUOTES, 'UTF-8');
 $money = static fn (mixed $v): string => '₺' . number_format((float) $v, 2, ',', '.');
@@ -26,12 +31,18 @@ $badgeClass = static function (string $v): string {
         <p class="hero-sub">Aktif promosyonları yönetin, yeni promosyon ekleyin, kullanıcılara bonus atayın.</p>
     </div>
     <div class="hero-actions">
-        <a class="btn btn--primary" href="<?= $text(AdminAuth::url('/promotion/create')) ?>">Promosyon ekle</a>
+        <?php $createUrl = AdminAuth::url('/promotion/create'); ?>
+        <a
+            class="btn btn--primary"
+            href="<?= $text($createUrl) ?>"
+            data-admin-modal-url="<?= $text($createUrl) ?>"
+            data-admin-modal-title="Yeni promosyon ekle"
+        >Promosyon ekle</a>
     </div>
 </div>
 
 <?php if ($flash !== ''): ?>
-    <div class="alert alert--<?= str_contains($flash, 'başarısız') || str_contains($flash, 'Geçersiz') ? 'danger' : 'success' ?>"><?= $text($flash) ?></div>
+    <div class="alert alert--<?= $flashIsError ? 'danger' : 'success' ?>"><?= $text($flash) ?></div>
 <?php endif; ?>
 
 <section class="card admin-compact-card">
