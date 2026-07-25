@@ -32,6 +32,9 @@
         var headers = extra || {};
         var csrf = (global.__CSRF_TOKEN__ || '').trim();
         if (csrf) headers['X-CSRF-Token'] = csrf;
+        // JWT Bearer token: bonus claim için zorunlu (CSRF check atlanır)
+        var jwt = (Shared.getMemberJwt && Shared.getMemberJwt()) || '';
+        if (jwt) headers['Authorization'] = 'Bearer ' + jwt;
         return headers;
     }
     var PROMO_CLAIM_URL = apiUrl('/api/v2/bonus-claim');
@@ -384,7 +387,7 @@
             claimStatus.textContent = '';
             claimStatus.classList.remove('is-error', 'is-success');
         }
-        var logged = !!global.__USER_LOGGED_IN__;
+        var logged = !!(global.__USER_LOGGED_IN__ && (Shared.getMemberJwt ? Shared.getMemberJwt() : false));
         if (claimSubmit) {
             claimSubmit.disabled = !logged;
             claimSubmit.hidden = !logged;
