@@ -1,5 +1,5 @@
 (function () {
-    'use strict'; () {
+    'use strict';
     // If mobile navigation.js is already managing the menu, delegate to it
     // to avoid double-binding and scroll lock races.
     if (window.__MOBILE_NAV_ACTIVE__) {
