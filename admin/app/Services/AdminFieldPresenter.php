@@ -8,6 +8,7 @@ final class AdminFieldPresenter
     {
         $label = match ($column) {
             'username' => in_array($moduleKey, ['deposits', 'withdrawals'], true) ? 'Üye Ad Soyad' : 'Kullanıcı',
+            'full_name' => 'İsim Soyisim',
             'image_url' => 'Resim',
             'game_id' => 'Oyun ID',
             'game_name' => 'Oyun Adı',

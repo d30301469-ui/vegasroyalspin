@@ -33,6 +33,17 @@ final class AdminModuleController extends AdminController
 
         try {
             $columns = $this->tables->columns($table);
+            if ($moduleKey === 'active-bonuses') {
+                $columns[] = [
+                    'name' => 'full_name',
+                    'type' => 'varchar(201)',
+                    'data_type' => 'varchar',
+                    'nullable' => 'YES',
+                    'column_key' => '',
+                    'extra' => '',
+                    'column_default' => null,
+                ];
+            }
             $rows = $this->tables->rows($table, $page, $perPage, $search, $fixedWhere);
             $total = $this->tables->countRows($table, $search, $fixedWhere);
             $primaryKey = $this->tables->primaryKey($table);

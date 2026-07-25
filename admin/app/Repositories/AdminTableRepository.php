@@ -76,7 +76,9 @@ final class AdminTableRepository
         $stmt->execute();
         $rows = $stmt->fetchAll();
 
-        return $table === 'megapayz_transactions' ? $this->withUserFullNames($rows) : $rows;
+        return in_array($table, ['megapayz_transactions', 'user_active_bonuses'], true)
+            ? $this->withUserFullNames($rows)
+            : $rows;
     }
 
     public function find(string $table, string $primaryKey, string $id): ?array
@@ -467,7 +469,7 @@ final class AdminTableRepository
                 $params[$param] = $search;
             }
         }
-        if ($table === 'megapayz_transactions') {
+        if (in_array($table, ['megapayz_transactions', 'user_active_bonuses'], true)) {
             try {
                 $stmt = AdminDatabase::pdo()->prepare(
                     "SELECT id
@@ -543,7 +545,10 @@ final class AdminTableRepository
             foreach ($rows as &$row) {
                 $userId = (int) ($row['user_id'] ?? 0);
                 if ($userId > 0 && isset($users[$userId]) && trim($users[$userId]) !== '') {
-                    $row['username'] = $users[$userId];
+                    $row['full_name'] = $users[$userId];
+                    if (array_key_exists('username', $row)) {
+                        $row['username'] = $users[$userId];
+                    }
                 }
             }
             unset($row);

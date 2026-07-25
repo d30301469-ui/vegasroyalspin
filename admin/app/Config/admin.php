@@ -69,8 +69,8 @@ return [
             'table' => 'user_active_bonuses',
             'active' => 'datatable',
             'crumbs' => 'Members | Active Bonuses',
-            'columns' => ['id', 'user_id', 'name', 'initial_amount', 'current_bonus_balance', 'status', 'deadline', 'created_at'],
-            'search_placeholder' => 'Aktif bonus ara...',
+            'columns' => ['id', 'user_id', 'full_name', 'name', 'initial_amount', 'current_bonus_balance', 'status', 'deadline', 'created_at'],
+            'search_placeholder' => 'Aktif bonus veya üye adı soyadı ara...',
         ],
         'frozen-accounts' => [
             'title' => 'Dondurulan Hesaplar',

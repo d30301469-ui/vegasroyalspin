@@ -731,7 +731,7 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                 <?php else: ?>
                                     <span class="admin-game-thumb-placeholder">Yok</span>
                                 <?php endif; ?>
-                            <?php elseif (in_array($columnName, ['username', 'email', 'name', 'title'], true)): ?>
+                            <?php elseif (in_array($columnName, ['username', 'full_name', 'email', 'name', 'title'], true)): ?>
                                 <div class="data-cell-user" style="min-width:0">
                                     <div class="av ma-<?= ($index % 6) + 1 ?>"><?= htmlspecialchars(strtoupper(substr($textValue, 0, 2)), ENT_QUOTES, 'UTF-8') ?></div>
                                     <div class="data-cell-user-meta" style="min-width:0">
