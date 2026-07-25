@@ -259,6 +259,8 @@
     panel.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
     panel.setAttribute('aria-hidden', 'false');
+    var toggleButton = document.getElementById('toggleButton');
+    if (toggleButton) toggleButton.setAttribute('aria-expanded', 'true');
     document.body.classList.add('mprofile-open');
     document.body.classList.add('overlay-sliding-is-visible', 'overlaySlidingIsVisible');
     isOpen = true;
@@ -302,6 +304,8 @@
     panel.classList.remove('is-open');
     overlay.setAttribute('aria-hidden', 'true');
     panel.setAttribute('aria-hidden', 'true');
+    var toggleButton = document.getElementById('toggleButton');
+    if (toggleButton) toggleButton.setAttribute('aria-expanded', 'false');
     document.body.classList.remove('mprofile-open');
     document.body.classList.remove('overlay-sliding-is-visible', 'overlaySlidingIsVisible');
     isOpen = false;
