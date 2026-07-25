@@ -74,6 +74,13 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
 <html lang="tr" class="<?= htmlspecialchars($mobileHtmlClass, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
+  <script>
+    try {
+      if (localStorage.getItem('metropol_member_jwt')) {
+        document.documentElement.classList.add('member-session-hint');
+      }
+    } catch (e) {}
+  </script>
   <base href="/">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, maximum-scale=1, viewport-fit=cover">

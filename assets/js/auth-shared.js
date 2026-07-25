@@ -354,10 +354,12 @@
             try {
                 if (t === '') {
                     w.localStorage.removeItem(JWT_KEY);
+                    document.documentElement.classList.remove('member-session-hint');
                     w.__HAS_MEMBER_JWT__ = false;
                     persistMemberJwtCookie('');
                 } else {
                     w.localStorage.setItem(JWT_KEY, t);
+                    document.documentElement.classList.add('member-session-hint');
                     w.__MEMBER_LOGIN_AT__ = Date.now();
                     w.__HAS_MEMBER_JWT__ = true;
                     persistMemberJwtCookie(t);

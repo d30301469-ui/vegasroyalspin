@@ -58,6 +58,18 @@ body.mobile-site #root.layout-bc .layout-header-holder-bc .header-bc {
   background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
 }
 
+html.member-session-hint body.mobile-site .header-bc.hdr-auth-guest .hdr-main-content-bc > .hdr-user-bc,
+html.member-session-hint body.mobile-site .header-bc.hdr-auth-guest .hdr-guest-shortcuts {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html.member-session-hint body.mobile-site .header-bc.hdr-auth-guest .hdr-guest-shortcuts {
+  height: 40px !important;
+  min-height: 40px !important;
+  padding-block: 0 !important;
+}
+
 body.mobile-site #root.layout-bc .hdr-navigation-scrollable-bc-holder,
 body.mobile-site #root.layout-bc .hdr-additional-info,
 body.mobile-site #root.layout-bc .hdr-crypto-content {
