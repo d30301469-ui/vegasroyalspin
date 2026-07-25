@@ -351,6 +351,7 @@
         },
         setMemberJwt: function (token) {
             var t = String(token || '').trim();
+            var previous = this.getMemberJwt();
             try {
                 if (t === '') {
                     w.localStorage.removeItem(JWT_KEY);
@@ -367,6 +368,11 @@
                         w.__USER_LOGGED_IN__ = true;
                     }
                     emitJwtReady();
+                }
+                if (previous !== t) {
+                    w.dispatchEvent(new CustomEvent('metropol:member-jwt-changed', {
+                        detail: { authenticated: t !== '' }
+                    }));
                 }
             } catch (e2) {
                 /* ignore */
