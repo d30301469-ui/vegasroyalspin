@@ -398,11 +398,22 @@
     function setContent(data) {
         if (titleEl) titleEl.textContent = data.title || '';
         if (imgEl) {
-            imgEl.decoding = 'async';
-            imgEl.onerror = function () {
+            // Önceki onerror/error listener'ları temizle
+            imgEl.onerror = null;
+            // addEventListener ile daha güvenilir hata yakalama (property overwrite sorunlarına karşı)
+            var fallbackUrl = data.imageFallbackUrl || '';
+            var errorHandler = function onBonusImgError() {
+                imgEl.removeEventListener('error', errorHandler);
                 imgEl.onerror = null;
-                if (data.imageFallbackUrl) imgEl.src = data.imageFallbackUrl;
+                if (fallbackUrl) {
+                    imgEl.src = fallbackUrl;
+                }
             };
+            imgEl.addEventListener('error', errorHandler, { once: true });
+            // onerror property'yi de yedek olarak bağla
+            imgEl.onerror = errorHandler;
+            // Önce src'yi temizle, sonra yeni URL'yi ata (cache'lenmiş hatalı state'i kırmak için)
+            imgEl.removeAttribute('src');
             imgEl.src = data.imageUrl || '';
             imgEl.alt = data.title || 'Bonus görseli';
         }
@@ -459,7 +470,10 @@
             titleEl.textContent = '';
         }
         if (imgEl) {
+            imgEl.onerror = null;
             imgEl.removeAttribute('src');
+            // src property'yi de boş string yap ki cached broken state kırılsın
+            try { imgEl.src = ''; } catch (ignore) {}
             imgEl.alt = '';
         }
         if (accordionList) {
