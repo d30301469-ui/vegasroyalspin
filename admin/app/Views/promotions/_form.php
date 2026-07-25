@@ -33,6 +33,22 @@ $currentImage = (string) ($promotion['image_url'] ?? '');
             <textarea id="promoDesc" class="input" name="description" rows="4" style="resize:vertical;height:100px"><?= $val('description') ?></textarea>
         </div>
 
+        <div class="field" style="grid-column:1/-1">
+            <label class="field-label" for="promoLongDescription">Bonustan nasıl faydalanabilirim?</label>
+            <textarea id="promoLongDescription" class="input" name="long_description" rows="4" style="resize:vertical;height:100px"><?= $val('long_description') ?></textarea>
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
+            <label class="field-label" for="promoTerms">Bonus çevrim şartı</label>
+            <textarea id="promoTerms" class="input" name="terms" rows="4" style="resize:vertical;height:100px"><?= $val('terms') ?></textarea>
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
+            <label class="field-label" for="promoGeneralRules">Bonus genel kuralları</label>
+            <textarea id="promoGeneralRules" class="input" name="general_rules" rows="4" style="resize:vertical;height:100px"><?= $val('general_rules') ?></textarea>
+            <small style="display:block;margin-top:6px;color:#667085">Bu üç alan frontend promosyon detayında ayrı başlıklar altında gösterilir.</small>
+        </div>
+
         <div class="field">
             <label class="field-label" for="promoType">Kategori <span style="color:var(--danger)">*</span></label>
             <select id="promoType" class="select" name="type" required>

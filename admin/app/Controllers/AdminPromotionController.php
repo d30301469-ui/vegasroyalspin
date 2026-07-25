@@ -110,11 +110,14 @@ final class AdminPromotionController extends AdminController
             $imageUrl = $uploadedImageUrl ?? self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
             $linkUrl = self::normalizePromotionLinkUrl((string) ($_POST['link_url'] ?? ''));
             AdminDatabase::pdo()->prepare(
-                'INSERT INTO promotions (title, description, type, category, status, sort_order, image_url, link_url, bonus_type, bonus_amount, bonus_rules, wagering_multiplier, created_at, updated_at)
-                 VALUES (:title, :description, :type, :category, :status, :sort_order, :image_url, :link_url, :bonus_type, :bonus_amount, :bonus_rules, :wagering_multiplier, NOW(), NOW())'
+                'INSERT INTO promotions (title, description, long_description, terms, general_rules, type, category, status, sort_order, image_url, link_url, bonus_type, bonus_amount, bonus_rules, wagering_multiplier, created_at, updated_at)
+                 VALUES (:title, :description, :long_description, :terms, :general_rules, :type, :category, :status, :sort_order, :image_url, :link_url, :bonus_type, :bonus_amount, :bonus_rules, :wagering_multiplier, NOW(), NOW())'
             )->execute([
                 'title' => $title,
                 'description' => trim((string) ($_POST['description'] ?? '')),
+                'long_description' => trim((string) ($_POST['long_description'] ?? '')),
+                'terms' => trim((string) ($_POST['terms'] ?? '')),
+                'general_rules' => trim((string) ($_POST['general_rules'] ?? '')),
                 'type' => trim((string) ($_POST['type'] ?? '')),
                 'category' => trim((string) ($_POST['category'] ?? '')),
                 'status' => trim((string) ($_POST['status'] ?? 'active')),
@@ -196,7 +199,8 @@ final class AdminPromotionController extends AdminController
             $imageUrl = $uploadedImageUrl ?? self::normalizePromotionImageUrl((string) ($_POST['image_url'] ?? ''));
             $linkUrl = self::normalizePromotionLinkUrl((string) ($_POST['link_url'] ?? ''));
             AdminDatabase::pdo()->prepare(
-                'UPDATE promotions SET title = :title, description = :description, type = :type, category = :category,
+                'UPDATE promotions SET title = :title, description = :description, long_description = :long_description,
+                 terms = :terms, general_rules = :general_rules, type = :type, category = :category,
                  status = :status, sort_order = :sort_order, image_url = :image_url, link_url = :link_url,
                  bonus_type = :bonus_type, bonus_amount = :bonus_amount, bonus_rules = :bonus_rules,
                  wagering_multiplier = :wagering_multiplier, updated_at = NOW()
@@ -204,6 +208,9 @@ final class AdminPromotionController extends AdminController
             )->execute([
                 'title' => $title,
                 'description' => trim((string) ($_POST['description'] ?? '')),
+                'long_description' => trim((string) ($_POST['long_description'] ?? '')),
+                'terms' => trim((string) ($_POST['terms'] ?? '')),
+                'general_rules' => trim((string) ($_POST['general_rules'] ?? '')),
                 'type' => trim((string) ($_POST['type'] ?? '')),
                 'category' => trim((string) ($_POST['category'] ?? '')),
                 'status' => trim((string) ($_POST['status'] ?? 'active')),

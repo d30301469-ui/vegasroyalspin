@@ -12,39 +12,19 @@ if (!function_exists('promotions_page_sections_from_api')) {
      */
     function promotions_page_sections_from_api(array $p): array
     {
-        $out = [];
-        $long = trim((string) ($p['long_description'] ?? ''));
-        if ($long !== '') {
-            $out[] = [
-                'title'   => 'KAMPANYA DETAYI',
-                'content' => '<p>' . nl2br(htmlspecialchars($long, ENT_QUOTES, 'UTF-8')) . '</p>',
-            ];
-        }
-        $terms = trim((string) ($p['terms'] ?? ''));
-        if ($terms !== '') {
-            $out[] = [
-                'title'   => 'BONUS ŞARTLARI',
-                'content' => '<p>' . nl2br(htmlspecialchars($terms, ENT_QUOTES, 'UTF-8')) . '</p>',
-            ];
-        }
-        $gen = trim((string) ($p['general_rules'] ?? ''));
-        if ($gen !== '') {
-            $out[] = [
-                'title'   => 'GENEL KURALLAR',
-                'content' => '<p>' . nl2br(htmlspecialchars($gen, ENT_QUOTES, 'UTF-8')) . '</p>',
-            ];
-        }
-        if ($out === []) {
-            $desc = trim((string) ($p['description'] ?? ''));
-            if ($desc !== '') {
-                $out[] = [
-                    'title'   => 'ÖZET',
-                    'content' => '<p>' . nl2br(htmlspecialchars($desc, ENT_QUOTES, 'UTF-8')) . '</p>',
-                ];
-            }
-        }
+        $description = trim((string) ($p['description'] ?? ''));
+        $sectionValues = [
+            ['BONUSTAN NASIL FAYDALANABİLİRİM', trim((string) ($p['long_description'] ?? '')) ?: $description],
+            ['BONUS ÇEVRİM ŞARTI', trim((string) ($p['terms'] ?? ''))],
+            ['BONUS GENEL KURALLARI', trim((string) ($p['general_rules'] ?? ''))],
+        ];
 
-        return $out;
+        return array_map(static function (array $section): array {
+            return [
+                'title' => $section[0],
+                'content' => '<p>' . nl2br(htmlspecialchars($section[1], ENT_QUOTES, 'UTF-8')) . '</p>',
+            ];
+        }, $sectionValues);
     }
 }
 
