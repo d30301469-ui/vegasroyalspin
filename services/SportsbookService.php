@@ -21,6 +21,7 @@ final class SportsbookService
     private const DEFAULT_API_BASE = 'https://api.ilomhzji.win';
     public const VENDOR_CODE       = 'sports-betby';
     public const GAME_CODE         = 'sports';
+    private static bool $schemaBootstrapped = false;
     private const SIGN_HEADERS     = [
         'HTTP_X_SIGNATURE',
         'HTTP_X_SIGN',
@@ -34,27 +35,17 @@ final class SportsbookService
 
     public static function bootstrap(PDO $pdo): void
     {
-        if ((string) getenv('METROPOL_RUNTIME_PROVIDER_BOOTSTRAP') !== '1'
-            || !self::runtimeSchemaChangesAllowed()) {
+        if (self::$schemaBootstrapped) {
             return;
         }
+
         self::createSchema($pdo);
         self::ensureDefaultConfig($pdo);
-    }
-
-    private static function runtimeSchemaChangesAllowed(): bool
-    {
-        $env = strtolower(trim((string) (getenv('APP_ENV') ?: 'production')));
-        return in_array($env, ['development', 'local', 'dev', 'testing', 'test'], true)
-            || (string) getenv('ALLOW_RUNTIME_MIGRATIONS') === '1';
+        self::$schemaBootstrapped = true;
     }
 
     public static function createSchema(PDO $pdo): void
     {
-        if (!self::runtimeSchemaChangesAllowed()) {
-            throw new RuntimeException('Runtime provider schema changes are disabled in production.');
-        }
-
         $pdo->exec(
             "CREATE TABLE IF NOT EXISTS sportsbook_config (
                 id                   TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -164,6 +155,7 @@ final class SportsbookService
     public static function config(PDO $pdo): array
     {
         try {
+            self::bootstrap($pdo);
             $row = $pdo->query("SELECT * FROM sportsbook_config WHERE id = 1 LIMIT 1")?->fetch(PDO::FETCH_ASSOC);
             return is_array($row) ? $row : [];
         } catch (Throwable) {
@@ -173,6 +165,8 @@ final class SportsbookService
 
     public static function updateConfig(PDO $pdo, array $data): void
     {
+        self::bootstrap($pdo);
+
         $allowed = [
             'agent_code', 'api_token', 'api_base_url', 'site_endpoint', 'api_mode',
             'sign_private_key', 'verify_public_key', 'currency', 'lang', 'timezone', 'callback_allowed_ips',
