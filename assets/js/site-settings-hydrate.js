@@ -130,10 +130,66 @@
         }
     }
 
+    function settingsRoot(settings) {
+        if (!settings || typeof settings !== 'object') {
+            return null;
+        }
+        if (settings.site_settings && typeof settings.site_settings === 'object') {
+            return settings.site_settings;
+        }
+        return settings;
+    }
+
+    function truthyFlag(value) {
+        if (value === true || value === 1 || value === '1') {
+            return true;
+        }
+        var normalized = String(value == null ? '' : value).trim().toLowerCase();
+        return normalized === 'true' || normalized === 'on' || normalized === 'yes';
+    }
+
+    /**
+     * Turnstile widget bayraklari sayfa bootstrap'inden gelir; stale CMS cache
+     * nedeniyle kapali kalabiliyor. API hydrate sonrasi globals'i senkronize et.
+     */
+    function syncTurnstile(settings) {
+        var root = settingsRoot(settings);
+        if (!root) {
+            return;
+        }
+        var enabled = truthyFlag(root.turnstile_enabled != null ? root.turnstile_enabled : settings.turnstile_enabled);
+        var siteKey = text(root.turnstile_site_key != null ? root.turnstile_site_key : settings.turnstile_site_key);
+        var prevEnabled = w.__TURNSTILE_ENABLED__ === true || w.__TURNSTILE_ENABLED__ === 1 || w.__TURNSTILE_ENABLED__ === '1';
+        var prevKey = typeof w.__TURNSTILE_SITE_KEY__ === 'string' ? w.__TURNSTILE_SITE_KEY__.trim() : '';
+        w.__TURNSTILE_ENABLED__ = enabled ? 1 : 0;
+        w.__TURNSTILE_SITE_KEY__ = siteKey;
+        // Secret asla client'a tasinmasin.
+        if (w.__SITE_SETTINGS__ && typeof w.__SITE_SETTINGS__ === 'object') {
+            try {
+                delete w.__SITE_SETTINGS__.turnstile_secret_key;
+                if (w.__SITE_SETTINGS__.site_settings && typeof w.__SITE_SETTINGS__.site_settings === 'object') {
+                    delete w.__SITE_SETTINGS__.site_settings.turnstile_secret_key;
+                }
+            } catch (eDel) {
+                /* ignore */
+            }
+        }
+        // Stale bootstrap false idi, API true geldiyse acik modalda widget'i yeniden dene.
+        if (enabled && siteKey !== '' && (!prevEnabled || prevKey !== siteKey)) {
+            if (typeof w.__ensureLoginTurnstileWidget === 'function') {
+                w.setTimeout(w.__ensureLoginTurnstileWidget, 50);
+            }
+            if (typeof w.__ensureRegisterTurnstileWidget === 'function') {
+                w.setTimeout(w.__ensureRegisterTurnstileWidget, 50);
+            }
+        }
+    }
+
     function apply(settings) {
         if (!settings || typeof settings !== 'object') {
             return;
         }
+        syncTurnstile(settings);
         applyLogo(pickLogo(settings), pickAnimatedLogo(settings), pickName(settings));
         applyTitle(pickTitle(settings));
         applyFavicon(pickFavicon(settings));

@@ -731,10 +731,36 @@
             }
         },
         turnstileEnabled: function () {
-            return w.__TURNSTILE_ENABLED__ === true || w.__TURNSTILE_ENABLED__ === 1 || w.__TURNSTILE_ENABLED__ === '1';
+            if (w.__TURNSTILE_ENABLED__ === true || w.__TURNSTILE_ENABLED__ === 1 || w.__TURNSTILE_ENABLED__ === '1') {
+                return true;
+            }
+            // Hydrate / API sonrasi __SITE_SETTINGS__ guncel olabilir.
+            var settings = w.__SITE_SETTINGS__;
+            if (settings && typeof settings === 'object') {
+                var root = (settings.site_settings && typeof settings.site_settings === 'object')
+                    ? settings.site_settings
+                    : settings;
+                var value = root.turnstile_enabled;
+                if (value === true || value === 1 || value === '1') {
+                    return true;
+                }
+                var normalized = String(value == null ? '' : value).trim().toLowerCase();
+                return normalized === 'true' || normalized === 'on' || normalized === 'yes';
+            }
+            return false;
         },
         turnstileSiteKey: function () {
-            return typeof w.__TURNSTILE_SITE_KEY__ === 'string' ? w.__TURNSTILE_SITE_KEY__.trim() : '';
+            if (typeof w.__TURNSTILE_SITE_KEY__ === 'string' && w.__TURNSTILE_SITE_KEY__.trim() !== '') {
+                return w.__TURNSTILE_SITE_KEY__.trim();
+            }
+            var settings = w.__SITE_SETTINGS__;
+            if (settings && typeof settings === 'object') {
+                var root = (settings.site_settings && typeof settings.site_settings === 'object')
+                    ? settings.site_settings
+                    : settings;
+                return String(root.turnstile_site_key || settings.turnstile_site_key || '').trim();
+            }
+            return '';
         },
         hasTurnstile: function () {
             return this.turnstileEnabled() && this.turnstileSiteKey() !== '';

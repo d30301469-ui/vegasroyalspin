@@ -567,6 +567,13 @@ final class ApiSiteSettings
         $resetInputBorder = trim((string) ($settings['reset_password_input_border_color'] ?? ''));
         $resetButtonTextColor = trim((string) ($settings['reset_password_button_text_color'] ?? ''));
 
+        $turnstileEnabled = !in_array(
+            strtolower(trim((string) ($settings['turnstile_enabled'] ?? '0'))),
+            ['0', '', 'false', 'off', 'no'],
+            true
+        );
+        $turnstileSiteKey = trim((string) ($settings['turnstile_site_key'] ?? ''));
+
         $normalizedSettings = array_merge($settings, [
             'site_adi' => $siteName,
             'site_name' => $siteName,
@@ -588,7 +595,11 @@ final class ApiSiteSettings
             'reset_password_hero_bottom_border_color' => $resetHeroBottomBorder,
             'reset_password_input_border_color' => $resetInputBorder,
             'reset_password_button_text_color' => $resetButtonTextColor,
+            'turnstile_enabled' => $turnstileEnabled ? 1 : 0,
+            'turnstile_site_key' => $turnstileSiteKey,
         ]);
+        // Public payload'a secret asla girmesin.
+        unset($normalizedSettings['turnstile_secret_key']);
 
         $payload = array_merge($normalizedSettings, [
             'site_settings' => $normalizedSettings,

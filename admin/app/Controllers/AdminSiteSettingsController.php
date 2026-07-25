@@ -63,6 +63,10 @@ final class AdminSiteSettingsController extends AdminController
                 continue;
             }
             $value = trim((string) ($_POST[$name] ?? ''));
+            // Password alanlari bos birakilirsa mevcut degeri koru (secret'i silme).
+            if ($type === 'password' && $value === '') {
+                continue;
+            }
             $updates[] = '`' . str_replace('`', '``', $name) . '` = :' . $name;
             $params[$name] = $value;
         }
@@ -155,7 +159,7 @@ final class AdminSiteSettingsController extends AdminController
                 'fields' => [
                     ['name' => 'turnstile_enabled', 'label' => 'Turnstile aktif', 'type' => 'checkbox', 'help' => 'Login ve kayıt modallarında Cloudflare insan doğrulaması zorunlu olur.'],
                     ['name' => 'turnstile_site_key', 'label' => 'Turnstile site key', 'type' => 'text', 'placeholder' => '0x4AAAAA...'],
-                    ['name' => 'turnstile_secret_key', 'label' => 'Turnstile secret key', 'type' => 'password', 'placeholder' => '0x4AAAAA...'],
+                    ['name' => 'turnstile_secret_key', 'label' => 'Turnstile secret key', 'type' => 'password', 'placeholder' => '0x4AAAAA...', 'help' => 'Boş bırakılırsa mevcut secret korunur. Login/kayıt modallarında widget görünmesi için Aktif + Site Key zorunludur.'],
                 ],
             ],
             'urls' => [

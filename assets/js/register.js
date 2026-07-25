@@ -964,7 +964,9 @@
         if (!container) return;
 
         // Modal gorunur degilken render denemesi widget'i yarim birakabiliyor.
+        // Transition sirasinda getClientRects() bos donebilir; gecikmeli tekrar dene.
         if (!container.offsetParent && container.getClientRects().length === 0) {
+            window.setTimeout(ensureRegisterTurnstileWidget, 200);
             return;
         }
 
@@ -988,6 +990,7 @@
 
         Shared.renderTurnstileWidget(container, { theme: 'dark', action: 'register' });
     }
+    window.__ensureRegisterTurnstileWidget = ensureRegisterTurnstileWidget;
 
     function resetRegisterTurnstileWidget() {
         var container = registerTurnstileContainer();

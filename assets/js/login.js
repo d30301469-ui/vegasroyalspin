@@ -185,6 +185,13 @@
         document.body.classList.add('register-modal-open');
         document.body.classList.remove('login-modal-open');
         applyMobileAuthLayoutFix('registerModal');
+        // Mobil header / __openRegisterModal bu yolu kullanir; register.js
+        // shown.bs.modal (jQuery) olayina bagli oldugu icin burada da render et.
+        if (typeof window.__ensureRegisterTurnstileWidget === 'function') {
+            window.__ensureRegisterTurnstileWidget();
+            window.setTimeout(window.__ensureRegisterTurnstileWidget, 160);
+            window.setTimeout(window.__ensureRegisterTurnstileWidget, 420);
+        }
     }
     window.__openRegisterModal = showRegisterModal;
     window.MaltabetAuth = window.MaltabetAuth || {};
@@ -233,13 +240,9 @@
         if (!container) return;
 
         // Modal gorunur degilken render denemesi widget'i yarim birakabiliyor.
-        // Mobilde CSS transition/animasyon sirasinda getClientRects() bos donebilir;
-        // bu durumda gecikmeli tekrar dene, aninda vazgecme.
+        // Transition/animasyon sirasinda getClientRects() bos donebilir; gecikmeli tekrar dene.
         if (!container.offsetParent && container.getClientRects().length === 0) {
-            var isMobileSite = !!(document.body && document.body.classList.contains('mobile-site'));
-            if (isMobileSite) {
-                window.setTimeout(ensureLoginTurnstileWidget, 200);
-            }
+            window.setTimeout(ensureLoginTurnstileWidget, 200);
             return;
         }
 
@@ -267,6 +270,7 @@
         Shared.renderTurnstileWidget(container, { theme: 'dark', action: 'login' });
         syncLoginTurnstileWrapState(container);
     }
+    window.__ensureLoginTurnstileWidget = ensureLoginTurnstileWidget;
 
     function resetLoginTurnstileWidget() {
         var container = loginTurnstileContainer();
