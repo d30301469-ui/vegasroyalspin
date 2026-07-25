@@ -1073,8 +1073,8 @@ body.mobile-site #registerModal .register-logo {
 body.mobile-site #registerModal .register-logo-img {
   max-width: 100% !important;
   width: auto !important;
-  height: 26px !important;
-  max-height: 26px !important;
+  height: 20px !important;
+  max-height: 20px !important;
   object-fit: contain !important;
   object-position: left center !important;
 }
