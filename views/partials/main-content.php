@@ -111,7 +111,8 @@ if (!function_exists('homeRenderBannerSection')) {
         $isMobileSurface = (function_exists('isMobile') && isMobile()) || strpos($host, 'm.') === 0;
         $forceMobileBanner = false;
         if ($isMobileSurface) {
-            $image = 'assets/images/slider-banner-main.webp';
+            // slider-banner-main.webp yanlis olarak spor baslik gorseliyle ayni; gercek cekim banner'i kullan.
+            $image = 'assets/images/mobile-withdraw-banner.webp';
             $forceMobileBanner = true;
             if (trim($alt) === '') {
                 $alt = 'Artık çekimlerinizde limitlerde takılmak yok';
@@ -136,7 +137,7 @@ if (!function_exists('homeRenderBannerSection')) {
                         alt="<?= homeSectionH($alt) ?>"
                         loading="lazy"
                         width="1200"
-                        height="360"
+                        height="150"
                     />
                 <?php if ($href !== ''): ?>
                 </a>
@@ -376,7 +377,7 @@ try {
 <?php
 homeRenderBannerSection(homeSectionByKey($homeSections, 'withdrawal-banner'));
 if ($homeIsMobile):
-    // Tek HTML baslik + col-4 kartlar (baslik gorseli cift boyandigi icin kaldirildi).
+    // Col-4 spor kisayollari (baslik yok — cift baslik sorununu onlemek icin).
     $sportsShortcuts = [
         ['href' => '/sportbook', 'aria' => 'Maç Öncesi', 'img' => '/assets/images/sports-shortcuts/sports-pre-match.webp'],
         ['href' => '/sportbook', 'aria' => 'Canlı Bülten', 'img' => '/assets/images/sports-shortcuts/sports-live.webp'],
@@ -386,13 +387,6 @@ if ($homeIsMobile):
 ?>
 <div class="hm-row-bc hm-row-mobile-sports-shortcuts" style="grid-template-columns: 12fr;">
     <div class="hm-row-bc-inner">
-        <header class="mobile-sports-shortcuts-heading">
-            <h2 class="mobile-sports-shortcuts-title">
-                <span class="mobile-sports-shortcuts-title-soft">SİZLER İÇİN SEÇİLMİŞ</span>
-                <span class="mobile-sports-shortcuts-title-accent">POPÜLER LİGLER VE TURNUVALAR</span>
-            </h2>
-            <span class="mobile-sports-shortcuts-underline" aria-hidden="true"></span>
-        </header>
         <div class="product-banner-container-bc col-4 product-banner-without-titles mobile-sports-shortcuts-grid" data-scroll-lock-scrollable>
             <?php foreach ($sportsShortcuts as $shortcut):
                 $imgAbs = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . $shortcut['img'];
