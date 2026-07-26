@@ -303,8 +303,22 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
   box-shadow: inset 0 0 0 1px rgba(168, 70, 225, 0.22);
 }
 
+/* Sadece GIRIS butonu — ayni dolanan isik */
+body.mobile-site #Giris.loginBtn,
+body.mobile-site .mobileHeader-actions #Giris {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  overflow: visible;
+  border: 1px solid transparent !important;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(168, 70, 225, 0.22);
+}
+
 .mobile-site .jp-tab::before,
-body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-info-bc.product-banner-bc::before {
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-info-bc.product-banner-bc::before,
+body.mobile-site #Giris.loginBtn::before,
+body.mobile-site .mobileHeader-actions #Giris::before {
   content: "" !important;
   position: absolute;
   inset: 0;
