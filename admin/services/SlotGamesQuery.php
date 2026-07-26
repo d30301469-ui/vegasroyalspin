@@ -93,7 +93,8 @@ final class SlotGamesQuery
             return $local;
         }
 
-        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query);
+        $timeout = $gameType === 1 ? 8 : 12;
+        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query, null, $timeout);
         if ($j === null) {
             $base = self::emptyPageResult($limit, $page);
             $base['apiError'] = true;
@@ -277,7 +278,14 @@ final class SlotGamesQuery
             return $local;
         }
 
-        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, 'games_provider.php', ['game_type' => $gameType]);
+        $j = BackendApiClient::request(
+            'GET',
+            BackendApiClient::SVC_GAMES,
+            'games_provider.php',
+            ['game_type' => $gameType],
+            null,
+            $gameType === 1 ? 5 : 12
+        );
         if ($j === null) {
             return [];
         }
