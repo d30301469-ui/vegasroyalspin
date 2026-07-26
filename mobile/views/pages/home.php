@@ -21,7 +21,6 @@ include VIEW_PATH . '/partials/slider.php';
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 	var bannerWrap = document.querySelector('.live-casino-banner-wrap');
-	var titleRow = document.querySelector('.hm-row-mobile-sports-title');
 	var shortcutRow = document.querySelector('.hm-row-mobile-sports-shortcuts');
 	if (!bannerWrap || !shortcutRow) {
 		return;
@@ -32,12 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		return;
 	}
 
-	var insertAfter = bannerWrap;
-	if (titleRow && titleRow.parentNode === parent) {
-		parent.insertBefore(titleRow, insertAfter.nextSibling);
-		insertAfter = titleRow;
-	}
-	parent.insertBefore(shortcutRow, insertAfter.nextSibling);
+	parent.insertBefore(shortcutRow, bannerWrap.nextSibling);
 });
 </script>
 <script src="/assets/js/jackpot.js?v=<?= htmlspecialchars($jackpotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
