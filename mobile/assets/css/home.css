@@ -4,7 +4,8 @@ body.mobile-site {
   background-repeat: no-repeat !important;
   background-size: cover !important;
   background-position: 50% 50% !important;
-  background-attachment: fixed !important;
+  /* fixed mobilde scroll/gecis takilmasi yapar */
+  background-attachment: scroll !important;
 }
 
 .mobile-site .hm-row-bc .banner-bc,
@@ -278,7 +279,11 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
   pointer-events: none;
 }
 
-/* JACKPOT / KAZANANLAR sekme buton glow animasyonu — KALDIRILDI */
+body.mobile-site .jp-main-card,
+body.mobile-site .jp-sub-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
 
 /* Cercevede dolanan isik — jp-tab + spor kisayol kartlari */
 @property --jp-border-angle {
@@ -346,6 +351,31 @@ body.mobile-site .mobileHeader-actions #Giris::before {
     linear-gradient(#fff 0 0);
   mask-composite: exclude;
   animation: jpTabBorderSpin 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-site .jp-tab::before,
+  body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-info-bc.product-banner-bc::before,
+  body.mobile-site #Giris.loginBtn::before,
+  body.mobile-site .mobileHeader-actions #Giris::before,
+  .mobile-site .jp-tab--active::before {
+    animation: none !important;
+  }
+}
+
+/* Sayfa gecisinde GPU yukunu dusur */
+html.is-page-leaving .mobile-site .jp-tab::before,
+html.is-page-leaving body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-info-bc.product-banner-bc::before,
+html.is-page-leaving body.mobile-site #Giris.loginBtn::before,
+html.is-page-leaving body.mobile-site .mobileHeader-actions #Giris::before,
+html.is-page-leaving .mobile-site .jp-tab--active::before,
+html.is-page-leaving .jp-main-amount {
+  animation: none !important;
+  transition: none !important;
+}
+
+html.is-page-leaving body.mobile-site {
+  background-image: none !important;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div:nth-child(1) .product-banner-bc::before {

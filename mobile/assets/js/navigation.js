@@ -423,6 +423,19 @@ window.__MOBILE_NAV_INITIALIZED__ = true;
             if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(href)) {
                 e.preventDefault();
                 e.stopPropagation();
+                return;
+            }
+
+            // Ayni-sekme sayfa gecisinde GPU animasyonlarini durdur (takilma azaltir).
+            try {
+                var url = new URL(href, window.location.href);
+                var sameOrigin = url.origin === window.location.origin;
+                var newTab = link.target === '_blank' || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
+                if (sameOrigin && !newTab && url.pathname !== window.location.pathname) {
+                    document.documentElement.classList.add('is-page-leaving');
+                }
+            } catch (err) {
+                /* ignore */
             }
         }, true);
 
@@ -434,12 +447,16 @@ window.__MOBILE_NAV_INITIALIZED__ = true;
 
         window.addEventListener('pageshow', function () {
             // BFCache donuslerinde stale kilit class'larini temizle.
+            document.documentElement.classList.remove('is-page-leaving');
             closeMenu(true);
             normalizeMenuState();
         });
 
         document.addEventListener('visibilitychange', function () {
-            if (document.visibilityState === 'visible') {
+            if (document.visibilityState === 'hidden') {
+                document.documentElement.classList.add('is-page-leaving');
+            } else {
+                document.documentElement.classList.remove('is-page-leaving');
                 normalizeMenuState();
             }
         });

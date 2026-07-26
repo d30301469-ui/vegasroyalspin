@@ -1,6 +1,6 @@
 /* vegasroyalspin PWA service worker */
 'use strict';
-const SW_VERSION = 'v21-slider-overlap-fix';
+const SW_VERSION = 'v22-mobile-nav-perf';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -45,6 +45,7 @@ function isCacheableStatic(requestUrl) {
 
   return (
     requestUrl.pathname.startsWith('/assets/') ||
+    requestUrl.pathname.startsWith('/mobile/assets/') ||
     requestUrl.pathname.endsWith('.webmanifest') ||
     requestUrl.pathname.endsWith('.css') ||
     requestUrl.pathname.endsWith('.js') ||
@@ -52,6 +53,7 @@ function isCacheableStatic(requestUrl) {
     requestUrl.pathname.endsWith('.jpg') ||
     requestUrl.pathname.endsWith('.jpeg') ||
     requestUrl.pathname.endsWith('.svg') ||
+    requestUrl.pathname.endsWith('.webp') ||
     requestUrl.pathname.endsWith('.ico')
   );
 }
@@ -83,6 +85,42 @@ function isAuthAppAsset(requestUrl) {
   );
 }
 
+function isVersionedAsset(requestUrl) {
+  return requestUrl.searchParams.has('v') || requestUrl.searchParams.has('ver');
+}
+
+function isCriticalModalAsset(requestUrl) {
+  if (requestUrl.origin !== self.location.origin) {
+    return false;
+  }
+
+  return (
+    requestUrl.pathname.startsWith('/assets/js/bonus-detail-modal') ||
+    requestUrl.pathname.startsWith('/assets/css/bonus-detail-modal') ||
+    requestUrl.pathname.startsWith('/assets/js/promosyonlar')
+  );
+}
+
+function isVolatileCssJs(requestUrl) {
+  if (!requestUrl.pathname.endsWith('.css') && !requestUrl.pathname.endsWith('.js')) {
+    return false;
+  }
+  if (isCriticalModalAsset(requestUrl) || isAuthAppAsset(requestUrl)) {
+    return true;
+  }
+  if (requestUrl.pathname.indexOf('/slider') !== -1) {
+    return true;
+  }
+  return !isVersionedAsset(requestUrl);
+}
+
+function cachePut(request, response) {
+  if (response && response.status === 200) {
+    const cloned = response.clone();
+    caches.open(STATIC_CACHE).then((cache) => cache.put(request, cloned));
+  }
+}
+
 self.addEventListener('message', (event) => {
   if (!event || !event.data || event.data.type !== 'CLEAR_ALL_CACHES') {
     return;
@@ -99,18 +137,6 @@ self.addEventListener('message', (event) => {
   );
 });
 
-function isCriticalModalAsset(requestUrl) {
-  if (requestUrl.origin !== self.location.origin) {
-    return false;
-  }
-
-  return (
-    requestUrl.pathname.startsWith('/assets/js/bonus-detail-modal') ||
-    requestUrl.pathname.startsWith('/assets/css/bonus-detail-modal') ||
-    requestUrl.pathname.startsWith('/assets/js/promosyonlar')
-  );
-}
-
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
@@ -120,9 +146,6 @@ self.addEventListener('fetch', (event) => {
 
   const requestUrl = new URL(request.url);
 
-  // Never intercept cross-origin requests (e.g. Cloudflare Turnstile iframe
-  // navigations). Serving a fallback into a third-party iframe breaks the
-  // widget (Turnstile error 300030 / postMessage origin mismatch).
   if (requestUrl.origin !== self.location.origin) {
     return;
   }
@@ -140,24 +163,34 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // CSS/JS (slider dahil) network-first: eski SW cache-first yüzünden
-  // masaüstünde bayat slider.css kalıp slaytlar üst üste biniyordu.
-  if (
-    isCriticalModalAsset(requestUrl) ||
-    isAuthAppAsset(requestUrl) ||
-    requestUrl.pathname.endsWith('.css') ||
-    requestUrl.pathname.endsWith('.js')
-  ) {
+  if (requestUrl.pathname.endsWith('.css') || requestUrl.pathname.endsWith('.js')) {
+    if (isVolatileCssJs(requestUrl)) {
+      event.respondWith(
+        fetch(request)
+          .then((response) => {
+            cachePut(request, response);
+            return response;
+          })
+          .catch(() => caches.match(request))
+      );
+      return;
+    }
+
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const cloned = response.clone();
-            caches.open(STATIC_CACHE).then((cache) => cache.put(request, cloned));
-          }
-          return response;
-        })
-        .catch(() => caches.match(request))
+      caches.match(request).then((cached) => {
+        const networkFetch = fetch(request)
+          .then((response) => {
+            cachePut(request, response);
+            return response;
+          })
+          .catch(() => cached);
+
+        if (cached) {
+          networkFetch.catch(function () { /* ignore */ });
+          return cached;
+        }
+        return networkFetch;
+      })
     );
     return;
   }
@@ -166,10 +199,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(request).then((cached) => {
       const networkFetch = fetch(request)
         .then((response) => {
-          if (response && response.status === 200) {
-            const cloned = response.clone();
-            caches.open(STATIC_CACHE).then((cache) => cache.put(request, cloned));
-          }
+          cachePut(request, response);
           return response;
         })
         .catch(() => cached);
