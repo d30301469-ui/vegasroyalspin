@@ -82,8 +82,16 @@ body.mobile-site {
 
 .mobile-site .home-jackpot-winners-section .slot-hero-tab--active {
   color: #fff;
-  background: linear-gradient(135deg, #9b2fd4 0%, #c742e8 100%);
+  background: rgba(18, 10, 40, 0.72);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.mobile-site .home-jackpot-winners-section .slot-hero-tab:hover,
+.mobile-site .home-jackpot-winners-section .slot-hero-tab:focus,
+.mobile-site .home-jackpot-winners-section .slot-hero-tab--active:hover,
+.mobile-site .home-jackpot-winners-section .slot-hero-tab--active:focus {
+  background: rgba(18, 10, 40, 0.72);
+  color: #fff;
 }
 
 /* Ayrı kapsüller: ikinci buton birleşik görünmesin */
