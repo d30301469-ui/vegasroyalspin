@@ -129,7 +129,9 @@ if ($playBypassShell) {
   --play-header-bg: #0e0124;
   --play-header-border: rgba(104, 9, 76, 0.55);
   --play-body-bg: #0f0522;
-  --play-balance-box-height: 36px;
+  --play-logo-height: 30px;
+  --play-balance-box-height: 30px;
+  --play-icon-btn-size: 30px;
   --play-font-ui: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Roboto", "Helvetica Neue", Arial, sans-serif;
 }
 /* Sitenin profesyonel cüzdan ikonu (BetConstruct-Icons) — play sayfası bağımsız yüklendiği için burada tanımlanıyor */
@@ -155,27 +157,48 @@ if ($playBypassShell) {
 .play-shell-body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--play-body-bg); color: #e8eaed; }
 .play-topbar {
   display: flex; align-items: center; justify-content: space-between;
-  flex-shrink: 0; min-height: 48px; padding: 0 12px 0 14px;
+  flex-shrink: 0; min-height: calc(var(--play-logo-height) + 16px); padding: 0 12px 0 14px;
   background: var(--play-header-bg);
   border-bottom: 1px solid var(--play-header-border);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
   gap: 10px;
 }
 .play-topbar-logo { display: flex; align-items: center; text-decoration: none; }
-.play-topbar-logo img { display: block; height: 30px; width: auto; max-height: 30px; object-fit: contain; }
-/* Desktop: logo 2 seviye kucult (30 → 26 → 22) */
-@media (min-width: 992px) {
-  .play-topbar-logo img { height: 22px; max-height: 22px; }
+.play-topbar-logo img {
+  display: block;
+  height: var(--play-logo-height);
+  width: auto;
+  max-height: var(--play-logo-height);
+  object-fit: contain;
 }
-.play-topbar-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+/* Desktop: logo 2 seviye kucult; sag kutular ayni yukseklige hizalanir */
+@media (min-width: 992px) {
+  :root {
+    --play-logo-height: 22px;
+    --play-balance-box-height: 22px;
+    --play-icon-btn-size: 22px;
+  }
+  .play-topbar { min-height: 38px; padding: 0 12px 0 14px; }
+  .play-topbar-actions { gap: 8px; }
+  .play-topbar-balance { gap: 8px; padding: 0 6px 0 2px; }
+  .play-topbar-balance-icon,
+  .play-topbar-balance .play-bal-main,
+  .play-topbar-balance .play-bal-bonus,
+  .play-icon-btn { border-radius: 6px; }
+  .play-topbar-balance-icon { font-size: 12px; }
+  .play-topbar-balance .play-bal-main { font-size: 12px; padding: 0 8px; }
+  .play-topbar-balance .play-bal-bonus { font-size: 10px; padding: 0 8px; }
+  .play-icon-btn { font-size: 12px; }
+}
+.play-topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .play-topbar-balance {
   display: none;
   align-items: center;
   margin-right: 2px;
   min-width: 0;
   max-width: min(52vw, 260px);
-  padding: 0 10px 0 4px;
-  gap: 14px;
+  padding: 0 8px 0 2px;
+  gap: 8px;
   font-family: var(--play-font-ui);
 }
 .play-topbar-balance.is-visible { display: flex; flex-direction: row; }
@@ -186,12 +209,12 @@ if ($playBypassShell) {
   justify-content: center;
   width: var(--play-balance-box-height);
   height: var(--play-balance-box-height);
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid rgba(51, 193, 107, 0.45);
   background: rgba(51, 193, 107, 0.14);
   box-sizing: border-box;
   color: #33c16b;
-  font-size: 17px;
+  font-size: 14px;
 }
 .play-topbar-balance-text {
   display: flex;
@@ -199,7 +222,7 @@ if ($playBypassShell) {
   align-items: flex-end;
   justify-content: center;
   min-width: 0;
-  line-height: 1.28;
+  line-height: 1.2;
   gap: 4px;
 }
 @media (min-width: 992px) {
@@ -209,10 +232,7 @@ if ($playBypassShell) {
   .play-topbar-balance-text {
     flex-direction: row;
     align-items: center;
-    gap: 10px;
-  }
-  .play-topbar-balance .play-bal-bonus {
-    font-size: 12px;
+    gap: 8px;
   }
 }
 .play-topbar-balance .play-bal-main {
@@ -221,13 +241,13 @@ if ($playBypassShell) {
   justify-content: center;
   height: var(--play-balance-box-height);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   color: #fff;
   white-space: nowrap;
-  padding: 0 10px;
-  border-radius: 10px;
+  padding: 0 9px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.1);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -244,8 +264,8 @@ if ($playBypassShell) {
   opacity: 0.9;
   color: rgba(255, 255, 255, 0.76);
   white-space: nowrap;
-  padding: 0 10px;
-  border-radius: 10px;
+  padding: 0 9px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -256,14 +276,14 @@ if ($playBypassShell) {
   border: none;
   background: rgba(255, 255, 255, 0.06);
   color: #e8eaed;
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
+  width: var(--play-icon-btn-size);
+  height: var(--play-icon-btn-size);
+  border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
