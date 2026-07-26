@@ -365,7 +365,11 @@ try {
 <?php
 homeRenderBannerSection(homeSectionByKey($homeSections, 'withdrawal-banner'));
 if ($homeIsMobile):
-    // Col-4 spor kisayollari (baslik yok — cift baslik sorununu onlemek icin).
+    // Orijinal BC HTML: baslik slider (1291/50) + col-4 product banners.
+    // Linkler bizde /sportbook; gorseller yerel kopya.
+    $sportsTitleImg = '/assets/images/sports-shortcuts/sports-title.webp';
+    $sportsTitleAbs = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . $sportsTitleImg;
+    $sportsTitleSrc = $sportsTitleImg . (is_file($sportsTitleAbs) ? ('?v=' . filemtime($sportsTitleAbs)) : '');
     $sportsShortcuts = [
         ['href' => '/sportbook', 'aria' => 'Maç Öncesi', 'img' => '/assets/images/sports-shortcuts/sports-pre-match.webp'],
         ['href' => '/sportbook', 'aria' => 'Canlı Bülten', 'img' => '/assets/images/sports-shortcuts/sports-live.webp'],
@@ -373,6 +377,27 @@ if ($homeIsMobile):
         ['href' => '/sportbook', 'aria' => 'Öne Çıkan Maçlar', 'img' => '/assets/images/sports-shortcuts/sports-popular.webp'],
     ];
 ?>
+<div class="hm-row-bc hm-row-mobile-sports-title has-slider" style="grid-template-columns: 12fr;">
+    <div class="hm-row-bc-inner">
+        <div class="slider-bc">
+            <div class="sdr-item-holder-bc mobile-sports-title-holder" style="aspect-ratio: 1291 / 50;">
+                <a class="sdr-item-bc" aria-label="Başlık" href="/sportbook">
+                    <img
+                        alt="Başlık"
+                        title="Başlık"
+                        loading="eager"
+                        decoding="async"
+                        fetchpriority="high"
+                        class="sdr-image-bc mobile-sports-title-img"
+                        src="<?= htmlspecialchars($sportsTitleSrc, ENT_QUOTES, 'UTF-8') ?>"
+                        width="1291"
+                        height="50"
+                    />
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="hm-row-bc hm-row-mobile-sports-shortcuts" style="grid-template-columns: 12fr;">
     <div class="hm-row-bc-inner">
         <div class="product-banner-container-bc col-4 product-banner-without-titles mobile-sports-shortcuts-grid" data-scroll-lock-scrollable>

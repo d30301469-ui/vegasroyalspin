@@ -145,15 +145,74 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header .product
   border-radius: 10px;
 }
 
-/* Eski cift baslik satirlari — tamamen gizle */
-body.mobile-site .hm-row-mobile-sports-title,
-body.mobile-site .mobile-sports-title-link,
-body.mobile-site .mobile-sports-title-img,
+/* BC orijinal: baslik (1291/50) + col-4 kartlar */
+body.mobile-site .hm-row-mobile-sports-shortcuts-heading,
 body.mobile-site .mobile-sports-shortcuts-heading {
   display: none !important;
 }
 
-/* Col-4 spor kisayol kartlari */
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-title {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-title .hm-row-bc-inner {
+  width: 100%;
+  padding: 0 var(--padding-page-aside, 7px);
+  box-sizing: border-box;
+}
+
+body.mobile-site .hm-row-mobile-sports-title .slider-bc {
+  display: block !important;
+  width: 100%;
+  height: auto !important;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+body.mobile-site .hm-row-mobile-sports-title .mobile-sports-title-holder {
+  position: relative;
+  display: block !important;
+  width: 100%;
+  height: auto !important;
+  aspect-ratio: 1291 / 50;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+body.mobile-site .hm-row-mobile-sports-title .sdr-item-bc {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+body.mobile-site .hm-row-mobile-sports-title .sdr-item-bc::before {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
+
+body.mobile-site .hm-row-mobile-sports-title .mobile-sports-title-img,
+body.mobile-site .hm-row-mobile-sports-title .sdr-image-bc {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center;
+  border: 0;
+  border-radius: 0;
+}
+
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts {
   display: grid !important;
   grid-template-columns: 1fr !important;
@@ -165,7 +224,7 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts {
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .hm-row-bc-inner {
   width: 100%;
-  padding: 0 var(--padding-page-aside, 7px);
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -176,7 +235,7 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
   gap: 10px !important;
   grid-gap: 10px !important;
   width: 100%;
-  margin: 0;
+  margin: 0 0 10px;
   padding: 10px 5px !important;
   background: rgba(0, 0, 0, 0.3) !important;
   border-radius: 0;

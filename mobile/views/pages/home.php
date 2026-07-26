@@ -20,16 +20,25 @@ include VIEW_PATH . '/partials/slider.php';
 <?php $jackpotJsVer = (string) (is_file(BASE_PATH . '/assets/js/jackpot.js') ? filemtime(BASE_PATH . '/assets/js/jackpot.js') : $homeJsVer); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-	var bannerWrap = document.querySelector('.live-casino-banner-wrap');
+	var titleRow = document.querySelector('.hm-row-mobile-sports-title');
 	var shortcutRow = document.querySelector('.hm-row-mobile-sports-shortcuts');
 	if (!shortcutRow) {
 		return;
 	}
 
-	// Cekim banneri mobilde yok; varsa kisayollari hemen altina al.
-	if (bannerWrap && bannerWrap.parentNode) {
-		bannerWrap.parentNode.insertBefore(shortcutRow, bannerWrap.nextSibling);
+	var anchor = document.querySelector('.live-casino-banner-wrap')
+		|| document.querySelector('.home-jackpot-winners-section');
+	if (!anchor || !anchor.parentNode) {
+		return;
 	}
+
+	var parent = anchor.parentNode;
+	var insertAfter = anchor;
+	if (titleRow && titleRow.parentNode === parent) {
+		parent.insertBefore(titleRow, insertAfter.nextSibling);
+		insertAfter = titleRow;
+	}
+	parent.insertBefore(shortcutRow, insertAfter.nextSibling);
 });
 </script>
 <script src="/assets/js/jackpot.js?v=<?= htmlspecialchars($jackpotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
