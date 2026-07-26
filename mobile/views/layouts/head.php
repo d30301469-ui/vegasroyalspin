@@ -66,6 +66,9 @@ $requestPathRaw = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/'
 $requestPath = $requestPathRaw === '/' ? '/' : rtrim($requestPathRaw, '/');
 $slotRoutes = ['/slot', '/livecasino', '/bgaming', '/sanal-sporlar'];
 $isSlotRoute = in_array($requestPath, $slotRoutes, true);
+$isPromotionsRoute = ($requestPath === '/promotions' || $requestPath === '/promosyonlar');
+$promoCssVer = (string) (is_file($assetCssDir . '/promosyonlar.css') ? filemtime($assetCssDir . '/promosyonlar.css') : 1);
+$bonusModalCssVer = (string) (is_file($assetCssDir . '/bonus-detail-modal.css') ? filemtime($assetCssDir . '/bonus-detail-modal.css') : 1);
 // Ana sayfada jackpot|kazananlar widget'ı var; CSS sadece slot rotasında
 // yüklenirse paneller/kartlar stillenmez (ham metin listesi gibi görünür).
 $isHomeRoute = ($requestPath === '/');
@@ -98,6 +101,10 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <meta name="apple-mobile-web-app-title" content="VegasRoyal">
   <link rel="manifest" href="<?= htmlspecialchars($headManifestUrl, ENT_QUOTES, 'UTF-8') ?>">
   <title><?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?></title>
+  <?php if ($isPromotionsRoute): ?>
+  <link rel="preload" href="/assets/css/promosyonlar.css?v=<?= htmlspecialchars($promoCssVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
+  <link rel="preload" href="/assets/css/bonus-detail-modal.css?v=<?= htmlspecialchars($bonusModalCssVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
+  <?php endif; ?>
   <style>
     html.mobile-root {
       --body-bg: #0e0124;
@@ -136,6 +143,10 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="stylesheet" href="/assets/css/login.css?v=<?= $ver($assetCssDir . '/login.css') ?>">
   <link rel="stylesheet" href="/assets/css/register.css?v=<?= $ver($assetCssDir . '/register.css') ?>">
   <link rel="stylesheet" href="/assets/css/auth-sliders.css?v=<?= $ver($assetCssDir . '/auth-sliders.css') ?>">
+  <?php if ($isPromotionsRoute): ?>
+  <link rel="stylesheet" href="/assets/css/promosyonlar.css?v=<?= htmlspecialchars($promoCssVer, ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="/assets/css/bonus-detail-modal.css?v=<?= htmlspecialchars($bonusModalCssVer, ENT_QUOTES, 'UTF-8') ?>">
+  <?php endif; ?>
 
   <link rel="stylesheet" href="/assets/css/bc-mobile-index.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-index.css')) ?>">
   <link rel="stylesheet" href="/assets/css/bc-mobile-header-original.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-header-original.css')) ?>">
