@@ -275,30 +275,81 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
 
 /* JACKPOT / KAZANANLAR sekme buton glow animasyonu — KALDIRILDI */
 
-/* Provider sekme butonları çerçeve animasyonu (AMUSNET, APOLLO GAMES, FUGAS, EGT) */
-@keyframes jpTabFrameGlow {
-  0%, 100% {
-    border-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 0 0 0 transparent;
-  }
-  50% {
-    border-color: rgba(168, 70, 225, 0.9);
-    box-shadow: 0 0 10px 3px rgba(168, 70, 225, 0.5),
-                0 0 20px 4px rgba(210, 90, 255, 0.2);
+/* Provider sekme butonlari — cercevede dolanan isik (yanip sonme yok) */
+@property --jp-border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes jpTabBorderSpin {
+  to {
+    --jp-border-angle: 360deg;
   }
 }
 
-@keyframes jpTabActiveFrame {
-  0%, 100% { box-shadow: 0 0 0 0 transparent; }
-  50%       { box-shadow: 0 0 12px 4px rgba(255, 255, 255, 0.35); }
+.mobile-site .jp-tab {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  overflow: visible;
+  border-color: transparent !important;
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px rgba(168, 70, 225, 0.22);
+}
+
+.mobile-site .jp-tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1.5px;
+  box-sizing: border-box;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--jp-border-angle),
+    transparent 0%,
+    transparent 55%,
+    rgba(168, 70, 225, 0.15) 68%,
+    rgba(168, 70, 225, 0.85) 78%,
+    rgba(255, 220, 255, 0.95) 86%,
+    rgba(168, 70, 225, 0.7) 92%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: jpTabBorderSpin 2.4s linear infinite;
 }
 
 .mobile-site .jp-tab:not(.jp-tab--active) {
-  animation: jpTabFrameGlow 2.2s ease-in-out infinite;
+  box-shadow: none;
+  animation: none;
 }
 
 .mobile-site .jp-tab--active {
-  animation: jpTabActiveFrame 2.2s ease-in-out infinite;
+  box-shadow: none;
+  animation: none;
+  border-color: transparent !important;
+}
+
+.mobile-site .jp-tab--active::before {
+  background: conic-gradient(
+    from var(--jp-border-angle),
+    transparent 0%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.25) 65%,
+    rgba(255, 255, 255, 0.95) 80%,
+    rgba(210, 160, 255, 0.8) 90%,
+    transparent 100%
+  );
+  animation: jpTabBorderSpin 2.8s linear infinite;
 }
 
 /* Provider başlığını gizle (AMUSNET / APOLLO GAMES metni) */
