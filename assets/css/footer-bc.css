@@ -1007,3 +1007,24 @@ body.mobile-site #root .layout-content-holder-bc.footerPageContent {
 .footerPageBody ol {
   margin: 0 0 14px;
 }
+
+.footerPageBody ul,
+.footerPageBody ol {
+  padding-left: 22px;
+}
+
+.footerPageBody li {
+  margin: 0 0 10px;
+}
+
+.footerPageBody li::marker {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+.footerPageBody h2,
+.footerPageBody h3,
+.footerPageBody h4 {
+  margin: 18px 0 10px;
+  color: rgba(255, 255, 255, 0.9);
+}
