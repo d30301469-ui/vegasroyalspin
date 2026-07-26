@@ -85,31 +85,3 @@
 .G1blue .loginModal .form-control {
     border-color: rgba(0,0,0,0.5);
 }
-
-/* Iframe / modal frame */
-.ifreamview {
-    border: none;
-    height: calc(100dvh - 162px)!important;
-}
-
-@media only screen and (max-width: 992px) {
-    .modalfreamheight {
-        height: 650px!important;
-        width: auto!important;
-        right: 0px!important;
-    }
-    .ifreamview {
-        height: calc(100vh - 200px) !important;
-    }
-}
-
-@media only screen and (max-width: 668px) {
-    .modalfreamheight {
-        height: calc(100vh - 80px) !important;
-        width: auto!important;
-        right: 0px!important;
-    }
-    .ifreamview {
-        height: calc(100vh - 190px) !important;
-    }
-}
