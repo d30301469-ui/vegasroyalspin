@@ -406,12 +406,11 @@ if ($homeIsMobile):
 <section class="hm-row-bc hm-row-mobile-sports-shortcuts" style="grid-template-columns: 12fr;" aria-label="Popüler ligler ve turnuvalar">
     <div class="hm-row-bc-inner">
         <header class="mobile-sports-shortcuts-heading">
-            <span class="mobile-sports-shortcuts-heading-line" aria-hidden="true"></span>
             <h2 class="mobile-sports-shortcuts-title">
                 <span class="mobile-sports-shortcuts-title-soft">SİZLER İÇİN SEÇİLMİŞ</span>
                 <span class="mobile-sports-shortcuts-title-accent">POPÜLER LİGLER VE TURNUVALAR</span>
             </h2>
-            <span class="mobile-sports-shortcuts-heading-line" aria-hidden="true"></span>
+            <span class="mobile-sports-shortcuts-underline" aria-hidden="true"></span>
         </header>
         <div class="product-banner-container-bc col-4 product-banner-without-titles mobile-sports-shortcuts-grid" data-scroll-lock-scrollable>
             <?php foreach ($sportsShortcuts as $shortcut): ?>

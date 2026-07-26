@@ -160,14 +160,15 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header .product
   border-radius: 10px;
 }
 
-/* BC orijinal (m.casinomilyon619): col-4 = 4 sütun tek satır + başlık */
+/* Screen orijinal: baslik + altinda pembe çizgi + 4 kart tek satir */
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts {
   display: grid !important;
   grid-template-columns: 1fr !important;
   width: 100%;
-  margin: 0 0 10px;
-  padding: 0 var(--padding-page-aside, 10px);
+  margin: 6px 0 12px;
+  padding: 0 8px;
   box-sizing: border-box;
+  background: transparent;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .hm-row-bc-inner {
@@ -179,55 +180,60 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .h
 
 body.mobile-site .mobile-sports-shortcuts-heading {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   margin: 0;
-  padding: 0 2px;
-}
-
-body.mobile-site .mobile-sports-shortcuts-heading-line {
-  flex: 1 1 auto;
-  height: 1px;
-  min-width: 10px;
-  max-width: 48px;
-  background: #ec4899;
-  opacity: 0.9;
-  box-shadow: 0 0 8px rgba(236, 72, 153, 0.65);
+  padding: 0 4px;
 }
 
 body.mobile-site .mobile-sports-shortcuts-title {
-  flex: 0 1 auto;
   margin: 0;
   padding: 0;
+  width: 100%;
   text-align: center;
-  font-size: 10px;
+  font-size: clamp(9px, 2.7vw, 12px);
   font-weight: 800;
-  letter-spacing: 0.01em;
-  line-height: 1.3;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
   text-transform: uppercase;
   white-space: normal;
 }
 
 body.mobile-site .mobile-sports-shortcuts-title-soft {
-  display: inline;
-  color: #fff;
+  color: #ffffff;
 }
 
 body.mobile-site .mobile-sports-shortcuts-title-accent {
-  display: inline;
-  color: #ec4899;
-  margin-left: 0.2em;
+  color: #e91e8c;
+  margin-left: 0.25em;
 }
 
-/* BC: .product-banner-container-bc.col-4 { grid-template-columns: repeat(4, 1fr) } */
+/* Basligin altinda tam genislik, kenarlari soluk pembe çizgi */
+body.mobile-site .mobile-sports-shortcuts-underline {
+  display: block;
+  width: 100%;
+  height: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(233, 30, 140, 0.15) 8%,
+    #e91e8c 28%,
+    #e91e8c 72%,
+    rgba(233, 30, 140, 0.15) 92%,
+    transparent 100%
+  );
+  box-shadow: 0 0 8px rgba(233, 30, 140, 0.55);
+}
+
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc.mobile-sports-shortcuts-grid,
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  grid-gap: 10px;
-  gap: 10px;
+  gap: 6px;
   width: 100%;
   margin: 0;
   padding: 0;
@@ -238,20 +244,23 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .mobile-sports-shortcuts-item,
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div {
   min-width: 0;
-  display: flex;
+  display: block;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .mobile-sports-shortcuts-link,
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-bc {
-  display: flex;
-  align-items: center;
+  display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   padding: 0;
+  margin: 0;
   text-decoration: none;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
   -webkit-tap-highlight-color: transparent;
-  border-radius: var(--border-radius, 4px);
-  overflow: hidden;
+  border-radius: 6px;
+  overflow: visible;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-img-bc {
@@ -260,8 +269,9 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
   max-width: 100%;
   height: auto;
   object-fit: contain;
-  border-radius: var(--border-radius, 4px);
+  border-radius: 6px;
   pointer-events: none;
+  vertical-align: top;
 }
 
 /* JACKPOT / KAZANANLAR sekme buton glow animasyonu — KALDIRILDI */
