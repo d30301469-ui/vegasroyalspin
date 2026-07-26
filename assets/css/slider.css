@@ -130,16 +130,15 @@
     inset: 0;
     opacity: 0;
     visibility: hidden;
+    z-index: 0;
     transition: opacity 0.35s ease;
     pointer-events: none;
     border: none;
     background: transparent;
 }
 
-/* JS herhangi nedenle gecikirse/kirilirsa slider tamamen kaybolmasin.
-   Yalnizca hicbir slayt .active degilken devreye girer; aksi halde
-   ilk slayt aktif slaytin ustune biner. */
-.home-hero-slider .slides:not(:has(.slide-item.active)) .sdr-item-holder-bc.slide-item:first-child {
+/* JS hazir olmadan once ilk slayti goster (bos ekran olmasin). */
+.home-hero-slider:not(.is-ready) .slides .sdr-item-holder-bc.slide-item:first-child {
     opacity: 1;
     visibility: visible;
     z-index: 1;
@@ -151,6 +150,15 @@
     visibility: visible;
     z-index: 1;
     pointer-events: auto;
+}
+
+/* JS hazir olduktan sonra aktif olmayan slaytlari zorla gizle —
+   eski CSS/SW onbellegi veya :has desteklemeyen tarayici ust uste binmesin. */
+.home-hero-slider.is-ready .sdr-item-holder-bc.slide-item:not(.active) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
 }
 
 .home-hero-slider .sdr-item-bc {

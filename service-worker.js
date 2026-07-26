@@ -1,6 +1,6 @@
 /* vegasroyalspin PWA service worker */
 'use strict';
-const SW_VERSION = 'v20-turnstile-hydrate-fix';
+const SW_VERSION = 'v21-slider-overlap-fix';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -140,22 +140,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (isCriticalModalAsset(requestUrl)) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const cloned = response.clone();
-            caches.open(STATIC_CACHE).then((cache) => cache.put(request, cloned));
-          }
-          return response;
-        })
-        .catch(() => caches.match(request))
-    );
-    return;
-  }
-
-  if (isAuthAppAsset(requestUrl)) {
+  // CSS/JS (slider dahil) network-first: eski SW cache-first yüzünden
+  // masaüstünde bayat slider.css kalıp slaytlar üst üste biniyordu.
+  if (
+    isCriticalModalAsset(requestUrl) ||
+    isAuthAppAsset(requestUrl) ||
+    requestUrl.pathname.endsWith('.css') ||
+    requestUrl.pathname.endsWith('.js')
+  ) {
     event.respondWith(
       fetch(request)
         .then((response) => {

@@ -47,6 +47,7 @@
 
         if (total === 0) return;
 
+        var root = container.closest('.home-hero-slider') || document.querySelector('.home-hero-slider');
         var currentIndex = 0;
         var autoSlideTimer = null;
         var startX = 0, dragging = false, navigated = false, touchActive = false;
@@ -64,6 +65,7 @@
                 }
             }
             if (counterText) counterText.textContent = (currentIndex + 1) + '/' + total;
+            if (root) root.classList.add('is-ready');
             resetAutoSlide();
         }
 
