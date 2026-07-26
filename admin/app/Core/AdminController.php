@@ -105,7 +105,15 @@ class AdminController
 
     protected function redirect(string $url): void
     {
-        header('Location: ' . $url);
+        if (!headers_sent()) {
+            header('Location: ' . $url, true, 302);
+        } else {
+            // Output buffering normal akista bunu engeller; yine de üçüncü
+            // parti/legacy çıktılarında kullanıcıyı yönlendirmesiz bırakma.
+            $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+            echo '<meta http-equiv="refresh" content="0;url=' . $safeUrl . '">';
+            echo '<p><a href="' . $safeUrl . '">Devam etmek için tıklayın</a></p>';
+        }
         exit;
     }
 }

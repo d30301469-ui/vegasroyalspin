@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+// Admin panel genelinde HTML üretimi başlamadan önce çıktıyı tamponla.
+// Böylece modül içindeki warning/erken echo, redirect ve cookie header'larını
+// bozmaz; response sonunda PHP buffer'ı normal şekilde gönderir.
+if (ob_get_level() === 0) {
+    ob_start();
+}
+
 require_once __DIR__ . '/Core/AdminPaths.php';
 admin_paths_bootstrap();
 
@@ -54,10 +61,12 @@ if (session_status() === PHP_SESSION_NONE) {
             'httponly' => true,
             'samesite' => 'Lax',
         ];
-        setcookie($adminSessionName, session_id(), $cookieOptions);
-        $cookieOptions['expires'] = time() - 3600;
-        $cookieOptions['domain'] = '';
-        setcookie($adminSessionName, '', $cookieOptions);
+        if (!headers_sent()) {
+            setcookie($adminSessionName, session_id(), $cookieOptions);
+            $cookieOptions['expires'] = time() - 3600;
+            $cookieOptions['domain'] = '';
+            setcookie($adminSessionName, '', $cookieOptions);
+        }
         $_SESSION['admin_cookie_domain_migrated'] = true;
     }
 }

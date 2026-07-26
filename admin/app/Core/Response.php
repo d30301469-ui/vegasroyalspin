@@ -31,7 +31,12 @@ final class Response
         if (!headers_sent()) {
             http_response_code($status);
             header('Location: ' . $url);
+        } else {
+            $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+            echo '<meta http-equiv="refresh" content="0;url=' . $safeUrl . '">';
+            echo '<p><a href="' . $safeUrl . '">Devam etmek için tıklayın</a></p>';
         }
+        exit;
     }
 }
 

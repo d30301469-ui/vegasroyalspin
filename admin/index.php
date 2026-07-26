@@ -254,7 +254,13 @@ $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $permission = AdminRoutePermission::resolve($path);
 if ($permission !== null) {
     if (!AdminAuth::check()) {
-        header('Location: ' . AdminAuth::url('/login'));
+        if (!headers_sent()) {
+            header('Location: ' . AdminAuth::url('/login'), true, 302);
+        } else {
+            $loginUrl = htmlspecialchars(AdminAuth::url('/login'), ENT_QUOTES, 'UTF-8');
+            echo '<meta http-equiv="refresh" content="0;url=' . $loginUrl . '">';
+            echo '<p><a href="' . $loginUrl . '">Giriş sayfasına devam et</a></p>';
+        }
         exit;
     }
     if (!AdminAuth::can($permission)) {
