@@ -130,7 +130,7 @@ final class PromotionMediaGuard
             $best = self::bestMatchingLibraryFile($title, $libraryFiles);
             if ($best !== null && $best !== $filename) {
                 $bestScore = self::scoreLibraryMatch($title, $best);
-                if ($bestScore >= 75.0 && ($bestScore - $currentScore) >= 10.0) {
+                if ($bestScore >= 75.0 && ($bestScore - $currentScore) >= 3.0) {
                     return '/upload/bonuses/' . $best;
                 }
             }
