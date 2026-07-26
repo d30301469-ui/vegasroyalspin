@@ -1,9 +1,6 @@
 /* Ana sayfa jackpot|kazananlar sekmeleri */
 body.mobile-site {
-  background-image: url('/assets/images/mobile-home-bg.jpg') !important;
-  background-repeat: no-repeat !important;
-  background-size: cover !important;
-  background-position: 50% 50% !important;
+  background: url('/assets/images/mobile-home-bg.jpg') no-repeat 50% 50% / cover !important;
   /* fixed mobilde scroll/gecis takilmasi yapar */
   background-attachment: scroll !important;
 }
@@ -748,10 +745,6 @@ html.is-page-leaving body.mobile-site .mobileHeader-actions #Giris::before,
 html.is-page-leaving .jp-main-amount {
   animation: none !important;
   transition: none !important;
-}
-
-html.is-page-leaving body.mobile-site {
-  background-image: none !important;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div:nth-child(1) .product-banner-bc::before {

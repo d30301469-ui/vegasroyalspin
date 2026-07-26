@@ -98,6 +98,15 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <meta name="apple-mobile-web-app-title" content="VegasRoyal">
   <link rel="manifest" href="<?= htmlspecialchars($headManifestUrl, ENT_QUOTES, 'UTF-8') ?>">
   <title><?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?></title>
+  <style>
+    html.mobile-root {
+      background-color: #0e0124;
+    }
+    body.mobile-site {
+      background: #0e0124 url('/assets/images/mobile-home-bg.jpg') no-repeat 50% 50% / cover !important;
+      background-attachment: scroll !important;
+    }
+  </style>
 
   <link rel="stylesheet" href="/assets/css/bootstrap-utils.css?v=<?= $ver($assetCssDir . '/global.css') ?>">
   <link rel="stylesheet" href="/assets/css/global.css?v=<?= $ver($assetCssDir . '/global.css') ?>">
