@@ -147,24 +147,84 @@ if (empty($demoBonuses)) {
 $rows = !empty($apiRows) ? $apiRows : $demoBonuses;
 $promotionImageFallback = '/assets/images/bonuses/20sabitkayipbonusu.webp';
 
-// Admin kaynaklı bozuk görsel URL'lerini güvenli fallback'e çevir
-// (ör: admin.vegasroyalspin.com/uploads/promotions/... dosyası yok → 404/ORB)
+if (!function_exists('promotions_page_asset_from_title')) {
+    function promotions_page_asset_from_title(string $title): string
+    {
+        $dir = dirname(__DIR__) . '/assets/images/bonuses';
+        if (!is_dir($dir)) {
+            return '';
+        }
+        $slug = strtolower(trim($title));
+        $map = [
+            'ı' => 'i', 'i̇' => 'i', 'ş' => 's', 'ğ' => 'g', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c',
+        ];
+        $slug = strtr($slug, $map);
+        $slug = preg_replace('/[^a-z0-9]+/', '', $slug) ?? '';
+        if ($slug === '') {
+            return '';
+        }
+        $best = '';
+        $bestPct = 0.0;
+        $secondPct = 0.0;
+        foreach (scandir($dir) ?: [] as $file) {
+            if ($file === '.' || $file === '..' || !is_file($dir . '/' . $file)) {
+                continue;
+            }
+            $fileSlug = preg_replace('/[^a-z0-9]+/', '', strtolower(pathinfo($file, PATHINFO_FILENAME))) ?? '';
+            if ($fileSlug === '') {
+                continue;
+            }
+            $pct = 0.0;
+            if ($slug === $fileSlug) {
+                $pct = 100.0;
+            } elseif (str_contains($slug, $fileSlug) || str_contains($fileSlug, $slug)) {
+                $shorter = min(strlen($slug), strlen($fileSlug));
+                $longer = max(strlen($slug), strlen($fileSlug));
+                $pct = 78.0 + (22.0 * ($shorter / max(1, $longer)));
+            } elseif (preg_match('/^(\d+)/', $slug, $tm) && preg_match('/^(\d+)/', $fileSlug, $fm) && $tm[1] === $fm[1]) {
+                similar_text($slug, $fileSlug, $pct);
+                $pct = max(70.0, $pct);
+            } else {
+                similar_text($slug, $fileSlug, $pct);
+            }
+            if ($pct > $bestPct) {
+                $secondPct = $bestPct;
+                $bestPct = $pct;
+                $best = $file;
+            } elseif ($pct > $secondPct) {
+                $secondPct = $pct;
+            }
+        }
+        if ($best === '' || $bestPct < 55.0 || (($bestPct - $secondPct) < 8.0 && $bestPct < 90.0)) {
+            return '';
+        }
+
+        return '/assets/images/bonuses/' . $best;
+    }
+}
+
+// Bozuk /uploads/promotions/ URL'lerini TEK ortak fallback'e yazma (görsel çiftlenmesi).
+// admin/upload/bonuses (veya assets kopyası) üzerinden başlığa göre doğru dosyayı seç.
+$promoGuardFile = (defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__)) . '/admin/app/Core/PromotionMediaGuard.php';
+if (!class_exists('PromotionMediaGuard', false) && is_readable($promoGuardFile)) {
+    require_once $promoGuardFile;
+}
+
 foreach ($rows as $i => $row) {
-    $img = isset($row['image_url']) ? (string) $row['image_url'] : '';
-    if ($img === '' || $img === '/') {
-        $rows[$i]['image_url'] = $promotionImageFallback;
-        continue;
+    $img = isset($row['image_url']) ? trim((string) $row['image_url']) : '';
+    $title = isset($row['title']) ? (string) $row['title'] : '';
+
+    if (class_exists('PromotionMediaGuard', false)) {
+        $resolved = PromotionMediaGuard::resolveDisplayImageUrl($img !== '' ? $img : '/upload/bonuses/.missing', $title);
+        if ($resolved !== '' && !str_contains($resolved, '.missing') && !preg_match('#/uploads/promotions/#i', $resolved)) {
+            $rows[$i]['image_url'] = promotions_page_normalize_image_url($resolved);
+            continue;
+        }
     }
-    // API'dan gelen mutlak admin URL'si /uploads/promotions/ patterni taşıyorsa
-    // (bu dosyalar mevcut olmadığından doğrudan fallback kullan)
-    if (preg_match('#^https?://[^/]+/uploads/promotions/#i', $img)) {
-        $rows[$i]['image_url'] = $promotionImageFallback;
-        continue;
-    }
-    // /uploads/promotions/ ile başlayan göreli yollar için de aynı
-    if (preg_match('#^/uploads/promotions/#i', $img)) {
-        $rows[$i]['image_url'] = $promotionImageFallback;
-        continue;
+
+    if ($img === '' || $img === '/' || preg_match('#(?:^https?://[^/]+)?/uploads/promotions/#i', $img) === 1) {
+        $byTitle = promotions_page_asset_from_title($title);
+        $rows[$i]['image_url'] = $byTitle !== '' ? $byTitle : $promotionImageFallback;
     }
 }
 

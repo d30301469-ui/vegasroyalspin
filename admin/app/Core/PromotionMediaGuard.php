@@ -120,11 +120,24 @@ final class PromotionMediaGuard
 
         $relative = self::normalizeToUploadsRelative($path);
         $filename = basename($relative);
+        $libraryFiles = self::libraryFilenames();
+
+        // Hash/upload adı kütüphanede yoksa başlığa göre doğru dosyayı seç.
         if ($filename !== '' && is_file(self::sourceDir() . '/' . $filename)) {
+            // Mevcut dosya kütüphanede var; yine de başlık çok daha iyi bir eşleşme
+            // gösteriyorsa (eski yanlış fuzzy repair) onu tercih et.
+            $currentScore = self::scoreLibraryMatch($title, $filename);
+            $best = self::bestMatchingLibraryFile($title, $libraryFiles);
+            if ($best !== null && $best !== $filename) {
+                $bestScore = self::scoreLibraryMatch($title, $best);
+                if ($bestScore >= 75.0 && ($bestScore - $currentScore) >= 10.0) {
+                    return '/upload/bonuses/' . $best;
+                }
+            }
+
             return '/upload/bonuses/' . $filename;
         }
 
-        $libraryFiles = self::libraryFilenames();
         if ($libraryFiles === []) {
             return $raw;
         }
@@ -251,47 +264,182 @@ final class PromotionMediaGuard
         }
 
         $filename = basename($relative);
-        if ($filename !== '' && is_file(self::sourceDir() . '/' . $filename)) {
-            $canonical = '/upload/bonuses/' . $filename;
-            if ($raw === $canonical) {
-                return false;
-            }
-            $update->execute(['image_url' => $canonical, 'id' => $row['id']]);
+        $title = (string) ($row['title'] ?? '');
+        $best = self::bestMatchingLibraryFile($title, $libraryFiles);
+        $currentScore = ($filename !== '' && is_file(self::sourceDir() . '/' . $filename))
+            ? self::scoreLibraryMatch($title, $filename)
+            : 0.0;
+        $bestScore = $best !== null ? self::scoreLibraryMatch($title, $best) : 0.0;
 
-            return true;
+        // 1) Dosya yoksa veya 2) başlık mevcut dosyadan belirgin şekilde daha iyi
+        // bir kütüphane görseline uyuyorsa kanonik /upload/bonuses yoluna yaz.
+        $shouldRemap = false;
+        if ($filename === '' || !is_file(self::sourceDir() . '/' . $filename)) {
+            $shouldRemap = $best !== null && $bestScore >= 55.0;
+        } elseif ($best !== null && $best !== $filename && $bestScore >= 75.0 && ($bestScore - $currentScore) >= 10.0) {
+            $shouldRemap = true;
         }
 
-        $titleSlug = self::slugify((string) ($row['title'] ?? ''));
-        if ($titleSlug === '') {
+        if (!$shouldRemap || $best === null) {
+            if ($filename !== '' && is_file(self::sourceDir() . '/' . $filename)) {
+                $canonical = '/upload/bonuses/' . $filename;
+                if ($raw !== $canonical && !preg_match('#^https?://#i', (string) ($row['image_url'] ?? ''))) {
+                    // Göreli path zaten doğru dosya; sadece kanonikleştir.
+                    if (str_starts_with($relative, '/upload/bonuses/')) {
+                        return false;
+                    }
+                    $update->execute(['image_url' => $canonical, 'id' => $row['id']]);
+
+                    return true;
+                }
+            }
+
             return false;
+        }
+
+        $canonical = '/upload/bonuses/' . $best;
+        if ($raw === $canonical || (string) ($row['image_url'] ?? '') === $canonical) {
+            return false;
+        }
+        $update->execute(['image_url' => $canonical, 'id' => $row['id']]);
+
+        return true;
+    }
+
+    /**
+     * @param list<string> $libraryFiles
+     */
+    private static function bestMatchingLibraryFile(string $title, array $libraryFiles): ?string
+    {
+        $titleSlug = self::slugify($title);
+        if ($titleSlug === '') {
+            return null;
+        }
+
+        // Aynı stem (15yatirim.webp / 15yatirim.jpg) tek aday sayılsın.
+        $bestByStem = [];
+        foreach ($libraryFiles as $file) {
+            $stem = self::slugify(pathinfo($file, PATHINFO_FILENAME));
+            if ($stem === '') {
+                continue;
+            }
+            $pct = self::scoreLibraryMatch($title, $file);
+            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+            $preferWebp = $ext === 'webp' ? 0.01 : 0.0;
+            $score = $pct + $preferWebp;
+            if (!isset($bestByStem[$stem]) || $score > $bestByStem[$stem]['score']) {
+                $bestByStem[$stem] = ['file' => $file, 'score' => $score, 'pct' => $pct];
+            }
         }
 
         $best = null;
         $bestPct = 0.0;
         $secondPct = 0.0;
-        foreach ($libraryFiles as $file) {
-            $fileSlug = self::slugify(pathinfo($file, PATHINFO_FILENAME));
-            if ($fileSlug === '') {
-                continue;
-            }
-            $pct = 0.0;
-            similar_text($titleSlug, $fileSlug, $pct);
+        foreach ($bestByStem as $row) {
+            $pct = (float) $row['pct'];
             if ($pct > $bestPct) {
                 $secondPct = $bestPct;
                 $bestPct = $pct;
-                $best = $file;
+                $best = (string) $row['file'];
             } elseif ($pct > $secondPct) {
                 $secondPct = $pct;
             }
         }
 
-        if ($best !== null && $bestPct >= 55.0 && ($bestPct - $secondPct) >= 8.0) {
-            $update->execute(['image_url' => '/upload/bonuses/' . $best, 'id' => $row['id']]);
-
-            return true;
+        if ($best === null) {
+            return null;
+        }
+        if ($bestPct < 55.0) {
+            return null;
+        }
+        $minGap = $bestPct >= 65.0 ? 3.0 : 8.0;
+        if (($bestPct - $secondPct) < $minGap && $bestPct < 90.0) {
+            return null;
         }
 
-        return false;
+        return $best;
+    }
+
+    private static function scoreLibraryMatch(string $title, string $filename): float
+    {
+        $titleSlug = self::slugify($title);
+        $fileSlug = self::slugify(pathinfo($filename, PATHINFO_FILENAME));
+        if ($titleSlug === '' || $fileSlug === '') {
+            return 0.0;
+        }
+        if ($titleSlug === $fileSlug) {
+            return 100.0;
+        }
+
+        // "15yatirimbonusu" ↔ "15yatirim" gibi containment.
+        if (str_contains($titleSlug, $fileSlug) || str_contains($fileSlug, $titleSlug)) {
+            $shorter = min(strlen($titleSlug), strlen($fileSlug));
+            $longer = max(strlen($titleSlug), strlen($fileSlug));
+
+            return 78.0 + (22.0 * ($shorter / max(1, $longer)));
+        }
+
+        // Kampanya sayıları: yalnızca başlığın önde gelen rakamı (15yatirim…)
+        // dosyadaki rakamlarla çelişiyorsa cezalandır. "%100 iade" gibi sondaki
+        // yüzdeler 20sabitkayip ile çakışmasın.
+        preg_match_all('/\d+/', $fileSlug, $fileNums);
+        $fileNums = array_values(array_unique($fileNums[0] ?? []));
+        $titleLead = preg_match('/^(\d+)/', $titleSlug, $tm) === 1 ? $tm[1] : '';
+        if ($titleLead !== '' && $fileNums !== [] && !in_array($titleLead, $fileNums, true)) {
+            $pct = 0.0;
+            similar_text($titleSlug, $fileSlug, $pct);
+
+            return min(40.0, (float) $pct);
+        }
+        if ($titleLead !== '' && in_array($titleLead, $fileNums, true)
+            && (str_contains($titleSlug, $fileSlug) || str_contains($fileSlug, $titleSlug) || preg_match('/^\d+/', $fileSlug) === 1)
+        ) {
+            $pct = 0.0;
+            similar_text($titleSlug, $fileSlug, $pct);
+
+            return max(82.0, (float) $pct);
+        }
+
+        // Anahtar kelime: slot+kayip → 20slotbonusu
+        $titleTokens = self::significantTokens($titleSlug);
+        $fileTokens = self::significantTokens($fileSlug);
+        $shared = array_values(array_intersect($titleTokens, $fileTokens));
+        if ($shared !== []) {
+            $pct = 0.0;
+            similar_text($titleSlug, $fileSlug, $pct);
+            $boost = 10.0 * count($shared);
+            // kayip+iade başlığında yalnızca "iade" içeren dosyayı (ayliknakitiade)
+            // "kayip" içeren dosyanın (20sabitkayip) gerisinde bırak.
+            if (in_array('kayip', $titleTokens, true) && in_array('kayip', $shared, true)) {
+                $boost += 12.0;
+            }
+            if (in_array('slot', $titleTokens, true) && in_array('slot', $shared, true)) {
+                $boost += 12.0;
+            }
+
+            return min(95.0, max(65.0, (float) $pct + $boost));
+        }
+
+        $pct = 0.0;
+        similar_text($titleSlug, $fileSlug, $pct);
+
+        return (float) $pct;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function significantTokens(string $slug): array
+    {
+        $parts = [];
+        // Bilinen kampanya kökleri
+        foreach (['slot', 'kayip', 'kayb', 'iade', 'yatirim', 'haftasonu', 'freespin', 'freebet', 'pragmatic', 'amusnet', 'kripto', 'affiliate', 'nakit', 'cevrimsiz', 'hosgeldin', 'sabit'] as $token) {
+            if (str_contains($slug, $token)) {
+                $parts[] = $token === 'kayb' ? 'kayip' : $token;
+            }
+        }
+
+        return $parts;
     }
 
     /**
@@ -308,34 +456,6 @@ final class PromotionMediaGuard
         }
 
         return $files;
-    }
-
-    /**
-     * @param list<string> $libraryFiles
-     */
-    private static function bestMatchingLibraryFile(string $title, array $libraryFiles): ?string
-    {
-        $titleSlug = self::slugify($title);
-        if ($titleSlug === '') {
-            return null;
-        }
-
-        $best = null;
-        $bestPct = 0.0;
-        foreach ($libraryFiles as $file) {
-            $fileSlug = self::slugify(pathinfo($file, PATHINFO_FILENAME));
-            if ($fileSlug === '') {
-                continue;
-            }
-            $pct = 0.0;
-            similar_text($titleSlug, $fileSlug, $pct);
-            if ($pct > $bestPct) {
-                $bestPct = $pct;
-                $best = $file;
-            }
-        }
-
-        return ($best !== null && $bestPct >= 55.0) ? $best : null;
     }
 
     private static function isBackendAbsoluteUrl(string $url): bool
@@ -461,17 +581,60 @@ final class PromotionMediaGuard
 
     private static function libraryDir(): string
     {
-        return self::rootPath() . '/storage/uploads/promotions';
+        foreach (self::pathCandidates(['/storage/uploads/promotions', '/uploads/promotions']) as $dir) {
+            return $dir;
+        }
+
+        return self::projectRoot() . '/storage/uploads/promotions';
     }
 
     private static function sourceDir(): string
     {
-        return self::rootPath() . '/admin/upload/bonuses';
+        foreach (self::pathCandidates(['/admin/upload/bonuses', '/upload/bonuses']) as $dir) {
+            if (is_dir($dir)) {
+                return $dir;
+            }
+        }
+
+        return self::projectRoot() . '/admin/upload/bonuses';
+    }
+
+    /**
+     * @param list<string> $suffixes
+     * @return list<string>
+     */
+    private static function pathCandidates(array $suffixes): array
+    {
+        $roots = [];
+        if (defined('BASE_PATH') && trim((string) BASE_PATH) !== '') {
+            $roots[] = rtrim(str_replace('\\', '/', (string) BASE_PATH), '/');
+        }
+        $roots[] = self::projectRoot();
+        // admin/app/Core → admin kökü (bazı deploy'larda BASE_PATH admin olur)
+        $roots[] = str_replace('\\', '/', dirname(__DIR__, 2));
+
+        $out = [];
+        foreach (array_values(array_unique($roots)) as $root) {
+            if ($root === '') {
+                continue;
+            }
+            foreach ($suffixes as $suffix) {
+                $out[] = $root . $suffix;
+            }
+        }
+
+        return $out;
+    }
+
+    private static function projectRoot(): string
+    {
+        // admin/app/Core → repo kökü
+        return str_replace('\\', '/', dirname(__DIR__, 3));
     }
 
     private static function rootPath(): string
     {
-        return defined('BASE_PATH') ? (string) BASE_PATH : str_replace('\\', '/', dirname(__DIR__, 2));
+        return self::projectRoot();
     }
 
     private static function shouldRunMaintenance(): bool
