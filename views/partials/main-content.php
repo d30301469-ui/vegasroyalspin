@@ -376,66 +376,67 @@ try {
 <?php
 homeRenderBannerSection(homeSectionByKey($homeSections, 'withdrawal-banner'));
 if ($homeIsMobile):
+    // Orijinal BC (casinomilyon619): baslik AYRI gorsel (1291/50) + col-4 product banners.
+    $sportsTitleImg = '/assets/images/sports-shortcuts/sports-title.webp';
+    $sportsTitleAbs = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . $sportsTitleImg;
+    $sportsTitleSrc = $sportsTitleImg . (is_file($sportsTitleAbs) ? ('?v=' . filemtime($sportsTitleAbs)) : '');
     $sportsShortcuts = [
-        [
-            'href' => '/sportbook',
-            'aria' => 'Maç Öncesi — Spor Bahisleri',
-            'alt' => 'Maç Öncesi',
-            'img' => '/assets/images/sports-shortcuts/sports-pre-match.webp',
-        ],
-        [
-            'href' => '/sportbook',
-            'aria' => 'Canlı Bülten — Spor Bahisleri',
-            'alt' => 'Canlı Bülten',
-            'img' => '/assets/images/sports-shortcuts/sports-live.webp',
-        ],
-        [
-            'href' => '/sportbook',
-            'aria' => 'Özel Oranlar — Spor Bahisleri',
-            'alt' => 'Özel Oranlar',
-            'img' => '/assets/images/sports-shortcuts/sports-boosted.webp',
-        ],
-        [
-            'href' => '/sportbook',
-            'aria' => 'Öne Çıkan Maçlar — Spor Bahisleri',
-            'alt' => 'Öne Çıkan Maçlar',
-            'img' => '/assets/images/sports-shortcuts/sports-popular.webp',
-        ],
+        ['href' => '/sportbook', 'aria' => 'Maç Öncesi', 'img' => '/assets/images/sports-shortcuts/sports-pre-match.webp'],
+        ['href' => '/sportbook', 'aria' => 'Canlı Bülten', 'img' => '/assets/images/sports-shortcuts/sports-live.webp'],
+        ['href' => '/sportbook', 'aria' => 'Özel Oranlar', 'img' => '/assets/images/sports-shortcuts/sports-boosted.webp'],
+        ['href' => '/sportbook', 'aria' => 'Öne Çıkan Maçlar', 'img' => '/assets/images/sports-shortcuts/sports-popular.webp'],
     ];
 ?>
-<section class="hm-row-bc hm-row-mobile-sports-shortcuts" style="grid-template-columns: 12fr;" aria-label="Popüler ligler ve turnuvalar">
+<div class="hm-row-bc hm-row-mobile-sports-title has-slider" style="grid-template-columns: 12fr;">
     <div class="hm-row-bc-inner">
-        <header class="mobile-sports-shortcuts-heading">
-            <h2 class="mobile-sports-shortcuts-title">
-                <span class="mobile-sports-shortcuts-title-soft">SİZLER İÇİN SEÇİLMİŞ</span>
-                <span class="mobile-sports-shortcuts-title-accent">POPÜLER LİGLER VE TURNUVALAR</span>
-            </h2>
-            <span class="mobile-sports-shortcuts-underline" aria-hidden="true"></span>
-        </header>
+        <div class="slider-bc">
+            <div class="sdr-item-holder-bc mobile-sports-title-holder">
+                <a class="sdr-item-bc mobile-sports-title-link" aria-label="Popüler ligler ve turnuvalar" href="/sportbook">
+                    <img
+                        class="sdr-image-bc mobile-sports-title-img"
+                        alt="Sizler icin secilmis populer ligler ve turnuvalar"
+                        title="Baslik"
+                        loading="eager"
+                        decoding="async"
+                        fetchpriority="high"
+                        src="<?= htmlspecialchars($sportsTitleSrc, ENT_QUOTES, 'UTF-8') ?>"
+                        width="1291"
+                        height="50"
+                    />
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="hm-row-bc hm-row-mobile-sports-shortcuts" style="grid-template-columns: 12fr;">
+    <div class="hm-row-bc-inner">
         <div class="product-banner-container-bc col-4 product-banner-without-titles mobile-sports-shortcuts-grid" data-scroll-lock-scrollable>
-            <?php foreach ($sportsShortcuts as $shortcut): ?>
-            <div class="mobile-sports-shortcuts-item">
+            <?php foreach ($sportsShortcuts as $shortcut):
+                $imgAbs = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . $shortcut['img'];
+                $imgSrc = $shortcut['img'] . (is_file($imgAbs) ? ('?v=' . filemtime($imgAbs)) : '');
+            ?>
+            <div>
                 <a
                     target="_self"
-                    class="product-banner-info-bc product-banner-bc mobile-sports-shortcuts-link"
+                    class="product-banner-info-bc product-banner-bc"
                     aria-label="<?= htmlspecialchars((string) $shortcut['aria'], ENT_QUOTES, 'UTF-8') ?>"
                     href="<?= htmlspecialchars((string) $shortcut['href'], ENT_QUOTES, 'UTF-8') ?>"
                 >
                     <img
-                        alt="<?= htmlspecialchars((string) $shortcut['alt'], ENT_QUOTES, 'UTF-8') ?>"
+                        alt=""
                         loading="lazy"
                         decoding="async"
-                        src="<?= htmlspecialchars((string) $shortcut['img'], ENT_QUOTES, 'UTF-8') ?>"
+                        src="<?= htmlspecialchars($imgSrc, ENT_QUOTES, 'UTF-8') ?>"
                         class="product-banner-img-bc"
-                        width="400"
-                        height="160"
+                        width="300"
+                        height="150"
                     />
                 </a>
             </div>
             <?php endforeach; ?>
         </div>
     </div>
-</section>
+</div>
 <?php
 endif;
 homeRenderGameSection(homeSectionByKey($homeSections, 'casino'), 'Casino', '/slot');

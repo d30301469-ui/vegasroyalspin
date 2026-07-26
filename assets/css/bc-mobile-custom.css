@@ -363,14 +363,15 @@ background: #d3a943 !important;
 .product-banner-container-bc.col-4.product-banner-without-titles:not(.mobile-sports-shortcuts-grid) {
   display: none !important;
 }
-/* Screen orijinal: mobil col-4 = 4 sütun, dar aralık */
+/* BC orijinal: mobil col-4 = 4 sütun, gap 10px, pad 10px 5px, koyu zemin */
 html.is-mobile .hm-row-mobile-sports-shortcuts .product-banner-container-bc.mobile-sports-shortcuts-grid,
 body.mobile-site .hm-row-mobile-sports-shortcuts .product-banner-container-bc.mobile-sports-shortcuts-grid,
 [class*=is-mobile] .hm-row-mobile-sports-shortcuts .product-banner-container-bc.col-4.product-banner-without-titles {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 6px !important;
-  background: transparent !important;
+  gap: 10px !important;
+  padding: 10px 5px !important;
+  background: rgba(0, 0, 0, 0.3) !important;
 }
 .hdr-main-content-bc {
   background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
@@ -738,13 +739,14 @@ body.mobile-site #registerModal .register-modal-content.has-auth-slider > .e-p-c
   display: block !important;
 }
 
-/* Mobilde ana sayfa spor shortcut satırını göster (4 sütun) */
+/* Mobilde ana sayfa spor shortcut satırını göster (BC col-4) */
 html.is-mobile .hm-row-mobile-sports-shortcuts .product-banner-container-bc.mobile-sports-shortcuts-grid,
 [class*=is-mobile] .hm-row-mobile-sports-shortcuts .product-banner-container-bc.mobile-sports-shortcuts-grid {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 6px !important;
-  background: transparent !important;
+  gap: 10px !important;
+  padding: 10px 5px !important;
+  background: rgba(0, 0, 0, 0.3) !important;
 }
 
 /* Slider görselleri kesilmesin */

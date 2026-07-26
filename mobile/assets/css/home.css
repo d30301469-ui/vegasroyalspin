@@ -160,107 +160,92 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header .product
   border-radius: 10px;
 }
 
-/* Screen orijinal: baslik + altinda pembe çizgi + 4 kart tek satir */
+/* BC orijinal (casinomilyon619): baslik gorseli + col-4 kartlar */
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-title {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-title .hm-row-bc-inner {
+  width: 100%;
+  padding: 0 var(--padding-page-aside, 7px);
+  box-sizing: border-box;
+}
+
+body.mobile-site .mobile-sports-title-holder {
+  aspect-ratio: 1291 / 50;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+body.mobile-site .mobile-sports-title-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+body.mobile-site .mobile-sports-title-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts {
   display: grid !important;
   grid-template-columns: 1fr !important;
   width: 100%;
-  margin: 6px 0 12px;
-  padding: 0 8px;
+  margin: 10px 0 0;
+  padding: 0;
   box-sizing: border-box;
-  background: transparent;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .hm-row-bc-inner {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-body.mobile-site .mobile-sports-shortcuts-heading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin: 0;
-  padding: 0 4px;
-}
-
-body.mobile-site .mobile-sports-shortcuts-title {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  text-align: center;
-  font-size: clamp(9px, 2.7vw, 12px);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1.25;
-  text-transform: uppercase;
-  white-space: normal;
-}
-
-body.mobile-site .mobile-sports-shortcuts-title-soft {
-  color: #ffffff;
-}
-
-body.mobile-site .mobile-sports-shortcuts-title-accent {
-  color: #e91e8c;
-  margin-left: 0.25em;
-}
-
-/* Basligin altinda tam genislik, kenarlari soluk pembe çizgi */
-body.mobile-site .mobile-sports-shortcuts-underline {
-  display: block;
-  width: 100%;
-  height: 1.5px;
-  border-radius: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(233, 30, 140, 0.15) 8%,
-    #e91e8c 28%,
-    #e91e8c 72%,
-    rgba(233, 30, 140, 0.15) 92%,
-    transparent 100%
-  );
-  box-shadow: 0 0 8px rgba(233, 30, 140, 0.55);
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc.mobile-sports-shortcuts-grid,
-body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc {
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc.col-4 {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 6px;
+  gap: 10px !important;
+  grid-gap: 10px !important;
   width: 100%;
-  margin: 0;
-  padding: 0;
-  background: transparent !important;
+  margin: 0 0 10px;
+  padding: 10px 5px !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 0;
+  box-sizing: border-box;
   align-items: stretch;
 }
 
-body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .mobile-sports-shortcuts-item,
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div {
   min-width: 0;
-  display: block;
 }
 
-body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .mobile-sports-shortcuts-link,
-body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-bc {
-  display: block;
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-info-bc.product-banner-bc {
+  display: flex !important;
+  align-items: center;
   width: 100%;
-  height: auto;
-  padding: 0;
+  height: 100%;
+  padding: 0 !important;
   margin: 0;
   text-decoration: none;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
+  border-radius: 4px;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
-  border-radius: 6px;
-  overflow: visible;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-img-bc {
@@ -269,9 +254,8 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
   max-width: 100%;
   height: auto;
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: 4px;
   pointer-events: none;
-  vertical-align: top;
 }
 
 /* JACKPOT / KAZANANLAR sekme buton glow animasyonu — KALDIRILDI */
