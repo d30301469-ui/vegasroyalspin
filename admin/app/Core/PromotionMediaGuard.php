@@ -334,7 +334,9 @@ final class PromotionMediaGuard
             $pct = self::scoreLibraryMatch($title, $file);
             $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
             $preferWebp = $ext === 'webp' ? 0.01 : 0.0;
-            $score = $pct + $preferWebp;
+            $titleSlug = self::slugify($title);
+            $preferSlot = (str_contains($titleSlug, 'slot') && str_contains($stem, 'slot')) ? 0.05 : 0.0;
+            $score = $pct + $preferWebp + $preferSlot;
             if (!isset($bestByStem[$stem]) || $score > $bestByStem[$stem]['score']) {
                 $bestByStem[$stem] = ['file' => $file, 'score' => $score, 'pct' => $pct];
             }
