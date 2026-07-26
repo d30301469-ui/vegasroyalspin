@@ -120,6 +120,63 @@ body.mobile-site {
   margin: 0;
 }
 
+/* SON KAZANANLAR / EN COK KAZANANLAR: pembe dolgu yok, dolanan border var */
+.mobile-site .winners-main-tabs {
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+}
+
+.mobile-site .winners-main-tab {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  border: 1px solid transparent;
+  border-radius: 3px !important;
+  background: rgba(18, 10, 40, 0.72);
+  background-clip: padding-box;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.mobile-site .winners-main-tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1.2px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--jp-border-angle),
+    transparent 0%,
+    transparent 55%,
+    rgba(168, 70, 225, 0.2) 68%,
+    rgba(168, 70, 225, 0.9) 78%,
+    rgba(255, 220, 255, 0.95) 86%,
+    rgba(168, 70, 225, 0.7) 92%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: jpTabBorderSpin 2.4s linear infinite;
+}
+
+.mobile-site .winners-main-tab:hover,
+.mobile-site .winners-main-tab:focus,
+.mobile-site .winners-main-tab.active,
+.mobile-site .winners-main-tab.active:hover,
+.mobile-site .winners-main-tab.active:focus {
+  background: rgba(18, 10, 40, 0.72);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
 /* Fallback home jackpot markup (wrapper yokken de düzenli görünsün) */
 .mobile-site .jp-section {
   margin: 8px auto 10px;
@@ -608,6 +665,7 @@ body.mobile-site .mobileHeader-actions #Giris::before {
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-site .home-jackpot-winners-section .slot-hero-tab::before,
+  .mobile-site .winners-main-tab::before,
   .mobile-site .jp-tab::before,
   .mobile-site .jp-tab,
   .mobile-site .jp-tab--active,
@@ -620,6 +678,7 @@ body.mobile-site .mobileHeader-actions #Giris::before {
 
 /* Sayfa gecisinde GPU yukunu dusur */
 html.is-page-leaving .mobile-site .home-jackpot-winners-section .slot-hero-tab::before,
+html.is-page-leaving .mobile-site .winners-main-tab::before,
 html.is-page-leaving .mobile-site .jp-tab::before,
 html.is-page-leaving .mobile-site .jp-tab,
 html.is-page-leaving .mobile-site .jp-tab--active,
