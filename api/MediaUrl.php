@@ -119,9 +119,15 @@ final class ApiMediaUrl
             $version = (string) time();
         } elseif (preg_match('/^\d{4}-\d{2}-\d{2}/', $version) === 1) {
             $ts = strtotime($version);
-            $version = $ts !== false ? (string) $ts : preg_replace('/\D+/', '', $version) ?: (string) time();
+            if ($ts !== false) {
+                $version = (string) $ts;
+            } else {
+                $digits = preg_replace('/\D+/', '', $version);
+                $version = ($digits !== null && $digits !== '') ? $digits : (string) time();
+            }
         } else {
-            $version = preg_replace('/[^a-zA-Z0-9_\-]/', '', $version) ?: (string) time();
+            $safe = preg_replace('/[^a-zA-Z0-9_\-]/', '', $version);
+            $version = ($safe !== null && $safe !== '') ? $safe : (string) time();
         }
 
         return $url . (str_contains($url, '?') ? '&' : '?') . 'updatedAt=' . rawurlencode($version);
