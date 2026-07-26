@@ -471,10 +471,10 @@ final class ApiSliders
             : (function_exists('frontend_remote_http_timeout') ? frontend_remote_http_timeout() : 12);
 
         if ($apiOnly) {
-            // Slider guncellemeleri gorseldir ve hemen yansimalidir: purge sinyali
-            // frontend'e ulasamazsa bile taze pencere en fazla 120 sn olsun
-            // (global CMS TTL api-only hostta 600 sn'e cikabiliyor).
-            $freshTtl = min(ApiCmsRemote::cacheFreshTtl(), 120);
+            // Slider guncellemeleri admin kaydinda purge ile aninda dusurulur;
+            // purge sinyali frontend'e ulasamazsa bile taze pencere en fazla
+            // 30 sn olsun (global CMS TTL api-only hostta 600 sn'e cikabiliyor).
+            $freshTtl = min(ApiCmsRemote::cacheFreshTtl(), 30);
             $cached = ApiCmsRemote::readPayloadCache($cacheKey, $freshTtl, false);
             if (is_array($cached['sliders'] ?? null)) {
                 ApiCmsRemote::recordFetch($cacheKey, 'cache');

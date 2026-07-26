@@ -64,6 +64,48 @@ foreach ($secrets as $key => $val) {
     }
 }
 
+// CMS purge uçtan uca testi: admin kaydı sonrası frontend cache'inin ANINDA
+// temizlenmesi bu çağrının 200 dönmesine bağlıdır. 403 = iki host'un .env
+// dosyasındaki FRONTEND_CMS_PURGE_SECRET değerleri FARKLI demektir; bu durumda
+// slider/footer değişiklikleri frontend'e cache TTL süresi kadar gecikmeli yansır.
+$purgeSecret = $secrets['FRONTEND_CMS_PURGE_SECRET'];
+if ($purgeSecret !== '' && !str_contains($purgeSecret, 'CHANGE-ME') && function_exists('curl_init')) {
+    $purgeTargets = [];
+    foreach (['FRONTEND_URL', 'SITE_URL', 'MOBILE_URL'] as $urlKey) {
+        $url = rtrim(trim(frontend_env_string($urlKey, '')), '/');
+        if ($url !== '' && !in_array($url, $purgeTargets, true)) {
+            $purgeTargets[] = $url;
+        }
+    }
+
+    echo "\nCMS cache purge probe (prefix=audit-probe, gerçek cache'e dokunmaz):\n";
+    foreach ($purgeTargets as $target) {
+        $ch = curl_init($target . '/api/v2/internal/cms-cache-purge?prefix=audit-probe');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'Accept: application/json',
+                'X-CMS-Purge-Secret: ' . $purgeSecret,
+            ],
+        ]);
+        curl_exec($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($status === 200) {
+            $line('OK', "CMS purge {$target} → HTTP 200 (anlık cache temizleme çalışıyor)");
+        } elseif ($status === 403) {
+            $line('FAIL', "CMS purge {$target} → HTTP 403 — FRONTEND_CMS_PURGE_SECRET bu host ile hedef host'ta FARKLI; iki .env'e aynı değeri yazın");
+        } else {
+            $line('FAIL', "CMS purge {$target} → HTTP {$status}" . ($curlError !== '' ? " ({$curlError})" : '') . ' — endpoint erişilemiyor');
+        }
+    }
+}
+
 if ($mode === 'frontend') {
     require_once $root . '/config/bootstrap_api.php';
     require_once $root . '/services/BackendApiClient.php';
