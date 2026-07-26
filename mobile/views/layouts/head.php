@@ -100,9 +100,13 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <title><?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?></title>
   <style>
     html.mobile-root {
-      background-color: #0e0124;
+      --body-bg: #0e0124;
+      --headerBG: #0e0124;
+      background: #0e0124 url('/assets/images/mobile-home-bg.jpg') no-repeat 50% 50% / cover !important;
     }
     body.mobile-site {
+      --body-bg: #0e0124;
+      --headerBG: #0e0124;
       background: #0e0124 url('/assets/images/mobile-home-bg.jpg') no-repeat 50% 50% / cover !important;
       background-attachment: scroll !important;
     }
