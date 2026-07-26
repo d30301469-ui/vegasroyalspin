@@ -440,7 +440,7 @@ if ($homeIsMobile):
 <?php
 endif;
 homeRenderGameSection(homeSectionByKey($homeSections, 'casino'), 'Casino', '/slot');
-homeRenderGameSection(homeSectionByKey($homeSections, 'live-casino'), 'Canl─▒ Casino', '/livecasino', true);
+homeRenderGameSection(homeSectionByKey($homeSections, 'live-casino'), 'Canlı Casino', '/livecasino', true);
 ?>
 
 <?php
