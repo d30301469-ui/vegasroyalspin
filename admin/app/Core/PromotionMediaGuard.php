@@ -422,7 +422,7 @@ final class PromotionMediaGuard
                 $boost += 8.0;
             }
 
-            return min(95.0, max(65.0, (float) $pct + $boost));
+            return min(98.0, max(65.0, (float) $pct + $boost));
         }
 
         $pct = 0.0;
