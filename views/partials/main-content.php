@@ -106,28 +106,16 @@ if (!function_exists('homeRenderBannerSection')) {
         $href = trim((string) ($payload['href'] ?? ''));
         $onclick = trim((string) ($payload['onclick'] ?? ''));
 
-        // Mobil yüzeyde (UA veya m. host) bu alanda kullanıcıdan gelen URL ile birebir banner kullan.
+        // Mobilde cekim banner'i gosterilmez.
         $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
         $isMobileSurface = (function_exists('isMobile') && isMobile()) || strpos($host, 'm.') === 0;
-        $forceMobileBanner = false;
         if ($isMobileSurface) {
-            // slider-banner-main.webp yanlis olarak spor baslik gorseliyle ayni; gercek cekim banner'i kullan.
-            $image = 'assets/images/mobile-withdraw-banner.webp';
-            $forceMobileBanner = true;
-            if (trim($alt) === '') {
-                $alt = 'Artık çekimlerinizde limitlerde takılmak yok';
-            }
+            return;
         }
 
-        if ($forceMobileBanner) {
-            $absFile = defined('BASE_PATH') ? BASE_PATH . '/' . ltrim($image, '/') : '';
-            $ver = (is_string($absFile) && $absFile !== '' && is_file($absFile)) ? (string) filemtime($absFile) : (string) time();
-            $src = '/' . ltrim($image, '/') . '?v=' . rawurlencode($ver);
-        } else {
-            $src = preg_match('#^https?://#i', $image) ? $image : (function_exists('asset_url') ? asset_url($image) : '/' . ltrim($image, '/'));
-        }
+        $src = preg_match('#^https?://#i', $image) ? $image : (function_exists('asset_url') ? asset_url($image) : '/' . ltrim($image, '/'));
         ?>
-        <div class="live-casino-banner-wrap" style="display:block !important;">
+        <div class="live-casino-banner-wrap">
             <div class="live-casino-banner">
                 <?php if ($href !== ''): ?>
                 <a href="<?= homeSectionH($href) ?>"<?= $onclick !== '' ? ' onclick="' . homeSectionH($onclick) . '"' : '' ?>>

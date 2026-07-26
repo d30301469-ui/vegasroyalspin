@@ -22,16 +22,14 @@ include VIEW_PATH . '/partials/slider.php';
 document.addEventListener('DOMContentLoaded', function () {
 	var bannerWrap = document.querySelector('.live-casino-banner-wrap');
 	var shortcutRow = document.querySelector('.hm-row-mobile-sports-shortcuts');
-	if (!bannerWrap || !shortcutRow) {
+	if (!shortcutRow) {
 		return;
 	}
 
-	var parent = bannerWrap.parentNode;
-	if (!parent) {
-		return;
+	// Cekim banneri mobilde yok; varsa kisayollari hemen altina al.
+	if (bannerWrap && bannerWrap.parentNode) {
+		bannerWrap.parentNode.insertBefore(shortcutRow, bannerWrap.nextSibling);
 	}
-
-	parent.insertBefore(shortcutRow, bannerWrap.nextSibling);
 });
 </script>
 <script src="/assets/js/jackpot.js?v=<?= htmlspecialchars($jackpotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>

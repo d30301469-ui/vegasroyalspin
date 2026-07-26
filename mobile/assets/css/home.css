@@ -48,24 +48,9 @@ body.mobile-site {
   border-radius: 8px;
 }
 
-/* Kampanya bannerı — tam görsel, kesilme yok */
+/* Kampanya / cekim banneri — mobilde gizli */
 .mobile-site .live-casino-banner-wrap {
-  margin: 8px 0 10px;
-  padding: 0;  /* full-width, no side gaps */
-}
-
-.mobile-site .live-casino-banner {
-  border-radius: 0;
-  overflow: hidden;
-  width: 100%;
-}
-
-.mobile-site .live-casino-banner img {
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  display: block !important;
-  object-fit: fill !important;
+  display: none !important;
 }
 
 /* Oyun başlığı — sol hizalama düzeltme */
