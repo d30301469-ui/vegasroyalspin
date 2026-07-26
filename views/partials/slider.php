@@ -128,6 +128,13 @@ $sliders             = array_values(array_filter($sliders, 'slider_item_has_medi
                 $dPath = (string) ($slider['desktopImageUrl'] ?? $slider['desktop_image_url'] ?? $slider['desktop_path'] ?? '');
                 $mPath = (string) ($slider['mobileImageUrl'] ?? $slider['mobile_image_url'] ?? $slider['mobile_path'] ?? '');
                 $dUrl = slider_build_url($dPath);
+                $version = trim((string) ($slider['updated_at'] ?? $slider['updatedAt'] ?? ''));
+                if ($version === '' || $version === '0000-00-00 00:00:00') {
+                    $version = 's' . (int) ($slider['id'] ?? 0) . 'o' . (int) ($slider['order'] ?? $sliderIndex);
+                }
+                if (class_exists('ApiMediaUrl', false)) {
+                    $dUrl = ApiMediaUrl::withMediaCacheBust($dUrl, $version);
+                }
                 $dMediaOk = slider_is_supported_media_url($dUrl);
                 if (!$dMediaOk) {
                     continue;

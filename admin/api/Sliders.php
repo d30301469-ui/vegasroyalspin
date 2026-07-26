@@ -289,6 +289,7 @@ final class ApiSliders
                 isset($columns['sort_order']) ? 'sort_order' : '0 AS sort_order',
                 isset($columns['order']) ? '`order`' : '0 AS `order`',
                 isset($columns['category']) ? 'category' : "'' AS category",
+                isset($columns['updated_at']) ? 'updated_at' : "'' AS updated_at",
             ];
 
             $whereSql = $where !== [] ? implode(' AND ', $where) : '1=1';
@@ -395,8 +396,12 @@ final class ApiSliders
             if ($desktop === '' && $mobile === '') {
                 continue;
             }
-            $desktop = ApiMediaUrl::resolve($desktop);
-            $mobile = ApiMediaUrl::resolve($mobile);
+            $version = trim((string) ($row['updated_at'] ?? $row['updatedAt'] ?? ''));
+            if ($version === '' || $version === '0000-00-00 00:00:00') {
+                $version = 's' . (int) ($row['id'] ?? 0) . 'o' . (int) ($row['sort_order'] ?? $row['order'] ?? 0);
+            }
+            $desktop = ApiMediaUrl::withMediaCacheBust(ApiMediaUrl::resolve($desktop), $version);
+            $mobile = ApiMediaUrl::withMediaCacheBust(ApiMediaUrl::resolve($mobile), $version);
             $selected = $surface === 'mobile'
                 ? ($mobile !== '' ? $mobile : $desktop)
                 : ($desktop !== '' ? $desktop : $mobile);
@@ -407,6 +412,7 @@ final class ApiSliders
                 'description' => (string) ($row['description'] ?? ''),
                 'category' => self::normalizeCategory((string) ($row['category'] ?? '')),
                 'order' => (int) ($row['sort_order'] ?? $row['order'] ?? 0),
+                'updated_at' => trim((string) ($row['updated_at'] ?? '')),
                 'desktopImageUrl' => $desktop,
                 'mobileImageUrl' => $mobile,
                 'imageUrl' => $selected,
@@ -788,9 +794,13 @@ final class ApiSliders
                 continue;
             }
 
-            $item['desktopImageUrl'] = ApiMediaUrl::resolve($desktop);
-            $item['mobileImageUrl'] = ApiMediaUrl::resolve($mobile);
-            $item['imageUrl'] = ApiMediaUrl::resolve($selected);
+            $version = trim((string) ($item['updated_at'] ?? $item['updatedAt'] ?? ''));
+            if ($version === '') {
+                $version = 's' . (int) ($item['id'] ?? 0) . 'o' . (int) ($item['order'] ?? 0);
+            }
+            $item['desktopImageUrl'] = ApiMediaUrl::withMediaCacheBust(ApiMediaUrl::resolve($desktop), $version);
+            $item['mobileImageUrl'] = ApiMediaUrl::withMediaCacheBust(ApiMediaUrl::resolve($mobile), $version);
+            $item['imageUrl'] = ApiMediaUrl::withMediaCacheBust(ApiMediaUrl::resolve($selected), $version);
             $item['surface'] = $surface;
             $normalized[] = $item;
         }

@@ -69,6 +69,7 @@ final class ApiMediaUrl
      */
     public static function resolveSliderRow(array $slider): array
     {
+        $version = self::sliderCacheVersion($slider);
         foreach ([
             'desktopImageUrl',
             'mobileImageUrl',
@@ -82,10 +83,68 @@ final class ApiMediaUrl
             if (!isset($slider[$key]) || !is_string($slider[$key])) {
                 continue;
             }
-            $slider[$key] = self::resolve($slider[$key]);
+            $slider[$key] = self::withMediaCacheBust(self::resolve($slider[$key]), $version);
         }
 
         return $slider;
+    }
+
+    /**
+     * ImageKit (ve benzeri CDN) URL'lerine updatedAt ekler.
+     * Ayni dosya adiyla gorsel degistirildiginde yillik CDN/tarayici cache
+     * eski banner'i gostermeye devam eder; mobil tarafta updatedAt varken
+     * masaustunde yoksa sadece desktop bayat kalir.
+     */
+    public static function withMediaCacheBust(string $url, string $version = ''): string
+    {
+        $url = trim($url);
+        if ($url === '' || !preg_match('#^https?://#i', $url)) {
+            return $url;
+        }
+
+        $query = (string) (parse_url($url, PHP_URL_QUERY) ?? '');
+        if (preg_match('/(?:^|&)(?:updatedAt|updated_at|v|ver|t)=/i', $query) === 1) {
+            return $url;
+        }
+
+        $version = trim($version);
+        if ($version === '') {
+            $version = (string) time();
+        } elseif (preg_match('/^\d{4}-\d{2}-\d{2}/', $version) === 1) {
+            $ts = strtotime($version);
+            if ($ts !== false) {
+                $version = (string) $ts;
+            } else {
+                $digits = preg_replace('/\D+/', '', $version);
+                $version = ($digits !== null && $digits !== '') ? $digits : (string) time();
+            }
+        } else {
+            $safe = preg_replace('/[^a-zA-Z0-9_\-]/', '', $version);
+            $version = ($safe !== null && $safe !== '') ? $safe : (string) time();
+        }
+
+        return $url . (str_contains($url, '?') ? '&' : '?') . 'updatedAt=' . rawurlencode($version);
+    }
+
+    /**
+     * @param array<string, mixed> $slider
+     */
+    private static function sliderCacheVersion(array $slider): string
+    {
+        foreach (['updated_at', 'updatedAt', 'updated'] as $key) {
+            $raw = trim((string) ($slider[$key] ?? ''));
+            if ($raw !== '' && $raw !== '0000-00-00 00:00:00') {
+                return $raw;
+            }
+        }
+
+        $id = (int) ($slider['id'] ?? 0);
+        $order = (int) ($slider['order'] ?? $slider['sort_order'] ?? 0);
+        if ($id > 0) {
+            return 's' . $id . 'o' . $order;
+        }
+
+        return '';
     }
 
     /**
