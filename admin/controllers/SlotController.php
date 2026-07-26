@@ -25,27 +25,23 @@ class SlotController extends Controller
 
         $page              = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
+        // Softswiss/slot entegrasyonu yok — sayfa bilerek boş.
+        // Aktif slot kataloğu yalnızca BGaming (/bgaming).
+        $games              = [];
 
+        $allUniqueProviders = [];
 
-        $result             = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $currentSort, []);
+        $totalSlots         = 0;
 
-        $games              = $result['games'];
+        $perPage            = $limit;
 
-        $allUniqueProviders = SlotGamesQuery::allProviders();
+        $currentPage        = $page;
 
-        $totalSlots         = $result['total'];
+        $hasNext            = false;
 
-        $perPage            = $result['perPage'];
+        $remainingGames     = 0;
 
-        $currentPage        = $result['page'];
-
-        $hasNext            = $result['hasNext'];
-
-        $loadedCount        = ($currentPage - 1) * $perPage + count($games);
-
-        $remainingGames     = max(0, $totalSlots - $loadedCount);
-
-        $showLoadMore       = $hasNext && $remainingGames > 0;
+        $showLoadMore       = false;
 
         $nextPage           = $currentPage + 1;
 
@@ -57,9 +53,11 @@ class SlotController extends Controller
 
         $slotShowActionButtons = true;
 
-        $apiError = !empty($result['apiError']);
+        $apiError = false;
 
-        sort($allUniqueProviders);
+        $slotEmptyTitle = 'Slot oyunu bulunamadı';
+
+        $slotEmptyText = 'Slot sağlayıcı entegrasyonu henüz aktif değil. BGaming oyunları için /bgaming sayfasını kullanın.';
 
         $this->view('pages/slot', compact(
 
@@ -69,7 +67,9 @@ class SlotController extends Controller
 
             'totalSlots', 'remainingGames', 'showLoadMore', 'providerBadges',
 
-            'perPage', 'hasNext', 'slotApiParams', 'slotShowActionButtons', 'slotGameType', 'apiError'
+            'perPage', 'hasNext', 'slotApiParams', 'slotShowActionButtons', 'slotGameType', 'apiError',
+
+            'slotEmptyTitle', 'slotEmptyText'
 
         ));
 

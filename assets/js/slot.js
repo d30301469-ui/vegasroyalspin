@@ -525,25 +525,28 @@
                 provider_code: game.provider_code || '',
                 source: game.source || ''
             };
+        }).filter(function(game) {
+            // Softswiss/slot entegrasyonu yok; BGaming yalnızca /bgaming.
+            return !isBgamingGame(game);
         });
         var page = Number(pagination.page || 1);
         var perPage = Number(pagination.perPage || PAGE_SIZE);
+        var rawCount = rawGames.length;
         var filteredCount = games.length;
-        var hasNext = !!pagination.hasNext;
-        var total = Number(pagination.total || filteredCount);
-        var loaded = Math.max(0, (page - 1) * perPage) + filteredCount;
-        var remaining = Math.max(0, total - loaded);
+        var hasNext = !!pagination.hasNext && filteredCount > 0;
+        var total = filteredCount;
+        var remaining = 0;
 
         return {
             ok: !!(data && data.success),
             games: games,
             totalSlots: total,
             remainingGames: remaining,
-            showLoadMore: hasNext && remaining > 0,
+            showLoadMore: false,
             nextPage: page + 1,
             page: page,
             perPage: perPage,
-            rawCount: games.length
+            rawCount: rawCount
         };
     }
 

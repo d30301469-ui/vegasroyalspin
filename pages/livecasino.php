@@ -13,19 +13,18 @@ $currentSort = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
-$result = SlotGamesQuery::gamesPage(1, $searchTerm, $selectedProviders, $limit, $page, $currentSort, []);
-$games = $result['games'] ?? [];
+// Live casino entegrasyonu yok — sayfa bilerek boş.
+$games = [];
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
-$allUniqueProviders = SlotGamesQuery::providersForGameType(1, 'live_casino');
-$totalSlots = (int) ($result['total'] ?? count($games));
-$perPage = (int) ($result['perPage'] ?? $limit);
-$currentPage = (int) ($result['page'] ?? $page);
-$hasNext = !empty($result['hasNext']);
-$loadedCount = ($currentPage - 1) * $perPage + count($games);
-$remainingGames = max(0, $totalSlots - $loadedCount);
-$showLoadMore = $hasNext && $remainingGames > 0;
+$allUniqueProviders = [];
+$totalSlots = 0;
+$perPage = $limit;
+$currentPage = $page;
+$hasNext = false;
+$remainingGames = 0;
+$showLoadMore = false;
 $nextPage = $currentPage + 1;
-$apiError = !empty($result['apiError']);
+$apiError = false;
 
 $providerBadges = [
     'pragmatic' => ['EN IYI', 'SICAK'],
@@ -35,13 +34,12 @@ $providerBadges = [
     'ezugi' => ['OZEL'],
     'creedroomz' => ['OZEL'],
 ];
-sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
 
 $slotPageBaseUrl = '/livecasino';
 $slotPageTitle = 'CANLI CASINO';
 $slotGameType = 1;
 $slotEmptyTitle = 'Canlı casino oyunu bulunamadı';
-$slotEmptyText = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin.';
+$slotEmptyText = 'Canlı casino entegrasyonu henüz aktif değil.';
 $slotApiParams = [];
 $sliderApiCategory = 'live_casino';
 $slotShowActionButtons = true;
