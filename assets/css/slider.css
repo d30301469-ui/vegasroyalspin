@@ -136,8 +136,10 @@
     background: transparent;
 }
 
-/* JS herhangi nedenle gecikirse/kirilirsa slider tamamen kaybolmasin. */
-.home-hero-slider .slides .sdr-item-holder-bc.slide-item:first-child {
+/* JS herhangi nedenle gecikirse/kirilirsa slider tamamen kaybolmasin.
+   Yalnizca hicbir slayt .active degilken devreye girer; aksi halde
+   ilk slayt aktif slaytin ustune biner. */
+.home-hero-slider .slides:not(:has(.slide-item.active)) .sdr-item-holder-bc.slide-item:first-child {
     opacity: 1;
     visibility: visible;
     z-index: 1;
