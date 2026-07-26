@@ -33,12 +33,16 @@ body.mobile-site {
 }
 
 .mobile-site .home-jackpot-winners-section .slot-hero-tab {
+  position: relative;
+  isolation: isolate;
   flex: 1;
   margin: 0;
   padding: 11px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9px;
+  overflow: visible;
+  border: 1px solid transparent;
+  border-radius: 3px;
   background: rgba(18, 10, 40, 0.72);
+  background-clip: padding-box;
   color: rgba(255, 255, 255, 0.55);
   font-size: 11px;
   font-weight: 800;
@@ -47,16 +51,44 @@ body.mobile-site {
   cursor: pointer;
 }
 
+.mobile-site .home-jackpot-winners-section .slot-hero-tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1.2px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--jp-border-angle),
+    transparent 0%,
+    transparent 55%,
+    rgba(168, 70, 225, 0.2) 68%,
+    rgba(168, 70, 225, 0.9) 78%,
+    rgba(255, 220, 255, 0.95) 86%,
+    rgba(168, 70, 225, 0.7) 92%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: jpTabBorderSpin 2.4s linear infinite;
+}
+
 .mobile-site .home-jackpot-winners-section .slot-hero-tab--active {
   color: #fff;
   background: linear-gradient(135deg, #9b2fd4 0%, #c742e8 100%);
-  border-color: rgba(255, 255, 255, 0.16);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
-/* Ayrı kapsüller: ikinci butonda da aynı ince çerçeve kalsın */
+/* Ayrı kapsüller: ikinci buton birleşik görünmesin */
 .mobile-site .home-jackpot-winners-section .slot-hero-tab + .slot-hero-tab {
-  border-left-color: rgba(255, 255, 255, 0.12);
+  border-left-color: transparent;
 }
 
 .mobile-site .home-jackpot-winners-section .slot-hero-panels,
@@ -565,6 +597,7 @@ body.mobile-site .mobileHeader-actions #Giris::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .mobile-site .home-jackpot-winners-section .slot-hero-tab::before,
   .mobile-site .jp-tab,
   .mobile-site .jp-tab--active,
   body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-info-bc.product-banner-bc::before,
@@ -575,6 +608,7 @@ body.mobile-site .mobileHeader-actions #Giris::before {
 }
 
 /* Sayfa gecisinde GPU yukunu dusur */
+html.is-page-leaving .mobile-site .home-jackpot-winners-section .slot-hero-tab::before,
 html.is-page-leaving .mobile-site .jp-tab,
 html.is-page-leaving .mobile-site .jp-tab--active,
 html.is-page-leaving body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-info-bc.product-banner-bc::before,
