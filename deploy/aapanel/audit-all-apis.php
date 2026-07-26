@@ -1,35 +1,51 @@
-#!/usr/bin/env php
 <?php
 
 declare(strict_types=1);
 
 /**
  * Frontend + backend API zinciri tam denetim.
- * Usage:
+ * Usage (CLI):
  *   php deploy/aapanel/audit-all-apis.php [frontend-root]
  *   php deploy/aapanel/audit-all-apis.php --backend [backend-root]
+ * Usage (tarayıcı):
+ *   https://site.com/deploy/aapanel/audit-all-apis.php
+ *   https://site.com/deploy/aapanel/audit-all-apis.php?mode=backend
  */
+
+$isCli = PHP_SAPI === 'cli';
+if (!$isCli) {
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Cache-Control: no-store');
+}
 
 $mode = 'frontend';
 $root = dirname(__DIR__, 2);
-foreach (array_slice($argv, 1) as $arg) {
-    if ($arg === '--backend') {
-        $mode = 'backend';
-        continue;
+if ($isCli) {
+    foreach (array_slice($argv ?? [], 1) as $arg) {
+        if ($arg === '--backend') {
+            $mode = 'backend';
+            continue;
+        }
+        if (trim($arg) !== '' && !str_starts_with($arg, '-')) {
+            $root = rtrim(str_replace('\\', '/', $arg), '/');
+        }
     }
-    if (trim($arg) !== '' && !str_starts_with($arg, '-')) {
-        $root = rtrim(str_replace('\\', '/', $arg), '/');
-    }
+} elseif (strtolower(trim((string) ($_GET['mode'] ?? ''))) === 'backend') {
+    $mode = 'backend';
 }
 
 $fail = 0;
 $warn = 0;
 $ok = 0;
 
-$line = static function (string $level, string $msg) use (&$fail, &$warn, &$ok): void {
+$line = static function (string $level, string $msg) use (&$fail, &$warn, &$ok, $isCli): void {
     if ($level === 'FAIL') {
         $fail++;
-        fwrite(STDERR, "FAIL  {$msg}\n");
+        if ($isCli) {
+            fwrite(STDERR, "FAIL  {$msg}\n");
+        } else {
+            echo "FAIL  {$msg}\n";
+        }
     } elseif ($level === 'WARN') {
         $warn++;
         echo "WARN  {$msg}\n";
