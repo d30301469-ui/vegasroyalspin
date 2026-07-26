@@ -148,7 +148,7 @@ if (!function_exists('frontend_is_api_only')) {
             if (function_exists('metropol_is_backend_host') && metropol_is_backend_host($host)) {
                 return false;
             }
-            if (in_array($host, ['admin.vegasroyalspin.com', 'api.vegasroyalspin.com'], true)) {
+            if ($host === 'admin.vegasroyalspin.com') {
                 return false;
             }
 
@@ -247,7 +247,7 @@ if (!function_exists('frontend_database_allowed')) {
             if (function_exists('metropol_is_backend_host') && metropol_is_backend_host($host)) {
                 return true;
             }
-            if (in_array($host, ['admin.vegasroyalspin.com', 'api.vegasroyalspin.com'], true)) {
+            if ($host === 'admin.vegasroyalspin.com') {
                 return true;
             }
 

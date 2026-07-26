@@ -69,11 +69,24 @@ class UserRepository
         return null;
     }
 
-    public function updateBalance(int $userId, float $amount): void
+    /**
+     * Backend v2 rotası `users/{id}/balance-adjust` şeklindedir ve
+     * wallet/action/amount gövdesi bekler. Yanıt kontrol edilmezse bakiye
+     * yüklenmediği halde callback başarılı sanılır — bu yüzden bool döner.
+     */
+    public function updateBalance(int $userId, float $amount): bool
     {
-        BackendApiClient::request('POST', $this->backendKey, '/users/balance-adjust', [], [
-            'user_id' => $userId,
-            'amount'  => $amount,
+        if ($userId <= 0 || abs($amount) < 0.01) {
+            return false;
+        }
+
+        $response = BackendApiClient::request('POST', $this->backendKey, '/users/' . $userId . '/balance-adjust', [], [
+            'wallet' => 'balance',
+            'action' => $amount >= 0 ? 'add' : 'subtract',
+            'amount' => round(abs($amount), 2),
+            'note'   => 'legacy-payment-callback',
         ]);
+
+        return is_array($response) && (bool) ($response['success'] ?? false);
     }
 }

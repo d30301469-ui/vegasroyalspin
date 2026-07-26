@@ -42,17 +42,19 @@ if ($normalizedRoute === 'internal/reset-bonus-claims') {
         }
         $authorized = true;
     } else {
-        // Shared secret header kontrolu
-        $purgeSecret = trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: ''));
+        // Yıkıcı işlem: yalnızca ADMIN_INTERNAL_RESET_SECRET kabul edilir.
+        // CMS purge secret'ı (FRONTEND_CMS_PURGE_SECRET) bilinçli olarak
+        // kullanılmaz — cache temizleme anahtarı veri silme yetkisi vermemeli.
+        $resetSecret = trim((string) (getenv('ADMIN_INTERNAL_RESET_SECRET') ?: ''));
         $provided = trim((string) ($_SERVER['HTTP_X_RESET_SECRET'] ?? ''));
-        if ($purgeSecret !== '' && $provided !== '' && hash_equals($purgeSecret, $provided)) {
+        if ($resetSecret !== '' && $provided !== '' && hash_equals($resetSecret, $provided)) {
             $authorized = true;
         }
     }
 
     if (!$authorized) {
         http_response_code(401);
-        echo json_encode(['success' => false, 'code' => 401, 'message' => 'Admin oturumu veya X-Reset-Secret header gerekli.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => false, 'code' => 401, 'message' => 'Admin oturumu veya X-Reset-Secret header (ADMIN_INTERNAL_RESET_SECRET) gerekli.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -149,16 +151,17 @@ if ($normalizedRoute === 'internal/reset-pending-transactions') {
         }
         $authorized = true;
     } else {
-        $purgeSecret = trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: ''));
+        // Yıkıcı işlem: yalnızca ADMIN_INTERNAL_RESET_SECRET kabul edilir (CMS purge secret'ı değil).
+        $resetSecret = trim((string) (getenv('ADMIN_INTERNAL_RESET_SECRET') ?: ''));
         $provided = trim((string) ($_SERVER['HTTP_X_RESET_SECRET'] ?? ''));
-        if ($purgeSecret !== '' && $provided !== '' && hash_equals($purgeSecret, $provided)) {
+        if ($resetSecret !== '' && $provided !== '' && hash_equals($resetSecret, $provided)) {
             $authorized = true;
         }
     }
 
     if (!$authorized) {
         http_response_code(401);
-        echo json_encode(['success' => false, 'code' => 401, 'message' => 'Admin oturumu veya X-Reset-Secret header gerekli.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => false, 'code' => 401, 'message' => 'Admin oturumu veya X-Reset-Secret header (ADMIN_INTERNAL_RESET_SECRET) gerekli.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

@@ -45,11 +45,15 @@ class PaymentCallbackService
         }
 
         if ($db_durum === 0) {
-            $this->userRepo->updateBalance($kullanici_id, $tutar);
+            // Bakiye yüklenemediyse sağlayıcıya başarı dönmek kaydı kaybettirir;
+            // 502 ile sağlayıcının retry mekanizması devreye girer.
+            if (!$this->userRepo->updateBalance($kullanici_id, $tutar)) {
+                return ['status' => 'error', 'message' => 'Bakiye güncellenemedi', 'http' => 502];
+            }
             $db_durum = 2;
         }
 
-        $this->depositRepo->insert(
+        $inserted = $this->depositRepo->insert(
             $data['id'] ?? null,
             $kullanici_id,
             $tutar,
@@ -61,6 +65,9 @@ class PaymentCallbackService
             $data['token'] ?? null,
             $data['kullanici_isim'] ?? null
         );
+        if (!$inserted) {
+            return ['status' => 'error', 'message' => 'Yatırım kaydı oluşturulamadı', 'http' => 502];
+        }
 
         return ['status' => true, 'http' => 200];
     }

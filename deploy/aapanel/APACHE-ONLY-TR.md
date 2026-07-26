@@ -14,8 +14,7 @@ Bu proje yalnizca Apache + .htaccess ile calisir. Nginx reverse proxy acik olmam
 ## Site ayarlari
 
 Her site icin:
-- admin.vegasroyalspin.com
-- api.vegasroyalspin.com (ayni backend kod kokune alias)
+- admin.vegasroyalspin.com (member API dahil — /api/v2 bu host uzerinden servis edilir, ayri api.* subdomain yoktur)
 - vegasroyalspin.com
 
 Ayarlar:
@@ -40,7 +39,7 @@ Ayarlar:
 
 ```bash
 curl -sS https://admin.vegasroyalspin.com/ping.php
-curl -sS https://api.vegasroyalspin.com/api/v2/site_settings.php
+curl -sS https://admin.vegasroyalspin.com/api/v2/site_settings.php
 curl -sS https://vegasroyalspin.com/ping.php
 curl -sS https://vegasroyalspin.com/health.php
 ```

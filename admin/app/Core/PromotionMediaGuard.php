@@ -48,7 +48,12 @@ final class PromotionMediaGuard
             self::markMaintenanceRun();
         }
 
-        // Onarım adımı ucuzdur; throttle'a bağlı kalmadan her istekte çalışır.
+        // Fuzzy onarım promotions.image_url'i otomatik değiştirir; yanlış
+        // eşleşme riski nedeniyle yalnızca PROMOTION_MEDIA_AUTO_REPAIR=1
+        // iken çalışır. Kapalıyken repairMissingImages() elle çağrılabilir.
+        if (!filter_var((string) getenv('PROMOTION_MEDIA_AUTO_REPAIR'), FILTER_VALIDATE_BOOLEAN)) {
+            return;
+        }
         try {
             self::repairMissingImages($pdo);
         } catch (Throwable) {

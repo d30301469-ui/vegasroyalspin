@@ -169,7 +169,7 @@
     }
 
     // Surum parametresi CDN/edge cache'ini atlayarak yeni SW'nin inmesini garantiler.
-    navigator.serviceWorker.register('/service-worker.js?v=21-slider-overlap-fix', { scope: '/' })
+    navigator.serviceWorker.register('/service-worker.js?v=22-mobile-nav-perf', { scope: '/' })
       .then(function (reg) {
         if (reg && typeof reg.update === 'function') {
           reg.update().catch(function () { /* ignore */ });

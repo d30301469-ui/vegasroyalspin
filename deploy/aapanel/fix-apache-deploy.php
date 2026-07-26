@@ -120,7 +120,7 @@ if (function_exists('curl_init')) {
     // API test (frontend → backend veya backend doğrudan)
     if ($role === 'backend') {
         $apiUrl = 'http://127.0.0.1/api/v2/site_settings.php';
-        $apiHost = 'api.vegasroyalspin.com';
+        $apiHost = 'admin.vegasroyalspin.com';
     } else {
         $apiUrl = 'http://127.0.0.1/api/v2/content/sliders?category=home';
         $apiHost = $host;
@@ -142,18 +142,16 @@ if (function_exists('curl_init')) {
     if ($apiHttp === 200 && is_string($apiBody) && str_contains($apiBody, '"success"')) {
         echo "[OK] API loopback {$apiUrl} Host:{$apiHost} → HTTP 200 JSON\n";
     } else {
-        $errors[] = "API loopback başarısız (HTTP {$apiHttp}). Backend .env ve api.vegasroyalspin.com DNS/SSL kontrol edin.";
+        $errors[] = "API loopback başarısız (HTTP {$apiHttp}). Backend .env ve admin.vegasroyalspin.com DNS/SSL kontrol edin.";
         echo "[FAIL] API loopback HTTP {$apiHttp}\n";
     }
 }
 
-// ── 4. SSL / api subdomain notu ─────────────────────────────────────────────
+// ── 4. SSL notu ──────────────────────────────────────────────────────────────
 if ($role === 'backend') {
-    echo "\n--- api.vegasroyalspin.com SSL (AH01909) ---\n";
-    echo "Uyarı normaldir aaPanel'de yanlış origin sertifikası varsa.\n";
-    echo "Çözüm: Cloudflare'de api A kaydını proxied (turuncu bulut) yapın.\n";
-    echo "       aaPanel'de api için ayrı 443 site AÇMAYIN — admin.vegasroyalspin.com ile aynı docroot.\n";
-    echo "       Cloudflare SSL = Flexible, aaPanel Force HTTPS = KAPAT.\n";
+    echo "\n--- admin.vegasroyalspin.com SSL ---\n";
+    echo "Member API ayrı api.* subdomain KULLANMAZ; admin.vegasroyalspin.com/api/v2 üzerinden servis edilir.\n";
+    echo "Cloudflare SSL = Flexible, aaPanel Force HTTPS = KAPAT.\n";
     echo "Sonra: php deploy/aapanel/fix-backend-env.php\n";
 } else {
     echo "\n--- Sonraki adımlar ---\n";

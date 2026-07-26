@@ -461,8 +461,11 @@ final class ApiCmsRemote
         if ($savedAt <= 0) {
             return null;
         }
+        // Yaş sınırı her zaman uygulanır: $allowStale=true çağrılarında üst sınır
+        // cacheStaleMaxAge() olarak geçilir. Aksi halde bayat CMS verisi (ör. eski
+        // marka footer'ı) uzak API erişilemediği sürece süresiz servis edilirdi.
         $age = time() - $savedAt;
-        if (!$allowStale && $age > max(30, $maxAgeSeconds)) {
+        if ($age > max(30, $maxAgeSeconds)) {
             return null;
         }
 

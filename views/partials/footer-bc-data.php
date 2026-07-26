@@ -7,22 +7,13 @@ if (!defined('API_PATH')) {
     require_once API_PATH . '/bootstrap.php';
 }
 
+// Tek kaynak: ApiFooter::fetch(). API-only hostlarda zaten uzak /content/footer'ı
+// ("footer" cache anahtarıyla) okur; DB'ye izin verilen hostlarda footer_settings
+// tablosunu okur. Eskiden burada ikinci bir "footer_render" cache anahtarıyla uzak
+// veri array_replace ile üste yazılıyordu; iki anahtar desenkron olduğunda taze veri
+// bayat remote kopyayla eziliyordu (adminden yapılan değişiklikler frontend'e
+// yansımıyordu). Bu yüzden overlay kaldırıldı — ikinci bir okuma eklemeyin.
 $footerPayload = ApiFooter::fetch();
-
-// Frontend render katmanında API footer verisini source-of-truth kabul et.
-// Split deploy veya local DB/env drift durumlarında admin'deki güncel footer
-// değerleri (özellikle copyright/site_name) doğrudan frontend'e yansısın.
-if (class_exists('ApiCmsRemote', false)) {
-    $remoteEnvelope = ApiCmsRemote::getMainCached('footer_render', ['/content/footer', '/footer.php']);
-    if (is_array($remoteEnvelope)) {
-        $remoteFooter = is_array($remoteEnvelope['footer'] ?? null)
-            ? $remoteEnvelope['footer']
-            : $remoteEnvelope;
-        if (is_array($remoteFooter) && $remoteFooter !== []) {
-            $footerPayload = ApiFooter::normalize(array_replace($footerPayload, $remoteFooter));
-        }
-    }
-}
 
 $footerSocialIcons = is_array($footerPayload['social_icons'] ?? null)
     ? $footerPayload['social_icons']

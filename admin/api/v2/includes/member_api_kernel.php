@@ -416,11 +416,19 @@ $memberJwtIssue = static function (PDO $pdo, array $user, int $ttl = 2592000): s
 };
 
 $memberFrontendTrustUserId = static function (string $scope = 'member-proxy'): int {
-    $secret = trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: ''));
-    if ($secret === '' && defined('FRONTEND_CMS_PURGE_SECRET')) {
-        $secret = trim((string) FRONTEND_CMS_PURGE_SECRET);
+    // Rotasyon güvenliği: önce özel FRONTEND_MEMBER_TRUST_SECRET, geçiş
+    // dönemi için eski CMS purge secret'ı da aday olarak denenir.
+    $secretCandidates = [];
+    foreach ([
+        trim((string) (getenv('FRONTEND_MEMBER_TRUST_SECRET') ?: '')),
+        trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: '')),
+        defined('FRONTEND_CMS_PURGE_SECRET') ? trim((string) FRONTEND_CMS_PURGE_SECRET) : '',
+    ] as $candidate) {
+        if ($candidate !== '' && !str_contains($candidate, 'CHANGE-ME') && !in_array($candidate, $secretCandidates, true)) {
+            $secretCandidates[] = $candidate;
+        }
     }
-    if ($secret === '' || str_contains($secret, 'CHANGE-ME')) {
+    if ($secretCandidates === []) {
         return 0;
     }
     $userId = (int) ($_SERVER['HTTP_X_MEMBER_PROXY_USER_ID'] ?? 0);
@@ -428,12 +436,13 @@ $memberFrontendTrustUserId = static function (string $scope = 'member-proxy'): i
     if ($userId <= 0 || $trust === '') {
         return 0;
     }
-    $expected = hash_hmac('sha256', $scope . ':' . $userId, $secret);
-    if (!hash_equals($expected, $trust)) {
-        return 0;
+    foreach ($secretCandidates as $candidate) {
+        if (hash_equals(hash_hmac('sha256', $scope . ':' . $userId, $candidate), $trust)) {
+            return $userId;
+        }
     }
 
-    return $userId;
+    return 0;
 };
 
 $memberJwtExtractBearer = static function (): string {

@@ -17,11 +17,19 @@ final class AdminAuth
         return $name !== '' ? $name : self::PERSIST_COOKIE;
     }
 
-    private static function persistentCookieSecret(): string
+    /**
+     * Kalıcı cookie HMAC anahtarı. Env'de hiçbir secret yoksa null döner ve
+     * "beni hatırla" özelliği devre dışı kalır — tahmin edilebilir sabit bir
+     * fallback ile imzalanmış cookie forge edilebilirdi.
+     */
+    private static function persistentCookieSecret(): ?string
     {
         $secret = trim((string) (getenv('ADMIN_AUTH_COOKIE_SECRET') ?: ''));
         if ($secret === '') {
-            $secret = trim((string) (getenv('APP_KEY') ?: getenv('MEMBER_JWT_SECRET') ?: 'vegasroyalspin-admin-auth'));
+            $secret = trim((string) (getenv('APP_KEY') ?: getenv('MEMBER_JWT_SECRET') ?: ''));
+        }
+        if ($secret === '') {
+            return null;
         }
         return hash('sha256', $secret . '|admin-persist');
     }
@@ -90,8 +98,12 @@ final class AdminAuth
         if (!is_string($payload) || $payload === '') {
             return;
         }
+        $secret = self::persistentCookieSecret();
+        if ($secret === null) {
+            return;
+        }
         $encoded = self::base64UrlEncode($payload);
-        $sig = hash_hmac('sha256', $encoded, self::persistentCookieSecret());
+        $sig = hash_hmac('sha256', $encoded, $secret);
         self::setPersistentCookie($encoded . '.' . $sig, $expiresAt);
     }
 
@@ -115,8 +127,14 @@ final class AdminAuth
             return false;
         }
 
+        $secret = self::persistentCookieSecret();
+        if ($secret === null) {
+            self::clearPersistentCookie();
+            return false;
+        }
+
         [$encoded, $sig] = explode('.', $raw, 2);
-        $expected = hash_hmac('sha256', $encoded, self::persistentCookieSecret());
+        $expected = hash_hmac('sha256', $encoded, $secret);
         if ($sig === '' || !hash_equals($expected, $sig)) {
             self::clearPersistentCookie();
             return false;

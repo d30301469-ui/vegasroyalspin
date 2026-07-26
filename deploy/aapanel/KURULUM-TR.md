@@ -1,4 +1,5 @@
-# aaPanel kurulum — vegasroyalspin.com + admin.vegasroyalspin.com + api.vegasroyalspin.com
+# aaPanel kurulum — vegasroyalspin.com + admin.vegasroyalspin.com
+<!-- Member API ayrı api.* subdomain kullanmaz; admin.vegasroyalspin.com/api/v2 üzerinden servis edilir. -->
 
 > **SSL: Cloudflare edge only** — [CLOUDFLARE-TR.md](CLOUDFLARE-TR.md)  
 > **Web sunucusu: Apache-only.** [APACHE-ONLY-TR.md](APACHE-ONLY-TR.md)
@@ -72,7 +73,7 @@ APP_ENV=production
 FRONTEND_API_ONLY=1
 SITE_URL=https://vegasroyalspin.com
 BACKEND_URL=https://admin.vegasroyalspin.com
-API_BACKEND_MAIN_BASE_URL=https://api.vegasroyalspin.com/api/v2
+API_BACKEND_MAIN_BASE_URL=https://admin.vegasroyalspin.com/api/v2
 MEMBER_JWT_SECRET=... (backend ile aynı)
 FRONTEND_CMS_PURGE_SECRET=... (backend ile aynı)
 ```
@@ -84,7 +85,7 @@ FRONTEND_CMS_PURGE_SECRET=... (backend ile aynı)
 ```bash
 curl -sS https://admin.vegasroyalspin.com/ping.php
 curl -sS https://vegasroyalspin.com/ping.php
-curl -sS 'https://api.vegasroyalspin.com/api/v2/content/sliders?category=home'
+curl -sS 'https://admin.vegasroyalspin.com/api/v2/content/sliders?category=home'
 curl -sS https://vegasroyalspin.com/diagnose.php
 ```
 

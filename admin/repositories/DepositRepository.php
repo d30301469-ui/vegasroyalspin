@@ -14,6 +14,11 @@ class DepositRepository
         $this->backendKey = $backendKey;
     }
 
+    /**
+     * Yanıt kontrol edilmezse kayıt yazılmadığı halde callback başarılı
+     * sanılır — bu yüzden bool döner. Backend'de bu path yoksa false döner
+     * ve çağıran taraf ödeme sağlayıcısına hata iletir.
+     */
     public function insert(
         ?string $user_id,
         int $uye,
@@ -25,8 +30,8 @@ class DepositRepository
         string $aciklama,
         ?string $token,
         ?string $adsoyad
-    ): void {
-        BackendApiClient::request('POST', $this->backendKey, '/deposits/parayatir', [], [
+    ): bool {
+        $response = BackendApiClient::request('POST', $this->backendKey, '/deposits/parayatir', [], [
             'user_id'  => $user_id,
             'uye'      => $uye,
             'miktar'   => $miktar,
@@ -38,5 +43,7 @@ class DepositRepository
             'token'    => $token,
             'adsoyad'  => $adsoyad,
         ]);
+
+        return is_array($response) && (bool) ($response['success'] ?? false);
     }
 }

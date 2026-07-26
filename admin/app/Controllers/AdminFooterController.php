@@ -116,21 +116,32 @@ final class AdminFooterController extends AdminController
             $pdo = AdminDatabase::pdo();
             $this->ensureFooterTable($pdo);
             error_log('Footer update - ensureFooterTable OK');
-            $pdo->exec('UPDATE footer_settings SET is_active = 0');
-            error_log('Footer update - SET is_active=0 OK');
 
-            $stmt = $pdo->prepare('SELECT id FROM footer_settings WHERE name = :name ORDER BY id DESC LIMIT 1');
-            $stmt->execute(['name' => 'default']);
-            $id = (int) $stmt->fetchColumn();
-            error_log('Footer update - found existing id: ' . $id);
-            if ($id > 0) {
-                $update = $pdo->prepare('UPDATE footer_settings SET payload = :payload, is_active = 1 WHERE id = :id');
-                $update->execute(['payload' => $encoded, 'id' => $id]);
-                error_log('Footer update - UPDATED existing record id=' . $id);
-            } else {
-                $insert = $pdo->prepare('INSERT INTO footer_settings (name, payload, is_active) VALUES (:name, :payload, 1)');
-                $insert->execute(['name' => 'default', 'payload' => $encoded]);
-                error_log('Footer update - INSERTED new record');
+            // Transaction: is_active=0 sonrası bir hata olursa aktif satırsız
+            // kalınmasın (frontend default payload'a düşerdi).
+            $pdo->beginTransaction();
+            try {
+                $pdo->exec('UPDATE footer_settings SET is_active = 0');
+
+                $stmt = $pdo->prepare('SELECT id FROM footer_settings WHERE name = :name ORDER BY id DESC LIMIT 1');
+                $stmt->execute(['name' => 'default']);
+                $id = (int) $stmt->fetchColumn();
+                if ($id > 0) {
+                    $update = $pdo->prepare('UPDATE footer_settings SET payload = :payload, is_active = 1 WHERE id = :id');
+                    $update->execute(['payload' => $encoded, 'id' => $id]);
+                    error_log('Footer update - UPDATED existing record id=' . $id);
+                } else {
+                    $insert = $pdo->prepare('INSERT INTO footer_settings (name, payload, is_active) VALUES (:name, :payload, 1)');
+                    $insert->execute(['name' => 'default', 'payload' => $encoded]);
+                    error_log('Footer update - INSERTED new record');
+                }
+
+                $pdo->commit();
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                throw $e;
             }
         } catch (Throwable $e) {
             error_log('Footer update - DB save FAILED: ' . $e->getMessage());

@@ -793,6 +793,9 @@ window.SLOT_CONFIG = {
     showLoadMore: <?= $showLoadMore ? 'true' : 'false' ?>
 };
 </script>
+<?php if (!defined('SURFACE') || SURFACE !== 'mobile'): ?>
+<?php include VIEW_PATH . '/partials/footer.php'; ?>
+<?php endif; ?>
 <script src="/assets/js/jackpot.js"></script>
 <script src="/assets/js/winners.js?v=<?= htmlspecialchars($slotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="/assets/js/slot.js?v=<?= rawurlencode($slotJsVer) ?>"></script>

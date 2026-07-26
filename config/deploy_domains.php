@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 /**
  * Production domain defaults — vegasroyalspin.com (frontend) +
- * admin.vegasroyalspin.com (backend panel/callback) +
- * api.vegasroyalspin.com (member API).
+ * admin.vegasroyalspin.com (backend panel/callback + member API).
+ * Ayrı bir api.* subdomain KULLANILMAZ; member API admin host üzerinden
+ * /api/v2 path'i ile servis edilir.
  * Override via .env (SITE_URL, FRONTEND_URL, PUBLIC_URL_HOSTS, …).
  */
 if (!function_exists('deploy_domain_config')) {
@@ -36,13 +37,13 @@ if (!function_exists('deploy_domain_config')) {
             'frontend_fallback_url' => 'https://vegasroyalspin.com',
             'mobile_url' => 'https://m.vegasroyalspin.com',
             'backend_url' => 'https://admin.vegasroyalspin.com',
-            'backend_api_base_url' => 'https://api.vegasroyalspin.com/api/v2',
+            'backend_api_base_url' => 'https://admin.vegasroyalspin.com/api/v2',
             'public_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com',
-            'allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,admin.vegasroyalspin.com,api.vegasroyalspin.com',
-            'default_allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,admin.vegasroyalspin.com,api.vegasroyalspin.com',
+            'allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,admin.vegasroyalspin.com',
+            'default_allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,admin.vegasroyalspin.com',
             'session_cookie_domain' => '.vegasroyalspin.com',
-            'api_public_base_url' => 'https://api.vegasroyalspin.com/api/v2',
-            'api_subdomain_host' => 'api.vegasroyalspin.com',
+            'api_public_base_url' => 'https://admin.vegasroyalspin.com/api/v2',
+            'api_subdomain_host' => 'admin.vegasroyalspin.com',
         ];
     }
 
@@ -87,7 +88,7 @@ if (!function_exists('deploy_domain_config')) {
             deploy_backend_hosts()
         );
         if ($parts === []) {
-            return 'admin\.vegasroyalspin\.com|api\.vegasroyalspin\.com';
+            return 'admin\.vegasroyalspin\.com';
         }
 
         return implode('|', $parts);

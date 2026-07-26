@@ -157,6 +157,14 @@ if (!function_exists('metropol_member_api_public_base')) {
 if (!function_exists('metropol_frontend_trust_secret')) {
     function metropol_frontend_trust_secret(): string
     {
+        // Üye proxy trust imzası için özel secret; tanımlı değilse geçiş
+        // uyumluluğu adına CMS purge secret'ına düşer. İki sunucuda da
+        // FRONTEND_MEMBER_TRUST_SECRET tanımlayıp fallback'i bırakın.
+        $dedicated = trim(frontend_env_string('FRONTEND_MEMBER_TRUST_SECRET', ''));
+        if ($dedicated !== '') {
+            return $dedicated;
+        }
+
         return frontend_env_string('FRONTEND_CMS_PURGE_SECRET', '');
     }
 }

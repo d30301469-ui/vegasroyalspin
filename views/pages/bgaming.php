@@ -151,4 +151,7 @@ window.BGAMING_CONFIG = {
     emptyText: <?= json_encode($slotEmptyText, JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
+<?php if (!defined('SURFACE') || SURFACE !== 'mobile'): ?>
+<?php include VIEW_PATH . '/partials/footer.php'; ?>
+<?php endif; ?>
 <script src="/assets/js/bgaming.js?v=<?= rawurlencode($bgamingJsVer) ?>"></script>

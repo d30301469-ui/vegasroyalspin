@@ -2,15 +2,24 @@
 /** Sunucu-sunucu güvenilir üye JWT yenileme (frontend proxy → backend). */
 
 if ($method === 'POST' && $route === 'internal/frontend-member-jwt') {
-    $secret = trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: ''));
-    if ($secret === '' && defined('FRONTEND_CMS_PURGE_SECRET')) {
-        $secret = trim((string) FRONTEND_CMS_PURGE_SECRET);
+    // Rotasyon güvenliği: özel trust secret'ı ve (geçiş dönemi için) eski
+    // CMS purge secret'ı aday olarak denenir. İki taraf da
+    // FRONTEND_MEMBER_TRUST_SECRET'a geçince fallback kaldırılabilir.
+    $secretCandidates = [];
+    foreach ([
+        trim((string) (getenv('FRONTEND_MEMBER_TRUST_SECRET') ?: '')),
+        trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: '')),
+        defined('FRONTEND_CMS_PURGE_SECRET') ? trim((string) FRONTEND_CMS_PURGE_SECRET) : '',
+    ] as $candidate) {
+        if ($candidate !== '' && !in_array($candidate, $secretCandidates, true)) {
+            $secretCandidates[] = $candidate;
+        }
     }
     $input = $memberInput($payload);
     $userId = (int) ($input['user_id'] ?? 0);
     $trust = trim((string) ($_SERVER['HTTP_X_FRONTEND_TRUST'] ?? ''));
 
-    if ($secret === '' || $userId <= 0 || $trust === '') {
+    if ($secretCandidates === [] || $userId <= 0 || $trust === '') {
         $memberEnvelope(403, [
             'success' => false,
             'code' => 403,
@@ -18,8 +27,14 @@ if ($method === 'POST' && $route === 'internal/frontend-member-jwt') {
         ]);
     }
 
-    $expected = hash_hmac('sha256', 'member-jwt:' . $userId, $secret);
-    if (!hash_equals($expected, $trust)) {
+    $trustValid = false;
+    foreach ($secretCandidates as $candidate) {
+        if (hash_equals(hash_hmac('sha256', 'member-jwt:' . $userId, $candidate), $trust)) {
+            $trustValid = true;
+            break;
+        }
+    }
+    if (!$trustValid) {
         $memberEnvelope(403, [
             'success' => false,
             'code' => 403,
