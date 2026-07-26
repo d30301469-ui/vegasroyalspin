@@ -421,6 +421,26 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
   animation: jpTabBorderSpin 2.4s linear infinite;
 }
 
+/* Spor kartlarinda bannerBreath + will-change kapali (border spin yeterli) */
+body.mobile-site .hm-row-mobile-sports-shortcuts .product-banner-bc,
+body.mobile-site .hm-row-bc .product-banner-bc {
+  animation: none !important;
+  will-change: auto !important;
+  transform: none !important;
+}
+
+body.mobile-site .hm-row-mobile-sports-shortcuts .product-banner-bc:hover {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Jackpot tutar glow — mobilde kapat */
+body.mobile-site .jp-main-amount,
+body.mobile-site .jp-sub-amount {
+  animation: none !important;
+  text-shadow: none !important;
+}
+
 /* Provider başlığını gizle (AMUSNET / APOLLO GAMES metni) */
 .mobile-site .jp-provider-title {
   display: none !important;

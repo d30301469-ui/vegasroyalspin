@@ -145,7 +145,6 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <script defer src="/assets/js/swiper-bundle.min.js?v=<?= $ver(BASE_PATH . '/assets/js/swiper-bundle.min.js') ?>"></script>
   <script defer src="/assets/js/pwa-register.js?v=<?= $ver(BASE_PATH . '/assets/js/pwa-register.js') ?>"></script>
   <script defer src="/assets/js/mobile-right-sheet.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/mobile-right-sheet.js')) ?>"></script>
-  <script defer src="/assets/js/footer.js?v=<?= rawurlencode($assetFingerprint(BASE_PATH . '/assets/js/footer.js')) ?>"></script>
   <?php endif; ?>
 </head>
 <body class="<?= htmlspecialchars($mobileBodyClass, ENT_QUOTES, 'UTF-8') ?>">
