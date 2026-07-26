@@ -66,6 +66,10 @@ $requestPathRaw = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/'
 $requestPath = $requestPathRaw === '/' ? '/' : rtrim($requestPathRaw, '/');
 $slotRoutes = ['/slot', '/livecasino', '/bgaming', '/sanal-sporlar'];
 $isSlotRoute = in_array($requestPath, $slotRoutes, true);
+// Ana sayfada jackpot|kazananlar widget'ı var; CSS sadece slot rotasında
+// yüklenirse paneller/kartlar stillenmez (ham metin listesi gibi görünür).
+$isHomeRoute = ($requestPath === '/');
+$needsJackpotAssets = true;
 $mobileBodyClass = 'mobile-site' . ($isSlotRoute ? ' slot-page-active' : '');
 $mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active' : '');
 $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOOK_LIGHTWEIGHT_LAYOUT;
@@ -104,8 +108,10 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="stylesheet" href="/assets/css/responsive.css?v=<?= $ver($assetCssDir . '/responsive.css') ?>">
   <link rel="stylesheet" href="/assets/css/mobile_bottom.css?v=<?= $ver($assetCssDir . '/mobile_bottom.css') ?>">
   <link rel="stylesheet" href="/assets/css/home.css?v=<?= $ver($assetCssDir . '/home.css') ?>">
+  <?php if ($needsJackpotAssets): ?>
   <?php if ($isSlotRoute): ?>
   <link rel="stylesheet" href="/assets/css/slots.css?v=<?= $ver($assetCssDir . '/slots.css') ?>">
+  <?php endif; ?>
   <link rel="stylesheet" href="/assets/css/jackpot.css?v=<?= $ver($assetCssDir . '/jackpot.css') ?>">
   <link rel="stylesheet" href="/assets/css/winners.css?v=<?= $ver($assetCssDir . '/winners.css') ?>">
   <?php endif; ?>
