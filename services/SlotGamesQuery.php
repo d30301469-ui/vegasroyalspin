@@ -31,6 +31,30 @@ final class SlotGamesQuery
     }
 
     /**
+     * Provider test entries are operational data, not public catalogue games.
+     * Keep them in the backend/admin catalogue, but never expose them on the
+     * public frontend.
+     *
+     * @param array<string, mixed> $row
+     */
+    public static function isFrontendHiddenGame(array $row): bool
+    {
+        $values = [
+            $row['name'] ?? $row['game_name'] ?? $row['title'] ?? '',
+            $row['game_id'] ?? $row['game_identifier'] ?? $row['identifier'] ?? $row['slug'] ?? '',
+        ];
+
+        foreach ($values as $value) {
+            $candidate = strtolower(trim((string) $value));
+            if ($candidate !== '' && preg_match('/(?:^|[^a-z0-9])acceptance[\s:_-]*test(?:$|[^a-z0-9])/i', $candidate) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @return array{
      *   games: array<int, array<string, mixed>>,
      *   total: int,
@@ -211,7 +235,7 @@ final class SlotGamesQuery
 
         $rows = [];
         foreach ($gamesRaw as $row) {
-            if (is_array($row)) {
+            if (is_array($row) && !self::isFrontendHiddenGame($row)) {
                 $rows[] = $row;
             }
         }
@@ -223,7 +247,7 @@ final class SlotGamesQuery
         }
 
         $p           = isset($data['pagination']) && is_array($data['pagination']) ? $data['pagination'] : [];
-        $total       = (int) ($p['total'] ?? 0);
+        $total       = max(0, (int) ($p['total'] ?? 0) - max(0, count($gamesRaw) - count($rows)));
         $perPage     = (int) ($p['perPage'] ?? $requestedLimit);
         if ($perPage < 1) {
             $perPage = $requestedLimit;
@@ -408,6 +432,9 @@ final class SlotGamesQuery
         if ($onlyFeatured) {
             $where[] = 'is_featured = 1';
         }
+        // Acceptance Test is retained for provider/admin diagnostics only.
+        $where[] = "LOWER(name) NOT LIKE '%acceptance%test%'";
+        $where[] = "LOWER(game_id) NOT LIKE '%acceptance%test%'";
         $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
 
         $countStmt = $pdo->prepare("SELECT COUNT(*) FROM {$unionSql}{$whereSql}");

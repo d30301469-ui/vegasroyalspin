@@ -131,11 +131,24 @@
         return API_ENDPOINT + '?' + params.toString();
     }
 
+    function isFrontendHiddenGame(game) {
+        var values = [
+            game && (game.name || game.game_name || game.title),
+            game && (game.game_id || game.game_identifier || game.identifier || game.slug)
+        ];
+        return values.some(function(value) {
+            var candidate = String(value || '').trim();
+            return candidate !== '' && /(?:^|[^a-z0-9])acceptance[\s:_-]*test(?:$|[^a-z0-9])/i.test(candidate);
+        });
+    }
+
     function normalizeApiResponse(data) {
         var inner = data && data.data ? data.data : {};
         var pagination = inner.pagination || {};
         var rawGames = Array.isArray(inner.games) ? inner.games : [];
-        var games = rawGames.map(function(game) {
+        var games = rawGames.filter(function(game) {
+            return !isFrontendHiddenGame(game);
+        }).map(function(game) {
             return {
                 id: game.id,
                 game_id: game.game_id || game.slug || game.id,
@@ -147,11 +160,9 @@
                 source: game.source || ''
             };
         });
-        // No bgaming filter — this is the dedicated bgaming page.
-
         var page = Number(pagination.page || 1);
         var perPage = Number(pagination.perPage || PAGE_SIZE);
-        var total = Number(pagination.total || games.length);
+        var total = Math.max(0, Number(pagination.total || games.length) - (rawGames.length - games.length));
         var loaded = Math.max(0, (page - 1) * perPage) + games.length;
         var remaining = Math.max(0, total - loaded);
 
