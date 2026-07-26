@@ -416,6 +416,11 @@ final class PromotionMediaGuard
             if (in_array('slot', $titleTokens, true) && in_array('slot', $shared, true)) {
                 $boost += 12.0;
             }
+            if (in_array('slot', $titleTokens, true) && in_array('kayip', $titleTokens, true)
+                && str_contains($fileSlug, 'slot')
+            ) {
+                $boost += 8.0;
+            }
 
             return min(95.0, max(65.0, (float) $pct + $boost));
         }
