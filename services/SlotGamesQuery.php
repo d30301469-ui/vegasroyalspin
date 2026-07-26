@@ -303,7 +303,14 @@ final class SlotGamesQuery
             return $local;
         }
 
-        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, 'games_provider.php', ['game_type' => $gameType]);
+        $j = BackendApiClient::request(
+            'GET',
+            BackendApiClient::SVC_GAMES,
+            'games_provider.php',
+            ['game_type' => $gameType],
+            null,
+            $gameType === 1 ? 5 : 12
+        );
         if ($j === null) {
             return [];
         }
