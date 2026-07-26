@@ -104,9 +104,11 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="stylesheet" href="/assets/css/responsive.css?v=<?= $ver($assetCssDir . '/responsive.css') ?>">
   <link rel="stylesheet" href="/assets/css/mobile_bottom.css?v=<?= $ver($assetCssDir . '/mobile_bottom.css') ?>">
   <link rel="stylesheet" href="/assets/css/home.css?v=<?= $ver($assetCssDir . '/home.css') ?>">
+  <?php if ($isSlotRoute): ?>
   <link rel="stylesheet" href="/assets/css/slots.css?v=<?= $ver($assetCssDir . '/slots.css') ?>">
   <link rel="stylesheet" href="/assets/css/jackpot.css?v=<?= $ver($assetCssDir . '/jackpot.css') ?>">
   <link rel="stylesheet" href="/assets/css/winners.css?v=<?= $ver($assetCssDir . '/winners.css') ?>">
+  <?php endif; ?>
   <link rel="stylesheet" href="/assets/css/swiper-bundle.min.css?v=<?= $ver($assetCssDir . '/swiper-bundle.min.css') ?>">
   <link rel="stylesheet" href="/assets/css/slider.css?v=<?= $ver($assetCssDir . '/slider.css') ?>">
   <link rel="stylesheet" href="/assets/css/slider-mobile-bc.css?v=<?= $ver($assetCssDir . '/slider-mobile-bc.css') ?>">
@@ -129,7 +131,9 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="stylesheet" href="/mobile/assets/css/mobile-right-sheet.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/mobile-right-sheet.css')) ?>">
   <link rel="stylesheet" href="/mobile/assets/css/home.css?v=<?= $ver($mobileCssDir . '/home.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/home-widgets.css?v=<?= $ver($mobileCssDir . '/home-widgets.css') ?>">
+  <?php if ($isSlotRoute): ?>
   <link rel="stylesheet" href="/mobile/assets/css/slots.css?v=<?= $ver($mobileCssDir . '/slots.css') ?>">
+  <?php endif; ?>
   <link rel="stylesheet" href="/mobile/assets/css/bottom-bar.css?v=<?= $ver($mobileCssDir . '/bottom-bar.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/footer.css?v=<?= $ver($mobileCssDir . '/footer.css') ?>">
   <link rel="stylesheet" href="/mobile/assets/css/auth-modals.css?v=<?= $ver($mobileCssDir . '/auth-modals.css') ?>">

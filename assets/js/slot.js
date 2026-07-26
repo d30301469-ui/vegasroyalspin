@@ -525,24 +525,14 @@
                 provider_code: game.provider_code || '',
                 source: game.source || ''
             };
-        }).filter(function(game) {
-            return !isBgamingGame(game);
         });
         var page = Number(pagination.page || 1);
         var perPage = Number(pagination.perPage || PAGE_SIZE);
-        var rawCount = rawGames.length;
         var filteredCount = games.length;
-        // BGaming filtre sonrası API total şişmesin; hasNext'e güven.
-        var hasNext = !!pagination.hasNext && (filteredCount > 0 || rawCount > 0);
-        var total = Number(pagination.total || 0);
-        if (rawCount > 0 && filteredCount < rawCount) {
-            // Filtrelenmiş sayfada kalanı abartma; sadece sonraki sayfa varsa devam.
-            total = Math.max(filteredCount, (page - 1) * perPage + filteredCount + (hasNext ? perPage : 0));
-        } else if (!total) {
-            total = filteredCount;
-        }
+        var hasNext = !!pagination.hasNext;
+        var total = Number(pagination.total || filteredCount);
         var loaded = Math.max(0, (page - 1) * perPage) + filteredCount;
-        var remaining = hasNext ? Math.max(perPage, total - loaded) : Math.max(0, total - loaded);
+        var remaining = Math.max(0, total - loaded);
 
         return {
             ok: !!(data && data.success),
@@ -553,7 +543,7 @@
             nextPage: page + 1,
             page: page,
             perPage: perPage,
-            rawCount: rawCount
+            rawCount: games.length
         };
     }
 

@@ -94,69 +94,8 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     // 'bgaming' -> only the direct BGaming catalog. Empty -> all sources.
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));
 
-    admin_require_project_file('services/SlotGamesQuery.php');
-    $providers = [];
-    if ($provider !== '') {
-        $providers[] = $provider;
-    }
-    if (isset($_GET['providers']) && is_array($_GET['providers'])) {
-        $providers = array_merge($providers, $_GET['providers']);
-    }
-
-    $extraQuery = [];
-    if ($source !== '') {
-        $extraQuery['source'] = $source;
-    }
-    if ($onlyFeatured) {
-        $extraQuery['is_featured'] = '1';
-    }
-    $result = SlotGamesQuery::gamesPage($gameType, $search, $providers, $limit, $page, (string) ($_GET['sort'] ?? ''), $extraQuery);
-    $games = [];
-    foreach (($result['games'] ?? []) as $game) {
-        if (!is_array($game)) {
-            continue;
-        }
-        $name = (string) ($game['game_name'] ?? $game['name'] ?? '');
-        $cover = (string) ($game['cover'] ?? $game['image_url'] ?? '');
-        $games[] = $game + [
-            'name'          => $name,
-            'title'         => $name,
-            'image_url'     => $cover,
-            'thumbnail_url' => $cover,
-            'category'      => $gameType === 1 ? 'live-casino' : 'slots',
-            'game_type'     => $gameType,
-        ];
-    }
-
-    $total = (int) ($result['total'] ?? count($games));
-    $perPage = (int) ($result['perPage'] ?? $limit);
-    $pageRet = (int) ($result['page'] ?? $page);
-    $totalPages = (int) ($result['totalPages'] ?? ($total > 0 ? ceil($total / max(1, $perPage)) : 0));
-    $memberEnvelope(!empty($result['apiError']) ? 503 : 200, [
-        'success' => empty($result['apiError']),
-        'code'    => !empty($result['apiError']) ? 503 : 200,
-        'message' => !empty($result['apiError']) ? 'Oyun listesi alınamadı' : 'Oyun listesi',
-        'data'    => [
-            'games'       => $games,
-            'items'       => $games,
-            'total'       => $total,
-            'page'        => $pageRet,
-            'limit'       => $perPage,
-            'perPage'     => $perPage,
-            'total_pages' => $totalPages,
-            'pagination'  => [
-                'page'       => $pageRet,
-                'perPage'    => $perPage,
-                'limit'      => $perPage,
-                'offset'     => ($pageRet - 1) * $perPage,
-                'total'      => $total,
-                'totalPages' => $totalPages,
-                'hasNext'    => !empty($result['hasNext']),
-                'hasPrev'    => $pageRet > 1,
-            ],
-        ],
-    ]);
-
+    // IMPORTANT: Serve from local DB only. Never call SlotGamesQuery here —
+    // that class HTTP-calls this same games.php endpoint and recurses until 503.
     $union = [];
     if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
         $union[] = "SELECT
@@ -171,6 +110,34 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             FROM bgaming_games
             WHERE is_active = 1";
     }
+
+    if ($union === []) {
+        $memberEnvelope(200, [
+            'success' => true,
+            'code'    => 200,
+            'message' => 'Oyun listesi',
+            'data'    => [
+                'games'       => [],
+                'items'       => [],
+                'total'       => 0,
+                'page'        => $page,
+                'limit'       => $limit,
+                'perPage'     => $limit,
+                'total_pages' => 0,
+                'pagination'  => [
+                    'page'       => $page,
+                    'perPage'    => $limit,
+                    'limit'      => $limit,
+                    'offset'     => $offset,
+                    'total'      => 0,
+                    'totalPages' => 0,
+                    'hasNext'    => false,
+                    'hasPrev'    => $offset > 0,
+                ],
+            ],
+        ]);
+    }
+
     $unionSql = '(' . implode(' UNION ALL ', $union) . ') AS catalog';
 
     $where  = [];

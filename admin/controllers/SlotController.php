@@ -29,16 +29,9 @@ class SlotController extends Controller
 
         $result             = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $currentSort, []);
 
-        $games              = array_values(array_filter($result['games'], static function (array $game): bool {
-            $provider = strtolower(trim((string) ($game['provider'] ?? $game['provider_code'] ?? '')));
-            $source = strtolower(trim((string) ($game['source'] ?? '')));
+        $games              = $result['games'];
 
-            return $provider !== 'bgaming' && $source !== 'bgaming';
-        }));
-
-        $allUniqueProviders = array_values(array_filter(SlotGamesQuery::allProviders(), static function (string $provider): bool {
-            return stripos($provider, 'bgaming') === false && stripos($provider, 'b gaming') === false;
-        }));
+        $allUniqueProviders = SlotGamesQuery::allProviders();
 
         $totalSlots         = $result['total'];
 

@@ -17,6 +17,7 @@ final class FrontendCmsCachePurge
 
         $secret = trim(frontend_env_string('FRONTEND_CMS_PURGE_SECRET', ''));
         if ($secret === '') {
+            error_log('[cms-purge] FRONTEND_CMS_PURGE_SECRET tanımsız; uzak frontend cache purge atlandı (prefix=' . ($prefix ?? '*') . '). Frontend en fazla cache TTL süresi kadar bayat veri gösterebilir.');
             return;
         }
 
@@ -49,8 +50,19 @@ final class FrontendCmsCachePurge
             if (defined('CURL_IPRESOLVE_V4')) {
                 curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
             }
-            curl_exec($ch);
+            $body = curl_exec($ch);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            $curlError = curl_error($ch);
             curl_close($ch);
+
+            if ($body === false || $httpCode < 200 || $httpCode >= 300) {
+                error_log(sprintf(
+                    '[cms-purge] Uzak frontend cache purge BAŞARISIZ: %s (HTTP %d%s). Frontend bayat CMS verisi gösterebilir.',
+                    $url,
+                    $httpCode,
+                    $curlError !== '' ? ', curl: ' . $curlError : ''
+                ));
+            }
         }
 
         self::purgeLocalCaches($prefix);
@@ -75,20 +87,23 @@ final class FrontendCmsCachePurge
 
         // Proxy cache keys are sha1(route|query), so prefix targeting is not practical.
         // Remove all proxy cache entries to avoid stale CMS payloads after admin updates.
-        $proxyDir = (defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__)) . '/storage/cache/public_api_proxy';
-        if (!is_dir($proxyDir)) {
-            return;
-        }
-
-        foreach (glob($proxyDir . '/*') ?: [] as $file) {
-            if (!is_string($file) || !is_file($file)) {
+        $base = defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__);
+        $proxyDir = $base . '/storage/cache/public_api_proxy';
+        $gamesDir = $base . '/storage/cache/games';
+        foreach ([$proxyDir, $gamesDir] as $dir) {
+            if (!is_dir($dir)) {
                 continue;
             }
-            $base = basename($file);
-            if (!str_ends_with($base, '.json') && !str_ends_with($base, '.json.refresh.lock')) {
-                continue;
+            foreach (glob($dir . '/*') ?: [] as $file) {
+                if (!is_string($file) || !is_file($file)) {
+                    continue;
+                }
+                $fileBase = basename($file);
+                if (!str_ends_with($fileBase, '.json') && !str_ends_with($fileBase, '.json.refresh.lock')) {
+                    continue;
+                }
+                @unlink($file);
             }
-            @unlink($file);
         }
     }
 

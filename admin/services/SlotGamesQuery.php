@@ -10,6 +10,9 @@ final class SlotGamesQuery
 {
     public const GAMES_PATH = 'games.php';
 
+    private const CACHE_TTL_SEC = 120;
+    private const CACHE_STALE_SEC = 86400;
+
     /**
      * API satırını şablon / slot.js için ortak forma çevirir.
      *
@@ -28,6 +31,30 @@ final class SlotGamesQuery
             'provider'      => (string) ($row['provider'] ?? ''),
             'source'        => (string) ($row['source'] ?? ''),
         ];
+    }
+
+    /**
+     * Provider test entries are operational data, not public catalogue games.
+     * Keep them in the backend/admin catalogue, but never expose them on the
+     * public frontend.
+     *
+     * @param array<string, mixed> $row
+     */
+    public static function isFrontendHiddenGame(array $row): bool
+    {
+        $values = [
+            $row['name'] ?? $row['game_name'] ?? $row['title'] ?? '',
+            $row['game_id'] ?? $row['game_identifier'] ?? $row['identifier'] ?? $row['slug'] ?? '',
+        ];
+
+        foreach ($values as $value) {
+            $candidate = strtolower(trim((string) $value));
+            if ($candidate !== '' && preg_match('/(?:^|[^a-z0-9])acceptance[\s:_-]*test(?:$|[^a-z0-9])/i', $candidate) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -93,9 +120,22 @@ final class SlotGamesQuery
             return $local;
         }
 
-        $timeout = $gameType === 1 ? 8 : 12;
+        $cacheKey = 'games:' . sha1(json_encode($query, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '');
+        $cached = self::cacheRead($cacheKey);
+        if ($cached !== null && empty($cached['_stale'])) {
+            unset($cached['_stale'], $cached['_cached_at']);
+            return $cached;
+        }
+
+        // Lobby: kısa timeout; asla 30s askıda kalmasın.
+        $timeout = $gameType === 1 ? 4 : 6;
         $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query, null, $timeout);
         if ($j === null) {
+            if ($cached !== null) {
+                unset($cached['_stale'], $cached['_cached_at']);
+                $cached['apiError'] = false;
+                return $cached;
+            }
             $base = self::emptyPageResult($limit, $page);
             $base['apiError'] = true;
             return $base;
@@ -104,6 +144,7 @@ final class SlotGamesQuery
         $catalogOrder = trim($searchTerm) !== '' || $cleanProviders !== [];
         $out = self::normalizeGamesResponse($j, $limit, $page, $catalogOrder);
         $out['apiError'] = false;
+        self::cacheWrite($cacheKey, $out);
         return $out;
     }
 
@@ -212,7 +253,7 @@ final class SlotGamesQuery
 
         $rows = [];
         foreach ($gamesRaw as $row) {
-            if (is_array($row)) {
+            if (is_array($row) && !self::isFrontendHiddenGame($row)) {
                 $rows[] = $row;
             }
         }
@@ -224,7 +265,7 @@ final class SlotGamesQuery
         }
 
         $p           = isset($data['pagination']) && is_array($data['pagination']) ? $data['pagination'] : [];
-        $total       = (int) ($p['total'] ?? 0);
+        $total       = max(0, (int) ($p['total'] ?? 0) - max(0, count($gamesRaw) - count($rows)));
         $perPage     = (int) ($p['perPage'] ?? $requestedLimit);
         if ($perPage < 1) {
             $perPage = $requestedLimit;
@@ -245,30 +286,7 @@ final class SlotGamesQuery
 
     public static function allProviders(): array
     {
-        $local = self::localProviders(0);
-        if ($local !== []) {
-            return $local;
-        }
-
-        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, 'games_provider.php', ['game_type' => 0]);
-        if ($j === null) {
-            return [];
-        }
-        $u   = BackendApiClient::unwrap($j);
-        $raw = $u['providers'] ?? $j['providers'] ?? [];
-        if (!is_array($raw)) {
-            return [];
-        }
-        $providers = [];
-        foreach ($raw as $row) {
-            if (is_string($row) && $row !== '') {
-                $providers[] = $row;
-            } elseif (is_array($row) && !empty($row['provider_name'])) {
-                $providers[] = $row['provider_name'];
-            }
-        }
-
-        return $providers;
+        return self::providersForGameType(0);
     }
 
     public static function providersForGameType(int $gameType, ?string $category = null): array
@@ -278,15 +296,24 @@ final class SlotGamesQuery
             return $local;
         }
 
+        $cacheKey = 'providers:' . $gameType;
+        $cached = self::cacheRead($cacheKey);
+        if (is_array($cached) && isset($cached['providers']) && empty($cached['_stale'])) {
+            return array_values(array_filter(array_map('strval', $cached['providers'])));
+        }
+
         $j = BackendApiClient::request(
             'GET',
             BackendApiClient::SVC_GAMES,
             'games_provider.php',
             ['game_type' => $gameType],
             null,
-            $gameType === 1 ? 5 : 12
+            $gameType === 1 ? 3 : 5
         );
         if ($j === null) {
+            if (is_array($cached) && isset($cached['providers'])) {
+                return array_values(array_filter(array_map('strval', $cached['providers'])));
+            }
             return [];
         }
         $u = BackendApiClient::unwrap($j);
@@ -304,7 +331,67 @@ final class SlotGamesQuery
         }
         $providers = array_values(array_unique(array_filter($providers)));
         sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
+        self::cacheWrite($cacheKey, ['providers' => $providers]);
         return $providers;
+    }
+
+    private static function cacheDir(): string
+    {
+        $base = defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__);
+
+        return rtrim(str_replace('\\', '/', $base), '/') . '/storage/cache/games';
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function cacheRead(string $key): ?array
+    {
+        $path = self::cacheDir() . '/' . preg_replace('/[^a-zA-Z0-9:_-]+/', '_', $key) . '.json';
+        if (!is_file($path)) {
+            return null;
+        }
+        $raw = @file_get_contents($path);
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded) || !isset($decoded['_cached_at'])) {
+            return null;
+        }
+        $age = time() - (int) $decoded['_cached_at'];
+        if ($age > self::CACHE_STALE_SEC) {
+            return null;
+        }
+        $decoded['_stale'] = $age > self::CACHE_TTL_SEC;
+
+        return $decoded;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function cacheWrite(string $key, array $payload): void
+    {
+        $dir = self::cacheDir();
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $path = $dir . '/' . preg_replace('/[^a-zA-Z0-9:_-]+/', '_', $key) . '.json';
+        $payload['_cached_at'] = time();
+        unset($payload['_stale']);
+        @file_put_contents($path, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    }
+
+    public static function purgeCache(): void
+    {
+        $dir = self::cacheDir();
+        if (!is_dir($dir)) {
+            return;
+        }
+        foreach (glob($dir . '/*.json') ?: [] as $file) {
+            @unlink($file);
+        }
     }
 
     private static function localGamesPage(array $query, int $limit, int $page, bool $catalogOrderAfterPopular): ?array
@@ -325,12 +412,11 @@ final class SlotGamesQuery
         try {
             $pdo = AdminDatabase::pdo();
             $gameType = (int) ($query['game_type'] ?? $query['filter_game_type'] ?? 0);
+            // Yerel katalogda canli casino yok — boş başarı (HTTP timeout yok).
             if ($gameType === 1) {
-                return null;
-            }
-            $source = strtolower(trim((string) ($query['source'] ?? '')));
-            if ($source !== 'bgaming') {
-                return null;
+                $empty = self::emptyPageResult($limit, $page);
+                $empty['apiError'] = false;
+                return $empty;
             }
             $catalog = self::combinedCatalogPage($pdo, $query, $limit, $page);
             $j = ['success' => true, 'data' => $catalog];
@@ -424,6 +510,9 @@ final class SlotGamesQuery
         if ($onlyFeatured) {
             $where[] = 'is_featured = 1';
         }
+        // Acceptance Test is retained for provider/admin diagnostics only.
+        $where[] = "LOWER(name) NOT LIKE '%acceptance%test%'";
+        $where[] = "LOWER(game_id) NOT LIKE '%acceptance%test%'";
         $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
 
         $countStmt = $pdo->prepare("SELECT COUNT(*) FROM {$unionSql}{$whereSql}");
@@ -481,8 +570,42 @@ final class SlotGamesQuery
 
     private static function localProviders(int $gameType): array
     {
-        // Yerel katalog yalnızca BGaming satırları tutuyor; provider listesi backend'den gelsin.
-        return [];
+        if ($gameType === 1) {
+            return [];
+        }
+        if (function_exists('frontend_database_allowed') && !frontend_database_allowed()) {
+            return [];
+        }
+
+        if (!class_exists('AdminDatabase', false)) {
+            if (is_file(ADMIN_APP_PATH . '/Core/AdminDatabase.php')) {
+                require_once ADMIN_APP_PATH . '/Core/AdminDatabase.php';
+            }
+        }
+        if (!class_exists('AdminDatabase', false)) {
+            return [];
+        }
+
+        try {
+            $pdo = AdminDatabase::pdo();
+            $rows = $pdo->query(
+                "SELECT DISTINCT provider AS provider_name
+                 FROM bgaming_games
+                 WHERE is_active = 1 AND provider <> ''
+                 ORDER BY provider_name ASC"
+            )->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable) {
+            return [];
+        }
+        $providers = [];
+        foreach ($rows as $row) {
+            if (is_array($row) && !empty($row['provider_name'])) {
+                $providers[] = (string) $row['provider_name'];
+            }
+        }
+        $providers = array_values(array_unique(array_filter($providers)));
+        sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
+        return $providers;
     }
 
     public static function winnersPool(int $limit = 200): array
