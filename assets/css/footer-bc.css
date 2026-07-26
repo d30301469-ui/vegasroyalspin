@@ -972,6 +972,12 @@ html.is-web .layout-footer-holder-bc .horizontalSliderElem .horizontalSliderImg 
   box-sizing: border-box;
 }
 
+/* Mobil: bc-mobile-header-original.css .layout-content-holder-bc'nin üst boşluğunu
+   sıfırladığı için içerik sticky header'a yapışıyordu — 3 seviye (24px) boşluk bırak. */
+body.mobile-site #root .layout-content-holder-bc.footerPageContent {
+  padding-top: 24px !important;
+}
+
 .footerPageContainer {
   min-height: 420px;
   padding: 28px 34px;
