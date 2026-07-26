@@ -117,7 +117,9 @@ final class SlotGamesQuery
             return $local;
         }
 
-        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query);
+        // Lobby sayfalari icin backend timeout'u kisalt (askida kalmasin).
+        $timeout = $gameType === 1 ? 8 : 12;
+        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query, null, $timeout);
         if ($j === null) {
             $base = self::emptyPageResult($limit, $page);
             $base['apiError'] = true;
@@ -340,6 +342,11 @@ final class SlotGamesQuery
 
         try {
             $pdo = AdminDatabase::pdo();
+            $gameType = (int) ($query['game_type'] ?? $query['filter_game_type'] ?? 0);
+            // Yerel katalogda canli casino yok — backend API'ye dus.
+            if ($gameType === 1) {
+                return null;
+            }
             $catalog = self::combinedCatalogPage($pdo, $query, $limit, $page);
             $j = ['success' => true, 'data' => $catalog];
             return self::normalizeGamesResponse($j, $limit, $page, $catalogOrderAfterPopular);
