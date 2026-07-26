@@ -38,6 +38,10 @@ $renderFooterPageBody = static function (string $content): string {
 
     $text = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
     $text = str_replace(["\r\n", "\r"], "\n", $text);
+    // Büyük harfli başlığa yapışık metni ayır ("...SÖZLEŞMESİSon Güncelleme...")
+    $text = (string) preg_replace('/(?<=[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ])(?=[A-ZÇĞİÖŞÜ][a-zçğıöşü])/u', "\n", $text);
+    // Rakama yapışık yeni cümle başlangıcını ayır ("...2026İşbu...")
+    $text = (string) preg_replace('/(?<=\d)(?=[A-ZÇĞİÖŞÜ][a-zçğıöşü])/u', "\n", $text);
     // Cümle sonuna yapışık numaralı bölüm başlangıçlarını ("...eder.5. Veri...") ayır
     $text = (string) preg_replace('/(?<=[.!?;:])\s*(?=\d{1,2}[.)]\s*[A-ZÇĞİÖŞÜ])/u', "\n", $text);
     // Satır içi • işaretlerini ayrı maddelere böl
@@ -74,6 +78,14 @@ $renderFooterPageBody = static function (string $content): string {
             continue;
         }
         $closeList();
+        // Tamamı büyük harf olan kısa bloklar bölüm başlığıdır
+        if (mb_strlen($block) <= 120
+            && preg_match('/[A-ZÇĞİÖŞÜ]{2}/u', $block) === 1
+            && preg_match('/^[A-ZÇĞİÖŞÜ0-9 ()&\-\'".,\/]+$/u', $block) === 1
+        ) {
+            $html .= '<h2>' . $block . '</h2>';
+            continue;
+        }
         $html .= '<p>' . $block . '</p>';
     }
     $closeList();

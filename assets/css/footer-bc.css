@@ -1028,3 +1028,21 @@ body.mobile-site #root .layout-content-holder-bc.footerPageContent {
   margin: 18px 0 10px;
   color: rgba(255, 255, 255, 0.9);
 }
+
+.footerPageBody h2:first-child,
+.footerPageBody h3:first-child {
+  margin-top: 0;
+}
+
+.footerPageBody h2 {
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.footerPageBody h3 {
+  font-size: 15px;
+}
+
+.footerPageBody h4 {
+  font-size: 14px;
+}
