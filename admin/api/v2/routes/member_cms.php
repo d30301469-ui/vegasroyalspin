@@ -292,6 +292,16 @@ if (in_array($method, ['GET', 'POST', 'PUT'], true) && ($route === 'content/foot
             ]);
         }
 
+        // Panel formuyla aynı davranış: kayıt sonrası frontend CMS cache'i temizle,
+        // aksi halde değişiklik cache TTL'i dolana kadar frontend'e yansımaz.
+        if (function_exists('metropol_notify_frontend_cms_purge')) {
+            try {
+                metropol_notify_frontend_cms_purge('footer');
+            } catch (Throwable $purgeError) {
+                error_log('Footer API update - cache purge failed: ' . $purgeError->getMessage());
+            }
+        }
+
         $memberEnvelope(200, [
             'success' => true,
             'code' => 200,
@@ -497,9 +507,13 @@ if ($method === 'GET' && ($route === 'content/sliders' || $route === 'sliders.ph
                 $desktop = trim((string) ($row['desktop_path'] ?? $row['desktop_image_url'] ?? ''));
                 $mobile  = trim((string) ($row['mobile_path'] ?? $row['mobile_image_url'] ?? ''));
                 if ($desktop === '' && $mobile === '') continue;
+                $version = trim((string) ($row['updated_at'] ?? ''));
+                if ($version === '' || $version === '0000-00-00 00:00:00') {
+                    $version = 's' . (int) ($row['id'] ?? 0) . 'o' . (int) ($row['order'] ?? $row['sort_order'] ?? 0);
+                }
                 if (class_exists('ApiMediaUrl', false)) {
-                    $desktop = ApiMediaUrl::resolve($desktop);
-                    $mobile  = ApiMediaUrl::resolve($mobile);
+                    $desktop = ApiMediaUrl::withMediaCacheBust(ApiMediaUrl::resolve($desktop), $version);
+                    $mobile  = ApiMediaUrl::withMediaCacheBust(ApiMediaUrl::resolve($mobile), $version);
                 }
                 $sliders[] = [
                     'id'              => (int) ($row['id'] ?? 0),
