@@ -4,6 +4,11 @@ class FooterPageController extends Controller
 {
     public function show(string $slug = ''): void
     {
+        // CMS içeriği: HTML edge/tarayıcı cache'inde bayat kalmasın
+        // (Cloudflare "cache everything" mobil varyantı eski şablonla servis ediyordu).
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+
         require_once API_PATH . '/bootstrap.php';
 
         $page = ApiFooterPages::findBySlug($slug);
