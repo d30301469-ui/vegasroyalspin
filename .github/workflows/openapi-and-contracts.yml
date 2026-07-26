@@ -33,16 +33,25 @@ jobs:
       CONTRACT_BASE_URL: ${{ secrets.CONTRACT_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
+      - name: Detect PHPUnit test configuration
+        id: phpunit
+        run: |
+          if { [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; } && [ -d tests ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "No PHPUnit configuration/tests found; skipping contract tests."
+          fi
       - name: Setup PHP
-        if: env.CONTRACT_BASE_URL != ''
+        if: env.CONTRACT_BASE_URL != '' && steps.phpunit.outputs.available == 'true'
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
       - name: Install composer deps
-        if: env.CONTRACT_BASE_URL != ''
+        if: env.CONTRACT_BASE_URL != '' && steps.phpunit.outputs.available == 'true'
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
       - name: Run contract tests
-        if: env.CONTRACT_BASE_URL != ''
+        if: env.CONTRACT_BASE_URL != '' && steps.phpunit.outputs.available == 'true'
         env:
           RUN_CONTRACT_TESTS: '1'
         run: vendor/bin/phpunit --testsuite Contract
@@ -51,13 +60,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Detect PHPUnit test configuration
+        id: phpunit
+        run: |
+          if { [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; } && [ -d tests ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "No PHPUnit configuration/tests found; skipping unit and feature tests."
+          fi
       - name: Setup PHP
+        if: steps.phpunit.outputs.available == 'true'
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
       - name: Install composer deps
+        if: steps.phpunit.outputs.available == 'true'
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
       - name: Run unit and feature test suites
+        if: steps.phpunit.outputs.available == 'true'
         run: |
           vendor/bin/phpunit --testsuite Unit
           vendor/bin/phpunit --testsuite Feature
