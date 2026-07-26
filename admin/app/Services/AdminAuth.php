@@ -43,6 +43,13 @@ final class AdminAuth
 
     private static function setPersistentCookie(string $value, int $expiresAt): void
     {
+        // Layout veya bir modül çıktı gönderdikten sonra cookie yenileme
+        // header üretmeye çalışırsa PHP 500 verir. Oturum zaten mevcut;
+        // cookie bir sonraki header-safe istekte yenilenir.
+        if (headers_sent()) {
+            return;
+        }
+
         $params = session_get_cookie_params();
         setcookie(self::persistentCookieName(), $value, [
             'expires' => $expiresAt,
@@ -56,6 +63,10 @@ final class AdminAuth
 
     private static function clearPersistentCookie(): void
     {
+        if (headers_sent()) {
+            return;
+        }
+
         $params = session_get_cookie_params();
         setcookie(self::persistentCookieName(), '', [
             'expires' => time() - 3600,
