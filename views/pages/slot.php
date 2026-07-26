@@ -735,7 +735,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                             <span class="providerBadgeBlock " data-badge=""></span>
                             <div class="casinoGameItem ">
                                 <img alt="<?= htmlspecialchars($game['game_name'], ENT_QUOTES); ?>"
-                                     loading="eager"
+                                     loading="lazy"
                                      src="<?= htmlspecialchars($game['cover'], ENT_QUOTES); ?>"
                                      data-src="<?= htmlspecialchars($game['cover'], ENT_QUOTES); ?>"
                                      class="casinoGameItemImage"

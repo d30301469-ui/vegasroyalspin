@@ -258,6 +258,13 @@
     const ACTION_BUTTONS = config.actionButtons === true;
     const EMPTY_TITLE = config.emptyTitle || 'Slot oyunu bulunamadı';
     const EMPTY_TEXT = config.emptyText || 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin';
+    const FETCH_TIMEOUT_MS = 15000;
+    const PRELOAD_FIRST_N = 6;
+    const PRELOAD_TIMEOUT_MS = 1200;
+    const MAX_EMPTY_FILTER_PAGES = 3;
+    var fetchAbort = null;
+    var emptyFilterPages = 0;
+    var loadMoreArmed = true;
 
     /* ── State (sayfa yenilemeden tutulur) ── */
     let state = {
@@ -466,7 +473,7 @@
             '<div class="casinoGameItemContent " data-favorite-kind="' + escapeHtml(FAVORITE_KIND) + '" data-game-id="' + gameIdEsc + '"' + catalogAttr + ' onclick="' + realPlayClickJs(gameUrlJs) + '">' +
             '<span class="providerBadgeBlock " data-badge=""></span>' +
             '<div class="casinoGameItem ">' +
-            '<img alt="' + name + '" loading="eager" src="' + cover + '" data-src="' + cover + '" class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onerror="this.src=\'' + PLACEHOLDER_IMG + '\'">' +
+            '<img alt="' + name + '" loading="lazy" src="' + cover + '" data-src="' + cover + '" class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onerror="this.src=\'' + PLACEHOLDER_IMG + '\'">' +
             '<i class="casinoGameItemFavBc bc-i-favorite "></i>' +
             actionsHtml +
             '</div>' +
@@ -523,19 +530,30 @@
         });
         var page = Number(pagination.page || 1);
         var perPage = Number(pagination.perPage || PAGE_SIZE);
-        var total = Number(pagination.total || games.length);
-        var loaded = Math.max(0, (page - 1) * perPage) + games.length;
-        var remaining = Math.max(0, total - loaded);
+        var rawCount = rawGames.length;
+        var filteredCount = games.length;
+        // BGaming filtre sonrası API total şişmesin; hasNext'e güven.
+        var hasNext = !!pagination.hasNext && (filteredCount > 0 || rawCount > 0);
+        var total = Number(pagination.total || 0);
+        if (rawCount > 0 && filteredCount < rawCount) {
+            // Filtrelenmiş sayfada kalanı abartma; sadece sonraki sayfa varsa devam.
+            total = Math.max(filteredCount, (page - 1) * perPage + filteredCount + (hasNext ? perPage : 0));
+        } else if (!total) {
+            total = filteredCount;
+        }
+        var loaded = Math.max(0, (page - 1) * perPage) + filteredCount;
+        var remaining = hasNext ? Math.max(perPage, total - loaded) : Math.max(0, total - loaded);
 
         return {
             ok: !!(data && data.success),
             games: games,
             totalSlots: total,
             remainingGames: remaining,
-            showLoadMore: !!pagination.hasNext && remaining > 0,
+            showLoadMore: hasNext && remaining > 0,
             nextPage: page + 1,
             page: page,
-            perPage: perPage
+            perPage: perPage,
+            rawCount: rawCount
         };
     }
 
@@ -550,9 +568,11 @@
         return html;
     }
 
-    function preloadImages(urls, timeoutMs) {
-        timeoutMs = timeoutMs || 8000;
-        return Promise.all(urls.map(function(url) {
+    function preloadImages(urls, timeoutMs, maxCount) {
+        timeoutMs = timeoutMs || PRELOAD_TIMEOUT_MS;
+        maxCount = maxCount == null ? PRELOAD_FIRST_N : maxCount;
+        var slice = (urls || []).slice(0, maxCount);
+        return Promise.all(slice.map(function(url) {
             if (!url) return Promise.resolve();
             return new Promise(function(resolve) {
                 var img = new Image();
@@ -711,19 +731,33 @@
         if (!gameGrid) return;
         if (append && state.isLoadingMore) return;
         if (append) state.isLoadingMore = true;
+        if (!append) emptyFilterPages = 0;
 
         var requestLimit = PAGE_SIZE;
         var url = buildApiUrl(append);
 
         if (!append) {
+            if (fetchAbort) {
+                try { fetchAbort.abort(); } catch (e) {}
+            }
             gameGrid.innerHTML = renderSkeletonItems(PAGE_SIZE);
         } else {
             gameGrid.insertAdjacentHTML('beforeend', renderSkeletonItems(requestLimit));
         }
 
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        if (!append) fetchAbort = controller;
+        var timeoutId = setTimeout(function() {
+            if (controller) controller.abort();
+        }, FETCH_TIMEOUT_MS);
+
+        var fetchOpts = { headers: { 'X-Requested-With': 'XMLHttpRequest' } };
+        if (controller) fetchOpts.signal = controller.signal;
+
+        fetch(url, fetchOpts)
             .then(function(res) { return res.json(); })
             .then(function(data) {
+                clearTimeout(timeoutId);
                 data = normalizeApiResponse(data);
                 if (!data.ok) {
                     if (append) {
@@ -747,6 +781,13 @@
                 if (games.length === 0) {
                     if (append) {
                         removeLastSkeletons(requestLimit);
+                        // BGaming filtreyle boş sayfa: sınırlı otomatik atlama
+                        if (data.showLoadMore && (data.rawCount || 0) > 0 && emptyFilterPages < MAX_EMPTY_FILTER_PAGES) {
+                            emptyFilterPages += 1;
+                            state.isLoadingMore = false;
+                            loadSlots(true);
+                            return;
+                        }
                         state.showLoadMore = false;
                     } else {
                         gameGrid.innerHTML = renderEmptyState();
@@ -761,8 +802,9 @@
                     return;
                 }
 
+                emptyFilterPages = 0;
                 var coverUrls = games.map(function(g) { return g.cover || ''; });
-                preloadImages(coverUrls, 8000).then(function() {
+                preloadImages(coverUrls, PRELOAD_TIMEOUT_MS, PRELOAD_FIRST_N).then(function() {
                     if (append) {
                         removeLastSkeletons(requestLimit);
                         gameGrid.insertAdjacentHTML('beforeend', games.map(renderGameItem).join(''));
@@ -776,12 +818,10 @@
                     }
                     applyMobileActionButtonSizing();
                     state.isLoadingMore = false;
-                    requestAnimationFrame(function() {
-                        checkLoadMore();
-                    });
                 });
             })
             .catch(function() {
+                clearTimeout(timeoutId);
                 state.isLoadingMore = false;
                 if (!append) {
                     gameGrid.innerHTML = renderEmptyState();
@@ -1298,7 +1338,7 @@
     window.removeFilter = removeFilter;
     window.clearAllUrlFilters = clearAllUrlFilters;
 
-    /* ── Infinite scroll: iç scroll + mobilde IO (iOS momentum scroll olayları güvenilir değil) ── */
+    /* ── Infinite scroll: yalnızca kullanıcı altta / sentinel görünürken ── */
     const slotsGamesEl = getCasinoGamesContainer(slotPageRoot);
     const loadMoreSentinel = document.getElementById('load-more-sentinel');
 
@@ -1307,8 +1347,10 @@
         var scrollTop = slotsGamesEl.scrollTop;
         var scrollHeight = slotsGamesEl.scrollHeight;
         var clientHeight = slotsGamesEl.clientHeight;
+        // İç scroll yoksa (scrollHeight ≈ clientHeight) otomatik dump yapma — IO sentinel'e bırak.
+        if (scrollHeight <= clientHeight + 4) return;
         var distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-        var threshold = Math.max(clientHeight * 0.10, 80); /* mobilde küçük viewport için alt sınır */
+        var threshold = Math.max(clientHeight * 0.10, 80);
         if (distanceFromBottom <= threshold) loadSlots(true);
     }
 
@@ -1318,30 +1360,29 @@
         }, { passive: true });
     }
 
-    /* Dokunmatik / momentum: scroll olayı tetiklenmeden alt kısma gelindiğinde yükle */
     if (loadMoreSentinel && typeof IntersectionObserver !== 'undefined') {
+        var ioRoot = slotsGamesEl && slotsGamesEl.scrollHeight > slotsGamesEl.clientHeight + 4
+            ? slotsGamesEl
+            : null;
         var loadMoreIo = new IntersectionObserver(function(entries) {
             for (var i = 0; i < entries.length; i++) {
-                if (!entries[i].isIntersecting) continue;
+                if (!entries[i].isIntersecting) {
+                    loadMoreArmed = true;
+                    continue;
+                }
+                if (!loadMoreArmed) return;
                 if (!state.showLoadMore || state.isLoadingMore || state.remainingGames <= 0) return;
+                loadMoreArmed = false;
                 loadSlots(true);
                 return;
             }
         }, {
-            root: null,
-            /* Alt sabit bar (~60–72px) + erken tetikleme */
+            root: ioRoot,
             rootMargin: '0px 0px 100px 0px',
             threshold: 0
         });
         loadMoreIo.observe(loadMoreSentinel);
     }
-
-    /* İlk boyut: liste kısa ve iç scroll yoksa veya sentinel zaten görünür alandaysa */
-    runAfterLayout(function() {
-        requestAnimationFrame(function() {
-            checkLoadMore();
-        });
-    });
 
     /* ── Random Game ── */
     var randomGameBtn = document.getElementById('randomGameBtn');

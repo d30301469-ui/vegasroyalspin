@@ -354,6 +354,11 @@ final class SlotGamesQuery
             if ($gameType === 1) {
                 return null;
             }
+            // Yerel DB yalnızca bgaming_games; softswiss slot lobisi backend'e düşsün.
+            $source = strtolower(trim((string) ($query['source'] ?? '')));
+            if ($source !== 'bgaming') {
+                return null;
+            }
             $catalog = self::combinedCatalogPage($pdo, $query, $limit, $page);
             $j = ['success' => true, 'data' => $catalog];
             return self::normalizeGamesResponse($j, $limit, $page, $catalogOrderAfterPopular);
@@ -506,46 +511,8 @@ final class SlotGamesQuery
 
     private static function localProviders(int $gameType): array
     {
-        if (function_exists('frontend_database_allowed') && !frontend_database_allowed()) {
-            return [];
-        }
-
-        if (!class_exists('AdminDatabase', false)) {
-            if (is_file(ADMIN_APP_PATH . '/Core/AdminDatabase.php')) {
-                require_once ADMIN_APP_PATH . '/Core/AdminDatabase.php';
-            }
-        }
-        if (!class_exists('AdminDatabase', false)) {
-            return [];
-        }
-
-        try {
-            $pdo = AdminDatabase::pdo();
-            $gt  = $gameType === 1 ? 1 : 0;
-            $union = [];
-            // BGaming providers are slot-only.
-            if ($gt === 0) {
-                $union[] = "SELECT DISTINCT provider AS provider_name
-                    FROM bgaming_games
-                    WHERE is_active = 1 AND provider <> ''";
-            }
-            if ($union === []) {
-                return [];
-            }
-            $sql  = implode(' UNION ', $union);
-            $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Throwable) {
-            return [];
-        }
-        $providers = [];
-        foreach ($rows as $row) {
-            if (is_array($row) && !empty($row['provider_name'])) {
-                $providers[] = (string) $row['provider_name'];
-            }
-        }
-        $providers = array_values(array_unique(array_filter($providers)));
-        sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
-        return $providers;
+        // Yerel katalog yalnızca BGaming satırları tutuyor; provider listesi backend'den gelsin.
+        return [];
     }
 
     public static function winnersPool(int $limit = 200): array

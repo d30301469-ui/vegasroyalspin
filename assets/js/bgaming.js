@@ -39,6 +39,12 @@
     var randomGameBtn  = document.getElementById('randomGameBtn');
     var searchDebounceTimer = null;
     var SEARCH_DEBOUNCE_MS = 500;
+    var fetchAbort = null;
+    var FETCH_TIMEOUT_MS = 15000;
+    var PRELOAD_FIRST_N = 6;
+    var PRELOAD_TIMEOUT_MS = 1200;
+    var loadMoreIo = null;
+    var loadMoreArmed = true;
 
     /* ── Utilities ── */
     function escapeHtml(str) {
@@ -232,9 +238,11 @@
         return html;
     }
 
-    function preloadImages(urls, timeoutMs) {
-        timeoutMs = timeoutMs || 6000;
-        return Promise.all(urls.map(function(url) {
+    function preloadImages(urls, timeoutMs, maxCount) {
+        timeoutMs = timeoutMs || PRELOAD_TIMEOUT_MS;
+        maxCount = maxCount == null ? PRELOAD_FIRST_N : maxCount;
+        var slice = (urls || []).slice(0, maxCount);
+        return Promise.all(slice.map(function(url) {
             if (!url) return Promise.resolve();
             return new Promise(function(resolve) {
                 var img = new Image();
@@ -263,14 +271,29 @@
         var url = buildApiUrl(append);
 
         if (!append) {
+            if (fetchAbort) {
+                try { fetchAbort.abort(); } catch (e) {}
+            }
             gameGrid.innerHTML = renderSkeletonItems(PAGE_SIZE);
         } else {
             gameGrid.insertAdjacentHTML('beforeend', renderSkeletonItems(requestLimit));
         }
 
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        if (!append) fetchAbort = controller;
+        var timedOut = false;
+        var timeoutId = setTimeout(function() {
+            timedOut = true;
+            if (controller) controller.abort();
+        }, FETCH_TIMEOUT_MS);
+
+        var fetchOpts = { headers: { 'X-Requested-With': 'XMLHttpRequest' } };
+        if (controller) fetchOpts.signal = controller.signal;
+
+        fetch(url, fetchOpts)
             .then(function(res) { return res.json(); })
             .then(function(data) {
+                clearTimeout(timeoutId);
                 data = normalizeApiResponse(data);
                 if (!data.ok) {
                     if (append) { removeLastSkeletons(requestLimit); state.isLoadingMore = false; }
@@ -292,7 +315,7 @@
                 }
 
                 var coverUrls = games.map(function(g) { return g.cover || ''; });
-                preloadImages(coverUrls, 6000).then(function() {
+                preloadImages(coverUrls, PRELOAD_TIMEOUT_MS, PRELOAD_FIRST_N).then(function() {
                     if (append) {
                         removeLastSkeletons(requestLimit);
                         gameGrid.insertAdjacentHTML('beforeend', games.map(renderGameItem).join(''));
@@ -300,41 +323,36 @@
                         gameGrid.innerHTML = games.map(renderGameItem).join('');
                     }
                     state.isLoadingMore = false;
-                    requestAnimationFrame(function() { checkLoadMore(); });
                 });
             })
             .catch(function() {
+                clearTimeout(timeoutId);
                 state.isLoadingMore = false;
+                if (timedOut && !append) {
+                    gameGrid.innerHTML = renderEmptyState();
+                    return;
+                }
                 if (!append) gameGrid.innerHTML = renderEmptyState();
                 else removeLastSkeletons(requestLimit);
             });
     }
 
-    /* ── Load more (infinite scroll) ── */
-    function checkLoadMore() {
-        if (!state.showLoadMore || state.isLoadingMore || state.remainingGames <= 0) return;
-        loadSlots(true);
-    }
-
+    /* ── Load more: sentinel görünür + aradan bir kez çıktıktan sonra ── */
     if (loadMoreSentinel && typeof IntersectionObserver !== 'undefined') {
-        var loadMoreIo = new IntersectionObserver(function(entries) {
+        loadMoreIo = new IntersectionObserver(function(entries) {
             for (var i = 0; i < entries.length; i++) {
-                if (!entries[i].isIntersecting) continue;
+                if (!entries[i].isIntersecting) {
+                    loadMoreArmed = true;
+                    continue;
+                }
+                if (!loadMoreArmed) return;
                 if (!state.showLoadMore || state.isLoadingMore || state.remainingGames <= 0) return;
+                loadMoreArmed = false;
                 loadSlots(true);
                 return;
             }
-        }, { root: null, rootMargin: '0px 0px 200px 0px', threshold: 0 });
+        }, { root: null, rootMargin: '0px 0px 120px 0px', threshold: 0 });
         loadMoreIo.observe(loadMoreSentinel);
-    }
-
-    /* İlk yüklemede sentinel görünür alandaysa hemen tetikle */
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            requestAnimationFrame(function() { requestAnimationFrame(checkLoadMore); });
-        });
-    } else {
-        requestAnimationFrame(function() { requestAnimationFrame(checkLoadMore); });
     }
 
     /* ── Search ── */

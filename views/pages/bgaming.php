@@ -102,7 +102,7 @@ $bgamingJsVer  = (string) ((is_file($bgamingJsPath) ? filemtime($bgamingJsPath) 
                             <span class="providerBadgeBlock" data-badge=""></span>
                             <div class="casinoGameItem">
                                 <img alt="<?= htmlspecialchars($gName, ENT_QUOTES); ?>"
-                                     loading="eager"
+                                     loading="lazy"
                                      src="<?= htmlspecialchars($gCover, ENT_QUOTES); ?>"
                                      data-src="<?= htmlspecialchars($gCover, ENT_QUOTES); ?>"
                                      class="casinoGameItemImage"
