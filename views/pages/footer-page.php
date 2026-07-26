@@ -6,8 +6,9 @@ $pageContent = (string) ($footerPage['content'] ?? '');
 /**
  * CMS içeriğini güvenli HTML'e çevirir.
  * - İçerik HTML ise: izinli etiketler korunur, script/event handler temizlenir.
- * - Düz metin ise: satır sonları paragrafa, "1." "2." gibi numaralı bölümler
- *   ayrı maddelere (<ol><li>) dönüştürülür.
+ * - Düz metin ise: satır sonları paragrafa; "1." "2." gibi numaralı bölümler
+ *   numaralı listeye (<ol>), "-", "*", "•" ile başlayan satırlar maddeli
+ *   listeye (<ul>) dönüştürülür. Madde başındaki "Başlık:" kısmı vurgulanır.
  */
 $renderFooterPageBody = static function (string $content): string {
     $content = trim($content);
@@ -30,33 +31,52 @@ $renderFooterPageBody = static function (string $content): string {
         return $html;
     }
 
+    // Madde metnindeki "Başlık: açıklama" kalıbında başlığı vurgular.
+    $emphasizeLabel = static function (string $item): string {
+        return (string) preg_replace('/^([^:.]{2,70}):\s+/u', '<strong>$1:</strong> ', $item);
+    };
+
     $text = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
     $text = str_replace(["\r\n", "\r"], "\n", $text);
     // Cümle sonuna yapışık numaralı bölüm başlangıçlarını ("...eder.5. Veri...") ayır
     $text = (string) preg_replace('/(?<=[.!?;:])\s*(?=\d{1,2}[.)]\s*[A-ZÇĞİÖŞÜ])/u', "\n", $text);
+    // Satır içi • işaretlerini ayrı maddelere böl
+    $text = (string) preg_replace('/\s*•\s*/u', "\n• ", $text);
 
     $blocks = array_values(array_filter(array_map('trim', explode("\n", $text)), static fn (string $line): bool => $line !== ''));
 
     $html = '';
-    $listOpen = false;
+    $openList = ''; // '', 'ol' veya 'ul'
+    $closeList = static function () use (&$html, &$openList): void {
+        if ($openList !== '') {
+            $html .= '</' . $openList . '>';
+            $openList = '';
+        }
+    };
+
     foreach ($blocks as $block) {
         if (preg_match('/^(\d{1,2})[.)]\s*(.+)$/su', $block, $m) === 1) {
-            if (!$listOpen) {
+            if ($openList !== 'ol') {
+                $closeList();
                 $html .= '<ol class="footerPageList">';
-                $listOpen = true;
+                $openList = 'ol';
             }
-            $html .= '<li value="' . (int) $m[1] . '">' . $m[2] . '</li>';
+            $html .= '<li value="' . (int) $m[1] . '">' . $emphasizeLabel($m[2]) . '</li>';
             continue;
         }
-        if ($listOpen) {
-            $html .= '</ol>';
-            $listOpen = false;
+        if (preg_match('/^[•*\-–]\s*(.+)$/su', $block, $m) === 1) {
+            if ($openList !== 'ul') {
+                $closeList();
+                $html .= '<ul class="footerPageList">';
+                $openList = 'ul';
+            }
+            $html .= '<li>' . $emphasizeLabel($m[1]) . '</li>';
+            continue;
         }
+        $closeList();
         $html .= '<p>' . $block . '</p>';
     }
-    if ($listOpen) {
-        $html .= '</ol>';
-    }
+    $closeList();
 
     return $html;
 };
