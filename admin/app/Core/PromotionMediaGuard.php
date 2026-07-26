@@ -130,7 +130,15 @@ final class PromotionMediaGuard
             $best = self::bestMatchingLibraryFile($title, $libraryFiles);
             if ($best !== null && $best !== $filename) {
                 $bestScore = self::scoreLibraryMatch($title, $best);
-                if ($bestScore >= 75.0 && ($bestScore - $currentScore) >= 3.0) {
+                $titleSlug = self::slugify($title);
+                $currentStem = self::slugify(pathinfo($filename, PATHINFO_FILENAME));
+                $bestStem = self::slugify(pathinfo($best, PATHINFO_FILENAME));
+                $titleWantsSlot = str_contains($titleSlug, 'slot');
+                $slotPrefer = $titleWantsSlot
+                    && str_contains($bestStem, 'slot')
+                    && !str_contains($currentStem, 'slot')
+                    && $bestScore >= ($currentScore - 1.0);
+                if ($slotPrefer || ($bestScore >= 75.0 && ($bestScore - $currentScore) >= 3.0)) {
                     return '/upload/bonuses/' . $best;
                 }
             }
