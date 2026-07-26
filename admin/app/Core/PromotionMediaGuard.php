@@ -346,7 +346,7 @@ final class PromotionMediaGuard
         $bestPct = 0.0;
         $secondPct = 0.0;
         foreach ($bestByStem as $row) {
-            $pct = (float) $row['pct'];
+            $pct = (float) $row['score'];
             if ($pct > $bestPct) {
                 $secondPct = $bestPct;
                 $bestPct = $pct;
@@ -359,10 +359,11 @@ final class PromotionMediaGuard
         if ($best === null) {
             return null;
         }
-        if ($bestPct < 55.0) {
+        $bestRawPct = (float) ($bestByStem[self::slugify(pathinfo($best, PATHINFO_FILENAME))]['pct'] ?? $bestPct);
+        if ($bestRawPct < 55.0 && $bestPct < 55.0) {
             return null;
         }
-        $minGap = $bestPct >= 65.0 ? 3.0 : 8.0;
+        $minGap = $bestPct >= 65.0 ? 0.02 : 8.0;
         if (($bestPct - $secondPct) < $minGap && $bestPct < 90.0) {
             return null;
         }
