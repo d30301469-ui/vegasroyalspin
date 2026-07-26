@@ -376,33 +376,67 @@ try {
 <?php
 homeRenderBannerSection(homeSectionByKey($homeSections, 'withdrawal-banner'));
 if ($homeIsMobile):
+    $sportsShortcuts = [
+        [
+            'href' => '/sportbook',
+            'aria' => 'Maç Öncesi — Spor Bahisleri',
+            'alt' => 'Maç Öncesi',
+            'img' => '/assets/images/sports-shortcuts/sports-pre-match.webp',
+        ],
+        [
+            'href' => '/sportbook',
+            'aria' => 'Canlı Bülten — Spor Bahisleri',
+            'alt' => 'Canlı Bülten',
+            'img' => '/assets/images/sports-shortcuts/sports-live.webp',
+        ],
+        [
+            'href' => '/sportbook',
+            'aria' => 'Özel Oranlar — Spor Bahisleri',
+            'alt' => 'Özel Oranlar',
+            'img' => '/assets/images/sports-shortcuts/sports-boosted.webp',
+        ],
+        [
+            'href' => '/sportbook',
+            'aria' => 'Öne Çıkan Maçlar — Spor Bahisleri',
+            'alt' => 'Öne Çıkan Maçlar',
+            'img' => '/assets/images/sports-shortcuts/sports-popular.webp',
+        ],
+    ];
 ?>
-<div class="hm-row-bc hm-row-mobile-sports-shortcuts" style="grid-template-columns: 12fr;">
+<section class="hm-row-bc hm-row-mobile-sports-shortcuts" style="grid-template-columns: 12fr;" aria-label="Popüler ligler ve turnuvalar">
     <div class="hm-row-bc-inner">
-        <div class="product-banner-container-bc col-4 product-banner-without-titles" data-scroll-lock-scrollable>
-            <div>
-                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="4" href="/tr/sports/pre-match">
-                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-pre-match.webp" class="product-banner-img-bc" />
+        <header class="mobile-sports-shortcuts-heading">
+            <span class="mobile-sports-shortcuts-heading-line" aria-hidden="true"></span>
+            <h2 class="mobile-sports-shortcuts-title">
+                <span class="mobile-sports-shortcuts-title-soft">SİZLER İÇİN SEÇİLMİŞ</span>
+                <span class="mobile-sports-shortcuts-title-accent">POPÜLER LİGLER VE TURNUVALAR</span>
+            </h2>
+            <span class="mobile-sports-shortcuts-heading-line" aria-hidden="true"></span>
+        </header>
+        <div class="product-banner-container-bc col-4 product-banner-without-titles mobile-sports-shortcuts-grid" data-scroll-lock-scrollable>
+            <?php foreach ($sportsShortcuts as $shortcut): ?>
+            <div class="mobile-sports-shortcuts-item">
+                <a
+                    target="_self"
+                    class="product-banner-info-bc product-banner-bc mobile-sports-shortcuts-link"
+                    aria-label="<?= htmlspecialchars((string) $shortcut['aria'], ENT_QUOTES, 'UTF-8') ?>"
+                    href="<?= htmlspecialchars((string) $shortcut['href'], ENT_QUOTES, 'UTF-8') ?>"
+                >
+                    <img
+                        alt="<?= htmlspecialchars((string) $shortcut['alt'], ENT_QUOTES, 'UTF-8') ?>"
+                        loading="lazy"
+                        decoding="async"
+                        src="<?= htmlspecialchars((string) $shortcut['img'], ENT_QUOTES, 'UTF-8') ?>"
+                        class="product-banner-img-bc"
+                        width="400"
+                        height="160"
+                    />
                 </a>
             </div>
-            <div>
-                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="3" href="/tr/sports/live">
-                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-live.webp" class="product-banner-img-bc" />
-                </a>
-            </div>
-            <div>
-                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="2" href="/tr/sports/pre-match/event-view?specialSection=boosted-bets">
-                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-boosted.webp" class="product-banner-img-bc" />
-                </a>
-            </div>
-            <div>
-                <a target="_self" class="product-banner-info-bc product-banner-bc" aria-label="1" href="/tr/sports/pre-match/event-view?specialSection=popular-matches">
-                    <img alt="" loading="lazy" decoding="async" src="/assets/images/sports-shortcuts/sports-popular.webp" class="product-banner-img-bc" />
-                </a>
-            </div>
+            <?php endforeach; ?>
         </div>
     </div>
-</div>
+</section>
 <?php
 endif;
 homeRenderGameSection(homeSectionByKey($homeSections, 'casino'), 'Casino', '/slot');
