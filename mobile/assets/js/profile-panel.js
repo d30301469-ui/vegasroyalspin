@@ -234,11 +234,6 @@
     if (countryEl) countryEl.textContent = country;
     if (countryFlag) countryFlag.classList.toggle('turkey', country === 'Türkiye');
 
-    var bonusIframe = panel.querySelector('[data-mbonus-iframe]');
-    if (bonusIframe && username) {
-      var baseUrl = bonusIframe.getAttribute('data-base-url') || '';
-      bonusIframe.src = baseUrl + '?username=' + encodeURIComponent(username);
-    }
   }
 
   function applyBalanceData(panel, data) {
@@ -323,8 +318,6 @@
       twofa.disabled = true;
     }
     setTwofaMessage(panel, '', 'İki faktörlü kimlik doğrulama durumu yükleniyor...');
-    var bonusIframe = panel.querySelector('[data-mbonus-iframe]');
-    if (bonusIframe) bonusIframe.src = 'about:blank';
     loyaltyLoaded = false;
     loyaltyPayload = null;
     messagesLoaded = false;
@@ -1803,10 +1796,8 @@
       tab.classList.toggle('active', tab.getAttribute('data-mbonus-tab') === pageName);
     });
     var nativeContent = panel.querySelector('[data-mbonus-native-content]');
-    var iframe = panel.querySelector('[data-mbonus-iframe]');
     var useNative = bonusPageUsesNativeList(pageName);
     if (nativeContent) nativeContent.hidden = !useNative;
-    if (iframe) iframe.hidden = useNative;
     if (bonusPageUsesPromotions(pageName)) {
       renderBonusPromotions(panel, pageName);
       if (!bonusPromotionsLoaded) loadBonusPromotions(panel, pageName);

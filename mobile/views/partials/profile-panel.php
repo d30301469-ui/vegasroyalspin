@@ -11,7 +11,6 @@ $panelLogoUrl = (string) ($panelBranding['logo_animated_url'] ?? $panelSettings[
 if (class_exists('ApiMediaUrl', false)) {
     $panelLogoUrl = ApiMediaUrl::resolve($panelLogoUrl);
 }
-$panelBonusIframeBaseUrl = 'https://jjbonusmilyon.com/';
 $panelCsrfKey = 'vegasroyalspin_csrf_token';
 if (empty($_SESSION[$panelCsrfKey]) || !is_string($_SESSION[$panelCsrfKey])) {
   $_SESSION[$panelCsrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
@@ -220,7 +219,6 @@ $_SESSION['csrf_token'] = $_SESSION[$panelCsrfKey];
           <div class="mprofile-bonus-request-list" data-mbonus-promotions-list><p class="profile-active-bonus-loading" role="status">Bonuslar yükleniyor...</p></div>
           <p class="profile-bonus-claim-status" data-mbonus-claim-status role="status" aria-live="polite"></p>
         </div>
-        <iframe class="iframe-widget" data-mbonus-iframe data-base-url="<?= htmlspecialchars($panelBonusIframeBaseUrl, ENT_QUOTES, 'UTF-8') ?>" title="Bonuslar" src="about:blank" allow="clipboard-write" style="height: 100%; width: 100%;" hidden></iframe>
       </div>
       <div class="mprofile-messages-view" data-mprofile-view="messages" aria-hidden="true">
         <div class="back-nav-bc"><i class="back-nav-icon-bc bc-i-round-arrow-left"></i><span class="back-nav-title-bc ellipsis">MESAJLAR</span></div>
@@ -369,8 +367,6 @@ $_SESSION['csrf_token'] = $_SESSION[$panelCsrfKey];
       input('address', user.address || '');
       var country = panel.querySelector('[data-mprofile-country]');
       if (country) country.textContent = user.country || '';
-      var iframe = panel.querySelector('[data-mbonus-iframe]');
-      if (iframe && username) iframe.src = (iframe.getAttribute('data-base-url') || '') + '?username=' + encodeURIComponent(username);
     }
 
     var balance = entry('balance', 60000);

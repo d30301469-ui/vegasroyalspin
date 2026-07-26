@@ -573,9 +573,6 @@ body.mobile-site .mainContentWrap .home-hero-slider {
     justify-content: center;
   }
 
-  .bonus-requestIframeStyle iframe.ifreamview {
-    width: 105%;
-  }
 }
 
 @media (max-width: 480px) {

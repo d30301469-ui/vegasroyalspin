@@ -451,22 +451,10 @@ app-image-viewer .modal-content {
     justify-content: flex-end;
 }
 
-/* Bonus iframe / Player sidebar / Setting bar */
+/* Player sidebar / Setting bar */
 #comm100-container > div > div {
     bottom: 6% !important;
     padding-right: 6px;
-}
-.bonus-requestIframeStyle .modal-body {
-    padding: 0;
-    overflow: hidden;
-}
-.bonus-requestIframeStyle iframe.ifreamview {
-    width: 103.5%;
-}
-.bonus-requestIframeStyle button.close {
-    color: var(--white-color);
-    font-size: 16px;
-    margin: 5px 0px 0 auto !important;
 }
 
 .playersidebarMain {

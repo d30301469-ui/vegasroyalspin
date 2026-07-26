@@ -351,36 +351,6 @@
             return false;
         }
 
-        // Kullanıcı menüsü: toggle davranışı header.js + profile modal (__openProfileModalInitial); çift dinleyici kaldırıldı.
-        var bonusRequestLink = document.getElementById("bonusRequestLink");
-        var bonusModal = document.getElementById("custome-promotion");
-        var closeButton = bonusModal ? bonusModal.querySelector(".close") : null;
-
-        if (bonusRequestLink && bonusModal) {
-            bonusRequestLink.addEventListener("click", function (event) {
-                event.preventDefault();
-                bonusModal.style.display = "block";
-                bonusModal.classList.add("show");
-                bonusModal.setAttribute("aria-hidden", "false");
-            });
-        }
-
-        if (closeButton && bonusModal) {
-            closeButton.addEventListener("click", function () {
-                bonusModal.style.display = "none";
-                bonusModal.classList.remove("show");
-                bonusModal.setAttribute("aria-hidden", "true");
-            });
-
-            window.addEventListener("click", function (event) {
-                if (event.target === bonusModal) {
-                    bonusModal.style.display = "none";
-                    bonusModal.classList.remove("show");
-                    bonusModal.setAttribute("aria-hidden", "true");
-                }
-            });
-        }
-
         // Smart panel — YENİ YAPI: sağ taraftan kayan sabit panel (header.js yönetir)
         // footer.js sadece sp-button tıklamalarını right-sidebar ile köprüler.
         function closeNewSmartPanel() {
