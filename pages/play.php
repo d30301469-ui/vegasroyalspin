@@ -162,7 +162,11 @@ if ($playBypassShell) {
   gap: 10px;
 }
 .play-topbar-logo { display: flex; align-items: center; text-decoration: none; }
-.play-topbar-logo img { display: block; height: 30px; width: auto; }
+.play-topbar-logo img { display: block; height: 30px; width: auto; max-height: 30px; object-fit: contain; }
+/* Desktop: logo 2 seviye kucult (30 → 26 → 22) */
+@media (min-width: 992px) {
+  .play-topbar-logo img { height: 22px; max-height: 22px; }
+}
 .play-topbar-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .play-topbar-balance {
   display: none;
@@ -323,7 +327,7 @@ if ($playLogoUrl !== '' && class_exists('ApiMediaUrl', false)) {
 ?>
 <header class="play-topbar" aria-label="Oyun çubuğu">
   <a class="play-topbar-logo" href="/" title="Ana sayfa" data-site-logo-link>
-    <img src="<?= htmlspecialchars($playLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="180" height="60" loading="lazy">
+    <img src="<?= htmlspecialchars($playLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) ($ayar['site_adi'] ?? 'Site'), ENT_QUOTES, 'UTF-8') ?>" width="132" height="44" loading="lazy">
   </a>
   <div class="play-topbar-actions">
     <div class="play-topbar-balance<?= $loggedIn ? ' is-visible' : '' ?>" id="playBalanceWrap" aria-live="polite">
