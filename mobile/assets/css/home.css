@@ -160,12 +160,13 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-banners-in-header .product
   border-radius: 10px;
 }
 
+/* BC orijinal (m.casinomilyon619): col-4 = 4 sütun tek satır + başlık */
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts {
   display: grid !important;
   grid-template-columns: 1fr !important;
   width: 100%;
-  margin: 4px 0 14px;
-  padding: 0 10px;
+  margin: 0 0 10px;
+  padding: 0 var(--padding-page-aside, 10px);
   box-sizing: border-box;
 }
 
@@ -173,91 +174,93 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .h
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 body.mobile-site .mobile-sports-shortcuts-heading {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   width: 100%;
-  margin: 2px 0 0;
+  margin: 0;
+  padding: 0 2px;
 }
 
 body.mobile-site .mobile-sports-shortcuts-heading-line {
   flex: 1 1 auto;
   height: 1px;
-  min-width: 12px;
-  background: linear-gradient(90deg, transparent, rgba(236, 72, 153, 0.85), transparent);
-  box-shadow: 0 0 6px rgba(236, 72, 153, 0.45);
+  min-width: 10px;
+  max-width: 48px;
+  background: #ec4899;
+  opacity: 0.9;
+  box-shadow: 0 0 8px rgba(236, 72, 153, 0.65);
 }
 
 body.mobile-site .mobile-sports-shortcuts-title {
   flex: 0 1 auto;
   margin: 0;
-  padding: 0 2px;
+  padding: 0;
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1.25;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
   text-transform: uppercase;
   white-space: normal;
 }
 
 body.mobile-site .mobile-sports-shortcuts-title-soft {
   display: inline;
-  color: rgba(255, 255, 255, 0.95);
+  color: #fff;
 }
 
 body.mobile-site .mobile-sports-shortcuts-title-accent {
   display: inline;
   color: #ec4899;
-  margin-left: 0.25em;
+  margin-left: 0.2em;
 }
 
-/* 2x2 grid — 4 sütun sıkışık kart yerine okunabilir mobil düzen */
+/* BC: .product-banner-container-bc.col-4 { grid-template-columns: repeat(4, 1fr) } */
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc.mobile-sports-shortcuts-grid,
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-gap: 10px;
+  gap: 10px;
   width: 100%;
+  margin: 0;
+  padding: 0;
   background: transparent !important;
-  padding: 0 !important;
+  align-items: stretch;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .mobile-sports-shortcuts-item,
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div {
   min-width: 0;
+  display: flex;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .mobile-sports-shortcuts-link,
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-bc {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
   height: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
+  padding: 0;
   text-decoration: none;
-  box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.35), 0 4px 14px rgba(0, 0, 0, 0.28);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .mobile-sports-shortcuts-link:active,
-body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-bc:active {
-  transform: scale(0.98);
+  -webkit-tap-highlight-color: transparent;
+  border-radius: var(--border-radius, 4px);
+  overflow: hidden;
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-img-bc {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 2.35 / 1;
-  object-fit: cover;
-  object-position: center;
   display: block;
-  border-radius: 10px;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--border-radius, 4px);
   pointer-events: none;
 }
 
