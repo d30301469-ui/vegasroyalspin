@@ -248,6 +248,9 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
 }
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-info-bc.product-banner-bc {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
   display: flex !important;
   align-items: center;
   width: 100%;
@@ -257,7 +260,7 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
   text-decoration: none;
   background: transparent !important;
   border: 0 !important;
-  box-shadow: none !important;
+  box-shadow: inset 0 0 0 1px rgba(168, 70, 225, 0.22);
   border-radius: 4px;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
@@ -265,6 +268,8 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
 
 body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-img-bc {
   display: block;
+  position: relative;
+  z-index: 0;
   width: 100%;
   max-width: 100%;
   height: auto;
@@ -275,7 +280,7 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
 
 /* JACKPOT / KAZANANLAR sekme buton glow animasyonu — KALDIRILDI */
 
-/* Provider sekme butonlari — cercevede dolanan isik (yanip sonme yok) */
+/* Cercevede dolanan isik — jp-tab + spor kisayol kartlari */
 @property --jp-border-angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -298,11 +303,12 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
   box-shadow: inset 0 0 0 1px rgba(168, 70, 225, 0.22);
 }
 
-.mobile-site .jp-tab::before {
-  content: "";
+.mobile-site .jp-tab::before,
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-info-bc.product-banner-bc::before {
+  content: "" !important;
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 2;
   border-radius: inherit;
   padding: 1.5px;
   box-sizing: border-box;
@@ -316,7 +322,7 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
     rgba(255, 220, 255, 0.95) 86%,
     rgba(168, 70, 225, 0.7) 92%,
     transparent 100%
-  );
+  ) !important;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -326,6 +332,19 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
     linear-gradient(#fff 0 0);
   mask-composite: exclude;
   animation: jpTabBorderSpin 2.4s linear infinite;
+}
+
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div:nth-child(1) .product-banner-bc::before {
+  animation-delay: 0s;
+}
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div:nth-child(2) .product-banner-bc::before {
+  animation-delay: 0.35s;
+}
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div:nth-child(3) .product-banner-bc::before {
+  animation-delay: 0.7s;
+}
+body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .product-banner-container-bc > div:nth-child(4) .product-banner-bc::before {
+  animation-delay: 1.05s;
 }
 
 .mobile-site .jp-tab:not(.jp-tab--active) {
@@ -348,7 +367,7 @@ body.mobile-site .mainContentWrap > .hm-row-bc.hm-row-mobile-sports-shortcuts .p
     rgba(255, 255, 255, 0.95) 80%,
     rgba(210, 160, 255, 0.8) 90%,
     transparent 100%
-  );
+  ) !important;
   animation: jpTabBorderSpin 2.8s linear infinite;
 }
 
