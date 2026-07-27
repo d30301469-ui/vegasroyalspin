@@ -716,9 +716,14 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                             <?php if (preg_match('/(^image_url$|thumbnail|banner|cover|logo)/i', $columnName) === 1): ?>
                                 <?php
                                 $imageUrl = trim((string) $rawValue);
+                                $imageFallbacks = [];
                                 if ($table === 'casino_aggregator_games' && class_exists('CasinoAggregatorService', false)) {
                                     $imageUrl = CasinoAggregatorService::resolveGameImage([
                                         'image_url' => $imageUrl,
+                                        'raw_payload' => $row['raw_payload'] ?? null,
+                                    ]);
+                                    $imageFallbacks = CasinoAggregatorService::resolveGameImageFallbacks([
+                                        'image_url' => trim((string) $rawValue),
                                         'raw_payload' => $row['raw_payload'] ?? null,
                                     ]);
                                 } elseif ($imageUrl !== '' && class_exists('CasinoAggregatorService', false)
@@ -742,7 +747,12 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                 }
                                 ?>
                                 <?php if ($imageUrl !== '' && (str_starts_with($imageUrl, 'http') || str_starts_with($imageUrl, '/'))): ?>
-                                    <img class="admin-game-thumb" src="<?= htmlspecialchars($imageUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Ön izleme" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'admin-game-thumb-placeholder',textContent:'Yok'}));">
+                                    <?php
+                                    $fallbackJson = !empty($imageFallbacks) && is_array($imageFallbacks)
+                                        ? htmlspecialchars(json_encode(array_values($imageFallbacks), JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8')
+                                        : '';
+                                    ?>
+                                    <img class="admin-game-thumb" src="<?= htmlspecialchars($imageUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Ön izleme" loading="lazy" referrerpolicy="no-referrer"<?= $fallbackJson !== '' ? ' data-fallbacks="' . $fallbackJson . '" data-fallback-idx="0"' : '' ?> onerror="(function(img){var f=[],i;try{f=JSON.parse(img.getAttribute('data-fallbacks')||'[]');}catch(e){}i=parseInt(img.getAttribute('data-fallback-idx')||'0',10)+1;if(Array.isArray(f)&&i<f.length){img.setAttribute('data-fallback-idx',String(i));img.src=f[i];return;}img.replaceWith(Object.assign(document.createElement('span'),{className:'admin-game-thumb-placeholder',textContent:'Yok'}));})(this);">
                                 <?php else: ?>
                                     <span class="admin-game-thumb-placeholder">Yok</span>
                                 <?php endif; ?>

@@ -243,6 +243,17 @@
 
   function gameThumbError(img, placeholder) {
     if (!img) return;
+    var fallbacks = [];
+    try {
+      var raw = img.getAttribute('data-fallbacks');
+      if (raw) fallbacks = JSON.parse(raw);
+    } catch (e) {}
+    var idx = parseInt(img.getAttribute('data-fallback-idx') || '0', 10) + 1;
+    if (Array.isArray(fallbacks) && idx < fallbacks.length) {
+      img.setAttribute('data-fallback-idx', String(idx));
+      img.src = fallbacks[idx];
+      return;
+    }
     img.onerror = null;
     img.src = placeholder || '/assets/games-img/game-img4.svg';
   }
@@ -257,9 +268,12 @@
     var placeholder = '/assets/games-img/game-img4.svg';
     listEl.innerHTML = rows.map(function (r) {
       var cover = preferCompatibleCover((r.cover && r.cover.trim()) ? r.cover : ((r.image_url || r.game_image_url || '') ));
+      var fallbacks = Array.isArray(r.image_fallbacks) ? r.image_fallbacks : (Array.isArray(r.cover_fallbacks) ? r.cover_fallbacks : []);
+      if (!cover && fallbacks.length) cover = fallbacks[0];
       if (!cover) cover = placeholder;
+      var fallbackAttr = fallbacks.length ? ' data-fallbacks="' + esc(JSON.stringify(fallbacks)) + '" data-fallback-idx="0"' : '';
       return '<div class="winners-list-item" role="listitem">' +
-        '<div class="winners-item-icon"><img src="' + esc(cover) + '" data-src="' + esc(cover) + '" alt="' + esc(r.game_name) + '" class="winners-item-cover" loading="lazy" referrerpolicy="no-referrer" onerror="window.__winnersThumbError&&window.__winnersThumbError(this)"></div>' +
+        '<div class="winners-item-icon"><img src="' + esc(cover) + '" data-src="' + esc(cover) + '"' + fallbackAttr + ' alt="' + esc(r.game_name) + '" class="winners-item-cover" loading="lazy" referrerpolicy="no-referrer" onerror="window.__winnersThumbError&&window.__winnersThumbError(this)"></div>' +
         '<div class="winners-item-info"><span class="winners-item-user">' + esc(r.user_mask) + '</span><span class="winners-item-game">' + esc(r.game_name) + '</span></div>' +
         '<div class="winners-item-amount">' + esc(fmt(r.amount)) + '</div></div>';
     }).join('');

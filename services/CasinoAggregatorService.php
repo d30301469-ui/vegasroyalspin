@@ -390,9 +390,20 @@ final class CasinoAggregatorService
 
     /**
      * Image maps look like {"en":"https://.../lobby/x.avif","lobby":"https://.../default/x.avif"}.
-     * Prefer en /lobby/ assets; never use raw JSON as the final URL.
+     * Some games only work on /lobby/, others only on /default/ — never rewrite paths.
      */
     public static function resolveMediaUrl(mixed $value, ?string $lang = null): string
+    {
+        $candidates = self::collectMediaUrlCandidates($value, $lang);
+        return $candidates[0] ?? '';
+    }
+
+    /**
+     * All usable CDN URLs from a localized image map (en, lobby, etc.), in priority order.
+     *
+     * @return list<string>
+     */
+    public static function collectMediaUrlCandidates(mixed $value, ?string $lang = null): array
     {
         $lang = strtolower(trim((string) ($lang ?? 'tr')));
         if ($lang === '') {
@@ -400,20 +411,20 @@ final class CasinoAggregatorService
         }
 
         if (is_array($value)) {
-            return self::normalizeMediaUrl(self::pickBestMediaCandidate($value, $lang));
+            return self::collectMediaUrlCandidatesFromMap($value, $lang);
         }
 
         if (!is_string($value)) {
-            return '';
+            return [];
         }
 
         $trimmed = trim($value);
         if ($trimmed === '') {
-            return '';
+            return [];
         }
 
         if (self::isUsableMediaUrl($trimmed)) {
-            return self::normalizeMediaUrl(self::preferLobbyPath($trimmed));
+            return [self::normalizeMediaUrl($trimmed)];
         }
 
         if (self::looksLikeLocalizedJson($trimmed)) {
@@ -423,27 +434,67 @@ final class CasinoAggregatorService
                     $decoded = json_decode($decoded, true);
                 }
                 if (is_array($decoded)) {
-                    $picked = self::pickBestMediaCandidate($decoded, $lang);
-                    if ($picked !== '') {
-                        return self::normalizeMediaUrl($picked);
+                    $urls = self::collectMediaUrlCandidatesFromMap($decoded, $lang);
+                    if ($urls !== []) {
+                        return $urls;
                     }
                 }
             }
 
-            if (preg_match('/["\']en["\']\s*:\s*["\']([^"\']+)["\']/i', $trimmed, $matches)) {
-                return self::normalizeMediaUrl((string) ($matches[1] ?? ''));
+            $regexUrls = [];
+            foreach (['en', 'lobby', 'tr', 'default'] as $key) {
+                if (preg_match('/["\']' . preg_quote($key, '/') . '["\']\s*:\s*["\']([^"\']+)["\']/i', $trimmed, $matches) === 1) {
+                    $url = self::normalizeMediaUrl((string) ($matches[1] ?? ''));
+                    if ($url !== '' && !in_array($url, $regexUrls, true)) {
+                        $regexUrls[] = $url;
+                    }
+                }
             }
-            if (preg_match('/["\']lobby["\']\s*:\s*["\']([^"\']+)["\']/i', $trimmed, $matches)) {
-                return self::normalizeMediaUrl(self::preferLobbyPath((string) ($matches[1] ?? '')));
+            if ($regexUrls !== []) {
+                return $regexUrls;
             }
         }
 
         $fromLabel = self::resolveLocalizedLabel($trimmed, $lang);
         if (self::isUsableMediaUrl($fromLabel)) {
-            return self::normalizeMediaUrl(self::preferLobbyPath($fromLabel));
+            return [self::normalizeMediaUrl($fromLabel)];
         }
 
-        return '';
+        return [];
+    }
+
+    /**
+     * @param array<string, mixed> $decoded
+     * @return list<string>
+     */
+    private static function collectMediaUrlCandidatesFromMap(array $decoded, string $lang): array
+    {
+        $urls = [];
+        $seen = [];
+
+        $add = static function (mixed $candidate) use (&$urls, &$seen): void {
+            if (!is_string($candidate)) {
+                return;
+            }
+            $url = self::normalizeMediaUrl(trim($candidate));
+            if ($url === '' || !self::isUsableMediaUrl($url)) {
+                return;
+            }
+            if (isset($seen[$url])) {
+                return;
+            }
+            $seen[$url] = true;
+            $urls[] = $url;
+        };
+
+        foreach ([$lang, 'en', 'tr', 'lobby', 'default'] as $key) {
+            $add(self::arrayValueByKeyInsensitive($decoded, $key));
+        }
+        foreach ($decoded as $candidate) {
+            $add($candidate);
+        }
+
+        return $urls;
     }
 
     /**
@@ -451,55 +502,15 @@ final class CasinoAggregatorService
      */
     private static function pickBestMediaCandidate(array $decoded, string $lang): string
     {
-        $urls = [];
-        foreach ([$lang, 'en', 'tr', 'default', 'lobby'] as $key) {
-            $match = self::arrayValueByKeyInsensitive($decoded, $key);
-            if (is_string($match)) {
-                $url = trim($match);
-                if ($url !== '' && (self::isUsableMediaUrl($url) || str_contains($url, '://'))) {
-                    $urls[] = $url;
-                }
-            }
-        }
-        foreach ($decoded as $candidate) {
-            if (!is_string($candidate)) {
-                continue;
-            }
-            $url = trim($candidate);
-            if ($url !== '' && (self::isUsableMediaUrl($url) || str_contains($url, '://')) && !in_array($url, $urls, true)) {
-                $urls[] = $url;
-            }
-        }
-
-        if ($urls === []) {
-            return '';
-        }
-
-        foreach ($urls as $url) {
-            if (stripos($url, '/lobby/') !== false) {
-                return $url;
-            }
-        }
-
-        return self::preferLobbyPath($urls[0]);
+        return self::collectMediaUrlCandidatesFromMap($decoded, $lang)[0] ?? '';
     }
 
     /**
-     * Lobby CDN often serves working thumbs under /lobby/ instead of /default/.
+     * @deprecated Do not rewrite CDN paths — games may require /lobby/ or /default/ as provided.
      */
     public static function preferLobbyPath(string $url): string
     {
-        $url = trim($url);
-        if ($url === '') {
-            return '';
-        }
-        if (stripos($url, '/default/') !== false && stripos($url, '/lobby/') === false) {
-            $rewritten = preg_replace('#/default/#i', '/lobby/', $url, 1);
-            if (is_string($rewritten) && $rewritten !== '') {
-                return $rewritten;
-            }
-        }
-        return $url;
+        return trim($url);
     }
 
     public static function isUsableMediaUrl(string $value): bool
@@ -525,7 +536,7 @@ final class CasinoAggregatorService
         if (str_starts_with($value, '//')) {
             $value = 'https:' . $value;
         }
-        return self::preferLobbyPath($value);
+        return $value;
     }
 
     /**
@@ -537,29 +548,93 @@ final class CasinoAggregatorService
     }
 
     /**
-     * Ordered fallbacks for frontend onerror chains.
+     * Ordered fallbacks for frontend onerror chains (alternate CDN URLs first).
      *
+     * @param array<string, mixed>|null $row
      * @return list<string>
      */
-    public static function mediaUrlFallbacks(string $url): array
+    public static function mediaUrlFallbacks(string $url, ?array $row = null, ?string $lang = null): array
     {
-        $url = self::normalizeMediaUrl($url);
-        if ($url === '') {
-            return [];
-        }
-
-        $out = [$url];
-        if (preg_match('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', $url) !== 1) {
-            return $out;
-        }
-
-        foreach (['avif', 'webp', 'png', 'jpg', 'jpeg'] as $ext) {
-            $candidate = preg_replace('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', '.' . $ext . '$2', $url);
-            if (is_string($candidate) && $candidate !== '' && !in_array($candidate, $out, true)) {
+        $out = [];
+        $add = static function (string $candidate) use (&$out): void {
+            $candidate = self::normalizeMediaUrl($candidate);
+            if ($candidate !== '' && self::isUsableMediaUrl($candidate) && !in_array($candidate, $out, true)) {
                 $out[] = $candidate;
             }
+        };
+
+        $add($url);
+
+        if ($row !== null) {
+            foreach (self::collectGameImageCandidates($row, $lang) as $candidate) {
+                $add($candidate);
+            }
         }
+
+        $primary = $out[0] ?? '';
+        if ($primary !== '' && preg_match('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', $primary) === 1) {
+            foreach (['avif', 'webp', 'png', 'jpg', 'jpeg'] as $ext) {
+                $candidate = preg_replace('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', '.' . $ext . '$2', $primary);
+                if (is_string($candidate) && $candidate !== '') {
+                    $add($candidate);
+                }
+            }
+        }
+
         return $out;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return list<string>
+     */
+    public static function collectGameImageCandidates(array $row, ?string $lang = null): array
+    {
+        $urls = [];
+        $seen = [];
+
+        $merge = static function (array $candidates) use (&$urls, &$seen): void {
+            foreach ($candidates as $candidate) {
+                if ($candidate === '' || isset($seen[$candidate])) {
+                    continue;
+                }
+                $seen[$candidate] = true;
+                $urls[] = $candidate;
+            }
+        };
+
+        $raw = $row['raw_payload'] ?? null;
+        if (is_string($raw) && $raw !== '') {
+            $decodedRaw = json_decode($raw, true);
+            if (!is_array($decodedRaw)) {
+                $decodedRaw = json_decode(stripslashes($raw), true);
+            }
+            $raw = is_array($decodedRaw) ? $decodedRaw : null;
+        }
+        if (is_array($raw)) {
+            foreach (['imageUrl', 'image_url', 'thumbnailUrl', 'thumbnail_url', 'thumbnail', 'iconUrl', 'icon_url', 'icon', 'img', 'cover', 'banner'] as $key) {
+                if (array_key_exists($key, $raw)) {
+                    $merge(self::collectMediaUrlCandidates($raw[$key], $lang));
+                }
+            }
+        }
+
+        foreach (['image_url', 'imageUrl', 'thumbnail_url', 'thumbnailUrl', 'cover'] as $key) {
+            if (!empty($row[$key])) {
+                $merge(self::collectMediaUrlCandidates($row[$key], $lang));
+            }
+        }
+
+        return $urls;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return list<string>
+     */
+    public static function resolveGameImageFallbacks(array $row, ?string $lang = null): array
+    {
+        return self::mediaUrlFallbacks(self::resolveGameImage($row, $lang), $row, $lang);
     }
 
     public static function extractMediaUrl(string $value): string
@@ -709,8 +784,12 @@ final class CasinoAggregatorService
         $row['provider_name'] = self::resolveLocalizedLabel($row['provider_name'] ?? '');
         $row['game_name'] = self::resolveLocalizedLabel($row['game_name'] ?? '');
         $image = self::resolveGameImage($row);
+        $fallbacks = self::resolveGameImageFallbacks($row);
         $row['image_url'] = $image;
         $row['banner'] = $image;
+        $row['cover'] = $image;
+        $row['image_fallbacks'] = $fallbacks;
+        $row['cover_fallbacks'] = $fallbacks;
         unset($row['raw_payload']);
         return $row;
     }

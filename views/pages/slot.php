@@ -719,6 +719,17 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                     <script>
                     window.__gameThumbError = window.__gameThumbError || function (img) {
                         if (!img) return;
+                        var fallbacks = [];
+                        try {
+                            var raw = img.getAttribute('data-fallbacks');
+                            if (raw) fallbacks = JSON.parse(raw);
+                        } catch (e) {}
+                        var idx = parseInt(img.getAttribute('data-fallback-idx') || '0', 10) + 1;
+                        if (Array.isArray(fallbacks) && idx < fallbacks.length) {
+                            img.setAttribute('data-fallback-idx', String(idx));
+                            img.src = fallbacks[idx];
+                            return;
+                        }
                         img.onerror = null;
                         img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI4IiBmaWxsPSIjMWExMTJlIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM2NjYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
                     };
@@ -738,9 +749,18 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                         $playHrefJson = (string) json_encode($playHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
                         $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{window.location.href=' . $playHrefJson . ';}';
                         $coverUrl = (string) ($game['cover'] ?? '');
+                        $coverFallbacks = [];
                         if (class_exists('CasinoAggregatorService', false)) {
-                            $coverUrl = CasinoAggregatorService::resolveMediaUrl($coverUrl);
+                            if (!empty($game['cover_fallbacks']) && is_array($game['cover_fallbacks'])) {
+                                $coverFallbacks = $game['cover_fallbacks'];
+                                $coverUrl = (string) ($coverFallbacks[0] ?? $coverUrl);
+                            } else {
+                                $coverUrl = CasinoAggregatorService::resolveMediaUrl($coverUrl);
+                            }
                         }
+                        $fallbackJson = $coverFallbacks !== []
+                            ? htmlspecialchars(json_encode(array_values($coverFallbacks), JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8')
+                            : '';
                         ?>
                         <div class="casinoGameItemContent " data-favorite-kind="<?= htmlspecialchars($slotFavoriteKind, ENT_QUOTES, 'UTF-8') ?>" data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= htmlspecialchars($runtimePlayIntentJs, ENT_QUOTES, 'UTF-8') ?>">
                             <span class="providerBadgeBlock " data-badge=""></span>
@@ -750,6 +770,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                                      referrerpolicy="no-referrer"
                                      src="<?= htmlspecialchars($coverUrl, ENT_QUOTES); ?>"
                                      data-src="<?= htmlspecialchars($coverUrl, ENT_QUOTES); ?>"
+                                     <?= $fallbackJson !== '' ? 'data-fallbacks="' . $fallbackJson . '" data-fallback-idx="0"' : '' ?>
                                      class="casinoGameItemImage"
                                      title="<?= htmlspecialchars($game['game_name'], ENT_QUOTES); ?>"
                                      style="aspect-ratio: 44 / 31;"

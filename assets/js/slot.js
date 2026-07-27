@@ -325,6 +325,17 @@
 
     function gameThumbError(img) {
         if (!img) return;
+        var fallbacks = [];
+        try {
+            var raw = img.getAttribute('data-fallbacks');
+            if (raw) fallbacks = JSON.parse(raw);
+        } catch (e) {}
+        var idx = parseInt(img.getAttribute('data-fallback-idx') || '0', 10) + 1;
+        if (Array.isArray(fallbacks) && idx < fallbacks.length) {
+            img.setAttribute('data-fallback-idx', String(idx));
+            img.src = fallbacks[idx];
+            return;
+        }
         img.onerror = null;
         img.src = PLACEHOLDER_IMG;
     }
@@ -459,6 +470,8 @@
     function renderGameItem(game) {
         const name = escapeHtml(game.game_name || '');
         const cover = escapeHtml(preferCompatibleCover(game.cover || ''));
+        const fallbacks = Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []);
+        const fallbackAttr = fallbacks.length ? ' data-fallbacks="' + escapeHtml(JSON.stringify(fallbacks)) + '" data-fallback-idx="0"' : '';
         const gameId = String(game.game_id || '');
         const gameIdEsc = escapeHtml(gameId);
         const catalogIdRaw = game.id != null && String(game.id).trim() !== '' ? String(game.id) : '';
@@ -484,7 +497,7 @@
             '<div class="casinoGameItemContent " data-favorite-kind="' + escapeHtml(FAVORITE_KIND) + '" data-game-id="' + gameIdEsc + '"' + catalogAttr + ' onclick="' + realPlayClickJs(gameUrlJs) + '">' +
             '<span class="providerBadgeBlock " data-badge=""></span>' +
             '<div class="casinoGameItem ">' +
-            '<img alt="' + name + '" loading="lazy" referrerpolicy="no-referrer" src="' + cover + '" data-src="' + cover + '" class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onerror="window.__gameThumbError&&window.__gameThumbError(this)">' +
+            '<img alt="' + name + '" loading="lazy" referrerpolicy="no-referrer" src="' + cover + '" data-src="' + cover + '"' + fallbackAttr + ' class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onerror="window.__gameThumbError&&window.__gameThumbError(this)">' +
             '<i class="casinoGameItemFavBc bc-i-favorite "></i>' +
             actionsHtml +
             '</div>' +

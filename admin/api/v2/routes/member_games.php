@@ -247,6 +247,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             $providerName = CasinoAggregatorService::resolveLocalizedLabel($r['provider'] ?? '');
             $gameName = CasinoAggregatorService::resolveLocalizedLabel($r['name'] ?? '');
             $imageUrl = CasinoAggregatorService::resolveGameImage($r);
+            $imageFallbacks = CasinoAggregatorService::resolveGameImageFallbacks($r);
             $allGames[] = [
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => (string) ($r['game_id'] ?? ''),
@@ -254,6 +255,8 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 'title'         => $gameName,
                 'image_url'     => $imageUrl,
                 'thumbnail_url' => $imageUrl,
+                'image_fallbacks' => $imageFallbacks,
+                'cover_fallbacks' => $imageFallbacks,
                 'provider'      => $providerName,
                 'provider_code' => (string) ($r['provider_code'] ?? ''),
                 'is_featured'   => $featured,

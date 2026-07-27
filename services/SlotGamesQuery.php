@@ -32,12 +32,21 @@ final class SlotGamesQuery
     {
         $provider = self::normalizeProviderLabel($row['provider'] ?? '');
         $cover = self::normalizeGameImage($row);
+        $coverFallbacks = [];
+        if (!empty($row['cover_fallbacks']) && is_array($row['cover_fallbacks'])) {
+            $coverFallbacks = $row['cover_fallbacks'];
+        } elseif (!empty($row['image_fallbacks']) && is_array($row['image_fallbacks'])) {
+            $coverFallbacks = $row['image_fallbacks'];
+        } elseif (class_exists('CasinoAggregatorService', false)) {
+            $coverFallbacks = CasinoAggregatorService::resolveGameImageFallbacks($row);
+        }
 
         return [
             'id'            => (string) ($row['id'] ?? ''),
             'game_id'       => (string) ($row['game_id'] ?? ''),
             'game_name'     => self::normalizeGameName($row['name'] ?? $row['game_name'] ?? ''),
             'cover'         => $cover,
+            'cover_fallbacks' => $coverFallbacks,
             'has_demo'      => !empty($row['has_demo']),
             'provider_code' => (string) ($row['provider_code'] ?? ''),
             'provider'      => $provider,
