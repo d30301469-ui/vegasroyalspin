@@ -136,6 +136,35 @@ if (!function_exists('homeRenderBannerSection')) {
     }
 }
 
+if (!function_exists('homeGameImageFallbacks')) {
+    /**
+     * @return list<string>
+     */
+    function homeGameImageFallbacks(string $image): array
+    {
+        $image = trim($image);
+        if ($image === '') {
+            return [];
+        }
+        if (preg_match('#\.(avif|webp)(\?|$)#i', $image) !== 1) {
+            return [$image];
+        }
+        $fallbacks = [];
+        // Mobile WebViews / older Safari may fail on AVIF/WebP — try PNG/JPG first.
+        foreach (['.png', '.jpg', '.jpeg'] as $ext) {
+            $candidate = preg_replace('#\.(avif|webp)(\?|$)#i', $ext . '$2', $image, 1);
+            if (is_string($candidate) && $candidate !== '' && !in_array($candidate, $fallbacks, true)) {
+                $fallbacks[] = $candidate;
+            }
+        }
+        if (!in_array($image, $fallbacks, true)) {
+            $fallbacks[] = $image;
+        }
+
+        return $fallbacks;
+    }
+}
+
 if (!function_exists('homeRenderGameCard')) {
     function homeRenderGameCard(array $card): void
     {
@@ -168,9 +197,15 @@ if (!function_exists('homeRenderGameCard')) {
         $demoOnclick = $gameId !== ''
             ? 'handleDemo(' . $gameIdJs . '); return false;'
             : 'event.stopPropagation(); return false;';
+        $fallbacks = homeGameImageFallbacks($image);
+        $image = $fallbacks[0] ?? $image;
+        $fallbackJson = count($fallbacks) > 1
+            ? htmlspecialchars((string) json_encode(array_values($fallbacks), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8')
+            : '';
+        $onerror = '(function(img){var f=[],i;try{f=JSON.parse(img.getAttribute(\'data-fallbacks\')||\'[]\');}catch(e){}i=parseInt(img.getAttribute(\'data-fallback-idx\')||\'0\',10)+1;if(Array.isArray(f)&&i<f.length){img.setAttribute(\'data-fallback-idx\',String(i));img.src=f[i];return;}img.onerror=null;})(this)';
         ?>
         <div class="<?= homeSectionH($class) ?>"<?= $onclick !== '' ? ' onclick="' . homeSectionH($onclick) . '"' : '' ?>>
-            <img loading="lazy" decoding="async" src="<?= homeSectionH($image) ?>" alt="<?= homeSectionH($alt) ?>" width="200" height="200" style="object-fit: <?= homeSectionH($imageFit) ?>; --home-image-scale: <?= homeSectionH((string) $imageScale) ?>;">
+            <img loading="lazy" decoding="async" referrerpolicy="no-referrer" src="<?= homeSectionH($image) ?>" alt="<?= homeSectionH($alt) ?>" width="200" height="200" style="object-fit: <?= homeSectionH($imageFit) ?>; --home-image-scale: <?= homeSectionH((string) $imageScale) ?>;"<?= $fallbackJson !== '' ? ' data-fallbacks="' . $fallbackJson . '" data-fallback-idx="0"' : '' ?> onerror="<?= homeSectionH($onerror) ?>">
             <div class="game-overlay">
                 <div class="game-overlay-top">
                     <span class="game-fav"><i class="far fa-star"></i></span>

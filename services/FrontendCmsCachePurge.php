@@ -146,15 +146,49 @@ final class FrontendCmsCachePurge
             frontend_env_string('MOBILE_URL', ''),
         ];
 
+        // MOBILE_URL often unset in .env — always purge m.* so phone browsers see fresh CMS.
+        if (function_exists('deploy_domain')) {
+            $candidates[] = deploy_domain('mobile_url');
+            $candidates[] = deploy_domain('frontend_url');
+        }
+
+        foreach ($candidates as $candidate) {
+            $derivedMobile = self::deriveMobileUrl(trim((string) $candidate));
+            if ($derivedMobile !== '') {
+                $candidates[] = $derivedMobile;
+            }
+        }
+
         $targets = [];
         foreach ($candidates as $candidate) {
             $url = rtrim(trim((string) $candidate), '/');
-            if ($url === '' || in_array($url, $targets, true)) {
+            if ($url === '' || !preg_match('#^https?://#i', $url) || in_array($url, $targets, true)) {
                 continue;
             }
             $targets[] = $url;
         }
 
         return $targets;
+    }
+
+    private static function deriveMobileUrl(string $url): string
+    {
+        $url = rtrim(trim($url), '/');
+        if ($url === '' || !preg_match('#^https?://#i', $url)) {
+            return '';
+        }
+        $parts = parse_url($url);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        if ($host === '' || str_starts_with($host, 'm.') || str_starts_with($host, 'www.')) {
+            return '';
+        }
+        // Only derive m.* for the primary public site host, not admin/api backends.
+        if (str_contains($host, 'admin.') || str_starts_with($host, 'api.') || str_contains($host, 'backoffice')) {
+            return '';
+        }
+        $scheme = (string) ($parts['scheme'] ?? 'https');
+        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+
+        return $scheme . '://m.' . $host . $port;
     }
 }

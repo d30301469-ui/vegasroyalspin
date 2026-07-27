@@ -72,6 +72,7 @@ final class ApiMediaUrl
 
     /**
      * Formdan gelen çözümlenmiş / mutlak medya URL'lerini DB'de saklanacak göreli yola çevirir.
+     * Harici CDN URL'leri (oyun ikonları vb.) olduğu gibi saklanır — host strip edilmez.
      */
     public static function storagePath(string $path): string
     {
@@ -85,6 +86,11 @@ final class ApiMediaUrl
         }
 
         if (preg_match('#^https?://#i', $path)) {
+            $host = strtolower((string) (parse_url($path, PHP_URL_HOST) ?? ''));
+            // Keep external absolute URLs so mobile/desktop can load CDN icons.
+            if ($host !== '' && !self::shouldStoreAsRelativeHost($host)) {
+                return $path;
+            }
             $path = (string) (parse_url($path, PHP_URL_PATH) ?? '');
         }
 
@@ -399,10 +405,66 @@ final class ApiMediaUrl
         return $out;
     }
 
+    /**
+     * Own / stale hosts → store path only. External CDN hosts → keep absolute URL.
+     */
+    private static function shouldStoreAsRelativeHost(string $host): bool
+    {
+        $host = strtolower(trim($host));
+        if ($host === '') {
+            return true;
+        }
+
+        // Casino media CDNs must stay absolute (mobile Safari / hotlink often need full host).
+        if (preg_match('/^(?:icons|cms)\.casinomilyon/i', $host) === 1) {
+            return false;
+        }
+        if (self::isTrustedPromotionCdnHost($host)) {
+            return false;
+        }
+
+        if (self::isStaleDevHost($host)) {
+            return true;
+        }
+
+        $owned = [];
+        foreach ([
+            getenv('SITE_URL') ?: '',
+            getenv('FRONTEND_URL') ?: '',
+            getenv('MOBILE_URL') ?: '',
+            getenv('BACKEND_URL') ?: '',
+            defined('SITE_URL') ? (string) SITE_URL : '',
+            defined('BACKEND_URL') ? (string) BACKEND_URL : '',
+        ] as $candidate) {
+            $candidateHost = strtolower((string) (parse_url(trim((string) $candidate), PHP_URL_HOST) ?? ''));
+            if ($candidateHost !== '') {
+                $owned[] = $candidateHost;
+            }
+        }
+        if (function_exists('deploy_domain')) {
+            foreach (['frontend_url', 'mobile_url', 'backend_url', 'frontend_fallback_url'] as $key) {
+                $candidateHost = strtolower((string) (parse_url(deploy_domain($key), PHP_URL_HOST) ?? ''));
+                if ($candidateHost !== '') {
+                    $owned[] = $candidateHost;
+                }
+            }
+        }
+        if (function_exists('deploy_backend_hosts')) {
+            foreach (deploy_backend_hosts() as $backendHost) {
+                $backendHost = strtolower(trim((string) $backendHost));
+                if ($backendHost !== '') {
+                    $owned[] = $backendHost;
+                }
+            }
+        }
+
+        return in_array($host, array_values(array_unique($owned)), true);
+    }
+
     private static function isStaleDevHost(string $host): bool
     {
         // Trusted media CDN hostlarini mutlak birak: admin uploads host'una rewrite edilmemeli.
-        if (preg_match('/^icons\.casinomilyon\d+\.com$/i', $host) === 1) {
+        if (preg_match('/^(?:icons|cms)\.casinomilyon/i', $host) === 1) {
             return false;
         }
 
