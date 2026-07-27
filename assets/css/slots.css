@@ -879,75 +879,96 @@ body:has(.slot-page-root)::-webkit-scrollbar {
 
 .sidebar-provider-item {
     flex-shrink: 0;
-    min-height: 40px;
+    min-height: 42px;
     min-width: 0;
-    background: transparent;
-    border: 1px solid var(--slot-border);
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid transparent;
+    border-radius: 8px;
     color: var(--slot-text-dim);
-    padding: 8px 12px;
-    padding-right: 72px; /* Etiketler için sağ üst boşluk */
+    padding: 8px 10px;
     font-size: 12px;
-    font-weight: 600;
-    line-height: 1.4;
+    font-weight: 700;
+    line-height: 1.2;
     text-align: left;
-    min-height: 40px;
     cursor: pointer;
     transition: var(--slot-transition);
     text-transform: uppercase;
     width: 100%;
-    flex-shrink: 0;
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     position: relative;
     overflow: hidden;
     appearance: button;
     box-sizing: border-box;
+    letter-spacing: 0.02em;
 }
 
 /* Sağlayıcı adı satırı (referans: providerListRow) */
 .sidebar-provider-item .provider-list-row {
-    flex: 1 1 0%;
+    flex: 1 1 auto;
     min-width: 0;
     max-width: 100%;
     display: block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-decoration: none;
+    border-bottom: 0;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+}
+
+.sidebar-provider-item.is-text .providerItemsBtn {
+    justify-content: center;
+    width: 100%;
+}
+
+.sidebar-provider-item.is-text .provider-list-row {
+    text-align: center;
 }
 
 .providerItemsBtn {
     flex: 1;
     min-width: 0;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .providerItemsBtn.has-provider-icon {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 0;
 }
 
 .providerItemsBtn .provider-logo-svg {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 auto;
-    width: 100%;
+    flex: 0 1 auto;
+    width: auto;
     max-width: 100%;
-    height: 32px;
+    height: 22px;
+    color: inherit;
 }
 
 .providerItemsBtn .provider-logo-svg svg {
-    width: 100%;
-    height: 100%;
+    width: auto;
+    max-width: 100%;
+    height: 22px;
     display: block;
+    fill: currentColor;
 }
 
 .providerItemsBtn .provider-logo-svg + .provider-list-row,
-.providerItemsBtn .CMSIconSVGWrapper + .provider-list-row {
+.providerItemsBtn .CMSIconSVGWrapper + .provider-list-row,
+.providerItemsBtn.has-provider-icon .provider-list-row {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -959,16 +980,36 @@ body:has(.slot-page-root)::-webkit-scrollbar {
     border: 0;
 }
 
-/* Tek etiket: sağlayıcı satırının sağ üstünde, ufak */
+/* Badge: küçük pill, sağ üst — satır metnini bozmasın */
+.sidebar-provider-item .badge-standalone.providerBadge,
 .sidebar-provider-item .provider-badges {
     position: absolute;
     top: 4px;
     right: 6px;
-    display: flex;
+    z-index: 2;
+    display: inline-flex;
     align-items: center;
     justify-content: flex-end;
     flex-shrink: 0;
     pointer-events: none;
+}
+
+.sidebar-provider-item .badge-standalone.providerBadge .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 14px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    line-height: 1;
+}
+
+.sidebar-provider-item .badge-standalone.providerBadge .ds-caption {
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .sidebar-provider-item .provider-badge {
@@ -1036,15 +1077,15 @@ body:has(.slot-page-root)::-webkit-scrollbar {
 
 .sidebar-provider-item:hover {
     color: var(--slot-text);
-    background: rgba(199, 66, 232, 0.08);
-    border-color: var(--slot-accent);
+    background: rgba(199, 66, 232, 0.1);
+    border-color: rgba(199, 66, 232, 0.35);
 }
 
 .sidebar-provider-item.active {
     background: var(--slot-accent);
     border-color: var(--slot-accent);
     color: #fff;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* Slot sayfası: satırda 5 oyun, kartlar büyük ── */
@@ -2326,16 +2367,30 @@ button.providers-games-label:hover {
     }
 
     .slot-page-root .sidebar-provider-item {
-        min-height: 31px;
-        padding: 0 8px;
-        padding-right: 54px;
+        min-height: 36px;
+        padding: 0 10px;
         border: 0;
-        border-radius: 4px;
-        background: transparent;
-        color: #b9afd0;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.03);
+        color: #cfc5e8;
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.01em;
+        letter-spacing: 0.02em;
+    }
+
+    .slot-page-root .sidebar-provider-item.is-text .provider-list-row {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .slot-page-root .sidebar-provider-item .providerItemsBtn .provider-logo-svg {
+        height: 18px;
+    }
+
+    .slot-page-root .sidebar-provider-item .providerItemsBtn .provider-logo-svg svg {
+        height: 18px;
     }
 
     .slot-page-root .sidebar-provider-item:hover {
@@ -2828,12 +2883,19 @@ button.providers-games-label:hover {
     }
 
     .slot-page-root .sidebar-provider-item {
-        min-height: 38px;
+        min-height: 40px;
         border: 0;
         border-radius: 6px;
-        background: transparent;
+        background: rgba(255, 255, 255, 0.03);
         color: #d7cdee;
         font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    .slot-page-root .sidebar-provider-item.is-text .provider-list-row {
+        text-align: center;
+        text-decoration: none;
     }
 
     .slot-page-root .sidebar-provider-item.active {
