@@ -50,7 +50,7 @@ body.mobile-site .informative-widget-link {
 body.mobile-site .informative-widget-close {
   position: absolute;
   top: -16px;
-  right: 8px;
+  right: 24px;
   z-index: 3;
   width: 28px;
   height: 28px;
