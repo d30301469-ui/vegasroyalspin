@@ -753,22 +753,12 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                         $demoHref = $slotDemoHref($game);
                         $playHrefJson = (string) json_encode($playHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
                         $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{window.location.href=' . $playHrefJson . ';}';
-                        $coverUrl = (string) ($game['cover'] ?? '');
+                        $coverUrl = (string) ($game['cover'] ?? $game['image_url'] ?? '');
                         $coverFallbacks = is_array($game['cover_fallbacks'] ?? null) ? $game['cover_fallbacks'] : [];
-                        if (class_exists('CasinoAggregatorService', false)) {
-                            if ($coverFallbacks !== []) {
-                                $coverFallbacks = CasinoAggregatorService::prioritizeMediaUrls($coverFallbacks);
-                            }
-                            if ($coverUrl !== '') {
-                                $coverUrl = CasinoAggregatorService::preferCompatibleMediaUrl($coverUrl);
-                            }
-                            if ($coverUrl === '' && $coverFallbacks !== []) {
-                                $coverUrl = (string) ($coverFallbacks[0] ?? '');
-                            } elseif ($coverFallbacks !== [] && CasinoAggregatorService::mediaUrlQualityScore((string) ($coverFallbacks[0] ?? '')) > CasinoAggregatorService::mediaUrlQualityScore($coverUrl)) {
-                                $coverUrl = (string) ($coverFallbacks[0] ?? $coverUrl);
-                            }
-                        } elseif ($coverUrl === '' && $coverFallbacks !== []) {
+                        if ($coverUrl === '' && $coverFallbacks !== []) {
                             $coverUrl = (string) ($coverFallbacks[0] ?? '');
+                        } elseif ($coverUrl !== '' && class_exists('CasinoAggregatorService', false)) {
+                            $coverUrl = CasinoAggregatorService::preferCompatibleMediaUrl($coverUrl);
                         }
                         $fallbackJson = $coverFallbacks !== []
                             ? htmlspecialchars(json_encode(array_values($coverFallbacks), JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8')

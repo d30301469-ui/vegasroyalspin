@@ -323,46 +323,23 @@
         return String(url || '').trim();
     }
 
-    function isVipAvifTrap(url) {
-        var lower = String(url || '').toLowerCase();
-        return lower.indexOf('_vip') !== -1 && /\.avif(\?|$)/.test(lower);
-    }
-
-    function mediaUrlQualityScore(url) {
-        var lower = String(url || '').toLowerCase();
-        var points = 0;
-        if (/\.png(\?|$)/.test(lower)) points += 40;
-        if (/\.webp(\?|$)/.test(lower)) points += 30;
-        if (/\.jpe?g(\?|$)/.test(lower)) points += 20;
-        if (/\.avif(\?|$)/.test(lower)) points += 5;
-        if (isVipAvifTrap(lower)) points -= 200;
-        if (lower.indexOf('_vip') !== -1 && /\.png(\?|$)/.test(lower)) points += 100;
-        return points;
-    }
-
-    function sortCoverFallbacks(fallbacks) {
+    function dedupeCoverFallbacks(fallbacks) {
         if (!Array.isArray(fallbacks) || !fallbacks.length) return [];
         var unique = [];
         fallbacks.forEach(function(url) {
             var value = String(url || '').trim();
-            if (!value || unique.indexOf(value) !== -1) return;
-            unique.push(value);
+            if (value && unique.indexOf(value) === -1) unique.push(value);
         });
-        return unique.sort(function(a, b) {
-            return mediaUrlQualityScore(b) - mediaUrlQualityScore(a);
-        });
+        return unique;
     }
 
     function pickBestCoverSource(game) {
         if (!game || typeof game !== 'object') return '';
-        var fallbacks = sortCoverFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks
+        var primary = String(game.image_url || game.cover || game.thumbnail_url || game.banner || '').trim();
+        var fallbacks = dedupeCoverFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks
             : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []));
-        var primary = String(game.cover || game.image_url || game.thumbnail_url || game.banner || '').trim();
-        if (primary && fallbacks.indexOf(primary) === -1) {
-            fallbacks.unshift(primary);
-            fallbacks = sortCoverFallbacks(fallbacks);
-        }
-        return fallbacks.length ? fallbacks[0] : primary;
+        if (primary) return primary;
+        return fallbacks.length ? fallbacks[0] : '';
     }
 
     function gameThumbError(img) {
@@ -372,12 +349,13 @@
             var raw = img.getAttribute('data-fallbacks');
             if (raw) fallbacks = JSON.parse(raw);
         } catch (e) {}
-        var ordered = sortCoverFallbacks(fallbacks);
+        fallbacks = dedupeCoverFallbacks(fallbacks);
         var currentSrc = String(img.getAttribute('src') || img.src || '').trim();
-        for (var i = 0; i < ordered.length; i++) {
-            var url = String(ordered[i] || '').trim();
-            if (!url || url === currentSrc || isVipAvifTrap(url)) continue;
-            img.setAttribute('data-fallbacks', JSON.stringify(ordered));
+        var idx = parseInt(img.getAttribute('data-fallback-idx') || '0', 10);
+        for (var i = idx + 1; i < fallbacks.length; i++) {
+            var url = String(fallbacks[i] || '').trim();
+            if (!url || url === currentSrc) continue;
+            img.setAttribute('data-fallbacks', JSON.stringify(fallbacks));
             img.setAttribute('data-fallback-idx', String(i));
             img.src = url;
             return;
@@ -521,7 +499,7 @@
 
     function renderGameItem(game) {
         const name = escapeHtml(game.game_name || '');
-        const fallbacks = sortCoverFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []));
+        const fallbacks = dedupeCoverFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []));
         const coverSource = pickBestCoverSource(Object.assign({}, game, {
             cover_fallbacks: fallbacks,
             image_fallbacks: fallbacks
@@ -595,7 +573,7 @@
         var pagination = inner.pagination || {};
         var rawGames = Array.isArray(inner.games) ? inner.games : [];
         var games = rawGames.map(function(game) {
-            var fallbacks = sortCoverFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks
+            var fallbacks = dedupeCoverFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks
                 : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []));
             var cover = preferCompatibleCover(pickBestCoverSource({
                 cover: game.cover,

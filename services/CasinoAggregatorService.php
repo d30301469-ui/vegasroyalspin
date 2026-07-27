@@ -261,10 +261,11 @@ final class CasinoAggregatorService
                 $lang = strtolower(trim((string) ($cfg['lang'] ?? 'tr')));
                 $rawJson = json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 $mediaRow = [
+                    'game_code' => $gameCode,
                     'image_url' => $row['imageUrl'] ?? ($row['image_url'] ?? ''),
                     'raw_payload' => is_string($rawJson) ? $rawJson : null,
                 ];
-                $media = self::hydrateGameMedia($mediaRow, $lang);
+                $media = self::hydrateGameMedia($mediaRow, $lang, true);
                 $insert->execute([
                     ':vendor' => $vendor,
                     ':game'   => $gameCode,
@@ -331,7 +332,7 @@ final class CasinoAggregatorService
                 self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null)
             );
             $newName = self::resolveLocalizedLabel($currentName, $lang) ?: $currentName;
-            $media = self::hydrateGameMedia($row, $lang);
+            $media = self::hydrateGameMedia($row, $lang, true);
             $newImage = trim((string) ($media['cover'] ?? ''));
             $newFallbacks = self::encodeStoredImageFallbacks($media['cover_fallbacks'] ?? []);
             $needsName = self::looksLikeLocalizedJson($currentName) && $newName !== '' && $newName !== $currentName;
@@ -468,21 +469,17 @@ final class CasinoAggregatorService
             $add($candidate);
         }
 
-        return self::prioritizeMediaUrls($urls);
+        return self::dedupeMediaUrls($urls);
     }
 
     /**
-     * Prefer raster formats (png/webp) over avif — EGT VIP lobby thumbs often work only as .png.
+     * Preserve discovery order; never reorder by file extension heuristics.
      *
      * @param list<string> $urls
      * @return list<string>
      */
-    public static function prioritizeMediaUrls(array $urls): array
+    public static function dedupeMediaUrls(array $urls): array
     {
-        if ($urls === []) {
-            return [];
-        }
-
         $unique = [];
         foreach ($urls as $url) {
             $url = self::normalizeMediaUrl(trim((string) $url));
@@ -491,68 +488,266 @@ final class CasinoAggregatorService
             }
         }
 
-        usort($unique, static function (string $a, string $b): int {
-            $score = static function (string $url): int {
-                $lower = strtolower($url);
-                $points = 0;
-                if (preg_match('#\.png(\?|$)#i', $lower)) {
-                    $points += 40;
-                }
-                if (preg_match('#\.webp(\?|$)#i', $lower)) {
-                    $points += 30;
-                }
-                if (preg_match('#\.jpe?g(\?|$)#i', $lower)) {
-                    $points += 20;
-                }
-                if (preg_match('#\.avif(\?|$)#i', $lower)) {
-                    $points += 5;
-                }
-                // EGT VIP .avif lobby URLs often return HTML, not an image.
-                if (str_contains($lower, '_vip') && preg_match('#\.avif(\?|$)#i', $lower)) {
-                    $points -= 200;
-                }
-                if (str_contains($lower, '_vip') && preg_match('#\.png(\?|$)#i', $lower)) {
-                    $points += 100;
-                }
-                if (str_contains($lower, '/lobby/') && preg_match('#\.png(\?|$)#i', $lower)) {
-                    $points += 10;
-                }
-                return $points;
-            };
-
-            return $score($b) <=> $score($a);
-        });
-
         return $unique;
+    }
+
+    /**
+     * @deprecated Use dedupeMediaUrls() — extension-based ordering breaks mixed CDN games.
+     * @param list<string> $urls
+     * @return list<string>
+     */
+    public static function prioritizeMediaUrls(array $urls): array
+    {
+        return self::dedupeMediaUrls($urls);
+    }
+
+    private static function mediaProbeCacheDir(): string
+    {
+        $base = defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__);
+
+        return rtrim(str_replace('\\', '/', $base), '/') . '/storage/cache/media-probes';
+    }
+
+    public static function probeMediaUrl(string $url): bool
+    {
+        $url = self::normalizeMediaUrl(trim($url));
+        if ($url === '' || !self::isUsableMediaUrl($url)) {
+            return false;
+        }
+
+        $cacheDir = self::mediaProbeCacheDir();
+        $cacheFile = $cacheDir . '/' . sha1($url) . '.json';
+        if (is_file($cacheFile)) {
+            $cached = json_decode((string) @file_get_contents($cacheFile), true);
+            if (is_array($cached) && isset($cached['ok'], $cached['ts']) && (time() - (int) $cached['ts']) < 604800) {
+                return (bool) $cached['ok'];
+            }
+        }
+
+        $ok = self::probeMediaUrlLive($url);
+
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0755, true);
+        }
+        @file_put_contents($cacheFile, json_encode(['ok' => $ok, 'ts' => time()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+
+        return $ok;
+    }
+
+    private static function probeMediaUrlLive(string $url): bool
+    {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 6,
+                'ignore_errors' => true,
+                'header' => "User-Agent: VegasRoyalSpin-MediaProbe/1.0\r\nRange: bytes=0-63\r\n",
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+
+        $body = @file_get_contents($url, false, $context);
+        if ($body === false || $body === '') {
+            return false;
+        }
+
+        $headers = $http_response_header ?? [];
+        $status = 0;
+        foreach ($headers as $headerLine) {
+            if (preg_match('#^HTTP/\S+\s+(\d{3})#', (string) $headerLine, $matches) === 1) {
+                $status = (int) ($matches[1] ?? 0);
+            }
+        }
+        if ($status < 200 || $status >= 400) {
+            return false;
+        }
+
+        $contentType = '';
+        foreach ($headers as $headerLine) {
+            if (stripos((string) $headerLine, 'Content-Type:') === 0) {
+                $contentType = strtolower(trim(substr((string) $headerLine, 13)));
+                break;
+            }
+        }
+        if ($contentType !== '' && str_contains($contentType, 'text/html')) {
+            return false;
+        }
+
+        $sample = substr($body, 0, 64);
+        if ($sample === '') {
+            return false;
+        }
+        if (str_starts_with($sample, '<!DOCTYPE') || str_starts_with($sample, '<html') || str_starts_with($sample, '<HTML')) {
+            return false;
+        }
+
+        return self::looksLikeImageBytes($sample);
+    }
+
+    private static function looksLikeImageBytes(string $sample): bool
+    {
+        if (str_starts_with($sample, "\x89PNG\r\n\x1a\n")) {
+            return true;
+        }
+        if (str_starts_with($sample, "GIF87a") || str_starts_with($sample, "GIF89a")) {
+            return true;
+        }
+        if (str_starts_with($sample, "\xFF\xD8\xFF")) {
+            return true;
+        }
+        if (str_starts_with($sample, 'RIFF') && str_contains(substr($sample, 0, 16), 'WEBP')) {
+            return true;
+        }
+        if (strlen($sample) >= 12 && substr($sample, 4, 4) === 'ftyp') {
+            return true;
+        }
+
+        return preg_match('#\.(png|jpe?g|webp|gif|avif|svg)(\?|$)#i', $sample) === 1;
+    }
+
+    private static function isBrokenMarketingImageUrl(string $url): bool
+    {
+        return preg_match('#egt-digital\.com/wp-content/#i', $url) === 1;
+    }
+
+    /**
+     * Probe CDN candidates and return working URLs first.
+     *
+     * @param list<string> $urls
+     * @return list<string>
+     */
+    public static function validateMediaUrlCandidates(array $urls, int $maxProbes = 20): array
+    {
+        $working = [];
+        $unprobed = [];
+        $broken = [];
+        $probes = 0;
+
+        foreach (self::dedupeMediaUrls($urls) as $url) {
+            if (self::isBrokenMarketingImageUrl($url)) {
+                $broken[] = $url;
+                continue;
+            }
+            if ($probes >= $maxProbes) {
+                $unprobed[] = $url;
+                continue;
+            }
+            $probes++;
+            if (self::probeMediaUrl($url)) {
+                $working[] = $url;
+            } else {
+                $broken[] = $url;
+            }
+        }
+
+        return array_values(array_merge($working, $unprobed, $broken));
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return list<string>
+     */
+    private static function resolveGameCode(array $row): string
+    {
+        $gameCode = trim((string) ($row['game_code'] ?? ''));
+        if ($gameCode !== '') {
+            return $gameCode;
+        }
+        $gameId = trim((string) ($row['game_id'] ?? ''));
+        if ($gameId !== '' && preg_match('#:([^:]+)$#', $gameId, $matches) === 1) {
+            return trim((string) ($matches[1] ?? ''));
+        }
+
+        return '';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function knownLobbyCdnHosts(): array
+    {
+        return [
+            'v1j674k0rsrc.mhjbneijrtonline.org',
+            '3787r8es.ohjaieijyg.org',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return list<string>
+     */
+    private static function extractLobbyCdnHosts(array $row): array
+    {
+        $hosts = [];
+        $addHost = static function (string $url) use (&$hosts): void {
+            $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
+            if ($host !== '' && preg_match('#(?:mhjbneijrtonline|ohjaieijyg)\.org$#i', $host) === 1 && !in_array($host, $hosts, true)) {
+                $hosts[] = $host;
+            }
+        };
+
+        foreach (['image_url', 'imageUrl', 'thumbnail_url', 'thumbnailUrl', 'cover'] as $key) {
+            $value = trim((string) ($row[$key] ?? ''));
+            if ($value !== '') {
+                $addHost($value);
+            }
+        }
+
+        $raw = $row['raw_payload'] ?? null;
+        if (is_string($raw) && $raw !== '') {
+            foreach (self::extractMediaUrlsDeep($raw) as $candidate) {
+                $addHost($candidate);
+            }
+        }
+
+        foreach (self::knownLobbyCdnHosts() as $host) {
+            if (!in_array($host, $hosts, true)) {
+                $hosts[] = $host;
+            }
+        }
+
+        return $hosts;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return list<string>
+     */
+    public static function synthesizeLobbyMediaCandidates(array $row): array
+    {
+        $gameCode = self::resolveGameCode($row);
+        if ($gameCode === '') {
+            return [];
+        }
+
+        $urls = [];
+        foreach (self::extractLobbyCdnHosts($row) as $host) {
+            foreach (['/lobby/', '/default/'] as $path) {
+                foreach (['avif', 'png', 'webp', 'jpg'] as $ext) {
+                    $urls[] = 'https://' . $host . $path . $gameCode . '.' . $ext;
+                }
+            }
+        }
+
+        return self::dedupeMediaUrls($urls);
+    }
+
+    /**
+     * @param list<string> $preferred
+     * @param list<string> $extra
+     * @return list<string>
+     */
+    private static function mergeMediaCandidates(array $preferred, array $extra): array
+    {
+        return self::dedupeMediaUrls(array_merge($preferred, $extra));
     }
 
     public static function mediaUrlQualityScore(string $url): int
     {
-        $urls = self::prioritizeMediaUrls([$url]);
-        if ($urls === []) {
-            return 0;
-        }
-        $lower = strtolower($urls[0]);
-        $points = 0;
-        if (preg_match('#\.png(\?|$)#i', $lower)) {
-            $points += 40;
-        }
-        if (preg_match('#\.webp(\?|$)#i', $lower)) {
-            $points += 30;
-        }
-        if (preg_match('#\.jpe?g(\?|$)#i', $lower)) {
-            $points += 20;
-        }
-        if (preg_match('#\.avif(\?|$)#i', $lower)) {
-            $points += 5;
-        }
-        if (str_contains($lower, '_vip') && preg_match('#\.avif(\?|$)#i', $lower)) {
-            $points -= 200;
-        }
-        if (str_contains($lower, '_vip') && preg_match('#\.png(\?|$)#i', $lower)) {
-            $points += 100;
-        }
-        return $points;
+        return self::probeMediaUrl($url) ? 100 : 0;
     }
 
     /**
@@ -627,7 +822,7 @@ final class CasinoAggregatorService
             }
         }
 
-        return self::prioritizeMediaUrls($variants);
+        return self::dedupeMediaUrls($variants);
     }
 
     /**
@@ -736,7 +931,7 @@ final class CasinoAggregatorService
             }
         }
 
-        return self::prioritizeMediaUrls($out);
+        return self::dedupeMediaUrls($out);
     }
 
     /**
@@ -781,7 +976,9 @@ final class CasinoAggregatorService
             }
         }
 
-        return self::prioritizeMediaUrls($urls);
+        $merge(self::synthesizeLobbyMediaCandidates($row));
+
+        return self::dedupeMediaUrls($urls);
     }
 
     /**
@@ -844,71 +1041,72 @@ final class CasinoAggregatorService
      * @param array<string, mixed> $row
      * @return array{cover: string, cover_fallbacks: list<string>, image_fallbacks: list<string>}
      */
-    public static function hydrateGameMedia(array $row, ?string $lang = null): array
+    public static function hydrateGameMedia(array $row, ?string $lang = null, bool $probeCandidates = false): array
     {
-        $fallbacks = self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null);
-        if ($fallbacks === [] && !empty($row['cover_fallbacks']) && is_array($row['cover_fallbacks'])) {
-            $fallbacks = self::decodeStoredImageFallbacks($row['cover_fallbacks']);
+        $storedFallbacks = self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null);
+        if ($storedFallbacks === [] && !empty($row['cover_fallbacks']) && is_array($row['cover_fallbacks'])) {
+            $storedFallbacks = self::decodeStoredImageFallbacks($row['cover_fallbacks']);
         }
 
-        $storedCover = self::normalizeMediaUrl(trim((string) ($row['image_url'] ?? '')));
-        if (!self::isUsableMediaUrl($storedCover) || self::looksLikeLocalizedJson($storedCover)) {
-            $storedCover = '';
-        }
-
-        $cover = trim((string) ($row['cover'] ?? ''));
-        if ($cover === '') {
-            $cover = trim((string) ($row['thumbnail_url'] ?? $row['imageUrl'] ?? ''));
-        }
-        if (($cover === '' || self::looksLikeLocalizedJson($cover)) && $storedCover !== '') {
-            $cover = $storedCover;
-        }
-
-        $hasPayload = trim((string) ($row['raw_payload'] ?? '')) !== '';
-        if ($hasPayload) {
-            $computedFallbacks = self::resolveGameImageFallbacks($row, $lang);
-            if ($computedFallbacks !== []) {
-                $fallbacks = $computedFallbacks;
+        $candidates = self::collectGameImageCandidates($row, $lang);
+        if ($candidates === []) {
+            $seed = trim((string) ($row['image_url'] ?? $row['cover'] ?? $row['thumbnail_url'] ?? ''));
+            if ($seed !== '' && self::isUsableMediaUrl($seed) && !self::looksLikeLocalizedJson($seed)) {
+                $candidates = self::mediaUrlFallbacks(self::normalizeMediaUrl($seed), $row, $lang);
             }
+        }
 
-            $resolvedCover = self::resolveGameImage($row, $lang);
-            if ($resolvedCover !== '') {
-                if ($cover === '' || self::looksLikeLocalizedJson($cover)) {
-                    $cover = $resolvedCover;
-                } elseif (self::mediaUrlQualityScore($resolvedCover) > self::mediaUrlQualityScore($cover)) {
-                    $cover = $resolvedCover;
+        $fallbacks = self::mergeMediaCandidates($storedFallbacks, $candidates);
+        if ($probeCandidates && $fallbacks !== []) {
+            $fallbacks = self::validateMediaUrlCandidates($fallbacks, 24);
+        } elseif ($fallbacks !== []) {
+            $marketing = [];
+            $regular = [];
+            foreach ($fallbacks as $url) {
+                if (self::isBrokenMarketingImageUrl($url)) {
+                    $marketing[] = $url;
+                } else {
+                    $regular[] = $url;
                 }
             }
-        } elseif ($fallbacks === [] && $cover !== '') {
-            $fallbacks = self::mediaUrlFallbacks($cover);
+            $fallbacks = array_values(array_merge($regular, $marketing));
         }
 
-        if ($storedCover !== '' && self::mediaUrlQualityScore($storedCover) >= self::mediaUrlQualityScore($cover)) {
-            $cover = $storedCover;
-        }
-
-        if ($cover === '' && $fallbacks !== []) {
-            $cover = (string) $fallbacks[0];
-        }
-        if ($cover !== '' && $fallbacks === []) {
-            $fallbacks = self::mediaUrlFallbacks($cover, $hasPayload ? $row : null, $lang);
+        $cover = '';
+        foreach ([
+            trim((string) ($row['cover'] ?? '')),
+            trim((string) ($row['image_url'] ?? '')),
+            trim((string) ($row['thumbnail_url'] ?? $row['imageUrl'] ?? '')),
+        ] as $candidateCover) {
+            if ($candidateCover !== '' && self::isUsableMediaUrl($candidateCover) && !self::looksLikeLocalizedJson($candidateCover)) {
+                $cover = self::normalizeMediaUrl($candidateCover);
+                break;
+            }
         }
         if ($cover !== '' && !in_array($cover, $fallbacks, true)) {
-            array_unshift($fallbacks, $cover);
+            $fallbacks = self::mergeMediaCandidates([$cover], $fallbacks);
         }
-        if ($storedCover !== '' && !in_array($storedCover, $fallbacks, true)) {
-            array_unshift($fallbacks, $storedCover);
+        if ($cover === '' && $fallbacks !== []) {
+            $cover = (string) $fallbacks[0];
+        } elseif ($cover !== '' && self::isBrokenMarketingImageUrl($cover) && $fallbacks !== []) {
+            foreach ($fallbacks as $candidate) {
+                if (!self::isBrokenMarketingImageUrl($candidate)) {
+                    $cover = $candidate;
+                    break;
+                }
+            }
         }
 
-        $fallbacks = self::prioritizeMediaUrls($fallbacks);
-        if ($fallbacks !== []) {
-            if ($cover === '' || self::mediaUrlQualityScore($fallbacks[0]) > self::mediaUrlQualityScore($cover)) {
-                $cover = (string) $fallbacks[0];
-            }
-            if (!in_array($cover, $fallbacks, true)) {
-                array_unshift($fallbacks, $cover);
-            }
-            $fallbacks = self::prioritizeMediaUrls($fallbacks);
+        if (!$probeCandidates && $fallbacks !== [] && ($cover === '' || !self::probeMediaUrl($cover))) {
+            $fallbacks = self::validateMediaUrlCandidates($fallbacks, 16);
+        }
+        if ($cover === '' && $fallbacks !== []) {
+            $cover = (string) $fallbacks[0];
+        } elseif ($fallbacks !== [] && !self::probeMediaUrl($cover)) {
+            $cover = (string) $fallbacks[0];
+        }
+        if ($cover !== '' && !in_array($cover, $fallbacks, true)) {
+            $fallbacks = self::mergeMediaCandidates([$cover], $fallbacks);
         }
 
         return [
