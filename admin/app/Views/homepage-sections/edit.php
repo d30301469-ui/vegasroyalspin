@@ -89,8 +89,8 @@ $renderGameRow = static function (string $sectionKey, array $card = []) use ($h,
                     <input class="input" name="cards[<?= $h($sectionKey) ?>][image_url][]" value="<?= $h($image) ?>" placeholder="assets/games-img/..." data-homepage-image-input>
                 </label>
                 <label class="homepage-field">
-                    <span>Oyun ID</span>
-                    <input class="input" name="cards[<?= $h($sectionKey) ?>][game_id][]" value="<?= $h($card['game_id'] ?? '') ?>" inputmode="numeric">
+                    <span>Oyun ID / game code</span>
+                    <input class="input" type="text" name="cards[<?= $h($sectionKey) ?>][game_id][]" value="<?= $h((string) ($card['game_id'] ?? '')) ?>" placeholder="vs20fruitswx veya aggregator:slot-pragmatic:vs20fruitswx" autocomplete="off" spellcheck="false">
                 </label>
             </div>
         </div>
@@ -355,6 +355,9 @@ $renderGameRow = static function (string $sectionKey, array $card = []) use ($h,
                     <div>
                         <span class="eyebrow">Oyun Listesi</span>
                         <h2 class="card-title"><?= $h($label) ?></h2>
+                        <p class="muted" style="margin:6px 0 0;font-size:12px;line-height:1.45">
+                            Oyun ID: <code>aggregator:vendor:code</code> (Casino Aggregator). Boş bırakılırsa başlığa göre katalogdan eşlenir.
+                        </p>
                         <div class="homepage-section-count"><?= count($cards) ?> kayıt</div>
                     </div>
                     <button class="btn btn--primary" type="button" data-add-homepage-card="<?= $h($sectionKey) ?>">Yeni Oyun Ekle</button>

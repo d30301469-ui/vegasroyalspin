@@ -163,6 +163,8 @@ final class ApiHomepageSections
         $payload = $normalized['payload'];
         if ($normalized['type'] === 'banner') {
             $payload = self::normalizeBannerPayload(is_array($payload) ? $payload : []);
+        } elseif ($normalized['type'] === 'games' && is_array($payload)) {
+            $payload = self::hydrateGamesPayloadWithCatalog($payload);
         }
         $normalized['payload'] = ApiMediaUrl::resolveHomepagePayload($payload);
 
@@ -379,7 +381,7 @@ final class ApiHomepageSections
             $imageFit = in_array($imageFit, ['cover', 'fill'], true) ? $imageFit : 'fill';
             $imageScale = (int) ($item['image_scale'] ?? 100);
             $items[] = [
-                'game_id' => (int) ($item['game_id'] ?? 0),
+                'game_id' => self::normalizeGameIdValue($item['game_id'] ?? ''),
                 'title' => $title,
                 'image_url' => $image,
                 'alt' => trim((string) ($item['alt'] ?? $title)),
@@ -399,6 +401,178 @@ final class ApiHomepageSections
                 ? array_values(array_filter($items, static fn (array $item): bool => (bool) $item['is_active']))
                 : $items,
         ];
+    }
+
+    /**
+     * Homepage casino tiles must launch via aggregator/bgaming string IDs
+     * (e.g. aggregator:slot-pragmatic:vs20olympx), not SoftSwiss integers.
+     *
+     * IMPORTANT: never cast to int — (int)"vs20fruitswx" === 0 in PHP.
+     */
+    public static function normalizeGameIdValue(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return '';
+        }
+        if (is_int($value) || is_float($value)) {
+            $asInt = (int) $value;
+            return $asInt > 0 ? (string) $asInt : '';
+        }
+
+        $id = trim((string) $value);
+        if ($id === '' || $id === '0') {
+            return '';
+        }
+
+        return $id;
+    }
+
+    /**
+     * Resolve curated CMS cards to playable catalog IDs (aggregator preferred).
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    public static function hydrateGamesPayloadWithCatalog(array $payload): array
+    {
+        $items = is_array($payload['items'] ?? null) ? $payload['items'] : [];
+        if ($items === []) {
+            return $payload;
+        }
+
+        try {
+            $pdo = self::pdo();
+        } catch (Throwable) {
+            return $payload;
+        }
+
+        foreach ($items as $index => $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $resolved = self::resolveCatalogGameId(
+                $pdo,
+                self::normalizeGameIdValue($item['game_id'] ?? ''),
+                trim((string) ($item['title'] ?? ''))
+            );
+            if ($resolved !== '') {
+                $items[$index]['game_id'] = $resolved;
+            }
+        }
+
+        $payload['items'] = $items;
+
+        return $payload;
+    }
+
+    private static function resolveCatalogGameId(PDO $pdo, string $gameId, string $title): string
+    {
+        if ($gameId !== '') {
+            if (str_starts_with($gameId, 'aggregator:') || str_starts_with($gameId, 'bgaming:')) {
+                return $gameId;
+            }
+
+            // Bare "vendor:gameCode" from aggregator catalog.
+            if (substr_count($gameId, ':') === 1 && !ctype_digit($gameId)) {
+                [$vendor, $code] = explode(':', $gameId, 2);
+                $vendor = trim($vendor);
+                $code = trim($code);
+                if ($vendor !== '' && $code !== '') {
+                    try {
+                        $stmt = $pdo->prepare(
+                            'SELECT vendor_code, game_code
+                             FROM casino_aggregator_games
+                             WHERE is_active = 1 AND vendor_code = :v AND game_code = :g
+                             LIMIT 1'
+                        );
+                        $stmt->execute([':v' => $vendor, ':g' => $code]);
+                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                        if (is_array($row)) {
+                            return 'aggregator:' . $row['vendor_code'] . ':' . $row['game_code'];
+                        }
+                    } catch (Throwable) {
+                    }
+                }
+            }
+
+            // Bare game_code match in aggregator catalog.
+            if (!ctype_digit($gameId)) {
+                try {
+                    $stmt = $pdo->prepare(
+                        'SELECT vendor_code, game_code
+                         FROM casino_aggregator_games
+                         WHERE is_active = 1 AND game_code = :g
+                         ORDER BY id ASC
+                         LIMIT 1'
+                    );
+                    $stmt->execute([':g' => $gameId]);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if (is_array($row)) {
+                        return 'aggregator:' . $row['vendor_code'] . ':' . $row['game_code'];
+                    }
+                } catch (Throwable) {
+                }
+
+                try {
+                    $stmt = $pdo->prepare(
+                        'SELECT identifier FROM bgaming_games WHERE is_active = 1 AND identifier = :g LIMIT 1'
+                    );
+                    $stmt->execute([':g' => $gameId]);
+                    $identifier = trim((string) $stmt->fetchColumn());
+                    if ($identifier !== '') {
+                        return 'bgaming:' . $identifier;
+                    }
+                } catch (Throwable) {
+                }
+            }
+        }
+
+        if ($title === '') {
+            return $gameId;
+        }
+
+        // Match curated homepage titles to aggregator games (exact then prefix).
+        $titleNorm = preg_replace('/[™®©]+/u', '', $title) ?? $title;
+        $titleNorm = trim(preg_replace('/\s+/u', ' ', $titleNorm) ?? $titleNorm);
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT vendor_code, game_code, game_name
+                 FROM casino_aggregator_games
+                 WHERE is_active = 1 AND LOWER(game_name) = LOWER(:title)
+                 ORDER BY id ASC
+                 LIMIT 1'
+            );
+            $stmt->execute([':title' => $titleNorm]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($row)) {
+                $stmt = $pdo->prepare(
+                    'SELECT vendor_code, game_code, game_name
+                     FROM casino_aggregator_games
+                     WHERE is_active = 1 AND LOWER(game_name) LIKE LOWER(:title)
+                     ORDER BY CHAR_LENGTH(game_name) ASC, id ASC
+                     LIMIT 1'
+                );
+                $stmt->execute([':title' => $titleNorm . '%']);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!is_array($row) && $titleNorm !== '') {
+                $stmt = $pdo->prepare(
+                    'SELECT vendor_code, game_code, game_name
+                     FROM casino_aggregator_games
+                     WHERE is_active = 1 AND LOWER(game_name) LIKE LOWER(:title)
+                     ORDER BY CHAR_LENGTH(game_name) ASC, id ASC
+                     LIMIT 1'
+                );
+                $stmt->execute([':title' => '%' . $titleNorm . '%']);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (is_array($row) && trim((string) ($row['vendor_code'] ?? '')) !== '' && trim((string) ($row['game_code'] ?? '')) !== '') {
+                return 'aggregator:' . $row['vendor_code'] . ':' . $row['game_code'];
+            }
+        } catch (Throwable) {
+        }
+
+        return $gameId;
     }
 
     private static function normalizeBannerPayload(array $payload): array

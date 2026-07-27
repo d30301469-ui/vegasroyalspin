@@ -182,6 +182,14 @@ final class AdminHomepageSectionsController extends AdminController
     {
         $items = [];
         $titles = is_array($cards['title'] ?? null) ? $cards['title'] : [];
+        $gameIds = is_array($cards['game_id'] ?? null) ? $cards['game_id'] : [];
+        $pdo = null;
+        try {
+            $pdo = AdminDatabase::pdo();
+        } catch (Throwable) {
+            $pdo = null;
+        }
+
         foreach ($titles as $index => $titleValue) {
             $title = trim((string) $titleValue);
             $image = $this->storageMediaPath((string) ($cards['image_url'][$index] ?? ''));
@@ -193,8 +201,30 @@ final class AdminHomepageSectionsController extends AdminController
             $imageFit = in_array($imageFit, ['cover', 'fill'], true) ? $imageFit : 'fill';
             $imageScale = (int) ($cards['image_scale'][$index] ?? 100);
             $imageScale = max(40, min(120, $imageScale));
+
+            $rawGameId = $gameIds[$index] ?? '';
+            // Never cast to int — alphanumeric codes like vs20fruitswx become 0.
+            $gameId = class_exists('ApiHomepageSections', false)
+                ? ApiHomepageSections::normalizeGameIdValue($rawGameId)
+                : trim((string) $rawGameId);
+            if ($gameId === '0') {
+                $gameId = '';
+            }
+            if ($pdo instanceof PDO && class_exists('ApiHomepageSections', false)) {
+                $hydrated = ApiHomepageSections::hydrateGamesPayloadWithCatalog([
+                    'items' => [[
+                        'game_id' => $gameId,
+                        'title' => $title,
+                    ]],
+                ]);
+                $resolved = trim((string) ($hydrated['items'][0]['game_id'] ?? ''));
+                if ($resolved !== '' && $resolved !== '0') {
+                    $gameId = $resolved;
+                }
+            }
+
             $items[] = [
-                'game_id' => (int) ($cards['game_id'][$index] ?? 0),
+                'game_id' => $gameId,
                 'title' => $title,
                 'image_url' => $image,
                 'alt' => trim((string) ($cards['alt'][$index] ?? $title)),

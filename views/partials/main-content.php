@@ -139,7 +139,10 @@ if (!function_exists('homeRenderBannerSection')) {
 if (!function_exists('homeRenderGameCard')) {
     function homeRenderGameCard(array $card): void
     {
-        $gameId = (int) ($card['game_id'] ?? 0);
+        $gameId = trim((string) ($card['game_id'] ?? ''));
+        if ($gameId === '' || $gameId === '0') {
+            $gameId = '';
+        }
         $title = trim((string) ($card['title'] ?? ''));
         $image = trim((string) ($card['image_url'] ?? ''));
         if ($title === '' || $image === '') {
@@ -151,18 +154,19 @@ if (!function_exists('homeRenderGameCard')) {
         $imageFit = (string) ($card['image_fit'] ?? 'fill');
         $imageFit = in_array($imageFit, ['cover', 'fill'], true) ? $imageFit : 'fill';
         $imageScale = $imageFit === 'fill' ? 1 : max(40, min(120, (int) ($card['image_scale'] ?? 100))) / 100;
-        $onclick = $gameId > 0
-            ? 'handlePlay(' . $gameId . ')'
+        $gameIdJs = $gameId !== '' ? homeSectionJs($gameId) : '';
+        $onclick = $gameId !== ''
+            ? 'handlePlay(' . $gameIdJs . ')'
             : ($link !== '' ? 'window.location.href=' . homeSectionJs($link) : '');
-        $playHref = $link !== '' ? $link : '#';
-        $playOnclick = $gameId > 0
-            ? 'handlePlay(' . $gameId . '); return false;'
+        $playHref = $link !== '' ? $link : ($gameId !== '' ? '/play?game_id=' . rawurlencode($gameId) . '&mode=real&wallet=main' : '#');
+        $playOnclick = $gameId !== ''
+            ? 'handlePlay(' . $gameIdJs . '); return false;'
             : ($link !== '' ? '' : 'event.stopPropagation(); return false;');
-        $demoHref = $gameId > 0
-            ? '/play?game_id=' . rawurlencode((string) $gameId) . '&mode=fun&demo=1'
+        $demoHref = $gameId !== ''
+            ? '/play?game_id=' . rawurlencode($gameId) . '&mode=fun&demo=1'
             : '#';
-        $demoOnclick = $gameId > 0
-            ? 'handleDemo(' . $gameId . '); return false;'
+        $demoOnclick = $gameId !== ''
+            ? 'handleDemo(' . $gameIdJs . '); return false;'
             : 'event.stopPropagation(); return false;';
         ?>
         <div class="<?= homeSectionH($class) ?>"<?= $onclick !== '' ? ' onclick="' . homeSectionH($onclick) . '"' : '' ?>>
