@@ -1543,10 +1543,7 @@
             scrollActiveCategoryIntoView();
             syncMobileFilterControls();
             if (API_ADAPTER === 'member_api_games' && gameGrid) {
-                var hasRenderedGames = gameGrid.querySelectorAll('.casinoGameItemContent[data-game-id]').length > 0;
-                if (!hasRenderedGames) {
-                    loadSlots(false);
-                }
+                loadSlots(false);
             }
         });
     } else {
@@ -1554,10 +1551,7 @@
         scrollActiveCategoryIntoView();
         syncMobileFilterControls();
         if (API_ADAPTER === 'member_api_games' && gameGrid) {
-            var hasRenderedGames = gameGrid.querySelectorAll('.casinoGameItemContent[data-game-id]').length > 0;
-            if (!hasRenderedGames) {
-                loadSlots(false);
-            }
+            loadSlots(false);
         }
     }
 })();

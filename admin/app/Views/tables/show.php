@@ -718,14 +718,13 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                 $imageUrl = trim((string) $rawValue);
                                 $imageFallbacks = [];
                                 if ($table === 'casino_aggregator_games' && class_exists('CasinoAggregatorService', false)) {
-                                    $imageUrl = CasinoAggregatorService::resolveGameImage([
+                                    $media = CasinoAggregatorService::hydrateGameMedia([
                                         'image_url' => $imageUrl,
+                                        'image_fallbacks' => $row['image_fallbacks'] ?? null,
                                         'raw_payload' => $row['raw_payload'] ?? null,
                                     ]);
-                                    $imageFallbacks = CasinoAggregatorService::resolveGameImageFallbacks([
-                                        'image_url' => trim((string) $rawValue),
-                                        'raw_payload' => $row['raw_payload'] ?? null,
-                                    ]);
+                                    $imageUrl = (string) ($media['cover'] ?? '');
+                                    $imageFallbacks = is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [];
                                 } elseif ($imageUrl !== '' && class_exists('CasinoAggregatorService', false)
                                     && CasinoAggregatorService::looksLikeLocalizedJson($imageUrl)) {
                                     $imageUrl = CasinoAggregatorService::resolveMediaUrl($imageUrl);

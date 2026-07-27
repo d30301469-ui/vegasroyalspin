@@ -40,6 +40,10 @@ final class CasinoAggregatorService
             if ($type !== '' && !str_starts_with($type, 'text') && !str_starts_with($type, 'longtext') && !str_starts_with($type, 'mediumtext')) {
                 $pdo->exec('ALTER TABLE casino_aggregator_games MODIFY image_url TEXT NULL');
             }
+            $fallbackCol = $pdo->query("SHOW COLUMNS FROM casino_aggregator_games LIKE 'image_fallbacks'")->fetch(PDO::FETCH_ASSOC);
+            if ($fallbackCol === false) {
+                $pdo->exec('ALTER TABLE casino_aggregator_games ADD COLUMN image_fallbacks TEXT NULL AFTER image_url');
+            }
         } catch (Throwable) {
         }
     }
@@ -216,12 +220,13 @@ final class CasinoAggregatorService
         $errors = [];
         $insert = $pdo->prepare(
             'INSERT INTO casino_aggregator_games
-                (vendor_code, game_code, game_name, game_type, image_url, raw_payload, synced_at)
-             VALUES (:vendor, :game, :name, :type, :image, :raw, NOW())
+                (vendor_code, game_code, game_name, game_type, image_url, image_fallbacks, raw_payload, synced_at)
+             VALUES (:vendor, :game, :name, :type, :image, :fallbacks, :raw, NOW())
              ON DUPLICATE KEY UPDATE
                 game_name = VALUES(game_name),
                 game_type = VALUES(game_type),
                 image_url = VALUES(image_url),
+                image_fallbacks = VALUES(image_fallbacks),
                 raw_payload = VALUES(raw_payload),
                 synced_at = NOW()'
         );
@@ -255,16 +260,18 @@ final class CasinoAggregatorService
                 }
                 $lang = strtolower(trim((string) ($cfg['lang'] ?? 'tr')));
                 $rawJson = json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                $image = self::resolveGameImage([
+                $mediaRow = [
                     'image_url' => $row['imageUrl'] ?? ($row['image_url'] ?? ''),
                     'raw_payload' => is_string($rawJson) ? $rawJson : null,
-                ], $lang);
+                ];
+                $media = self::hydrateGameMedia($mediaRow, $lang);
                 $insert->execute([
                     ':vendor' => $vendor,
                     ':game'   => $gameCode,
                     ':name'   => self::resolveLocalizedLabel($row['gameName'] ?? '', $lang) ?: $gameCode,
                     ':type'   => max(1, (int) ($row['gameType'] ?? 1)),
-                    ':image'  => $image !== '' ? $image : null,
+                    ':image'  => ($media['cover'] ?? '') !== '' ? $media['cover'] : null,
+                    ':fallbacks' => self::encodeStoredImageFallbacks($media['cover_fallbacks'] ?? []),
                     ':raw'    => $rawJson,
                 ]);
                 $gameCount++;
@@ -312,29 +319,32 @@ final class CasinoAggregatorService
 
         $gameFixed = 0;
         $gameStmt = $pdo->prepare(
-            'UPDATE casino_aggregator_games SET game_name = :name, image_url = :image WHERE id = :id'
+            'UPDATE casino_aggregator_games SET game_name = :name, image_url = :image, image_fallbacks = :fallbacks WHERE id = :id'
         );
-        foreach ($pdo->query('SELECT id, game_code, game_name, image_url, raw_payload FROM casino_aggregator_games')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        foreach ($pdo->query('SELECT id, game_code, game_name, image_url, image_fallbacks, raw_payload FROM casino_aggregator_games')->fetchAll(PDO::FETCH_ASSOC) as $row) {
             if (!is_array($row)) {
                 continue;
             }
             $currentName = trim((string) ($row['game_name'] ?? ''));
             $currentImage = trim((string) ($row['image_url'] ?? ''));
+            $currentFallbacks = self::encodeStoredImageFallbacks(
+                self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null)
+            );
             $newName = self::resolveLocalizedLabel($currentName, $lang) ?: $currentName;
-            $newImage = self::resolveGameImage($row, $lang);
+            $media = self::hydrateGameMedia($row, $lang);
+            $newImage = trim((string) ($media['cover'] ?? ''));
+            $newFallbacks = self::encodeStoredImageFallbacks($media['cover_fallbacks'] ?? []);
             $needsName = self::looksLikeLocalizedJson($currentName) && $newName !== '' && $newName !== $currentName;
-            $needsImage = $newImage !== '' && $newImage !== $currentImage
-                && ($currentImage === ''
-                    || !self::isUsableMediaUrl($currentImage)
-                    || self::looksLikeLocalizedJson($currentImage)
-                    || stripos($currentImage, '/default/') !== false);
-            if (!$needsName && !$needsImage) {
+            $needsImage = $newImage !== '' && $newImage !== $currentImage;
+            $needsFallbacks = $newFallbacks !== null && $newFallbacks !== $currentFallbacks;
+            if (!$needsName && !$needsImage && !$needsFallbacks) {
                 continue;
             }
             $gameStmt->execute([
-                ':name'  => $needsName ? $newName : $currentName,
-                ':image' => $needsImage ? $newImage : ($currentImage !== '' ? $currentImage : null),
-                ':id'    => (int) $row['id'],
+                ':name'      => $needsName ? $newName : $currentName,
+                ':image'     => $newImage !== '' ? $newImage : ($currentImage !== '' ? $currentImage : null),
+                ':fallbacks' => $newFallbacks,
+                ':id'        => (int) $row['id'],
             ]);
             $gameFixed++;
         }
@@ -738,6 +748,102 @@ final class CasinoAggregatorService
         return self::mediaUrlFallbacks(self::resolveGameImage($row, $lang), $row, $lang);
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function decodeStoredImageFallbacks(mixed $value): array
+    {
+        if (is_array($value)) {
+            return array_values(array_unique(array_filter(array_map(
+                static fn ($item): string => self::normalizeMediaUrl(trim((string) $item)),
+                $value
+            ), static fn (string $url): bool => $url !== '' && self::isUsableMediaUrl($url))));
+        }
+        if (!is_string($value)) {
+            return [];
+        }
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return [];
+        }
+        $decoded = json_decode($trimmed, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return self::decodeStoredImageFallbacks($decoded);
+    }
+
+    /**
+     * @param list<string> $fallbacks
+     */
+    public static function encodeStoredImageFallbacks(array $fallbacks): ?string
+    {
+        $clean = [];
+        foreach ($fallbacks as $fallback) {
+            $url = self::normalizeMediaUrl(trim((string) $fallback));
+            if ($url !== '' && self::isUsableMediaUrl($url) && !in_array($url, $clean, true)) {
+                $clean[] = $url;
+            }
+        }
+        if ($clean === []) {
+            return null;
+        }
+
+        return json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: null;
+    }
+
+    /**
+     * Single source of truth for frontend/admin/API game thumbnails.
+     *
+     * @param array<string, mixed> $row
+     * @return array{cover: string, cover_fallbacks: list<string>, image_fallbacks: list<string>}
+     */
+    public static function hydrateGameMedia(array $row, ?string $lang = null): array
+    {
+        $fallbacks = self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null);
+        if ($fallbacks === [] && !empty($row['cover_fallbacks']) && is_array($row['cover_fallbacks'])) {
+            $fallbacks = self::decodeStoredImageFallbacks($row['cover_fallbacks']);
+        }
+
+        $cover = trim((string) ($row['cover'] ?? ''));
+        if ($cover === '') {
+            $cover = trim((string) ($row['image_url'] ?? $row['thumbnail_url'] ?? $row['imageUrl'] ?? ''));
+        }
+
+        $hasPayload = trim((string) ($row['raw_payload'] ?? '')) !== '';
+        if ($hasPayload) {
+            $resolvedCover = self::resolveGameImage($row, $lang);
+            if ($resolvedCover !== '') {
+                $cover = $resolvedCover;
+            }
+            $computedFallbacks = self::resolveGameImageFallbacks($row, $lang);
+            if ($computedFallbacks !== []) {
+                $fallbacks = $computedFallbacks;
+            }
+        } elseif ($fallbacks === [] && $cover !== '') {
+            $fallbacks = self::mediaUrlFallbacks($cover);
+        }
+
+        if ($cover === '' && $fallbacks !== []) {
+            $cover = (string) $fallbacks[0];
+        }
+        if ($cover !== '' && $fallbacks === []) {
+            $fallbacks = self::mediaUrlFallbacks($cover, $hasPayload ? $row : null, $lang);
+        }
+        if ($cover !== '' && !in_array($cover, $fallbacks, true)) {
+            array_unshift($fallbacks, $cover);
+        }
+
+        $fallbacks = array_values(array_unique(array_filter($fallbacks, static fn (string $url): bool => $url !== '' && self::isUsableMediaUrl($url))));
+
+        return [
+            'cover'            => $cover,
+            'cover_fallbacks'  => $fallbacks,
+            'image_fallbacks'  => $fallbacks,
+        ];
+    }
+
     public static function extractMediaUrl(string $value): string
     {
         $value = trim($value);
@@ -884,13 +990,12 @@ final class CasinoAggregatorService
     {
         $row['provider_name'] = self::resolveLocalizedLabel($row['provider_name'] ?? '');
         $row['game_name'] = self::resolveLocalizedLabel($row['game_name'] ?? '');
-        $image = self::resolveGameImage($row);
-        $fallbacks = self::resolveGameImageFallbacks($row);
-        $row['image_url'] = $image;
-        $row['banner'] = $image;
-        $row['cover'] = $image;
-        $row['image_fallbacks'] = $fallbacks;
-        $row['cover_fallbacks'] = $fallbacks;
+        $media = self::hydrateGameMedia($row);
+        $row['image_url'] = (string) ($media['cover'] ?? '');
+        $row['banner'] = (string) ($media['cover'] ?? '');
+        $row['cover'] = (string) ($media['cover'] ?? '');
+        $row['image_fallbacks'] = $media['image_fallbacks'] ?? [];
+        $row['cover_fallbacks'] = $media['cover_fallbacks'] ?? [];
         unset($row['raw_payload']);
         return $row;
     }

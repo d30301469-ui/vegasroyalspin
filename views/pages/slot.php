@@ -754,18 +754,11 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                         $playHrefJson = (string) json_encode($playHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
                         $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{window.location.href=' . $playHrefJson . ';}';
                         $coverUrl = (string) ($game['cover'] ?? '');
-                        $coverFallbacks = [];
-                        if (class_exists('CasinoAggregatorService', false)) {
-                            if (!empty($game['cover_fallbacks']) && is_array($game['cover_fallbacks'])) {
-                                $coverFallbacks = $game['cover_fallbacks'];
-                            } elseif (($game['source'] ?? '') === 'aggregator' && $coverUrl !== '') {
-                                $coverFallbacks = CasinoAggregatorService::mediaUrlFallbacks($coverUrl);
-                            }
-                            if ($coverFallbacks !== []) {
-                                $coverUrl = (string) ($coverFallbacks[0] ?? $coverUrl);
-                            } elseif ($coverUrl !== '') {
-                                $coverUrl = CasinoAggregatorService::resolveMediaUrl($coverUrl);
-                            }
+                        $coverFallbacks = is_array($game['cover_fallbacks'] ?? null) ? $game['cover_fallbacks'] : [];
+                        if ($coverFallbacks !== []) {
+                            $coverUrl = (string) ($coverFallbacks[0] ?? $coverUrl);
+                        } elseif ($coverUrl !== '' && class_exists('CasinoAggregatorService', false)) {
+                            $coverUrl = CasinoAggregatorService::resolveMediaUrl($coverUrl);
                         }
                         $fallbackJson = $coverFallbacks !== []
                             ? htmlspecialchars(json_encode(array_values($coverFallbacks), JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8')

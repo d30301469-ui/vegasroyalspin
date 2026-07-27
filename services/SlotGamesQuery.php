@@ -31,25 +31,20 @@ final class SlotGamesQuery
     public static function mapApiRowToLegacy(array $row): array
     {
         $provider = self::normalizeProviderLabel($row['provider'] ?? '');
-        $cover = self::normalizeGameImage($row);
-        $coverFallbacks = [];
-        if (!empty($row['cover_fallbacks']) && is_array($row['cover_fallbacks'])) {
-            $coverFallbacks = $row['cover_fallbacks'];
-        } elseif (!empty($row['image_fallbacks']) && is_array($row['image_fallbacks'])) {
-            $coverFallbacks = $row['image_fallbacks'];
-        } elseif (class_exists('CasinoAggregatorService', false)) {
-            $coverFallbacks = CasinoAggregatorService::resolveGameImageFallbacks($row);
-        }
-        if ($coverFallbacks === [] && $cover !== '' && class_exists('CasinoAggregatorService', false)) {
-            $coverFallbacks = CasinoAggregatorService::mediaUrlFallbacks($cover, $row);
-        }
+        $media = class_exists('CasinoAggregatorService', false)
+            ? CasinoAggregatorService::hydrateGameMedia($row)
+            : [
+                'cover'           => self::normalizeGameImage($row),
+                'cover_fallbacks' => [],
+                'image_fallbacks' => [],
+            ];
 
         return [
             'id'            => (string) ($row['id'] ?? ''),
             'game_id'       => (string) ($row['game_id'] ?? ''),
             'game_name'     => self::normalizeGameName($row['name'] ?? $row['game_name'] ?? ''),
-            'cover'         => $cover,
-            'cover_fallbacks' => $coverFallbacks,
+            'cover'         => (string) ($media['cover'] ?? ''),
+            'cover_fallbacks' => is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [],
             'has_demo'      => !empty($row['has_demo']),
             'provider_code' => (string) ($row['provider_code'] ?? ''),
             'provider'      => $provider,
@@ -491,6 +486,7 @@ final class SlotGamesQuery
                     provider AS provider,
                     provider AS provider_code,
                     COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
+                    '' AS image_fallbacks,
                     is_featured AS is_featured,
                     'bgaming' AS source,
                     CAST(id AS CHAR) AS row_id,
@@ -506,6 +502,7 @@ final class SlotGamesQuery
                     COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
                     g.vendor_code AS provider_code,
                     COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                    COALESCE(g.image_fallbacks, '') AS image_fallbacks,
                     g.is_featured AS is_featured,
                     'aggregator' AS source,
                     CAST(g.id AS CHAR) AS row_id,
@@ -578,7 +575,7 @@ final class SlotGamesQuery
         $total = (int) $countStmt->fetchColumn();
 
         $rowsStmt = $pdo->prepare(
-            "SELECT game_id, name, provider, provider_code, image_url, is_featured, source, row_id, raw_payload
+            "SELECT game_id, name, provider, provider_code, image_url, image_fallbacks, is_featured, source, row_id, raw_payload
              FROM {$unionSql}{$whereSql}
              ORDER BY is_featured DESC, name ASC
              LIMIT :limit OFFSET :offset"
@@ -596,21 +593,17 @@ final class SlotGamesQuery
             $provider = SlotGamesQuery::normalizeProviderLabel($r['provider'] ?? '');
             $imageUrl = SlotGamesQuery::normalizeGameImage($r);
             $name = SlotGamesQuery::normalizeGameName($r['name'] ?? '');
-            $coverFallbacks = [];
-            if (class_exists('CasinoAggregatorService', false)) {
-                $coverFallbacks = CasinoAggregatorService::resolveGameImageFallbacks($r);
-                if ($coverFallbacks === [] && $imageUrl !== '') {
-                    $coverFallbacks = CasinoAggregatorService::mediaUrlFallbacks($imageUrl, $r);
-                }
-            }
+            $media = class_exists('CasinoAggregatorService', false)
+                ? CasinoAggregatorService::hydrateGameMedia($r)
+                : ['cover' => $imageUrl, 'cover_fallbacks' => [], 'image_fallbacks' => []];
 
             return [
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => (string) ($r['game_id'] ?? ''),
                 'name'          => $name,
-                'image_url'     => $imageUrl,
-                'cover_fallbacks' => $coverFallbacks,
-                'image_fallbacks' => $coverFallbacks,
+                'image_url'     => (string) ($media['cover'] ?? $imageUrl),
+                'cover_fallbacks' => is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [],
+                'image_fallbacks' => is_array($media['image_fallbacks'] ?? null) ? $media['image_fallbacks'] : [],
                 'provider'      => $provider,
                 'provider_code' => (string) ($r['provider_code'] ?? ''),
                 'is_featured'   => $featured,

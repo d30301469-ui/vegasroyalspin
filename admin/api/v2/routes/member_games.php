@@ -135,6 +135,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 provider AS provider,
                 provider AS provider_code,
                 COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
+                '' AS image_fallbacks,
                 is_featured AS is_featured,
                 'bgaming' AS source,
                 CAST(id AS CHAR) AS row_id,
@@ -150,6 +151,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
                 g.vendor_code AS provider_code,
                 COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                COALESCE(g.image_fallbacks, '') AS image_fallbacks,
                 g.is_featured AS is_featured,
                 'aggregator' AS source,
                 CAST(g.id AS CHAR) AS row_id,
@@ -230,7 +232,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
         $total = (int) $countStmt->fetchColumn();
 
         $rowsStmt = $pdo->prepare(
-            "SELECT game_id, name, provider, provider_code, image_url, is_featured, source, row_id, raw_payload
+            "SELECT game_id, name, provider, provider_code, image_url, image_fallbacks, is_featured, source, row_id, raw_payload
              FROM {$unionSql}{$whereSql}
              ORDER BY is_featured DESC, name ASC
              LIMIT :limit OFFSET :offset"
@@ -246,8 +248,9 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             $featured = (int) ($r['is_featured'] ?? 0);
             $providerName = CasinoAggregatorService::resolveLocalizedLabel($r['provider'] ?? '');
             $gameName = CasinoAggregatorService::resolveLocalizedLabel($r['name'] ?? '');
-            $imageUrl = CasinoAggregatorService::resolveGameImage($r);
-            $imageFallbacks = CasinoAggregatorService::resolveGameImageFallbacks($r);
+            $media = CasinoAggregatorService::hydrateGameMedia($r);
+            $imageUrl = (string) ($media['cover'] ?? '');
+            $imageFallbacks = is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [];
             $allGames[] = [
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => (string) ($r['game_id'] ?? ''),

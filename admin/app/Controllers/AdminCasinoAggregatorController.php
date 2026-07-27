@@ -65,6 +65,12 @@ final class AdminCasinoAggregatorController extends AdminController
         $this->ensurePost();
         try {
             $result = CasinoAggregatorService::syncGames(AdminDatabase::pdo());
+            if (class_exists('SlotGamesQuery', false)) {
+                SlotGamesQuery::purgeCache();
+            } elseif (is_file(dirname(__DIR__, 3) . '/services/SlotGamesQuery.php')) {
+                require_once dirname(__DIR__, 3) . '/services/SlotGamesQuery.php';
+                SlotGamesQuery::purgeCache();
+            }
             $msg = 'Oyun sync tamamlandı: ' . (int) ($result['game_count'] ?? 0) . ' oyun, '
                 . (int) ($result['vendor_count'] ?? 0) . ' vendor.';
             if (((int) ($result['repaired_vendors'] ?? 0)) > 0 || ((int) ($result['repaired_games'] ?? 0)) > 0) {
