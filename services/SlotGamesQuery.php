@@ -85,6 +85,13 @@ final class SlotGamesQuery
         return self::gamesPage(0, $searchTerm, $providers, $limit, $page, $sort, $extraQuery);
     }
 
+    public static function liveCasinoPage(string $searchTerm, array $providers, int $limit, int $page, string $sort = '', array $extraQuery = []): array
+    {
+        $query = array_merge(['source' => 'aggregator'], $extraQuery);
+
+        return self::gamesPage(1, $searchTerm, $providers, $limit, $page, $sort, $query);
+    }
+
     /**
      * @return array{
      *   games: array<int, array<string, mixed>>,

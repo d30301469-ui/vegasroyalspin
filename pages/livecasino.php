@@ -6,41 +6,53 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../core/bootstrap.php';
 require_once SERVICE_PATH . '/SlotGamesQuery.php';
 require_once SERVICE_PATH . '/ProviderDisplayBadgeMap.php';
+require_once SERVICE_PATH . '/CasinoAggregatorService.php';
 
 $searchTerm = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
-$selectedProviders = isset($_GET['providers']) ? (array) $_GET['providers'] : [];
+$selectedProviders = array_values(array_filter(array_map(
+    static fn ($provider): string => CasinoAggregatorService::resolveLocalizedLabel(trim((string) $provider)),
+    isset($_GET['providers']) ? (array) $_GET['providers'] : []
+), static fn (string $provider): bool => $provider !== ''));
 $currentSort = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
-// Live casino entegrasyonu yok — sayfa bilerek boş.
-$games = [];
+$result = SlotGamesQuery::liveCasinoPage($searchTerm, $selectedProviders, $limit, $page, $currentSort);
+$games = is_array($result['games'] ?? null) ? $result['games'] : [];
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
-$allUniqueProviders = [];
-$totalSlots = 0;
-$perPage = $limit;
-$currentPage = $page;
-$hasNext = false;
-$remainingGames = 0;
-$showLoadMore = false;
+
+$allUniqueProviders = SlotGamesQuery::providersForGameType(1);
+sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
+
+$totalSlots = (int) ($result['total'] ?? count($games));
+$perPage = (int) ($result['perPage'] ?? $limit);
+$currentPage = (int) ($result['page'] ?? $page);
+$hasNext = !empty($result['hasNext']);
+$loadedCount = ($currentPage - 1) * $perPage + count($games);
+$remainingGames = max(0, $totalSlots - $loadedCount);
+$showLoadMore = $hasNext && $remainingGames > 0;
 $nextPage = $currentPage + 1;
-$apiError = false;
+$apiError = !empty($result['apiError']);
 
 $providerBadges = [
     'pragmatic' => ['EN IYI', 'SICAK'],
+    'pragmaticplay' => ['EN IYI', 'SICAK'],
     'evolution' => ['EN IYI'],
-    'vivo' => ['SICAK'],
-    'sagaming' => ['SICAK'],
+    'evo' => ['EN IYI'],
     'ezugi' => ['OZEL'],
     'creedroomz' => ['OZEL'],
+    'vivo' => ['SICAK'],
+    'sagaming' => ['SICAK'],
+    'playtech' => ['EN IYI'],
+    'netent' => ['SICAK'],
 ];
 
 $slotPageBaseUrl = '/livecasino';
 $slotPageTitle = 'CANLI CASINO';
 $slotGameType = 1;
 $slotEmptyTitle = 'Canlı casino oyunu bulunamadı';
-$slotEmptyText = 'Canlı casino entegrasyonu henüz aktif değil.';
-$slotApiParams = [];
+$slotEmptyText = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin.';
+$slotApiParams = ['source' => 'aggregator'];
 $sliderApiCategory = 'live_casino';
 $slotShowActionButtons = true;
 $slotHideProviders = false;
