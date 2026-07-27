@@ -300,6 +300,8 @@ if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_ga
     $userId = $memberRequireLogin();
     $pdo = AdminDatabase::pdo();
     BgamingService::bootstrap($pdo);
+    admin_require_project_file('services/CasinoAggregatorService.php');
+    CasinoAggregatorService::bootstrap($pdo);
 
     $source = strtolower(trim((string) ($_GET['source'] ?? $_GET['category'] ?? $_GET['game_type'] ?? 'all')));
     if (in_array($source, ['live', 'livecasino'], true)) {
@@ -392,6 +394,48 @@ if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_ga
         } catch (Throwable) {}
     }
 
+    if ($source === 'all' || $source === 'slot' || $source === 'live_casino') {
+        $aggTypeSql = match ($source) {
+            'slot' => ' AND COALESCE(g.game_type, 1) = 1',
+            'live_casino' => ' AND COALESCE(g.game_type, 1) = 2',
+            default => '',
+        };
+        try {
+            $aggStmt = $pdo->prepare(
+                "SELECT
+                    t.id,
+                    t.txn_code,
+                    t.pair_code,
+                    t.wager_id,
+                    t.round_id,
+                    t.vendor_code,
+                    t.game_code,
+                    COALESCE(g.game_name, t.game_code) AS game_name,
+                    COALESCE(NULLIF(v.vendor_name, ''), t.vendor_code) AS provider_name,
+                    COALESCE(g.game_type, 1) AS game_type,
+                    t.txn_type,
+                    t.amount,
+                    t.after_balance,
+                    t.created_at
+                 FROM casino_aggregator_transactions t
+                 LEFT JOIN casino_aggregator_games g
+                    ON g.vendor_code = t.vendor_code AND g.game_code = t.game_code
+                 LEFT JOIN casino_aggregator_vendors v ON v.vendor_code = t.vendor_code
+                 WHERE t.user_id = :uid{$aggTypeSql}
+                 ORDER BY t.id DESC
+                 LIMIT {$fetchLimit}"
+            );
+            $aggStmt->execute([':uid' => $userId]);
+            foreach ($aggStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $rows[] = CasinoAggregatorService::buildMemberGameHistoryRow($row);
+            }
+        } catch (Throwable) {
+        }
+    }
+
     usort($rows, static function (array $left, array $right): int {
         return strtotime((string) ($right['created_at'] ?? '')) <=> strtotime((string) ($left['created_at'] ?? ''));
     });
@@ -471,6 +515,8 @@ if ($method === 'GET' && ($route === 'games/search' || $route === 'games/search.
 if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
     $pdo = AdminDatabase::pdo();
     BgamingService::bootstrap($pdo);
+    admin_require_project_file('services/CasinoAggregatorService.php');
+    CasinoAggregatorService::bootstrap($pdo);
     $emptyWinners = static function (string $tab, string $period) use ($memberEnvelope): void {
         $memberEnvelope(200, [
             'success' => true,
@@ -496,6 +542,7 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
     }
     if ($tab === 'recent') {
         $bgamingPeriodSql = '';
+        $aggregatorPeriodSql = '';
     } else {
         $bgamingPeriodSql = match ($period) {
             'week' => ' AND t.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)',
@@ -503,6 +550,7 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
             'all' => '',
             default => ' AND t.created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)',
         };
+        $aggregatorPeriodSql = $bgamingPeriodSql;
     }
 
     $winnerSql = "SELECT *
@@ -518,11 +566,32 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
                           t.amount AS win_amount,
                           t.created_at AS created_at,
                           t.id AS sort_id,
-                          'bgaming' AS source
+                          'bgaming' AS source,
+                          NULL AS raw_payload
                       FROM bgaming_transactions t
                       LEFT JOIN users u ON u.id = t.user_id
                       LEFT JOIN bgaming_games g ON g.identifier = t.game_identifier
                       WHERE t.txn_type IN ('win', 'promo_win', 'freespins_win') AND t.amount > 0{$bgamingPeriodSql}
+                      UNION ALL
+                      SELECT
+                          u.username,
+                          t.user_id,
+                          CONCAT('aggregator:', t.vendor_code, ':', t.game_code) AS game_id,
+                          COALESCE(g.game_name, t.game_code) AS game_name,
+                          COALESCE(NULLIF(v.vendor_name, ''), t.vendor_code) AS provider_name,
+                          COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                          COALESCE(NULLIF(g.image_url, ''), '') AS banner,
+                          ABS(t.amount) AS win_amount,
+                          t.created_at AS created_at,
+                          t.id AS sort_id,
+                          'aggregator' AS source,
+                          g.raw_payload AS raw_payload
+                      FROM casino_aggregator_transactions t
+                      LEFT JOIN users u ON u.id = t.user_id
+                      LEFT JOIN casino_aggregator_games g
+                          ON g.vendor_code = t.vendor_code AND g.game_code = t.game_code
+                      LEFT JOIN casino_aggregator_vendors v ON v.vendor_code = t.vendor_code
+                      WHERE t.txn_type = 'win' AND t.amount > 0{$aggregatorPeriodSql}
                   ) winners_union";
 
     $maskUsername = static function (mixed $value): string {
@@ -537,6 +606,10 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
         $stmt->execute();
         $grouped = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $row = CasinoAggregatorService::normalizeWinnerDisplayRow($row);
             $key = (string) ((int) ($row['user_id'] ?? 0) > 0 ? $row['user_id'] : ($row['username'] ?? 'guest'));
             if (!isset($grouped[$key])) {
                 $grouped[$key] = $row;
@@ -594,6 +667,7 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->execute();
     $rows = array_map(static function (array $row) use ($maskUsername): array {
+        $row = CasinoAggregatorService::normalizeWinnerDisplayRow($row);
         $username = (string) ($row['username'] ?? 'Uye');
         $masked = $maskUsername($username);
         return [

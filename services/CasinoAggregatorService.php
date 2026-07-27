@@ -402,6 +402,88 @@ final class CasinoAggregatorService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $row DB row from casino_aggregator_transactions (+ optional game/vendor joins)
+     * @return array<string, mixed>
+     */
+    public static function buildMemberGameHistoryRow(array $row): array
+    {
+        $rawTxnType = strtolower((string) ($row['txn_type'] ?? 'bet'));
+        $normalizedTxnType = match ($rawTxnType) {
+            'win' => 'win',
+            'cancel' => 'refund',
+            default => 'bet',
+        };
+        $amount = abs((float) ($row['amount'] ?? 0));
+        $vendorCode = trim((string) ($row['vendor_code'] ?? ''));
+        $gameCode = trim((string) ($row['game_code'] ?? ''));
+        $gameType = (int) ($row['game_type'] ?? 1);
+        $isLive = $gameType === 2;
+        $providerName = self::resolveLocalizedLabel($row['provider_name'] ?? $vendorCode) ?: $vendorCode;
+        $providerCode = $vendorCode !== '' ? $vendorCode : 'aggregator';
+        $gameName = self::resolveLocalizedLabel($row['game_name'] ?? $gameCode) ?: $gameCode;
+        $gameId = ($vendorCode !== '' && $gameCode !== '') ? self::buildGameId($vendorCode, $gameCode) : $gameCode;
+        $localId = (string) ($row['id'] ?? '');
+
+        return [
+            'id' => 'aggregator:' . $localId,
+            'history_id' => 'aggregator:' . $localId,
+            'transactionId' => (string) ($row['txn_code'] ?? ''),
+            'transaction_id' => (string) ($row['txn_code'] ?? ''),
+            'providerTxnId' => (string) ($row['txn_code'] ?? ''),
+            'provider_txn_id' => (string) ($row['txn_code'] ?? ''),
+            'relatedTransactionId' => (string) ($row['pair_code'] ?? ''),
+            'related_transaction_id' => (string) ($row['pair_code'] ?? ''),
+            'sessionToken' => (string) ($row['wager_id'] ?? ''),
+            'session_id' => (string) ($row['wager_id'] ?? ''),
+            'roundId' => (string) ($row['round_id'] ?? ''),
+            'round_id' => (string) ($row['round_id'] ?? ''),
+            'gameId' => $gameId,
+            'game_id' => $gameId,
+            'gameName' => $gameName,
+            'game_name' => $gameName,
+            'providerCode' => $providerCode,
+            'provider_code' => $providerCode,
+            'providerName' => $providerName,
+            'provider_name' => $providerName,
+            'category' => $isLive ? 'live_casino' : 'slot',
+            'source' => $isLive ? 'live_casino' : 'slot',
+            'txnType' => $normalizedTxnType,
+            'txn_type' => $normalizedTxnType,
+            'status' => 'completed',
+            'betAmount' => $normalizedTxnType === 'bet' ? $amount : 0.0,
+            'bet_amount' => $normalizedTxnType === 'bet' ? $amount : 0.0,
+            'winAmount' => $normalizedTxnType !== 'bet' ? $amount : 0.0,
+            'win_amount' => $normalizedTxnType !== 'bet' ? $amount : 0.0,
+            'balanceAfter' => (float) ($row['after_balance'] ?? 0),
+            'balance_after' => (float) ($row['after_balance'] ?? 0),
+            'createdAt' => (string) ($row['created_at'] ?? ''),
+            'created_at' => (string) ($row['created_at'] ?? ''),
+            'wallet' => 'casino',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    public static function normalizeWinnerDisplayRow(array $row): array
+    {
+        $row['provider_name'] = self::resolveLocalizedLabel($row['provider_name'] ?? '');
+        $row['game_name'] = self::resolveLocalizedLabel($row['game_name'] ?? '');
+        $image = self::resolveLocalizedLabel($row['image_url'] ?? '');
+        if ($image === '') {
+            $image = self::resolveGameImage([
+                'image_url' => (string) ($row['image_url'] ?? ''),
+                'raw_payload' => $row['raw_payload'] ?? null,
+            ]);
+        }
+        $row['image_url'] = $image;
+        $row['banner'] = $image;
+        unset($row['raw_payload']);
+        return $row;
+    }
+
     public static function resolveLocalizedLabel(mixed $value, ?string $lang = null): string
     {
         $lang = strtolower(trim((string) ($lang ?? 'tr')));

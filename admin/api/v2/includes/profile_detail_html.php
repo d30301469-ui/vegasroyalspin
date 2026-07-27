@@ -315,6 +315,41 @@ if (!function_exists('member_profile_render_game_history_detail')) {
             }
         }
 
+        if (!is_array($row) && $source === 'aggregator') {
+            admin_require_project_file('services/CasinoAggregatorService.php');
+            CasinoAggregatorService::bootstrap($pdo);
+            $stmt = $pdo->prepare("SELECT
+                                       t.id,
+                                       'aggregator' AS source,
+                                       t.txn_code AS transaction_id,
+                                       t.pair_code AS related_transaction_id,
+                                       t.wager_id AS session_id,
+                                       t.round_id,
+                                       CONCAT('aggregator:', t.vendor_code, ':', t.game_code) AS game_id,
+                                       COALESCE(g.game_name, t.game_code) AS game_name,
+                                       COALESCE(NULLIF(v.vendor_name, ''), t.vendor_code) AS provider_code,
+                                       COALESCE(NULLIF(v.vendor_name, ''), t.vendor_code) AS provider_name,
+                                       CASE WHEN COALESCE(g.game_type, 1) = 2 THEN 'live' ELSE 'slot' END AS game_category,
+                                       COALESCE(g.game_type, 1) AS game_type,
+                                       t.txn_type,
+                                       'completed' AS status,
+                                       CASE WHEN t.txn_type = 'bet' THEN ABS(t.amount) ELSE 0 END AS bet_amount,
+                                       CASE WHEN t.txn_type IN ('win', 'cancel') THEN ABS(t.amount) ELSE 0 END AS win_amount,
+                                       t.after_balance AS balance_after,
+                                       t.created_at AS created_at
+                                   FROM casino_aggregator_transactions t
+                                   LEFT JOIN casino_aggregator_games g
+                                       ON g.vendor_code = t.vendor_code AND g.game_code = t.game_code
+                                   LEFT JOIN casino_aggregator_vendors v ON v.vendor_code = t.vendor_code
+                                   WHERE t.user_id = :user_id AND t.id = :id
+                                   LIMIT 1");
+            $stmt->execute(['user_id' => $userId, 'id' => $id]);
+            $candidate = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($candidate)) {
+                $row = $candidate;
+            }
+        }
+
         if (!is_array($row)) {
             member_profile_emit_html(200, '<div class="alert alert-warning">Oyun işlemi bulunamadı</div>');
         }
@@ -322,20 +357,31 @@ if (!function_exists('member_profile_render_game_history_detail')) {
         $providerName = (string) ($row['provider_name'] ?? '');
         $providerCode = (string) ($row['provider_code'] ?? '');
         $gameName = (string) ($row['game_name'] ?? '');
+        if (($row['source'] ?? '') === 'aggregator' && class_exists('CasinoAggregatorService', false)) {
+            $providerName = CasinoAggregatorService::resolveLocalizedLabel($providerName) ?: $providerName;
+            $providerCode = CasinoAggregatorService::resolveLocalizedLabel($providerCode) ?: $providerCode;
+            $gameName = CasinoAggregatorService::resolveLocalizedLabel($gameName) ?: $gameName;
+        }
         $txnType = strtolower((string) ($row['txn_type'] ?? 'bet'));
         if ($txnType === 'rollback') {
             $txnType = 'refund';
         } elseif (in_array($txnType, ['promo_win', 'freespins_win'], true)) {
             $txnType = 'win';
+        } elseif ($txnType === 'cancel') {
+            $txnType = 'refund';
         }
         $status = (string) ($row['status'] ?? '');
         $betAmount = (float) ($row['bet_amount'] ?? 0);
         $winAmount = (float) ($row['win_amount'] ?? 0);
         $balanceAfter = $row['balance_after'] ?? null;
         $createdAt = (string) ($row['created_at'] ?? '');
-        $sourceText = ((string) ($row['source'] ?? '') === 'bgaming')
-            ? 'Slot'
-            : ((((string) ($row['game_category'] ?? 'casino') === 'live') || (int) ($row['game_type'] ?? 0) === 1) ? 'Canlı Casino' : 'Slot');
+        $sourceText = match ((string) ($row['source'] ?? '')) {
+            'aggregator' => (((string) ($row['game_category'] ?? 'casino') === 'live') || (int) ($row['game_type'] ?? 0) === 2)
+                ? 'Canlı Casino'
+                : 'Slot',
+            'bgaming' => 'Slot',
+            default => ((((string) ($row['game_category'] ?? 'casino') === 'live') || (int) ($row['game_type'] ?? 0) === 1) ? 'Canlı Casino' : 'Slot'),
+        };
         $transactionLabel = match ($txnType) {
             'win' => 'Kazanç',
             'refund', 'cancel' => 'İade',
