@@ -337,9 +337,15 @@
             return;
         }
         img.onerror = null;
+        img.onload = null;
         img.src = PLACEHOLDER_IMG;
     }
+    function gameThumbLoaded(img) {
+        if (!img || img.naturalWidth > 0) return;
+        gameThumbError(img);
+    }
     window.__gameThumbError = gameThumbError;
+    window.__gameThumbLoaded = gameThumbLoaded;
 
     function buildApiUrl(append) {
         const params = new URLSearchParams();
@@ -497,7 +503,7 @@
             '<div class="casinoGameItemContent " data-favorite-kind="' + escapeHtml(FAVORITE_KIND) + '" data-game-id="' + gameIdEsc + '"' + catalogAttr + ' onclick="' + realPlayClickJs(gameUrlJs) + '">' +
             '<span class="providerBadgeBlock " data-badge=""></span>' +
             '<div class="casinoGameItem ">' +
-            '<img alt="' + name + '" loading="lazy" referrerpolicy="no-referrer" src="' + cover + '" data-src="' + cover + '"' + fallbackAttr + ' class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onerror="window.__gameThumbError&&window.__gameThumbError(this)">' +
+            '<img alt="' + name + '" loading="lazy" referrerpolicy="no-referrer" src="' + cover + '" data-src="' + cover + '"' + fallbackAttr + ' class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onload="window.__gameThumbLoaded&&window.__gameThumbLoaded(this)" onerror="window.__gameThumbError&&window.__gameThumbError(this)">' +
             '<i class="casinoGameItemFavBc bc-i-favorite "></i>' +
             actionsHtml +
             '</div>' +

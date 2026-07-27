@@ -359,10 +359,13 @@ final class CasinoAggregatorService
         }
         if (is_array($raw)) {
             // Prefer raw payload — image_url column may be truncated JSON leftovers.
-            foreach (['imageUrl', 'image_url', 'thumbnailUrl', 'thumbnail_url', 'thumbnail', 'iconUrl', 'icon_url', 'icon', 'img', 'cover', 'banner'] as $key) {
+            foreach (['imageUrl', 'image_url', 'thumbnailUrl', 'thumbnail_url', 'thumbnail', 'iconUrl', 'icon_url', 'icon', 'img', 'cover', 'banner', 'logo', 'previewUrl', 'preview_url', 'preview'] as $key) {
                 if (array_key_exists($key, $raw)) {
                     $candidates[] = $raw[$key];
                 }
+            }
+            foreach (self::extractMediaUrlsDeep($raw, $lang) as $deepUrl) {
+                $candidates[] = $deepUrl;
             }
         }
 
@@ -513,6 +516,112 @@ final class CasinoAggregatorService
         return trim($url);
     }
 
+    /**
+     * Generate alternate CDN URLs (/lobby/ vs /default/, extension swaps).
+     *
+     * @return list<string>
+     */
+    public static function expandMediaUrlVariants(string $url): array
+    {
+        $url = self::normalizeMediaUrl($url);
+        if ($url === '' || !self::isUsableMediaUrl($url)) {
+            return [];
+        }
+
+        $variants = [];
+        $add = static function (string $candidate) use (&$variants): void {
+            $candidate = self::normalizeMediaUrl($candidate);
+            if ($candidate !== '' && self::isUsableMediaUrl($candidate) && !in_array($candidate, $variants, true)) {
+                $variants[] = $candidate;
+            }
+        };
+
+        $add($url);
+
+        $pathVariants = [$url];
+        if (stripos($url, '/lobby/') !== false) {
+            $swapped = preg_replace('#/lobby/#i', '/default/', $url, 1);
+            if (is_string($swapped) && $swapped !== '') {
+                $pathVariants[] = $swapped;
+            }
+        }
+        if (stripos($url, '/default/') !== false) {
+            $swapped = preg_replace('#/default/#i', '/lobby/', $url, 1);
+            if (is_string($swapped) && $swapped !== '') {
+                $pathVariants[] = $swapped;
+            }
+        }
+
+        foreach ($pathVariants as $pathVariant) {
+            $add($pathVariant);
+            if (preg_match('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', $pathVariant) !== 1) {
+                continue;
+            }
+            foreach (['png', 'webp', 'jpg', 'jpeg', 'avif'] as $ext) {
+                $extVariant = preg_replace('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', '.' . $ext . '$2', $pathVariant);
+                if (!is_string($extVariant) || $extVariant === '') {
+                    continue;
+                }
+                $add($extVariant);
+                if (stripos($extVariant, '/lobby/') !== false) {
+                    $add((string) preg_replace('#/lobby/#i', '/default/', $extVariant, 1));
+                }
+                if (stripos($extVariant, '/default/') !== false) {
+                    $add((string) preg_replace('#/default/#i', '/lobby/', $extVariant, 1));
+                }
+            }
+        }
+
+        return $variants;
+    }
+
+    /**
+     * Recursively collect image-like URLs from nested API payloads.
+     *
+     * @return list<string>
+     */
+    public static function extractMediaUrlsDeep(mixed $value, ?string $lang = null): array
+    {
+        $urls = [];
+        $seen = [];
+        $walk = static function (mixed $node) use (&$walk, &$urls, &$seen, $lang): void {
+            if (is_string($node)) {
+                $trimmed = trim($node);
+                if ($trimmed === '') {
+                    return;
+                }
+                if (self::looksLikeLocalizedJson($trimmed)) {
+                    foreach (self::collectMediaUrlCandidates($trimmed, $lang) as $candidate) {
+                        if (!isset($seen[$candidate])) {
+                            $seen[$candidate] = true;
+                            $urls[] = $candidate;
+                        }
+                    }
+                    return;
+                }
+                if (self::isUsableMediaUrl($trimmed)) {
+                    $normalized = self::normalizeMediaUrl($trimmed);
+                } else {
+                    $normalized = self::extractMediaUrl($trimmed);
+                }
+                if ($normalized !== '' && self::isUsableMediaUrl($normalized) && !isset($seen[$normalized])) {
+                    $seen[$normalized] = true;
+                    $urls[] = $normalized;
+                }
+                return;
+            }
+            if (!is_array($node)) {
+                return;
+            }
+            foreach ($node as $child) {
+                $walk($child);
+            }
+        };
+
+        $walk($value);
+        return $urls;
+    }
+
     public static function isUsableMediaUrl(string $value): bool
     {
         $value = trim($value);
@@ -557,9 +666,10 @@ final class CasinoAggregatorService
     {
         $out = [];
         $add = static function (string $candidate) use (&$out): void {
-            $candidate = self::normalizeMediaUrl($candidate);
-            if ($candidate !== '' && self::isUsableMediaUrl($candidate) && !in_array($candidate, $out, true)) {
-                $out[] = $candidate;
+            foreach (self::expandMediaUrlVariants($candidate) as $variant) {
+                if (!in_array($variant, $out, true)) {
+                    $out[] = $variant;
+                }
             }
         };
 
@@ -568,16 +678,6 @@ final class CasinoAggregatorService
         if ($row !== null) {
             foreach (self::collectGameImageCandidates($row, $lang) as $candidate) {
                 $add($candidate);
-            }
-        }
-
-        $primary = $out[0] ?? '';
-        if ($primary !== '' && preg_match('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', $primary) === 1) {
-            foreach (['avif', 'webp', 'png', 'jpg', 'jpeg'] as $ext) {
-                $candidate = preg_replace('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', '.' . $ext . '$2', $primary);
-                if (is_string($candidate) && $candidate !== '') {
-                    $add($candidate);
-                }
             }
         }
 
@@ -612,11 +712,12 @@ final class CasinoAggregatorService
             $raw = is_array($decodedRaw) ? $decodedRaw : null;
         }
         if (is_array($raw)) {
-            foreach (['imageUrl', 'image_url', 'thumbnailUrl', 'thumbnail_url', 'thumbnail', 'iconUrl', 'icon_url', 'icon', 'img', 'cover', 'banner'] as $key) {
+            foreach (['imageUrl', 'image_url', 'thumbnailUrl', 'thumbnail_url', 'thumbnail', 'iconUrl', 'icon_url', 'icon', 'img', 'cover', 'banner', 'logo', 'previewUrl', 'preview_url', 'preview'] as $key) {
                 if (array_key_exists($key, $raw)) {
                     $merge(self::collectMediaUrlCandidates($raw[$key], $lang));
                 }
             }
+            $merge(self::extractMediaUrlsDeep($raw, $lang));
         }
 
         foreach (['image_url', 'imageUrl', 'thumbnail_url', 'thumbnailUrl', 'cover'] as $key) {

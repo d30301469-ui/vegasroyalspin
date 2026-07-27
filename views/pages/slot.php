@@ -731,7 +731,12 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                             return;
                         }
                         img.onerror = null;
+                        img.onload = null;
                         img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI4IiBmaWxsPSIjMWExMTJlIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM2NjYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+                    };
+                    window.__gameThumbLoaded = window.__gameThumbLoaded || function (img) {
+                        if (!img || img.naturalWidth > 0) return;
+                        window.__gameThumbError && window.__gameThumbError(img);
                     };
                     </script>
                     <div class="casinoCategoryGames">
@@ -774,6 +779,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                                      class="casinoGameItemImage"
                                      title="<?= htmlspecialchars($game['game_name'], ENT_QUOTES); ?>"
                                      style="aspect-ratio: 44 / 31;"
+                                     onload="window.__gameThumbLoaded&&window.__gameThumbLoaded(this)"
                                      onerror="window.__gameThumbError&&window.__gameThumbError(this)">
                                 <i class="casinoGameItemFavBc bc-i-favorite "></i>
                                 <?php if ($slotShowActionButtons): ?>

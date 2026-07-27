@@ -255,7 +255,12 @@
       return;
     }
     img.onerror = null;
+    img.onload = null;
     img.src = placeholder || '/assets/games-img/game-img4.svg';
+  }
+  function gameThumbLoaded(img) {
+    if (!img || img.naturalWidth > 0) return;
+    gameThumbError(img);
   }
 
   function render(rows, tab) {
@@ -273,11 +278,12 @@
       if (!cover) cover = placeholder;
       var fallbackAttr = fallbacks.length ? ' data-fallbacks="' + esc(JSON.stringify(fallbacks)) + '" data-fallback-idx="0"' : '';
       return '<div class="winners-list-item" role="listitem">' +
-        '<div class="winners-item-icon"><img src="' + esc(cover) + '" data-src="' + esc(cover) + '"' + fallbackAttr + ' alt="' + esc(r.game_name) + '" class="winners-item-cover" loading="lazy" referrerpolicy="no-referrer" onerror="window.__winnersThumbError&&window.__winnersThumbError(this)"></div>' +
+        '<div class="winners-item-icon"><img src="' + esc(cover) + '" data-src="' + esc(cover) + '"' + fallbackAttr + ' alt="' + esc(r.game_name) + '" class="winners-item-cover" loading="lazy" referrerpolicy="no-referrer" onload="window.__winnersThumbLoaded&&window.__winnersThumbLoaded(this)" onerror="window.__winnersThumbError&&window.__winnersThumbError(this)"></div>' +
         '<div class="winners-item-info"><span class="winners-item-user">' + esc(r.user_mask) + '</span><span class="winners-item-game">' + esc(r.game_name) + '</span></div>' +
         '<div class="winners-item-amount">' + esc(fmt(r.amount)) + '</div></div>';
     }).join('');
     window.__winnersThumbError = function (img) { gameThumbError(img, placeholder); };
+    window.__winnersThumbLoaded = function (img) { gameThumbLoaded(img); };
 
       startAutoMotion();
   }
