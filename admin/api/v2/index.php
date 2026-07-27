@@ -241,6 +241,11 @@ if ($method === 'POST' && in_array($route, ['sportsbook-wallet', 'sportsbook_wal
     exit;
 }
 
+if ($method === 'POST' && in_array($route, ['casino-aggregator-wallet', 'casino_aggregator_wallet', 'casino-aggregator-wallet.php', 'casino_aggregator_callback', 'casino-aggregator-callback'], true)) {
+    require __DIR__ . '/casino_aggregator_callback.php';
+    exit;
+}
+
 $megaPayzRoute = strtolower(trim((string) $route, '/'));
 if ($method === 'POST' && in_array($megaPayzRoute, ['megapayz-callback', 'megapayz/deposit'], true)) {
     $transport = MegaPayzService::verifyCallbackTransport($_SERVER);

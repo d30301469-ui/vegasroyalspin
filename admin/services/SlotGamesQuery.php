@@ -412,12 +412,7 @@ final class SlotGamesQuery
         try {
             $pdo = AdminDatabase::pdo();
             $gameType = (int) ($query['game_type'] ?? $query['filter_game_type'] ?? 0);
-            // Yerel katalogda canli casino yok — boş başarı (HTTP timeout yok).
-            if ($gameType === 1) {
-                $empty = self::emptyPageResult($limit, $page);
-                $empty['apiError'] = false;
-                return $empty;
-            }
+            // Yerel katalog: slot (0) ve canlı casino (1) aggregator oyunlarını da içerir.
             $catalog = self::combinedCatalogPage($pdo, $query, $limit, $page);
             $j = ['success' => true, 'data' => $catalog];
             return self::normalizeGamesResponse($j, $limit, $page, $catalogOrderAfterPopular);
@@ -470,6 +465,21 @@ final class SlotGamesQuery
                     CAST(id AS CHAR) AS row_id
                 FROM bgaming_games
                 WHERE is_active = 1";
+        }
+        $aggGameType = $gameType === 1 ? 2 : 1;
+        if ($source === '' || $source === 'aggregator') {
+            $union[] = "SELECT
+                    CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
+                    g.game_name AS name,
+                    COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
+                    g.vendor_code AS provider_code,
+                    COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                    g.is_featured AS is_featured,
+                    'aggregator' AS source,
+                    CAST(g.id AS CHAR) AS row_id
+                FROM casino_aggregator_games g
+                INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
+                WHERE g.is_active = 1 AND v.is_active = 1 AND g.game_type = {$aggGameType}";
         }
 
         if ($union === []) {
@@ -570,9 +580,6 @@ final class SlotGamesQuery
 
     private static function localProviders(int $gameType): array
     {
-        if ($gameType === 1) {
-            return [];
-        }
         if (function_exists('frontend_database_allowed') && !frontend_database_allowed()) {
             return [];
         }
@@ -586,22 +593,48 @@ final class SlotGamesQuery
             return [];
         }
 
+        $providers = [];
+        $seen = [];
         try {
             $pdo = AdminDatabase::pdo();
-            $rows = $pdo->query(
-                "SELECT DISTINCT provider AS provider_name
-                 FROM bgaming_games
-                 WHERE is_active = 1 AND provider <> ''
+            if ($gameType === 0) {
+                $rows = $pdo->query(
+                    "SELECT DISTINCT provider AS provider_name
+                     FROM bgaming_games
+                     WHERE is_active = 1 AND provider <> ''
+                     ORDER BY provider_name ASC"
+                )->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($rows as $row) {
+                    if (is_array($row) && !empty($row['provider_name'])) {
+                        $name = (string) $row['provider_name'];
+                        if (!isset($seen[$name])) {
+                            $seen[$name] = true;
+                            $providers[] = $name;
+                        }
+                    }
+                }
+            }
+            $aggType = $gameType === 1 ? 2 : 1;
+            $aggStmt = $pdo->prepare(
+                "SELECT DISTINCT COALESCE(NULLIF(v.vendor_name, ''), v.vendor_code) AS provider_name
+                 FROM casino_aggregator_vendors v
+                 INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
+                 WHERE v.is_active = 1 AND g.is_active = 1 AND v.game_type = :type
                  ORDER BY provider_name ASC"
-            )->fetchAll(PDO::FETCH_ASSOC);
+            );
+            $aggStmt->execute([':type' => $aggType]);
+            foreach ($aggStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                if (!is_array($row) || empty($row['provider_name'])) {
+                    continue;
+                }
+                $name = (string) $row['provider_name'];
+                if (!isset($seen[$name])) {
+                    $seen[$name] = true;
+                    $providers[] = $name;
+                }
+            }
         } catch (Throwable) {
             return [];
-        }
-        $providers = [];
-        foreach ($rows as $row) {
-            if (is_array($row) && !empty($row['provider_name'])) {
-                $providers[] = (string) $row['provider_name'];
-            }
         }
         $providers = array_values(array_unique(array_filter($providers)));
         sort($providers, SORT_NATURAL | SORT_FLAG_CASE);

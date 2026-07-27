@@ -44,6 +44,28 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
             $pStmt = $pdo->query($sql);
             $providers = $pStmt ? $pStmt->fetchAll(PDO::FETCH_ASSOC) : [];
         }
+        $aggType = $gameType === 1 ? 2 : 1;
+        $aggStmt = $pdo->prepare(
+            "SELECT DISTINCT v.vendor_code AS provider_code, v.vendor_name AS provider_name
+             FROM casino_aggregator_vendors v
+             INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
+             WHERE v.is_active = 1 AND g.is_active = 1 AND v.game_type = :type
+             ORDER BY v.vendor_name ASC"
+        );
+        $aggStmt->execute([':type' => $aggType]);
+        $aggRows = $aggStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $seen = [];
+        foreach ($providers as $row) {
+            $seen[(string) ($row['provider_code'] ?? '')] = true;
+        }
+        foreach ($aggRows as $row) {
+            $code = (string) ($row['provider_code'] ?? '');
+            if ($code === '' || isset($seen[$code])) {
+                continue;
+            }
+            $seen[$code] = true;
+            $providers[] = $row;
+        }
     } catch (Throwable) {}
     $memberEnvelope(200, [
         'success' => true,
@@ -109,6 +131,21 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 CAST(id AS CHAR) AS row_id
             FROM bgaming_games
             WHERE is_active = 1";
+    }
+    $aggGameType = $gameType === 1 ? 2 : 1;
+    if ($source === '' || $source === 'aggregator') {
+        $union[] = "SELECT
+                CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
+                g.game_name AS name,
+                COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
+                g.vendor_code AS provider_code,
+                COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                g.is_featured AS is_featured,
+                'aggregator' AS source,
+                CAST(g.id AS CHAR) AS row_id
+            FROM casino_aggregator_games g
+            INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
+            WHERE g.is_active = 1 AND v.is_active = 1 AND g.game_type = {$aggGameType}";
     }
 
     if ($union === []) {
@@ -697,9 +734,10 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         $gameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
 
         // Some catalogue links pass the bare provider game id without a
-        // "bgaming:" prefix. Resolve the owning provider from the
+        // "bgaming:" / "aggregator:" prefix. Resolve the owning provider from the
         // database so the launch still routes correctly.
-        if ($gameId !== '' && !BgamingService::ownsGameId($gameId)) {
+        admin_require_project_file('services/CasinoAggregatorService.php');
+        if ($gameId !== '' && !BgamingService::ownsGameId($gameId) && !CasinoAggregatorService::ownsGameId($gameId)) {
             $resolvePdo = AdminDatabase::pdo();
             try {
                 $bStmt = $resolvePdo->prepare('SELECT 1 FROM bgaming_games WHERE identifier = :g LIMIT 1');
@@ -709,7 +747,32 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                 }
             } catch (Throwable) {
             }
+            if (!CasinoAggregatorService::ownsGameId($gameId)) {
+                try {
+                    $parts = explode(':', $gameId, 2);
+                    if (count($parts) === 2) {
+                        $aggStmt = $resolvePdo->prepare(
+                            'SELECT 1 FROM casino_aggregator_games WHERE vendor_code = :v AND game_code = :g LIMIT 1'
+                        );
+                        $aggStmt->execute([':v' => $parts[0], ':g' => $parts[1]]);
+                        if ($aggStmt->fetchColumn()) {
+                            $gameId = CasinoAggregatorService::buildGameId($parts[0], $parts[1]);
+                        }
+                    }
+                } catch (Throwable) {
+                }
+            }
             $input['game_id'] = $gameId;
+        }
+
+        if (CasinoAggregatorService::ownsGameId($gameId)) {
+            $result = CasinoAggregatorService::launch(AdminDatabase::pdo(), $user, $input);
+            $result = $normalizeLaunchResult($result, $requestedOpenMode);
+            $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
+            if ($httpCode >= 500 && $httpCode !== 503) {
+                $httpCode = 422;
+            }
+            $memberEnvelope($httpCode, $result);
         }
 
         if (!BgamingService::ownsGameId($gameId)) {

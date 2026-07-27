@@ -35,6 +35,8 @@ $isLightweightRoute = preg_match('#^/api/v2/(?:bgaming-wallet|bgaming)(?:/.*)?$#
     || $backendPath === '/api/v2/casino-callback'
     || $backendPath === '/api/v2/sportsbook-wallet'
     || str_starts_with($backendPath, '/api/v2/sportsbook-wallet/')
+    || $backendPath === '/api/v2/casino-aggregator-wallet'
+    || str_starts_with($backendPath, '/api/v2/casino-aggregator-wallet/')
     || $backendPath === '/sportsbook_api'
     || str_starts_with($backendPath, '/sportsbook_api/')
     || $backendPath === '/api/v2/internal'
@@ -96,6 +98,15 @@ if ($isLightweightRoute) {
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
         require __DIR__ . '/api/v2/sportsbook_callback.php';
+        exit;
+    }
+    if ($backendPath === '/api/v2/casino-aggregator-wallet'
+        || str_starts_with($backendPath, '/api/v2/casino-aggregator-wallet/')
+    ) {
+        require_once __DIR__ . '/app/Core/AdminPaths.php';
+        admin_paths_bootstrap();
+        require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
+        require __DIR__ . '/api/v2/casino_aggregator_callback.php';
         exit;
     }
     if ($backendPath === '/api/v2/casino-callback') {
@@ -183,6 +194,10 @@ $router->post('/bgaming/freespins/sync', [AdminBgamingController::class, 'syncFr
 $router->post('/bgaming/freespins/cancel', [AdminBgamingController::class, 'cancelFreespin']);
 $router->get('/sportsbook/settings', [AdminSportsbookController::class, 'settings']);
 $router->post('/sportsbook/settings', [AdminSportsbookController::class, 'updateSettings']);
+$router->get('/casino-aggregator/settings', [AdminCasinoAggregatorController::class, 'settings']);
+$router->post('/casino-aggregator/settings', [AdminCasinoAggregatorController::class, 'updateSettings']);
+$router->post('/casino-aggregator/sync-vendors', [AdminCasinoAggregatorController::class, 'syncVendors']);
+$router->post('/casino-aggregator/sync-games', [AdminCasinoAggregatorController::class, 'syncGames']);
 $router->get('/megapayz/settings', [AdminMegaPayzController::class, 'settings']);
 $router->post('/megapayz/settings', [AdminMegaPayzController::class, 'updateSettings']);
 $router->get('/megapayz/methods', [AdminMegaPayzController::class, 'methods']);

@@ -29,6 +29,11 @@ return static function (Router $router): void {
     if (class_exists(\App\Http\Controllers\Callback\CasinoCallbackController::class)) {
         $router->any('/api/v2/casino-callback', [new \App\Http\Controllers\Callback\CasinoCallbackController(), '__invoke'], $backend);
     }
+    if (class_exists(\App\Http\Controllers\Callback\CasinoAggregatorCallbackController::class)) {
+        $aggregator = new \App\Http\Controllers\Callback\CasinoAggregatorCallbackController();
+        $router->any('/api/v2/casino-aggregator-wallet', [$aggregator, '__invoke'], $backend);
+        $router->any('/api/v2/casino-aggregator-wallet/{any}', [$aggregator, '__invoke'], $backend);
+    }
 
     $router->any('/api/v2/{any}', [new PublicMemberApiController(), '__invoke'], $security);
     $router->any('/api/member/{any}', [new PublicMemberApiController(), '__invoke'], $security);
