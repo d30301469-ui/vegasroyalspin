@@ -350,6 +350,15 @@ final class MegaPayzService
         self::storeGatewayResponse($pdo, $trx, $res);
 
         if (!empty($res['status']) && (int) ($res['code'] ?? 0) === 200 && !empty($res['url'])) {
+            self::notifyMember(
+                $pdo,
+                (int) ($user['id'] ?? 0),
+                'Yatırım işlemi başlatıldı',
+                self::formatMoney($amount) . ' tutarındaki yatırım işleminiz oluşturuldu. Ödeme tamamlandığında bakiyenize yansıyacaktır.',
+                'info',
+                '/profile/deposit-withdraw-history'
+            );
+
             return [
                 'success' => true,
                 'code' => 200,
@@ -438,6 +447,15 @@ final class MegaPayzService
             }
         } catch (Throwable) {
         }
+
+        self::notifyMember(
+            $pdo,
+            (int) ($user['id'] ?? 0),
+            'Çekim talebi alındı',
+            self::formatMoney($amount) . ' tutarındaki çekim talebiniz alındı. Admin onayı bekleniyor.',
+            'info',
+            '/profile/deposit-withdraw-history'
+        );
 
         return [
             'success' => true,
@@ -551,6 +569,17 @@ final class MegaPayzService
                 'id' => $transactionId,
             ]);
             $pdo->commit();
+
+            $rejectReason = $reason !== '' ? $reason : 'Admin tarafından reddedildi.';
+            self::notifyPaymentStatus(
+                $pdo,
+                'withdraw',
+                (int) ($tx['user_id'] ?? 0),
+                'rejected',
+                (float) ($tx['amount'] ?? 0),
+                (string) ($tx['currency'] ?? 'TRY'),
+                $rejectReason
+            );
 
             return ['success' => true, 'message' => 'Çekim reddedildi ve bakiye iade edildi.'];
         } catch (Throwable) {
@@ -673,6 +702,20 @@ final class MegaPayzService
                 $pdo->rollBack();
             }
             return ['status' => false, 'code' => 99999, 'message' => 'Callback could not be processed'];
+        }
+
+        $finalStatus = $status !== '' ? $status : 'callback';
+        if (in_array($finalStatus, ['confirmed', 'rejected', 'failed'], true)) {
+            $failureMessage = trim((string) ($payload['message'] ?? $payload['failure_message'] ?? $tx['failure_message'] ?? ''));
+            self::notifyPaymentStatus(
+                $pdo,
+                $type,
+                $userId,
+                $finalStatus,
+                $amount > 0 ? $amount : (float) ($tx['amount'] ?? 0),
+                (string) ($payload['currency'] ?? $tx['currency'] ?? 'TRY'),
+                $failureMessage
+            );
         }
 
         return ['status' => true, 'code' => 200, 'message' => 'OK'];
@@ -1034,6 +1077,95 @@ final class MegaPayzService
     {
         $pdo->prepare("UPDATE megapayz_transactions SET status = 'failed', failure_message = :message WHERE trx = :trx")
             ->execute(['message' => $message, 'trx' => $trx]);
+    }
+
+    private static function formatMoney(float $amount, string $currency = 'TRY'): string
+    {
+        $currency = strtoupper(trim($currency));
+        if ($currency === '') {
+            $currency = 'TRY';
+        }
+
+        return number_format($amount, 2, ',', '.') . ' ' . $currency;
+    }
+
+    private static function notifyMember(
+        PDO $pdo,
+        int $userId,
+        string $title,
+        string $body = '',
+        string $type = 'info',
+        ?string $actionUrl = null
+    ): void {
+        if ($userId <= 0 || $title === '') {
+            return;
+        }
+        try {
+            if (!class_exists('MemberNotificationService', false)) {
+                foreach ([
+                    __DIR__ . '/MemberNotificationService.php',
+                    dirname(__DIR__) . '/services/MemberNotificationService.php',
+                    dirname(__DIR__, 2) . '/services/MemberNotificationService.php',
+                ] as $file) {
+                    if (is_readable($file)) {
+                        require_once $file;
+                        break;
+                    }
+                }
+            }
+            if (!class_exists('MemberNotificationService', false)) {
+                return;
+            }
+            MemberNotificationService::create($pdo, $userId, $title, $body, $type, $actionUrl);
+        } catch (Throwable) {
+            // Bildirim hatası ödeme akışını bozmamalı.
+        }
+    }
+
+    private static function notifyPaymentStatus(
+        PDO $pdo,
+        string $type,
+        int $userId,
+        string $status,
+        float $amount,
+        string $currency = 'TRY',
+        string $extra = ''
+    ): void {
+        if ($userId <= 0 || !in_array($status, ['confirmed', 'rejected', 'failed'], true)) {
+            return;
+        }
+
+        $isDeposit = $type === 'deposit';
+        $money = self::formatMoney($amount, $currency);
+        $historyUrl = '/profile/deposit-withdraw-history';
+        $extra = trim($extra);
+
+        if ($status === 'confirmed') {
+            self::notifyMember(
+                $pdo,
+                $userId,
+                $isDeposit ? 'Yatırım onaylandı' : 'Çekim tamamlandı',
+                $isDeposit
+                    ? $money . ' tutarındaki yatırımınız bakiyenize eklendi.'
+                    : $money . ' tutarındaki çekim talebiniz tamamlandı.',
+                'success',
+                $historyUrl
+            );
+            return;
+        }
+
+        $outcome = $status === 'failed' ? 'başarısız oldu' : 'reddedildi';
+        $title = $isDeposit
+            ? ($status === 'failed' ? 'Yatırım başarısız' : 'Yatırım reddedildi')
+            : ($status === 'failed' ? 'Çekim başarısız' : 'Çekim reddedildi');
+        $body = $isDeposit
+            ? $money . ' tutarındaki yatırım işleminiz ' . $outcome . '.'
+            : $money . ' tutarındaki çekim talebiniz ' . $outcome . '. Tutar bakiyenize iade edildi.';
+        if ($extra !== '') {
+            $body .= ' ' . $extra;
+        }
+
+        self::notifyMember($pdo, $userId, $title, $body, 'warning', $historyUrl);
     }
 
     private static function refundWithdraw(PDO $pdo, string $trx, float $amount, int $userId, string $message): void
