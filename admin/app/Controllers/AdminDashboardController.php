@@ -24,7 +24,8 @@ final class AdminDashboardController extends AdminController
         $pendingDeposits = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'deposit' AND status = 'pending'");
         $withdrawTotal = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'withdraw' AND status IN ('confirmed','approved') AND {$txWhere}");
         $pendingWithdrawals = $this->scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'pending'");
-        $activeGames = $this->scalar('SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1');
+        $activeGames = $this->scalar('SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1')
+            + $this->scalar('SELECT COUNT(*) FROM casino_aggregator_games WHERE is_active = 1');
         $todayVisits = $this->scalar("SELECT COUNT(*) FROM visitor_logs WHERE {$this->dateCondition('created_at', $dateRange)}");
         $newUsersInRange = $this->scalar("SELECT COUNT(*) FROM users WHERE {$userWhere}");
         $todayUsers = $this->scalar("SELECT COUNT(*) FROM users WHERE {$this->dateCondition('created_at', ['start' => new DateTimeImmutable('today'), 'end' => (new DateTimeImmutable('today'))->setTime(23, 59, 59)])}");
@@ -216,30 +217,54 @@ final class AdminDashboardController extends AdminController
         $bgamingWhere = $this->dateCondition('processed_at', $dateRange);
         $bgamingBet = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM bgaming_transactions WHERE txn_type IN ('bet','promo_bet') AND {$bgamingWhere}");
         $bgamingWin = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM bgaming_transactions WHERE txn_type IN ('win','promo_win','freespins_win') AND {$bgamingWhere}");
-        $bet = $bgamingBet;
-        $win = $bgamingWin;
-        $net = $bet - $win;
-
         $bgamingBetCount = $this->scalar("SELECT COUNT(*) FROM bgaming_transactions WHERE txn_type IN ('bet','promo_bet') AND {$bgamingWhere}");
         $bgamingPlayers = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM bgaming_transactions WHERE {$bgamingWhere}");
-        $betCount = $bgamingBetCount;
-        $playerCount = $bgamingPlayers;
-        $rtp = $bet > 0 ? ($win / $bet) * 100 : 0;
         $bgamingRtp = $bgamingBet > 0 ? ($bgamingWin / $bgamingBet) * 100 : 0;
+        $bgamingNet = $bgamingBet - $bgamingWin;
+
+        $aggWhere = $this->dateCondition('created_at', $dateRange);
+        $aggBet = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM casino_aggregator_transactions WHERE txn_type = 'bet' AND {$aggWhere}");
+        $aggWin = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM casino_aggregator_transactions WHERE txn_type = 'win' AND {$aggWhere}");
+        $aggCancel = $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM casino_aggregator_transactions WHERE txn_type = 'cancel' AND {$aggWhere}");
+        $aggBetCount = $this->scalar("SELECT COUNT(*) FROM casino_aggregator_transactions WHERE txn_type = 'bet' AND {$aggWhere}");
+        $aggPlayers = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM casino_aggregator_transactions WHERE {$aggWhere}");
+        $aggNet = $aggBet - $aggWin - $aggCancel;
+        $aggRtp = $aggBet > 0 ? ($aggWin / $aggBet) * 100 : 0;
+
+        $bet = $bgamingBet + $aggBet;
+        $win = $bgamingWin + $aggWin;
+        $cancel = $aggCancel;
+        $net = $bet - $win - $cancel;
+        $betCount = $bgamingBetCount + $aggBetCount;
+        $playerCount = $this->scalar(
+            "SELECT COUNT(DISTINCT user_id) FROM (
+                SELECT user_id FROM bgaming_transactions WHERE {$bgamingWhere}
+                UNION
+                SELECT user_id FROM casino_aggregator_transactions WHERE {$aggWhere}
+            ) AS casino_players"
+        );
+        $rtp = $bet > 0 ? ($win / $bet) * 100 : 0;
 
         $labels = ['Bahis', 'Ödeme', 'İptal', 'İade', 'Net', 'Bahis Adedi', 'Oyuncu Adedi', 'Kişi Başı', 'RTP'];
         $formats = ['money', 'money', 'money', 'money', 'money', 'number', 'number', 'money', 'percent'];
         $datasets = [
-            'Slot' => $this->statsDataset($labels, $formats, [$bgamingBet, $bgamingWin, 0, 0, $bgamingBet - $bgamingWin, $bgamingBetCount, $bgamingPlayers, $bgamingPlayers > 0 ? $bgamingBet / $bgamingPlayers : 0, $bgamingRtp], [
+            'Slot' => $this->statsDataset($labels, $formats, [$bgamingBet, $bgamingWin, 0, 0, $bgamingNet, $bgamingBetCount, $bgamingPlayers, $bgamingPlayers > 0 ? $bgamingBet / $bgamingPlayers : 0, $bgamingRtp], [
                 ['label' => 'Bahis', 'value' => $bgamingBet, 'color' => '#6366f1'],
                 ['label' => 'Ödeme', 'value' => $bgamingWin, 'color' => '#22c55e'],
-                ['label' => 'Net', 'value' => $bgamingBet - $bgamingWin, 'color' => '#3b82f6'],
+                ['label' => 'Net', 'value' => $bgamingNet, 'color' => '#3b82f6'],
+            ]),
+            'Aggregator' => $this->statsDataset($labels, $formats, [$aggBet, $aggWin, $aggCancel, 0, $aggNet, $aggBetCount, $aggPlayers, $aggPlayers > 0 ? $aggBet / $aggPlayers : 0, $aggRtp], [
+                ['label' => 'Bahis', 'value' => $aggBet, 'color' => '#8b5cf6'],
+                ['label' => 'Ödeme', 'value' => $aggWin, 'color' => '#22c55e'],
+                ['label' => 'İptal', 'value' => $aggCancel, 'color' => '#f59e0b'],
+                ['label' => 'Net', 'value' => $aggNet, 'color' => '#3b82f6'],
             ]),
             'Sanal Spor' => $this->statsDataset($labels, $formats, [0, 0, 0, 0, 0, 0, 0, 0, 0], [
                 ['label' => 'Sanal Spor', 'value' => 0, 'color' => '#22c55e'],
             ]),
-            'Toplam' => $this->statsDataset($labels, $formats, [$bet, $win, 0, 0, $net, $betCount, $playerCount, $playerCount > 0 ? $bet / $playerCount : 0, $rtp], [
+            'Toplam' => $this->statsDataset($labels, $formats, [$bet, $win, $cancel, 0, $net, $betCount, $playerCount, $playerCount > 0 ? $bet / $playerCount : 0, $rtp], [
                 ['label' => 'BGaming', 'value' => $bgamingBet, 'color' => '#6366f1'],
+                ['label' => 'Aggregator', 'value' => $aggBet, 'color' => '#8b5cf6'],
                 ['label' => 'Net', 'value' => $net, 'color' => '#3b82f6'],
                 ['label' => 'Sanal Spor', 'value' => 0, 'color' => '#22c55e'],
             ]),
@@ -249,7 +274,7 @@ final class AdminDashboardController extends AdminController
             'tabs' => array_keys($datasets),
             'active_tab' => 'Toplam',
             'datasets' => $datasets,
-            'module_url' => '/module?key=bgaming-transactions',
+            'module_url' => '/module?key=casino-aggregator-transactions',
         ];
     }
 

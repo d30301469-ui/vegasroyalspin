@@ -27,7 +27,8 @@ final class AdminReportController extends AdminController
                 'users' => $this->scalar('SELECT COUNT(*) FROM users'),
                 'deposits' => $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'deposit' AND status IN ('confirmed','approved')"),
                 'withdrawals' => $this->scalar("SELECT COALESCE(SUM(amount), 0) FROM megapayz_transactions WHERE type = 'withdraw'"),
-                'games' => $this->scalar('SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1'),
+                'games' => $this->scalar('SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1')
+                    + $this->scalar('SELECT COUNT(*) FROM casino_aggregator_games WHERE is_active = 1'),
                 'visits' => $this->scalar('SELECT COUNT(*) FROM visitor_logs'),
             ],
             'dailyVisits' => $this->series('visitor_logs', 'created_at'),

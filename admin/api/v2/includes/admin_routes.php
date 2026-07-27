@@ -30,7 +30,8 @@ $routes = [
             'users' => (int) $scalar($pdo, 'SELECT COUNT(*) FROM users'),
             'deposits_confirmed' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE type='deposit' AND status='confirmed'"),
             'withdrawals_pending' => (int) $scalar($pdo, "SELECT COUNT(*) FROM megapayz_transactions WHERE type='withdraw' AND status='pending'"),
-            'games_active' => (int) $scalar($pdo, 'SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1'),
+            'games_active' => (int) ($scalar($pdo, 'SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1')
+                + $scalar($pdo, 'SELECT COUNT(*) FROM casino_aggregator_games WHERE is_active = 1')),
             'call_requests_pending' => (int) $scalar($pdo, "SELECT COUNT(*) FROM call_me_requests WHERE status='pending'"),
             'support_tickets_open' => (int) $scalar($pdo, "SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','answered')"),
             'aml_alerts_open' => ComplianceService::countOpen($pdo, 'aml_alerts'),
