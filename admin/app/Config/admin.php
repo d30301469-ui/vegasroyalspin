@@ -44,6 +44,7 @@ if (in_array(strtolower($env(['APP_ENV'], 'development')), ['production', 'prod'
 
 return [
     'name' => getenv('ADMIN_PANEL_NAME') ?: 'Backoffice',
+    'timezone' => function_exists('admin_timezone') ? admin_timezone() : 'Europe/Istanbul',
     'db' => $db,
     'session_key' => 'bo_backoffice_admin_user',
     'csrf_key' => 'bo_backoffice_admin_csrf',

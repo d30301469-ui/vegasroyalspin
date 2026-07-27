@@ -1,6 +1,42 @@
 (function () {
     'use strict';
 
+    var ADMIN_TZ = (typeof window !== 'undefined' && window.__ADMIN_TIMEZONE__)
+        ? String(window.__ADMIN_TIMEZONE__)
+        : 'Europe/Istanbul';
+
+    function adminDateTimeOptions(extra) {
+        var opts = Object.assign({
+            timeZone: ADMIN_TZ,
+            hour12: false
+        }, extra || {});
+        return opts;
+    }
+
+    function formatAdminDate(value, options) {
+        if (value == null || value === '') return '';
+        var date = value instanceof Date ? value : new Date(value);
+        if (isNaN(date.getTime())) return String(value);
+        try {
+            return new Intl.DateTimeFormat('tr-TR', adminDateTimeOptions(options || {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            })).format(date);
+        } catch (e) {
+            return date.toLocaleString('tr-TR', { hour12: false });
+        }
+    }
+
+    window.AdminTimezone = {
+        id: ADMIN_TZ,
+        format: formatAdminDate,
+        options: adminDateTimeOptions
+    };
+
     var toastDefaults = {
         duration: 3600,
         close: true,

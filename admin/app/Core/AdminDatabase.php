@@ -52,7 +52,28 @@ final class AdminDatabase
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ];
 
-        return new PDO($dsn, $username, $password, $options);
+        $pdo = new PDO($dsn, $username, $password, $options);
+        self::applySessionTimezone($pdo);
+
+        return $pdo;
+    }
+
+    private static function applySessionTimezone(PDO $pdo): void
+    {
+        $offset = function_exists('admin_mysql_timezone')
+            ? admin_mysql_timezone()
+            : '+03:00';
+
+        // Named zone (Europe/Istanbul) yerine offset: mysql timezone tables gerekmez.
+        if (!preg_match('/^[+-]\d{2}:\d{2}$/', $offset)) {
+            $offset = '+03:00';
+        }
+
+        try {
+            $pdo->exec("SET time_zone = '{$offset}'");
+        } catch (Throwable) {
+            // Saat dilimi ayarı başarısız olsa bile bağlantıyı düşürme.
+        }
     }
 
     private static function connectFromAdminConfig(): PDO

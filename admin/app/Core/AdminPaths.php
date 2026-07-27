@@ -28,6 +28,60 @@ if (!function_exists('admin_paths_bootstrap')) {
         }
 
         admin_define_project_constants($root);
+        admin_apply_timezone();
+    }
+
+    /** Admin paneli için varsayılan saat dilimi (Türkiye). */
+    function admin_timezone(): string
+    {
+        static $timezone = null;
+        if (is_string($timezone)) {
+            return $timezone;
+        }
+
+        foreach (['ADMIN_TIMEZONE', 'APP_TIMEZONE'] as $key) {
+            $value = function_exists('admin_env') ? admin_env($key, '') : '';
+            if ($value === '' && function_exists('getenv')) {
+                $raw = getenv($key);
+                $value = is_string($raw) ? trim($raw) : '';
+            }
+            if ($value === '' && isset($_ENV[$key])) {
+                $value = trim((string) $_ENV[$key]);
+            }
+            if ($value !== '') {
+                try {
+                    new DateTimeZone($value);
+
+                    return $timezone = $value;
+                } catch (Throwable) {
+                    // Geçersiz değer → varsayılana düş.
+                }
+            }
+        }
+
+        return $timezone = 'Europe/Istanbul';
+    }
+
+    /** MySQL session time_zone için sayısal offset (+03:00). Named zone tablosu gerekmez. */
+    function admin_mysql_timezone(): string
+    {
+        try {
+            return (new DateTimeImmutable('now', new DateTimeZone(admin_timezone())))->format('P');
+        } catch (Throwable) {
+            return '+03:00';
+        }
+    }
+
+    function admin_apply_timezone(): void
+    {
+        $timezone = admin_timezone();
+        if (@date_default_timezone_set($timezone) !== true) {
+            $timezone = 'Europe/Istanbul';
+            date_default_timezone_set($timezone);
+        }
+        if (!defined('ADMIN_TIMEZONE')) {
+            define('ADMIN_TIMEZONE', $timezone);
+        }
     }
 
     /**

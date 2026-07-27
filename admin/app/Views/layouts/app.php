@@ -151,6 +151,7 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?= htmlspecialchars($pageTitle . ' · ' . $panelName, ENT_QUOTES, 'UTF-8') ?></title>
     <script>
+        window.__ADMIN_TIMEZONE__ = <?= json_encode(defined('ADMIN_TIMEZONE') ? ADMIN_TIMEZONE : (function_exists('admin_timezone') ? admin_timezone() : 'Europe/Istanbul'), JSON_UNESCAPED_UNICODE) ?>;
         !function(){try{var t=localStorage.getItem("dash26-theme"),e=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-theme",t||(e?"dark":"light"))}catch(t){document.documentElement.setAttribute("data-theme","light")}}()
     </script>
     <script defer src="<?= htmlspecialchars(AdminAuth::url('/runtime.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
