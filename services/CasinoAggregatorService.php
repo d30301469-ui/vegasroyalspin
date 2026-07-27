@@ -357,48 +357,9 @@ final class CasinoAggregatorService
      */
     public static function resolveGameImage(array $row, ?string $lang = null): string
     {
-        $candidates = [];
+        $candidates = self::collectGameImageCandidates($row, $lang);
 
-        $raw = $row['raw_payload'] ?? null;
-        if (is_string($raw) && $raw !== '') {
-            $decodedRaw = json_decode($raw, true);
-            if (!is_array($decodedRaw)) {
-                $decodedRaw = json_decode(stripslashes($raw), true);
-            }
-            $raw = is_array($decodedRaw) ? $decodedRaw : null;
-        }
-        if (is_array($raw)) {
-            // Prefer raw payload — image_url column may be truncated JSON leftovers.
-            foreach (['imageUrl', 'image_url', 'thumbnailUrl', 'thumbnail_url', 'thumbnail', 'iconUrl', 'icon_url', 'icon', 'img', 'cover', 'banner', 'logo', 'previewUrl', 'preview_url', 'preview'] as $key) {
-                if (array_key_exists($key, $raw)) {
-                    $candidates[] = $raw[$key];
-                }
-            }
-            foreach (self::extractMediaUrlsDeep($raw, $lang) as $deepUrl) {
-                $candidates[] = $deepUrl;
-            }
-        }
-
-        $candidates[] = $row['image_url'] ?? null;
-        $candidates[] = $row['imageUrl'] ?? null;
-        $candidates[] = $row['thumbnail_url'] ?? null;
-        $candidates[] = $row['thumbnailUrl'] ?? null;
-        $candidates[] = $row['cover'] ?? null;
-
-        foreach ($candidates as $candidate) {
-            if ($candidate === null || $candidate === '') {
-                continue;
-            }
-            $resolved = self::resolveMediaUrl($candidate, $lang);
-            if (!self::isUsableMediaUrl($resolved)) {
-                $resolved = self::extractMediaUrl($resolved !== '' ? $resolved : (is_string($candidate) ? $candidate : ''));
-            }
-            if (self::isUsableMediaUrl($resolved)) {
-                return self::normalizeMediaUrl($resolved);
-            }
-        }
-
-        return '';
+        return $candidates !== [] ? (string) $candidates[0] : '';
     }
 
     /**
@@ -507,7 +468,91 @@ final class CasinoAggregatorService
             $add($candidate);
         }
 
-        return $urls;
+        return self::prioritizeMediaUrls($urls);
+    }
+
+    /**
+     * Prefer raster formats (png/webp) over avif — EGT VIP lobby thumbs often work only as .png.
+     *
+     * @param list<string> $urls
+     * @return list<string>
+     */
+    public static function prioritizeMediaUrls(array $urls): array
+    {
+        if ($urls === []) {
+            return [];
+        }
+
+        $unique = [];
+        foreach ($urls as $url) {
+            $url = self::normalizeMediaUrl(trim((string) $url));
+            if ($url !== '' && self::isUsableMediaUrl($url) && !in_array($url, $unique, true)) {
+                $unique[] = $url;
+            }
+        }
+
+        usort($unique, static function (string $a, string $b): int {
+            $score = static function (string $url): int {
+                $lower = strtolower($url);
+                $points = 0;
+                if (preg_match('#\.png(\?|$)#i', $lower)) {
+                    $points += 40;
+                }
+                if (preg_match('#\.webp(\?|$)#i', $lower)) {
+                    $points += 30;
+                }
+                if (preg_match('#\.jpe?g(\?|$)#i', $lower)) {
+                    $points += 20;
+                }
+                if (preg_match('#\.avif(\?|$)#i', $lower)) {
+                    $points += 5;
+                }
+                // EGT VIP .avif lobby URLs often return HTML, not an image.
+                if (str_contains($lower, '_vip') && preg_match('#\.avif(\?|$)#i', $lower)) {
+                    $points -= 200;
+                }
+                if (str_contains($lower, '_vip') && preg_match('#\.png(\?|$)#i', $lower)) {
+                    $points += 100;
+                }
+                if (str_contains($lower, '/lobby/') && preg_match('#\.png(\?|$)#i', $lower)) {
+                    $points += 10;
+                }
+                return $points;
+            };
+
+            return $score($b) <=> $score($a);
+        });
+
+        return $unique;
+    }
+
+    public static function mediaUrlQualityScore(string $url): int
+    {
+        $urls = self::prioritizeMediaUrls([$url]);
+        if ($urls === []) {
+            return 0;
+        }
+        $lower = strtolower($urls[0]);
+        $points = 0;
+        if (preg_match('#\.png(\?|$)#i', $lower)) {
+            $points += 40;
+        }
+        if (preg_match('#\.webp(\?|$)#i', $lower)) {
+            $points += 30;
+        }
+        if (preg_match('#\.jpe?g(\?|$)#i', $lower)) {
+            $points += 20;
+        }
+        if (preg_match('#\.avif(\?|$)#i', $lower)) {
+            $points += 5;
+        }
+        if (str_contains($lower, '_vip') && preg_match('#\.avif(\?|$)#i', $lower)) {
+            $points -= 200;
+        }
+        if (str_contains($lower, '_vip') && preg_match('#\.png(\?|$)#i', $lower)) {
+            $points += 100;
+        }
+        return $points;
     }
 
     /**
@@ -582,7 +627,7 @@ final class CasinoAggregatorService
             }
         }
 
-        return $variants;
+        return self::prioritizeMediaUrls($variants);
     }
 
     /**
@@ -691,7 +736,7 @@ final class CasinoAggregatorService
             }
         }
 
-        return $out;
+        return self::prioritizeMediaUrls($out);
     }
 
     /**
@@ -736,7 +781,7 @@ final class CasinoAggregatorService
             }
         }
 
-        return $urls;
+        return self::prioritizeMediaUrls($urls);
     }
 
     /**
@@ -806,23 +851,40 @@ final class CasinoAggregatorService
             $fallbacks = self::decodeStoredImageFallbacks($row['cover_fallbacks']);
         }
 
+        $storedCover = self::normalizeMediaUrl(trim((string) ($row['image_url'] ?? '')));
+        if (!self::isUsableMediaUrl($storedCover) || self::looksLikeLocalizedJson($storedCover)) {
+            $storedCover = '';
+        }
+
         $cover = trim((string) ($row['cover'] ?? ''));
         if ($cover === '') {
-            $cover = trim((string) ($row['image_url'] ?? $row['thumbnail_url'] ?? $row['imageUrl'] ?? ''));
+            $cover = trim((string) ($row['thumbnail_url'] ?? $row['imageUrl'] ?? ''));
+        }
+        if (($cover === '' || self::looksLikeLocalizedJson($cover)) && $storedCover !== '') {
+            $cover = $storedCover;
         }
 
         $hasPayload = trim((string) ($row['raw_payload'] ?? '')) !== '';
         if ($hasPayload) {
-            $resolvedCover = self::resolveGameImage($row, $lang);
-            if ($resolvedCover !== '') {
-                $cover = $resolvedCover;
-            }
             $computedFallbacks = self::resolveGameImageFallbacks($row, $lang);
             if ($computedFallbacks !== []) {
                 $fallbacks = $computedFallbacks;
             }
+
+            $resolvedCover = self::resolveGameImage($row, $lang);
+            if ($resolvedCover !== '') {
+                if ($cover === '' || self::looksLikeLocalizedJson($cover)) {
+                    $cover = $resolvedCover;
+                } elseif (self::mediaUrlQualityScore($resolvedCover) > self::mediaUrlQualityScore($cover)) {
+                    $cover = $resolvedCover;
+                }
+            }
         } elseif ($fallbacks === [] && $cover !== '') {
             $fallbacks = self::mediaUrlFallbacks($cover);
+        }
+
+        if ($storedCover !== '' && self::mediaUrlQualityScore($storedCover) >= self::mediaUrlQualityScore($cover)) {
+            $cover = $storedCover;
         }
 
         if ($cover === '' && $fallbacks !== []) {
@@ -834,8 +896,20 @@ final class CasinoAggregatorService
         if ($cover !== '' && !in_array($cover, $fallbacks, true)) {
             array_unshift($fallbacks, $cover);
         }
+        if ($storedCover !== '' && !in_array($storedCover, $fallbacks, true)) {
+            array_unshift($fallbacks, $storedCover);
+        }
 
-        $fallbacks = array_values(array_unique(array_filter($fallbacks, static fn (string $url): bool => $url !== '' && self::isUsableMediaUrl($url))));
+        $fallbacks = self::prioritizeMediaUrls($fallbacks);
+        if ($fallbacks !== []) {
+            if ($cover === '' || self::mediaUrlQualityScore($fallbacks[0]) > self::mediaUrlQualityScore($cover)) {
+                $cover = (string) $fallbacks[0];
+            }
+            if (!in_array($cover, $fallbacks, true)) {
+                array_unshift($fallbacks, $cover);
+            }
+            $fallbacks = self::prioritizeMediaUrls($fallbacks);
+        }
 
         return [
             'cover'            => $cover,

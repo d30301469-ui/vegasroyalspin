@@ -601,6 +601,7 @@ final class SlotGamesQuery
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => (string) ($r['game_id'] ?? ''),
                 'name'          => $name,
+                'cover'         => (string) ($media['cover'] ?? $imageUrl),
                 'image_url'     => (string) ($media['cover'] ?? $imageUrl),
                 'cover_fallbacks' => is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [],
                 'image_fallbacks' => is_array($media['image_fallbacks'] ?? null) ? $media['image_fallbacks'] : [],

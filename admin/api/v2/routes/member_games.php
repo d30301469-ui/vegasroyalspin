@@ -256,6 +256,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 'game_id'       => (string) ($r['game_id'] ?? ''),
                 'name'          => $gameName,
                 'title'         => $gameName,
+                'cover'         => $imageUrl,
                 'image_url'     => $imageUrl,
                 'thumbnail_url' => $imageUrl,
                 'image_fallbacks' => $imageFallbacks,

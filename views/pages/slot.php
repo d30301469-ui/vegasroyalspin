@@ -755,10 +755,20 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                         $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{window.location.href=' . $playHrefJson . ';}';
                         $coverUrl = (string) ($game['cover'] ?? '');
                         $coverFallbacks = is_array($game['cover_fallbacks'] ?? null) ? $game['cover_fallbacks'] : [];
-                        if ($coverFallbacks !== []) {
-                            $coverUrl = (string) ($coverFallbacks[0] ?? $coverUrl);
-                        } elseif ($coverUrl !== '' && class_exists('CasinoAggregatorService', false)) {
-                            $coverUrl = CasinoAggregatorService::resolveMediaUrl($coverUrl);
+                        if (class_exists('CasinoAggregatorService', false)) {
+                            if ($coverFallbacks !== []) {
+                                $coverFallbacks = CasinoAggregatorService::prioritizeMediaUrls($coverFallbacks);
+                            }
+                            if ($coverUrl !== '') {
+                                $coverUrl = CasinoAggregatorService::preferCompatibleMediaUrl($coverUrl);
+                            }
+                            if ($coverUrl === '' && $coverFallbacks !== []) {
+                                $coverUrl = (string) ($coverFallbacks[0] ?? '');
+                            } elseif ($coverFallbacks !== [] && CasinoAggregatorService::mediaUrlQualityScore((string) ($coverFallbacks[0] ?? '')) > CasinoAggregatorService::mediaUrlQualityScore($coverUrl)) {
+                                $coverUrl = (string) ($coverFallbacks[0] ?? $coverUrl);
+                            }
+                        } elseif ($coverUrl === '' && $coverFallbacks !== []) {
+                            $coverUrl = (string) ($coverFallbacks[0] ?? '');
                         }
                         $fallbackJson = $coverFallbacks !== []
                             ? htmlspecialchars(json_encode(array_values($coverFallbacks), JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8')
