@@ -101,7 +101,7 @@
       var style = document.createElement('style');
       style.id = 'pwaInstallButtonStyles';
       style.textContent =
-        '#pwaInstallButton{position:fixed;right:16px;bottom:88px;z-index:2147483000;width:56px;height:56px;padding:0;border:0;border-radius:50%;' +
+        '#pwaInstallButton{position:fixed;right:16px;bottom:calc(var(--tab-navigation-height, 48px) + env(safe-area-inset-bottom, 0px) + 10px);z-index:930;width:56px;height:56px;padding:0;border:0;border-radius:50%;' +
         'background:linear-gradient(135deg,#8a2be2 0%,#5b1aa8 100%);color:#fff;cursor:pointer;display:none;align-items:center;justify-content:center;' +
         'box-shadow:0 10px 24px rgba(90,26,168,.45),0 2px 6px rgba(0,0,0,.3);transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent;}' +
         '#pwaInstallButton:active{transform:scale(.92);}' +

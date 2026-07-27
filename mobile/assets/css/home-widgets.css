@@ -1,16 +1,23 @@
-/* Ana sayfa — dolandırıcılık uyarısı orijinal gibi slider üstünde sabit (alt bant) */
+/* Ana sayfa — dolandırıcılık uyarısı: PWA indirme FAB (#pwaInstallButton, bottom:88px + 56px) üstünde */
 body.mobile-site .mobile-home-widgets {
   position: fixed;
   left: var(--padding-page-aside, 10px);
   right: var(--padding-page-aside, 10px);
-  bottom: calc(var(--tab-navigation-height, 48px) + env(safe-area-inset-bottom, 0px) + 8px);
+  /* tab (~48) + PWA FAB yüksekliği (56) + boşluk (~12) — indirme alanı ile iç içe girmesin */
+  bottom: calc(var(--tab-navigation-height, 48px) + env(safe-area-inset-bottom, 0px) + 108px);
   z-index: 920;
   margin: 0;
   padding: 0;
   pointer-events: none;
 }
 
+body.mobile-site .mobile-home-widgets[hidden],
+body.mobile-site .mobile-home-widgets.is-dismissed {
+  display: none !important;
+}
+
 body.mobile-site .mobile-home-widgets .informative-widget {
+  position: relative;
   pointer-events: auto;
 }
 
@@ -19,17 +26,17 @@ body.mobile-site .mobile-home-widgets .mobile-quick-actions-grid {
 }
 
 body.mobile-site .informative-widget {
-  margin-bottom: 10px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%);
+  margin-bottom: 0;
+  border-radius: 24px;
+  overflow: visible;
+  background: transparent;
 }
 
 body.mobile-site .informative-widget-link {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px 10px 12px;
+  padding: 10px 40px 10px 12px;
   text-decoration: none;
   color: #fff !important;
   background: rgba(8, 6, 20, 0.92) !important;
@@ -37,6 +44,38 @@ body.mobile-site .informative-widget-link {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-top: 0 !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+body.mobile-site .informative-widget-close {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.mobile-site .informative-widget-close:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+body.mobile-site .informative-widget-close .bc-i-close-remove,
+body.mobile-site .informative-widget-close .bc-i-close-remove::before {
+  font-size: 15px;
+  line-height: 1;
+  color: #fff;
 }
 
 body.mobile-site .informative-widget-container {
