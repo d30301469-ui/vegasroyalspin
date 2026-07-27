@@ -1154,6 +1154,16 @@ body.mobile-site .right-sidebar-overlay {
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
+.notification-drawer__item.is-unread {
+  border-color: rgba(139, 92, 246, 0.45);
+  background: #1f1a28;
+}
+.notification-drawer__item[data-action-url] {
+  cursor: pointer;
+}
+.notification-drawer__item--member .notification-drawer__text {
+  text-transform: none;
+}
 .notification-drawer__body {
   flex: 1;
   min-width: 0;

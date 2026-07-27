@@ -461,8 +461,26 @@
         }
 
         var announcementsLoadToken = 0;
-        function fetchJsonSafe(url) {
-            return fetch(url, { credentials: "same-origin", headers: memberAuthHeaders({ Accept: "application/json" }) })
+        function fetchJsonSafe(url, options) {
+            options = options || {};
+            var method = String(options.method || "GET").toUpperCase();
+            var headers = memberAuthHeaders(Object.assign({ Accept: "application/json" }, options.headers || {}));
+            if (method !== "GET" && method !== "HEAD" && !headers["Content-Type"] && !headers["content-type"]) {
+                headers["Content-Type"] = "application/json";
+            }
+            var credentials = options.credentials;
+            if (!credentials) {
+                credentials = Shared.memberCredentials ? Shared.memberCredentials() : "same-origin";
+            }
+            var init = {
+                method: method,
+                credentials: credentials,
+                headers: headers
+            };
+            if (options.body != null) {
+                init.body = options.body;
+            }
+            return fetch(url, init)
                 .then(function (r) {
                     return r.text().then(function (text) {
                         if (!text) return null;
@@ -476,6 +494,54 @@
                 .catch(function () {
                     return null;
                 });
+        }
+
+        function notificationsApiUrl(path) {
+            var drawerList = document.getElementById("notificationDrawerList");
+            var base = (drawerList && drawerList.getAttribute("data-notifications-url")) || "/api/v2/notifications";
+            if (!path || path === "") {
+                return apiUrl(base);
+            }
+            if (path.charAt(0) === "/") {
+                return apiUrl(path);
+            }
+            return apiUrl(base.replace(/\/?$/, "/") + path);
+        }
+
+        function fetchMemberNotificationItems() {
+            if (!isLoggedInUser()) {
+                return Promise.resolve({ items: [], unread: 0 });
+            }
+            var url = appendQuery(notificationsApiUrl(""), "limit=50");
+            return fetchJsonSafe(url).then(function (json) {
+                if (!json || !json.success || !json.data) {
+                    return { items: [], unread: 0 };
+                }
+                var items = Array.isArray(json.data.items) ? json.data.items : [];
+                var unread = Number(json.data.unread != null ? json.data.unread : 0);
+                return { items: items, unread: isNaN(unread) ? 0 : unread };
+            });
+        }
+
+        function markMemberNotificationRead(id) {
+            var nid = Number(id);
+            if (!isLoggedInUser() || !nid) {
+                return Promise.resolve(null);
+            }
+            return fetchJsonSafe(notificationsApiUrl(nid + "/read"), {
+                method: "POST",
+                body: "{}"
+            });
+        }
+
+        function markAllMemberNotificationsRead() {
+            if (!isLoggedInUser()) {
+                return Promise.resolve(null);
+            }
+            return fetchJsonSafe(apiUrl("/api/v2/notifications/read-all"), {
+                method: "POST",
+                body: "{}"
+            });
         }
 
         function fetchFreespinNotificationItems() {
@@ -534,6 +600,47 @@
             MaltabetToast.warning(activeCount + ' adet kullanılabilir freespin bulundu. Profil > Casino Freespinleri bölümünü kontrol edin.', 'Freespin Uyarısı');
         }
 
+        function appendNotificationDrawerItem(drawerList, opts) {
+            opts = opts || {};
+            var item = document.createElement("div");
+            item.className = "notification-drawer__item" + (opts.className ? " " + opts.className : "");
+            if (opts.kind) item.setAttribute("data-kind", opts.kind);
+            if (opts.id != null && opts.id !== "") item.setAttribute("data-id", String(opts.id));
+            if (opts.unread) item.setAttribute("data-unread", "1");
+            if (opts.actionUrl) item.setAttribute("data-action-url", String(opts.actionUrl));
+
+            var icons = document.createElement("span");
+            icons.className = "notification-drawer__icons";
+            icons.innerHTML = opts.iconHtml || "<i class=\"sp-button-icon-bc bc-i-notification\" aria-hidden=\"true\"></i><i class=\"fa-solid fa-star notification-drawer__star\" aria-hidden=\"true\"></i>";
+
+            var body = document.createElement("div");
+            body.className = "notification-drawer__body";
+
+            var text = document.createElement("span");
+            text.className = "notification-drawer__text";
+            text.textContent = opts.title || "Bildirim";
+            body.appendChild(text);
+
+            if (opts.detail) {
+                var det = document.createElement("p");
+                det.className = "notification-drawer__detail";
+                det.textContent = opts.detail.length > 220 ? opts.detail.slice(0, 217) + "\u2026" : opts.detail;
+                body.appendChild(det);
+            }
+
+            var closeBtn = document.createElement("button");
+            closeBtn.type = "button";
+            closeBtn.className = "notification-drawer__item-close";
+            closeBtn.setAttribute("aria-label", "Kaldır");
+            closeBtn.innerHTML = "&times;";
+
+            item.appendChild(icons);
+            item.appendChild(body);
+            item.appendChild(closeBtn);
+            drawerList.appendChild(item);
+            return item;
+        }
+
         function loadAnnouncementsForDrawer() {
             var drawerList = document.getElementById("notificationDrawerList");
             if (!drawerList) return;
@@ -541,68 +648,79 @@
             var url = appendQuery(apiUrl(baseUrl), "action=all");
             var token = ++announcementsLoadToken;
             drawerList.innerHTML = "<p class=\"notification-drawer__loading\" role=\"status\">Yükleniyor…</p>";
-            var freespinPromise = isLoggedInUser() ? fetchFreespinNotificationItems() : Promise.resolve([]);
-            Promise.all([fetchJsonSafe(url), freespinPromise])
+            var loggedIn = isLoggedInUser();
+            var memberPromise = loggedIn ? fetchMemberNotificationItems() : Promise.resolve({ items: [], unread: 0 });
+            var freespinPromise = loggedIn ? fetchFreespinNotificationItems() : Promise.resolve([]);
+            Promise.all([fetchJsonSafe(url), memberPromise, freespinPromise])
                 .then(function (result) {
                     if (token !== announcementsLoadToken) return;
                     var json = result[0];
-                    var freespinItems = Array.isArray(result[1]) ? result[1] : [];
-                    if (json === null) {
-                        drawerList.innerHTML = "";
-                        if (freespinItems.length === 0) {
-                            var parseErr = document.createElement("p");
-                            parseErr.className = "notification-drawer__error";
-                            parseErr.setAttribute("role", "alert");
-                            parseErr.textContent = "Bildirimler yüklenemedi. Lütfen tekrar deneyin.";
-                            drawerList.appendChild(parseErr);
-                            updateNotificationBadge(0);
-                            return;
-                        }
-                    }
+                    var memberPayload = result[1] && typeof result[1] === "object" ? result[1] : { items: [], unread: 0 };
+                    var memberItems = Array.isArray(memberPayload.items) ? memberPayload.items : [];
+                    var memberUnread = Number(memberPayload.unread || 0);
+                    var freespinItems = Array.isArray(result[2]) ? result[2] : [];
 
-                    var items = [];
+                    var announcements = [];
                     if (json && json.success && json.data && Array.isArray(json.data.announcements)) {
-                        items = json.data.announcements.filter(function (a) {
+                        announcements = json.data.announcements.filter(function (a) {
                             if (!a) return false;
                             var act = a.is_active;
                             if (act === false || act === 0 || act === "0") return false;
                             return true;
                         });
                     }
+
+                    if (json === null && memberItems.length === 0 && freespinItems.length === 0) {
+                        drawerList.innerHTML = "";
+                        var parseErr = document.createElement("p");
+                        parseErr.className = "notification-drawer__error";
+                        parseErr.setAttribute("role", "alert");
+                        parseErr.textContent = "Bildirimler yüklenemedi. Lütfen tekrar deneyin.";
+                        drawerList.appendChild(parseErr);
+                        updateNotificationBadge(0);
+                        return;
+                    }
+
                     drawerList.innerHTML = "";
-                    items.forEach(function (a) {
+
+                    memberItems.forEach(function (n) {
+                        var id = n && n.id != null ? String(n.id) : "";
+                        var title = (n && n.title != null ? String(n.title) : "").trim() || "Bildirim";
+                        var bodyText = (n && n.body != null ? String(n.body) : "").replace(/\s+/g, " ").trim();
+                        var typeLabel = (n && n.type != null ? String(n.type) : "info").trim();
+                        var createdAt = (n && n.created_at != null ? String(n.created_at) : "").trim();
+                        var detailParts = [];
+                        if (typeLabel) detailParts.push(typeLabel);
+                        if (createdAt) detailParts.push(createdAt);
+                        if (bodyText) detailParts.push(bodyText);
+                        var isUnread = !(n && (n.is_read === 1 || n.is_read === true || n.is_read === "1"));
+                        var actionUrl = n && n.action_url != null ? String(n.action_url).trim() : "";
+                        appendNotificationDrawerItem(drawerList, {
+                            kind: "member",
+                            id: id,
+                            title: title,
+                            detail: detailParts.join(" · "),
+                            unread: isUnread,
+                            actionUrl: actionUrl || null,
+                            className: "notification-drawer__item--member" + (isUnread ? " is-unread" : ""),
+                            iconHtml: "<i class=\"sp-button-icon-bc bc-i-notification\" aria-hidden=\"true\"></i><i class=\"fa-solid fa-star notification-drawer__star\" aria-hidden=\"true\"></i>"
+                        });
+                    });
+
+                    announcements.forEach(function (a) {
                         var id = a.id != null ? String(a.id) : "";
                         var title = (a.title != null ? String(a.title) : "").trim();
                         var bodySrc = a.content != null ? a.content : (a.description != null ? a.description : "");
                         var raw = String(bodySrc).replace(/<[^>]*>/g, " ");
                         var content = raw.replace(/\s+/g, " ").trim();
-                        var item = document.createElement("div");
-                        item.className = "notification-drawer__item";
-                        if (id) item.setAttribute("data-id", id);
-                        var icons = document.createElement("span");
-                        icons.className = "notification-drawer__icons";
-                        icons.innerHTML = "<i class=\"sp-button-icon-bc bc-i-notification\" aria-hidden=\"true\"></i><i class=\"fa-solid fa-star notification-drawer__star\" aria-hidden=\"true\"></i>";
-                        var body = document.createElement("div");
-                        body.className = "notification-drawer__body";
-                        var text = document.createElement("span");
-                        text.className = "notification-drawer__text";
-                        text.textContent = title || "Duyuru";
-                        body.appendChild(text);
-                        if (content) {
-                            var det = document.createElement("p");
-                            det.className = "notification-drawer__detail";
-                            det.textContent = content.length > 220 ? content.slice(0, 217) + "\u2026" : content;
-                            body.appendChild(det);
-                        }
-                        var closeBtn = document.createElement("button");
-                        closeBtn.type = "button";
-                        closeBtn.className = "notification-drawer__item-close";
-                        closeBtn.setAttribute("aria-label", "Kaldır");
-                        closeBtn.innerHTML = "&times;";
-                        item.appendChild(icons);
-                        item.appendChild(body);
-                        item.appendChild(closeBtn);
-                        drawerList.appendChild(item);
+                        appendNotificationDrawerItem(drawerList, {
+                            kind: "announcement",
+                            id: id ? "announcement-" + id : "",
+                            title: title || "Duyuru",
+                            detail: content,
+                            className: "notification-drawer__item--announcement",
+                            iconHtml: "<i class=\"sp-button-icon-bc bc-i-notification\" aria-hidden=\"true\"></i><i class=\"fa-solid fa-star notification-drawer__star\" aria-hidden=\"true\"></i>"
+                        });
                     });
 
                     freespinItems.forEach(function (row, index) {
@@ -611,42 +729,26 @@
                         var spins = Number((row && row.freespins_per_player) || 0);
                         var game = String((row && row.game_identifier) || '');
                         var detailText = spins + ' spin · Durum: ' + status + (game ? ' · Oyun: ' + game : '');
-
-                        var item = document.createElement("div");
-                        item.className = "notification-drawer__item";
-                        item.setAttribute("data-id", "freespin-" + index);
-
-                        var icons = document.createElement("span");
-                        icons.className = "notification-drawer__icons";
-                        icons.innerHTML = "<i class=\"sp-button-icon-bc bc-i-promotions-3\" aria-hidden=\"true\"></i><i class=\"fa-solid fa-star notification-drawer__star\" aria-hidden=\"true\"></i>";
-
-                        var body = document.createElement("div");
-                        body.className = "notification-drawer__body";
-
-                        var text = document.createElement("span");
-                        text.className = "notification-drawer__text";
-                        text.textContent = 'Freespin: ' + (campaignCode || 'Kampanya');
-                        body.appendChild(text);
-
-                        var det = document.createElement("p");
-                        det.className = "notification-drawer__detail";
-                        det.textContent = detailText;
-                        body.appendChild(det);
-
-                        var closeBtn = document.createElement("button");
-                        closeBtn.type = "button";
-                        closeBtn.className = "notification-drawer__item-close";
-                        closeBtn.setAttribute("aria-label", "Kaldır");
-                        closeBtn.innerHTML = "&times;";
-
-                        item.appendChild(icons);
-                        item.appendChild(body);
-                        item.appendChild(closeBtn);
-                        drawerList.appendChild(item);
+                        appendNotificationDrawerItem(drawerList, {
+                            kind: "freespin",
+                            id: "freespin-" + index,
+                            title: "Freespin: " + (campaignCode || "Kampanya"),
+                            detail: detailText,
+                            className: "notification-drawer__item--freespin",
+                            iconHtml: "<i class=\"sp-button-icon-bc bc-i-promotions-3\" aria-hidden=\"true\"></i><i class=\"fa-solid fa-star notification-drawer__star\" aria-hidden=\"true\"></i>"
+                        });
                     });
 
-                    updateNotificationBadge(items.length + freespinItems.length);
-                    if (isLoggedInUser()) {
+                    if (memberItems.length === 0 && announcements.length === 0 && freespinItems.length === 0) {
+                        var empty = document.createElement("p");
+                        empty.className = "notification-drawer__loading";
+                        empty.textContent = "Henüz bildirim veya duyuru yok.";
+                        drawerList.appendChild(empty);
+                    }
+
+                    var badgeCount = (isNaN(memberUnread) ? 0 : memberUnread) + announcements.length + freespinItems.length;
+                    updateNotificationBadge(badgeCount);
+                    if (loggedIn) {
                         notifyFreespinToast(freespinItems);
                     }
                 })
@@ -656,7 +758,7 @@
                     var err = document.createElement("p");
                     err.className = "notification-drawer__error";
                     err.setAttribute("role", "alert");
-                    err.textContent = "Duyurular yüklenemedi. Lütfen tekrar deneyin.";
+                    err.textContent = "Bildirimler yüklenemedi. Lütfen tekrar deneyin.";
                     drawerList.appendChild(err);
                     updateNotificationBadge(0);
                 });
@@ -720,6 +822,8 @@
                         if (notificationList) {
                             notificationList.innerHTML = '';
                         }
+                        updateNotificationBadge(0);
+                        markAllMemberNotificationsRead();
                     });
                 }
             }, 0);
@@ -983,17 +1087,34 @@
             drawerClear.addEventListener("click", function () {
                 drawerList.innerHTML = "";
                 updateNotificationBadge(0);
+                markAllMemberNotificationsRead();
             });
         }
         if (drawerList) {
             drawerList.addEventListener("click", function (e) {
+                var item = e.target.closest(".notification-drawer__item");
+                if (!item || !drawerList.contains(item)) return;
+
                 var btn = e.target.closest(".notification-drawer__item-close");
-                if (!btn) return;
-                var item = btn.closest(".notification-drawer__item");
-                if (item) {
+                if (btn) {
+                    var kind = item.getAttribute("data-kind") || "";
+                    var id = item.getAttribute("data-id") || "";
+                    if (kind === "member" && id) {
+                        markMemberNotificationRead(id);
+                    }
                     item.remove();
                     var count = drawerList.querySelectorAll(".notification-drawer__item").length;
                     updateNotificationBadge(count);
+                    return;
+                }
+
+                var actionUrl = item.getAttribute("data-action-url") || "";
+                if (actionUrl && (item.getAttribute("data-kind") || "") === "member") {
+                    var nid = item.getAttribute("data-id") || "";
+                    if (nid) {
+                        markMemberNotificationRead(nid);
+                    }
+                    window.location.href = actionUrl;
                 }
             });
         }

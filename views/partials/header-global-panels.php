@@ -59,7 +59,7 @@ if ((!isset($siteContactLinks) || !is_array($siteContactLinks) || $siteContactLi
         <span class="notification-drawer__date" id="notificationDrawerDate">18 Mart 2026</span>
         <button type="button" class="notification-drawer__clear" id="notificationDrawerClear">Temizle</button>
     </div>
-    <div class="notification-drawer__list" id="notificationDrawerList" data-announcements-url="/api/v2/announcements" aria-live="polite"></div>
+    <div class="notification-drawer__list" id="notificationDrawerList" data-announcements-url="/api/v2/announcements" data-notifications-url="/api/v2/notifications" aria-live="polite"></div>
 </aside>
 
 <!-- Favoriler sidebar -->
