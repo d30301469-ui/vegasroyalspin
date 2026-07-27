@@ -6,21 +6,20 @@ $callbackText = (string) ($mobileContactLinks['callback_widget_text'] ?? 'Doland
 $callbackText = trim($callbackText);
 ?>
 <div class="mobile-home-widgets" id="mobileHomeWidgets">
-<div class="informative-widget" id="informativeWidget">
-  <a href="<?= htmlspecialchars($callbackUrl, ENT_QUOTES, 'UTF-8') ?>" class="informative-widget-link informative-widget-bc">
-    <div class="informative-widget-container">
-      <i class="bc-i-info" aria-hidden="true"></i>
-      <span><?= htmlspecialchars($callbackText !== '' ? $callbackText : 'Dolandırıcılara geçit verme! Size ulaşan numara bize mi ait tıkla!', ENT_QUOTES, 'UTF-8') ?></span>
-    </div>
-    <span class="informative-widget-actions" aria-hidden="true">
-      <i class="bc-i-call"></i>
-      <i class="bc-i-whatsapp"></i>
-    </span>
-  </a>
+  <div class="informative-widget" id="informativeWidget">
+    <a href="<?= htmlspecialchars($callbackUrl, ENT_QUOTES, 'UTF-8') ?>" class="informative-widget-link informative-widget-bc">
+      <div class="informative-widget-container">
+        <i class="bc-i-info" aria-hidden="true"></i>
+        <span><?= htmlspecialchars($callbackText !== '' ? $callbackText : 'Dolandırıcılara geçit verme! Size ulaşan numara bize mi ait tıkla!', ENT_QUOTES, 'UTF-8') ?></span>
+      </div>
+      <span class="informative-widget-actions" aria-hidden="true">
+        <i class="bc-i-call"></i>
+      </span>
+    </a>
+  </div>
   <button type="button" class="informative-widget-close" id="informativeWidgetClose" aria-label="Uyarıyı kapat" title="Kapat">
     <i class="bc-i-close-remove" aria-hidden="true"></i>
   </button>
-</div>
 
 <?php /* 2x2 hızlı işlem grid — orijinal mobil header altında yok; kaldırıldı */ ?>
 </div>
