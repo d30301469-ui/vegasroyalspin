@@ -57,6 +57,7 @@ final class AdminBgamingController extends AdminController
             'crumbs' => 'Games | BGaming Campaign Create',
             'configRow' => BgamingService::config($pdo),
             'campaigns' => BgamingService::campaigns($pdo),
+            'freespinGames' => BgamingService::freespinCapableGames($pdo),
             'editCampaign' => $editId > 0 ? BgamingService::campaignById($pdo, $editId) : null,
             'flash' => $this->pullFlash(),
         ]);
@@ -109,6 +110,7 @@ final class AdminBgamingController extends AdminController
             'crumbs' => 'Games | BGaming Freespins',
             'configRow' => BgamingService::config($pdo),
             'users' => $this->assignableUsers($pdo),
+            'freespinGames' => BgamingService::freespinCapableGames($pdo),
             'localCampaigns' => array_values(array_filter(
                 BgamingService::campaigns($pdo),
                 static fn (array $row): bool => (string) ($row['campaign_type'] ?? '') === 'freespin'

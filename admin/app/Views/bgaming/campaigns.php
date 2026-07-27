@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 $campaigns = is_array($campaigns ?? null) ? $campaigns : [];
 $editCampaign = is_array($editCampaign ?? null) ? $editCampaign : [];
+$freespinGames = is_array($freespinGames ?? null) ? $freespinGames : [];
 $flash = trim((string) ($flash ?? ''));
 $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 $campaign = static fn (string $field, mixed $default = ''): string => htmlspecialchars((string) ($editCampaign[$field] ?? $default), ENT_QUOTES, 'UTF-8');
+$selectedGame = (string) ($editCampaign['game_identifier'] ?? '');
 $campaignDateTime = static function (string $field) use ($editCampaign): string {
     $raw = (string) ($editCampaign[$field] ?? '');
     if ($raw === '') {
@@ -86,11 +88,29 @@ $isEdit = $editCampaign !== [];
                         </div>
                         <div class="field">
                             <label class="field-label" for="game_identifier">Game Identifier</label>
-                            <input id="game_identifier" class="input" type="text" name="game_identifier" maxlength="120" value="<?= $campaign('game_identifier') ?>" placeholder="acceptance:test veya gerçek oyun kodu">
+                            <?php if ($freespinGames !== []): ?>
+                                <select id="game_identifier" class="input" name="game_identifier">
+                                    <option value="">Freespin destekli oyun seçin</option>
+                                    <?php foreach ($freespinGames as $game): ?>
+                                        <?php
+                                        $identifier = (string) ($game['identifier'] ?? '');
+                                        $title = (string) ($game['title'] ?? $identifier);
+                                        ?>
+                                        <option value="<?= $text($identifier) ?>"<?= $selectedGame === $identifier ? ' selected' : '' ?>><?= $text($title) ?> (<?= $text($identifier) ?>)</option>
+                                    <?php endforeach; ?>
+                                    <?php if ($selectedGame !== '' && !in_array($selectedGame, array_column($freespinGames, 'identifier'), true)): ?>
+                                        <option value="<?= $text($selectedGame) ?>" selected><?= $text($selectedGame) ?> (katalogda api_freespins yok)</option>
+                                    <?php endif; ?>
+                                </select>
+                                <p class="bgaming-meta" style="margin-top:6px">Sadece BGaming <code>api_freespins=1</code> oyunlar listelenir. Liste boşsa Ayarlar'dan oyun sync çalıştırın.</p>
+                            <?php else: ?>
+                                <input id="game_identifier" class="input" type="text" name="game_identifier" maxlength="120" value="<?= $campaign('game_identifier') ?>" placeholder="acceptance:test veya gerçek oyun kodu">
+                                <p class="bgaming-meta" style="margin-top:6px">Freespin destekli oyun bulunamadı. Önce BGaming oyun sync çalıştırın; aksi halde API 400 döner.</p>
+                            <?php endif; ?>
                         </div>
                         <div class="field">
                             <label class="field-label" for="currency_code">Para Birimi</label>
-                            <input id="currency_code" class="input" type="text" name="currency_code" maxlength="8" value="<?= $campaign('currency_code', $configRow['currency'] ?? 'TRY') ?>">
+                            <input id="currency_code" class="input" type="text" name="currency_code" maxlength="8" value="<?= $campaign('currency_code', $configRow['currency'] ?? 'USD') ?>">
                         </div>
                         <div class="field">
                             <label class="field-label" for="freespins_per_player">Kişi Başı Freespin</label>

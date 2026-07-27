@@ -501,6 +501,12 @@ final class BgamingService
         if ($campaignType === 'freespin' && $freespinsPerPlayer <= 0) {
             throw new RuntimeException('Freespin adedi 1 veya daha büyük olmalıdır.');
         }
+        if ($campaignType === 'freespin') {
+            if ($gameIdentifier === '') {
+                throw new RuntimeException('Freespin kampanyası için game_identifier zorunludur.');
+            }
+            $gameIdentifier = self::resolveFreespinGameIdentifier($pdo, $gameIdentifier);
+        }
         if ($campaignType === 'promo' && $promoAmount <= 0) {
             throw new RuntimeException('Promo tutarı 0 dan büyük olmalıdır.');
         }
@@ -616,7 +622,10 @@ final class BgamingService
 
         $remoteIssueId = null;
         if ($campaignType === 'freespin') {
-            $gameIdentifier = trim((string) ($campaign['game_identifier'] ?? ''));
+            $gameIdentifier = self::resolveFreespinGameIdentifier(
+                $pdo,
+                trim((string) ($campaign['game_identifier'] ?? ''))
+            );
             if ($gameIdentifier === '') {
                 throw new RuntimeException('Freespin kampanyası için game_identifier zorunludur.');
             }
@@ -631,9 +640,10 @@ final class BgamingService
             self::issueRemoteFreespins($pdo, [
                 'user_id' => $userId,
                 'issue_id' => $remoteIssueId,
-                'games' => $gameIdentifier,
+                'games' => [$gameIdentifier],
                 'currency' => (string) ($campaign['currency_code'] ?? self::config($pdo)['currency'] ?? self::DEFAULT_CURRENCY),
                 'freespins_quantity' => $freespinsPerPlayer,
+                'bet_level' => self::resolveFreespinBetLevel($pdo, $gameIdentifier, 0),
                 'valid_since' => (int) ($campaign['begins_at'] ?? 0) > 0 ? date('Y-m-d H:i:s', (int) $campaign['begins_at']) : '',
                 'valid_until' => $expiresAtTs > 0 ? date('Y-m-d H:i:s', $expiresAtTs) : '',
             ]);
@@ -944,8 +954,8 @@ final class BgamingService
                 'title' => trim((string) ($game['title'] ?? $identifier)),
                 'provider' => trim((string) ($game['provider'] ?? 'bgaming')) ?: 'bgaming',
                 'category' => trim((string) ($game['category'] ?? '')),
-                'api_freespins' => !empty($game['api_freespins']) ? 1 : 0,
-                'in_game_freespins' => !empty($game['in_game_freespins']) ? 1 : 0,
+                'api_freespins' => self::truthyFlag($game['api_freespins'] ?? $game['has_freespins'] ?? false) ? 1 : 0,
+                'in_game_freespins' => self::truthyFlag($game['in_game_freespins'] ?? false) ? 1 : 0,
                 'bet_type' => trim((string) ($game['bet_type'] ?? '')),
                 'api_version' => trim((string) ($game['api_version'] ?? '')),
                 'lines_count' => isset($game['lines_count']) ? (int) $game['lines_count'] : (isset($gameTable['lines_count']) ? (int) $gameTable['lines_count'] : null),
@@ -1072,7 +1082,54 @@ final class BgamingService
 
     public static function normalizeGameIdentifier(string $gameId): string
     {
-        return self::ownsGameId($gameId) ? substr($gameId, strlen(self::GAME_ID_PREFIX)) : $gameId;
+        $gameId = trim($gameId);
+        if ($gameId === '') {
+            return '';
+        }
+        if (self::ownsGameId($gameId)) {
+            return substr($gameId, strlen(self::GAME_ID_PREFIX));
+        }
+        if (str_starts_with(strtolower($gameId), 'softswiss:')) {
+            return substr($gameId, strlen('softswiss:'));
+        }
+
+        return $gameId;
+    }
+
+    /**
+     * @return list<array{identifier:string,title:string}>
+     */
+    public static function freespinCapableGames(PDO $pdo): array
+    {
+        self::bootstrap($pdo);
+        try {
+            $stmt = $pdo->query(
+                'SELECT identifier, title
+                 FROM bgaming_games
+                 WHERE is_active = 1 AND api_freespins = 1
+                 ORDER BY title ASC, identifier ASC'
+            );
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $identifier = trim((string) ($row['identifier'] ?? ''));
+            if ($identifier === '') {
+                continue;
+            }
+            $out[] = [
+                'identifier' => $identifier,
+                'title' => trim((string) ($row['title'] ?? $identifier)) ?: $identifier,
+            ];
+        }
+
+        return $out;
     }
 
     public static function launch(PDO $pdo, ?array $user, array $input): array
@@ -1565,19 +1622,20 @@ final class BgamingService
             $issueId = 'fs_' . $userId . '_' . bin2hex(random_bytes(6));
         }
 
-        $gamesRaw = trim((string) ($input['games'] ?? $input['game_identifier'] ?? ''));
-        $games = array_values(array_unique(array_filter(array_map(
-            static fn (string $game): string => trim($game),
-            preg_split('/[\s,;]+/', $gamesRaw) ?: []
-        ), static fn (string $game): bool => $game !== '')));
+        $games = self::parseFreespinGameIdentifiers($input['games'] ?? $input['game_identifier'] ?? null);
         if ($games === []) {
             throw new RuntimeException('En az bir game identifier zorunludur.');
         }
+        $resolvedGames = [];
+        foreach ($games as $gameId) {
+            $resolvedGames[] = self::resolveFreespinGameIdentifier($pdo, $gameId);
+        }
+        $games = array_values(array_unique($resolvedGames));
 
         $config = self::activeConfig($pdo);
         $currency = self::normalizeCurrency((string) ($input['currency'] ?? $config['currency'] ?? self::DEFAULT_CURRENCY));
         $count = max(1, (int) ($input['freespins_quantity'] ?? $input['freespins_count'] ?? 1));
-        $betLevel = max(0, (int) ($input['bet_level'] ?? 0));
+        $betLevel = self::resolveFreespinBetLevel($pdo, $games[0], max(0, (int) ($input['bet_level'] ?? 0)));
 
         $validUntilRaw = trim((string) ($input['valid_until'] ?? ''));
         $validUntilTs = strtotime($validUntilRaw !== '' ? $validUntilRaw : '+7 days');
@@ -1590,6 +1648,7 @@ final class BgamingService
             'issue_id' => $issueId,
             'currency' => $currency,
             'games' => $games,
+            'bet_level' => $betLevel,
             'freespins_quantity' => $count,
             'valid_until' => gmdate('Y-m-d\TH:i:s\Z', $validUntilTs),
             'user' => [
@@ -1600,9 +1659,6 @@ final class BgamingService
                 'country' => strtoupper((string) ($config['country'] ?? 'TR')),
             ],
         ];
-        if ($betLevel > 0) {
-            $payload['bet_level'] = $betLevel;
-        }
 
         $validSinceRaw = trim((string) ($input['valid_since'] ?? ''));
         if ($validSinceRaw !== '') {
@@ -2334,9 +2390,164 @@ final class BgamingService
 
     private static function listFromDirectResponse(array $response): array
     {
-        return isset($response['data']) && is_array($response['data'])
-            ? array_values(array_filter($response['data'], 'is_array'))
-            : [];
+        if (isset($response['data']) && is_array($response['data'])) {
+            return array_values(array_filter($response['data'], 'is_array'));
+        }
+
+        // BGaming/SoftSwiss GCP gamelist often returns a root-level array.
+        if ($response !== [] && array_is_list($response)) {
+            return array_values(array_filter($response, 'is_array'));
+        }
+
+        return [];
+    }
+
+    private static function truthyFlag(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_int($value) || is_float($value)) {
+            return (int) $value === 1;
+        }
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function parseFreespinGameIdentifiers(mixed $gamesInput): array
+    {
+        $parts = [];
+        if (is_array($gamesInput)) {
+            foreach ($gamesInput as $item) {
+                if (is_array($item)) {
+                    $parts[] = (string) ($item['identifier'] ?? $item['game'] ?? $item['game_identifier'] ?? $item['id'] ?? '');
+                    continue;
+                }
+                $parts[] = (string) $item;
+            }
+        } else {
+            $raw = trim((string) ($gamesInput ?? ''));
+            $parts = $raw !== '' ? (preg_split('/[\s,;]+/', $raw) ?: []) : [];
+        }
+
+        $out = [];
+        foreach ($parts as $part) {
+            $normalized = self::normalizeGameIdentifier(trim((string) $part));
+            if ($normalized !== '') {
+                $out[$normalized] = $normalized;
+            }
+        }
+
+        return array_values($out);
+    }
+
+    private static function resolveFreespinGameIdentifier(PDO $pdo, string $gameId): string
+    {
+        $normalized = self::normalizeGameIdentifier(trim($gameId));
+        if ($normalized === '') {
+            throw new RuntimeException('Geçersiz game identifier.');
+        }
+
+        // Acceptance harness game is always allowed without local catalog checks.
+        if (strcasecmp($normalized, 'acceptance:test') === 0) {
+            return 'acceptance:test';
+        }
+
+        $row = null;
+        try {
+            $exact = $pdo->prepare(
+                'SELECT identifier, api_freespins, is_active
+                 FROM bgaming_games
+                 WHERE identifier = :identifier
+                 LIMIT 1'
+            );
+            $exact->execute(['identifier' => $normalized]);
+            $fetched = $exact->fetch(PDO::FETCH_ASSOC);
+            $row = is_array($fetched) ? $fetched : null;
+
+            if ($row === null) {
+                $ci = $pdo->prepare(
+                    'SELECT identifier, api_freespins, is_active
+                     FROM bgaming_games
+                     WHERE LOWER(identifier) = LOWER(:identifier)
+                     LIMIT 1'
+                );
+                $ci->execute(['identifier' => $normalized]);
+                $fetched = $ci->fetch(PDO::FETCH_ASSOC);
+                $row = is_array($fetched) ? $fetched : null;
+            }
+
+            if ($row === null) {
+                $byTitle = $pdo->prepare(
+                    'SELECT identifier, api_freespins, is_active
+                     FROM bgaming_games
+                     WHERE LOWER(title) = LOWER(:title)
+                     LIMIT 1'
+                );
+                $byTitle->execute(['title' => $normalized]);
+                $fetched = $byTitle->fetch(PDO::FETCH_ASSOC);
+                $row = is_array($fetched) ? $fetched : null;
+            }
+        } catch (Throwable) {
+            $row = null;
+        }
+
+        if (!is_array($row)) {
+            // Keep remote identifiers that are not synced yet, but strip local prefixes.
+            return $normalized;
+        }
+
+        $identifier = trim((string) ($row['identifier'] ?? ''));
+        if ($identifier === '') {
+            throw new RuntimeException('Geçersiz game identifier.');
+        }
+        if ((int) ($row['is_active'] ?? 0) !== 1) {
+            throw new RuntimeException('Seçilen oyun aktif değil: ' . $identifier);
+        }
+        if ((int) ($row['api_freespins'] ?? 0) !== 1) {
+            throw new RuntimeException(
+                'Seçilen oyun API freespin desteklemiyor: ' . $identifier
+                . '. BGaming gamelist içinde api_freespins=1 olan bir oyun seçin (veya oyun listesini yeniden sync edin).'
+            );
+        }
+
+        return $identifier;
+    }
+
+    private static function resolveFreespinBetLevel(PDO $pdo, string $gameId, int $requested): int
+    {
+        if ($requested > 0) {
+            return $requested;
+        }
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT bet_levels
+                 FROM bgaming_games
+                 WHERE identifier = :identifier
+                 LIMIT 1'
+            );
+            $stmt->execute(['identifier' => $gameId]);
+            $raw = $stmt->fetchColumn();
+            if (is_string($raw) && $raw !== '') {
+                $levels = json_decode($raw, true);
+                if (is_array($levels) && $levels !== []) {
+                    // SoftSwiss bet_level is a 1-based index into available bet levels.
+                    return 1;
+                }
+            }
+        } catch (Throwable) {
+        }
+
+        // SoftSwiss/BGaming requires bet_level for /promo/freespins.
+        return 1;
     }
 
     /**
@@ -2450,7 +2661,7 @@ final class BgamingService
             return rtrim((string) BACKEND_URL, '/');
         }
 
-        return rtrim((string) (getenv('BACKEND_URL') ?: getenv('BACKEND_FALLBACK_URL') ?: 'https://bo-nexthub.site'), '/');
+        return rtrim((string) (getenv('BACKEND_URL') ?: getenv('BACKEND_FALLBACK_URL') ?: 'https://bo-backoffice.site'), '/');
     }
 
     private static function logWallet(PDO $pdo, string $endpoint, array $payload, array $response, int $status, int $durationMs): void
@@ -2524,12 +2735,14 @@ final class BgamingService
 
         if ($issueExists->fetchColumn() === false) {
             try {
+                $resolvedGame = self::resolveFreespinGameIdentifier($pdo, $gameIdentifier);
                 self::issueRemoteFreespins($pdo, [
                     'user_id' => $userId,
                     'issue_id' => $issueId,
-                    'games' => $gameIdentifier,
+                    'games' => [$resolvedGame],
                     'currency' => (string) ($row['currency_code'] ?? self::DEFAULT_CURRENCY),
                     'freespins_quantity' => max(1, (int) ($row['freespins_per_player'] ?? 0)),
+                    'bet_level' => self::resolveFreespinBetLevel($pdo, $resolvedGame, 0),
                     'valid_since' => (int) ($row['begins_at'] ?? 0) > 0 ? date('Y-m-d H:i:s', (int) $row['begins_at']) : '',
                     'valid_until' => (int) ($row['expires_at'] ?? 0) > 0 ? date('Y-m-d H:i:s', (int) $row['expires_at']) : '',
                 ]);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 $configRow = is_array($configRow ?? null) ? $configRow : [];
 $users = is_array($users ?? null) ? $users : [];
+$freespinGames = is_array($freespinGames ?? null) ? $freespinGames : [];
 $localCampaigns = is_array($localCampaigns ?? null) ? $localCampaigns : [];
 $remoteData = is_array($remoteData ?? null) ? $remoteData : ['data' => [], 'meta' => []];
 $remoteItems = is_array($remoteData['data'] ?? null) ? $remoteData['data'] : [];
@@ -92,8 +93,22 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
                         </div>
                         <div class="field">
                             <label class="field-label" for="fs_games">Game Identifier</label>
-                            <input id="fs_games" class="input" type="text" name="games" required placeholder="acceptance:test veya CarnivalBonanza">
-                            <p class="bgaming-fs-hint">Tek oyun kodu yazın. Birden fazla oyun için virgülle ayırın. Accept testinde <code>acceptance:test</code> kullanın.</p>
+                            <?php if ($freespinGames !== []): ?>
+                                <select id="fs_games" class="input" name="games" required>
+                                    <option value="">Freespin destekli oyun seçin</option>
+                                    <option value="acceptance:test">acceptance:test (API test)</option>
+                                    <?php foreach ($freespinGames as $game): ?>
+                                        <?php
+                                        $identifier = (string) ($game['identifier'] ?? '');
+                                        $title = (string) ($game['title'] ?? $identifier);
+                                        ?>
+                                        <option value="<?= $text($identifier) ?>"><?= $text($title) ?> (<?= $text($identifier) ?>)</option>
+                                    <?php endforeach; ?>
+                                </select>
+                            <?php else: ?>
+                                <input id="fs_games" class="input" type="text" name="games" required placeholder="acceptance:test veya CarnivalBonanza">
+                            <?php endif; ?>
+                            <p class="bgaming-fs-hint">Sadece <code>api_freespins</code> destekli oyunlar BGaming'e gönderilebilir. Accept testinde <code>acceptance:test</code> kullanın.</p>
                         </div>
                         <div class="field">
                             <label class="field-label" for="fs_count">Freespin Adedi</label>
