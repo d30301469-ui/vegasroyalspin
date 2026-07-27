@@ -640,8 +640,11 @@ final class MegaPayzService
                 $pdo->rollBack();
                 return ['status' => false, 'code' => 99999, 'message' => 'Invalid callback amount'];
             }
+            // Deposit: banka transferinde kullanıcı talep tutarından farklı yatırabilir.
+            // Callback'teki gerçek tutarı kabul edip bakiyeye onu yansıtıyoruz.
+            // Withdraw: bakiye talep anında düşüldüğü için tutar eşleşmesi zorunlu.
             $txAmount = round((float) ($tx['amount'] ?? 0), 2);
-            if (abs(round($amount, 2) - $txAmount) > 0.01) {
+            if ($type === 'withdraw' && abs(round($amount, 2) - $txAmount) > 0.01) {
                 $pdo->rollBack();
                 return ['status' => false, 'code' => 99999, 'message' => 'Callback amount mismatch'];
             }
