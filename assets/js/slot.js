@@ -533,16 +533,18 @@
         var perPage = Number(pagination.perPage || PAGE_SIZE);
         var rawCount = rawGames.length;
         var filteredCount = games.length;
-        var hasNext = !!pagination.hasNext && filteredCount > 0;
-        var total = filteredCount;
-        var remaining = 0;
+        var total = Number(pagination.total || filteredCount);
+        var hasNext = !!pagination.hasNext;
+        var loadedCount = (page - 1) * perPage + filteredCount;
+        var remaining = Math.max(0, total - loadedCount);
+        var showLoadMore = hasNext && (filteredCount > 0 || rawCount > 0);
 
         return {
             ok: !!(data && data.success),
             games: games,
             totalSlots: total,
             remainingGames: remaining,
-            showLoadMore: false,
+            showLoadMore: showLoadMore,
             nextPage: page + 1,
             page: page,
             perPage: perPage,
@@ -1502,10 +1504,22 @@
             setActiveCategoryTab();
             scrollActiveCategoryIntoView();
             syncMobileFilterControls();
+            if (API_ADAPTER === 'member_api_games' && gameGrid) {
+                var hasRenderedGames = gameGrid.querySelectorAll('.casinoGameItemContent[data-game-id]').length > 0;
+                if (!hasRenderedGames) {
+                    loadSlots(false);
+                }
+            }
         });
     } else {
         setActiveCategoryTab();
         scrollActiveCategoryIntoView();
         syncMobileFilterControls();
+        if (API_ADAPTER === 'member_api_games' && gameGrid) {
+            var hasRenderedGames = gameGrid.querySelectorAll('.casinoGameItemContent[data-game-id]').length > 0;
+            if (!hasRenderedGames) {
+                loadSlots(false);
+            }
+        }
     }
 })();
