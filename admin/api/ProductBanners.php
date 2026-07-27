@@ -61,13 +61,14 @@ final class ApiProductBanners
     public static function defaultRows(bool $loggedIn = false): array
     {
         $supportUrl = self::liveSupportUrl();
+        $callbackUrl = self::callbackUrl();
 
         return [
             ['href' => '/slot', 'aria' => 'SLOT', 'img' => 'slot.webp', 'alt' => 'Slot'],
             ['href' => '/sportbook', 'aria' => 'Spor Bahisleri', 'img' => 'spor.webp', 'alt' => 'Spor Bahisleri'],
             ['href' => '/livecasino', 'aria' => 'Canlı Casino', 'img' => 'canlicasino.webp', 'alt' => 'Canlı Casino'],
             ['href' => '/promotions', 'aria' => 'Promosyonlar', 'img' => 'arkadasbonusu.webp', 'alt' => 'Promosyonlar'],
-            ['href' => '/beni-ara', 'aria' => 'Aranma Talebi', 'img' => 'cozummerkezi.webp', 'alt' => 'Aranma Talebi'],
+            ['href' => $callbackUrl, 'aria' => 'Aranma Talebi', 'img' => 'cozummerkezi.webp', 'alt' => 'Aranma Talebi'],
             ['href' => $supportUrl, 'aria' => 'Destek', 'img' => 'telegram.webp', 'alt' => 'Canlı Destek'],
         ];
     }
@@ -137,7 +138,16 @@ final class ApiProductBanners
             return self::liveSupportUrl();
         }
         if ($href === '{{WHATSAPP_URL}}') {
-            return self::envUrl('WHATSAPP_URL', 'javascript:void(0);');
+            return self::whatsappUrl();
+        }
+        if ($href === '{{CALLBACK_URL}}' || $href === '/beni-ara') {
+            return self::callbackUrl();
+        }
+        if ($href === '{{TELEGRAM_URL}}') {
+            return self::telegramUrl();
+        }
+        if ($href === '{{PARTNERSHIP_URL}}' || $href === '/ortaklik') {
+            return self::partnershipUrl();
         }
 
         return $href;
@@ -176,6 +186,46 @@ final class ApiProductBanners
         }
 
         return self::envUrl('LIVE_SUPPORT_URL', '');
+    }
+
+    private static function callbackUrl(): string
+    {
+        global $siteContactLinks;
+        if (isset($siteContactLinks['callback_url']) && trim((string) $siteContactLinks['callback_url']) !== '') {
+            return trim((string) $siteContactLinks['callback_url']);
+        }
+
+        return '/beni-ara';
+    }
+
+    private static function whatsappUrl(): string
+    {
+        global $siteContactLinks;
+        if (isset($siteContactLinks['whatsapp_url']) && trim((string) $siteContactLinks['whatsapp_url']) !== '') {
+            return trim((string) $siteContactLinks['whatsapp_url']);
+        }
+
+        return self::envUrl('WHATSAPP_URL', 'javascript:void(0);');
+    }
+
+    private static function telegramUrl(): string
+    {
+        global $siteContactLinks;
+        if (isset($siteContactLinks['telegram_url']) && trim((string) $siteContactLinks['telegram_url']) !== '') {
+            return trim((string) $siteContactLinks['telegram_url']);
+        }
+
+        return self::envUrl('TELEGRAM_URL', 'https://t.me');
+    }
+
+    private static function partnershipUrl(): string
+    {
+        global $siteContactLinks;
+        if (isset($siteContactLinks['partnership_url']) && trim((string) $siteContactLinks['partnership_url']) !== '') {
+            return trim((string) $siteContactLinks['partnership_url']);
+        }
+
+        return '/ortaklik';
     }
 
     private static function envUrl(string $key, string $default): string

@@ -177,6 +177,7 @@ final class AdminSiteSettingsController extends AdminController
                 'caption' => 'Destek ve sosyal kanallar',
                 'fields' => [
                     ['name' => 'live_support_url', 'label' => 'Canlı destek URL', 'type' => 'url'],
+                    ['name' => 'live_support_title', 'label' => 'Canlı destek başlığı', 'type' => 'text', 'placeholder' => 'Canlı Destek'],
                     ['name' => 'live_chat_license', 'label' => 'LiveChat lisans ID', 'type' => 'text'],
                     ['name' => 'live_chat_enabled', 'label' => 'LiveChat aktif', 'type' => 'checkbox'],
                     ['name' => 'callback_url', 'label' => 'Beni ara URL', 'type' => 'text', 'placeholder' => '/beni-ara'],
@@ -185,6 +186,7 @@ final class AdminSiteSettingsController extends AdminController
                     ['name' => 'whatsapp_url', 'label' => 'WhatsApp URL', 'type' => 'url'],
                     ['name' => 'telegram_url', 'label' => 'Telegram URL', 'type' => 'url'],
                     ['name' => 'partnership_label', 'label' => 'Ortaklık etiketi', 'type' => 'text'],
+                    ['name' => 'partnership_title', 'label' => 'Ortaklık başlığı', 'type' => 'text', 'placeholder' => 'Ortaklık', 'help' => 'Header buton title/aria metni'],
                     ['name' => 'partnership_url', 'label' => 'Ortaklık URL', 'type' => 'text'],
                 ],
             ],

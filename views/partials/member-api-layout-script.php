@@ -43,7 +43,15 @@ $memberBootstrapState = [
     window.__SITE_SETTINGS_API__ = <?php echo json_encode((string) ($memberApiLayout['__SITE_SETTINGS_API__'] ?? '/api/v2/site-settings'), JSON_UNESCAPED_SLASHES); ?>;
     window.__FRONTEND_CONNECTIONS__ = <?php echo json_encode([
         'liveSupportUrl' => (string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : '')),
-        'telegramUrl' => defined('TELEGRAM_URL') ? (string) TELEGRAM_URL : '',
+        'liveSupportTitle' => (string) ($siteContactLinks['live_support_title'] ?? 'Canlı Destek'),
+        'telegramUrl' => (string) ($siteContactLinks['telegram_url'] ?? (defined('TELEGRAM_URL') ? TELEGRAM_URL : '')),
+        'whatsappUrl' => (string) ($siteContactLinks['whatsapp_url'] ?? (defined('WHATSAPP_URL') ? WHATSAPP_URL : '')),
+        'contactPhone' => (string) ($siteContactLinks['contact_phone'] ?? ''),
+        'callbackUrl' => (string) ($siteContactLinks['callback_url'] ?? '/beni-ara'),
+        'callbackWidgetText' => (string) ($siteContactLinks['callback_widget_text'] ?? ''),
+        'partnershipUrl' => (string) ($siteContactLinks['partnership_url'] ?? '/ortaklik'),
+        'partnershipLabel' => (string) ($siteContactLinks['partnership_label'] ?? 'ORTAKLIK'),
+        'partnershipTitle' => (string) ($siteContactLinks['partnership_title'] ?? 'Ortaklık'),
         'megapayzLogoBaseUrl' => defined('MEGAPAYZ_LOGO_BASE_URL') ? (string) MEGAPAYZ_LOGO_BASE_URL : '',
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 

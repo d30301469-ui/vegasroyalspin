@@ -18,6 +18,44 @@ $footerPayload = ApiFooter::fetch();
 $footerSocialIcons = is_array($footerPayload['social_icons'] ?? null)
     ? $footerPayload['social_icons']
     : [];
+
+// Site Ayarları → İletişim linklerini footer sosyal ikonlarına yedir (boş/eksik network'ler için).
+$footerContactLinks = is_array($siteContactLinks ?? null)
+    ? $siteContactLinks
+    : (class_exists('ApiSiteSettings') ? ApiSiteSettings::normalizeContactLinks(is_array($ayar ?? null) ? $ayar : []) : []);
+$footerContactSocialFallbacks = [
+    'telegram' => trim((string) ($footerContactLinks['telegram_url'] ?? '')),
+    'whatsapp' => trim((string) ($footerContactLinks['whatsapp_url'] ?? '')),
+    'phone' => trim((string) ($footerContactLinks['contact_phone'] ?? '')),
+];
+if ($footerContactSocialFallbacks['phone'] !== '') {
+    $footerContactSocialFallbacks['phone'] = 'tel:' . preg_replace('/[^0-9+]/', '', $footerContactSocialFallbacks['phone']);
+}
+$footerSocialByNetwork = [];
+foreach ($footerSocialIcons as $index => $icon) {
+    if (!is_array($icon)) {
+        continue;
+    }
+    $network = strtolower(trim((string) ($icon['network'] ?? '')));
+    if ($network === '') {
+        continue;
+    }
+    $footerSocialByNetwork[$network] = $index;
+    $url = trim((string) ($icon['url'] ?? ''));
+    if (($url === '' || $url === '#' || str_starts_with($url, 'javascript:')) && isset($footerContactSocialFallbacks[$network]) && $footerContactSocialFallbacks[$network] !== '') {
+        $footerSocialIcons[$index]['url'] = $footerContactSocialFallbacks[$network];
+    }
+}
+foreach ($footerContactSocialFallbacks as $network => $url) {
+    if ($url === '' || isset($footerSocialByNetwork[$network])) {
+        continue;
+    }
+    $footerSocialIcons[] = [
+        'network' => $network,
+        'url' => $url,
+    ];
+}
+unset($footerContactLinks, $footerContactSocialFallbacks, $footerSocialByNetwork, $index, $icon, $network, $url);
 $footerMenuColumns = is_array($footerPayload['menu_columns'] ?? null)
     ? $footerPayload['menu_columns']
     : [];

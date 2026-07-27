@@ -6,8 +6,12 @@
  */
 $panelBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
 $panelSettings = isset($ayar) && is_array($ayar) ? $ayar : [];
+$panelContactLinks = isset($siteContactLinks) && is_array($siteContactLinks) ? $siteContactLinks : [];
 $panelSiteName = (string) ($panelBranding['site_name'] ?? $panelSettings['site_adi'] ?? 'VegasRoyalSpin');
 $panelLogoUrl = (string) ($panelBranding['logo_animated_url'] ?? $panelSettings['logo_animated_url'] ?? $panelBranding['logo_mobile_url'] ?? $panelBranding['logo_url'] ?? $panelSettings['logo_mobile_url'] ?? $panelSettings['logo_url'] ?? '');
+$panelPartnershipUrl = (string) ($panelContactLinks['partnership_url'] ?? '/ortaklik');
+$panelPartnershipTitle = (string) ($panelContactLinks['partnership_title'] ?? 'Ortaklık');
+$panelPartnershipIsExternal = (bool) preg_match('#^https?://#i', $panelPartnershipUrl);
 if (class_exists('ApiMediaUrl', false)) {
     $panelLogoUrl = ApiMediaUrl::resolve($panelLogoUrl);
 }
@@ -44,7 +48,7 @@ $_SESSION['csrf_token'] = $_SESSION[$panelCsrfKey];
         <a class="logo" href="/" data-site-logo-link>
           <?php if ($panelLogoUrl !== ''): ?><img class="hdr-logo-bc" src="<?= htmlspecialchars($panelLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
         </a>
-        <a href="https://affiliates.my/" target="_blank" rel="noopener noreferrer" class=" header-icon"><img alt="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars($panelSiteName, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" decoding="async" src="https://cms.casinomilyon615.com/storage/medias/casinomilyon-18755179/media_18755179_1617883267cb571ec980e925adbb0427.gif"></a>
+        <a href="<?= htmlspecialchars($panelPartnershipUrl, ENT_QUOTES, 'UTF-8') ?>"<?= $panelPartnershipIsExternal ? ' target="_blank" rel="noopener noreferrer"' : '' ?> class=" header-icon" title="<?= htmlspecialchars($panelPartnershipTitle, ENT_QUOTES, 'UTF-8') ?>"><img alt="<?= htmlspecialchars($panelPartnershipTitle, ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars($panelPartnershipTitle, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" decoding="async" src="https://cms.casinomilyon615.com/storage/medias/casinomilyon-18755179/media_18755179_1617883267cb571ec980e925adbb0427.gif"></a>
       </div>
       <i class="hdr-user-close bc-i-close-remove"></i>
     </div>

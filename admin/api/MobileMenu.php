@@ -33,12 +33,12 @@ final class ApiMobileMenu
                     ? $remote['menu']
                     : (is_array($remote['mobile_menu'] ?? null) ? $remote['mobile_menu'] : []);
 
-                return self::normalizePayload($menu, $default);
+                return self::applyContactLinks(self::normalizePayload($menu, $default));
             }
 
             ApiCmsRemote::recordFetch('mobile_menu', 'default');
 
-            return $default;
+            return self::applyContactLinks($default);
         }
 
         try {
@@ -52,17 +52,17 @@ final class ApiMobileMenu
             );
             $payload = $stmt !== false ? $stmt->fetchColumn() : false;
             if (!is_string($payload) || trim($payload) === '') {
-                return $default;
+                return self::applyContactLinks($default);
             }
 
             $decoded = json_decode($payload, true);
             if (!is_array($decoded)) {
-                return $default;
+                return self::applyContactLinks($default);
             }
 
-            return self::normalizePayload($decoded, $default);
+            return self::applyContactLinks(self::normalizePayload($decoded, $default));
         } catch (Throwable) {
-            return $default;
+            return self::applyContactLinks($default);
         }
     }
 
@@ -84,21 +84,24 @@ final class ApiMobileMenu
      */
     public static function defaultDesktopNav(): array
     {
+        $callbackUrl = self::contactUrl('callback_url', '/beni-ara');
+
         return [
             ['label' => 'SPOR', 'href' => '/sportbook', 'icon' => 'bc-i-prematch', 'enabled' => true],
             ['label' => 'SLOT', 'href' => '/slot', 'icon' => 'bc-i-slots', 'enabled' => true],
             ['label' => 'CANLI CASINO', 'href' => '/livecasino', 'icon' => 'bc-i-livecasino', 'enabled' => true],
             ['label' => 'BGAMING', 'href' => '/bgaming', 'icon' => 'bc-i-tv-games', 'enabled' => true],
             ['label' => 'TURNUVALAR', 'href' => '/turnuvalar', 'icon' => 'bc-i-tournament', 'enabled' => true],
-            ['label' => 'BENİ ARA', 'href' => '/beni-ara', 'icon' => 'bc-i-call', 'enabled' => true],
+            ['label' => 'BENİ ARA', 'href' => $callbackUrl, 'icon' => 'bc-i-call', 'enabled' => true],
             ['label' => 'PROMOSYONLAR', 'href' => '/promotions', 'icon' => 'bc-i-promotions-3', 'enabled' => true],
         ];
     }
 
     public static function defaultPayload(): array
     {
-        $liveSupportUrl = self::envUrl('LIVE_SUPPORT_URL', 'javascript:void(0)');
-        $whatsappUrl = self::envUrl('WHATSAPP_URL', 'javascript:void(0)');
+        $liveSupportUrl = self::contactUrl('live_support_url', self::envUrl('LIVE_SUPPORT_URL', 'javascript:void(0)'));
+        $whatsappUrl = self::contactUrl('whatsapp_url', self::envUrl('WHATSAPP_URL', 'javascript:void(0)'));
+        $callbackUrl = self::contactUrl('callback_url', '/beni-ara');
 
         return [
             'title' => 'Menü',
@@ -128,7 +131,7 @@ final class ApiMobileMenu
                     'title' => 'İLETİŞİM',
                     'items' => [
                         ['label' => 'Canlı Destek', 'href' => $liveSupportUrl, 'icon' => 'bc-i-live-chat', 'badge' => 'ÖZEL', 'target' => '_blank', 'enabled' => true],
-                        ['label' => 'Beni Ara', 'href' => '/beni-ara', 'icon' => 'bc-i-call', 'badge' => 'ÖZEL', 'target' => '_self', 'enabled' => true],
+                        ['label' => 'Beni Ara', 'href' => $callbackUrl, 'icon' => 'bc-i-call', 'badge' => 'ÖZEL', 'target' => '_self', 'enabled' => true],
                         ['label' => 'Whatsapp', 'href' => $whatsappUrl, 'icon' => 'bc-i-whatsapp', 'badge' => 'ÖZEL', 'target' => '_blank', 'enabled' => true],
                     ],
                 ],
@@ -145,10 +148,121 @@ final class ApiMobileMenu
                 ['href' => '/sportbook', 'aria' => 'Spor Bahisleri', 'img' => 'spor.webp', 'alt' => 'Spor Bahisleri', 'enabled' => true],
                 ['href' => '/livecasino', 'aria' => 'Canlı Casino', 'img' => 'canlicasino.webp', 'alt' => 'Canlı Casino', 'enabled' => true],
                 ['href' => '/promotions', 'aria' => 'Promosyonlar', 'img' => 'arkadasbonusu.webp', 'alt' => 'Promosyonlar', 'enabled' => true],
-                ['href' => '/beni-ara', 'aria' => 'Aranma Talebi', 'img' => 'cozummerkezi.webp', 'alt' => 'Aranma Talebi', 'enabled' => true],
+                ['href' => $callbackUrl, 'aria' => 'Aranma Talebi', 'img' => 'cozummerkezi.webp', 'alt' => 'Aranma Talebi', 'enabled' => true],
                 ['href' => '{{LIVE_SUPPORT_URL}}', 'aria' => 'Destek', 'img' => 'telegram.webp', 'alt' => 'Canlı Destek', 'enabled' => true],
             ],
         ];
+    }
+
+    private static function contactLinks(): array
+    {
+        global $siteContactLinks;
+        if (is_array($siteContactLinks) && $siteContactLinks !== []) {
+            return $siteContactLinks;
+        }
+        if (class_exists('ApiSiteSettings', false)) {
+            return ApiSiteSettings::normalizeContactLinks([]);
+        }
+
+        return [];
+    }
+
+    private static function contactUrl(string $key, string $default = ''): string
+    {
+        $links = self::contactLinks();
+        $value = trim((string) ($links[$key] ?? ''));
+
+        return $value !== '' ? $value : $default;
+    }
+
+    /**
+     * Admin Site Ayarları iletişim linklerini menü href'lerine uygular.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private static function applyContactLinks(array $payload): array
+    {
+        $map = [
+            '{{LIVE_SUPPORT_URL}}' => self::contactUrl('live_support_url', self::envUrl('LIVE_SUPPORT_URL', 'javascript:void(0)')),
+            '{{WHATSAPP_URL}}' => self::contactUrl('whatsapp_url', self::envUrl('WHATSAPP_URL', 'javascript:void(0)')),
+            '{{TELEGRAM_URL}}' => self::contactUrl('telegram_url', self::envUrl('TELEGRAM_URL', 'https://t.me')),
+            '{{CALLBACK_URL}}' => self::contactUrl('callback_url', '/beni-ara'),
+            '{{PARTNERSHIP_URL}}' => self::contactUrl('partnership_url', '/ortaklik'),
+            '/beni-ara' => self::contactUrl('callback_url', '/beni-ara'),
+            '/ortaklik' => self::contactUrl('partnership_url', '/ortaklik'),
+        ];
+
+        $rewrite = static function (string $href) use ($map): string {
+            $href = trim($href);
+            if ($href === '') {
+                return $href;
+            }
+            if (isset($map[$href])) {
+                return $map[$href];
+            }
+
+            return $href;
+        };
+
+        if (isset($payload['desktop_nav']) && is_array($payload['desktop_nav'])) {
+            foreach ($payload['desktop_nav'] as $i => $item) {
+                if (!is_array($item) || !isset($item['href'])) {
+                    continue;
+                }
+                $payload['desktop_nav'][$i]['href'] = $rewrite((string) $item['href']);
+            }
+        }
+
+        if (isset($payload['tab_bar']) && is_array($payload['tab_bar'])) {
+            foreach ($payload['tab_bar'] as $i => $item) {
+                if (!is_array($item) || !isset($item['href'])) {
+                    continue;
+                }
+                $payload['tab_bar'][$i]['href'] = $rewrite((string) $item['href']);
+            }
+        }
+
+        if (isset($payload['sections']) && is_array($payload['sections'])) {
+            foreach ($payload['sections'] as $si => $section) {
+                if (!is_array($section) || !isset($section['items']) || !is_array($section['items'])) {
+                    continue;
+                }
+                foreach ($section['items'] as $ii => $item) {
+                    if (!is_array($item) || !isset($item['href'])) {
+                        continue;
+                    }
+                    $href = trim((string) $item['href']);
+                    $icon = strtolower((string) ($item['icon'] ?? ''));
+                    $label = strtolower((string) ($item['label'] ?? ''));
+                    if (
+                        ($href === '' || $href === 'javascript:void(0)' || $href === 'javascript:void(0);')
+                        && (str_contains($icon, 'whatsapp') || str_contains($label, 'whatsapp'))
+                    ) {
+                        $href = $map['{{WHATSAPP_URL}}'];
+                    } elseif (
+                        ($href === '' || $href === 'javascript:void(0)' || $href === 'javascript:void(0);')
+                        && (str_contains($icon, 'live-chat') || str_contains($label, 'canlı destek') || str_contains($label, 'canli destek'))
+                    ) {
+                        $href = $map['{{LIVE_SUPPORT_URL}}'];
+                    } else {
+                        $href = $rewrite($href);
+                    }
+                    $payload['sections'][$si]['items'][$ii]['href'] = $href;
+                }
+            }
+        }
+
+        if (isset($payload['product_banners']) && is_array($payload['product_banners'])) {
+            foreach ($payload['product_banners'] as $i => $banner) {
+                if (!is_array($banner) || !isset($banner['href'])) {
+                    continue;
+                }
+                $payload['product_banners'][$i]['href'] = $rewrite((string) $banner['href']);
+            }
+        }
+
+        return $payload;
     }
 
     private static function envUrl(string $key, string $default): string

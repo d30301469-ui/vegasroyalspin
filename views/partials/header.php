@@ -17,11 +17,13 @@ $headerContactLinks = is_array($siteContactLinks ?? null)
 $headerPartnershipUrl = (string) ($headerContactLinks['partnership_url'] ?? '/ortaklik');
 $headerPartnershipLabel = (string) ($headerContactLinks['partnership_label'] ?? 'ORTAKLIK');
 $headerPartnershipTitle = (string) ($headerContactLinks['partnership_title'] ?? 'Ortaklık');
+$headerPartnershipIsExternal = (bool) preg_match('#^https?://#i', $headerPartnershipUrl);
 $headerSupportUrl = (string) ($headerContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : ''));
 $headerSupportTitle = (string) ($headerContactLinks['live_support_title'] ?? 'Canlı Destek');
 $headerSupportUrlJs = json_encode($headerSupportUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 $headerSupportUrlJs = is_string($headerSupportUrlJs) ? $headerSupportUrlJs : '""';
 $headerSupportOnclick = 'window.open(' . $headerSupportUrlJs . ', "_blank"); return false;';
+$headerPartnershipAttrs = $headerPartnershipIsExternal ? ' target="_blank" rel="noopener noreferrer"' : '';
 $headerBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
 $headerSiteName      = (string) ($headerBranding['site_name']         ?? $ayar['site_adi']           ?? 'VegasRoyalSpin');
 $headerLogoUrl       = cms_asset_url((string) ($headerBranding['logo_url']          ?? $ayar['logo_url']          ?? ''));
@@ -68,7 +70,7 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                     <div class="header-custom-buttons">
                         <a href="<?= htmlspecialchars($headerPartnershipUrl, ENT_QUOTES, 'UTF-8') ?>"
                            class="btn a-color header-icon-text bc-i-standings"
-                           title="<?= htmlspecialchars($headerPartnershipTitle, ENT_QUOTES, 'UTF-8') ?>">
+                           title="<?= htmlspecialchars($headerPartnershipTitle, ENT_QUOTES, 'UTF-8') ?>"<?= $headerPartnershipAttrs ?>>
                             <span><?= htmlspecialchars($headerPartnershipLabel, ENT_QUOTES, 'UTF-8') ?></span>
                         </a>
                         <a href="#"
@@ -181,7 +183,7 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                     <div class="header-custom-buttons">
                         <a href="<?= htmlspecialchars($headerPartnershipUrl, ENT_QUOTES, 'UTF-8') ?>"
                            class="btn a-color header-icon-text bc-i-standings"
-                           title="<?= htmlspecialchars($headerPartnershipTitle, ENT_QUOTES, 'UTF-8') ?>">
+                           title="<?= htmlspecialchars($headerPartnershipTitle, ENT_QUOTES, 'UTF-8') ?>"<?= $headerPartnershipAttrs ?>>
                             <span><?= htmlspecialchars($headerPartnershipLabel, ENT_QUOTES, 'UTF-8') ?></span>
                         </a>
                         <a href="#"

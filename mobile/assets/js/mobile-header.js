@@ -198,9 +198,27 @@
         }
         if (!supportUrl) {
             supportUrl = (typeof window.__mobileSupportUrl === 'string' && window.__mobileSupportUrl)
+                || (window.__FRONTEND_CONNECTIONS__ && window.__FRONTEND_CONNECTIONS__.liveSupportUrl)
                 || (typeof LIVE_SUPPORT_URL !== 'undefined' ? LIVE_SUPPORT_URL : '');
         }
         var supportUrlEnc = supportUrl.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        var connections = window.__FRONTEND_CONNECTIONS__ || {};
+        var siteContact = (window.__SITE_SETTINGS__ && window.__SITE_SETTINGS__.contact) || {};
+        var partnershipUrl = connections.partnershipUrl
+            || siteContact.partnership_url
+            || '/ortaklik';
+        var partnershipTitle = connections.partnershipTitle
+            || siteContact.partnership_title
+            || 'Ortaklık';
+        var partnershipLabel = connections.partnershipLabel
+            || siteContact.partnership_label
+            || 'ORTAKLIK';
+        var partnershipIsExternal = /^https?:\/\//i.test(partnershipUrl);
+        var partnershipUrlEnc = String(partnershipUrl).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        var partnershipTitleEnc = String(partnershipTitle).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        var partnershipLabelEnc = String(partnershipLabel).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        var partnershipAttrs = partnershipIsExternal ? ' target="_blank" rel="noopener noreferrer"' : '';
 
         return ''
             + '<div class="hdr-additional-info">'
@@ -247,12 +265,13 @@
             + '      <a href="#"'
             + '         class="user-nav-icon bc-i-call callPanel"'
             + '         onclick="window.open(\'' + supportUrlEnc + '\',\'_blank\'); return false;"'
-            + '         title="Canlı Destek"'
-            + '         aria-label="Canlı Destek"></a>'
-            + '      <a href="/ortaklik"'
+            + '         title="' + String(connections.liveSupportTitle || siteContact.live_support_title || 'Canlı Destek').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') + '"'
+            + '         aria-label="' + String(connections.liveSupportTitle || siteContact.live_support_title || 'Canlı Destek').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') + '"></a>'
+            + '      <a href="' + partnershipUrlEnc + '"'
             + '         class="user-nav-icon bc-i-standings"'
-            + '         title="Ortaklık"'
-            + '         aria-label="Ortaklık"></a>'
+            + '         title="' + partnershipTitleEnc + '"'
+            + '         aria-label="' + partnershipLabelEnc + '"'
+            + partnershipAttrs + '></a>'
             + '      <a href="/promotions"'
             + '         class="user-nav-icon bc-i-x50-wheel hdr-shortcut-wheel"'
             + '         title="Çark"'

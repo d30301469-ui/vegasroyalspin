@@ -37,6 +37,11 @@ foreach (array_keys($mobileHeaderLoyaltyIconMap) as $mobileHeaderLoyaltyLevelCod
 $mobileHeaderLoyaltyIconUrl = $mobileHeaderLoyaltyIconMap[$mobileHeaderLoyaltyCode] ?? '/assets/images/loyalty/badges/bronze.png';
 $mobileHeaderSupportUrl = (string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : ''));
 $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+$mobileHeaderSupportTitle = (string) ($siteContactLinks['live_support_title'] ?? 'Canlı Destek');
+$mobileHeaderPartnershipUrl = (string) ($siteContactLinks['partnership_url'] ?? '/ortaklik');
+$mobileHeaderPartnershipTitle = (string) ($siteContactLinks['partnership_title'] ?? 'Ortaklık');
+$mobileHeaderPartnershipLabel = (string) ($siteContactLinks['partnership_label'] ?? 'ORTAKLIK');
+$mobileHeaderPartnershipIsExternal = (bool) preg_match('#^https?://#i', $mobileHeaderPartnershipUrl);
 ?>
 <div class="layout-header-holder-bc mobile-bc-header">
   <div class="hdr-dynamic-content" aria-hidden="true">
@@ -156,12 +161,13 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
           <a href="#"
              class="user-nav-icon bc-i-call callPanel"
              onclick="window.open(<?= htmlspecialchars($mobileHeaderSupportUrlJs, ENT_QUOTES, 'UTF-8') ?>,'_blank'); return false;"
-             title="Canlı Destek"
-             aria-label="Canlı Destek"></a>
-          <a href="/ortaklik"
+             title="<?= htmlspecialchars($mobileHeaderSupportTitle, ENT_QUOTES, 'UTF-8') ?>"
+             aria-label="<?= htmlspecialchars($mobileHeaderSupportTitle, ENT_QUOTES, 'UTF-8') ?>"></a>
+          <a href="<?= htmlspecialchars($mobileHeaderPartnershipUrl, ENT_QUOTES, 'UTF-8') ?>"
              class="user-nav-icon bc-i-standings"
-             title="Ortaklık"
-             aria-label="Ortaklık"></a>
+             title="<?= htmlspecialchars($mobileHeaderPartnershipTitle, ENT_QUOTES, 'UTF-8') ?>"
+             aria-label="<?= htmlspecialchars($mobileHeaderPartnershipLabel, ENT_QUOTES, 'UTF-8') ?>"
+             <?= $mobileHeaderPartnershipIsExternal ? 'target="_blank" rel="noopener noreferrer"' : '' ?>></a>
           <a href="/promotions"
              class="user-nav-icon bc-i-x50-wheel hdr-shortcut-wheel"
              title="Çark"
@@ -180,8 +186,8 @@ $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl
       <a href="#"
          class="guest-shortcut-icon bc-i-call callPanel"
          onclick="window.open(<?= htmlspecialchars($mobileHeaderSupportUrlJs, ENT_QUOTES, 'UTF-8') ?>,'_blank'); return false;"
-         title="Canlı Destek"
-         aria-label="Canlı Destek"></a>
+         title="<?= htmlspecialchars($mobileHeaderSupportTitle, ENT_QUOTES, 'UTF-8') ?>"
+         aria-label="<?= htmlspecialchars($mobileHeaderSupportTitle, ENT_QUOTES, 'UTF-8') ?>"></a>
       <button type="button"
               class="guest-shortcut-icon bc-i-wallet"
               onclick="if (typeof showLoginWarning === 'function') showLoginWarning();"

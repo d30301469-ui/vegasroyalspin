@@ -13,6 +13,7 @@ $sliderMobileBc = true;
 $sliderApiCategory = 'home';
 include VIEW_PATH . '/partials/slider.php';
 ?>
+<?php include VIEW_PATH . '/partials/mobile-home-widgets.php'; ?>
 <?php include VIEW_PATH . '/partials/main-content.php'; ?>
 
 <?php $homeJsVer = (string) (is_file(BASE_PATH . '/assets/js/home.js') ? filemtime(BASE_PATH . '/assets/js/home.js') : time()); ?>
