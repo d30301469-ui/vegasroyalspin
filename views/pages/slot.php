@@ -758,8 +758,12 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                         if (class_exists('CasinoAggregatorService', false)) {
                             if (!empty($game['cover_fallbacks']) && is_array($game['cover_fallbacks'])) {
                                 $coverFallbacks = $game['cover_fallbacks'];
+                            } elseif (($game['source'] ?? '') === 'aggregator' && $coverUrl !== '') {
+                                $coverFallbacks = CasinoAggregatorService::mediaUrlFallbacks($coverUrl);
+                            }
+                            if ($coverFallbacks !== []) {
                                 $coverUrl = (string) ($coverFallbacks[0] ?? $coverUrl);
-                            } else {
+                            } elseif ($coverUrl !== '') {
                                 $coverUrl = CasinoAggregatorService::resolveMediaUrl($coverUrl);
                             }
                         }

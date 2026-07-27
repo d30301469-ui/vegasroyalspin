@@ -475,8 +475,9 @@
 
     function renderGameItem(game) {
         const name = escapeHtml(game.game_name || '');
-        const cover = escapeHtml(preferCompatibleCover(game.cover || ''));
         const fallbacks = Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []);
+        const coverSource = fallbacks.length ? fallbacks[0] : (game.cover || '');
+        const cover = escapeHtml(preferCompatibleCover(coverSource));
         const fallbackAttr = fallbacks.length ? ' data-fallbacks="' + escapeHtml(JSON.stringify(fallbacks)) + '" data-fallback-idx="0"' : '';
         const gameId = String(game.game_id || '');
         const gameIdEsc = escapeHtml(gameId);
@@ -545,11 +546,18 @@
         var pagination = inner.pagination || {};
         var rawGames = Array.isArray(inner.games) ? inner.games : [];
         var games = rawGames.map(function(game) {
+            var fallbacks = Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks
+                : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []);
+            var coverSource = fallbacks.length
+                ? fallbacks[0]
+                : (game.image_url || game.thumbnail_url || game.banner || game.cover || '');
             return {
                 id: game.id,
                 game_id: game.game_id || game.slug || game.id,
                 game_name: game.name || game.game_name || '',
-                cover: preferCompatibleCover(game.image_url || game.thumbnail_url || game.banner || game.cover || ''),
+                cover: preferCompatibleCover(coverSource),
+                cover_fallbacks: fallbacks,
+                image_fallbacks: fallbacks,
                 has_demo: game.has_demo,
                 provider: game.provider || '',
                 provider_code: game.provider_code || '',

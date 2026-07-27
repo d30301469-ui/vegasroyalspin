@@ -40,6 +40,9 @@ final class SlotGamesQuery
         } elseif (class_exists('CasinoAggregatorService', false)) {
             $coverFallbacks = CasinoAggregatorService::resolveGameImageFallbacks($row);
         }
+        if ($coverFallbacks === [] && $cover !== '' && class_exists('CasinoAggregatorService', false)) {
+            $coverFallbacks = CasinoAggregatorService::mediaUrlFallbacks($cover, $row);
+        }
 
         return [
             'id'            => (string) ($row['id'] ?? ''),
@@ -593,12 +596,21 @@ final class SlotGamesQuery
             $provider = SlotGamesQuery::normalizeProviderLabel($r['provider'] ?? '');
             $imageUrl = SlotGamesQuery::normalizeGameImage($r);
             $name = SlotGamesQuery::normalizeGameName($r['name'] ?? '');
+            $coverFallbacks = [];
+            if (class_exists('CasinoAggregatorService', false)) {
+                $coverFallbacks = CasinoAggregatorService::resolveGameImageFallbacks($r);
+                if ($coverFallbacks === [] && $imageUrl !== '') {
+                    $coverFallbacks = CasinoAggregatorService::mediaUrlFallbacks($imageUrl, $r);
+                }
+            }
 
             return [
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => (string) ($r['game_id'] ?? ''),
                 'name'          => $name,
                 'image_url'     => $imageUrl,
+                'cover_fallbacks' => $coverFallbacks,
+                'image_fallbacks' => $coverFallbacks,
                 'provider'      => $provider,
                 'provider_code' => (string) ($r['provider_code'] ?? ''),
                 'is_featured'   => $featured,
