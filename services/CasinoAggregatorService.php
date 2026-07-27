@@ -265,17 +265,21 @@ final class CasinoAggregatorService
                     'image_url' => $row['imageUrl'] ?? ($row['image_url'] ?? ''),
                     'raw_payload' => is_string($rawJson) ? $rawJson : null,
                 ];
-                $media = self::hydrateGameMedia($mediaRow, $lang, true);
-                $insert->execute([
-                    ':vendor' => $vendor,
-                    ':game'   => $gameCode,
-                    ':name'   => self::resolveLocalizedLabel($row['gameName'] ?? '', $lang) ?: $gameCode,
-                    ':type'   => max(1, (int) ($row['gameType'] ?? 1)),
-                    ':image'  => ($media['cover'] ?? '') !== '' ? $media['cover'] : null,
-                    ':fallbacks' => self::encodeStoredImageFallbacks($media['cover_fallbacks'] ?? []),
-                    ':raw'    => $rawJson,
-                ]);
-                $gameCount++;
+                try {
+                    $media = self::hydrateGameMedia($mediaRow, $lang, true);
+                    $insert->execute([
+                        ':vendor' => $vendor,
+                        ':game'   => $gameCode,
+                        ':name'   => self::resolveLocalizedLabel($row['gameName'] ?? '', $lang) ?: $gameCode,
+                        ':type'   => max(1, (int) ($row['gameType'] ?? 1)),
+                        ':image'  => ($media['cover'] ?? '') !== '' ? $media['cover'] : null,
+                        ':fallbacks' => self::encodeStoredImageFallbacks($media['cover_fallbacks'] ?? []),
+                        ':raw'    => $rawJson,
+                    ]);
+                    $gameCount++;
+                } catch (Throwable $e) {
+                    $errors[] = $vendor . '/' . $gameCode . ': ' . $e->getMessage();
+                }
             }
         }
 
@@ -332,7 +336,11 @@ final class CasinoAggregatorService
                 self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null)
             );
             $newName = self::resolveLocalizedLabel($currentName, $lang) ?: $currentName;
-            $media = self::hydrateGameMedia($row, $lang, true);
+            try {
+                $media = self::hydrateGameMedia($row, $lang, true);
+            } catch (Throwable) {
+                continue;
+            }
             $newImage = trim((string) ($media['cover'] ?? ''));
             $newFallbacks = self::encodeStoredImageFallbacks($media['cover_fallbacks'] ?? []);
             $needsName = self::looksLikeLocalizedJson($currentName) && $newName !== '' && $newName !== $currentName;
@@ -514,6 +522,9 @@ final class CasinoAggregatorService
         if ($url === '' || !self::isUsableMediaUrl($url)) {
             return false;
         }
+        if (!self::shouldProbeMediaUrl($url)) {
+            return true;
+        }
 
         $cacheDir = self::mediaProbeCacheDir();
         $cacheFile = $cacheDir . '/' . sha1($url) . '.json';
@@ -524,7 +535,11 @@ final class CasinoAggregatorService
             }
         }
 
-        $ok = self::probeMediaUrlLive($url);
+        try {
+            $ok = self::probeMediaUrlLive($url);
+        } catch (Throwable) {
+            $ok = false;
+        }
 
         if (!is_dir($cacheDir)) {
             @mkdir($cacheDir, 0755, true);
@@ -536,46 +551,57 @@ final class CasinoAggregatorService
 
     private static function probeMediaUrlLive(string $url): bool
     {
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => 6,
-                'ignore_errors' => true,
-                'header' => "User-Agent: VegasRoyalSpin-MediaProbe/1.0\r\nRange: bytes=0-63\r\n",
-            ],
-            'ssl' => [
-                'verify_peer' => true,
-                'verify_peer_name' => true,
-            ],
-        ]);
+        $previousTimeout = ini_get('default_socket_timeout');
+        ini_set('default_socket_timeout', '2');
 
-        $body = @file_get_contents($url, false, $context);
-        if ($body === false || $body === '') {
+        try {
+            if (function_exists('curl_init')) {
+                $body = self::probeMediaUrlViaCurl($url);
+
+                return $body !== false && self::isValidImageSample((string) $body);
+            }
+
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'GET',
+                    'timeout' => 2,
+                    'ignore_errors' => true,
+                    'header' => "User-Agent: VegasRoyalSpin-MediaProbe/1.0\r\nRange: bytes=0-63\r\n",
+                ],
+                'ssl' => [
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
+                ],
+            ]);
+
+            $body = @file_get_contents($url, false, $context);
+            if ($body === false || $body === '') {
+                return false;
+            }
+
+            $headers = $GLOBALS['http_response_header'] ?? [];
+            foreach ($headers as $headerLine) {
+                if (preg_match('#^HTTP/\S+\s+(\d{3})#', (string) $headerLine, $matches) === 1) {
+                    $status = (int) ($matches[1] ?? 0);
+                    if ($status < 200 || $status >= 400) {
+                        return false;
+                    }
+                    break;
+                }
+            }
+
+            return self::isValidImageSample((string) $body);
+        } catch (Throwable) {
             return false;
-        }
-
-        $headers = $http_response_header ?? [];
-        $status = 0;
-        foreach ($headers as $headerLine) {
-            if (preg_match('#^HTTP/\S+\s+(\d{3})#', (string) $headerLine, $matches) === 1) {
-                $status = (int) ($matches[1] ?? 0);
+        } finally {
+            if ($previousTimeout !== false && $previousTimeout !== '') {
+                ini_set('default_socket_timeout', (string) $previousTimeout);
             }
         }
-        if ($status < 200 || $status >= 400) {
-            return false;
-        }
+    }
 
-        $contentType = '';
-        foreach ($headers as $headerLine) {
-            if (stripos((string) $headerLine, 'Content-Type:') === 0) {
-                $contentType = strtolower(trim(substr((string) $headerLine, 13)));
-                break;
-            }
-        }
-        if ($contentType !== '' && str_contains($contentType, 'text/html')) {
-            return false;
-        }
-
+    private static function isValidImageSample(string $body): bool
+    {
         $sample = substr($body, 0, 64);
         if ($sample === '') {
             return false;
@@ -585,6 +611,36 @@ final class CasinoAggregatorService
         }
 
         return self::looksLikeImageBytes($sample);
+    }
+
+    private static function probeMediaUrlViaCurl(string $url): string|false
+    {
+        $handle = curl_init($url);
+        if ($handle === false) {
+            return false;
+        }
+
+        curl_setopt_array($handle, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 2,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_TIMEOUT => 2,
+            CURLOPT_RANGE => '0-63',
+            CURLOPT_USERAGENT => 'VegasRoyalSpin-MediaProbe/1.0',
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+        ]);
+
+        $body = curl_exec($handle);
+        $httpCode = (int) curl_getinfo($handle, CURLINFO_HTTP_CODE);
+        curl_close($handle);
+
+        if ($body === false || $httpCode < 200 || $httpCode >= 400) {
+            return false;
+        }
+
+        return $body;
     }
 
     private static function looksLikeImageBytes(string $sample): bool
@@ -614,6 +670,20 @@ final class CasinoAggregatorService
     }
 
     /**
+     * Only probe known aggregator lobby CDNs. Other hosts (duel.com, etc.) often
+     * timeout or block server-side requests and must never abort catalog sync.
+     */
+    private static function shouldProbeMediaUrl(string $url): bool
+    {
+        $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
+        if ($host === '') {
+            return false;
+        }
+
+        return preg_match('#(?:mhjbneijrtonline|ohjaieijyg)\.org$#i', $host) === 1;
+    }
+
+    /**
      * Probe CDN candidates and return working URLs first.
      *
      * @param list<string> $urls
@@ -631,14 +701,22 @@ final class CasinoAggregatorService
                 $broken[] = $url;
                 continue;
             }
+            if (!self::shouldProbeMediaUrl($url)) {
+                $unprobed[] = $url;
+                continue;
+            }
             if ($probes >= $maxProbes) {
                 $unprobed[] = $url;
                 continue;
             }
             $probes++;
-            if (self::probeMediaUrl($url)) {
-                $working[] = $url;
-            } else {
+            try {
+                if (self::probeMediaUrl($url)) {
+                    $working[] = $url;
+                } else {
+                    $broken[] = $url;
+                }
+            } catch (Throwable) {
                 $broken[] = $url;
             }
         }
@@ -1058,7 +1136,7 @@ final class CasinoAggregatorService
 
         $fallbacks = self::mergeMediaCandidates($storedFallbacks, $candidates);
         if ($probeCandidates && $fallbacks !== []) {
-            $fallbacks = self::validateMediaUrlCandidates($fallbacks, 24);
+            $fallbacks = self::validateMediaUrlCandidates($fallbacks, 12);
         } elseif ($fallbacks !== []) {
             $marketing = [];
             $regular = [];
@@ -1097,12 +1175,12 @@ final class CasinoAggregatorService
             }
         }
 
-        if (!$probeCandidates && $fallbacks !== [] && ($cover === '' || !self::probeMediaUrl($cover))) {
+        if (!$probeCandidates && $fallbacks !== [] && ($cover === '' || (self::shouldProbeMediaUrl($cover) && !self::probeMediaUrl($cover)))) {
             $fallbacks = self::validateMediaUrlCandidates($fallbacks, 16);
         }
         if ($cover === '' && $fallbacks !== []) {
             $cover = (string) $fallbacks[0];
-        } elseif ($fallbacks !== [] && !self::probeMediaUrl($cover)) {
+        } elseif ($fallbacks !== [] && self::shouldProbeMediaUrl($cover) && !self::probeMediaUrl($cover)) {
             $cover = (string) $fallbacks[0];
         }
         if ($cover !== '' && !in_array($cover, $fallbacks, true)) {
