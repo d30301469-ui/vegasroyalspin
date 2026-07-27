@@ -716,18 +716,33 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                             <?php if (preg_match('/(^image_url$|thumbnail|banner|cover|logo)/i', $columnName) === 1): ?>
                                 <?php
                                 $imageUrl = trim((string) $rawValue);
-                                if ($imageUrl === '' && $columnName === 'image_url') {
-                                    $imageUrl = trim((string) ($row['banner'] ?? ''));
-                                }
-                                if ($imageUrl === '' && !empty($row['raw_payload'])) {
-                                    $rawPayload = json_decode((string) $row['raw_payload'], true);
-                                    if (is_array($rawPayload)) {
-                                        $imageUrl = trim((string) ($rawPayload['banner'] ?? $rawPayload['image_url'] ?? $rawPayload['image'] ?? ''));
+                                if ($table === 'casino_aggregator_games' && class_exists('CasinoAggregatorService', false)) {
+                                    $imageUrl = CasinoAggregatorService::resolveGameImage([
+                                        'image_url' => $imageUrl,
+                                        'raw_payload' => $row['raw_payload'] ?? null,
+                                    ]);
+                                } elseif ($imageUrl !== '' && class_exists('CasinoAggregatorService', false)
+                                    && CasinoAggregatorService::looksLikeLocalizedJson($imageUrl)) {
+                                    $imageUrl = CasinoAggregatorService::resolveMediaUrl($imageUrl);
+                                } else {
+                                    if ($imageUrl === '' && $columnName === 'image_url') {
+                                        $imageUrl = trim((string) ($row['banner'] ?? ''));
+                                    }
+                                    if ($imageUrl === '' && !empty($row['raw_payload'])) {
+                                        $rawPayload = is_array($row['raw_payload'] ?? null)
+                                            ? $row['raw_payload']
+                                            : json_decode((string) ($row['raw_payload'] ?? ''), true);
+                                        if (is_array($rawPayload)) {
+                                            $imageUrl = trim((string) ($rawPayload['imageUrl'] ?? $rawPayload['banner'] ?? $rawPayload['image_url'] ?? $rawPayload['image'] ?? ''));
+                                            if (class_exists('CasinoAggregatorService', false)) {
+                                                $imageUrl = CasinoAggregatorService::resolveMediaUrl($imageUrl);
+                                            }
+                                        }
                                     }
                                 }
                                 ?>
-                                <?php if ($imageUrl !== ''): ?>
-                                    <img class="admin-game-thumb" src="<?= htmlspecialchars($imageUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Ön izleme" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'admin-game-thumb-placeholder',textContent:'Yok'}));">
+                                <?php if ($imageUrl !== '' && (str_starts_with($imageUrl, 'http') || str_starts_with($imageUrl, '/'))): ?>
+                                    <img class="admin-game-thumb" src="<?= htmlspecialchars($imageUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Ön izleme" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'admin-game-thumb-placeholder',textContent:'Yok'}));">
                                 <?php else: ?>
                                     <span class="admin-game-thumb-placeholder">Yok</span>
                                 <?php endif; ?>

@@ -324,7 +324,10 @@ final class CasinoAggregatorService
             $newImage = self::resolveGameImage($row, $lang);
             $needsName = self::looksLikeLocalizedJson($currentName) && $newName !== '' && $newName !== $currentName;
             $needsImage = $newImage !== '' && $newImage !== $currentImage
-                && ($currentImage === '' || !self::isUsableMediaUrl($currentImage) || self::looksLikeLocalizedJson($currentImage));
+                && ($currentImage === ''
+                    || !self::isUsableMediaUrl($currentImage)
+                    || self::looksLikeLocalizedJson($currentImage)
+                    || stripos($currentImage, '/default/') !== false);
             if (!$needsName && !$needsImage) {
                 continue;
             }
@@ -386,8 +389,8 @@ final class CasinoAggregatorService
     }
 
     /**
-     * Image maps look like {"en":"https://.../x.avif","lobby":"https://.../y.avif"}.
-     * Prefer locale / en over lobby.
+     * Image maps look like {"en":"https://.../lobby/x.avif","lobby":"https://.../default/x.avif"}.
+     * Prefer en /lobby/ assets; never use raw JSON as the final URL.
      */
     public static function resolveMediaUrl(mixed $value, ?string $lang = null): string
     {
@@ -397,7 +400,7 @@ final class CasinoAggregatorService
         }
 
         if (is_array($value)) {
-            return self::pickLocalized($value, $lang, true);
+            return self::normalizeMediaUrl(self::pickBestMediaCandidate($value, $lang));
         }
 
         if (!is_string($value)) {
@@ -410,10 +413,93 @@ final class CasinoAggregatorService
         }
 
         if (self::isUsableMediaUrl($trimmed)) {
-            return self::normalizeMediaUrl($trimmed);
+            return self::normalizeMediaUrl(self::preferLobbyPath($trimmed));
         }
 
-        return self::resolveLocalizedLabel($trimmed, $lang);
+        if (self::looksLikeLocalizedJson($trimmed)) {
+            foreach ([$trimmed, stripslashes($trimmed), html_entity_decode($trimmed, ENT_QUOTES, 'UTF-8')] as $candidate) {
+                $decoded = json_decode($candidate, true);
+                if (is_string($decoded) && self::looksLikeLocalizedJson($decoded)) {
+                    $decoded = json_decode($decoded, true);
+                }
+                if (is_array($decoded)) {
+                    $picked = self::pickBestMediaCandidate($decoded, $lang);
+                    if ($picked !== '') {
+                        return self::normalizeMediaUrl($picked);
+                    }
+                }
+            }
+
+            if (preg_match('/["\']en["\']\s*:\s*["\']([^"\']+)["\']/i', $trimmed, $matches)) {
+                return self::normalizeMediaUrl((string) ($matches[1] ?? ''));
+            }
+            if (preg_match('/["\']lobby["\']\s*:\s*["\']([^"\']+)["\']/i', $trimmed, $matches)) {
+                return self::normalizeMediaUrl(self::preferLobbyPath((string) ($matches[1] ?? '')));
+            }
+        }
+
+        $fromLabel = self::resolveLocalizedLabel($trimmed, $lang);
+        if (self::isUsableMediaUrl($fromLabel)) {
+            return self::normalizeMediaUrl(self::preferLobbyPath($fromLabel));
+        }
+
+        return '';
+    }
+
+    /**
+     * @param array<string, mixed> $decoded
+     */
+    private static function pickBestMediaCandidate(array $decoded, string $lang): string
+    {
+        $urls = [];
+        foreach ([$lang, 'en', 'tr', 'default', 'lobby'] as $key) {
+            $match = self::arrayValueByKeyInsensitive($decoded, $key);
+            if (is_string($match)) {
+                $url = trim($match);
+                if ($url !== '' && (self::isUsableMediaUrl($url) || str_contains($url, '://'))) {
+                    $urls[] = $url;
+                }
+            }
+        }
+        foreach ($decoded as $candidate) {
+            if (!is_string($candidate)) {
+                continue;
+            }
+            $url = trim($candidate);
+            if ($url !== '' && (self::isUsableMediaUrl($url) || str_contains($url, '://')) && !in_array($url, $urls, true)) {
+                $urls[] = $url;
+            }
+        }
+
+        if ($urls === []) {
+            return '';
+        }
+
+        foreach ($urls as $url) {
+            if (stripos($url, '/lobby/') !== false) {
+                return $url;
+            }
+        }
+
+        return self::preferLobbyPath($urls[0]);
+    }
+
+    /**
+     * Lobby CDN often serves working thumbs under /lobby/ instead of /default/.
+     */
+    public static function preferLobbyPath(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+        if (stripos($url, '/default/') !== false && stripos($url, '/lobby/') === false) {
+            $rewritten = preg_replace('#/default/#i', '/lobby/', $url, 1);
+            if (is_string($rewritten) && $rewritten !== '') {
+                return $rewritten;
+            }
+        }
+        return $url;
     }
 
     public static function isUsableMediaUrl(string $value): bool
@@ -439,7 +525,7 @@ final class CasinoAggregatorService
         if (str_starts_with($value, '//')) {
             $value = 'https:' . $value;
         }
-        return $value;
+        return self::preferLobbyPath($value);
     }
 
     /**
