@@ -115,12 +115,18 @@ $adminRole = (string) ($currentUser['role'] ?? 'admin');
 $adminInitials = strtoupper(substr($adminName, 0, 2));
 $canWithdrawals = AdminAuth::can('withdrawals');
 $canKyc = AdminAuth::can('kyc');
+$canUsers = AdminAuth::can('users');
 $canEmail = AdminAuth::can('email');
 $canLogs = AdminAuth::can('logs');
 $canSiteSettings = AdminAuth::can('site-settings');
 $canAdmins = AdminAuth::can('admins');
-$notificationCount = ($canWithdrawals ? $layoutScalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'pending'") : 0)
-    + ($canKyc ? $layoutScalar("SELECT COUNT(*) FROM kyc_requests WHERE status = 'pending'") : 0);
+$pendingWithdrawalsCount = $canWithdrawals ? $layoutScalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'pending'") : 0;
+$pendingKycCount = $canKyc ? $layoutScalar("SELECT COUNT(*) FROM kyc_requests WHERE status = 'pending'") : 0;
+$newRegistrationsCount = $canUsers ? $layoutScalar("SELECT COUNT(*) FROM users WHERE DATE(created_at) = CURDATE()") : 0;
+$newRegistrationRows = $canUsers
+    ? $layoutRows("SELECT id, username, name, surname, created_at FROM users WHERE DATE(created_at) = CURDATE() ORDER BY created_at DESC LIMIT 5")
+    : [];
+$notificationCount = $pendingWithdrawalsCount + $pendingKycCount + $newRegistrationsCount;
 $messageRows = $canEmail ? $layoutRows('SELECT * FROM member_inbox_messages ORDER BY created_at DESC LIMIT 3') : [];
 $logRows = $canLogs ? $layoutRows('SELECT admin_username, action, status, created_at FROM admin_logs ORDER BY created_at DESC LIMIT 3') : [];
 $paletteItems = [];
@@ -1409,13 +1415,24 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
                     <div class="dd-menu" role="menu">
                         <div class="dd-head"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Bildirimler</div>
                         <div class="dd-list">
-                            <?php if ($canWithdrawals): ?><a class="dd-item" href="<?= htmlspecialchars(AdminAuth::url('/module?key=withdrawals'), ENT_QUOTES, 'UTF-8') ?>"><div class="dd-avatar a1">ÇK</div><div class="dd-body"><div class="dd-text"><strong>Bekleyen çekim</strong> talepleri</div><div class="dd-time"><?= $layoutScalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type = 'withdraw' AND status = 'pending'") ?> kayıt</div></div></a><?php endif; ?>
-                            <?php if ($canKyc): ?><a class="dd-item" href="<?= htmlspecialchars(AdminAuth::url('/module?key=kyc'), ENT_QUOTES, 'UTF-8') ?>"><div class="dd-avatar a2">KY</div><div class="dd-body"><div class="dd-text"><strong>KYC</strong> inceleme kuyruğu</div><div class="dd-time"><?= $layoutScalar("SELECT COUNT(*) FROM kyc_requests WHERE status = 'pending'") ?> kayıt</div></div></a><?php endif; ?>
+                            <?php if ($canWithdrawals): ?><a class="dd-item" href="<?= htmlspecialchars(AdminAuth::url('/module?key=withdrawals'), ENT_QUOTES, 'UTF-8') ?>"><div class="dd-avatar a1">ÇK</div><div class="dd-body"><div class="dd-text"><strong>Bekleyen çekim</strong> talepleri</div><div class="dd-time"><?= (int) $pendingWithdrawalsCount ?> kayıt</div></div></a><?php endif; ?>
+                            <?php if ($canKyc): ?><a class="dd-item" href="<?= htmlspecialchars(AdminAuth::url('/module?key=kyc'), ENT_QUOTES, 'UTF-8') ?>"><div class="dd-avatar a2">KY</div><div class="dd-body"><div class="dd-text"><strong>KYC</strong> inceleme kuyruğu</div><div class="dd-time"><?= (int) $pendingKycCount ?> kayıt</div></div></a><?php endif; ?>
+                            <?php if ($canUsers): ?><a class="dd-item" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users'), ENT_QUOTES, 'UTF-8') ?>"><div class="dd-avatar a3">YK</div><div class="dd-body"><div class="dd-text"><strong>Yeni kayıt</strong> üyeler</div><div class="dd-time"><?= (int) $newRegistrationsCount ?> bugün</div></div></a><?php endif; ?>
+                            <?php foreach ($newRegistrationRows as $regUser): ?>
+                                <?php
+                                $regUsername = trim((string) ($regUser['username'] ?? ''));
+                                $regFullName = trim(((string) ($regUser['name'] ?? '')) . ' ' . ((string) ($regUser['surname'] ?? '')));
+                                $regLabel = $regUsername !== '' ? $regUsername : ($regFullName !== '' ? $regFullName : ('#' . (int) ($regUser['id'] ?? 0)));
+                                $regInitials = strtoupper(substr(preg_replace('/\s+/', '', $regLabel) ?: 'U', 0, 2));
+                                ?>
+                                <a class="dd-item" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users'), ENT_QUOTES, 'UTF-8') ?>"><div class="dd-avatar a1"><?= htmlspecialchars($regInitials, ENT_QUOTES, 'UTF-8') ?></div><div class="dd-body"><div class="dd-text"><strong><?= htmlspecialchars($regLabel, ENT_QUOTES, 'UTF-8') ?></strong> yeni kayıt oldu</div><div class="dd-time"><?= htmlspecialchars((string) ($regUser['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div></div></a>
+                            <?php endforeach; ?>
                             <?php foreach ($logRows as $log): ?>
                                 <a class="dd-item" href="<?= htmlspecialchars(AdminAuth::url('/module?key=logs'), ENT_QUOTES, 'UTF-8') ?>"><div class="dd-avatar a3">LG</div><div class="dd-body"><div class="dd-text"><strong><?= htmlspecialchars((string) ($log['admin_username'] ?? 'Admin'), ENT_QUOTES, 'UTF-8') ?></strong> <?= htmlspecialchars((string) ($log['action'] ?? 'log'), ENT_QUOTES, 'UTF-8') ?></div><div class="dd-time"><?= htmlspecialchars((string) ($log['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div></div></a>
                             <?php endforeach; ?>
                         </div>
-                        <?php if ($canLogs): ?><a class="dd-footer" href="<?= htmlspecialchars(AdminAuth::url('/module?key=logs'), ENT_QUOTES, 'UTF-8') ?>">Tüm logları görüntüle →</a><?php endif; ?>
+                        <?php if ($canUsers): ?><a class="dd-footer" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users'), ENT_QUOTES, 'UTF-8') ?>">Tüm üyeleri görüntüle →</a>
+                        <?php elseif ($canLogs): ?><a class="dd-footer" href="<?= htmlspecialchars(AdminAuth::url('/module?key=logs'), ENT_QUOTES, 'UTF-8') ?>">Tüm logları görüntüle →</a><?php endif; ?>
                     </div>
                 </div>
                 <?php if ($canEmail): ?><div class="dd-wrap">
