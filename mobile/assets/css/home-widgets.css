@@ -7,7 +7,9 @@ body.mobile-site .mobile-home-widgets {
   bottom: calc(var(--tab-navigation-height, 48px) + env(safe-area-inset-bottom, 0px) + 108px);
   z-index: 920;
   margin: 0;
-  padding: 0;
+  /* sağ üstte X için boşluk — kutu dışında kalsın */
+  padding: 14px 14px 0 0;
+  box-sizing: border-box;
   pointer-events: none;
 }
 
@@ -21,7 +23,7 @@ body.mobile-site .mobile-home-widgets .informative-widget {
   margin: 0;
   pointer-events: auto;
   border-radius: 24px;
-  overflow: visible;
+  overflow: hidden;
   background: rgba(8, 6, 20, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
@@ -44,11 +46,11 @@ body.mobile-site .informative-widget-link {
   box-shadow: none !important;
 }
 
-/* Kapat: kutunun dışında, sağ üst köşede */
+/* Kapat: kutunun sağ üst dışında */
 body.mobile-site .informative-widget-close {
   position: absolute;
-  top: -10px;
-  right: -4px;
+  top: 0;
+  right: 0;
   z-index: 3;
   width: 28px;
   height: 28px;

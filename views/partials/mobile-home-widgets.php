@@ -16,10 +16,10 @@ $callbackText = trim($callbackText);
         <i class="bc-i-call"></i>
       </span>
     </a>
-    <button type="button" class="informative-widget-close" id="informativeWidgetClose" aria-label="Uyarıyı kapat" title="Kapat">
-      <i class="bc-i-close-remove" aria-hidden="true"></i>
-    </button>
   </div>
+  <button type="button" class="informative-widget-close" id="informativeWidgetClose" aria-label="Uyarıyı kapat" title="Kapat">
+    <i class="bc-i-close-remove" aria-hidden="true"></i>
+  </button>
 
 <?php /* 2x2 hızlı işlem grid — orijinal mobil header altında yok; kaldırıldı */ ?>
 </div>
