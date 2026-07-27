@@ -28,6 +28,7 @@ $memberUserById ??= static fn (\PDO $p, int $id): ?array => null;
 
 if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/providers', 'live-casino/providers', 'games-provider', 'games_provider.php'], true)) {
     $pdo = AdminDatabase::pdo();
+    admin_require_project_file('services/CasinoAggregatorService.php');
     // 0 = slot lobby (BGaming), 1 = live casino.
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
     if ($route === 'live-casino/providers') {
@@ -64,6 +65,7 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
                 continue;
             }
             $seen[$code] = true;
+            $row['provider_name'] = CasinoAggregatorService::resolveLocalizedLabel($row['provider_name'] ?? '') ?: $code;
             $providers[] = $row;
         }
     } catch (Throwable) {}
@@ -103,6 +105,7 @@ if ($method === 'GET' && $route === 'casino/categories') {
 
 if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $pdo      = AdminDatabase::pdo();
+    admin_require_project_file('services/CasinoAggregatorService.php');
     // 0 = slot lobby (BGaming), 1 = live casino.
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
     $page     = max(1, (int) ($_GET['page'] ?? 1));
@@ -110,6 +113,12 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $offset   = ($page - 1) * $limit;
     $search   = trim((string) ($_GET['search'] ?? $_GET['q'] ?? ''));
     $provider = trim((string) ($_GET['provider'] ?? $_GET['provider_code'] ?? ''));
+    $providerList = [];
+    if (isset($_GET['providers']) && is_array($_GET['providers'])) {
+        $providerList = array_values(array_filter(array_map(static fn ($x): string => trim((string) $x), $_GET['providers']), static fn (string $x): bool => $x !== '' && strtolower($x) !== 'hepsi'));
+    } elseif ($provider !== '' && strtolower($provider) !== 'hepsi') {
+        $providerList = [$provider];
+    }
     $onlyFeatured = (string) ($_GET['is_featured'] ?? '') === '1'
         || in_array(strtolower((string) ($_GET['sort'] ?? '')), ['popular', 'liked'], true);
     // Optional source restriction (matches SlotGamesQuery::combinedCatalogPage):
@@ -128,7 +137,8 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
                 is_featured AS is_featured,
                 'bgaming' AS source,
-                CAST(id AS CHAR) AS row_id
+                CAST(id AS CHAR) AS row_id,
+                '' AS raw_payload
             FROM bgaming_games
             WHERE is_active = 1";
     }
@@ -142,7 +152,8 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
                 g.is_featured AS is_featured,
                 'aggregator' AS source,
-                CAST(g.id AS CHAR) AS row_id
+                CAST(g.id AS CHAR) AS row_id,
+                COALESCE(g.raw_payload, '') AS raw_payload
             FROM casino_aggregator_games g
             INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
             WHERE g.is_active = 1 AND v.is_active = 1 AND g.game_type = {$aggGameType}";
@@ -184,9 +195,24 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
         $params[':search']  = '%' . $search . '%';
         $params[':search2'] = '%' . $search . '%';
     }
-    if ($provider !== '' && strtolower($provider) !== 'hepsi') {
-        $where[]             = 'provider = :provider';
-        $params[':provider'] = $provider;
+    if ($providerList !== []) {
+        $filterTerms = $providerList;
+        try {
+            $expanded = CasinoAggregatorService::expandProviderFilter($pdo, $providerList);
+            $filterTerms = array_values(array_unique(array_merge($expanded['names'], $expanded['codes'])));
+        } catch (Throwable) {
+        }
+        $providerPlaceholders = [];
+        $codePlaceholders = [];
+        foreach ($filterTerms as $idx => $providerName) {
+            $providerKey = ':provider' . $idx;
+            $codeKey = ':provider_code' . $idx;
+            $providerPlaceholders[] = $providerKey;
+            $codePlaceholders[] = $codeKey;
+            $params[$providerKey] = $providerName;
+            $params[$codeKey] = $providerName;
+        }
+        $where[] = '(provider IN (' . implode(', ', $providerPlaceholders) . ') OR provider_code IN (' . implode(', ', $codePlaceholders) . '))';
     }
     if ($onlyFeatured) {
         $where[] = 'is_featured = 1';
@@ -204,7 +230,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
         $total = (int) $countStmt->fetchColumn();
 
         $rowsStmt = $pdo->prepare(
-            "SELECT game_id, name, provider, provider_code, image_url, is_featured, source, row_id
+            "SELECT game_id, name, provider, provider_code, image_url, is_featured, source, row_id, raw_payload
              FROM {$unionSql}{$whereSql}
              ORDER BY is_featured DESC, name ASC
              LIMIT :limit OFFSET :offset"
@@ -218,14 +244,20 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
         $rows = $rowsStmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rows as $r) {
             $featured = (int) ($r['is_featured'] ?? 0);
+            $providerName = CasinoAggregatorService::resolveLocalizedLabel($r['provider'] ?? '');
+            $gameName = CasinoAggregatorService::resolveLocalizedLabel($r['name'] ?? '');
+            $imageUrl = CasinoAggregatorService::resolveLocalizedLabel($r['image_url'] ?? '');
+            if ($imageUrl === '') {
+                $imageUrl = CasinoAggregatorService::resolveGameImage($r);
+            }
             $allGames[] = [
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => (string) ($r['game_id'] ?? ''),
-                'name'          => (string) ($r['name'] ?? ''),
-                'title'         => (string) ($r['name'] ?? ''),
-                'image_url'     => (string) ($r['image_url'] ?? ''),
-                'thumbnail_url' => (string) ($r['image_url'] ?? ''),
-                'provider'      => (string) ($r['provider'] ?? ''),
+                'name'          => $gameName,
+                'title'         => $gameName,
+                'image_url'     => $imageUrl,
+                'thumbnail_url' => $imageUrl,
+                'provider'      => $providerName,
                 'provider_code' => (string) ($r['provider_code'] ?? ''),
                 'is_featured'   => $featured,
                 'is_popular'    => $featured === 1,

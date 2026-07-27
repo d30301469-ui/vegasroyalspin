@@ -67,6 +67,10 @@ final class AdminCasinoAggregatorController extends AdminController
             $result = CasinoAggregatorService::syncGames(AdminDatabase::pdo());
             $msg = 'Oyun sync tamamlandı: ' . (int) ($result['game_count'] ?? 0) . ' oyun, '
                 . (int) ($result['vendor_count'] ?? 0) . ' vendor.';
+            if (((int) ($result['repaired_vendors'] ?? 0)) > 0 || ((int) ($result['repaired_games'] ?? 0)) > 0) {
+                $msg .= ' Etiket düzeltme: ' . (int) ($result['repaired_vendors'] ?? 0) . ' vendor, '
+                    . (int) ($result['repaired_games'] ?? 0) . ' oyun.';
+            }
             $errors = is_array($result['errors'] ?? null) ? $result['errors'] : [];
             if ($errors !== []) {
                 $msg .= ' Uyarı: ' . implode(' | ', array_slice($errors, 0, 3));

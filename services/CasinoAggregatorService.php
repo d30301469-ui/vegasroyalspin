@@ -157,6 +157,7 @@ final class CasinoAggregatorService
                 game_type = VALUES(game_type),
                 synced_at = NOW()'
         );
+        $lang = strtolower(trim((string) ($cfg['lang'] ?? 'tr')));
         foreach ($vendors as $row) {
             if (!is_array($row)) {
                 continue;
@@ -167,12 +168,13 @@ final class CasinoAggregatorService
             }
             $stmt->execute([
                 ':code' => $code,
-                ':name' => trim((string) ($row['vendorName'] ?? $code)),
+                ':name' => self::resolveLocalizedLabel($row['vendorName'] ?? '', $lang) ?: $code,
                 ':type' => max(1, (int) ($row['gameType'] ?? 1)),
             ]);
             $count++;
         }
         $pdo->exec('UPDATE casino_aggregator_config SET vendors_synced_at = NOW() WHERE id = 1');
+        self::repairCatalogLabels($pdo, $lang);
         return ['vendor_count' => $count];
     }
 
@@ -242,9 +244,9 @@ final class CasinoAggregatorService
                 $insert->execute([
                     ':vendor' => $vendor,
                     ':game'   => $gameCode,
-                    ':name'   => self::localizedValue($row['gameName'] ?? '', $lang) ?: $gameCode,
+                    ':name'   => self::resolveLocalizedLabel($row['gameName'] ?? '', $lang) ?: $gameCode,
                     ':type'   => max(1, (int) ($row['gameType'] ?? 1)),
-                    ':image'  => self::localizedValue($row['imageUrl'] ?? '', $lang) ?: null,
+                    ':image'  => self::resolveLocalizedLabel($row['imageUrl'] ?? '', $lang) ?: null,
                     ':raw'    => json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ]);
                 $gameCount++;
@@ -252,11 +254,227 @@ final class CasinoAggregatorService
         }
 
         $pdo->exec('UPDATE casino_aggregator_config SET games_synced_at = NOW() WHERE id = 1');
+        $repair = self::repairCatalogLabels($pdo);
         return [
             'vendor_count' => count($vendors),
             'game_count'   => $gameCount,
             'errors'       => $errors,
+            'repaired_vendors' => (int) ($repair['vendors'] ?? 0),
+            'repaired_games'   => (int) ($repair['games'] ?? 0),
         ];
+    }
+
+    /** @return array{vendors: int, games: int} */
+    public static function repairCatalogLabels(PDO $pdo, ?string $lang = null): array
+    {
+        self::bootstrap($pdo);
+        $cfg = self::config($pdo);
+        $lang = strtolower(trim((string) ($lang ?? $cfg['lang'] ?? 'tr')));
+        if ($lang === '') {
+            $lang = 'tr';
+        }
+
+        $vendorFixed = 0;
+        $vendorStmt = $pdo->prepare('UPDATE casino_aggregator_vendors SET vendor_name = :name WHERE id = :id');
+        foreach ($pdo->query('SELECT id, vendor_code, vendor_name FROM casino_aggregator_vendors')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $raw = trim((string) ($row['vendor_name'] ?? ''));
+            if ($raw === '' || !self::looksLikeLocalizedJson($raw)) {
+                continue;
+            }
+            $resolved = self::resolveLocalizedLabel($raw, $lang);
+            if ($resolved === '' || $resolved === $raw) {
+                continue;
+            }
+            $vendorStmt->execute([':name' => $resolved, ':id' => (int) $row['id']]);
+            $vendorFixed++;
+        }
+
+        $gameFixed = 0;
+        $gameStmt = $pdo->prepare(
+            'UPDATE casino_aggregator_games SET game_name = :name, image_url = :image WHERE id = :id'
+        );
+        foreach ($pdo->query('SELECT id, game_code, game_name, image_url, raw_payload FROM casino_aggregator_games')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $currentName = trim((string) ($row['game_name'] ?? ''));
+            $currentImage = trim((string) ($row['image_url'] ?? ''));
+            $newName = self::resolveLocalizedLabel($currentName, $lang) ?: $currentName;
+            $newImage = self::resolveGameImage($row, $lang);
+            $needsName = self::looksLikeLocalizedJson($currentName) && $newName !== '' && $newName !== $currentName;
+            $needsImage = $newImage !== '' && $newImage !== $currentImage
+                && ($currentImage === '' || self::looksLikeLocalizedJson($currentImage));
+            if (!$needsName && !$needsImage) {
+                continue;
+            }
+            $gameStmt->execute([
+                ':name'  => $needsName ? $newName : $currentName,
+                ':image' => $needsImage ? $newImage : ($currentImage !== '' ? $currentImage : null),
+                ':id'    => (int) $row['id'],
+            ]);
+            $gameFixed++;
+        }
+
+        return ['vendors' => $vendorFixed, 'games' => $gameFixed];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    public static function resolveGameImage(array $row, ?string $lang = null): string
+    {
+        $image = self::resolveLocalizedLabel($row['image_url'] ?? '', $lang);
+        if ($image !== '') {
+            return $image;
+        }
+        $raw = $row['raw_payload'] ?? null;
+        if (is_string($raw)) {
+            $raw = json_decode($raw, true);
+        }
+        if (is_array($raw)) {
+            return self::resolveLocalizedLabel($raw['imageUrl'] ?? '', $lang);
+        }
+        return '';
+    }
+
+    /**
+     * @param list<string> $filters
+     * @return array{names: list<string>, codes: list<string>}
+     */
+    public static function expandProviderFilter(PDO $pdo, array $filters, ?string $lang = null): array
+    {
+        self::bootstrap($pdo);
+        $cfg = self::config($pdo);
+        $lang = strtolower(trim((string) ($lang ?? $cfg['lang'] ?? 'tr')));
+        if ($lang === '') {
+            $lang = 'tr';
+        }
+
+        $names = [];
+        $codes = [];
+        foreach ($filters as $filter) {
+            $filter = trim((string) $filter);
+            if ($filter === '' || strtolower($filter) === 'hepsi') {
+                continue;
+            }
+            $names[$filter] = true;
+            $resolved = self::resolveLocalizedLabel($filter, $lang);
+            if ($resolved !== '') {
+                $names[$resolved] = true;
+            }
+        }
+
+        if ($names === []) {
+            return ['names' => [], 'codes' => []];
+        }
+
+        try {
+            foreach ($pdo->query('SELECT vendor_code, vendor_name FROM casino_aggregator_vendors')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $code = trim((string) ($row['vendor_code'] ?? ''));
+                $rawName = trim((string) ($row['vendor_name'] ?? ''));
+                $resolvedName = self::resolveLocalizedLabel($rawName, $lang) ?: $code;
+                foreach (array_keys($names) as $filterName) {
+                    if (strcasecmp($resolvedName, $filterName) === 0
+                        || strcasecmp($rawName, $filterName) === 0
+                        || strcasecmp($code, $filterName) === 0) {
+                        $names[$resolvedName] = true;
+                        if ($rawName !== '') {
+                            $names[$rawName] = true;
+                        }
+                        if ($code !== '') {
+                            $codes[$code] = true;
+                        }
+                    }
+                }
+            }
+        } catch (Throwable) {
+        }
+
+        return [
+            'names' => array_values(array_keys($names)),
+            'codes' => array_values(array_keys($codes)),
+        ];
+    }
+
+    public static function resolveLocalizedLabel(mixed $value, ?string $lang = null): string
+    {
+        $lang = strtolower(trim((string) ($lang ?? 'tr')));
+        if ($lang === '') {
+            $lang = 'tr';
+        }
+
+        if (is_array($value)) {
+            return self::pickLocalized($value, $lang);
+        }
+
+        if (!is_string($value)) {
+            return '';
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return '';
+        }
+
+        if (!self::looksLikeLocalizedJson($trimmed)) {
+            return $trimmed;
+        }
+
+        foreach ([$trimmed, stripslashes($trimmed), html_entity_decode($trimmed, ENT_QUOTES, 'UTF-8')] as $candidate) {
+            $decoded = json_decode($candidate, true);
+            if (is_array($decoded)) {
+                $picked = self::pickLocalized($decoded, $lang);
+                if ($picked !== '') {
+                    return $picked;
+                }
+            }
+        }
+
+        if (preg_match('/["\']?(?:en|tr|' . preg_quote($lang, '/') . ')["\']?\s*:\s*["\']([^"\']+)["\']/i', $trimmed, $matches)) {
+            return trim((string) ($matches[1] ?? ''));
+        }
+
+        return $trimmed;
+    }
+
+    public static function looksLikeLocalizedJson(string $value): bool
+    {
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return false;
+        }
+        if ($trimmed[0] === '{' || $trimmed[0] === '[') {
+            return true;
+        }
+        return str_contains($trimmed, '{"') || str_contains($trimmed, '{\"') || str_contains($trimmed, '"en"');
+    }
+
+    /** @param array<string, mixed> $decoded */
+    private static function pickLocalized(array $decoded, string $lang): string
+    {
+        foreach ([$lang, 'tr', 'en'] as $key) {
+            if (!empty($decoded[$key]) && is_string($decoded[$key])) {
+                $picked = trim($decoded[$key]);
+                if ($picked !== '') {
+                    return $picked;
+                }
+            }
+        }
+        foreach ($decoded as $candidate) {
+            if (is_string($candidate)) {
+                $picked = trim($candidate);
+                if ($picked !== '') {
+                    return $picked;
+                }
+            }
+        }
+        return '';
     }
 
     public static function launch(PDO $pdo, ?array $user, array $input): array
@@ -522,27 +740,6 @@ final class CasinoAggregatorService
             return;
         }
         throw new RuntimeException($context . ': ' . (string) ($response['msg'] ?? 'API hatası'));
-    }
-
-    private static function localizedValue(mixed $value, string $lang): string
-    {
-        if (is_string($value)) {
-            $trimmed = trim($value);
-            if ($trimmed === '') {
-                return '';
-            }
-            if ($trimmed[0] === '{') {
-                $decoded = json_decode($trimmed, true);
-                if (is_array($decoded)) {
-                    return trim((string) ($decoded[$lang] ?? $decoded['en'] ?? $decoded['tr'] ?? reset($decoded) ?: ''));
-                }
-            }
-            return $trimmed;
-        }
-        if (is_array($value)) {
-            return trim((string) ($value[$lang] ?? $value['en'] ?? $value['tr'] ?? reset($value) ?: ''));
-        }
-        return '';
     }
 
     private static function signMessage(string $message, string $privateKeyB64): string

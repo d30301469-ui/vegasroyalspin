@@ -2,13 +2,17 @@
 
 require_once SERVICE_PATH . '/SlotGamesQuery.php';
 require_once SERVICE_PATH . '/ProviderDisplayBadgeMap.php';
+require_once SERVICE_PATH . '/CasinoAggregatorService.php';
 
 class SlotController extends Controller
 {
     public function index(): void
     {
         $searchTerm        = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
-        $selectedProviders = isset($_GET['providers']) ? (array) $_GET['providers'] : [];
+        $selectedProviders = array_values(array_filter(array_map(
+            static fn ($provider): string => CasinoAggregatorService::resolveLocalizedLabel(trim((string) $provider)),
+            isset($_GET['providers']) ? (array) $_GET['providers'] : []
+        ), static fn (string $provider): bool => $provider !== ''));
         $currentSort       = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
         $limit             = 30;
         $page              = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;

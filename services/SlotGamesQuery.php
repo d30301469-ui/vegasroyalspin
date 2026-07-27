@@ -6,6 +6,15 @@ if (!defined('ADMIN_APP_PATH')) {
     define('ADMIN_APP_PATH', dirname(__DIR__) . '/admin/app');
 }
 
+if (!class_exists('CasinoAggregatorService', false)) {
+    $aggregatorServicePath = is_file(__DIR__ . '/CasinoAggregatorService.php')
+        ? __DIR__ . '/CasinoAggregatorService.php'
+        : dirname(__DIR__) . '/services/CasinoAggregatorService.php';
+    if (is_file($aggregatorServicePath)) {
+        require_once $aggregatorServicePath;
+    }
+}
+
 final class SlotGamesQuery
 {
     public const GAMES_PATH = 'games.php';
@@ -21,14 +30,17 @@ final class SlotGamesQuery
      */
     public static function mapApiRowToLegacy(array $row): array
     {
+        $provider = self::normalizeProviderLabel($row['provider'] ?? '');
+        $cover = self::normalizeGameImage($row);
+
         return [
             'id'            => (string) ($row['id'] ?? ''),
             'game_id'       => (string) ($row['game_id'] ?? ''),
-            'game_name'     => (string) ($row['name'] ?? ''),
-            'cover'         => (string) ($row['image_url'] ?? ''),
+            'game_name'     => self::normalizeGameName($row['name'] ?? $row['game_name'] ?? ''),
+            'cover'         => $cover,
             'has_demo'      => !empty($row['has_demo']),
             'provider_code' => (string) ($row['provider_code'] ?? ''),
-            'provider'      => (string) ($row['provider'] ?? ''),
+            'provider'      => $provider,
             'source'        => (string) ($row['source'] ?? ''),
         ];
     }
@@ -326,7 +338,7 @@ final class SlotGamesQuery
             if (is_string($row) && $row !== '') {
                 $providers[] = $row;
             } elseif (is_array($row) && !empty($row['provider_name'])) {
-                $providers[] = (string) $row['provider_name'];
+                $providers[] = self::normalizeProviderLabel((string) $row['provider_name']);
             }
         }
         $providers = array_values(array_unique(array_filter($providers)));
@@ -462,7 +474,8 @@ final class SlotGamesQuery
                     COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
                     is_featured AS is_featured,
                     'bgaming' AS source,
-                    CAST(id AS CHAR) AS row_id
+                    CAST(id AS CHAR) AS row_id,
+                    '' AS raw_payload
                 FROM bgaming_games
                 WHERE is_active = 1";
         }
@@ -476,7 +489,8 @@ final class SlotGamesQuery
                     COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
                     g.is_featured AS is_featured,
                     'aggregator' AS source,
-                    CAST(g.id AS CHAR) AS row_id
+                    CAST(g.id AS CHAR) AS row_id,
+                    COALESCE(g.raw_payload, '') AS raw_payload
                 FROM casino_aggregator_games g
                 INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
                 WHERE g.is_active = 1 AND v.is_active = 1 AND g.game_type = {$aggGameType}";
@@ -509,13 +523,25 @@ final class SlotGamesQuery
             $params[':search2'] = '%' . $search . '%';
         }
         if ($providerList !== []) {
-            $placeholders = [];
-            foreach ($providerList as $idx => $providerName) {
-                $key = ':provider' . $idx;
-                $placeholders[] = $key;
-                $params[$key] = $providerName;
+            $filterTerms = $providerList;
+            if (class_exists('CasinoAggregatorService', false)) {
+                try {
+                    $expanded = CasinoAggregatorService::expandProviderFilter($pdo, $providerList);
+                    $filterTerms = array_values(array_unique(array_merge($expanded['names'], $expanded['codes'])));
+                } catch (Throwable) {
+                }
             }
-            $where[] = 'provider IN (' . implode(', ', $placeholders) . ')';
+            $providerPlaceholders = [];
+            $codePlaceholders = [];
+            foreach ($filterTerms as $idx => $providerName) {
+                $providerKey = ':provider' . $idx;
+                $codeKey = ':provider_code' . $idx;
+                $providerPlaceholders[] = $providerKey;
+                $codePlaceholders[] = $codeKey;
+                $params[$providerKey] = $providerName;
+                $params[$codeKey] = $providerName;
+            }
+            $where[] = '(provider IN (' . implode(', ', $providerPlaceholders) . ') OR provider_code IN (' . implode(', ', $codePlaceholders) . '))';
         }
         if ($onlyFeatured) {
             $where[] = 'is_featured = 1';
@@ -533,7 +559,7 @@ final class SlotGamesQuery
         $total = (int) $countStmt->fetchColumn();
 
         $rowsStmt = $pdo->prepare(
-            "SELECT game_id, name, provider, provider_code, image_url, is_featured, source, row_id
+            "SELECT game_id, name, provider, provider_code, image_url, is_featured, source, row_id, raw_payload
              FROM {$unionSql}{$whereSql}
              ORDER BY is_featured DESC, name ASC
              LIMIT :limit OFFSET :offset"
@@ -548,17 +574,22 @@ final class SlotGamesQuery
 
         $games = array_map(static function (array $r): array {
             $featured = (int) ($r['is_featured'] ?? 0);
+            $provider = SlotGamesQuery::normalizeProviderLabel($r['provider'] ?? '');
+            $imageUrl = SlotGamesQuery::normalizeGameImage($r);
+            $name = SlotGamesQuery::normalizeGameName($r['name'] ?? '');
+
             return [
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => (string) ($r['game_id'] ?? ''),
-                'name'          => (string) ($r['name'] ?? ''),
-                'image_url'     => (string) ($r['image_url'] ?? ''),
-                'provider'      => (string) ($r['provider'] ?? ''),
+                'name'          => $name,
+                'image_url'     => $imageUrl,
+                'provider'      => $provider,
                 'provider_code' => (string) ($r['provider_code'] ?? ''),
                 'is_featured'   => $featured,
                 'is_popular'    => $featured === 1,
                 'has_demo'      => true,
                 'source'        => (string) ($r['source'] ?? ''),
+                'raw_payload'   => (string) ($r['raw_payload'] ?? ''),
             ];
         }, is_array($items) ? $items : []);
 
@@ -606,7 +637,7 @@ final class SlotGamesQuery
                 )->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($rows as $row) {
                     if (is_array($row) && !empty($row['provider_name'])) {
-                        $name = (string) $row['provider_name'];
+                        $name = self::normalizeProviderLabel((string) $row['provider_name']);
                         if (!isset($seen[$name])) {
                             $seen[$name] = true;
                             $providers[] = $name;
@@ -627,7 +658,7 @@ final class SlotGamesQuery
                 if (!is_array($row) || empty($row['provider_name'])) {
                     continue;
                 }
-                $name = (string) $row['provider_name'];
+                $name = self::normalizeProviderLabel((string) $row['provider_name']);
                 if (!isset($seen[$name])) {
                     $seen[$name] = true;
                     $providers[] = $name;
@@ -639,6 +670,39 @@ final class SlotGamesQuery
         $providers = array_values(array_unique(array_filter($providers)));
         sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
         return $providers;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private static function normalizeGameImage(array $row): string
+    {
+        $image = self::normalizeLocalizedValue($row['image_url'] ?? $row['thumbnail_url'] ?? $row['cover'] ?? '');
+        if ($image !== '') {
+            return $image;
+        }
+        if (class_exists('CasinoAggregatorService', false)) {
+            return CasinoAggregatorService::resolveGameImage($row);
+        }
+        return '';
+    }
+
+    private static function normalizeGameName(mixed $value): string
+    {
+        return self::normalizeLocalizedValue($value);
+    }
+
+    private static function normalizeProviderLabel(mixed $value): string
+    {
+        return self::normalizeLocalizedValue($value);
+    }
+
+    private static function normalizeLocalizedValue(mixed $value): string
+    {
+        if (class_exists('CasinoAggregatorService', false)) {
+            return CasinoAggregatorService::resolveLocalizedLabel($value);
+        }
+        return trim((string) $value);
     }
 
     public static function winnersPool(int $limit = 200): array
