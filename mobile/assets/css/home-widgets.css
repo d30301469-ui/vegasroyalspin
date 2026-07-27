@@ -18,7 +18,15 @@ body.mobile-site .mobile-home-widgets.is-dismissed {
 
 body.mobile-site .mobile-home-widgets .informative-widget {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   pointer-events: auto;
+  padding: 0 4px 0 0;
+  border-radius: 24px;
+  background: rgba(8, 6, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
 
 body.mobile-site .mobile-home-widgets .mobile-quick-actions-grid {
@@ -27,40 +35,40 @@ body.mobile-site .mobile-home-widgets .mobile-quick-actions-grid {
 
 body.mobile-site .informative-widget {
   margin-bottom: 0;
-  border-radius: 24px;
   overflow: visible;
-  background: transparent;
 }
 
 body.mobile-site .informative-widget-link {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 40px 10px 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 4px 8px 12px;
   text-decoration: none;
   color: #fff !important;
-  background: rgba(8, 6, 20, 0.92) !important;
+  background: transparent !important;
+  border: 0 !important;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-top: 0 !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  box-shadow: none !important;
 }
 
 body.mobile-site .informative-widget-close {
-  position: absolute;
-  top: 50%;
-  right: 6px;
+  position: relative;
+  top: auto;
+  right: auto;
   z-index: 2;
+  flex-shrink: 0;
   width: 30px;
   height: 30px;
-  margin: 0;
+  margin: 0 4px 0 0;
   padding: 0;
   border: 0;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transform: translateY(-50%);
+  transform: none;
   background: rgba(255, 255, 255, 0.16);
   color: #fff;
   cursor: pointer;
@@ -101,6 +109,7 @@ body.mobile-site .informative-widget-actions {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  align-items: center;
 }
 
 body.mobile-site .informative-widget-actions .bc-i-call {

@@ -12,6 +12,10 @@ $callbackText = trim($callbackText);
       <i class="bc-i-info" aria-hidden="true"></i>
       <span><?= htmlspecialchars($callbackText !== '' ? $callbackText : 'Dolandırıcılara geçit verme! Size ulaşan numara bize mi ait tıkla!', ENT_QUOTES, 'UTF-8') ?></span>
     </div>
+    <span class="informative-widget-actions" aria-hidden="true">
+      <i class="bc-i-call"></i>
+      <i class="bc-i-whatsapp"></i>
+    </span>
   </a>
   <button type="button" class="informative-widget-close" id="informativeWidgetClose" aria-label="Uyarıyı kapat" title="Kapat">
     <i class="bc-i-close-remove" aria-hidden="true"></i>
