@@ -2,6 +2,7 @@
 /**
  * Header partial — casinomilyon590.com BC platform yapısı
  */
+global $ayar, $loggedIn, $siteMeta, $siteBranding, $siteContactLinks, $siteSettingsPayload;
 if (function_exists('isMobile') && isMobile() && defined('MOBILE_PATH')) {
     $mobileHeader = MOBILE_PATH . '/views/partials/header.php';
     if (file_exists($mobileHeader)) { include $mobileHeader; return; }
@@ -10,8 +11,11 @@ require_once __DIR__ . '/header-init.php';
 $loggedIn = isset($loggedIn) ? (bool) $loggedIn : false;
 $ayar = isset($ayar) && is_array($ayar) ? $ayar : [];
 $siteContactLinks = isset($siteContactLinks) && is_array($siteContactLinks) ? $siteContactLinks : [];
+if ($siteContactLinks === [] && isset($siteSettingsPayload['contact']) && is_array($siteSettingsPayload['contact'])) {
+    $siteContactLinks = $siteSettingsPayload['contact'];
+}
 $siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
-$headerContactLinks = is_array($siteContactLinks ?? null)
+$headerContactLinks = $siteContactLinks !== []
     ? $siteContactLinks
     : (class_exists('ApiSiteSettings') ? ApiSiteSettings::normalizeContactLinks(is_array($ayar ?? null) ? $ayar : []) : []);
 $headerPartnershipUrl = (string) ($headerContactLinks['partnership_url'] ?? '/ortaklik');

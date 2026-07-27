@@ -2,6 +2,11 @@
 /**
  * Header dışı global UI: yan çekmeceler, kupon paneli, profil modalı, arama paneli.
  */
+global $ayar, $loggedIn, $siteContactLinks, $siteBranding, $siteSettingsPayload;
+if ((!isset($siteContactLinks) || !is_array($siteContactLinks) || $siteContactLinks === [])
+    && isset($siteSettingsPayload['contact']) && is_array($siteSettingsPayload['contact'])) {
+    $siteContactLinks = $siteSettingsPayload['contact'];
+}
 ?>
 
 <!-- Akıllı Menü: üç nokta butonunun altında açılan floating dikey menü -->

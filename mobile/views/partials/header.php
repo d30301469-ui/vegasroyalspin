@@ -2,12 +2,15 @@
 /**
  * Mobil header — m.casinomilyon591 DOM yapısı (layout-header-holder-bc > hdr-dynamic + header-bc)
  */
+global $ayar, $loggedIn, $siteMeta, $siteBranding, $siteContactLinks, $siteSettingsPayload;
 require_once VIEW_PATH . '/partials/header-init.php';
 $loggedIn = !empty($loggedIn) ? true : (function_exists('metropol_frontend_member_logged_in') ? metropol_frontend_member_logged_in() : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true));
 $ayar = isset($ayar) && is_array($ayar) ? $ayar : [];
 $siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
 $siteContactLinks = isset($siteContactLinks) && is_array($siteContactLinks) ? $siteContactLinks : [];
-$hdrAuthClass = $loggedIn ? ' hdr-auth-user' : ' hdr-auth-guest';
+if ($siteContactLinks === [] && isset($siteSettingsPayload['contact']) && is_array($siteSettingsPayload['contact'])) {
+    $siteContactLinks = $siteSettingsPayload['contact'];
+}$hdrAuthClass = $loggedIn ? ' hdr-auth-user' : ' hdr-auth-guest';
 $depositHref = '/profile/deposit-withdraw?openDepositPanel=1';
 $balanceHref = $loggedIn ? $depositHref : '#';
 $smartPanelBadge = $loggedIn ? '23' : '2';

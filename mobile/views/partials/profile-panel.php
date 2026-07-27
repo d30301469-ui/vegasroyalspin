@@ -4,6 +4,11 @@
  * SSR guest olsa bile render edilir; istemci JWT restorasyonu header'ı sonradan
  * user durumuna yükseltebilir ve panel açılışını API oturum kontrolü korur.
  */
+global $ayar, $loggedIn, $siteContactLinks, $siteBranding, $siteSettingsPayload;
+if ((!isset($siteContactLinks) || !is_array($siteContactLinks) || $siteContactLinks === [])
+    && isset($siteSettingsPayload['contact']) && is_array($siteSettingsPayload['contact'])) {
+    $siteContactLinks = $siteSettingsPayload['contact'];
+}
 $panelBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
 $panelSettings = isset($ayar) && is_array($ayar) ? $ayar : [];
 $panelContactLinks = isset($siteContactLinks) && is_array($siteContactLinks) ? $siteContactLinks : [];

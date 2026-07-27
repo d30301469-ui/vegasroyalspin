@@ -1,4 +1,9 @@
 <?php
+global $ayar, $loggedIn, $siteContactLinks, $siteBranding, $siteSettingsPayload;
+if ((!isset($siteContactLinks) || !is_array($siteContactLinks) || $siteContactLinks === [])
+    && isset($siteSettingsPayload['contact']) && is_array($siteSettingsPayload['contact'])) {
+    $siteContactLinks = $siteSettingsPayload['contact'];
+}
 $login_error = isset($_SESSION['login_error']) ? $_SESSION['login_error'] : '';
 if (isset($_SESSION['login_error'])) {
     unset($_SESSION['login_error']);

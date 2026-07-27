@@ -12,7 +12,7 @@ class Controller
      */
     protected function view(string $path, array $data = []): void
     {
-        global $ayar, $loggedIn;
+        global $ayar, $loggedIn, $siteMeta, $siteBranding, $siteContactLinks, $siteSettingsPayload;
         extract($data);
         if (defined('SURFACE') && SURFACE === 'mobile' && defined('MOBILE_PATH')) {
             $mobileFile = MOBILE_PATH . '/views/' . $path . '.php';

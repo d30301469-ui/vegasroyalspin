@@ -105,6 +105,34 @@ final class FrontendCmsCachePurge
                 @unlink($file);
             }
         }
+
+        // Site settings envelope is separate from cms/proxy caches — always purge on
+        // full purge or explicit site_settings prefix so live_support_url etc. refresh.
+        $shouldPurgeSiteSettings = $prefix === null
+            || trim((string) $prefix) === ''
+            || trim((string) $prefix) === 'site_settings';
+        if ($shouldPurgeSiteSettings) {
+            $siteSettingsApi = $base . '/api/SiteSettings.php';
+            if (is_readable($siteSettingsApi)) {
+                require_once $siteSettingsApi;
+            }
+            if (class_exists('ApiSiteSettings', false)) {
+                try {
+                    ApiSiteSettings::purgeCache();
+                } catch (Throwable) {
+                    // Best-effort.
+                }
+            } else {
+                foreach ([
+                    $base . '/storage/cache/site_settings_envelope.json',
+                    $base . '/storage/cache/site_settings_envelope.json.refresh.lock',
+                ] as $envelopeFile) {
+                    if (is_file($envelopeFile)) {
+                        @unlink($envelopeFile);
+                    }
+                }
+            }
+        }
     }
 
     /**

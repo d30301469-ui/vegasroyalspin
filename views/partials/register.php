@@ -1,4 +1,9 @@
 <?php
+global $ayar, $loggedIn, $siteContactLinks, $siteBranding, $siteSettingsPayload;
+if ((!isset($siteContactLinks) || !is_array($siteContactLinks) || $siteContactLinks === [])
+    && isset($siteSettingsPayload['contact']) && is_array($siteSettingsPayload['contact'])) {
+    $siteContactLinks = $siteSettingsPayload['contact'];
+}
 $registerMobileSingleStep = true;
 $registerAuthSliderItems = class_exists('ApiAuthSliders') ? ApiAuthSliders::fetchFor('register') : [];
 $registerAuthSliderClass = $registerAuthSliderItems !== [] ? ' has-auth-slider' : '';
