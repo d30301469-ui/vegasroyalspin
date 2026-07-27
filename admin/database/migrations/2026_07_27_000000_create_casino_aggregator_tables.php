@@ -59,7 +59,7 @@ return static function (PDO $pdo): void {
             game_code     VARCHAR(120) NOT NULL,
             game_name     VARCHAR(255) NOT NULL DEFAULT '',
             game_type     TINYINT UNSIGNED NOT NULL DEFAULT 1,
-            image_url     VARCHAR(700) NULL,
+            image_url     TEXT NULL,
             raw_payload   JSON NULL,
             is_active     TINYINT(1) NOT NULL DEFAULT 1,
             is_featured   TINYINT(1) NOT NULL DEFAULT 0,

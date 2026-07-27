@@ -319,6 +319,17 @@
 
     const PLACEHOLDER_IMG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI4IiBmaWxsPSIjMWExMTJlIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM2NjYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
 
+    function preferCompatibleCover(url) {
+        return String(url || '').trim();
+    }
+
+    function gameThumbError(img) {
+        if (!img) return;
+        img.onerror = null;
+        img.src = PLACEHOLDER_IMG;
+    }
+    window.__gameThumbError = gameThumbError;
+
     function buildApiUrl(append) {
         const params = new URLSearchParams();
         Object.keys(API_EXTRA_PARAMS).forEach(function(key) {
@@ -447,7 +458,7 @@
 
     function renderGameItem(game) {
         const name = escapeHtml(game.game_name || '');
-        const cover = escapeHtml(game.cover || '');
+        const cover = escapeHtml(preferCompatibleCover(game.cover || ''));
         const gameId = String(game.game_id || '');
         const gameIdEsc = escapeHtml(gameId);
         const catalogIdRaw = game.id != null && String(game.id).trim() !== '' ? String(game.id) : '';
@@ -473,7 +484,7 @@
             '<div class="casinoGameItemContent " data-favorite-kind="' + escapeHtml(FAVORITE_KIND) + '" data-game-id="' + gameIdEsc + '"' + catalogAttr + ' onclick="' + realPlayClickJs(gameUrlJs) + '">' +
             '<span class="providerBadgeBlock " data-badge=""></span>' +
             '<div class="casinoGameItem ">' +
-            '<img alt="' + name + '" loading="lazy" src="' + cover + '" data-src="' + cover + '" class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onerror="this.src=\'' + PLACEHOLDER_IMG + '\'">' +
+            '<img alt="' + name + '" loading="lazy" referrerpolicy="no-referrer" src="' + cover + '" data-src="' + cover + '" class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onerror="window.__gameThumbError&&window.__gameThumbError(this)">' +
             '<i class="casinoGameItemFavBc bc-i-favorite "></i>' +
             actionsHtml +
             '</div>' +
@@ -519,7 +530,7 @@
                 id: game.id,
                 game_id: game.game_id || game.slug || game.id,
                 game_name: game.name || game.game_name || '',
-                cover: game.image_url || game.thumbnail_url || game.banner || game.cover || '',
+                cover: preferCompatibleCover(game.image_url || game.thumbnail_url || game.banner || game.cover || ''),
                 has_demo: game.has_demo,
                 provider: game.provider || '',
                 provider_code: game.provider_code || '',

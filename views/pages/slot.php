@@ -716,6 +716,13 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                 <?php endif; ?>
 
                 <div class="casinoGameItemWrp slot-oyun-listesi slots-games-container" id="casino_games_container" aria-label="Oyun listesi">
+                    <script>
+                    window.__gameThumbError = window.__gameThumbError || function (img) {
+                        if (!img) return;
+                        img.onerror = null;
+                        img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI4IiBmaWxsPSIjMWExMTJlIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM2NjYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+                    };
+                    </script>
                     <div class="casinoCategoryGames">
                 <?php if (empty($games)): ?>
                     <div class="empty-state">
@@ -730,18 +737,23 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                         $demoHref = $slotDemoHref($game);
                         $playHrefJson = (string) json_encode($playHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
                         $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__slotHandlePlayIntent){window.__slotHandlePlayIntent(event,' . $playHrefJson . ');}else{window.location.href=' . $playHrefJson . ';}';
+                        $coverUrl = (string) ($game['cover'] ?? '');
+                        if (class_exists('CasinoAggregatorService', false)) {
+                            $coverUrl = CasinoAggregatorService::resolveMediaUrl($coverUrl);
+                        }
                         ?>
                         <div class="casinoGameItemContent " data-favorite-kind="<?= htmlspecialchars($slotFavoriteKind, ENT_QUOTES, 'UTF-8') ?>" data-catalog-id="<?= htmlspecialchars((string)($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-game-id="<?= htmlspecialchars((string)($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onclick="<?= htmlspecialchars($runtimePlayIntentJs, ENT_QUOTES, 'UTF-8') ?>">
                             <span class="providerBadgeBlock " data-badge=""></span>
                             <div class="casinoGameItem ">
                                 <img alt="<?= htmlspecialchars($game['game_name'], ENT_QUOTES); ?>"
                                      loading="lazy"
-                                     src="<?= htmlspecialchars($game['cover'], ENT_QUOTES); ?>"
-                                     data-src="<?= htmlspecialchars($game['cover'], ENT_QUOTES); ?>"
+                                     referrerpolicy="no-referrer"
+                                     src="<?= htmlspecialchars($coverUrl, ENT_QUOTES); ?>"
+                                     data-src="<?= htmlspecialchars($coverUrl, ENT_QUOTES); ?>"
                                      class="casinoGameItemImage"
                                      title="<?= htmlspecialchars($game['game_name'], ENT_QUOTES); ?>"
                                      style="aspect-ratio: 44 / 31;"
-                                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI4IiBmaWxsPSIjMWExMTJlIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM2NjYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4='">
+                                     onerror="window.__gameThumbError&&window.__gameThumbError(this)">
                                 <i class="casinoGameItemFavBc bc-i-favorite "></i>
                                 <?php if ($slotShowActionButtons): ?>
                                     <div class="game-overlay">

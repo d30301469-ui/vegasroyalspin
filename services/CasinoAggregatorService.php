@@ -27,8 +27,21 @@ final class CasinoAggregatorService
             return;
         }
         self::createSchema($pdo);
+        self::ensureSchemaUpgrades($pdo);
         self::ensureDefaultConfig($pdo);
         self::$schemaBootstrapped = true;
+    }
+
+    private static function ensureSchemaUpgrades(PDO $pdo): void
+    {
+        try {
+            $col = $pdo->query("SHOW COLUMNS FROM casino_aggregator_games LIKE 'image_url'")->fetch(PDO::FETCH_ASSOC);
+            $type = strtolower((string) ($col['Type'] ?? ''));
+            if ($type !== '' && !str_starts_with($type, 'text') && !str_starts_with($type, 'longtext') && !str_starts_with($type, 'mediumtext')) {
+                $pdo->exec('ALTER TABLE casino_aggregator_games MODIFY image_url TEXT NULL');
+            }
+        } catch (Throwable) {
+        }
     }
 
     public static function createSchema(PDO $pdo): void
@@ -241,13 +254,18 @@ final class CasinoAggregatorService
                     continue;
                 }
                 $lang = strtolower(trim((string) ($cfg['lang'] ?? 'tr')));
+                $rawJson = json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $image = self::resolveGameImage([
+                    'image_url' => $row['imageUrl'] ?? ($row['image_url'] ?? ''),
+                    'raw_payload' => is_string($rawJson) ? $rawJson : null,
+                ], $lang);
                 $insert->execute([
                     ':vendor' => $vendor,
                     ':game'   => $gameCode,
                     ':name'   => self::resolveLocalizedLabel($row['gameName'] ?? '', $lang) ?: $gameCode,
                     ':type'   => max(1, (int) ($row['gameType'] ?? 1)),
-                    ':image'  => self::resolveLocalizedLabel($row['imageUrl'] ?? '', $lang) ?: null,
-                    ':raw'    => json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    ':image'  => $image !== '' ? $image : null,
+                    ':raw'    => $rawJson,
                 ]);
                 $gameCount++;
             }
@@ -306,7 +324,7 @@ final class CasinoAggregatorService
             $newImage = self::resolveGameImage($row, $lang);
             $needsName = self::looksLikeLocalizedJson($currentName) && $newName !== '' && $newName !== $currentName;
             $needsImage = $newImage !== '' && $newImage !== $currentImage
-                && ($currentImage === '' || self::looksLikeLocalizedJson($currentImage));
+                && ($currentImage === '' || !self::isUsableMediaUrl($currentImage) || self::looksLikeLocalizedJson($currentImage));
             if (!$needsName && !$needsImage) {
                 continue;
             }
@@ -326,16 +344,149 @@ final class CasinoAggregatorService
      */
     public static function resolveGameImage(array $row, ?string $lang = null): string
     {
-        $image = self::resolveLocalizedLabel($row['image_url'] ?? '', $lang);
-        if ($image !== '') {
-            return $image;
-        }
+        $candidates = [];
+
         $raw = $row['raw_payload'] ?? null;
-        if (is_string($raw)) {
-            $raw = json_decode($raw, true);
+        if (is_string($raw) && $raw !== '') {
+            $decodedRaw = json_decode($raw, true);
+            if (!is_array($decodedRaw)) {
+                $decodedRaw = json_decode(stripslashes($raw), true);
+            }
+            $raw = is_array($decodedRaw) ? $decodedRaw : null;
         }
         if (is_array($raw)) {
-            return self::resolveLocalizedLabel($raw['imageUrl'] ?? '', $lang);
+            // Prefer raw payload — image_url column may be truncated JSON leftovers.
+            foreach (['imageUrl', 'image_url', 'thumbnailUrl', 'thumbnail_url', 'thumbnail', 'iconUrl', 'icon_url', 'icon', 'img', 'cover', 'banner'] as $key) {
+                if (array_key_exists($key, $raw)) {
+                    $candidates[] = $raw[$key];
+                }
+            }
+        }
+
+        $candidates[] = $row['image_url'] ?? null;
+        $candidates[] = $row['imageUrl'] ?? null;
+        $candidates[] = $row['thumbnail_url'] ?? null;
+        $candidates[] = $row['thumbnailUrl'] ?? null;
+        $candidates[] = $row['cover'] ?? null;
+
+        foreach ($candidates as $candidate) {
+            if ($candidate === null || $candidate === '') {
+                continue;
+            }
+            $resolved = self::resolveMediaUrl($candidate, $lang);
+            if (!self::isUsableMediaUrl($resolved)) {
+                $resolved = self::extractMediaUrl($resolved !== '' ? $resolved : (is_string($candidate) ? $candidate : ''));
+            }
+            if (self::isUsableMediaUrl($resolved)) {
+                return self::normalizeMediaUrl($resolved);
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Image maps look like {"en":"https://.../x.avif","lobby":"https://.../y.avif"}.
+     * Prefer locale / en over lobby.
+     */
+    public static function resolveMediaUrl(mixed $value, ?string $lang = null): string
+    {
+        $lang = strtolower(trim((string) ($lang ?? 'tr')));
+        if ($lang === '') {
+            $lang = 'tr';
+        }
+
+        if (is_array($value)) {
+            return self::pickLocalized($value, $lang, true);
+        }
+
+        if (!is_string($value)) {
+            return '';
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return '';
+        }
+
+        if (self::isUsableMediaUrl($trimmed)) {
+            return self::normalizeMediaUrl($trimmed);
+        }
+
+        return self::resolveLocalizedLabel($trimmed, $lang);
+    }
+
+    public static function isUsableMediaUrl(string $value): bool
+    {
+        $value = trim($value);
+        if ($value === '' || self::looksLikeLocalizedJson($value)) {
+            return false;
+        }
+        if (preg_match('#^(https?:)?//[^\s<>"\']+#i', $value) === 1) {
+            return true;
+        }
+        if (str_starts_with($value, '/') && !str_starts_with($value, '//') && preg_match('#\.(png|jpe?g|webp|gif|svg|avif)(\?.*)?$#i', $value) === 1) {
+            return true;
+        }
+        return false;
+    }
+
+    public static function normalizeMediaUrl(string $value): string
+    {
+        $value = trim($value);
+        $value = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
+        $value = rtrim($value, " \t\n\r\0\x0B},)]\"'");
+        if (str_starts_with($value, '//')) {
+            $value = 'https:' . $value;
+        }
+        return $value;
+    }
+
+    /**
+     * Keep provider CDN URLs as-is (including .avif). Do not rewrite extensions.
+     */
+    public static function preferCompatibleMediaUrl(string $url): string
+    {
+        return self::normalizeMediaUrl($url);
+    }
+
+    /**
+     * Ordered fallbacks for frontend onerror chains.
+     *
+     * @return list<string>
+     */
+    public static function mediaUrlFallbacks(string $url): array
+    {
+        $url = self::normalizeMediaUrl($url);
+        if ($url === '') {
+            return [];
+        }
+
+        $out = [$url];
+        if (preg_match('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', $url) !== 1) {
+            return $out;
+        }
+
+        foreach (['avif', 'webp', 'png', 'jpg', 'jpeg'] as $ext) {
+            $candidate = preg_replace('#\.(avif|webp|png|jpe?g|gif)(\?|$)#i', '.' . $ext . '$2', $url);
+            if (is_string($candidate) && $candidate !== '' && !in_array($candidate, $out, true)) {
+                $out[] = $candidate;
+            }
+        }
+        return $out;
+    }
+
+    public static function extractMediaUrl(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+        if (preg_match('#https?://[^\s<>"\']+#i', $value, $matches) === 1) {
+            return self::normalizeMediaUrl((string) $matches[0]);
+        }
+        if (preg_match('#//[^\s<>"\']+#i', $value, $matches) === 1) {
+            return self::normalizeMediaUrl((string) $matches[0]);
         }
         return '';
     }
@@ -471,13 +622,7 @@ final class CasinoAggregatorService
     {
         $row['provider_name'] = self::resolveLocalizedLabel($row['provider_name'] ?? '');
         $row['game_name'] = self::resolveLocalizedLabel($row['game_name'] ?? '');
-        $image = self::resolveLocalizedLabel($row['image_url'] ?? '');
-        if ($image === '') {
-            $image = self::resolveGameImage([
-                'image_url' => (string) ($row['image_url'] ?? ''),
-                'raw_payload' => $row['raw_payload'] ?? null,
-            ]);
-        }
+        $image = self::resolveGameImage($row);
         $row['image_url'] = $image;
         $row['banner'] = $image;
         unset($row['raw_payload']);
@@ -492,7 +637,7 @@ final class CasinoAggregatorService
         }
 
         if (is_array($value)) {
-            return self::pickLocalized($value, $lang);
+            return self::pickLocalized($value, $lang, self::arrayLooksLikeMediaMap($value));
         }
 
         if (!is_string($value)) {
@@ -504,22 +649,44 @@ final class CasinoAggregatorService
             return '';
         }
 
+        // Double-encoded JSON string: "{\"en\":\"...\"}"
+        if (($trimmed[0] === '"' || $trimmed[0] === "'") && str_contains($trimmed, '{')) {
+            $unquoted = json_decode($trimmed, true);
+            if (is_string($unquoted) && $unquoted !== '') {
+                $trimmed = trim($unquoted);
+            } elseif (is_array($unquoted)) {
+                return self::pickLocalized($unquoted, $lang, self::arrayLooksLikeMediaMap($unquoted));
+            }
+        }
+
         if (!self::looksLikeLocalizedJson($trimmed)) {
             return $trimmed;
         }
 
         foreach ([$trimmed, stripslashes($trimmed), html_entity_decode($trimmed, ENT_QUOTES, 'UTF-8')] as $candidate) {
             $decoded = json_decode($candidate, true);
+            if (is_string($decoded) && self::looksLikeLocalizedJson($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
             if (is_array($decoded)) {
-                $picked = self::pickLocalized($decoded, $lang);
+                $picked = self::pickLocalized($decoded, $lang, self::arrayLooksLikeMediaMap($decoded));
                 if ($picked !== '') {
                     return $picked;
                 }
             }
         }
 
-        if (preg_match('/["\']?(?:en|tr|' . preg_quote($lang, '/') . ')["\']?\s*:\s*["\']([^"\']+)["\']/i', $trimmed, $matches)) {
+        // Prefer en URL explicitly when JSON parse fails but payload is media map text.
+        if (preg_match('/["\']en["\']\s*:\s*["\']([^"\']+)["\']/i', $trimmed, $matches)) {
             return trim((string) ($matches[1] ?? ''));
+        }
+        if (preg_match('/["\']?(?:tr|' . preg_quote($lang, '/') . ')["\']?\s*:\s*["\']([^"\']+)["\']/i', $trimmed, $matches)) {
+            return trim((string) ($matches[1] ?? ''));
+        }
+
+        $extracted = self::extractMediaUrl($trimmed);
+        if ($extracted !== '') {
+            return $extracted;
         }
 
         return $trimmed;
@@ -538,17 +705,53 @@ final class CasinoAggregatorService
     }
 
     /** @param array<string, mixed> $decoded */
-    private static function pickLocalized(array $decoded, string $lang): string
+    private static function arrayLooksLikeMediaMap(array $decoded): bool
     {
-        foreach ([$lang, 'tr', 'en'] as $key) {
-            if (!empty($decoded[$key]) && is_string($decoded[$key])) {
-                $picked = trim($decoded[$key]);
+        foreach ($decoded as $candidate) {
+            if (!is_string($candidate)) {
+                continue;
+            }
+            if (self::isUsableMediaUrl($candidate) || (str_contains($candidate, 'http') && str_contains($candidate, '://'))) {
+                return true;
+            }
+        }
+        return array_key_exists('lobby', $decoded) || array_key_exists('en', $decoded);
+    }
+
+    /**
+     * @param array<string, mixed> $decoded
+     */
+    private static function pickLocalized(array $decoded, string $lang, bool $preferMediaKeys = false): string
+    {
+        // Media maps: {"en":"...avif","lobby":"...avif"} — always prefer en over lobby.
+        $priority = $preferMediaKeys
+            ? [$lang, 'en', 'tr', 'default', 'lobby']
+            : [$lang, 'en', 'tr', 'default'];
+
+        $tried = [];
+        foreach ($priority as $key) {
+            $key = strtolower(trim((string) $key));
+            if ($key === '' || isset($tried[$key])) {
+                continue;
+            }
+            $tried[$key] = true;
+            $match = self::arrayValueByKeyInsensitive($decoded, $key);
+            if (is_string($match)) {
+                $picked = trim($match);
                 if ($picked !== '') {
                     return $picked;
                 }
             }
         }
-        foreach ($decoded as $candidate) {
+
+        foreach ($decoded as $mapKey => $candidate) {
+            $mapKeyNorm = strtolower(trim((string) $mapKey));
+            if ($preferMediaKeys && $mapKeyNorm === 'lobby') {
+                continue;
+            }
+            if (isset($tried[$mapKeyNorm])) {
+                continue;
+            }
             if (is_string($candidate)) {
                 $picked = trim($candidate);
                 if ($picked !== '') {
@@ -556,7 +759,29 @@ final class CasinoAggregatorService
                 }
             }
         }
+
+        if ($preferMediaKeys) {
+            $lobby = self::arrayValueByKeyInsensitive($decoded, 'lobby');
+            if (is_string($lobby) && trim($lobby) !== '') {
+                return trim($lobby);
+            }
+        }
+
         return '';
+    }
+
+    /** @param array<string, mixed> $decoded */
+    private static function arrayValueByKeyInsensitive(array $decoded, string $key): mixed
+    {
+        if (array_key_exists($key, $decoded)) {
+            return $decoded[$key];
+        }
+        foreach ($decoded as $mapKey => $value) {
+            if (strtolower((string) $mapKey) === $key) {
+                return $value;
+            }
+        }
+        return null;
     }
 
     public static function launch(PDO $pdo, ?array $user, array $input): array

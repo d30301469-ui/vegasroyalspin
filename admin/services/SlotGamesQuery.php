@@ -684,14 +684,19 @@ final class SlotGamesQuery
      */
     private static function normalizeGameImage(array $row): string
     {
-        $image = self::normalizeLocalizedValue($row['image_url'] ?? $row['thumbnail_url'] ?? $row['cover'] ?? '');
-        if ($image !== '') {
-            return $image;
-        }
         if (class_exists('CasinoAggregatorService', false)) {
-            return CasinoAggregatorService::resolveGameImage($row);
+            $resolved = CasinoAggregatorService::resolveGameImage($row);
+            if ($resolved !== '') {
+                return $resolved;
+            }
         }
-        return '';
+
+        $image = self::normalizeLocalizedValue($row['image_url'] ?? $row['thumbnail_url'] ?? $row['cover'] ?? '');
+        if (class_exists('CasinoAggregatorService', false) && !CasinoAggregatorService::isUsableMediaUrl($image)) {
+            return CasinoAggregatorService::extractMediaUrl($image);
+        }
+
+        return $image;
     }
 
     private static function normalizeGameName(mixed $value): string
