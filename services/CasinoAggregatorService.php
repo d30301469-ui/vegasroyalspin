@@ -262,6 +262,9 @@ final class CasinoAggregatorService
                 $rawJson = json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 try {
                     $media = self::resolveApiGameMedia($row, $lang);
+                    if (self::isEgtVipVendor($vendor)) {
+                        $media = self::forceGameMediaToPng($media);
+                    }
                     $insert->execute([
                         ':vendor' => $vendor,
                         ':game'   => $gameCode,
@@ -286,6 +289,7 @@ final class CasinoAggregatorService
             'errors'       => $errors,
             'repaired_vendors' => (int) ($repair['vendors'] ?? 0),
             'repaired_games'   => (int) ($repair['games'] ?? 0),
+            'egt_vip_png'      => (int) ($repair['egt_vip_png'] ?? 0),
         ];
     }
 
@@ -321,7 +325,7 @@ final class CasinoAggregatorService
         $gameStmt = $pdo->prepare(
             'UPDATE casino_aggregator_games SET game_name = :name, image_url = :image, image_fallbacks = :fallbacks WHERE id = :id'
         );
-        foreach ($pdo->query('SELECT id, game_code, game_name, image_url, image_fallbacks, raw_payload FROM casino_aggregator_games')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        foreach ($pdo->query('SELECT id, vendor_code, game_code, game_name, image_url, image_fallbacks, raw_payload FROM casino_aggregator_games')->fetchAll(PDO::FETCH_ASSOC) as $row) {
             if (!is_array($row)) {
                 continue;
             }
@@ -333,6 +337,9 @@ final class CasinoAggregatorService
             $newName = self::resolveLocalizedLabel($currentName, $lang) ?: $currentName;
             try {
                 $media = self::resolveApiGameMedia($row, $lang);
+                if (self::isEgtVipVendor((string) ($row['vendor_code'] ?? ''))) {
+                    $media = self::forceGameMediaToPng($media);
+                }
             } catch (Throwable) {
                 continue;
             }
@@ -353,7 +360,123 @@ final class CasinoAggregatorService
             $gameFixed++;
         }
 
-        return ['vendors' => $vendorFixed, 'games' => $gameFixed];
+        $egtVipPng = self::repairEgtVipImagesToPng($pdo);
+
+        return [
+            'vendors' => $vendorFixed,
+            'games' => $gameFixed,
+            'egt_vip_png' => (int) ($egtVipPng['updated'] ?? 0),
+        ];
+    }
+
+    public static function isEgtVipVendor(string $vendorCode): bool
+    {
+        $normalized = strtolower(preg_replace('/[^a-z0-9]+/i', '', $vendorCode) ?? '');
+
+        return $normalized !== '' && str_contains($normalized, 'egtvip');
+    }
+
+    /**
+     * Force EGT VIP lobby thumbnails to PNG in DB (image_url + image_fallbacks).
+     *
+     * @return array{updated: int, scanned: int}
+     */
+    public static function repairEgtVipImagesToPng(PDO $pdo): array
+    {
+        self::bootstrap($pdo);
+        $updated = 0;
+        $scanned = 0;
+        $stmt = $pdo->prepare(
+            'UPDATE casino_aggregator_games
+             SET image_url = :image, image_fallbacks = :fallbacks
+             WHERE id = :id'
+        );
+
+        $rows = $pdo->query(
+            'SELECT id, vendor_code, image_url, image_fallbacks
+             FROM casino_aggregator_games'
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach (is_array($rows) ? $rows : [] as $row) {
+            if (!is_array($row) || !self::isEgtVipVendor((string) ($row['vendor_code'] ?? ''))) {
+                continue;
+            }
+            $scanned++;
+            $media = self::forceGameMediaToPng([
+                'cover' => trim((string) ($row['image_url'] ?? '')),
+                'cover_fallbacks' => self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null),
+                'image_fallbacks' => self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null),
+            ]);
+            $newImage = trim((string) ($media['cover'] ?? ''));
+            $newFallbacks = self::encodeStoredImageFallbacks($media['cover_fallbacks'] ?? []);
+            $oldImage = trim((string) ($row['image_url'] ?? ''));
+            $oldFallbacks = self::encodeStoredImageFallbacks(
+                self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null)
+            );
+            if ($newImage === $oldImage && $newFallbacks === $oldFallbacks) {
+                continue;
+            }
+            if ($newImage === '' && $newFallbacks === null) {
+                continue;
+            }
+            $stmt->execute([
+                ':image' => $newImage !== '' ? $newImage : ($oldImage !== '' ? $oldImage : null),
+                ':fallbacks' => $newFallbacks,
+                ':id' => (int) $row['id'],
+            ]);
+            $updated++;
+        }
+
+        return ['updated' => $updated, 'scanned' => $scanned];
+    }
+
+    /**
+     * @param array{cover?: string, cover_fallbacks?: list<string>, image_fallbacks?: list<string>} $media
+     * @return array{cover: string, cover_fallbacks: list<string>, image_fallbacks: list<string>}
+     */
+    public static function forceGameMediaToPng(array $media): array
+    {
+        $cover = self::rewriteMediaUrlToPng(trim((string) ($media['cover'] ?? '')));
+        $fallbacks = [];
+        $sourceFallbacks = [];
+        if (is_array($media['cover_fallbacks'] ?? null)) {
+            $sourceFallbacks = $media['cover_fallbacks'];
+        } elseif (is_array($media['image_fallbacks'] ?? null)) {
+            $sourceFallbacks = $media['image_fallbacks'];
+        }
+        foreach ($sourceFallbacks as $url) {
+            $png = self::rewriteMediaUrlToPng(trim((string) $url));
+            if ($png !== '' && !in_array($png, $fallbacks, true)) {
+                $fallbacks[] = $png;
+            }
+        }
+        if ($cover !== '' && !in_array($cover, $fallbacks, true)) {
+            array_unshift($fallbacks, $cover);
+        }
+        if ($cover === '' && $fallbacks !== []) {
+            $cover = (string) $fallbacks[0];
+        }
+
+        return [
+            'cover' => $cover,
+            'cover_fallbacks' => $fallbacks,
+            'image_fallbacks' => $fallbacks,
+        ];
+    }
+
+    public static function rewriteMediaUrlToPng(string $url): string
+    {
+        $url = self::normalizeMediaUrl(trim($url));
+        if ($url === '' || !self::isUsableMediaUrl($url) || self::looksLikeLocalizedJson($url)) {
+            return '';
+        }
+        if (preg_match('#\.(avif|webp|jpe?g|gif|png)(\?|$)#i', $url) === 1) {
+            $png = preg_replace('#\.(avif|webp|jpe?g|gif|png)(\?|$)#i', '.png$2', $url, 1);
+
+            return is_string($png) ? $png : $url;
+        }
+
+        return $url;
     }
 
     /**
@@ -1204,14 +1327,34 @@ final class CasinoAggregatorService
                 array_unshift($fallbacks, $storedCover);
             }
 
-            return [
+            $media = [
                 'cover'           => $storedCover,
                 'cover_fallbacks' => $fallbacks,
                 'image_fallbacks' => $fallbacks,
             ];
+            if (self::isEgtVipVendor(self::rowVendorCode($row))) {
+                return self::forceGameMediaToPng($media);
+            }
+
+            return $media;
         }
 
-        return self::resolveApiGameMedia($row, $lang);
+        $media = self::resolveApiGameMedia($row, $lang);
+        if (self::isEgtVipVendor(self::rowVendorCode($row))) {
+            return self::forceGameMediaToPng($media);
+        }
+
+        return $media;
+    }
+
+    private static function rowVendorCode(array $row): string
+    {
+        $vendor = trim((string) ($row['vendor_code'] ?? ''));
+        if ($vendor !== '') {
+            return $vendor;
+        }
+
+        return trim((string) ($row['provider_code'] ?? ''));
     }
 
     public static function extractMediaUrl(string $value): string

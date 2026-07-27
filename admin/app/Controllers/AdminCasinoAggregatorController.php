@@ -77,6 +77,9 @@ final class AdminCasinoAggregatorController extends AdminController
                 $msg .= ' Etiket düzeltme: ' . (int) ($result['repaired_vendors'] ?? 0) . ' vendor, '
                     . (int) ($result['repaired_games'] ?? 0) . ' oyun.';
             }
+            if (((int) ($result['egt_vip_png'] ?? 0)) > 0) {
+                $msg .= ' EGT VIP PNG: ' . (int) $result['egt_vip_png'] . ' oyun.';
+            }
             $errors = is_array($result['errors'] ?? null) ? $result['errors'] : [];
             if ($errors !== []) {
                 $msg .= ' Uyarı: ' . implode(' | ', array_slice($errors, 0, 3));
