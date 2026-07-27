@@ -260,13 +260,8 @@ final class CasinoAggregatorService
                 }
                 $lang = strtolower(trim((string) ($cfg['lang'] ?? 'tr')));
                 $rawJson = json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                $mediaRow = [
-                    'game_code' => $gameCode,
-                    'image_url' => $row['imageUrl'] ?? ($row['image_url'] ?? ''),
-                    'raw_payload' => is_string($rawJson) ? $rawJson : null,
-                ];
                 try {
-                    $media = self::hydrateGameMedia($mediaRow, $lang, true);
+                    $media = self::resolveApiGameMedia($row, $lang);
                     $insert->execute([
                         ':vendor' => $vendor,
                         ':game'   => $gameCode,
@@ -337,7 +332,7 @@ final class CasinoAggregatorService
             );
             $newName = self::resolveLocalizedLabel($currentName, $lang) ?: $currentName;
             try {
-                $media = self::hydrateGameMedia($row, $lang, true);
+                $media = self::resolveApiGameMedia($row, $lang);
             } catch (Throwable) {
                 continue;
             }
@@ -366,9 +361,65 @@ final class CasinoAggregatorService
      */
     public static function resolveGameImage(array $row, ?string $lang = null): string
     {
-        $candidates = self::collectGameImageCandidates($row, $lang);
+        $candidates = self::collectGameImageCandidates($row, $lang, false);
 
         return $candidates !== [] ? (string) $candidates[0] : '';
+    }
+
+    /**
+     * Resolve cover + fallbacks from GetVendorGames VendorGame.imageUrl (API spec §5.4).
+     * Uses the localized JSON map as provided — no HTTP probing or URL synthesis.
+     *
+     * @param array<string, mixed> $apiRow GetVendorGames row or DB row with raw_payload
+     * @return array{cover: string, cover_fallbacks: list<string>, image_fallbacks: list<string>}
+     */
+    public static function resolveApiGameMedia(array $apiRow, ?string $lang = null): array
+    {
+        $lang = strtolower(trim((string) ($lang ?? 'tr')));
+        if ($lang === '') {
+            $lang = 'tr';
+        }
+
+        $candidates = self::collectMediaUrlCandidates(
+            $apiRow['imageUrl'] ?? $apiRow['image_url'] ?? '',
+            $lang
+        );
+
+        if ($candidates === []) {
+            $raw = $apiRow['raw_payload'] ?? null;
+            if (is_string($raw) && $raw !== '') {
+                $decoded = json_decode($raw, true);
+                if (!is_array($decoded)) {
+                    $decoded = json_decode(stripslashes($raw), true);
+                }
+                if (is_array($decoded)) {
+                    $candidates = self::collectMediaUrlCandidates(
+                        $decoded['imageUrl'] ?? $decoded['image_url'] ?? '',
+                        $lang
+                    );
+                }
+            }
+        }
+
+        $candidates = self::dedupeMediaUrls($candidates);
+        $regular = [];
+        $marketing = [];
+        foreach ($candidates as $url) {
+            if (self::isBrokenMarketingImageUrl($url)) {
+                $marketing[] = $url;
+            } else {
+                $regular[] = $url;
+            }
+        }
+        $candidates = array_values(array_merge($regular, $marketing));
+
+        $cover = $candidates[0] ?? '';
+
+        return [
+            'cover'           => $cover,
+            'cover_fallbacks' => $candidates,
+            'image_fallbacks' => $candidates,
+        ];
     }
 
     /**
@@ -994,17 +1045,16 @@ final class CasinoAggregatorService
     {
         $out = [];
         $add = static function (string $candidate) use (&$out): void {
-            foreach (self::expandMediaUrlVariants($candidate) as $variant) {
-                if (!in_array($variant, $out, true)) {
-                    $out[] = $variant;
-                }
+            $candidate = self::normalizeMediaUrl($candidate);
+            if ($candidate !== '' && self::isUsableMediaUrl($candidate) && !in_array($candidate, $out, true)) {
+                $out[] = $candidate;
             }
         };
 
         $add($url);
 
         if ($row !== null) {
-            foreach (self::collectGameImageCandidates($row, $lang) as $candidate) {
+            foreach (self::collectGameImageCandidates($row, $lang, false) as $candidate) {
                 $add($candidate);
             }
         }
@@ -1016,7 +1066,7 @@ final class CasinoAggregatorService
      * @param array<string, mixed> $row
      * @return list<string>
      */
-    public static function collectGameImageCandidates(array $row, ?string $lang = null): array
+    public static function collectGameImageCandidates(array $row, ?string $lang = null, bool $includeSynthesized = false): array
     {
         $urls = [];
         $seen = [];
@@ -1040,21 +1090,22 @@ final class CasinoAggregatorService
             $raw = is_array($decodedRaw) ? $decodedRaw : null;
         }
         if (is_array($raw)) {
-            foreach (['imageUrl', 'image_url', 'thumbnailUrl', 'thumbnail_url', 'thumbnail', 'iconUrl', 'icon_url', 'icon', 'img', 'cover', 'banner', 'logo', 'previewUrl', 'preview_url', 'preview'] as $key) {
+            foreach (['imageUrl', 'image_url'] as $key) {
                 if (array_key_exists($key, $raw)) {
                     $merge(self::collectMediaUrlCandidates($raw[$key], $lang));
                 }
             }
-            $merge(self::extractMediaUrlsDeep($raw, $lang));
         }
 
-        foreach (['image_url', 'imageUrl', 'thumbnail_url', 'thumbnailUrl', 'cover'] as $key) {
+        foreach (['image_url', 'imageUrl', 'cover'] as $key) {
             if (!empty($row[$key])) {
                 $merge(self::collectMediaUrlCandidates($row[$key], $lang));
             }
         }
 
-        $merge(self::synthesizeLobbyMediaCandidates($row));
+        if ($includeSynthesized) {
+            $merge(self::synthesizeLobbyMediaCandidates($row));
+        }
 
         return self::dedupeMediaUrls($urls);
     }
@@ -1121,77 +1172,46 @@ final class CasinoAggregatorService
      */
     public static function hydrateGameMedia(array $row, ?string $lang = null, bool $probeCandidates = false): array
     {
+        unset($probeCandidates);
+
         $storedFallbacks = self::decodeStoredImageFallbacks($row['image_fallbacks'] ?? null);
         if ($storedFallbacks === [] && !empty($row['cover_fallbacks']) && is_array($row['cover_fallbacks'])) {
             $storedFallbacks = self::decodeStoredImageFallbacks($row['cover_fallbacks']);
         }
 
-        $candidates = self::collectGameImageCandidates($row, $lang);
-        if ($candidates === []) {
-            $seed = trim((string) ($row['image_url'] ?? $row['cover'] ?? $row['thumbnail_url'] ?? ''));
-            if ($seed !== '' && self::isUsableMediaUrl($seed) && !self::looksLikeLocalizedJson($seed)) {
-                $candidates = self::mediaUrlFallbacks(self::normalizeMediaUrl($seed), $row, $lang);
+        $storedCover = self::normalizeMediaUrl(trim((string) ($row['image_url'] ?? '')));
+        if (!self::isUsableMediaUrl($storedCover) || self::looksLikeLocalizedJson($storedCover)) {
+            $storedCover = '';
+        }
+        if ($storedCover === '') {
+            $storedCover = self::normalizeMediaUrl(trim((string) ($row['cover'] ?? '')));
+            if (!self::isUsableMediaUrl($storedCover) || self::looksLikeLocalizedJson($storedCover)) {
+                $storedCover = '';
             }
         }
 
-        $fallbacks = self::mergeMediaCandidates($storedFallbacks, $candidates);
-        if ($probeCandidates && $fallbacks !== []) {
-            $fallbacks = self::validateMediaUrlCandidates($fallbacks, 12);
-        } elseif ($fallbacks !== []) {
-            $marketing = [];
-            $regular = [];
-            foreach ($fallbacks as $url) {
-                if (self::isBrokenMarketingImageUrl($url)) {
-                    $marketing[] = $url;
-                } else {
-                    $regular[] = $url;
+        if ($storedCover !== '') {
+            if (self::isBrokenMarketingImageUrl($storedCover) && $storedFallbacks !== []) {
+                foreach ($storedFallbacks as $candidate) {
+                    if (!self::isBrokenMarketingImageUrl($candidate)) {
+                        $storedCover = $candidate;
+                        break;
+                    }
                 }
             }
-            $fallbacks = array_values(array_merge($regular, $marketing));
-        }
-
-        $cover = '';
-        foreach ([
-            trim((string) ($row['cover'] ?? '')),
-            trim((string) ($row['image_url'] ?? '')),
-            trim((string) ($row['thumbnail_url'] ?? $row['imageUrl'] ?? '')),
-        ] as $candidateCover) {
-            if ($candidateCover !== '' && self::isUsableMediaUrl($candidateCover) && !self::looksLikeLocalizedJson($candidateCover)) {
-                $cover = self::normalizeMediaUrl($candidateCover);
-                break;
+            $fallbacks = $storedFallbacks !== [] ? $storedFallbacks : [$storedCover];
+            if (!in_array($storedCover, $fallbacks, true)) {
+                array_unshift($fallbacks, $storedCover);
             }
-        }
-        if ($cover !== '' && !in_array($cover, $fallbacks, true)) {
-            $fallbacks = self::mergeMediaCandidates([$cover], $fallbacks);
-        }
-        if ($cover === '' && $fallbacks !== []) {
-            $cover = (string) $fallbacks[0];
-        } elseif ($cover !== '' && self::isBrokenMarketingImageUrl($cover) && $fallbacks !== []) {
-            foreach ($fallbacks as $candidate) {
-                if (!self::isBrokenMarketingImageUrl($candidate)) {
-                    $cover = $candidate;
-                    break;
-                }
-            }
+
+            return [
+                'cover'           => $storedCover,
+                'cover_fallbacks' => $fallbacks,
+                'image_fallbacks' => $fallbacks,
+            ];
         }
 
-        if (!$probeCandidates && $fallbacks !== [] && ($cover === '' || (self::shouldProbeMediaUrl($cover) && !self::probeMediaUrl($cover)))) {
-            $fallbacks = self::validateMediaUrlCandidates($fallbacks, 16);
-        }
-        if ($cover === '' && $fallbacks !== []) {
-            $cover = (string) $fallbacks[0];
-        } elseif ($fallbacks !== [] && self::shouldProbeMediaUrl($cover) && !self::probeMediaUrl($cover)) {
-            $cover = (string) $fallbacks[0];
-        }
-        if ($cover !== '' && !in_array($cover, $fallbacks, true)) {
-            $fallbacks = self::mergeMediaCandidates([$cover], $fallbacks);
-        }
-
-        return [
-            'cover'            => $cover,
-            'cover_fallbacks'  => $fallbacks,
-            'image_fallbacks'  => $fallbacks,
-        ];
+        return self::resolveApiGameMedia($row, $lang);
     }
 
     public static function extractMediaUrl(string $value): string

@@ -159,18 +159,41 @@ final class ApiHomepageSections
 
     public static function normalizeSection(array $section, bool $onlyActiveItems = true): array
     {
+        $normalized = self::sectionForAdminEdit($section, $onlyActiveItems);
+        $payload = $normalized['payload'];
+        if ($normalized['type'] === 'banner') {
+            $payload = self::normalizeBannerPayload(is_array($payload) ? $payload : []);
+        }
+        $normalized['payload'] = ApiMediaUrl::resolveHomepagePayload($payload);
+
+        return $normalized;
+    }
+
+    /**
+     * Admin düzenleme formu için ham DB kaydı — URL çözümleme ve banner fallback yok.
+     *
+     * @param array<string, mixed> $section
+     * @return array<string, mixed>
+     */
+    public static function sectionForAdminEdit(array $section, bool $onlyActiveItems = false): array
+    {
         $type = (string) ($section['type'] ?? 'games');
         $type = in_array($type, ['games', 'banner'], true) ? $type : 'games';
         $surface = self::normalizeSurface((string) ($section['surface'] ?? 'all'));
-        $payload = is_array($section['payload'] ?? null) ? $section['payload'] : [];
+        $payload = is_array($section['payload'] ?? null)
+            ? $section['payload']
+            : self::decodePayload($section['payload'] ?? null);
 
         if ($type === 'banner') {
-            $payload = self::normalizeBannerPayload($payload);
+            $payload = [
+                'image_url' => trim((string) ($payload['image_url'] ?? '')),
+                'alt' => trim((string) ($payload['alt'] ?? '')),
+                'href' => trim((string) ($payload['href'] ?? '')),
+                'onclick' => trim((string) ($payload['onclick'] ?? '')),
+            ];
         } else {
             $payload = self::normalizeGamesPayload($payload, $onlyActiveItems);
         }
-
-        $payload = ApiMediaUrl::resolveHomepagePayload($payload);
 
         return [
             'id' => (int) ($section['id'] ?? 0),
@@ -190,7 +213,7 @@ final class ApiHomepageSections
     /**
      * @return list<array<string, mixed>>
      */
-    public static function defaultSections(string $surface = 'all', string $sectionKey = ''): array
+    public static function defaultSections(string $surface = 'all', string $sectionKey = '', bool $forAdmin = false): array
     {
         $sections = [
             [
@@ -275,7 +298,9 @@ final class ApiHomepageSections
             if ($surface !== 'all' && !in_array($section['surface'], ['all', $surface], true)) {
                 continue;
             }
-            $filtered[] = self::normalizeSection($section);
+            $filtered[] = $forAdmin
+                ? self::sectionForAdminEdit($section, false)
+                : self::normalizeSection($section);
         }
 
         return $filtered;

@@ -64,6 +64,38 @@ final class ApiMediaUrl
     }
 
     /**
+     * Formdan gelen çözümlenmiş / mutlak medya URL'lerini DB'de saklanacak göreli yola çevirir.
+     */
+    public static function storagePath(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return '';
+        }
+
+        if (preg_match('#^/+https?://#i', $path) === 1) {
+            $path = ltrim($path, '/');
+        }
+
+        if (preg_match('#^https?://#i', $path)) {
+            $path = (string) (parse_url($path, PHP_URL_PATH) ?? '');
+        }
+
+        $path = str_replace('\\', '/', $path);
+        $path = self::normalizeLegacyMediaPath($path !== '' && $path[0] !== '/' ? '/' . $path : $path);
+
+        if (defined('SITE_URL')) {
+            $sitePath = (string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?: '');
+            $sitePath = $sitePath === '/' ? '' : rtrim($sitePath, '/');
+            if ($sitePath !== '' && str_starts_with($path, $sitePath . '/')) {
+                $path = substr($path, strlen($sitePath));
+            }
+        }
+
+        return ltrim($path, '/');
+    }
+
+    /**
      * @param array<string, mixed> $slider
      * @return array<string, mixed>
      */

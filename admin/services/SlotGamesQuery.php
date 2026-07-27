@@ -31,13 +31,26 @@ final class SlotGamesQuery
     public static function mapApiRowToLegacy(array $row): array
     {
         $provider = self::normalizeProviderLabel($row['provider'] ?? '');
-        $media = class_exists('CasinoAggregatorService', false)
-            ? CasinoAggregatorService::hydrateGameMedia($row)
-            : [
-                'cover'           => self::normalizeGameImage($row),
-                'cover_fallbacks' => [],
-                'image_fallbacks' => [],
+        $existingCover = trim((string) ($row['cover'] ?? $row['image_url'] ?? ''));
+        $existingFallbacks = is_array($row['cover_fallbacks'] ?? null)
+            ? $row['cover_fallbacks']
+            : (is_array($row['image_fallbacks'] ?? null) ? $row['image_fallbacks'] : []);
+
+        if ($existingCover !== '' && $existingFallbacks !== []) {
+            $media = [
+                'cover'           => $existingCover,
+                'cover_fallbacks' => $existingFallbacks,
+                'image_fallbacks' => $existingFallbacks,
             ];
+        } else {
+            $media = class_exists('CasinoAggregatorService', false)
+                ? CasinoAggregatorService::hydrateGameMedia($row)
+                : [
+                    'cover'           => self::normalizeGameImage($row),
+                    'cover_fallbacks' => [],
+                    'image_fallbacks' => [],
+                ];
+        }
 
         return [
             'id'            => (string) ($row['id'] ?? ''),

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 final class AdminHomepageSectionsController extends AdminController
 {
+    private const ADMIN_SURFACE = 'all';
+
     public function edit(): void
     {
         $this->requirePermission('homepage-sections');
@@ -40,7 +42,7 @@ final class AdminHomepageSectionsController extends AdminController
         foreach ($this->editableSectionKeys() as $sectionKey => $type) {
             $sectionInput = is_array($postedSections[$sectionKey] ?? null) ? $postedSections[$sectionKey] : [];
             $title = trim((string) ($sectionInput['title'] ?? ''));
-            $surface = $this->surface((string) ($sectionInput['surface'] ?? 'all'));
+            $surface = self::ADMIN_SURFACE;
             $sortOrder = (int) ($sectionInput['sort_order'] ?? 0);
             $isActive = (int) ($sectionInput['is_active'] ?? 0) === 1 ? 1 : 0;
             $startDate = $this->nullableDate((string) ($sectionInput['start_date'] ?? ''));
@@ -56,31 +58,58 @@ final class AdminHomepageSectionsController extends AdminController
                 $this->redirect(AdminAuth::url('/homepage-sections'));
             }
 
-            $stmt = $pdo->prepare(
-                'INSERT INTO homepage_sections
-                    (section_key, title, type, surface, payload, sort_order, is_active, start_date, end_date)
-                 VALUES
-                    (:section_key, :title, :type, :surface, :payload, :sort_order, :is_active, :start_date, :end_date)
-                 ON DUPLICATE KEY UPDATE
-                    title = VALUES(title),
-                    type = VALUES(type),
-                    payload = VALUES(payload),
-                    sort_order = VALUES(sort_order),
-                    is_active = VALUES(is_active),
-                    start_date = VALUES(start_date),
-                    end_date = VALUES(end_date)'
+            $lookup = $pdo->prepare(
+                'SELECT id FROM homepage_sections
+                 WHERE section_key = :section_key AND surface = :surface
+                 LIMIT 1'
             );
-            $stmt->execute([
+            $lookup->execute([
                 'section_key' => $sectionKey,
-                'title' => $title,
-                'type' => $type,
                 'surface' => $surface,
-                'payload' => $encoded,
-                'sort_order' => $sortOrder,
-                'is_active' => $isActive,
-                'start_date' => $startDate,
-                'end_date' => $endDate,
             ]);
+            $existingId = (int) $lookup->fetchColumn();
+
+            if ($existingId > 0) {
+                $stmt = $pdo->prepare(
+                    'UPDATE homepage_sections
+                     SET title = :title,
+                         type = :type,
+                         payload = :payload,
+                         sort_order = :sort_order,
+                         is_active = :is_active,
+                         start_date = :start_date,
+                         end_date = :end_date
+                     WHERE id = :id'
+                );
+                $stmt->execute([
+                    'id' => $existingId,
+                    'title' => $title,
+                    'type' => $type,
+                    'payload' => $encoded,
+                    'sort_order' => $sortOrder,
+                    'is_active' => $isActive,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                ]);
+            } else {
+                $stmt = $pdo->prepare(
+                    'INSERT INTO homepage_sections
+                        (section_key, title, type, surface, payload, sort_order, is_active, start_date, end_date)
+                     VALUES
+                        (:section_key, :title, :type, :surface, :payload, :sort_order, :is_active, :start_date, :end_date)'
+                );
+                $stmt->execute([
+                    'section_key' => $sectionKey,
+                    'title' => $title,
+                    'type' => $type,
+                    'surface' => $surface,
+                    'payload' => $encoded,
+                    'sort_order' => $sortOrder,
+                    'is_active' => $isActive,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                ]);
+            }
         }
 
         $_SESSION['admin_homepage_sections_flash'] = 'Ana sayfa vitrinleri güncellendi.';
@@ -97,23 +126,23 @@ final class AdminHomepageSectionsController extends AdminController
     private function sectionsByKey(): array
     {
         $sections = [];
-        foreach (ApiHomepageSections::defaultSections('all') as $section) {
+        foreach (ApiHomepageSections::defaultSections('all', '', true) as $section) {
             $sections[$section['section_key']] = $section;
         }
 
-        $placeholders = implode(',', array_fill(0, count($this->editableSectionKeys()), '?'));
+        $keys = array_keys($this->editableSectionKeys());
+        $sectionPlaceholders = implode(',', array_fill(0, count($keys), '?'));
         $stmt = AdminDatabase::pdo()->prepare(
             'SELECT id, section_key, title, type, surface, payload, sort_order, is_active, start_date, end_date, updated_at
              FROM homepage_sections
-             WHERE section_key IN (' . $placeholders . ')
+             WHERE section_key IN (' . $sectionPlaceholders . ')
+               AND surface = ?
              ORDER BY sort_order ASC, id ASC'
         );
-        $stmt->execute(array_keys($this->editableSectionKeys()));
+        $stmt->execute([...$keys, self::ADMIN_SURFACE]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach (is_array($rows) ? $rows : [] as $row) {
-            $payload = json_decode((string) ($row['payload'] ?? ''), true);
-            $row['payload'] = is_array($payload) ? $payload : [];
-            $section = ApiHomepageSections::normalizeSection($row, false);
+            $section = ApiHomepageSections::sectionForAdminEdit($row, false);
             if ($section['section_key'] !== '') {
                 $sections[$section['section_key']] = $section;
             }
@@ -142,7 +171,7 @@ final class AdminHomepageSectionsController extends AdminController
     private function bannerPayload(array $input): array
     {
         return [
-            'image_url' => trim((string) ($input['image_url'] ?? '')),
+            'image_url' => $this->storageMediaPath((string) ($input['image_url'] ?? '')),
             'alt' => trim((string) ($input['alt'] ?? '')),
             'href' => trim((string) ($input['href'] ?? '')),
             'onclick' => trim((string) ($input['onclick'] ?? '')),
@@ -155,7 +184,7 @@ final class AdminHomepageSectionsController extends AdminController
         $titles = is_array($cards['title'] ?? null) ? $cards['title'] : [];
         foreach ($titles as $index => $titleValue) {
             $title = trim((string) $titleValue);
-            $image = trim((string) (($cards['image_url'][$index] ?? '')));
+            $image = $this->storageMediaPath((string) ($cards['image_url'][$index] ?? ''));
             if ($title === '' || $image === '') {
                 continue;
             }
@@ -186,9 +215,13 @@ final class AdminHomepageSectionsController extends AdminController
         ];
     }
 
-    private function surface(string $surface): string
+    private function storageMediaPath(string $path): string
     {
-        return in_array($surface, ['all', 'desktop', 'mobile'], true) ? $surface : 'all';
+        if (class_exists('ApiMediaUrl', false)) {
+            return ApiMediaUrl::storagePath($path);
+        }
+
+        return ltrim(trim($path), '/');
     }
 
     private function nullableDate(string $value): ?string
