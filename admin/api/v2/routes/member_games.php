@@ -50,7 +50,7 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
             "SELECT DISTINCT v.vendor_code AS provider_code, v.vendor_name AS provider_name
              FROM casino_aggregator_vendors v
              INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
-             WHERE v.is_active = 1 AND g.is_active = 1 AND v.game_type = :type
+             WHERE v.is_active = 1 AND g.is_active = 1 AND g.game_type = :type
              ORDER BY v.vendor_name ASC"
         );
         $aggStmt->execute([':type' => $aggType]);

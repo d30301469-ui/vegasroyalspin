@@ -681,11 +681,21 @@ final class SlotGamesQuery
                 }
             }
             $aggType = $gameType === 1 ? 2 : 1;
+            if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
+                static $liveTypesRepaired = false;
+                if (!$liveTypesRepaired) {
+                    $liveTypesRepaired = true;
+                    try {
+                        CasinoAggregatorService::repairGameTypesFromPayload($pdo);
+                    } catch (Throwable) {
+                    }
+                }
+            }
             $aggStmt = $pdo->prepare(
                 "SELECT DISTINCT COALESCE(NULLIF(v.vendor_name, ''), v.vendor_code) AS provider_name
                  FROM casino_aggregator_vendors v
                  INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
-                 WHERE v.is_active = 1 AND g.is_active = 1 AND v.game_type = :type
+                 WHERE v.is_active = 1 AND g.is_active = 1 AND g.game_type = :type
                  ORDER BY provider_name ASC"
             );
             $aggStmt->execute([':type' => $aggType]);

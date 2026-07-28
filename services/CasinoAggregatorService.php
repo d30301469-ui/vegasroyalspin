@@ -75,6 +75,57 @@ final class CasinoAggregatorService
         2 => 'Live Casino',
     ];
 
+    /**
+     * Normalize Operator API / DB gameType to 1 (Slot) or 2 (Live Casino).
+     * Falls back to vendorCode hints (e.g. live-evolution) when the value is missing.
+     */
+    public static function normalizeGameType(mixed $value, ?string $vendorCode = null): int
+    {
+        if (is_int($value) || is_float($value) || (is_string($value) && is_numeric(trim($value)))) {
+            $n = (int) $value;
+            if ($n === 2) {
+                return 2;
+            }
+            if ($n === 1) {
+                return 1;
+            }
+        }
+
+        $raw = strtolower(trim((string) ($value ?? '')));
+        if ($raw !== '') {
+            if (
+                $raw === '2'
+                || str_contains($raw, 'live')
+                || str_contains($raw, 'livecasino')
+                || str_contains($raw, 'live_casino')
+                || str_contains($raw, 'live casino')
+            ) {
+                return 2;
+            }
+            if ($raw === '1' || str_contains($raw, 'slot')) {
+                return 1;
+            }
+        }
+
+        $vendor = strtolower(trim((string) ($vendorCode ?? '')));
+        if ($vendor !== '') {
+            if (
+                str_starts_with($vendor, 'live-')
+                || str_starts_with($vendor, 'live_')
+                || str_contains($vendor, 'livecasino')
+                || str_contains($vendor, 'live-casino')
+                || str_contains($vendor, 'live_casino')
+            ) {
+                return 2;
+            }
+            if (str_starts_with($vendor, 'slot-') || str_starts_with($vendor, 'slot_')) {
+                return 1;
+            }
+        }
+
+        return 1;
+    }
+
     private const SIGN_HEADERS = [
         'HTTP_X_SIGNATURE',
         'HTTP_X_SIGN',
@@ -379,7 +430,7 @@ final class CasinoAggregatorService
             $stmt->execute([
                 ':code' => $code,
                 ':name' => self::resolveLocalizedLabel($row['vendorName'] ?? '', $lang) ?: $code,
-                ':type' => max(1, (int) ($row['gameType'] ?? 1)),
+                ':type' => self::normalizeGameType($row['gameType'] ?? $row['game_type'] ?? null, $code),
             ]);
             $count++;
         }
@@ -393,7 +444,7 @@ final class CasinoAggregatorService
     {
         self::bootstrap($pdo);
         $cfg = self::configuredConfig($pdo);
-        $sql = 'SELECT vendor_code FROM casino_aggregator_vendors WHERE is_active = 1';
+        $sql = 'SELECT vendor_code, game_type FROM casino_aggregator_vendors WHERE is_active = 1';
         $params = [];
         if ($vendorCode !== null && trim($vendorCode) !== '') {
             $sql .= ' AND vendor_code = :vendor';
@@ -402,11 +453,24 @@ final class CasinoAggregatorService
         $sql .= ' ORDER BY vendor_code ASC';
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        $vendors = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
-        if ($vendors === []) {
+        $vendorRows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if ($vendorRows === []) {
             self::syncVendors($pdo);
             $stmt->execute($params);
-            $vendors = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            $vendorRows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        }
+        $vendorTypes = [];
+        $vendors = [];
+        foreach ($vendorRows as $vendorRow) {
+            if (!is_array($vendorRow)) {
+                continue;
+            }
+            $code = trim((string) ($vendorRow['vendor_code'] ?? ''));
+            if ($code === '') {
+                continue;
+            }
+            $vendors[] = $code;
+            $vendorTypes[$code] = self::normalizeGameType($vendorRow['game_type'] ?? 1, $code);
         }
 
         $gameCount = 0;
@@ -453,6 +517,13 @@ final class CasinoAggregatorService
                 }
                 $lang = strtolower(trim((string) ($cfg['lang'] ?? 'tr')));
                 $rawJson = json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $rawType = $row['gameType'] ?? $row['game_type'] ?? null;
+                $type = self::normalizeGameType($rawType, $vendor);
+                // If API omits gameType on the game row, inherit vendor classification
+                // (Evolution live vendors are often typed at vendor level only).
+                if (($rawType === null || $rawType === '') && isset($vendorTypes[$vendor])) {
+                    $type = $vendorTypes[$vendor];
+                }
                 try {
                     $media = self::resolveApiGameMedia($row, $lang);
                     if (self::isEgtVipVendor($vendor)) {
@@ -462,7 +533,7 @@ final class CasinoAggregatorService
                         ':vendor' => $vendor,
                         ':game'   => $gameCode,
                         ':name'   => self::resolveLocalizedLabel($row['gameName'] ?? '', $lang) ?: $gameCode,
-                        ':type'   => max(1, (int) ($row['gameType'] ?? 1)),
+                        ':type'   => $type,
                         ':image'  => ($media['cover'] ?? '') !== '' ? $media['cover'] : null,
                         ':fallbacks' => self::encodeStoredImageFallbacks($media['cover_fallbacks'] ?? []),
                         ':raw'    => $rawJson,
@@ -473,6 +544,21 @@ final class CasinoAggregatorService
                 }
             }
         }
+
+        // Keep vendor.game_type aligned with actual catalog contents when a vendor
+        // has live games (GetVendors may mark Evolution as slot-only).
+        try {
+            $pdo->exec(
+                'UPDATE casino_aggregator_vendors v
+                 SET v.game_type = 2
+                 WHERE EXISTS (
+                    SELECT 1 FROM casino_aggregator_games g
+                    WHERE g.vendor_code = v.vendor_code AND g.is_active = 1 AND g.game_type = 2
+                 )'
+            );
+        } catch (Throwable) {
+        }
+        self::repairGameTypesFromPayload($pdo);
 
         $pdo->exec('UPDATE casino_aggregator_config SET games_synced_at = NOW() WHERE id = 1');
         $repair = self::repairCatalogLabels($pdo);
@@ -486,7 +572,80 @@ final class CasinoAggregatorService
         ];
     }
 
-    /** @return array{vendors: int, games: int} */
+    /**
+     * Reclassify games from stored raw_payload / live-* vendor codes so live
+     * casino titles (e.g. Evolution type 2) appear in the live lobby.
+     *
+     * @return array{updated:int,vendors:int}
+     */
+    public static function repairGameTypesFromPayload(PDO $pdo): array
+    {
+        self::bootstrap($pdo);
+        $updated = 0;
+        $vendorUpdated = 0;
+        try {
+            $vendorTypeStmt = $pdo->query('SELECT vendor_code, game_type FROM casino_aggregator_vendors');
+            $vendorTypes = [];
+            foreach ($vendorTypeStmt ? $vendorTypeStmt->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $code = trim((string) ($row['vendor_code'] ?? ''));
+                if ($code === '') {
+                    continue;
+                }
+                $vendorTypes[$code] = self::normalizeGameType($row['game_type'] ?? 1, $code);
+            }
+
+            $stmt = $pdo->query(
+                'SELECT id, vendor_code, game_type, raw_payload FROM casino_aggregator_games'
+            );
+            $update = $pdo->prepare('UPDATE casino_aggregator_games SET game_type = :type WHERE id = :id');
+            foreach ($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $id = (int) ($row['id'] ?? 0);
+                $vendor = trim((string) ($row['vendor_code'] ?? ''));
+                $current = (int) ($row['game_type'] ?? 1);
+                $payload = [];
+                $raw = trim((string) ($row['raw_payload'] ?? ''));
+                if ($raw !== '') {
+                    $decoded = json_decode($raw, true);
+                    if (is_array($decoded)) {
+                        $payload = $decoded;
+                    }
+                }
+                $rawType = $payload['gameType'] ?? $payload['game_type'] ?? null;
+                $type = self::normalizeGameType($rawType, $vendor);
+                if (($rawType === null || $rawType === '') && isset($vendorTypes[$vendor])) {
+                    $type = $vendorTypes[$vendor];
+                }
+                if ($id > 0 && $type !== $current) {
+                    $update->execute([':type' => $type, ':id' => $id]);
+                    $updated++;
+                }
+            }
+
+            $vendorUpdated = (int) $pdo->exec(
+                'UPDATE casino_aggregator_vendors v
+                 SET v.game_type = 2
+                 WHERE EXISTS (
+                    SELECT 1 FROM casino_aggregator_games g
+                    WHERE g.vendor_code = v.vendor_code AND g.is_active = 1 AND g.game_type = 2
+                 )'
+            );
+            if ($vendorUpdated < 0) {
+                $vendorUpdated = 0;
+            }
+        } catch (Throwable) {
+            return ['updated' => $updated, 'vendors' => $vendorUpdated];
+        }
+
+        return ['updated' => $updated, 'vendors' => $vendorUpdated];
+    }
+
+    /** @return array{vendors: int, games: int, egt_vip_png?: int} */
     public static function repairCatalogLabels(PDO $pdo, ?string $lang = null): array
     {
         self::bootstrap($pdo);
