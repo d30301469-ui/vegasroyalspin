@@ -157,6 +157,7 @@ require_once ADMIN_APP_PATH . '/Controllers/AdminMegaPayzController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminBgamingController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminSportsbookController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminCasinoAggregatorController.php';
+require_once ADMIN_APP_PATH . '/Controllers/AdminGamingSoftController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminGscPlusController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminFooterController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminSiteSettingsController.php';

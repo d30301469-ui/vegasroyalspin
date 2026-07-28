@@ -216,7 +216,9 @@ final class AdminAuth
         if (!self::isSuperAdmin()) {
             return;
         }
-        if (!empty($_SESSION['admin_superadmin_perms_synced'])) {
+        if (!empty($_SESSION['admin_superadmin_perms_synced'])
+            && (string) $_SESSION['admin_superadmin_perms_synced'] === sha1(implode('|', self::allCanonicalPermissionKeys()))
+        ) {
             return;
         }
         $adminId = (int) (self::user()['id'] ?? 0);
@@ -254,7 +256,8 @@ final class AdminAuth
                 ]);
             }
 
-            $_SESSION['admin_superadmin_perms_synced'] = true;
+            // Include a fingerprint so newly added nav keys re-sync on next request.
+            $_SESSION['admin_superadmin_perms_synced'] = sha1(implode('|', self::allCanonicalPermissionKeys()));
         } catch (Throwable) {
             // DB henüz hazır değilse ya da geçici bir hata olursa panel açılmaya devam etsin;
             // isSuperAdmin() bypass'ı zaten erişimi garanti eder.
@@ -324,6 +327,13 @@ final class AdminAuth
             'chat', 'compose' => 'email',
             'reports-financial' => 'deposits',
             'reports-charts', 'reports-calendar', 'backoffice-suite' => 'dashboard',
+            'gsc-plus-settings' => 'gamingsoft-settings',
+            'gsc-plus-products' => 'gamingsoft-products',
+            'gsc-plus-games' => 'gamingsoft-games',
+            'gsc-plus-sessions' => 'gamingsoft-sessions',
+            'gsc-plus-transactions' => 'gamingsoft-transactions',
+            'gsc-plus-wagers' => 'gamingsoft-wagers',
+            'gsc-plus-wallet-logs' => 'gamingsoft-wallet-logs',
             default => $permissionKey,
         };
     }
@@ -386,6 +396,14 @@ final class AdminAuth
             'be_pages_admin_access_control' => 'permissions',
             'be_pages_bonus_claims' => 'bonus-claims',
             'be_pages_call_me_requests' => 'call-requests',
+            // GSC+ transient keys during rename → gamingsoft-*
+            'gsc-plus-settings' => 'gamingsoft-settings',
+            'gsc-plus-products' => 'gamingsoft-products',
+            'gsc-plus-games' => 'gamingsoft-games',
+            'gsc-plus-sessions' => 'gamingsoft-sessions',
+            'gsc-plus-transactions' => 'gamingsoft-transactions',
+            'gsc-plus-wagers' => 'gamingsoft-wagers',
+            'gsc-plus-wallet-logs' => 'gamingsoft-wallet-logs',
         ];
     }
 

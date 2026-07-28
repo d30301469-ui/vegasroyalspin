@@ -21,9 +21,9 @@ $callbackAlias = (string) ($callbackAlias ?? '');
 
 <section class="hero">
     <div class="hero-text">
-        <span class="eyebrow">Oyunlar · GSC+</span>
-        <h1 class="hero-title">GSC+ <span class="accent">Seamless Wallet</span></h1>
-        <p class="hero-sub">GamingSoft Operator API v2.0.6 — operator credentials, katalog sync ve wallet callback URL yönetimi.</p>
+        <span class="eyebrow">Oyunlar · Gaming Soft</span>
+        <h1 class="hero-title">Gaming Soft <span class="accent">(GSC+ v2.0.6)</span></h1>
+        <p class="hero-sub">Seamless wallet callback, product/game sync ve launch-game entegrasyonu.</p>
     </div>
     <div class="hero-actions">
         <button class="btn btn--primary" type="submit" form="gscSettingsForm">Ayarları Kaydet</button>
@@ -35,13 +35,13 @@ $callbackAlias = (string) ($callbackAlias ?? '');
 <?php endif; ?>
 
 <div class="gsc-grid">
-    <form id="gscSettingsForm" class="gsc-card" method="post" action="<?= $text(AdminAuth::url('/gsc-plus/settings')) ?>">
+    <form id="gscSettingsForm" class="gsc-card" method="post" action="<?= $text(AdminAuth::url('/gamingsoft/settings')) ?>">
         <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
 
         <div class="field">
             <label class="field-label" for="operator_code">Operator Code</label>
             <input id="operator_code" class="input" type="text" name="operator_code" value="<?= $text($configRow['operator_code'] ?? '') ?>" maxlength="32" autocomplete="off" required>
-            <p class="gsc-help">GSC+ tarafından verilen 4+ karakterli agent kodu.</p>
+            <p class="gsc-help">GSC+ tarafından verilen agent kodu.</p>
         </div>
 
         <div class="field">
@@ -84,7 +84,7 @@ $callbackAlias = (string) ($callbackAlias ?? '');
 
         <label class="field" style="display:flex;align-items:center;gap:10px;margin-top:8px">
             <input type="checkbox" name="is_active" value="1" <?= !empty($configRow['is_active']) ? 'checked' : '' ?>>
-            <span>GSC+ entegrasyonunu aktif et</span>
+            <span>Gaming Soft entegrasyonunu aktif et</span>
         </label>
     </form>
 
@@ -102,18 +102,18 @@ $callbackAlias = (string) ($callbackAlias ?? '');
         </div>
 
         <div class="gsc-actions" style="margin-top:16px">
-            <form method="post" action="<?= $text(AdminAuth::url('/gsc-plus/sync-products')) ?>">
+            <form method="post" action="<?= $text(AdminAuth::url('/gamingsoft/sync-products')) ?>">
                 <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
                 <button class="btn btn--ghost" type="submit" style="width:100%">Ürünleri Sync Et</button>
             </form>
-            <form method="post" action="<?= $text(AdminAuth::url('/gsc-plus/sync-games')) ?>">
+            <form method="post" action="<?= $text(AdminAuth::url('/gamingsoft/sync-games')) ?>">
                 <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
                 <button class="btn btn--ghost" type="submit" style="width:100%">Oyunları Sync Et</button>
             </form>
         </div>
 
         <div style="margin-top:18px">
-            <div class="field-label">Callback URL (GSC+ paneline verilecek)</div>
+            <div class="field-label">Callback URL (GSC+ paneline verin)</div>
             <p class="gsc-code gsc-help"><?= $text($callbackUrl) ?></p>
             <p class="gsc-help" style="margin-top:10px">
                 balance → <code>.../v1/api/seamless/balance</code><br>
