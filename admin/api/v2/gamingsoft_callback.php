@@ -58,13 +58,16 @@ $rawBody = '';
 $payload = null;
 
 // When routed via api/v2/index.php, member_api_kernel already read php://input.
-if (array_key_exists('GAMINGSOFT_WALLET_PAYLOAD', $GLOBALS) && is_array($GLOBALS['GAMINGSOFT_WALLET_PAYLOAD'])) {
-    $payload = $GLOBALS['GAMINGSOFT_WALLET_PAYLOAD'];
-    $rawBody = (string) ($GLOBALS['GAMINGSOFT_WALLET_RAW'] ?? '');
-    unset($GLOBALS['GAMINGSOFT_WALLET_PAYLOAD'], $GLOBALS['GAMINGSOFT_WALLET_RAW']);
+$forwardedPayload = $GLOBALS['GAMINGSOFT_WALLET_PAYLOAD'] ?? null;
+$forwardedRaw = (string) ($GLOBALS['GAMINGSOFT_WALLET_RAW'] ?? '');
+unset($GLOBALS['GAMINGSOFT_WALLET_PAYLOAD'], $GLOBALS['GAMINGSOFT_WALLET_RAW']);
+
+if (is_array($forwardedPayload) && ($forwardedPayload !== [] || trim($forwardedRaw) !== '')) {
+    $payload = $forwardedPayload;
+    $rawBody = $forwardedRaw;
 }
 
-if (!is_array($payload)) {
+if (!is_array($payload) || $payload === []) {
     $rawBody = (string) file_get_contents('php://input');
     $payload = json_decode($rawBody, true);
     if (!is_array($payload)) {

@@ -588,22 +588,18 @@ final class GamingSoftService
         }
 
         $userId = (int) $user['id'];
+        // Always use numeric user id — never username. Dual accounts break seamless wallet
+        // lookups and surface as in-game "re-log in / launch again" errors.
         $memberAccount = self::memberAccountFromUser($user);
         $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
+        if ($nickname === '') {
+            $nickname = 'user_' . $userId;
+        }
         $memberAccountCandidates = [$memberAccount];
-        if ($nickname !== '' && $nickname !== $memberAccount && strlen($nickname) <= 50) {
-            $memberAccountCandidates[] = $nickname;
-        }
         $launchPassword = self::memberLaunchPassword($pdo, $userId, $memberAccount, (string) $cfg['secret_key']);
-        $launchPasswordCandidatesByAccount = [];
-        foreach ($memberAccountCandidates as $accountCandidate) {
-            $launchPasswordCandidatesByAccount[$accountCandidate] = self::memberLaunchPasswordCandidates(
-                $pdo,
-                $userId,
-                $accountCandidate,
-                (string) $cfg['secret_key']
-            );
-        }
+        $launchPasswordCandidatesByAccount = [
+            $memberAccount => [$launchPassword],
+        ];
 
         // Product row is authoritative for launch mode (entry_type) and game_type.
         $targetCurrency = self::resolveOperatorCurrency($cfg);
@@ -662,11 +658,8 @@ final class GamingSoftService
         );
 
         $channel = strtolower(trim((string) ($input['channel'] ?? 'desktop')));
-        $platform = match (true) {
-            in_array($channel, ['mobile', 'm'], true) => 'MOBILE',
-            in_array($channel, ['desktop', 'pc'], true) => 'DESKTOP',
-            default => 'WEB',
-        };
+        // Prefer WEB over DESKTOP — DESKTOP tokens often fail later inside live clients.
+        $platform = in_array($channel, ['mobile', 'm'], true) ? 'MOBILE' : 'WEB';
 
         $langInput = strtolower(trim((string) ($input['lang'] ?? '')));
         $languageCode = (int) ($cfg['language_code'] ?? 0);
@@ -679,6 +672,15 @@ final class GamingSoftService
             $lobbyUrl = defined('SITE_URL') && trim((string) SITE_URL) !== ''
                 ? rtrim((string) SITE_URL, '/')
                 : ('https://' . (string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+        }
+        // Live lobby return URL — avoid bare domain /admin host for operator_lobby_url.
+        if (self::isLiveGameType($gameType) || self::isLiveGameType($productGameType)) {
+            $lobbyHost = preg_replace('#^https?://admin\.#i', 'https://', $lobbyUrl) ?? $lobbyUrl;
+            if (!preg_match('#/livecasino(?:/|$|\?)#i', $lobbyHost)) {
+                $lobbyUrl = rtrim(preg_replace('#/admin(?:/.*)?$#i', '', $lobbyHost) ?? $lobbyHost, '/') . '/livecasino';
+            } else {
+                $lobbyUrl = $lobbyHost;
+            }
         }
 
         $ip = trim((string) ($input['ip'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'));
@@ -863,8 +865,10 @@ final class GamingSoftService
         } catch (Throwable) {
         }
 
+        // Top-level redirect: many GSC+ live clients break (or show "re-log in")
+        // when embedded in /play iframe (3rd-party cookies / frame policies).
         $data = [
-            'open_mode' => 'iframe',
+            'open_mode' => 'redirect',
             'mode'      => 'real',
         ];
         if ($launchUrl !== '') {
@@ -959,6 +963,16 @@ final class GamingSoftService
 
         $data = [];
         $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
+        // Defensive: some provider paths send a single top-level member_account.
+        if ($batch === []) {
+            $topMember = trim((string) ($payload['member_account'] ?? ''));
+            if ($topMember !== '') {
+                $batch = [[
+                    'member_account' => $topMember,
+                    'product_code'   => (int) ($payload['product_code'] ?? $payload['Product_code'] ?? 0),
+                ]];
+            }
+        }
         foreach ($batch as $req) {
             if (!is_array($req)) {
                 continue;
@@ -1636,71 +1650,20 @@ final class GamingSoftService
 
     /**
      * Stable GSC+ launch password (MD5).
-     * Priority: stored gamingsoft_member_accounts → derived md5(member+secret).
-     * Never rotate with users.password — that breaks provider sessions ("re-log in").
+     * Always md5(member_account + secret_key) — never users.password or stale stored
+     * variants. GSC+ accepts any MD5 on launch but mismatched passwords across
+     * retries create broken provider sessions ("re-log in").
      *
      * @return list<string>
      */
     private static function memberLaunchPasswordCandidates(PDO $pdo, int $userId, string $memberAccount, string $secretKey): array
     {
-        $candidates = [];
-        $add = static function (string $value) use (&$candidates): void {
-            $value = strtolower(trim($value));
-            if (preg_match('/^[a-f0-9]{32}$/', $value) !== 1) {
-                return;
-            }
-            if (!in_array($value, $candidates, true)) {
-                $candidates[] = $value;
-            }
-        };
-
-        $stored = '';
-        if ($memberAccount !== '') {
-            try {
-                $stmt = $pdo->prepare(
-                    'SELECT launch_password FROM gamingsoft_member_accounts
-                     WHERE member_account = :ma LIMIT 1'
-                );
-                $stmt->execute([':ma' => $memberAccount]);
-                $stored = trim((string) ($stmt->fetchColumn() ?: ''));
-                $add($stored);
-            } catch (Throwable) {
-            }
-        }
-        if ($stored === '' && $userId > 0) {
-            try {
-                $stmt = $pdo->prepare(
-                    'SELECT launch_password FROM gamingsoft_member_accounts
-                     WHERE user_id = :uid LIMIT 1'
-                );
-                $stmt->execute([':uid' => $userId]);
-                $stored = trim((string) ($stmt->fetchColumn() ?: ''));
-                $add($stored);
-            } catch (Throwable) {
-            }
-        }
-
         $derived = md5($memberAccount . $secretKey);
-        $add($derived);
-
-        // Last-resort: legacy MD5 site password (only if already GSC+-compatible).
-        // Never promote this to stored unless a launch with it succeeds.
-        if ($userId > 0) {
-            try {
-                $stmt = $pdo->prepare('SELECT password FROM users WHERE id = :id LIMIT 1');
-                $stmt->execute([':id' => $userId]);
-                $add(trim((string) ($stmt->fetchColumn() ?: '')));
-            } catch (Throwable) {
-            }
-        }
-
-        // First launch only: persist derived password and never overwrite later
-        // unless a successful launch reports a different working password.
-        if ($userId > 0 && $stored === '') {
+        if ($userId > 0 && $memberAccount !== '') {
             self::persistLaunchPassword($pdo, $userId, $memberAccount, $derived);
         }
 
-        return $candidates !== [] ? $candidates : [$derived];
+        return [$derived];
     }
 
     private static function persistLaunchPassword(PDO $pdo, int $userId, string $memberAccount, string $password): void
