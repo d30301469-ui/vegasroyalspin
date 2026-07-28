@@ -323,6 +323,7 @@ final class AdminCasinoAggregatorController extends AdminController
                     $players[$idx]['_call_options'] = $callOptions[$cacheKey];
                     $players[$idx]['_call_type'] = (string) ($callOptions[$cacheKey]['call_type'] ?? CasinoAggregatorService::normalizeCallType($pType));
                 }
+                $players = CasinoAggregatorService::attachLocalUserProfiles($pdo, $players);
             } catch (Throwable $e) {
                 $playersError = $e->getMessage();
             }
@@ -342,10 +343,19 @@ final class AdminCasinoAggregatorController extends AdminController
                     'offset' => 0,
                     'limit' => 50,
                 ])['data'] ?? [];
+                if (is_array($history)) {
+                    $history = CasinoAggregatorService::attachLocalUserProfiles($pdo, $history);
+                }
             } catch (Throwable $e) {
                 $historyError = $e->getMessage();
             }
         }
+
+        $callLogs = CasinoAggregatorService::recentCallLogs($pdo, 40);
+        $logUserMap = CasinoAggregatorService::mapLocalUsersByCodes(
+            $pdo,
+            array_map(static fn ($row): string => (string) ($row['user_code'] ?? ''), is_array($callLogs) ? $callLogs : [])
+        );
 
         $this->view('casino-aggregator/game-control', [
             'title'         => 'Casino Aggregator Game Control',
@@ -362,7 +372,8 @@ final class AdminCasinoAggregatorController extends AdminController
             'histVendor'    => $histVendor,
             'startTime'     => $startTime,
             'endTime'       => $endTime,
-            'callLogs'      => CasinoAggregatorService::recentCallLogs($pdo, 40),
+            'callLogs'      => is_array($callLogs) ? $callLogs : [],
+            'logUserMap'    => $logUserMap,
             'flash'         => $this->pullFlash(),
         ]);
     }

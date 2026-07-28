@@ -5,6 +5,7 @@ $vendors = is_array($vendors ?? null) ? $vendors : [];
 $players = is_array($players ?? null) ? $players : [];
 $history = is_array($history ?? null) ? $history : [];
 $callLogs = is_array($callLogs ?? null) ? $callLogs : [];
+$logUserMap = is_array($logUserMap ?? null) ? $logUserMap : [];
 $flash = trim((string) ($flash ?? ''));
 $vendorCode = trim((string) ($vendorCode ?? ''));
 $playersError = trim((string) ($playersError ?? ''));
@@ -16,6 +17,23 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
 $isActive = !empty($configRow['is_active']) && $configRow['is_active'] !== '0';
 $csrf = AdminAuth::csrfToken();
 $callListUrl = AdminAuth::url('/casino-aggregator/call-list');
+
+$localUserLabel = static function (?array $profile, string $fallbackCode) use ($text): string {
+    if (!is_array($profile)) {
+        return $text($fallbackCode !== '' ? $fallbackCode : '—');
+    }
+    $full = trim((string) ($profile['full_name'] ?? ''));
+    if ($full === '') {
+        $full = trim((string) ($profile['name'] ?? '') . ' ' . (string) ($profile['surname'] ?? ''));
+    }
+    if ($full === '') {
+        $full = trim((string) ($profile['username'] ?? ''));
+    }
+    if ($full === '') {
+        $full = $fallbackCode !== '' ? $fallbackCode : '—';
+    }
+    return $text($full);
+};
 
 $statusBadge = static function (mixed $status): array {
     $raw = trim((string) ($status ?? ''));
@@ -66,6 +84,8 @@ foreach ($callLogs as $log) {
     .gc-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
     .gc-num { font-variant-numeric: tabular-nums; }
     .gc-muted { color: var(--t-muted); font-size: 13px; }
+    .gc-user-name { font-weight: 600; line-height: 1.25; }
+    .gc-user-meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:4px; color: var(--t-muted); font-size: 12px; }
     .gc-details summary { cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px; }
     .gc-details summary::-webkit-details-marker { display:none; }
 </style>
@@ -136,7 +156,7 @@ foreach ($callLogs as $log) {
             <table class="data-table">
                 <thead>
                 <tr>
-                    <th>User</th>
+                    <th>Kullanıcı</th>
                     <th>Game</th>
                     <th>Tip</th>
                     <th>Bet</th>
@@ -163,9 +183,24 @@ foreach ($callLogs as $log) {
                     $hasCalls = $callValues !== [];
                     $typeBadge = $callType === '1' ? 'badge purple' : 'badge primary';
                     $typeLabel = $callType === '1' ? 'Free' : 'Base';
+                    $localUser = is_array($p['_local_user'] ?? null) ? $p['_local_user'] : null;
+                    $localUsername = is_array($localUser) ? trim((string) ($localUser['username'] ?? '')) : '';
+                    $localId = is_array($localUser) ? (int) ($localUser['id'] ?? 0) : 0;
                     ?>
                     <tr>
-                        <td><span class="gc-mono"><?= $text($pUser) ?></span></td>
+                        <td>
+                            <div class="gc-user-name"><?= $localUserLabel($localUser, $pUser) ?></div>
+                            <div class="gc-user-meta">
+                                <?php if ($localUsername !== ''): ?>
+                                    <span class="gc-mono">@<?= $text($localUsername) ?></span>
+                                <?php endif; ?>
+                                <?php if ($localId > 0): ?>
+                                    <span class="badge">#<?= $localId ?></span>
+                                <?php elseif ($pUser !== ''): ?>
+                                    <span class="gc-mono"><?= $text($pUser) ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </td>
                         <td>
                             <span class="gc-mono"><?= $text($pGame) ?></span>
                             <?php if ($pCur !== ''): ?>
@@ -316,7 +351,7 @@ foreach ($callLogs as $log) {
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>User</th>
+                        <th>Kullanıcı</th>
                         <th>Game</th>
                         <th>RTP</th>
                         <th>Bet</th>
@@ -326,10 +361,19 @@ foreach ($callLogs as $log) {
                     </thead>
                     <tbody>
                     <?php foreach ($history as $h): if (!is_array($h)) continue; ?>
-                        <?php [$badgeClass, $badgeLabel] = $statusBadge($h['status'] ?? ''); ?>
+                        <?php
+                        [$badgeClass, $badgeLabel] = $statusBadge($h['status'] ?? '');
+                        $hUser = (string) ($h['userCode'] ?? '');
+                        $hLocal = is_array($h['_local_user'] ?? null) ? $h['_local_user'] : null;
+                        ?>
                         <tr>
                             <td class="gc-mono"><?= $text((string) ($h['id'] ?? '')) ?></td>
-                            <td class="gc-mono"><?= $text((string) ($h['userCode'] ?? '')) ?></td>
+                            <td>
+                                <div class="gc-user-name"><?= $localUserLabel($hLocal, $hUser) ?></div>
+                                <?php if ($hUser !== ''): ?>
+                                    <div class="gc-user-meta"><span class="gc-mono"><?= $text($hUser) ?></span></div>
+                                <?php endif; ?>
+                            </td>
                             <td class="gc-mono"><?= $text((string) ($h['gameCode'] ?? '')) ?></td>
                             <td class="gc-num"><span class="badge"><?= $text((string) ($h['rtp'] ?? '')) ?></span></td>
                             <td class="gc-num"><?= $text((string) ($h['betAmount'] ?? '')) ?></td>
@@ -360,7 +404,7 @@ foreach ($callLogs as $log) {
             <thead>
             <tr>
                 <th>İşlem</th>
-                <th>User</th>
+                <th>Kullanıcı</th>
                 <th>Call ID</th>
                 <th>RTP</th>
                 <th>Money</th>
@@ -376,10 +420,17 @@ foreach ($callLogs as $log) {
                     'CallCancel' => 'badge warning',
                     default => 'badge',
                 };
+                $logUser = (string) ($log['user_code'] ?? '');
+                $logLocal = is_array($logUserMap[$logUser] ?? null) ? $logUserMap[$logUser] : null;
                 ?>
                 <tr>
                     <td><span class="<?= $actionBadge ?>"><?= $text($action) ?></span></td>
-                    <td class="gc-mono"><?= $text((string) ($log['user_code'] ?? '')) ?></td>
+                    <td>
+                        <div class="gc-user-name"><?= $localUserLabel($logLocal, $logUser) ?></div>
+                        <?php if ($logUser !== ''): ?>
+                            <div class="gc-user-meta"><span class="gc-mono"><?= $text($logUser) ?></span></div>
+                        <?php endif; ?>
+                    </td>
                     <td class="gc-mono"><?= $text((string) ($log['call_id'] ?? '')) ?></td>
                     <td class="gc-num"><?= $text((string) ($log['call_rtp'] ?? '')) ?></td>
                     <td class="gc-num"><?= $text((string) ($log['money_amount'] ?? '')) ?></td>

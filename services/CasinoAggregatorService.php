@@ -2561,6 +2561,118 @@ final class CasinoAggregatorService
     }
 
     /**
+     * Map aggregator userCode values to local profile fields (name/surname/username).
+     *
+     * @param list<string|int> $userCodes
+     * @return array<string, array{id:int,username:string,name:string,surname:string,full_name:string}>
+     */
+    public static function mapLocalUsersByCodes(PDO $pdo, array $userCodes): array
+    {
+        $ids = [];
+        $usernames = [];
+        foreach ($userCodes as $code) {
+            $code = trim((string) $code);
+            if ($code === '') {
+                continue;
+            }
+            if (ctype_digit($code)) {
+                $ids[(int) $code] = true;
+            } else {
+                $usernames[$code] = true;
+            }
+        }
+        if ($ids === [] && $usernames === []) {
+            return [];
+        }
+
+        $rows = [];
+        try {
+            if ($ids !== []) {
+                $idList = array_keys($ids);
+                $placeholders = implode(',', array_fill(0, count($idList), '?'));
+                $stmt = $pdo->prepare(
+                    "SELECT id, username, name, surname FROM users WHERE id IN ({$placeholders})"
+                );
+                $stmt->execute($idList);
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    if (is_array($row)) {
+                        $rows[] = $row;
+                    }
+                }
+            }
+            if ($usernames !== []) {
+                $nameList = array_keys($usernames);
+                $placeholders = implode(',', array_fill(0, count($nameList), '?'));
+                $stmt = $pdo->prepare(
+                    "SELECT id, username, name, surname FROM users WHERE username IN ({$placeholders})"
+                );
+                $stmt->execute($nameList);
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    if (is_array($row)) {
+                        $rows[] = $row;
+                    }
+                }
+            }
+        } catch (Throwable) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($rows as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $username = trim((string) ($row['username'] ?? ''));
+            $name = trim((string) ($row['name'] ?? ''));
+            $surname = trim((string) ($row['surname'] ?? ''));
+            $fullName = trim($name . ' ' . $surname);
+            $profile = [
+                'id'        => $id,
+                'username'  => $username,
+                'name'      => $name,
+                'surname'   => $surname,
+                'full_name' => $fullName !== '' ? $fullName : ($username !== '' ? $username : (string) $id),
+            ];
+            $map[(string) $id] = $profile;
+            if ($username !== '') {
+                $map[$username] = $profile;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $players
+     * @return list<array<string, mixed>>
+     */
+    public static function attachLocalUserProfiles(PDO $pdo, array $players): array
+    {
+        $codes = [];
+        foreach ($players as $player) {
+            if (!is_array($player)) {
+                continue;
+            }
+            $code = trim((string) ($player['userCode'] ?? $player['user_code'] ?? ''));
+            if ($code !== '') {
+                $codes[] = $code;
+            }
+        }
+        $map = self::mapLocalUsersByCodes($pdo, $codes);
+        foreach ($players as $idx => $player) {
+            if (!is_array($player)) {
+                continue;
+            }
+            $code = trim((string) ($player['userCode'] ?? $player['user_code'] ?? ''));
+            $profile = $map[$code] ?? null;
+            $players[$idx]['_local_user'] = is_array($profile) ? $profile : null;
+        }
+
+        return $players;
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @return array<string, string>
      */
