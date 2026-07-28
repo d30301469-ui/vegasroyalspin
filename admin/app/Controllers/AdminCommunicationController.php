@@ -430,11 +430,31 @@ final class AdminCommunicationController extends AdminController
     /** @param array<string,mixed> $settings */
     private function mailTemplateOptions(array $settings): array
     {
+        $siteUrl = $this->frontendSiteUrl();
+        $companyName = trim((string) ($settings['company_name'] ?? ''));
+        if ($companyName === '') {
+            $companyName = 'Vegasroyalspin';
+        }
+        $logoUrl = $siteUrl !== '' ? ($siteUrl . '/assets/images/favicons/apple-touch-icon.png') : '';
+        try {
+            $row = AdminDatabase::pdo()->query('SELECT favicon_url FROM site_ayarlar ORDER BY id ASC LIMIT 1')->fetch();
+            if (is_array($row)) {
+                $favicon = trim((string) ($row['favicon_url'] ?? ''));
+                if ($favicon !== '') {
+                    $logoUrl = preg_match('#^https?://#i', $favicon) === 1
+                        ? $favicon
+                        : ($siteUrl . (str_starts_with($favicon, '/') ? $favicon : '/' . $favicon));
+                }
+            }
+        } catch (Throwable) {
+        }
+
         return [
             'template_html' => (string) ($settings['reset_template_html'] ?? ''),
-            'company_name' => (string) ($settings['company_name'] ?? 'VegasRoyalSpin'),
+            'company_name' => $companyName,
             'support_email' => (string) ($settings['support_email'] ?? ''),
             'company_address' => (string) ($settings['company_address'] ?? ''),
+            'logo_url' => $logoUrl,
         ];
     }
 

@@ -121,7 +121,7 @@ $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
                 <div class="field span-2">
                     <label class="field-label" for="reset_template_html">Reset Mail HTML Sablonu (Opsiyonel)</label>
                     <textarea id="reset_template_html" class="input" name="reset_template_html" rows="16" placeholder="Bos birakirsan sistem varsayilan reset template'ini kullanir."><?= htmlspecialchars((string) ($settings['reset_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                    <div class="field-help">Desteklenen placeholder'lar: {{PREHEADER}}, {{HEADING}}, {{BODY_HTML}}, {{CTA_LABEL}}, {{CTA_URL}}, {{COMPANY_NAME}}, {{SUPPORT_EMAIL}}, {{SUPPORT_EMAIL_LINK}}, {{YEAR}}, {{COMPANY_ADDRESS_HTML}}, {{LOGO_HTML}}, {{FALLBACK_URL}}</div>
+                    <div class="field-help">Desteklenen placeholder'lar: {{PREHEADER}}, {{HEADING}}, {{BODY_HTML}}, {{CTA_LABEL}}, {{CTA_URL}}, {{COMPANY_NAME}}, {{MEMBER_NAME}}, {{SUPPORT_EMAIL}}, {{SUPPORT_EMAIL_LINK}}, {{YEAR}}, {{COMPANY_ADDRESS_HTML}}, {{LOGO_HTML}}, {{FALLBACK_URL}}</div>
                 </div>
             </div>
 

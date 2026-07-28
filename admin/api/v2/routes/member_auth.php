@@ -115,6 +115,37 @@ if (!function_exists('memberLogOutboundMail')) {
     }
 }
 
+if (!function_exists('memberResolveMailLogoUrl')) {
+    /** Mail şablonunda kullanılacak site favicon/logo URL'sini üretir (mutlak). */
+    function memberResolveMailLogoUrl(PDO $pdo, string $siteUrl): string
+    {
+        $siteUrl = rtrim($siteUrl, '/');
+        $favicon = '';
+        try {
+            $stmt = $pdo->query('SELECT favicon_url, logo_url FROM site_ayarlar ORDER BY id ASC LIMIT 1');
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+            if (is_array($row)) {
+                $favicon = trim((string) ($row['favicon_url'] ?? ''));
+                if ($favicon === '') {
+                    $favicon = trim((string) ($row['logo_url'] ?? ''));
+                }
+            }
+        } catch (Throwable) {
+            $favicon = '';
+        }
+        if ($favicon === '') {
+            $favicon = '/assets/images/favicons/apple-touch-icon.png';
+        }
+        if (preg_match('#^https?://#i', $favicon) === 1) {
+            return $favicon;
+        }
+        if ($favicon[0] !== '/') {
+            $favicon = '/' . $favicon;
+        }
+        return $siteUrl !== '' ? ($siteUrl . $favicon) : $favicon;
+    }
+}
+
 if (!function_exists('memberSendResetMail')) {
     function memberSendResetMail(PDO $pdo, string $toEmail, string $token): bool
     {
@@ -128,9 +159,37 @@ if (!function_exists('memberSendResetMail')) {
             $from = 'no-reply@' . (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
         }
 
-        $subject = 'Sifre Sifirlama Baglantiniz';
+        $memberName = '';
+        try {
+            $userStmt = $pdo->prepare('SELECT name, surname, username FROM users WHERE email = :email LIMIT 1');
+            $userStmt->execute(['email' => $toEmail]);
+            $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($userRow)) {
+                $memberName = trim(trim((string) ($userRow['name'] ?? '')) . ' ' . trim((string) ($userRow['surname'] ?? '')));
+                if ($memberName === '') {
+                    $memberName = trim((string) ($userRow['username'] ?? ''));
+                }
+            }
+        } catch (Throwable) {
+            $memberName = '';
+        }
+        if ($memberName === '') {
+            $memberName = 'Değerli Üyemiz';
+        }
+
+        $companyName = trim((string) ($settings['company_name'] ?? ''));
+        if ($companyName === '') {
+            $companyName = 'Vegasroyalspin';
+        }
+
+        $subject = $companyName . ' — Şifre Sıfırlama';
         $link = memberResetLink($token);
-        $messageText = "Sifrenizi sifirlamak icin asagidaki baglantiyi kullanin:\n\n" . $link . "\n\nBaglanti 1 saat gecerlidir.";
+        $messageText = 'Merhaba ' . $memberName . ",\n\n"
+            . $companyName . " hesabınız için şifre sıfırlama talebinde bulundunuz.\n"
+            . "Şifrenizi sıfırlamak için aşağıdaki bağlantıyı kullanın:\n\n"
+            . $link . "\n\n"
+            . "Bu bağlantı 1 saat geçerlidir. Talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.\n\n"
+            . $companyName . ' Ekibi';
 
         if (!$enabled) {
             memberLogOutboundMail($pdo, $toEmail, $subject, '[mail_disabled] ' . $messageText, 'not_configured');
@@ -160,30 +219,35 @@ if (!function_exists('memberSendResetMail')) {
             $error = '';
             $htmlBody = null;
             if (function_exists('metropol_mail_render_template')) {
-                $companyName = trim((string) ($settings['company_name'] ?? ''));
-                if ($companyName === '') {
-                    $companyName = 'VegasRoyalSpin';
-                }
                 $supportEmail = trim((string) ($settings['support_email'] ?? ''));
                 if ($supportEmail === '' || filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false) {
                     $domain = (string) (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: 'vegasroyalspin.com');
                     $supportEmail = 'support@' . $domain;
                 }
 
+                $siteUrl = memberResetBaseUrl();
                 $templateOptions = [
                     'template_html' => (string) ($settings['reset_template_html'] ?? ''),
                     'company_name' => $companyName,
                     'support_email' => $supportEmail,
                     'company_address' => (string) ($settings['company_address'] ?? ''),
+                    'logo_url' => memberResolveMailLogoUrl($pdo, $siteUrl),
+                    'member_name' => $memberName,
                 ];
 
-                $bodyHtml = '<p style="margin:0 0 16px 0;">You recently requested to reset your password for your ' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . ' account. Click the button below to reset it. <strong>This password reset is only valid for the next 24 hours.</strong></p>';
+                $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
+                $bodyHtml = '<p style="margin:0 0 16px 0;">'
+                    . $safeCompany . ' hesabınız için şifre sıfırlama talebinde bulundunuz. '
+                    . 'Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz. '
+                    . '<strong>Bu bağlantı 1 saat geçerlidir.</strong>'
+                    . '</p>'
+                    . '<p style="margin:0;color:#4a5568;font-size:15px;">Bu talebi siz oluşturmadıysanız bu e-postayı güvenle yok sayabilirsiniz.</p>';
                 $htmlBody = metropol_mail_render_template(
-                    memberResetBaseUrl(),
-                    'Password reset link is ready',
-                    'Hi {$name},',
+                    $siteUrl,
+                    $companyName . ' şifre sıfırlama bağlantınız hazır',
+                    'Merhaba ' . $memberName . ',',
                     $bodyHtml,
-                    'Reset your password',
+                    'Şifremi Sıfırla',
                     $link,
                     $templateOptions
                 );
@@ -787,7 +851,7 @@ if ($method === 'POST' && ($route === 'forgot_password.php' || $route === 'auth/
             )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
             memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token);
         } else {
-            memberLogOutboundMail($pdo, $email, 'Sifre Sifirlama Baglantiniz', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
+            memberLogOutboundMail($pdo, $email, 'Vegasroyalspin — Şifre Sıfırlama', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
         }
     } catch (Throwable $forgotPasswordError) {
         error_log('[member_auth/forgot_password] ' . $forgotPasswordError->getMessage());
@@ -860,7 +924,7 @@ if ($method === 'POST' && ($route === 'password_reset.php' || $route === 'auth/p
                 )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
                 memberSendResetMail($pdo, $email, $token);
             } else {
-                memberLogOutboundMail($pdo, $email, 'Sifre Sifirlama Baglantiniz', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
+                memberLogOutboundMail($pdo, $email, 'Vegasroyalspin — Şifre Sıfırlama', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
             }
         } catch (Throwable $passwordResetRequestError) {
             error_log('[member_auth/password_reset.request] ' . $passwordResetRequestError->getMessage());
