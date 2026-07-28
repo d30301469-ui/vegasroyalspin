@@ -72,7 +72,7 @@ if (!function_exists('metropol_mail_load_phpmailer')) {
 }
 
 if (!function_exists('metropol_mail_send_phpmailer')) {
-    function metropol_mail_send_phpmailer(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null): bool
+    function metropol_mail_send_phpmailer(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null, string $toName = ''): bool
     {
         $host = trim((string) ($settings['smtp_host'] ?? ''));
         $port = (int) ($settings['smtp_port'] ?? 0);
@@ -140,7 +140,7 @@ if (!function_exists('metropol_mail_send_phpmailer')) {
                             ]];
                         }
                         $mail->setFrom($from, 'Vegasroyalspin');
-                        $mail->addAddress($to);
+                        $mail->addAddress($to, trim($toName));
                         $mail->addReplyTo($from, 'Vegasroyalspin');
                         $fromDomainForId = strpos($from, '@') !== false ? substr($from, strpos($from, '@') + 1) : 'vegasroyalspin.com';
                         $mail->MessageID = '<' . bin2hex(random_bytes(16)) . '@' . $fromDomainForId . '>';
@@ -178,7 +178,7 @@ if (!function_exists('metropol_mail_send_phpmailer')) {
 }
 
 if (!function_exists('metropol_mail_send_raw_smtp')) {
-    function metropol_mail_send_raw_smtp(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null): bool
+    function metropol_mail_send_raw_smtp(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null, string $toName = ''): bool
     {
         $host = trim((string) ($settings['smtp_host'] ?? ''));
         $port = (int) ($settings['smtp_port'] ?? 0);
@@ -330,12 +330,13 @@ if (!function_exists('metropol_mail_send_raw_smtp')) {
                     }
                     $fromDomainForId = strpos($from, '@') !== false ? substr($from, strpos($from, '@') + 1) : 'vegasroyalspin.com';
                     $messageIdHeader = 'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $fromDomainForId . '>';
+                    $toHeader = metropol_mail_format_address_header($to, $toName);
 
                     if ($htmlBody !== null) {
                         $boundary = 'metropol-' . bin2hex(random_bytes(12));
                         $headers = [
                             'From: Vegasroyalspin <' . $from . '>',
-                            'To: <' . $to . '>',
+                            'To: ' . $toHeader,
                             'Reply-To: Vegasroyalspin <' . $from . '>',
                             'Subject: ' . $subject,
                             'MIME-Version: 1.0',
@@ -356,7 +357,7 @@ if (!function_exists('metropol_mail_send_raw_smtp')) {
                     } else {
                         $headers = [
                             'From: Vegasroyalspin <' . $from . '>',
-                            'To: <' . $to . '>',
+                            'To: ' . $toHeader,
                             'Reply-To: Vegasroyalspin <' . $from . '>',
                             'Subject: ' . $subject,
                             'MIME-Version: 1.0',
@@ -394,20 +395,37 @@ if (!function_exists('metropol_mail_send_raw_smtp')) {
     }
 }
 
+if (!function_exists('metropol_mail_format_address_header')) {
+    function metropol_mail_format_address_header(string $email, string $name = ''): string
+    {
+        $email = trim($email);
+        $name = trim(preg_replace('/[\r\n]+/', ' ', $name) ?? $name);
+        if ($name === '') {
+            return '<' . $email . '>';
+        }
+        if (preg_match('/^[\x20-\x7E]+$/', $name) === 1) {
+            $safe = str_replace(['\\', '"'], ['\\\\', '\\"'], $name);
+            return '"' . $safe . '" <' . $email . '>';
+        }
+
+        return '=?UTF-8?B?' . base64_encode($name) . '?= <' . $email . '>';
+    }
+}
+
 if (!function_exists('metropol_mail_send')) {
     /**
      * PHPMailer önce, ham SMTP fallback. İkisi de başarısızsa false; $error birleşik neden.
      *
      * @param array<string,mixed> $settings mail_settings satırı
      */
-    function metropol_mail_send(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null): bool
+    function metropol_mail_send(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null, string $toName = ''): bool
     {
         $phpmailerError = '';
-        if (metropol_mail_send_phpmailer($settings, $from, $to, $subject, $body, $phpmailerError, $htmlBody)) {
+        if (metropol_mail_send_phpmailer($settings, $from, $to, $subject, $body, $phpmailerError, $htmlBody, $toName)) {
             return true;
         }
         $rawError = '';
-        if (metropol_mail_send_raw_smtp($settings, $from, $to, $subject, $body, $rawError, $htmlBody)) {
+        if (metropol_mail_send_raw_smtp($settings, $from, $to, $subject, $body, $rawError, $htmlBody, $toName)) {
             return true;
         }
         $error = 'phpmailer=' . ($phpmailerError !== '' ? $phpmailerError : 'n/a')

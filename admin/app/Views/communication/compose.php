@@ -84,7 +84,7 @@ $isBulk = $oldMode === 'bulk';
                         <span class="badge primary"><?= (int) $memberEmailCount ?> üye</span>
                         <strong>Tüm kullanıcılar</strong>
                     </div>
-                    <p class="field-help" style="margin:8px 0 0;">Toplu mail, veritabanındaki e-postası olan bütün üyelere otomatik gönderilir. Tek tek adres girilmez.</p>
+                    <p class="field-help" style="margin:8px 0 0;">Toplu mail, veritabanındaki e-postası olan bütün üyelere otomatik gönderilir. Her alıcıya isim-soyisim kişisel olarak yazılır.</p>
                 </div>
             </div>
 
@@ -95,6 +95,7 @@ $isBulk = $oldMode === 'bulk';
             <div class="field span-2">
                 <label class="field-label" for="body">Mesaj</label>
                 <textarea id="body" class="textarea" name="body" rows="10" required><?= htmlspecialchars($oldBody, ENT_QUOTES, 'UTF-8') ?></textarea>
+                <p class="field-help">Her üyeye isim-soyisim otomatik eklenir (To: İsim Soyisim &lt;mail&gt;). İsterseniz metinde {{MEMBER_NAME}}, {{ISIM}}, {{SOYISIM}} kullanın; yoksa başına “Merhaba İsim Soyisim,” eklenir.</p>
             </div>
         </div>
         <div class="form-actions">

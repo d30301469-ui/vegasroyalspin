@@ -437,9 +437,10 @@ final class AdminCommunicationController extends AdminController
         }
 
         // Tek mail: yalnızca 1 adres. Toplu: yalnızca veritabanındaki tüm üyeler.
+        /** @var list<array{email:string,name:string,surname:string,full_name:string}> $recipients */
         $recipients = [];
         if ($mode === 'bulk') {
-            $recipients = $this->normalizeRecipientEmails($this->memberRecipientEmails());
+            $recipients = $this->memberRecipients();
             if ($recipients === []) {
                 $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: veritabanında geçerli e-postası olan kullanıcı bulunamadı.';
                 $this->redirect(AdminAuth::url('/email/send'));
@@ -452,7 +453,7 @@ final class AdminCommunicationController extends AdminController
                 $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: geçerli bir üye e-postası girin.';
                 $this->redirect(AdminAuth::url('/email/send'));
             }
-            $recipients = [$single];
+            $recipients = [$this->resolveRecipientProfile($single)];
         }
 
         $settings = $this->mailSettingsRow();
@@ -462,23 +463,12 @@ final class AdminCommunicationController extends AdminController
             $from = trim((string) ($settings['smtp_user'] ?? ''));
         }
 
-        $htmlBody = '';
         if ($enabled) {
             require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
-            $siteUrl = $this->frontendSiteUrl();
-            $templateOptions = $this->mailTemplateOptions($settings);
-            $bodyHtmlEscaped = nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
-            $htmlBody = metropol_mail_render_template(
-                $siteUrl,
-                $subject !== '' ? $subject : 'VegasRoyalSpin bildirimi',
-                $subject !== '' ? $subject : 'Bildirim',
-                '<p style="margin:0;">' . $bodyHtmlEscaped . '</p>',
-                'Mesaji Gor',
-                $siteUrl !== '' ? $siteUrl : 'https://vegasroyalspin.com',
-                $templateOptions
-            );
         }
 
+        $siteUrl = $this->frontendSiteUrl();
+        $templateOptionsBase = $this->mailTemplateOptions($settings);
         $adminUser = AdminAuth::user();
         $adminId = (int) ($adminUser['id'] ?? 0);
         $sentCount = 0;
@@ -486,15 +476,46 @@ final class AdminCommunicationController extends AdminController
         $lastError = '';
         $failedSamples = [];
 
-        foreach ($recipients as $email) {
-            $this->writeMemberInboxMessage($email, $subject, $body);
+        foreach ($recipients as $recipient) {
+            $email = (string) ($recipient['email'] ?? '');
+            $fullName = trim((string) ($recipient['full_name'] ?? ''));
+            $firstName = trim((string) ($recipient['name'] ?? ''));
+            $lastName = trim((string) ($recipient['surname'] ?? ''));
+            if ($email === '') {
+                continue;
+            }
+
+            $personalizedBody = $this->personalizeMailBody($body, $firstName, $lastName, $fullName);
+            $this->writeMemberInboxMessage($email, $subject, $personalizedBody);
 
             $ok = false;
             $error = '';
+            $htmlBody = '';
             if (!$enabled) {
                 $error = 'mail_disabled';
             } else {
-                $ok = metropol_mail_send($settings, $from, $email, $subject, $body, $error, $htmlBody);
+                $bodyHtmlEscaped = nl2br(htmlspecialchars($personalizedBody, ENT_QUOTES, 'UTF-8'));
+                $templateOptions = $templateOptionsBase;
+                $templateOptions['member_name'] = $fullName !== '' ? $fullName : 'Üye';
+                $htmlBody = metropol_mail_render_template(
+                    $siteUrl,
+                    $subject !== '' ? $subject : 'VegasRoyalSpin bildirimi',
+                    $subject !== '' ? $subject : 'Bildirim',
+                    '<p style="margin:0;">' . $bodyHtmlEscaped . '</p>',
+                    'Mesaji Gor',
+                    $siteUrl !== '' ? $siteUrl : 'https://vegasroyalspin.com',
+                    $templateOptions
+                );
+                $ok = metropol_mail_send(
+                    $settings,
+                    $from,
+                    $email,
+                    $subject,
+                    $personalizedBody,
+                    $error,
+                    $htmlBody,
+                    $fullName
+                );
             }
 
             if ($ok) {
@@ -503,7 +524,8 @@ final class AdminCommunicationController extends AdminController
                 $failedCount++;
                 $lastError = $error !== '' ? $error : 'send_failed';
                 if (count($failedSamples) < 5) {
-                    $failedSamples[] = $email . ' (' . $lastError . ')';
+                    $label = $fullName !== '' ? ($fullName . ' <' . $email . '>') : $email;
+                    $failedSamples[] = $label . ' (' . $lastError . ')';
                 }
             }
 
@@ -512,10 +534,11 @@ final class AdminCommunicationController extends AdminController
                     'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
                      VALUES (:admin_id, :to_email, :subject, :body_preview, :status, NOW())'
                 );
-                $preview = $ok ? $body : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $body);
+                $preview = $ok ? $personalizedBody : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $personalizedBody);
+                $logTo = $fullName !== '' ? ($fullName . ' <' . $email . '>') : $email;
                 $stmt->execute([
                     'admin_id' => $adminId,
-                    'to_email' => $email,
+                    'to_email' => substr($logTo, 0, 190),
                     'subject' => $subject,
                     'body_preview' => substr($preview, 0, 500),
                     'status' => $ok ? 'sent' : ($enabled ? 'failed' : 'not_configured'),
@@ -570,18 +593,109 @@ final class AdminCommunicationController extends AdminController
     /** @return list<string> */
     private function memberRecipientEmails(): array
     {
+        $out = [];
+        foreach ($this->memberRecipients() as $recipient) {
+            $out[] = (string) ($recipient['email'] ?? '');
+        }
+
+        return array_values(array_filter($out, static fn (string $email): bool => $email !== ''));
+    }
+
+    /**
+     * @return list<array{email:string,name:string,surname:string,full_name:string}>
+     */
+    private function memberRecipients(): array
+    {
         try {
             $stmt = AdminDatabase::pdo()->query(
-                'SELECT email FROM users
+                'SELECT email, name, surname FROM users
                  WHERE email IS NOT NULL AND TRIM(email) <> \'\'
                  ORDER BY id ASC
                  LIMIT 5000'
             );
-            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
-            return is_array($rows) ? array_map('strval', $rows) : [];
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            if (!is_array($rows)) {
+                return [];
+            }
+
+            $out = [];
+            foreach ($rows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $email = strtolower(trim((string) ($row['email'] ?? '')));
+                if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                    continue;
+                }
+                $name = trim((string) ($row['name'] ?? ''));
+                $surname = trim((string) ($row['surname'] ?? ''));
+                $fullName = trim($name . ' ' . $surname);
+                $out[$email] = [
+                    'email' => $email,
+                    'name' => $name,
+                    'surname' => $surname,
+                    'full_name' => $fullName,
+                ];
+            }
+
+            return array_values($out);
         } catch (Throwable) {
             return [];
         }
+    }
+
+    /**
+     * @return array{email:string,name:string,surname:string,full_name:string}
+     */
+    private function resolveRecipientProfile(string $email): array
+    {
+        $email = strtolower(trim($email));
+        $profile = [
+            'email' => $email,
+            'name' => '',
+            'surname' => '',
+            'full_name' => '',
+        ];
+        try {
+            $stmt = AdminDatabase::pdo()->prepare(
+                'SELECT name, surname FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1'
+            );
+            $stmt->execute(['email' => $email]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($row)) {
+                $name = trim((string) ($row['name'] ?? ''));
+                $surname = trim((string) ($row['surname'] ?? ''));
+                $profile['name'] = $name;
+                $profile['surname'] = $surname;
+                $profile['full_name'] = trim($name . ' ' . $surname);
+            }
+        } catch (Throwable) {
+        }
+
+        return $profile;
+    }
+
+    private function personalizeMailBody(string $body, string $name, string $surname, string $fullName): string
+    {
+        $displayName = $fullName !== '' ? $fullName : 'Üye';
+        $hasToken = preg_match('/\{\{\s*(MEMBER_NAME|NAME|SURNAME|ISIM|SOYISIM)\s*\}\}/u', $body) === 1;
+        $replaced = strtr($body, [
+            '{{MEMBER_NAME}}' => $displayName,
+            '{{NAME}}' => $name,
+            '{{SURNAME}}' => $surname,
+            '{{ISIM}}' => $name,
+            '{{SOYISIM}}' => $surname,
+        ]);
+
+        if ($hasToken) {
+            return $replaced;
+        }
+
+        if ($fullName === '') {
+            return $replaced;
+        }
+
+        return 'Merhaba ' . $fullName . ",\n\n" . $replaced;
     }
 
     private function writeMemberInboxMessage(string $email, string $subject, string $body): void
