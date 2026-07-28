@@ -143,6 +143,7 @@ foreach ($navigation as $group) {
 $navIconPalette = ['#60a5fa', '#8b5cf6', '#f59e0b', '#ef4444', '#94a3b8', '#38bdf8', '#22c55e', '#3b82f6', '#f97316', '#64748b', '#6366f1', '#a855f7', '#06b6d4'];
 $navIconIndex = 0;
 $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time());
+$adminStyleVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/style.css') ?: time());
 ?>
 <!doctype html>
 <html lang="tr">
@@ -163,8 +164,24 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
     <script defer src="<?= htmlspecialchars(AdminAuth::url('/admin-ui.js?v=' . $adminUiVersion), ENT_QUOTES, 'UTF-8') ?>"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <link href="<?= htmlspecialchars(AdminAuth::url('/style.css'), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+    <link href="<?= htmlspecialchars(AdminAuth::url('/style.css?v=' . $adminStyleVersion), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
     <style>
+        .col-1 { grid-column: span 1; }
+        .col-2 { grid-column: span 2; }
+        .col-3 { grid-column: span 3; }
+        .col-4 { grid-column: span 4; }
+        .col-5 { grid-column: span 5; }
+        .col-6 { grid-column: span 6; }
+        .col-7 { grid-column: span 7; }
+        .col-8 { grid-column: span 8; }
+        .col-9 { grid-column: span 9; }
+        .col-10 { grid-column: span 10; }
+        .col-11 { grid-column: span 11; }
+        .col-12 { grid-column: span 12; }
+        @media (max-width: 1100px) {
+            .col-1, .col-2, .col-3, .col-4, .col-5, .col-6,
+            .col-7, .col-8, .col-9, .col-10, .col-11 { grid-column: span 12; }
+        }
         .admin-table-fit .data-table th,
         .admin-table-fit .data-table td {
             min-width: 0;

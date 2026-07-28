@@ -24,7 +24,7 @@ $htmlLang = 'tr';
     </script>
     <script defer src="<?= htmlspecialchars(AdminAuth::url('/runtime.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
     <script defer src="<?= htmlspecialchars(AdminAuth::url('/2026.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-    <link href="<?= htmlspecialchars(AdminAuth::url('/style.css'), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+    <link href="<?= htmlspecialchars(AdminAuth::url('/style.css?v=' . (string) (@filemtime(ADMIN_BASE_PATH . '/style.css') ?: time())), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
 </head>
 <body>
     <?php require $viewFile; ?>

@@ -2,6 +2,39 @@
 
 $flash = trim((string) ($flash ?? ''));
 ?>
+<style>
+    .signup-layout {
+        align-items: start;
+        display: grid;
+        gap: 14px;
+        grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+        width: 100%;
+    }
+    .signup-layout > .card {
+        min-width: 0;
+        width: 100%;
+    }
+    .signup-layout .form-grid {
+        display: grid;
+        gap: 14px 16px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .signup-layout .form-grid .field,
+    .signup-layout .input,
+    .signup-layout .select {
+        min-width: 0;
+        width: 100%;
+    }
+    @media (max-width: 1100px) {
+        .signup-layout {
+            grid-template-columns: 1fr;
+        }
+        .signup-layout .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
 <section class="hero">
     <div class="hero-text">
         <span class="eyebrow">Pages · Signup</span>
@@ -13,8 +46,8 @@ $flash = trim((string) ($flash ?? ''));
     </div>
 </section>
 
-<div class="grid">
-    <section class="col-7 card">
+<div class="signup-layout">
+    <section class="card">
         <div class="card-head">
             <div class="card-title-wrap">
                 <span class="eyebrow">Admin account</span>
@@ -55,7 +88,7 @@ $flash = trim((string) ($flash ?? ''));
         </form>
     </section>
 
-    <section class="col-5 card">
+    <section class="card">
         <div class="card-head">
             <div class="card-title-wrap">
                 <span class="eyebrow">Access</span>
