@@ -93,8 +93,10 @@ final class CasinoAggregatorService
         }
 
         try {
-            self::runSettingsMigration($pdo);
-        } catch (Throwable) {
+            self::ensureSettingsTables($pdo);
+        } catch (Throwable $e) {
+            error_log('Casino aggregator settings schema: ' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -112,18 +114,58 @@ final class CasinoAggregatorService
             throw new RuntimeException('Casino aggregator migration dosyası bulunamadı.');
         }
 
-        self::runSettingsMigration($pdo);
+        self::ensureSettingsTables($pdo);
     }
 
     private static function runSettingsMigration(PDO $pdo): void
     {
+        self::ensureSettingsTables($pdo);
+    }
+
+    private static function ensureSettingsTables(PDO $pdo): void
+    {
         $migration = dirname(__DIR__) . '/database/migrations/2026_07_28_000000_casino_aggregator_settings.php';
-        if (!is_readable($migration)) {
-            return;
+        if (is_readable($migration)) {
+            /** @var mixed $runner */
+            $runner = require $migration;
+            if (is_callable($runner)) {
+                $runner($pdo);
+                return;
+            }
         }
-        $runner = require $migration;
-        if (is_callable($runner)) {
-            $runner($pdo);
+
+        // Fallback if migration file is missing (same DDL, no TEXT defaults).
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS casino_aggregator_agent_settings (
+                setting_key   VARCHAR(64) NOT NULL,
+                setting_value VARCHAR(512) NOT NULL,
+                synced_at     DATETIME NULL,
+                created_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (setting_key)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS casino_aggregator_user_settings (
+                id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                user_id       INT UNSIGNED NULL,
+                user_code     VARCHAR(120) NOT NULL,
+                setting_key   VARCHAR(64) NOT NULL,
+                setting_value VARCHAR(512) NOT NULL,
+                synced_at     DATETIME NULL,
+                created_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uniq_casino_agg_user_setting (user_code, setting_key),
+                KEY idx_casino_agg_user_settings_user (user_id),
+                KEY idx_casino_agg_user_settings_key (setting_key)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $stmt = $pdo->prepare(
+            'INSERT IGNORE INTO casino_aggregator_agent_settings (setting_key, setting_value) VALUES (:k, :v)'
+        );
+        foreach (['RoundKey' => '', 'HideRoundId' => '0', 'HideTournament' => '0', 'HideBadge' => '0', 'LowRtp' => '', 'HighRtp' => ''] as $key => $value) {
+            $stmt->execute([':k' => $key, ':v' => $value]);
         }
     }
 

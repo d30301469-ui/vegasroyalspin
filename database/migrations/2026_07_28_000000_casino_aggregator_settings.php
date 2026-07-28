@@ -9,7 +9,7 @@ return static function (PDO $pdo): void {
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS casino_aggregator_agent_settings (
             setting_key   VARCHAR(64) NOT NULL,
-            setting_value TEXT NOT NULL DEFAULT '',
+            setting_value VARCHAR(512) NOT NULL,
             synced_at     DATETIME NULL,
             created_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -23,7 +23,7 @@ return static function (PDO $pdo): void {
             user_id       INT UNSIGNED NULL,
             user_code     VARCHAR(120) NOT NULL,
             setting_key   VARCHAR(64) NOT NULL,
-            setting_value TEXT NOT NULL DEFAULT '',
+            setting_value VARCHAR(512) NOT NULL,
             synced_at     DATETIME NULL,
             created_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
