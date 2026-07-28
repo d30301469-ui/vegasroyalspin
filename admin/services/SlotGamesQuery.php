@@ -498,23 +498,8 @@ final class SlotGamesQuery
         $source       = strtolower(trim((string) ($query['source'] ?? '')));
 
         $union = [];
-        $c = 'utf8mb4_unicode_ci';
-        // BGaming catalog is slot-only; include only on the slot lobby.
-        if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
-            $union[] = "SELECT
-                    CONVERT(CONCAT('bgaming:', identifier) USING utf8mb4) COLLATE {$c} AS game_id,
-                    CONVERT(title USING utf8mb4) COLLATE {$c} AS name,
-                    CONVERT(provider USING utf8mb4) COLLATE {$c} AS provider,
-                    CONVERT(provider USING utf8mb4) COLLATE {$c} AS provider_code,
-                    CONVERT(COALESCE(NULLIF(thumbnail_url, ''), '') USING utf8mb4) COLLATE {$c} AS image_url,
-                    CONVERT('' USING utf8mb4) COLLATE {$c} AS image_fallbacks,
-                    is_featured AS is_featured,
-                    CONVERT('bgaming' USING utf8mb4) COLLATE {$c} AS source,
-                    CONVERT(CAST(id AS CHAR) USING utf8mb4) COLLATE {$c} AS row_id,
-                    CONVERT('' USING utf8mb4) COLLATE {$c} AS raw_payload
-                FROM bgaming_games
-                WHERE is_active = 1";
-        }
+        // Slot lobby policy: only Casino Aggregator games are public.
+        // BGaming stays available for backend/admin flows, but not frontend slots.
         $aggGameType = $gameType === 1 ? 2 : 1;
         if ($source === '' || $source === 'aggregator') {
             if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
@@ -527,27 +512,29 @@ final class SlotGamesQuery
                     }
                 }
             }
-            $typeClause = "g.game_type = {$aggGameType}";
+            // Historical rows may store slot type as 0, while current sync normalizes to 1.
+            // Keep slot lobby tolerant so integration games do not disappear after migrations.
+            $typeClause = $gameType === 1 ? "g.game_type = {$aggGameType}" : "(g.game_type IN (0, {$aggGameType}))";
             if (class_exists('CasinoAggregatorService', false)) {
                 $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
                 if ($gameType === 1) {
                     $typeClause = "(g.game_type = {$aggGameType} OR {$liveMatch})";
                 } else {
                     // Keep live brands out of the slot lobby.
-                    $typeClause = "(g.game_type = {$aggGameType} AND NOT {$liveMatch})";
+                    $typeClause = "((g.game_type IN (0, {$aggGameType})) AND NOT {$liveMatch})";
                 }
             }
             $union[] = "SELECT
-                    CONVERT(CONCAT('aggregator:', g.vendor_code, ':', g.game_code) USING utf8mb4) COLLATE {$c} AS game_id,
-                    CONVERT(g.game_name USING utf8mb4) COLLATE {$c} AS name,
-                    CONVERT(COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) USING utf8mb4) COLLATE {$c} AS provider,
-                    CONVERT(g.vendor_code USING utf8mb4) COLLATE {$c} AS provider_code,
-                    CONVERT(COALESCE(NULLIF(g.image_url, ''), '') USING utf8mb4) COLLATE {$c} AS image_url,
-                    CONVERT('' USING utf8mb4) COLLATE {$c} AS image_fallbacks,
+                    CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
+                    g.game_name AS name,
+                    COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
+                    g.vendor_code AS provider_code,
+                    COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                    CAST('' AS CHAR) AS image_fallbacks,
                     g.is_featured AS is_featured,
-                    CONVERT('aggregator' USING utf8mb4) COLLATE {$c} AS source,
-                    CONVERT(CAST(g.id AS CHAR) USING utf8mb4) COLLATE {$c} AS row_id,
-                    CONVERT('' USING utf8mb4) COLLATE {$c} AS raw_payload
+                    'aggregator' AS source,
+                    CAST(g.id AS CHAR) AS row_id,
+                    CAST('' AS CHAR) AS raw_payload
                 FROM casino_aggregator_games g
                 INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
                 WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
@@ -691,23 +678,7 @@ final class SlotGamesQuery
         $seen = [];
         try {
             $pdo = AdminDatabase::pdo();
-            if ($gameType === 0) {
-                $rows = $pdo->query(
-                    "SELECT DISTINCT provider AS provider_name
-                     FROM bgaming_games
-                     WHERE is_active = 1 AND provider <> ''
-                     ORDER BY provider_name ASC"
-                )->fetchAll(PDO::FETCH_ASSOC);
-                foreach ($rows as $row) {
-                    if (is_array($row) && !empty($row['provider_name'])) {
-                        $name = self::normalizeProviderLabel((string) $row['provider_name']);
-                        if (!isset($seen[$name])) {
-                            $seen[$name] = true;
-                            $providers[] = $name;
-                        }
-                    }
-                }
-            }
+            // Slot lobby policy: do not expose BGaming providers on frontend.
             $aggType = $gameType === 1 ? 2 : 1;
             if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
                 static $liveTypesRepaired = false;
@@ -720,14 +691,19 @@ final class SlotGamesQuery
                 }
             }
             $liveExtra = '';
+            $slotExtra = '';
             if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
                 $liveExtra = ' OR ' . CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
+            }
+            if ($gameType === 0) {
+                // Some older aggregator rows use 0 for slots.
+                $slotExtra = ' OR g.game_type = 0';
             }
             $aggStmt = $pdo->prepare(
                 "SELECT DISTINCT COALESCE(NULLIF(v.vendor_name, ''), v.vendor_code) AS provider_name
                  FROM casino_aggregator_vendors v
                  INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
-                 WHERE v.is_active = 1 AND g.is_active = 1 AND (g.game_type = :type{$liveExtra})
+                 WHERE v.is_active = 1 AND g.is_active = 1 AND (g.game_type = :type{$liveExtra}{$slotExtra})
                  ORDER BY provider_name ASC"
             );
             $aggStmt->execute([':type' => $aggType]);

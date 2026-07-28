@@ -37,8 +37,6 @@ $isLightweightRoute = preg_match('#^/api/v2/(?:bgaming-wallet|bgaming)(?:/.*)?$#
     || str_starts_with($backendPath, '/api/v2/sportsbook-wallet/')
     || $backendPath === '/api/v2/casino-aggregator-wallet'
     || str_starts_with($backendPath, '/api/v2/casino-aggregator-wallet/')
-    || $backendPath === '/api/v2/gamingsoft-wallet'
-    || str_starts_with($backendPath, '/api/v2/gamingsoft-wallet/')
     || $backendPath === '/sportsbook_api'
     || str_starts_with($backendPath, '/sportsbook_api/')
     || $backendPath === '/api/v2/internal'
@@ -109,23 +107,6 @@ if ($isLightweightRoute) {
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
         require __DIR__ . '/api/v2/casino_aggregator_callback.php';
-        exit;
-    }
-    if ($backendPath === '/api/v2/gamingsoft-wallet'
-        || str_starts_with($backendPath, '/api/v2/gamingsoft-wallet/')
-    ) {
-        // Doc: seamless wallet is a stateless JSON API — do not start admin sessions
-        // (avoids Set-Cookie VRSADMINSESSID on provider callbacks).
-        if (!defined('METROPOL_API_NO_SESSION')) {
-            define('METROPOL_API_NO_SESSION', true);
-        }
-        require_once __DIR__ . '/app/Core/AdminPaths.php';
-        admin_paths_bootstrap();
-        require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
-        if (preg_match('#^/api/v2/gamingsoft-wallet(?:/(.*))?$#', $backendPath, $gsMatch)) {
-            $_GET['endpoint'] = trim((string) ($gsMatch[1] ?? ''), '/');
-        }
-        require __DIR__ . '/api/v2/gamingsoft_callback.php';
         exit;
     }
     if ($backendPath === '/api/v2/casino-callback') {
@@ -227,10 +208,6 @@ $router->get('/casino-aggregator/game-control', [AdminCasinoAggregatorController
 $router->post('/casino-aggregator/call-apply', [AdminCasinoAggregatorController::class, 'callApply']);
 $router->post('/casino-aggregator/call-cancel', [AdminCasinoAggregatorController::class, 'callCancel']);
 $router->post('/casino-aggregator/call-list', [AdminCasinoAggregatorController::class, 'callList']);
-$router->get('/gamingsoft/settings', [AdminGamingSoftController::class, 'settings']);
-$router->post('/gamingsoft/settings', [AdminGamingSoftController::class, 'updateSettings']);
-$router->post('/gamingsoft/sync-products', [AdminGamingSoftController::class, 'syncProducts']);
-$router->post('/gamingsoft/sync-games', [AdminGamingSoftController::class, 'syncGames']);
 $router->get('/megapayz/settings', [AdminMegaPayzController::class, 'settings']);
 $router->post('/megapayz/settings', [AdminMegaPayzController::class, 'updateSettings']);
 $router->get('/megapayz/methods', [AdminMegaPayzController::class, 'methods']);

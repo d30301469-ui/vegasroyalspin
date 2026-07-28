@@ -224,7 +224,6 @@ final class AdminPermissionController extends AdminController
             'bgaming-settings', 'bgaming-games', 'bgaming-transactions', 'bgaming-wallet-logs' => 'BGaming sağlayıcı ve oyun yönetimi.',
             'sportsbook-settings', 'sportsbook-sessions', 'sportsbook-transactions', 'sportsbook-wallet-logs' => 'Sportsbook (BetBy) spor bahisleri sağlayıcı yönetimi.',
             'casino-aggregator-settings', 'casino-aggregator-vendors', 'casino-aggregator-games', 'casino-aggregator-sessions', 'casino-aggregator-transactions', 'casino-aggregator-wallet-logs' => 'Casino aggregator (Operator API) vendor, oyun, agent/user setting ve wallet yönetimi.',
-            'gamingsoft-settings', 'gamingsoft-products', 'gamingsoft-games', 'gamingsoft-sessions', 'gamingsoft-transactions', 'gamingsoft-wallet-logs' => 'Gaming Soft / GSC+ seamless wallet, ürün, oyun ve işlem yönetimi.',
             'payment-providers', 'payment-methods' => 'Ödeme sağlayıcı ve metot ayarlarını yönetme.',
             'promotions', 'sliders', 'auth-sliders', 'homepage-sections', 'announcements', 'promocodes', 'promocode-requests' => 'Site içerik ve kampanya alanlarını yönetme.',
             'footer-settings', 'footer-pages', 'mobile-menu-settings' => 'Footer, sayfa ve mobil menü içeriklerini düzenleme.',
