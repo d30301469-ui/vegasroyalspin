@@ -574,6 +574,14 @@ $userColumns = [
 $listPath = $moduleKey !== '' ? '/module' : '/table';
 $listIdentityName = $moduleKey !== '' ? 'key' : 'name';
 $listIdentityValue = $moduleKey !== '' ? $moduleKey : $table;
+$filterDefs = is_array($filterDefs ?? null) ? $filterDefs : (is_array($module['filters'] ?? null) ? $module['filters'] : []);
+$filterOptions = is_array($filterOptions ?? null) ? $filterOptions : [];
+$activeFilters = is_array($activeFilters ?? null) ? $activeFilters : [];
+$activeFilterCount = count($activeFilters);
+$filterQuery = '';
+foreach ($activeFilters as $filterKey => $filterValue) {
+    $filterQuery .= '&f[' . rawurlencode((string) $filterKey) . ']=' . rawurlencode((string) $filterValue);
+}
 $baseListQuery = ($moduleKey !== '' ? '/module?key=' . rawurlencode($moduleKey) : '/table?name=' . rawurlencode($table));
 $createUrl = AdminAuth::url('/table/create?name=' . rawurlencode($table) . ($moduleKey !== '' ? '&module=' . rawurlencode($moduleKey) : ''));
 $reservedWidth = 3 + (int) rtrim($actionColumnWidth, '%');
@@ -592,7 +600,7 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
         <div class="hero-text">
             <span class="eyebrow">Backoffice · Modül</span>
             <h1 class="hero-title"><?= htmlspecialchars((string) ($module['title'] ?? $table), ENT_QUOTES, 'UTF-8') ?> <span class="accent">kayıtları</span></h1>
-            <p class="hero-sub"><?= htmlspecialchars((string) $total, ENT_QUOTES, 'UTF-8') ?> kayıt · Arama, kolon filtreleri, seçim ve dışa aktarma bu ekranda yönetilir.</p>
+            <p class="hero-sub"><?= htmlspecialchars((string) $total, ENT_QUOTES, 'UTF-8') ?> kayıt · Arama, gelişmiş filtreler, seçim ve dışa aktarma bu ekranda yönetilir.</p>
         </div>
         <?php if (!$isReadOnlyModule && !$isWriteProtectedTable): ?>
         <div class="hero-actions">
@@ -636,7 +644,10 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
         <form method="get" action="<?= htmlspecialchars(AdminAuth::url($listPath), ENT_QUOTES, 'UTF-8') ?>" class="admin-actionbar-left">
             <input type="hidden" name="<?= htmlspecialchars($listIdentityName, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($listIdentityValue, ENT_QUOTES, 'UTF-8') ?>">
             <input type="hidden" name="per_page" value="<?= htmlspecialchars((string) $perPage, ENT_QUOTES, 'UTF-8') ?>">
-            <button class="admin-action-btn" type="submit"><svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtre <span class="badge primary"><?= $search !== '' ? '1' : '0' ?></span></button>
+            <?php foreach ($activeFilters as $filterKey => $filterValue): ?>
+                <input type="hidden" name="f[<?= htmlspecialchars((string) $filterKey, ENT_QUOTES, 'UTF-8') ?>]" value="<?= htmlspecialchars((string) $filterValue, ENT_QUOTES, 'UTF-8') ?>">
+            <?php endforeach; ?>
+            <button class="admin-action-btn" type="submit"><svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtre <span class="badge primary"><?= htmlspecialchars((string) (($search !== '' ? 1 : 0) + $activeFilterCount), ENT_QUOTES, 'UTF-8') ?></span></button>
             <input class="admin-filter-input admin-search-lg" type="search" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars((string) ($module['search_placeholder'] ?? 'Tabloda ara...'), ENT_QUOTES, 'UTF-8') ?>" data-admin-compact-global-filter>
             <a class="admin-action-btn" href="<?= htmlspecialchars(AdminAuth::url($baseListQuery), ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></a>
         </form>
@@ -645,6 +656,9 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
             <form method="get" action="<?= htmlspecialchars(AdminAuth::url($listPath), ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="<?= htmlspecialchars($listIdentityName, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($listIdentityValue, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>">
+                <?php foreach ($activeFilters as $filterKey => $filterValue): ?>
+                    <input type="hidden" name="f[<?= htmlspecialchars((string) $filterKey, ENT_QUOTES, 'UTF-8') ?>]" value="<?= htmlspecialchars((string) $filterValue, ENT_QUOTES, 'UTF-8') ?>">
+                <?php endforeach; ?>
                 <select class="select admin-select-compact" name="per_page" onchange="this.form.submit()">
                     <?php foreach ([10, 25, 50, 100] as $option): ?>
                         <option value="<?= htmlspecialchars($option, ENT_QUOTES, 'UTF-8') ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= htmlspecialchars($option, ENT_QUOTES, 'UTF-8') ?> / sayfa</option>
@@ -654,9 +668,65 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
         </div>
     </div>
 
+    <?php if ($filterDefs !== []): ?>
+    <style>
+        .admin-advanced-filters { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:10px; align-items:end; margin:0 0 14px; padding:14px; border:1px solid var(--border); border-radius:14px; background:var(--bg-card); }
+        .admin-advanced-filters .field { margin:0; }
+        .admin-advanced-filters .field-label { display:block; font-size:12px; color:var(--t-muted); margin-bottom:6px; }
+        .admin-advanced-filters .admin-filter-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    </style>
+    <form method="get" action="<?= htmlspecialchars(AdminAuth::url($listPath), ENT_QUOTES, 'UTF-8') ?>" class="admin-advanced-filters">
+        <input type="hidden" name="<?= htmlspecialchars($listIdentityName, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($listIdentityValue, ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="per_page" value="<?= htmlspecialchars((string) $perPage, ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>">
+        <?php foreach ($filterDefs as $filterColumn => $filterDef): ?>
+            <?php
+            if (!is_string($filterColumn) || $filterColumn === '' || !is_array($filterDef)) {
+                continue;
+            }
+            $filterLabel = (string) ($filterDef['label'] ?? $filterColumn);
+            $filterType = strtolower((string) ($filterDef['type'] ?? 'text'));
+            $currentValue = (string) ($activeFilters[$filterColumn] ?? '');
+            $options = $filterOptions[$filterColumn] ?? [];
+            if (!is_array($options)) {
+                $options = [];
+            }
+            ?>
+            <div class="field">
+                <label class="field-label" for="af_<?= htmlspecialchars($filterColumn, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($filterLabel, ENT_QUOTES, 'UTF-8') ?></label>
+                <?php if ($filterType === 'select'): ?>
+                    <select class="select" id="af_<?= htmlspecialchars($filterColumn, ENT_QUOTES, 'UTF-8') ?>" name="f[<?= htmlspecialchars($filterColumn, ENT_QUOTES, 'UTF-8') ?>]">
+                        <option value="">Tümü</option>
+                        <?php foreach ($options as $optValue => $optLabel): ?>
+                            <?php
+                            if (is_int($optValue)) {
+                                $optValue = (string) $optLabel;
+                            }
+                            $optValue = (string) $optValue;
+                            $optLabel = (string) $optLabel;
+                            ?>
+                            <option value="<?= htmlspecialchars($optValue, ENT_QUOTES, 'UTF-8') ?>" <?= $currentValue === $optValue ? 'selected' : '' ?>><?= htmlspecialchars($optLabel, ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php else: ?>
+                    <input class="input" id="af_<?= htmlspecialchars($filterColumn, ENT_QUOTES, 'UTF-8') ?>" type="text" name="f[<?= htmlspecialchars($filterColumn, ENT_QUOTES, 'UTF-8') ?>]" value="<?= htmlspecialchars($currentValue, ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars($filterLabel, ENT_QUOTES, 'UTF-8') ?>">
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+        <div class="field admin-filter-actions">
+            <button class="admin-action-btn primary" type="submit">Uygula</button>
+            <a class="admin-action-btn" href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . ($search !== '' ? '&search=' . rawurlencode($search) : '') . '&per_page=' . $perPage), ENT_QUOTES, 'UTF-8') ?>">Temizle</a>
+        </div>
+    </form>
+    <?php endif; ?>
+
     <div class="admin-compact-info">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        Kolon filtreleri ekranda görünen kayıtlar üzerinde çalışır. CSV dışa aktarma yalnızca görünür satırları indirir.
+        <?php if ($filterDefs !== []): ?>
+            Gelişmiş filtreler tüm kayıtlarda sunucu tarafında çalışır (game_type dahil). Alt kolon kutuları yalnızca bu sayfadaki satırları daraltır.
+        <?php else: ?>
+            Kolon filtreleri ekranda görünen kayıtlar üzerinde çalışır. CSV dışa aktarma yalnızca görünür satırları indirir.
+        <?php endif; ?>
     </div>
 
     <section class="admin-compact-card">
@@ -872,20 +942,20 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
     <div class="admin-compact-foot">
         <div class="admin-page-size">
             <?php foreach ([10, 25, 50, 100] as $size): ?>
-                <a class="<?= $perPage === $size ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . '&per_page=' . $size), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($size, ENT_QUOTES, 'UTF-8') ?></a>
+                <a class="<?= $perPage === $size ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . $filterQuery . '&per_page=' . $size), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($size, ENT_QUOTES, 'UTF-8') ?></a>
             <?php endforeach; ?>
         </div>
         <div class="admin-compact-pager">
             <span><?= htmlspecialchars($pageStart, ENT_QUOTES, 'UTF-8') ?>-<?= htmlspecialchars($pageEnd, ENT_QUOTES, 'UTF-8') ?> / <?= htmlspecialchars($total, ENT_QUOTES, 'UTF-8') ?></span>
             <span class="badge solid"><?= htmlspecialchars($table, ENT_QUOTES, 'UTF-8') ?></span>
             <?php if ($page > 1): ?>
-                <a href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . '&per_page=' . $perPage . '&page=' . ($page - 1)), ENT_QUOTES, 'UTF-8') ?>" aria-label="Previous">‹</a>
+                <a href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . $filterQuery . '&per_page=' . $perPage . '&page=' . ($page - 1)), ENT_QUOTES, 'UTF-8') ?>" aria-label="Previous">‹</a>
             <?php endif; ?>
             <span class="active"><?= htmlspecialchars($page, ENT_QUOTES, 'UTF-8') ?></span>
             <span>/</span>
             <span><?= htmlspecialchars($totalPages, ENT_QUOTES, 'UTF-8') ?></span>
             <?php if ($page < $totalPages): ?>
-                <a href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . '&per_page=' . $perPage . '&page=' . ($page + 1)), ENT_QUOTES, 'UTF-8') ?>" aria-label="Next">›</a>
+                <a href="<?= htmlspecialchars(AdminAuth::url($baseListQuery . '&search=' . rawurlencode($search) . $filterQuery . '&per_page=' . $perPage . '&page=' . ($page + 1)), ENT_QUOTES, 'UTF-8') ?>" aria-label="Next">›</a>
             <?php endif; ?>
         </div>
     </div>

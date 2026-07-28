@@ -226,6 +226,46 @@ return [
             'crumbs' => 'Gaming Soft | Products',
             'columns' => ['id', 'product_code', 'provider', 'product_name', 'game_type', 'currency', 'status', 'entry_type', 'is_active', 'synced_at'],
             'search_placeholder' => 'Ürün, provider veya game type ara...',
+            'filters' => [
+                'game_type' => [
+                    'label' => 'Game Type',
+                    'type' => 'select',
+                    'options' => 'distinct',
+                    'fallback' => ['SLOT', 'LIVE_CASINO', 'LIVE_CASINO_PREMIUM', 'SPORT_BOOK', 'FISHING', 'POKER', 'OTHERS'],
+                ],
+                'currency' => [
+                    'label' => 'Currency',
+                    'type' => 'select',
+                    'options' => 'distinct',
+                    'fallback' => ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'],
+                ],
+                'status' => [
+                    'label' => 'Status',
+                    'type' => 'select',
+                    'options' => 'distinct',
+                    'fallback' => ['ACTIVATED', 'DEACTIVATED', 'MAINTAINED'],
+                ],
+                'entry_type' => [
+                    'label' => 'Entry Type',
+                    'type' => 'select',
+                    'options' => ['1' => '1 · Direct game', '2' => '2 · Lobby only'],
+                ],
+                'is_active' => [
+                    'label' => 'Aktif',
+                    'type' => 'select',
+                    'options' => ['1' => 'Aktif', '0' => 'Pasif'],
+                ],
+                'provider' => [
+                    'label' => 'Provider',
+                    'type' => 'text',
+                    'mode' => 'like',
+                ],
+                'product_code' => [
+                    'label' => 'Product Code',
+                    'type' => 'text',
+                    'mode' => 'exact',
+                ],
+            ],
         ],
         'gamingsoft-games' => [
             'title' => 'GSC+ Oyunları',
@@ -234,6 +274,54 @@ return [
             'crumbs' => 'Gaming Soft | Games',
             'columns' => ['id', 'image_url', 'product_code', 'game_code', 'game_name', 'game_type', 'support_currency', 'status', 'is_active', 'is_featured', 'synced_at'],
             'search_placeholder' => 'Oyun adı, product veya game code ara...',
+            'filters' => [
+                'game_type' => [
+                    'label' => 'Game Type',
+                    'type' => 'select',
+                    'options' => 'distinct',
+                    'fallback' => [
+                        'SLOT', 'LIVE_CASINO', 'LIVE_CASINO_PREMIUM', 'SPORT_BOOK', 'VIRTUAL_SPORT',
+                        'LOTTERY', 'QIPAI', 'P2P', 'FISHING', 'COCK_FIGHTING', 'BONUS', 'ESPORT', 'POKER', 'OTHERS',
+                    ],
+                ],
+                'support_currency' => [
+                    'label' => 'Currency',
+                    'type' => 'select',
+                    'options' => 'distinct',
+                    'fallback' => ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'],
+                ],
+                'status' => [
+                    'label' => 'Status',
+                    'type' => 'select',
+                    'options' => 'distinct',
+                    'fallback' => ['ACTIVATED', 'DEACTIVATED', 'MAINTAINED'],
+                ],
+                'is_active' => [
+                    'label' => 'Aktif',
+                    'type' => 'select',
+                    'options' => ['1' => 'Aktif', '0' => 'Pasif'],
+                ],
+                'is_featured' => [
+                    'label' => 'Featured',
+                    'type' => 'select',
+                    'options' => ['1' => 'Featured', '0' => 'Normal'],
+                ],
+                'product_code' => [
+                    'label' => 'Product Code',
+                    'type' => 'text',
+                    'mode' => 'exact',
+                ],
+                'game_code' => [
+                    'label' => 'Game Code',
+                    'type' => 'text',
+                    'mode' => 'like',
+                ],
+                'game_name' => [
+                    'label' => 'Oyun Adı',
+                    'type' => 'text',
+                    'mode' => 'like',
+                ],
+            ],
         ],
         'gamingsoft-sessions' => [
             'title' => 'GSC+ Oturumları',

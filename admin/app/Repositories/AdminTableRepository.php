@@ -81,6 +81,116 @@ final class AdminTableRepository
             : $rows;
     }
 
+    /**
+     * Distinct non-empty values for a column (advanced filter dropdowns).
+     *
+     * @return list<string>
+     */
+    public function distinctValues(string $table, string $column, int $limit = 300): array
+    {
+        $this->assertTable($table);
+        $allowed = [];
+        foreach ($this->columns($table) as $col) {
+            $allowed[(string) $col['name']] = true;
+        }
+        if (!isset($allowed[$column])) {
+            return [];
+        }
+        $limit = max(1, min(500, $limit));
+        $sql = 'SELECT DISTINCT ' . $this->quoteIdentifier($column) . ' AS v
+                FROM ' . $this->quoteIdentifier($table) . '
+                WHERE ' . $this->quoteIdentifier($column) . " IS NOT NULL
+                  AND TRIM(CAST(" . $this->quoteIdentifier($column) . " AS CHAR)) <> ''
+                ORDER BY v ASC
+                LIMIT {$limit}";
+        try {
+            $stmt = AdminDatabase::pdo()->query($sql);
+            $values = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        } catch (Throwable) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($values as $value) {
+            $text = trim((string) $value);
+            if ($text === '' || isset($out[$text])) {
+                continue;
+            }
+            $out[$text] = $text;
+        }
+
+        return array_values($out);
+    }
+
+    /**
+     * Build WHERE fragment from module advanced filters.
+     *
+     * @param array<string, array<string, mixed>> $filterDefs
+     * @param array<string, mixed> $rawFilters
+     * @return array{0: string, 1: array<string, mixed>, 2: array<string, string>}
+     */
+    public function buildColumnFilters(string $table, array $filterDefs, array $rawFilters): array
+    {
+        if ($filterDefs === []) {
+            return ['', [], []];
+        }
+
+        $allowed = [];
+        $types = [];
+        foreach ($this->columns($table) as $col) {
+            $name = (string) ($col['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+            $allowed[$name] = true;
+            $types[$name] = strtolower((string) ($col['data_type'] ?? ''));
+        }
+
+        $parts = [];
+        $params = [];
+        $active = [];
+        $index = 0;
+        foreach ($filterDefs as $column => $def) {
+            if (!is_string($column) || $column === '' || !isset($allowed[$column])) {
+                continue;
+            }
+            if (!is_array($def)) {
+                $def = [];
+            }
+            $value = $rawFilters[$column] ?? '';
+            if (is_array($value)) {
+                $value = (string) reset($value);
+            }
+            $value = trim((string) $value);
+            if ($value === '') {
+                continue;
+            }
+
+            $mode = strtolower((string) ($def['mode'] ?? 'exact'));
+            $param = 'af_' . $index++;
+            $quoted = $this->quoteIdentifier($column);
+            $dataType = $types[$column] ?? '';
+
+            if ($mode === 'like') {
+                $parts[] = $quoted . ' LIKE :' . $param;
+                $params[$param] = '%' . $value . '%';
+            } elseif (in_array($dataType, ['int', 'bigint', 'tinyint', 'smallint', 'mediumint'], true) && is_numeric($value)) {
+                $parts[] = $quoted . ' = :' . $param;
+                $params[$param] = (int) $value;
+            } else {
+                $parts[] = $quoted . ' = :' . $param;
+                $params[$param] = $value;
+            }
+            $active[$column] = $value;
+        }
+
+        if ($parts === []) {
+            return ['', [], []];
+        }
+
+        return [implode(' AND ', $parts), $params, $active];
+    }
+
     public function find(string $table, string $primaryKey, string $id): ?array
     {
         $this->assertTable($table);
