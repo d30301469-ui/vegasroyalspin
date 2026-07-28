@@ -282,13 +282,20 @@ final class GamingSoftService
                 synced_at = NOW()'
         );
 
+        $targetCurrency = self::resolveOperatorCurrency($cfg);
         $count = 0;
+        $skipped = 0;
         foreach ($products as $row) {
             if (!is_array($row)) {
                 continue;
             }
             $code = (int) ($row['product_code'] ?? 0);
             if ($code <= 0) {
+                continue;
+            }
+            $rowCurrency = strtoupper(trim((string) ($row['currency'] ?? '')));
+            if ($rowCurrency !== '' && $rowCurrency !== $targetCurrency) {
+                $skipped++;
                 continue;
             }
             $status = strtoupper(trim((string) ($row['status'] ?? '')));
@@ -299,7 +306,7 @@ final class GamingSoftService
                 ':prov'  => trim((string) ($row['provider'] ?? '')),
                 ':pname' => trim((string) ($row['product_name'] ?? $row['provider'] ?? '')),
                 ':gtype' => strtoupper(trim((string) ($row['game_type'] ?? ''))),
-                ':cur'   => strtoupper(trim((string) ($row['currency'] ?? ''))),
+                ':cur'   => $rowCurrency !== '' ? $rowCurrency : $targetCurrency,
                 ':status'=> $status,
                 ':entry' => (int) ($row['entry_type'] ?? 1),
             ]);
@@ -308,7 +315,7 @@ final class GamingSoftService
 
         $pdo->exec('UPDATE gamingsoft_config SET products_synced_at = NOW() WHERE id = 1');
 
-        return ['product_count' => $count];
+        return ['product_count' => $count, 'skipped_other_currency' => $skipped, 'currency' => $targetCurrency];
     }
 
     public static function syncGames(PDO $pdo, ?int $productCode = null): array
@@ -532,12 +539,12 @@ final class GamingSoftService
             $gameCode = null;
         }
 
-        $productCurrency = self::pickLaunchCurrency(
+        $targetCurrency = self::resolveOperatorCurrency($cfg);
+        $currency = self::pickLaunchCurrency(
             (string) ($productRow['currency'] ?? $gameRow['product_currency'] ?? ''),
             (string) ($gameRow['support_currency'] ?? ''),
-            (string) ($cfg['currency'] ?? self::STAGING_CURRENCY)
+            $targetCurrency
         );
-        $currency = $productCurrency;
 
         $channel = strtolower(trim((string) ($input['channel'] ?? 'desktop')));
         $platform = match (true) {
@@ -618,6 +625,36 @@ final class GamingSoftService
             $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
             $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
             $gameCode = null;
+        }
+
+        // Wrong launch currency (e.g. CNY product row while VGY1 credit is IDR) surfaces as agent balance error.
+        if (($code !== 200 && $code !== 0)
+            && self::isAgentBalanceMessage($providerMessage)
+            && $currency !== $targetCurrency
+        ) {
+            $retryTime = self::requestTimeSeconds();
+            $payload = self::buildLaunchPayload(
+                $cfg,
+                $memberAccount,
+                $nickname,
+                $targetCurrency,
+                $gameCode,
+                (int) $parsed['product_code'],
+                $gameType,
+                $languageCode,
+                $ip !== '' ? $ip : '127.0.0.1',
+                $platform,
+                $lobbyUrl,
+                $retryTime
+            );
+            try {
+                $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
+            } catch (Throwable $e) {
+                return ['success' => false, 'code' => 503, 'message' => 'GSC+ API bağlantı hatası: ' . $e->getMessage()];
+            }
+            $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
+            $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
+            $currency = $targetCurrency;
         }
 
         $launchUrl = trim((string) ($response['url'] ?? $response['URL'] ?? ''));
@@ -740,10 +777,10 @@ final class GamingSoftService
 
     private static function walletBalance(PDO $pdo, array $payload): array
     {
-        $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
         $cfg = self::config($pdo);
+        $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
         if ($currency === '') {
-            $currency = strtoupper((string) ($cfg['currency'] ?? 'TRY'));
+            $currency = self::resolveOperatorCurrency($cfg);
         }
 
         $data = [];
@@ -803,7 +840,7 @@ final class GamingSoftService
         $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
         $cfg = self::config($pdo);
         if ($currency === '') {
-            $currency = strtoupper((string) ($cfg['currency'] ?? 'TRY'));
+            $currency = self::resolveOperatorCurrency($cfg);
         }
 
         $data = [];
@@ -1343,25 +1380,50 @@ final class GamingSoftService
         return $t;
     }
 
-    private static function pickLaunchCurrency(string $productCurrency, string $supportCurrency, string $cfgCurrency): string
+    /** @param array<string, mixed> $cfg */
+    private static function resolveOperatorCurrency(array $cfg): string
     {
-        $candidates = [];
-        foreach ([$productCurrency, $supportCurrency, $cfgCurrency, self::STAGING_CURRENCY] as $raw) {
-            foreach (preg_split('/[,\s|;]+/', strtoupper(trim($raw))) ?: [] as $part) {
-                $part = trim((string) $part);
-                if ($part !== '' && !in_array($part, $candidates, true)) {
-                    $candidates[] = $part;
-                }
+        $currency = strtoupper(trim((string) ($cfg['currency'] ?? '')));
+        if ($currency === '' || $currency === 'TRY') {
+            return self::STAGING_CURRENCY;
+        }
+
+        return $currency;
+    }
+
+    /** @return list<string> */
+    private static function splitCurrencyCandidates(string $raw): array
+    {
+        $out = [];
+        foreach (preg_split('/[,\s|;]+/', strtoupper(trim($raw))) ?: [] as $part) {
+            $part = trim((string) $part);
+            if ($part !== '' && !in_array($part, $out, true)) {
+                $out[] = $part;
             }
         }
 
-        foreach ($candidates as $candidate) {
+        return $out;
+    }
+
+    private static function pickLaunchCurrency(string $productCurrency, string $supportCurrency, string $cfgCurrency): string
+    {
+        $cfgCurrency = strtoupper(trim($cfgCurrency));
+        if ($cfgCurrency === '' || $cfgCurrency === 'TRY') {
+            $cfgCurrency = self::STAGING_CURRENCY;
+        }
+
+        // Operator config currency is the funded agent wallet (VGY1 staging = IDR).
+        if (in_array($cfgCurrency, self::STAGING_CURRENCIES, true)) {
+            return $cfgCurrency;
+        }
+
+        foreach (self::splitCurrencyCandidates($productCurrency . ' ' . $supportCurrency) as $candidate) {
             if (in_array($candidate, self::STAGING_CURRENCIES, true)) {
                 return $candidate;
             }
         }
 
-        return $candidates[0] ?? self::STAGING_CURRENCY;
+        return $cfgCurrency !== '' ? $cfgCurrency : self::STAGING_CURRENCY;
     }
 
     /**
@@ -1416,6 +1478,15 @@ final class GamingSoftService
             || str_contains($lower, 'product not found');
     }
 
+    private static function isAgentBalanceMessage(string $message): bool
+    {
+        $lower = strtolower(trim($message));
+
+        return str_contains($lower, 'insufficient agent balance')
+            || str_contains($lower, 'agent balance')
+            || str_contains($lower, 'insufficient credit');
+    }
+
     private static function mapLaunchErrorMessage(string $providerMessage, string $currency = ''): string
     {
         $lower = strtolower($providerMessage);
@@ -1423,16 +1494,14 @@ final class GamingSoftService
             return 'Oyun başlatılamadı.';
         }
 
-        // GSC+ agency credit — not the player's seamless wallet balance.
-        if (str_contains($lower, 'insufficient agent balance')
-            || str_contains($lower, 'agent balance')
-            || str_contains($lower, 'insufficient credit')
-        ) {
+        if (self::isAgentBalanceMessage($providerMessage)) {
             $cur = $currency !== '' ? $currency : self::STAGING_CURRENCY;
+            $cfgCur = self::STAGING_CURRENCY;
 
-            return 'Oyun başlatılamadı: GSC+ acente bakiyesi yetersiz'
-                . ' (operator VGY1 / para birimi ' . $cur . ').'
-                . ' Bu üye cüzdanı değil; staging hesabınıza kredi için GSC+ destek ile iletişime geçin.';
+            return 'Oyun başlatılamadı: GSC+ acente bakiyesi yetersiz veya yanlış para birimi ('
+                . $cur . '). VGY1 staging kredisi genelde '
+                . $cfgCur . ' cüzdanındadır — Admin → GSC+ Ayarları → Currency = '
+                . $cfgCur . ' olmalı, ardından Product Sync + Oyun Sync çalıştırın.';
         }
 
         if (self::isRecordNotFoundMessage($providerMessage)) {
