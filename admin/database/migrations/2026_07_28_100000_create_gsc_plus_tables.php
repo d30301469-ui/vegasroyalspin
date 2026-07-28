@@ -13,6 +13,34 @@ return static function (PDO $pdo): void {
     };
 
     $operatorUrl = str_replace("'", "''", $envDefault('GSC_OPERATOR_URL', 'https://staging.gsimw.com'));
+    // The GSC+ agent wallet is contracted per currency; the staging agent (VGY1)
+    // is funded in IDR, so IDR — not the site display currency — is the default.
+    $currency = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $envDefault('GSC_CURRENCY', 'IDR')) ?? 'IDR');
+    if ($currency === '') {
+        $currency = 'IDR';
+    }
+
+    $columnExists = static function (PDO $pdo, string $table, string $column): bool {
+        try {
+            $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE :col");
+            $stmt->execute([':col' => $column]);
+
+            return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+        } catch (Throwable) {
+            return false;
+        }
+    };
+
+    $indexExists = static function (PDO $pdo, string $table, string $index): bool {
+        try {
+            $stmt = $pdo->prepare("SHOW INDEX FROM `{$table}` WHERE Key_name = :idx");
+            $stmt->execute([':idx' => $index]);
+
+            return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+        } catch (Throwable) {
+            return false;
+        }
+    };
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS gsc_config (
@@ -20,7 +48,7 @@ return static function (PDO $pdo): void {
             operator_code        VARCHAR(32) NOT NULL DEFAULT '',
             secret_key           VARCHAR(255) NOT NULL DEFAULT '',
             operator_url         VARCHAR(255) NOT NULL DEFAULT '{$operatorUrl}',
-            currency             VARCHAR(16) NOT NULL DEFAULT 'TRY',
+            currency             VARCHAR(16) NOT NULL DEFAULT '{$currency}',
             language_code        INT NOT NULL DEFAULT 0,
             channel_code         VARCHAR(32) NOT NULL DEFAULT 'gscp',
             operator_lobby_url   VARCHAR(255) NOT NULL DEFAULT '',
@@ -52,11 +80,25 @@ return static function (PDO $pdo): void {
             created_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            UNIQUE KEY uniq_gsc_product_code_currency (product_code, currency),
+            UNIQUE KEY uniq_gsc_product (product_code, currency, game_type),
             KEY idx_gsc_products_active (is_active),
             KEY idx_gsc_products_type (game_type)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+
+    // available-products lists one row per (product_code, currency, game_type):
+    // e.g. 1006/IDR appears as both LIVE_CASINO and LIVE_CASINO_PREMIUM. The
+    // original (product_code, currency) key collapsed them into a single row and
+    // silently dropped one of the two game lists.
+    if (!$indexExists($pdo, 'gsc_products', 'uniq_gsc_product')) {
+        try {
+            if ($indexExists($pdo, 'gsc_products', 'uniq_gsc_product_code_currency')) {
+                $pdo->exec('ALTER TABLE gsc_products DROP INDEX uniq_gsc_product_code_currency');
+            }
+            $pdo->exec('ALTER TABLE gsc_products ADD UNIQUE KEY uniq_gsc_product (product_code, currency, game_type)');
+        } catch (Throwable) {
+        }
+    }
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS gsc_games (
@@ -66,7 +108,8 @@ return static function (PDO $pdo): void {
             game_name         VARCHAR(255) NOT NULL DEFAULT '',
             game_type         VARCHAR(64) NOT NULL DEFAULT '',
             image_url         TEXT NULL,
-            support_currency  VARCHAR(16) NOT NULL DEFAULT '',
+            support_currency  VARCHAR(64) NOT NULL DEFAULT '',
+            product_currency  VARCHAR(16) NOT NULL DEFAULT '',
             status            VARCHAR(32) NOT NULL DEFAULT '',
             allow_free_round  TINYINT(1) NOT NULL DEFAULT 0,
             entry_type        TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -90,6 +133,17 @@ return static function (PDO $pdo): void {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
+    // Games report support_currency as a list ("IDR,PHP,MYR") or "ALL", which does
+    // not fit the original VARCHAR(16). product_currency holds the contracted
+    // currency of the parent product — the value launch-game must send.
+    if (!$columnExists($pdo, 'gsc_games', 'product_currency')) {
+        try {
+            $pdo->exec("ALTER TABLE gsc_games MODIFY support_currency VARCHAR(64) NOT NULL DEFAULT ''");
+            $pdo->exec("ALTER TABLE gsc_games ADD COLUMN product_currency VARCHAR(16) NOT NULL DEFAULT '' AFTER support_currency");
+        } catch (Throwable) {
+        }
+    }
+
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS gsc_sessions (
             id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -98,7 +152,7 @@ return static function (PDO $pdo): void {
             product_code     INT NOT NULL,
             game_code        VARCHAR(120) NULL,
             game_type        VARCHAR(64) NOT NULL DEFAULT '',
-            currency         VARCHAR(16) NOT NULL DEFAULT 'TRY',
+            currency         VARCHAR(16) NOT NULL DEFAULT '{$currency}',
             platform         VARCHAR(20) NOT NULL DEFAULT 'WEB',
             launch_url       TEXT NULL,
             request_payload  JSON NULL,
@@ -132,7 +186,7 @@ return static function (PDO $pdo): void {
             tip_amount       DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
             before_balance   DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
             after_balance    DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
-            currency         VARCHAR(16) NOT NULL DEFAULT 'TRY',
+            currency         VARCHAR(16) NOT NULL DEFAULT '{$currency}',
             settled_at       BIGINT NULL,
             direction        ENUM('withdraw','deposit','push') NOT NULL DEFAULT 'withdraw',
             payload          JSON NULL,
@@ -202,6 +256,11 @@ return static function (PDO $pdo): void {
     $pdo->exec(
         "INSERT IGNORE INTO gsc_config
             (id, operator_code, secret_key, operator_url, currency, language_code, channel_code, is_active)
-         VALUES (1, '', '', '{$operatorUrl}', 'TRY', 0, 'gscp', 0)"
+         VALUES (1, '', '', '{$operatorUrl}', '{$currency}', 0, 'gscp', 0)"
     );
+
+    // TRY was never a contracted GSC+ currency for this agent; it only ever came
+    // from the old hardcoded default and makes launch-game and the wallet
+    // callbacks disagree with the agent wallet.
+    $pdo->exec("UPDATE gsc_config SET currency = '{$currency}' WHERE id = 1 AND currency = 'TRY'");
 };

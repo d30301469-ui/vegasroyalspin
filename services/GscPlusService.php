@@ -71,6 +71,13 @@ final class GscPlusService
     /** VGY1 staging currencies enabled with GSC+. */
     public const STAGING_CURRENCIES = ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'];
 
+    /**
+     * The agent wallet is funded per currency (3.12 Wallet Balance Inquiry); the
+     * staging agent is contracted in IDR, so IDR — not the site display currency —
+     * is the fallback whenever gsc_config carries no explicit value.
+     */
+    public const DEFAULT_CURRENCY = 'IDR';
+
     private const DEBIT_ACTIONS = [
         'BET', 'TIP', 'BET_PRESERVE',
     ];
@@ -125,8 +132,16 @@ final class GscPlusService
         $pdo->exec(
             "INSERT IGNORE INTO gsc_config
                 (id, operator_code, secret_key, operator_url, currency, language_code, channel_code, is_active)
-             VALUES (1, '', '', 'https://staging.gsimw.com', 'TRY', 0, 'gscp', 0)"
+             VALUES (1, '', '', 'https://staging.gsimw.com', '" . self::DEFAULT_CURRENCY . "', 0, 'gscp', 0)"
         );
+    }
+
+    /** Configured operator currency, falling back to the contracted default. */
+    public static function configCurrency(array $cfg): string
+    {
+        $currency = strtoupper(trim((string) ($cfg['currency'] ?? '')));
+
+        return $currency !== '' ? $currency : self::DEFAULT_CURRENCY;
     }
 
     public static function config(PDO $pdo): array
@@ -267,16 +282,19 @@ final class GscPlusService
      */
     public static function formatProviderBalance(float $amount, string $currency): float
     {
-        $amount = max(0.0, $amount);
         $currency = strtoupper(trim($currency));
+        // A RESETTLED correction may legitimately leave the wallet negative
+        // (GSC appendix, Wager Status note), so the sign must survive rounding.
+        $sign = $amount < 0 ? -1.0 : 1.0;
+        $amount = abs($amount);
         if (self::currencyRatio($currency) > 1) {
-            return (float) number_format($amount, 4, '.', '');
+            return $sign * (float) number_format($amount, 4, '.', '');
         }
         if (in_array($currency, ['IDR', 'VND', 'KRW', 'JPY'], true)) {
-            return (float) number_format($amount, 2, '.', '');
+            return $sign * (float) number_format($amount, 2, '.', '');
         }
 
-        return (float) number_format($amount, 4, '.', '');
+        return $sign * (float) number_format($amount, 4, '.', '');
     }
 
     /** Convert provider (GSC) amount → wallet storage amount. */
@@ -306,9 +324,18 @@ final class GscPlusService
         return self::formatProviderBalance($walletAmount, $currency);
     }
 
-    /** @return array{code:int,message:string,data:list<array<string,mixed>>} */
-    private static function batchCurrencyError(array $payload, string $message = 'Invalid currency'): array
+    /**
+     * Batch-shaped error so every entry in batch_requests gets its own code, as
+     * the /balance, /withdraw and /deposit responses are documented (2.1–2.3).
+     *
+     * @return array{code:int,message:string,data:list<array<string,mixed>>}
+     */
+    private static function batchError(array $payload, int $code, string $message, bool $withBeforeBalance): array
     {
+        $row = $withBeforeBalance
+            ? ['before_balance' => 0, 'balance' => 0]
+            : ['balance' => 0];
+
         $data = [];
         $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
         foreach ($batch as $req) {
@@ -318,16 +345,13 @@ final class GscPlusService
             $data[] = [
                 'member_account' => trim((string) ($req['member_account'] ?? '')),
                 'product_code' => (int) ($req['product_code'] ?? $req['Product_code'] ?? 0),
-                'balance' => 0,
-                'code' => 999,
-                'message' => $message,
-            ];
+            ] + $row + ['code' => $code, 'message' => $message];
         }
         if ($data === []) {
-            $data[] = ['balance' => 0, 'code' => 999, 'message' => $message];
+            $data[] = $row + ['code' => $code, 'message' => $message];
         }
 
-        return ['code' => 999, 'message' => $message, 'data' => $data];
+        return ['code' => $code, 'message' => $message, 'data' => $data];
     }
 
     public static function operatorSign(string $requestTime, string $secretKey, string $action, string $operatorCode): string
@@ -371,11 +395,16 @@ final class GscPlusService
             return ['status' => 404, 'body' => ['code' => 999, 'message' => 'NOT_FOUND']];
         }
         $signAction = $actionMap[$endpoint];
+        $isBatch = $endpoint !== 'pushbetdata';
+        $withBeforeBalance = in_array($endpoint, ['withdraw', 'deposit'], true);
+        $errorBody = static fn (int $code, string $message): array => $isBatch
+            ? self::batchError($payload, $code, $message, $withBeforeBalance)
+            : ['code' => $code, 'message' => $message];
 
         try {
             $cfg = self::config($pdo);
             if ((int) ($cfg['is_active'] ?? 0) !== 1) {
-                $body = ['code' => 999, 'message' => 'Provider inactive'];
+                $body = $errorBody(999, 'Provider inactive');
                 self::logWallet($pdo, $endpoint, null, null, null, 503, 999, 'INACTIVE', $started, $payload, $body);
                 return ['status' => 503, 'body' => $body];
             }
@@ -383,21 +412,12 @@ final class GscPlusService
             $secretKey = (string) ($cfg['secret_key'] ?? '');
             $reqOp = trim((string) ($payload['operator_code'] ?? ''));
             if ($operatorCode === '' || $secretKey === '' || strcasecmp($reqOp, $operatorCode) !== 0) {
-                $body = $endpoint === 'pushbetdata'
-                    ? ['code' => 1002, 'message' => self::WALLET_CODES[1002]]
-                    : ['data' => []];
-                if ($endpoint !== 'pushbetdata') {
-                    // Still return batch structure with error if possible
-                    $body = ['code' => 1002, 'message' => self::WALLET_CODES[1002], 'data' => []];
-                }
+                $body = $errorBody(1002, self::WALLET_CODES[1002]);
                 self::logWallet($pdo, $endpoint, null, null, null, 200, 1002, 'PROXY_KEY', $started, $payload, $body);
                 return ['status' => 200, 'body' => $body];
             }
             if (!self::verifyCallbackSign($payload, $signAction, $secretKey, $operatorCode)) {
-                $body = ['code' => 1004, 'message' => self::WALLET_CODES[1004]];
-                if ($endpoint !== 'pushbetdata') {
-                    $body['data'] = [];
-                }
+                $body = $errorBody(1004, self::WALLET_CODES[1004]);
                 self::logWallet($pdo, $endpoint, null, null, null, 200, 1004, 'INVALID_SIGN', $started, $payload, $body);
                 return ['status' => 200, 'body' => $body];
             }
@@ -412,10 +432,7 @@ final class GscPlusService
             self::logWallet($pdo, $endpoint, null, null, null, 200, (int) ($body['code'] ?? 0), null, $started, $payload, $body);
             return ['status' => 200, 'body' => $body];
         } catch (Throwable $e) {
-            $body = ['code' => 999, 'message' => 'Internal Server Error'];
-            if ($endpoint !== 'pushbetdata') {
-                $body['data'] = [];
-            }
+            $body = $errorBody(999, 'Internal Server Error');
             error_log('[GSC+] wallet ' . $endpoint . ': ' . $e->getMessage());
             self::logWallet($pdo, $endpoint, null, null, null, 500, 999, 'EXCEPTION', $started, $payload, $body + ['error' => $e->getMessage()]);
             return ['status' => 200, 'body' => $body];
@@ -426,10 +443,10 @@ final class GscPlusService
     {
         $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
         if ($currency === '') {
-            $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'IDR')));
+            $currency = self::configCurrency($cfg);
         }
         if (!self::isSupportedCurrency($currency)) {
-            return self::batchCurrencyError($payload, 'Invalid currency');
+            return self::batchError($payload, 999, 'Invalid currency', false);
         }
 
         $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
@@ -478,10 +495,10 @@ final class GscPlusService
     {
         $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
         if ($currency === '') {
-            $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'IDR')));
+            $currency = self::configCurrency($cfg);
         }
         if (!self::isSupportedCurrency($currency)) {
-            return self::batchCurrencyError($payload, 'Invalid currency');
+            return self::batchError($payload, 999, 'Invalid currency', true);
         }
 
         $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
@@ -492,7 +509,7 @@ final class GscPlusService
             }
             $member = trim((string) ($req['member_account'] ?? ''));
             $productCode = (int) ($req['product_code'] ?? $req['Product_code'] ?? 0);
-            $gameType = (string) ($req['game_type'] ?? '');
+            $gameType = (string) ($req['game_type'] ?? $payload['game_type'] ?? '');
             $transactions = is_array($req['transactions'] ?? null) ? $req['transactions'] : [];
             $user = self::userByMemberAccount($pdo, $member);
             if ($user === null) {
@@ -570,12 +587,14 @@ final class GscPlusService
 
             $batchBefore = round((float) $locked['balance'], 4);
             $balance = $batchBefore;
-            $hadDuplicate = false;
+            $duplicates = 0;
+            $processed = 0;
 
             foreach ($transactions as $tx) {
                 if (!is_array($tx)) {
                     continue;
                 }
+                $processed++;
                 $txnId = trim((string) ($tx['id'] ?? ''));
                 if ($txnId === '') {
                     $pdo->rollBack();
@@ -593,7 +612,7 @@ final class GscPlusService
                 $existing->execute([':id' => $txnId]);
                 $prev = $existing->fetch(PDO::FETCH_ASSOC);
                 if (is_array($prev)) {
-                    $hadDuplicate = true;
+                    $duplicates++;
                     $balance = round((float) ($prev['after_balance'] ?? $balance), 4);
                     continue;
                 }
@@ -696,7 +715,10 @@ final class GscPlusService
             }
 
             $pdo->commit();
-            if ($hadDuplicate && count($transactions) === 1) {
+            // Already-seen ids are skipped rather than replayed. 1003 is only
+            // reported when nothing new was applied, so a mixed batch still
+            // acknowledges the transactions it did process.
+            if ($duplicates > 0 && $duplicates === $processed) {
                 return [
                     'before_balance' => $batchBefore,
                     'balance' => $balance,
@@ -791,7 +813,10 @@ final class GscPlusService
                 $memberMissing = true;
                 continue;
             }
-            $currency = strtoupper(trim((string) ($wager['currency'] ?? $cfg['currency'] ?? 'TRY')));
+            $currency = strtoupper(trim((string) ($wager['currency'] ?? '')));
+            if ($currency === '') {
+                $currency = self::configCurrency($cfg);
+            }
             $pdo->prepare(
                 'INSERT INTO gsc_wagers
                     (member_account, wager_code, wager_status, wager_type, round_id, product_code, game_code,
@@ -943,21 +968,22 @@ final class GscPlusService
         $gameCode = $parsed['game_code'];
         $isLobby = ($gameCode === '' || $gameCode === '_lobby');
 
-        $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'TRY')));
+        $currency = self::configCurrency($cfg);
         $gameRow = null;
         if (!$isLobby) {
+            // support_currency is a provider-side list ("ALL", "IDR,PHP,MYR"), never a
+            // single code, so it must not be matched literally against our currency —
+            // syncGames already folded currency support into is_active.
             $gameStmt = $pdo->prepare(
                 'SELECT * FROM gsc_games
                  WHERE product_code = :p AND game_code = :g AND is_active = 1
-                   AND (support_currency = :c OR support_currency = \'\' OR support_currency IS NULL)
-                 ORDER BY (support_currency = :c2) DESC
+                 ORDER BY (product_currency = :c) DESC, id ASC
                  LIMIT 1'
             );
             $gameStmt->execute([
                 ':p' => $productCode,
                 ':g' => $gameCode,
                 ':c' => $currency,
-                ':c2' => $currency,
             ]);
             $gameRow = $gameStmt->fetch(PDO::FETCH_ASSOC);
             if (!is_array($gameRow)) {
@@ -967,11 +993,17 @@ final class GscPlusService
             if ($status !== '' && !in_array($status, ['ACTIVATED', 'ACTIVAT'], true)) {
                 return ['success' => false, 'code' => 503, 'message' => 'Oyun bakımda veya pasif.'];
             }
+            if (!self::gameSupportsCurrency((string) ($gameRow['support_currency'] ?? ''), $currency)) {
+                return ['success' => false, 'code' => 503, 'message' => 'Oyun bu para birimini desteklemiyor.'];
+            }
         } else {
             $prodStmt = $pdo->prepare(
-                'SELECT * FROM gsc_products WHERE product_code = :p AND is_active = 1 LIMIT 1'
+                'SELECT * FROM gsc_products
+                 WHERE product_code = :p AND is_active = 1
+                 ORDER BY (currency = :c) DESC, id ASC
+                 LIMIT 1'
             );
-            $prodStmt->execute([':p' => $productCode]);
+            $prodStmt->execute([':p' => $productCode, ':c' => $currency]);
             $prod = $prodStmt->fetch(PDO::FETCH_ASSOC);
             if (!is_array($prod)) {
                 return ['success' => false, 'code' => 404, 'message' => 'Ürün bulunamadı veya pasif.'];
@@ -980,7 +1012,15 @@ final class GscPlusService
                 'game_type' => (string) ($prod['game_type'] ?? 'SLOT'),
                 'entry_type' => (int) ($prod['entry_type'] ?? 2),
                 'product_name' => (string) ($prod['product_name'] ?? ''),
+                'product_currency' => (string) ($prod['currency'] ?? ''),
             ];
+        }
+
+        // Products are contracted per currency (available-products returns one row
+        // per currency), so launch-game must send the product's own currency.
+        $productCurrency = strtoupper(trim((string) ($gameRow['product_currency'] ?? '')));
+        if ($productCurrency !== '' && self::isSupportedCurrency($productCurrency)) {
+            $currency = $productCurrency;
         }
 
         $isGuest = !is_array($user) || (int) ($user['id'] ?? 0) <= 0;
@@ -996,15 +1036,7 @@ final class GscPlusService
         $platform = self::resolvePlatform($input);
         $languageCode = (int) ($cfg['language_code'] ?? 0);
         $ip = trim((string) ($input['ip'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'));
-        $lobbyUrl = trim((string) ($cfg['operator_lobby_url'] ?? ''));
-        if ($lobbyUrl === '') {
-            $lobbyUrl = trim((string) ($input['home_url'] ?? ''));
-        }
-        if ($lobbyUrl === '') {
-            $lobbyUrl = defined('SITE_URL') && trim((string) SITE_URL) !== ''
-                ? rtrim((string) SITE_URL, '/')
-                : ('https://' . (string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
-        }
+        $lobbyUrl = self::resolveLobbyUrl($cfg, $input);
 
         $requestTime = (string) time();
         $operatorCode = (string) $cfg['operator_code'];
@@ -1026,6 +1058,18 @@ final class GscPlusService
             'request_time' => (int) $requestTime,
             'operator_lobby_url' => $lobbyUrl,
         ];
+
+        // SABA Sports quick-bet widget (doc 3.1) is only addressed when the caller
+        // asks for the Widget platform.
+        if ($platform === 'Widget') {
+            $widgetId = trim((string) ($input['widget_id'] ?? ''));
+            if ($widgetId !== '') {
+                $body['widget_id'] = $widgetId;
+            }
+            if (array_key_exists('is_widget_login', $input)) {
+                $body['is_widget_login'] = (bool) $input['is_widget_login'];
+            }
+        }
 
         try {
             $response = self::operatorRequest($pdo, 'POST', '/api/operators/launch-game', $body);
@@ -1119,6 +1163,314 @@ final class GscPlusService
         ];
     }
 
+    /**
+     * 3.2 Wager List — settlement-time window, capped at 5 minutes by the provider.
+     *
+     * @param int $startMs Settlement window start (millisecond timestamp).
+     * @param int $endMs   Settlement window end (millisecond timestamp).
+     * @return array{wagers:list<array<string,mixed>>,pagination:array<string,mixed>}
+     */
+    public static function wagerList(PDO $pdo, int $startMs, int $endMs, int $offset = 0, int $size = 5000): array
+    {
+        if ($endMs <= $startMs) {
+            throw new RuntimeException('GSC+ wager list: end, start değerinden büyük olmalı.');
+        }
+        if (($endMs - $startMs) > 5 * 60 * 1000) {
+            throw new RuntimeException('GSC+ wager list: zaman aralığı en fazla 5 dakika olabilir.');
+        }
+
+        $params = [
+            'start' => $startMs,
+            'end' => $endMs,
+            'size' => max(1, min(5000, $size)),
+        ];
+        if ($offset > 0) {
+            $params['offset'] = $offset;
+        }
+        $response = self::signedGet($pdo, '/api/operators/wagers', 'getwagers', $params);
+
+        return [
+            'wagers' => array_values(array_filter(
+                is_array($response['wagers'] ?? null) ? $response['wagers'] : [],
+                'is_array'
+            )),
+            'pagination' => is_array($response['pagination'] ?? null) ? $response['pagination'] : [],
+        ];
+    }
+
+    /**
+     * 3.3 Wager — single bet by numeric id or wager code.
+     *
+     * @return array<string,mixed>
+     */
+    public static function wager(PDO $pdo, string $idOrCode): array
+    {
+        $idOrCode = trim($idOrCode);
+        if ($idOrCode === '') {
+            throw new RuntimeException('GSC+ wager: id veya code zorunlu.');
+        }
+        $response = self::signedGet($pdo, '/api/operators/wagers/' . rawurlencode($idOrCode), 'getwager');
+
+        return is_array($response['wager'] ?? null) ? $response['wager'] : [];
+    }
+
+    /**
+     * 3.5 Game History — returns a URL or, for some providers (PG Soft), raw HTML.
+     *
+     * @return array{content:string}
+     */
+    public static function gameHistory(PDO $pdo, string $wagerCode): array
+    {
+        $wagerCode = trim($wagerCode);
+        if ($wagerCode === '') {
+            throw new RuntimeException('GSC+ game history: wager_code zorunlu.');
+        }
+        $response = self::signedGet(
+            $pdo,
+            '/api/operators/' . rawurlencode($wagerCode) . '/game-history',
+            'gamehistory'
+        );
+
+        return ['content' => (string) ($response['content'] ?? '')];
+    }
+
+    /**
+     * 3.7 Turn on Super Lobby — $type 0 = Super Lobby, 1 = Aurora LIVE.
+     */
+    public static function launchSuperLobby(PDO $pdo, array $user, array $input = [], int $type = 0): string
+    {
+        $cfg = self::activeConfig($pdo);
+        if ((int) ($user['id'] ?? 0) <= 0) {
+            throw new RuntimeException('Super Lobby için giriş yapın.');
+        }
+
+        $requestTime = time();
+        $operatorCode = (string) $cfg['operator_code'];
+        $lobbyUrl = self::resolveLobbyUrl($cfg, $input);
+        $response = self::operatorRequest($pdo, 'POST', '/superlobby/launch', [
+            'operator_code' => $operatorCode,
+            'member_account' => self::memberAccountFromUser($user),
+            'nickname' => trim((string) ($user['username'] ?? '')) ?: ('user_' . (int) $user['id']),
+            'currency' => self::configCurrency($cfg),
+            'language_code' => (int) ($cfg['language_code'] ?? 0),
+            'platform' => self::resolvePlatform($input),
+            'sign' => self::operatorSign((string) $requestTime, (string) $cfg['secret_key'], 'launchsuperlobby', $operatorCode),
+            'request_time' => $requestTime,
+            'type' => $type === 1 ? 1 : 0,
+            'operator_lobby_url' => $lobbyUrl,
+        ]);
+
+        $url = trim((string) ($response['url'] ?? ''));
+        if ($url === '') {
+            throw new RuntimeException(
+                'GSC+ super lobby: ' . (trim((string) ($response['message'] ?? '')) ?: 'URL dönmedi.')
+            );
+        }
+
+        return $url;
+    }
+
+    /**
+     * 3.8 Create Free Round for Player.
+     *
+     * @param list<array{gameId:string,betValues:list<array<string,mixed>>}> $gameList
+     * @return string bonus_code
+     */
+    public static function createFreeRound(
+        PDO $pdo,
+        string $memberAccount,
+        int $productCode,
+        string $gameType,
+        int $rounds,
+        int $startAt,
+        int $endAt,
+        array $gameList
+    ): string {
+        $cfg = self::activeConfig($pdo);
+        if ($gameList === []) {
+            throw new RuntimeException('GSC+ free round: game_list boş olamaz.');
+        }
+        if ($rounds <= 0) {
+            throw new RuntimeException('GSC+ free round: rounds sıfırdan büyük olmalı.');
+        }
+        if ($endAt <= $startAt) {
+            throw new RuntimeException('GSC+ free round: end_at, start_at değerinden büyük olmalı.');
+        }
+
+        $requestTime = time();
+        $operatorCode = (string) $cfg['operator_code'];
+        $response = self::operatorRequest($pdo, 'POST', '/api/operators/create-free-round', [
+            'operator_code' => $operatorCode,
+            'member_account' => substr(trim($memberAccount), 0, 50),
+            'currency' => self::configCurrency($cfg),
+            'product_code' => $productCode,
+            'game_type' => strtoupper(trim($gameType)),
+            'start_at' => $startAt,
+            'end_at' => $endAt,
+            'rounds' => $rounds,
+            'game_list' => $gameList,
+            'sign' => self::operatorSign((string) $requestTime, (string) $cfg['secret_key'], 'createfreeround', $operatorCode),
+            'request_time' => $requestTime,
+            'channel_code' => self::channelCode($cfg),
+        ]);
+
+        $bonusCode = trim((string) ($response['bonus_code'] ?? ''));
+        if ($bonusCode === '') {
+            throw new RuntimeException(
+                'GSC+ create free round: ' . (trim((string) ($response['message'] ?? '')) ?: 'bonus_code dönmedi.')
+            );
+        }
+
+        return $bonusCode;
+    }
+
+    /** 3.9 Cancel Free Round. */
+    public static function cancelFreeRound(PDO $pdo, string $bonusCode, int $productCode, string $gameType): string
+    {
+        $cfg = self::activeConfig($pdo);
+        $bonusCode = trim($bonusCode);
+        if ($bonusCode === '') {
+            throw new RuntimeException('GSC+ cancel free round: bonus_code zorunlu.');
+        }
+
+        $requestTime = time();
+        $operatorCode = (string) $cfg['operator_code'];
+        $response = self::operatorRequest($pdo, 'POST', '/api/operators/cancel-free-round', [
+            'operator_code' => $operatorCode,
+            'currency' => self::configCurrency($cfg),
+            'product_code' => $productCode,
+            'game_type' => strtoupper(trim($gameType)),
+            'bonus_code' => $bonusCode,
+            'sign' => self::operatorSign((string) $requestTime, (string) $cfg['secret_key'], 'cancelfreeround', $operatorCode),
+            'request_time' => $requestTime,
+            'channel_code' => self::channelCode($cfg),
+        ]);
+
+        return trim((string) ($response['bonus_code'] ?? $bonusCode));
+    }
+
+    /**
+     * 3.10 Get Player Free Round Bonus.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function playerFreeRounds(PDO $pdo, string $memberAccount, int $productCode, string $gameType): array
+    {
+        $cfg = self::activeConfig($pdo);
+        $response = self::signedGet($pdo, '/api/operators/get-player-frb', 'getplayersfrb', [
+            'member_account' => substr(trim($memberAccount), 0, 50),
+            'currency' => self::configCurrency($cfg),
+            'product_code' => $productCode,
+            'game_type' => strtoupper(trim($gameType)),
+            'channel_code' => self::channelCode($cfg),
+        ]);
+
+        return array_values(array_filter(
+            is_array($response['bonuses'] ?? null) ? $response['bonuses'] : [],
+            'is_array'
+        ));
+    }
+
+    /**
+     * 3.11 Get Game Bet Scales — bet steps per game and currency.
+     *
+     * @param list<string> $gameIds Max 50 game ids.
+     * @return list<array<string,mixed>>
+     */
+    public static function gameBetScales(PDO $pdo, array $gameIds, int $productCode, string $gameType): array
+    {
+        $cfg = self::activeConfig($pdo);
+        $gameIds = array_values(array_filter(array_map(
+            static fn (mixed $id): string => trim((string) $id),
+            $gameIds
+        ), static fn (string $id): bool => $id !== ''));
+        if ($gameIds === []) {
+            throw new RuntimeException('GSC+ bet scales: bet_game_list boş olamaz.');
+        }
+        if (count($gameIds) > 50) {
+            throw new RuntimeException('GSC+ bet scales: en fazla 50 oyun sorgulanabilir.');
+        }
+
+        $response = self::signedGet($pdo, '/api/operators/get-bet-scales', 'getbetscales', [
+            'currency' => self::configCurrency($cfg),
+            'product_code' => $productCode,
+            'game_type' => strtoupper(trim($gameType)),
+            'bet_game_list' => implode(',', $gameIds),
+            'channel_code' => self::channelCode($cfg),
+        ]);
+
+        return array_values(array_filter(
+            is_array($response['betScales'] ?? null) ? $response['betScales'] : [],
+            'is_array'
+        ));
+    }
+
+    /**
+     * 3.13 Auto Deposit — agent wallet top-up URL, valid for 900 seconds.
+     * Must be enabled by GSC+ before use.
+     */
+    public static function autoDepositOrder(PDO $pdo, float $amount, string $paymentCurrency = 'USDT'): string
+    {
+        $cfg = self::activeConfig($pdo);
+        if ($amount <= 0) {
+            throw new RuntimeException('GSC+ auto deposit: amount sıfırdan büyük olmalı.');
+        }
+
+        $requestTime = (string) time();
+        $operatorCode = (string) $cfg['operator_code'];
+        $response = self::operatorRequest($pdo, 'POST', '/api/operators/recharge/order', [
+            'operator_code' => $operatorCode,
+            'payment_currency' => strtoupper(trim($paymentCurrency)),
+            'deposit_currency' => self::configCurrency($cfg),
+            'amount' => $amount,
+            'request_time' => $requestTime,
+            'sign' => self::operatorSign($requestTime, (string) $cfg['secret_key'], 'autodeposit', $operatorCode),
+        ]);
+
+        $url = trim((string) ($response['url'] ?? ''));
+        if ($url === '') {
+            throw new RuntimeException(
+                'GSC+ auto deposit: ' . (trim((string) ($response['message'] ?? '')) ?: 'URL dönmedi.')
+            );
+        }
+
+        return $url;
+    }
+
+    /**
+     * Signed GET against the operator API. operator_code/sign/request_time are
+     * always appended, per the shared signature scheme in section 3.
+     *
+     * @param array<string,mixed> $params
+     * @return array<string,mixed>
+     */
+    private static function signedGet(PDO $pdo, string $path, string $action, array $params = []): array
+    {
+        $cfg = self::activeConfig($pdo);
+        $requestTime = (string) time();
+        $operatorCode = (string) $cfg['operator_code'];
+        $query = http_build_query($params + [
+            'operator_code' => $operatorCode,
+            'sign' => self::operatorSign($requestTime, (string) $cfg['secret_key'], $action, $operatorCode),
+            'request_time' => $requestTime,
+        ]);
+        $response = self::operatorRequest($pdo, 'GET', $path . '?' . $query);
+
+        $code = (int) ($response['code'] ?? 0);
+        if ($code !== 0 && $code !== 200) {
+            throw new RuntimeException(
+                'GSC+ ' . $action . ': ' . (trim((string) ($response['message'] ?? '')) ?: ('code ' . $code))
+            );
+        }
+
+        return $response;
+    }
+
+    private static function channelCode(array $cfg): string
+    {
+        return trim((string) ($cfg['channel_code'] ?? '')) ?: 'gscp';
+    }
+
     /** @return array{count:int} */
     public static function syncProducts(PDO $pdo): array
     {
@@ -1137,6 +1489,7 @@ final class GscPlusService
             $list = $response;
         }
 
+        $operatorCurrency = self::configCurrency($cfg);
         $count = 0;
         $now = date('Y-m-d H:i:s');
         foreach ($list as $item) {
@@ -1147,8 +1500,16 @@ final class GscPlusService
             if ($productCode <= 0) {
                 continue;
             }
-            $currency = strtoupper(trim((string) ($item['currency'] ?? $cfg['currency'] ?? '')));
+            $currency = strtoupper(trim((string) ($item['currency'] ?? '')));
+            if ($currency === '') {
+                $currency = $operatorCurrency;
+            }
             $status = strtoupper(trim((string) ($item['status'] ?? '')));
+            // Each product is contracted in exactly one currency; a product bought in
+            // CNY/VND cannot be launched from an IDR agent wallet, so only the rows
+            // matching the operator currency belong in the lobby.
+            $isActive = in_array($status, ['ACTIVATED', ''], true)
+                && strcasecmp($currency, $operatorCurrency) === 0;
             $pdo->prepare(
                 'INSERT INTO gsc_products
                     (product_code, product_id, provider_id, provider, product_name, game_type, currency, status,
@@ -1176,7 +1537,7 @@ final class GscPlusService
                 ':cur' => $currency,
                 ':status' => $status,
                 ':entry' => (int) ($item['entry_type'] ?? 1),
-                ':active' => in_array($status, ['ACTIVATED', ''], true) ? 1 : 0,
+                ':active' => $isActive ? 1 : 0,
                 ':raw' => json_encode($item, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ':synced' => $now,
             ]);
@@ -1214,10 +1575,15 @@ final class GscPlusService
             $errors[] = 'live products: ' . $e->getMessage();
         }
 
+        // available-products lists a product once per game type, so the same code can
+        // appear twice (1006 = LIVE_CASINO + LIVE_CASINO_PREMIUM); syncGames covers
+        // every game type of a code in one call.
+        $liveProducts = array_values(array_unique(array_map('intval', $liveProducts)));
+
         $games = 0;
         $startedAt = date('Y-m-d H:i:s');
         $syncedProducts = 0;
-        foreach (array_unique(array_map('intval', $liveProducts)) as $productCode) {
+        foreach ($liveProducts as $productCode) {
             if ($productCode <= 0) {
                 continue;
             }
@@ -1286,8 +1652,12 @@ final class GscPlusService
             return true;
         }
         $currency = strtoupper(trim($currency));
+        // A scaled contract (IDR2) is the same provider currency as its base (IDR),
+        // which is how game lists spell it.
+        $base = self::providerBaseCurrency($currency);
         foreach (explode(',', $supportCurrency) as $candidate) {
-            if (trim($candidate) === $currency) {
+            $candidate = trim($candidate);
+            if ($candidate === $currency || $candidate === $base) {
                 return true;
             }
         }
@@ -1298,31 +1668,34 @@ final class GscPlusService
     public static function syncGames(PDO $pdo, ?int $onlyProductCode = null): array
     {
         $cfg = self::activeConfig($pdo);
-        $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'TRY')));
+        $operatorCurrency = self::configCurrency($cfg);
+        $columns = 'product_code, game_type, entry_type, provider, product_name, currency';
 
         if ($onlyProductCode !== null && $onlyProductCode > 0) {
-            // Prefer the synced product row so provider/product_name/entry_type stay accurate.
+            // Prefer the synced product rows so provider/product_name/entry_type stay
+            // accurate. A product code can carry several game types (1006 is listed as
+            // both LIVE_CASINO and LIVE_CASINO_PREMIUM) and each has its own game list.
             $stmt = $pdo->prepare(
-                'SELECT product_code, game_type, entry_type, provider, product_name
-                 FROM gsc_products WHERE product_code = :pc LIMIT 1'
+                "SELECT {$columns} FROM gsc_products WHERE product_code = :pc AND is_active = 1"
             );
             $stmt->execute([':pc' => $onlyProductCode]);
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            $products = is_array($row)
-                ? [$row]
-                : [['product_code' => $onlyProductCode, 'game_type' => '', 'entry_type' => 1, 'provider' => '', 'product_name' => '']];
+            $products = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            if ($products === []) {
+                $products = [[
+                    'product_code' => $onlyProductCode,
+                    'game_type' => '',
+                    'entry_type' => 1,
+                    'provider' => '',
+                    'product_name' => '',
+                    'currency' => $operatorCurrency,
+                ]];
+            }
         } else {
-            $prodStmt = $pdo->query(
-                'SELECT product_code, game_type, entry_type, provider, product_name
-                 FROM gsc_products WHERE is_active = 1'
-            );
+            $prodStmt = $pdo->query("SELECT {$columns} FROM gsc_products WHERE is_active = 1");
             $products = $prodStmt ? $prodStmt->fetchAll(PDO::FETCH_ASSOC) : [];
             if ($products === []) {
                 self::syncProducts($pdo);
-                $prodStmt = $pdo->query(
-                    'SELECT product_code, game_type, entry_type, provider, product_name
-                     FROM gsc_products WHERE is_active = 1'
-                );
+                $prodStmt = $pdo->query("SELECT {$columns} FROM gsc_products WHERE is_active = 1");
                 $products = $prodStmt ? $prodStmt->fetchAll(PDO::FETCH_ASSOC) : [];
             }
         }
@@ -1335,6 +1708,7 @@ final class GscPlusService
                 continue;
             }
             $gameType = strtoupper(trim((string) ($product['game_type'] ?? '')));
+            $currency = strtoupper(trim((string) ($product['currency'] ?? ''))) ?: $operatorCurrency;
             $requestTime = (string) time();
             $operatorCode = (string) $cfg['operator_code'];
             $sign = self::operatorSign($requestTime, (string) $cfg['secret_key'], 'gamelist', $operatorCode);
@@ -1376,16 +1750,17 @@ final class GscPlusService
                 }
                 $pdo->prepare(
                     'INSERT INTO gsc_games
-                        (product_code, game_code, game_name, game_type, image_url, support_currency, status,
-                         allow_free_round, entry_type, provider, product_name, lang_name, lang_icon,
-                         provider_created_at, raw_payload, is_active, synced_at)
+                        (product_code, game_code, game_name, game_type, image_url, support_currency,
+                         product_currency, status, allow_free_round, entry_type, provider, product_name,
+                         lang_name, lang_icon, provider_created_at, raw_payload, is_active, synced_at)
                      VALUES
-                        (:pc, :gc, :gn, :gt, :img, :cur, :status, :fr, :entry, :provider, :pname,
+                        (:pc, :gc, :gn, :gt, :img, :cur, :pcur, :status, :fr, :entry, :provider, :pname,
                          :lname, :licon, :created, :raw, :active, :synced)
                      ON DUPLICATE KEY UPDATE
                         game_name = VALUES(game_name),
                         game_type = VALUES(game_type),
                         image_url = VALUES(image_url),
+                        product_currency = VALUES(product_currency),
                         status = VALUES(status),
                         allow_free_round = VALUES(allow_free_round),
                         entry_type = VALUES(entry_type),
@@ -1403,7 +1778,8 @@ final class GscPlusService
                     ':gn' => trim((string) ($game['game_name'] ?? $code)),
                     ':gt' => strtoupper(trim((string) ($game['game_type'] ?? $gameType))),
                     ':img' => trim((string) ($game['image_url'] ?? '')) ?: null,
-                    ':cur' => $supportCurrency,
+                    ':cur' => substr($supportCurrency, 0, 64),
+                    ':pcur' => $currency,
                     ':status' => $status,
                     ':fr' => !empty($game['allow_free_round']) ? 1 : 0,
                     ':entry' => (int) ($product['entry_type'] ?? 1),
@@ -1423,13 +1799,14 @@ final class GscPlusService
             if ((int) ($product['entry_type'] ?? 1) === 2) {
                 $pdo->prepare(
                     'INSERT INTO gsc_games
-                        (product_code, game_code, game_name, game_type, support_currency, status,
-                         entry_type, provider, product_name, is_active, synced_at)
+                        (product_code, game_code, game_name, game_type, support_currency, product_currency,
+                         status, entry_type, provider, product_name, is_active, synced_at)
                      VALUES
-                        (:pc, \'_lobby\', :gn, :gt, :cur, \'ACTIVATED\', 2, :provider, :pname, 1, :synced)
+                        (:pc, \'_lobby\', :gn, :gt, :cur, :pcur, \'ACTIVATED\', 2, :provider, :pname, 1, :synced)
                      ON DUPLICATE KEY UPDATE
                         game_name = VALUES(game_name),
                         game_type = VALUES(game_type),
+                        product_currency = VALUES(product_currency),
                         is_active = 1,
                         synced_at = VALUES(synced_at)'
                 )->execute([
@@ -1437,6 +1814,7 @@ final class GscPlusService
                     ':gn' => trim((string) ($product['product_name'] ?? ('Product ' . $productCode))) . ' Lobby',
                     ':gt' => $gameType !== '' ? $gameType : 'SLOT',
                     ':cur' => $currency,
+                    ':pcur' => $currency,
                     ':provider' => trim((string) ($product['provider'] ?? '')),
                     ':pname' => trim((string) ($product['product_name'] ?? '')),
                     ':synced' => $now,
@@ -1460,6 +1838,22 @@ final class GscPlusService
         return substr('u' . (int) ($user['id'] ?? 0), 0, 50);
     }
 
+    /** Client site URL required by launch-game and superlobby/launch. */
+    private static function resolveLobbyUrl(array $cfg, array $input): string
+    {
+        $lobbyUrl = trim((string) ($cfg['operator_lobby_url'] ?? ''));
+        if ($lobbyUrl === '') {
+            $lobbyUrl = trim((string) ($input['home_url'] ?? ''));
+        }
+        if ($lobbyUrl === '') {
+            $lobbyUrl = defined('SITE_URL') && trim((string) SITE_URL) !== ''
+                ? rtrim((string) SITE_URL, '/')
+                : ('https://' . (string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+        }
+
+        return $lobbyUrl;
+    }
+
     private static function memberPassword(array $cfg, array $user): string
     {
         $seed = (string) ($cfg['secret_key'] ?? '') . '|' . (int) ($user['id'] ?? 0) . '|' . (string) ($user['username'] ?? '');
@@ -1469,8 +1863,12 @@ final class GscPlusService
     private static function resolvePlatform(array $input): string
     {
         $platform = strtoupper(trim((string) ($input['platform'] ?? '')));
-        if (in_array($platform, ['WEB', 'DESKTOP', 'MOBILE', 'WIDGET'], true)) {
+        if (in_array($platform, ['WEB', 'DESKTOP', 'MOBILE'], true)) {
             return $platform;
+        }
+        // The documented enum is WEB, DESKTOP, MOBILE and "Widget" (mixed case).
+        if ($platform === 'WIDGET') {
+            return 'Widget';
         }
         $channel = strtolower(trim((string) ($input['channel'] ?? '')));
         if ($channel === 'mobile') {
