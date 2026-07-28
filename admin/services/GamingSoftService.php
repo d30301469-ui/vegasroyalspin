@@ -235,8 +235,13 @@ final class GamingSoftService
 
         return $t === 'LIVE_CASINO'
             || $t === 'LIVE_CASINO_PREMIUM'
+            || $t === 'LC'
+            || $t === 'LIVE'
+            || $t === 'LIVE CASINO'
+            || $t === 'LIVE-CASINO'
             || str_starts_with($t, 'LIVE_CASINO')
-            || str_contains($t, 'LIVE_CASINO');
+            || str_contains($t, 'LIVE_CASINO')
+            || str_contains($t, 'LIVE CASINO');
     }
 
     // ─── Operator outbound ───────────────────────────────────────────

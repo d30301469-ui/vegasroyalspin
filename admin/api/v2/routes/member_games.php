@@ -182,19 +182,22 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
 
     // IMPORTANT: Serve from local DB only. Never call SlotGamesQuery here —
     // that class HTTP-calls this same games.php endpoint and recurses until 503.
-    $union = [];
+    //
+    // Also: never UNION branches that mix JSON columns (raw_payload / image_fallbacks)
+    // with VARCHAR literals — MySQL rejects the mix and the old catch{} returned an empty list.
+    $branches = [];
     if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
-        $union[] = "SELECT
+        $branches[] = "SELECT
                 CONCAT('bgaming:', identifier) AS game_id,
                 title AS name,
                 provider AS provider,
                 provider AS provider_code,
                 COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
-                '' AS image_fallbacks,
+                CAST('' AS CHAR) AS image_fallbacks,
                 is_featured AS is_featured,
                 'bgaming' AS source,
                 CAST(id AS CHAR) AS row_id,
-                '' AS raw_payload
+                CAST('' AS CHAR) AS raw_payload
             FROM bgaming_games
             WHERE is_active = 1";
     }
@@ -213,17 +216,17 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
         } else {
             $typeClause = "(g.game_type = {$aggGameType} AND NOT {$liveMatch})";
         }
-        $union[] = "SELECT
+        $branches[] = "SELECT
                 CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
                 g.game_name AS name,
                 COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
                 g.vendor_code AS provider_code,
                 COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                COALESCE(g.image_fallbacks, '') AS image_fallbacks,
+                CAST('' AS CHAR) AS image_fallbacks,
                 g.is_featured AS is_featured,
                 'aggregator' AS source,
                 CAST(g.id AS CHAR) AS row_id,
-                COALESCE(g.raw_payload, '') AS raw_payload
+                CAST('' AS CHAR) AS raw_payload
             FROM casino_aggregator_games g
             INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
             WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
@@ -231,30 +234,31 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     if ($source === '' || $source === 'gamingsoft') {
         admin_require_project_file('services/GamingSoftService.php');
         $gsTypeExpr = "CASE
-            WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+            WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM','LC','LIVE','LIVE CASINO','LIVE-CASINO')
               OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
               OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
+              OR UPPER(TRIM(g.game_type)) LIKE '%LIVE CASINO%'
             THEN 2 ELSE 1 END";
         $gsTypeClause = $gameType === 1
             ? "({$gsTypeExpr}) = 2"
             : "({$gsTypeExpr}) = 1";
-        $union[] = "SELECT
+        $branches[] = "SELECT
                 CONCAT('gamingsoft:', g.product_code, ':', g.game_code) AS game_id,
                 g.game_name AS name,
                 COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
                 CAST(g.product_code AS CHAR) AS provider_code,
                 COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                '' AS image_fallbacks,
+                CAST('' AS CHAR) AS image_fallbacks,
                 g.is_featured AS is_featured,
                 'gamingsoft' AS source,
                 CAST(g.id AS CHAR) AS row_id,
-                COALESCE(g.raw_payload, '') AS raw_payload
+                CAST('' AS CHAR) AS raw_payload
             FROM gamingsoft_games g
             LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
             WHERE g.is_active = 1 AND {$gsTypeClause}";
     }
 
-    if ($union === []) {
+    if ($branches === []) {
         $memberEnvelope(200, [
             'success' => true,
             'code'    => 200,
@@ -281,7 +285,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
         ]);
     }
 
-    $unionSql = '(' . implode(' UNION ALL ', $union) . ') AS catalog';
+    $unionSql = '(' . implode(' UNION ALL ', $branches) . ') AS catalog';
 
     $where  = [];
     $params = [];
@@ -364,8 +368,9 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 'source'        => (string) ($r['source'] ?? ''),
             ];
         }
-    } catch (Throwable) {}
-
+    } catch (Throwable $e) {
+        error_log('member_games catalogue union error: ' . $e->getMessage());
+    }
     $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
     $memberEnvelope(200, [
         'success' => true,

@@ -506,11 +506,11 @@ final class SlotGamesQuery
                     provider AS provider,
                     provider AS provider_code,
                     COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
-                    '' AS image_fallbacks,
+                    CAST('' AS CHAR) AS image_fallbacks,
                     is_featured AS is_featured,
                     'bgaming' AS source,
                     CAST(id AS CHAR) AS row_id,
-                    '' AS raw_payload
+                    CAST('' AS CHAR) AS raw_payload
                 FROM bgaming_games
                 WHERE is_active = 1";
         }
@@ -542,11 +542,11 @@ final class SlotGamesQuery
                     COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
                     g.vendor_code AS provider_code,
                     COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                    COALESCE(g.image_fallbacks, '') AS image_fallbacks,
+                    CAST('' AS CHAR) AS image_fallbacks,
                     g.is_featured AS is_featured,
                     'aggregator' AS source,
                     CAST(g.id AS CHAR) AS row_id,
-                    COALESCE(g.raw_payload, '') AS raw_payload
+                    CAST('' AS CHAR) AS raw_payload
                 FROM casino_aggregator_games g
                 INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
                 WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
@@ -561,9 +561,10 @@ final class SlotGamesQuery
                 }
             }
             $gsTypeExpr = "CASE
-                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM','LC','LIVE','LIVE CASINO','LIVE-CASINO')
                   OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
                   OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
+                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE CASINO%'
                 THEN 2 ELSE 1 END";
             $gsTypeClause = $gameType === 1
                 ? "({$gsTypeExpr}) = 2"
@@ -574,11 +575,11 @@ final class SlotGamesQuery
                     COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
                     CAST(g.product_code AS CHAR) AS provider_code,
                     COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                    '' AS image_fallbacks,
+                    CAST('' AS CHAR) AS image_fallbacks,
                     g.is_featured AS is_featured,
                     'gamingsoft' AS source,
                     CAST(g.id AS CHAR) AS row_id,
-                    COALESCE(g.raw_payload, '') AS raw_payload
+                    CAST('' AS CHAR) AS raw_payload
                 FROM gamingsoft_games g
                 LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
                 WHERE g.is_active = 1 AND {$gsTypeClause}";
