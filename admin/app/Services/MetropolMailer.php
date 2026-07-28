@@ -510,54 +510,67 @@ if (!function_exists('metropol_mail_render_template')) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="x-apple-disable-message-reformatting">
 <title>' . $safeCompany . ' — Şifre Sıfırlama</title>
+<style type="text/css">
+@media only screen and (max-width:620px){
+  .vrs-wrap{padding:16px 10px !important;}
+  .vrs-card{width:100% !important;max-width:100% !important;border-radius:14px !important;}
+  .vrs-pad{padding-left:18px !important;padding-right:18px !important;}
+  .vrs-title{font-size:22px !important;line-height:1.3 !important;}
+  .vrs-brand{font-size:22px !important;}
+  .vrs-btn{display:block !important;width:100% !important;box-sizing:border-box !important;text-align:center !important;padding:16px 18px !important;}
+  .vrs-btn-td{width:100% !important;}
+}
+</style>
 </head>
-<body style="margin:0;padding:0;background-color:#0a0719;">
+<body style="margin:0;padding:0;background-color:#0a0719;-webkit-text-size-adjust:100%;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">' . $safePreheader . '</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a0719;background-image:linear-gradient(180deg,#0a0719 0%,#000b24 100%);padding:40px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="vrs-wrap" style="background-color:#0a0719;padding:28px 14px;">
 <tr>
 <td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:linear-gradient(160deg,#1b0c49 0%,#0b0b24 55%,#09123f 100%);border-radius:18px;overflow:hidden;border:1px solid rgba(236,70,170,.35);box-shadow:0 18px 50px rgba(0,0,0,.45);">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="vrs-card" style="max-width:560px;width:100%;background-color:#12082f;border-radius:18px;overflow:hidden;border:1px solid #6b2a78;">
     <tr>
-        <td style="height:4px;background:linear-gradient(90deg,#850f83 0%,#ec46aa 50%,#9e13a0 100%);font-size:0;line-height:0;">&nbsp;</td>
+        <td style="height:4px;background-color:#850f83;font-size:0;line-height:0;">&nbsp;</td>
     </tr>
     <tr>
-        <td align="center" style="padding:36px 28px 18px 28px;">
+        <td align="center" class="vrs-pad" style="padding:28px 22px 14px 22px;">
             ' . $logoHtml . '
-            <div style="margin-top:16px;font-family:Arial,Helvetica,sans-serif;font-size:26px;line-height:1.2;color:#ffffff;font-weight:800;letter-spacing:.02em;">' . $safeCompany . '</div>
-            <div style="margin-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#b39dcc;">Güvenli hesap erişimi</div>
+            <div class="vrs-brand" style="margin-top:14px;font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:1.25;color:#ffffff;font-weight:800;">' . $safeCompany . '</div>
+            <div style="margin-top:6px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#c9b3e6;">Güvenli hesap erişimi</div>
         </td>
     </tr>
     <tr>
-        <td style="padding:8px 28px 0 28px;font-family:Arial,Helvetica,sans-serif;">
-            <h1 style="margin:0 0 18px 0;font-size:28px;line-height:1.25;color:#ffffff;font-weight:800;">' . $safeHeading . '</h1>
-            <div style="font-size:16px;line-height:1.7;color:#d7c6ef;">' . $bodyHtml . '</div>
+        <td class="vrs-pad" style="padding:10px 22px 0 22px;font-family:Arial,Helvetica,sans-serif;">
+            <p style="margin:0 0 10px 0;font-size:13px;letter-spacing:.03em;text-transform:uppercase;color:#c44bb8;font-weight:700;">Merhaba ' . $safeMember . '</p>
+            <h1 class="vrs-title" style="margin:0 0 14px 0;font-size:26px;line-height:1.3;color:#ffffff;font-weight:800;">' . $safeHeading . '</h1>
+            <div style="font-size:15px;line-height:1.7;color:#dcccf3;">' . $bodyHtml . '</div>
         </td>
     </tr>
     <tr>
-        <td align="center" style="padding:28px 28px 12px 28px;">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <td align="center" class="vrs-pad" style="padding:24px 22px 10px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                    <td align="center" style="border-radius:10px;background:linear-gradient(135deg,#850f83 0%,#9e13a0 55%,#ec46aa 100%);">
-                        <a href="' . $safeCtaUrl . '" target="_blank" style="display:inline-block;padding:16px 36px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">' . $safeCtaLabel . '</a>
+                    <td align="center" class="vrs-btn-td" bgcolor="#850f83" style="border-radius:12px;background-color:#850f83;">
+                        <a class="vrs-btn" href="' . $safeCtaUrl . '" target="_blank" style="display:inline-block;padding:15px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.2;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;background-color:#850f83;">' . $safeCtaLabel . '</a>
                     </td>
                 </tr>
             </table>
         </td>
     </tr>
     <tr>
-        <td style="padding:20px 28px 32px 28px;font-family:Arial,Helvetica,sans-serif;">
-            <p style="margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#b39dcc;">Sorunuz olursa bu e-postaya yanıt verin veya <a href="mailto:' . $safeSupport . '" style="color:#ec46aa;text-decoration:underline;">destek ekibimize</a> yazın.</p>
-            <p style="margin:0 0 18px 0;font-size:14px;line-height:1.7;color:#d7c6ef;">Saygılarımızla,<br><strong style="color:#ffffff;">' . $safeCompany . ' Ekibi</strong></p>
-            <hr style="border:none;border-top:1px solid rgba(236,70,170,.22);margin:22px 0;">
-            <p style="margin:0 0 8px 0;font-size:12px;line-height:1.6;color:#8f7aa8;">Buton çalışmazsa bağlantıyı tarayıcınıza yapıştırın:</p>
-            <p style="margin:0;font-size:12px;line-height:1.6;color:#b39dcc;word-break:break-all;">' . $safeCtaUrl . '</p>
+        <td class="vrs-pad" style="padding:18px 22px 28px 22px;font-family:Arial,Helvetica,sans-serif;">
+            <p style="margin:0 0 12px 0;font-size:13px;line-height:1.7;color:#b9a3d6;">Sorunuz olursa bu e-postaya yanıt verin veya <a href="mailto:' . $safeSupport . '" style="color:#c44bb8;text-decoration:underline;">destek ekibimize</a> yazın.</p>
+            <p style="margin:0 0 16px 0;font-size:13px;line-height:1.7;color:#dcccf3;">Saygılarımızla,<br><strong style="color:#ffffff;">' . $safeCompany . ' Ekibi</strong></p>
+            <hr style="border:none;border-top:1px solid #4a2a63;margin:18px 0;">
+            <p style="margin:0 0 6px 0;font-size:12px;line-height:1.6;color:#9b86b8;">Buton çalışmazsa bağlantıyı tarayıcınıza yapıştırın:</p>
+            <p style="margin:0;font-size:12px;line-height:1.6;color:#b9a3d6;word-break:break-all;">' . $safeCtaUrl . '</p>
         </td>
     </tr>
     <tr>
-        <td align="center" style="padding:18px 24px 28px 24px;background:rgba(0,0,0,.28);">
-            <p style="margin:0 0 8px 0;font-size:12px;line-height:1.6;color:#8f7aa8;font-family:Arial,Helvetica,sans-serif;">&copy; ' . $year . ' ' . $safeCompany . '. Tüm hakları saklıdır.</p>
-            <p style="margin:0;font-size:12px;line-height:1.6;color:#8f7aa8;font-family:Arial,Helvetica,sans-serif;">' . $addressHtml . '</p>
+        <td align="center" style="padding:16px 18px 22px 18px;background-color:#0a0618;">
+            <p style="margin:0 0 6px 0;font-size:11px;line-height:1.6;color:#8f7aa8;font-family:Arial,Helvetica,sans-serif;">&copy; ' . $year . ' ' . $safeCompany . '. Tüm hakları saklıdır.</p>
+            <p style="margin:0;font-size:11px;line-height:1.6;color:#8f7aa8;font-family:Arial,Helvetica,sans-serif;">' . $addressHtml . '</p>
         </td>
     </tr>
 </table>

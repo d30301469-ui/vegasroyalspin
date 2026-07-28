@@ -289,16 +289,18 @@ if (!function_exists('memberSendResetMail')) {
 
                 $safeName = htmlspecialchars($memberName, ENT_QUOTES, 'UTF-8');
                 $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
-                $bodyHtml = '<p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:#d7c6ef;">'
+                $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
                     . $safeCompany . ' hesabınız için şifre sıfırlama talebi alındı. '
                     . 'Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.'
                     . '</p>'
-                    . '<p style="margin:0;font-size:14px;line-height:1.7;color:#b39dcc;">'
-                    . '<strong style="color:#ec46aa;">Bu bağlantı 1 saat geçerlidir.</strong> '
+                    . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
+                    . '<strong style="color:#c44bb8;">Bu bağlantı 1 saat geçerlidir.</strong> '
                     . 'Talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.'
                     . '</p>';
-                // safeName body icinde de gorunsun (ozel sablon BODY_HTML kullanirsa)
-                $bodyHtml = '<p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;color:#d7c6ef;">Merhaba <strong style="color:#ffffff;">' . $safeName . '</strong>,</p>' . $bodyHtml;
+                // Isim soyisim sablonda {{MEMBER_NAME}} / ust satirdan gelir; body icine de yedek olarak eklenir.
+                if (stripos($customHtml, '{{MEMBER_NAME}}') === false) {
+                    $bodyHtml = '<p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#dcccf3;">Merhaba <strong style="color:#ffffff;">' . $safeName . '</strong>,</p>' . $bodyHtml;
+                }
                 $htmlBody = metropol_mail_render_template(
                     $siteUrl,
                     $companyName . ' şifre sıfırlama bağlantınız hazır',
