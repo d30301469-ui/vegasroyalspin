@@ -47,6 +47,14 @@ final class GamingSoftService
     public const STAGING_API_BASE_URL = 'https://staging.gsimw.com';
     public const STAGING_SITE_ENDPOINT = 'https://admin.vegasroyalspin.com';
     public const STAGING_CURRENCY = 'IDR';
+    /**
+     * VGY1 staging: Pragmatic/Efinity GameLaunch returns Un-Authorized even with
+     * valid seamless balance — hide from live lobby until GSC+ enables the bridge.
+     * SA Gaming (1185) and Astar (1220) work.
+     *
+     * @var list<int>
+     */
+    public const STAGING_BLOCKED_LIVE_PRODUCTS = [1006];
     /** Site member wallet currency (display/deposit currency). */
     public const SITE_WALLET_CURRENCY = 'TRY';
     /** Default TRY→IDR multiplier for VGY1 staging when site wallet is TRY but GSC+ game wallet is IDR. */
@@ -2006,14 +2014,19 @@ final class GamingSoftService
             }
         };
 
-        $add($productType);
+        // Game row game_type is authoritative (e.g. 303 → LIVE_CASINO_PREMIUM).
         $add($primaryType);
-        $add(self::normalizeProviderGameType($productType));
+        $add($productType);
         $add(self::normalizeProviderGameType($primaryType));
+        $add(self::normalizeProviderGameType($productType));
 
         if (self::isLiveGameType($primaryType) || self::isLiveGameType($productType)) {
-            foreach (['LIVE_CASINO', 'LIVE_CASINO_PREMIUM', 'LC', 'LIVE'] as $liveType) {
-                $add($liveType);
+            if (str_contains($primaryType, 'PREMIUM') || str_contains($productType, 'PREMIUM')) {
+                $add('LIVE_CASINO_PREMIUM');
+                $add('LIVE_CASINO');
+            } else {
+                $add('LIVE_CASINO');
+                $add('LIVE_CASINO_PREMIUM');
             }
         }
 
@@ -2389,6 +2402,10 @@ final class GamingSoftService
     /**
      * Detect broken Pragmatic/Efinity sessions (GSC returns URL but provider rejects).
      * Returns Turkish error message, or null when OK / not applicable.
+     *
+     * Verified against GSC+ staging VGY1: SA Gaming + Astar launch OK; Pragmatic/Efinity
+     * GameLaunch returns Un-Authorized even when seamless getBalance is code=0 and
+     * agent IDR float covers the player balance — this is provider-side provisioning.
      */
     private static function probeProviderLaunchSession(string $launchUrl): ?string
     {
@@ -2398,19 +2415,36 @@ final class GamingSoftService
         }
 
         try {
+            $jar = tempnam(sys_get_temp_dir(), 'gsck');
+            if ($jar === false) {
+                $jar = '';
+            }
+
             $ch = curl_init($launchUrl);
-            curl_setopt_array($ch, [
+            $opts = [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_TIMEOUT        => 12,
                 CURLOPT_CONNECTTIMEOUT => 6,
                 CURLOPT_USERAGENT      => 'Mozilla/5.0',
                 CURLOPT_SSL_VERIFYPEER => true,
-            ]);
+                CURLOPT_HEADER         => true,
+            ];
+            if ($jar !== '') {
+                $opts[CURLOPT_COOKIEJAR] = $jar;
+                $opts[CURLOPT_COOKIEFILE] = $jar;
+            }
+            curl_setopt_array($ch, $opts);
             self::applyCaInfo($ch);
-            $html = (string) curl_exec($ch);
+            $raw = (string) curl_exec($ch);
+            $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
             curl_close($ch);
+            $html = substr($raw, $headerSize);
             if ($html === '') {
+                if ($jar !== '') {
+                    @unlink($jar);
+                }
+
                 return null;
             }
 
@@ -2420,69 +2454,42 @@ final class GamingSoftService
                 $componentLaunchUrl = is_string($decoded) ? $decoded : stripcslashes($m[1]);
             }
 
-            $ssid = '';
-            if (preg_match('/[?&]ssid=([^&]+)/i', $launchUrl, $m) === 1) {
-                $ssid = urldecode($m[1]);
-            } elseif (preg_match('/ssid:"([^"]+)"/', $html, $m) === 1) {
-                $ssid = $m[1];
+            if ($componentLaunchUrl === '') {
+                if ($jar !== '') {
+                    @unlink($jar);
+                }
+
+                return null;
             }
 
-            if ($ssid !== '') {
-                $sessionRaw = '';
-                $session = null;
-                for ($attempt = 0; $attempt < 2; $attempt++) {
-                    if ($attempt > 0) {
-                        usleep(1500000);
-                    }
-                    $ch2 = curl_init('https://efinity.prerelease-env.biz/gs2c/SingleSessionAPI/data');
-                    curl_setopt_array($ch2, [
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_POST           => true,
-                        CURLOPT_TIMEOUT        => 10,
-                        CURLOPT_CONNECTTIMEOUT => 5,
-                        CURLOPT_HTTPHEADER     => [
-                            'Content-Type: application/x-www-form-urlencoded',
-                            'Referer: ' . $launchUrl,
-                        ],
-                        CURLOPT_POSTFIELDS     => http_build_query(['ssid' => $ssid]),
-                        CURLOPT_SSL_VERIFYPEER => true,
-                    ]);
-                    self::applyCaInfo($ch2);
-                    $sessionRaw = (string) curl_exec($ch2);
-                    curl_close($ch2);
-                    $session = json_decode($sessionRaw, true);
-                    if (!is_array($session) || (int) ($session['error'] ?? 0) === 0) {
-                        break;
-                    }
-                }
-                if (is_array($session) && (int) ($session['error'] ?? 0) !== 0) {
-                    $desc = trim((string) ($session['description'] ?? ''));
-                    if ($desc !== '' || str_contains(strtolower($sessionRaw), 'session not found')) {
-                        return 'Pragmatic oturumu oluşmadı (Session not found). '
-                            . 'Buy-in agent IDR bakiyesi yetersiz olabilir veya GSC+ Pragmatic seamless henüz aktif değil. '
-                            . 'Admin → GSC+ Ayarları → Agent Wallet (top-up / credit mode) ve Wallet Logları (balance code=0).';
-                    }
-                }
+            $ch3 = curl_init($componentLaunchUrl);
+            $opts3 = [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_CONNECTTIMEOUT => 6,
+                CURLOPT_USERAGENT      => 'Mozilla/5.0',
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_HTTPHEADER     => ['Referer: ' . $launchUrl],
+            ];
+            if ($jar !== '') {
+                $opts3[CURLOPT_COOKIEJAR] = $jar;
+                $opts3[CURLOPT_COOKIEFILE] = $jar;
+            }
+            curl_setopt_array($ch3, $opts3);
+            self::applyCaInfo($ch3);
+            $body = (string) curl_exec($ch3);
+            $http = (int) curl_getinfo($ch3, CURLINFO_HTTP_CODE);
+            curl_close($ch3);
+            if ($jar !== '') {
+                @unlink($jar);
             }
 
-            if ($componentLaunchUrl !== '') {
-                $ch3 = curl_init($componentLaunchUrl);
-                curl_setopt_array($ch3, [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT        => 12,
-                    CURLOPT_CONNECTTIMEOUT => 6,
-                    CURLOPT_USERAGENT      => 'Mozilla/5.0',
-                    CURLOPT_SSL_VERIFYPEER => true,
-                ]);
-                self::applyCaInfo($ch3);
-                $body = (string) curl_exec($ch3);
-                $http = (int) curl_getinfo($ch3, CURLINFO_HTTP_CODE);
-                curl_close($ch3);
-                if ($http >= 400 || stripos($body, 'Un-Authorized') !== false || stripos($body, 're-log in') !== false) {
-                    return 'Pragmatic GameLaunch Un-Authorized. '
-                        . 'Agent wallet buy-in float veya GSC+ Pragmatic (1006) aktivasyonunu kontrol edin '
-                        . '(Admin → GSC+ Ayarları → Agent Wallet).';
-                }
+            if ($http >= 400 || stripos($body, 'Un-Authorized') !== false || stripos($body, 're-log in') !== false) {
+                return 'Pragmatic Live (Efinity) oturumu sağlayıcı tarafından reddedildi (Un-Authorized). '
+                    . 'Bizim seamless wallet (balance code=0) ve agent IDR float çalışıyor; '
+                    . 'SA Gaming / Astar aynı ortamda açılıyor. '
+                    . 'GSC+ destekten VGY1 + product 1006 Efinity seamless aktivasyonunu / staging whitelist isteyin. '
+                    . 'Şimdilik Canlı Casino’da Astar veya SA Gaming deneyin.';
             }
         } catch (Throwable) {
             return null;

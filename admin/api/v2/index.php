@@ -247,12 +247,15 @@ if ($method === 'POST' && in_array($route, ['casino-aggregator-wallet', 'casino_
 }
 
 if (
-    in_array($method, ['GET', 'POST'], true)
+    in_array($method, ['GET', 'POST', 'OPTIONS'], true)
     && (
         in_array($route, ['gamingsoft-wallet', 'gamingsoft_wallet', 'gamingsoft-wallet.php', 'gamingsoft_callback', 'gamingsoft-callback'], true)
         || str_starts_with(strtolower(trim((string) $route, '/')), 'gamingsoft-wallet/')
     )
 ) {
+    if (!defined('METROPOL_API_NO_SESSION')) {
+        define('METROPOL_API_NO_SESSION', true);
+    }
     if (preg_match('#^gamingsoft-wallet(?:\.php)?/?(.*)$#i', trim((string) $route, '/'), $gsRouteMatch)) {
         $_GET['endpoint'] = trim((string) ($gsRouteMatch[1] ?? ''), '/');
     }

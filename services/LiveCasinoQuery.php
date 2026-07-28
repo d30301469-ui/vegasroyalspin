@@ -78,6 +78,27 @@ final class LiveCasinoQuery
         return preg_replace('/[^A-Z0-9]/', '', strtoupper($currency)) ?: GamingSoftService::STAGING_CURRENCY;
     }
 
+    /** Exclude GSC+ products known broken on current staging (e.g. Pragmatic Efinity). */
+    private static function gamingSoftBlockedProductsSql(string $column = 'g.product_code'): string
+    {
+        $blocked = [];
+        if (class_exists('GamingSoftService', false)
+            && defined('GamingSoftService::STAGING_BLOCKED_LIVE_PRODUCTS')
+        ) {
+            foreach (GamingSoftService::STAGING_BLOCKED_LIVE_PRODUCTS as $code) {
+                $code = (int) $code;
+                if ($code > 0) {
+                    $blocked[] = (string) $code;
+                }
+            }
+        }
+        if ($blocked === []) {
+            return '1=1';
+        }
+
+        return $column . ' NOT IN (' . implode(',', $blocked) . ')';
+    }
+
     /**
      * @param list<string> $providers
      * @return array{
@@ -449,6 +470,7 @@ final class LiveCasinoQuery
                        AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                      WHERE g.is_active = 1
                        AND {$gsLive}
+                       AND " . self::gamingSoftBlockedProductsSql('g.product_code') . "
                      ORDER BY provider_name ASC"
                 );
                 foreach (($gsStmt ? $gsStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
@@ -468,6 +490,7 @@ final class LiveCasinoQuery
                      WHERE p.is_active = 1
                        AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                        AND {$prodLive}
+                       AND " . self::gamingSoftBlockedProductsSql('p.product_code') . "
                      ORDER BY provider_name ASC"
                 );
                 foreach (($prodStmt ? $prodStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
@@ -582,7 +605,8 @@ final class LiveCasinoQuery
                    AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                 WHERE g.is_active = 1
                   AND g.game_code <> '__lobby__'
-                  AND {$liveGame}";
+                  AND {$liveGame}
+                  AND " . self::gamingSoftBlockedProductsSql('g.product_code');
     }
 
     /**
@@ -609,6 +633,7 @@ final class LiveCasinoQuery
                 WHERE p.is_active = 1
                   AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                   AND {$live}
+                  AND " . self::gamingSoftBlockedProductsSql('p.product_code') . "
                   AND NOT EXISTS (
                       SELECT 1 FROM gamingsoft_games g
                       WHERE g.product_code = p.product_code

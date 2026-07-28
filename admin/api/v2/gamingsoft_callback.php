@@ -18,6 +18,10 @@ admin_require_project_file('services/GamingSoftService.php');
 admin_require_project_file('services/WageringService.php');
 
 header('Content-Type: application/json; charset=UTF-8');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Sign, Authorization');
 
 $endpoint = strtolower(trim((string) ($_GET['endpoint'] ?? $_GET['route'] ?? ''), '/'));
 if ($endpoint === '') {
@@ -31,6 +35,12 @@ $endpoint = preg_replace('#^gamingsoft-wallet(?:\.php)?/#', '', $endpoint) ?? $e
 $endpoint = preg_replace('#^v1/api/seamless/#', '', $endpoint) ?? $endpoint;
 $endpoint = preg_replace('#^api/seamless/#', '', $endpoint) ?? $endpoint;
 $endpoint = preg_replace('#^seamless/#', '', $endpoint) ?? $endpoint;
+
+$method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+if ($method === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
 
 if ($endpoint === '' || $endpoint === 'health') {
     http_response_code(200);
@@ -48,7 +58,7 @@ if ($endpoint === '' || $endpoint === 'health') {
     exit;
 }
 
-if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? '')) !== 'POST') {
+if ($method !== 'POST') {
     http_response_code(405);
     echo json_encode(['code' => 999, 'message' => 'METHOD_NOT_ALLOWED'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;

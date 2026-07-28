@@ -114,6 +114,11 @@ if ($isLightweightRoute) {
     if ($backendPath === '/api/v2/gamingsoft-wallet'
         || str_starts_with($backendPath, '/api/v2/gamingsoft-wallet/')
     ) {
+        // Doc: seamless wallet is a stateless JSON API — do not start admin sessions
+        // (avoids Set-Cookie VRSADMINSESSID on provider callbacks).
+        if (!defined('METROPOL_API_NO_SESSION')) {
+            define('METROPOL_API_NO_SESSION', true);
+        }
         require_once __DIR__ . '/app/Core/AdminPaths.php';
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
