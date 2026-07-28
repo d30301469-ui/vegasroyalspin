@@ -160,8 +160,12 @@ final class GscPlusService
             $sets[] = "{$key} = :{$key}";
             $params[":{$key}"] = $value;
         }
-        $sets[] = 'is_active = :is_active';
-        $params[':is_active'] = !empty($data['is_active']) ? 1 : 0;
+        // Only touch is_active when explicitly provided; partial updates
+        // (e.g. currency-only) must not silently disable the integration.
+        if (array_key_exists('is_active', $data)) {
+            $sets[] = 'is_active = :is_active';
+            $params[':is_active'] = !empty($data['is_active']) ? 1 : 0;
+        }
         if ($sets === []) {
             return;
         }

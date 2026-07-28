@@ -55,7 +55,8 @@ final class AdminGamingSoftController extends AdminController
     {
         $this->requirePermission('gamingsoft-settings');
         $this->ensurePost();
-        GscPlusService::updateConfig(AdminDatabase::pdo(), $_POST);
+        // Checkbox is absent from $_POST when unchecked — make the flag explicit.
+        GscPlusService::updateConfig(AdminDatabase::pdo(), $_POST + ['is_active' => !empty($_POST['is_active']) ? 1 : 0]);
         $this->flash('Gaming Soft ayarları güncellendi.');
         $this->redirect(AdminAuth::url('/gamingsoft/settings'));
     }

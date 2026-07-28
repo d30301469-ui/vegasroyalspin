@@ -123,7 +123,8 @@ if ($endpoint === 'synccatalog') {
         // so game active-flags are recalculated for the correct currency.
         $newCurrency = strtoupper(trim((string) ($payload['currency'] ?? '')));
         if ($newCurrency !== '' && GscPlusService::isSupportedCurrency($newCurrency)) {
-            GscPlusService::updateConfig($pdo, ['currency' => $newCurrency]);
+            // Operator-signed catalog sync implies the integration is meant to be live.
+            GscPlusService::updateConfig($pdo, ['currency' => $newCurrency, 'is_active' => 1]);
         }
         set_time_limit(300);
         $result = GscPlusService::syncLiveCasinoCatalog($pdo);
