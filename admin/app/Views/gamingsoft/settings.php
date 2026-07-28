@@ -73,6 +73,16 @@ $isActive = !empty($configRow['is_active']) && $configRow['is_active'] !== '0';
         </div>
 
         <div class="field">
+            <label class="field-label" for="try_to_idr_rate">TRY → IDR Dönüşüm Kuru</label>
+            <input id="try_to_idr_rate" class="input" type="number" name="try_to_idr_rate" min="1" step="0.01"
+                   value="<?= $text($configRow['try_to_idr_rate'] ?? '500') ?>">
+            <p class="gs-help">
+                Site cüzdanı TRY, GSC+ oyun cüzdanı IDR olduğunda kullanılır.
+                Örnek: 500 = 100 TRY ≈ 50.000 IDR. Dream Gaming minimum masa limiti genelde 32.000 IDR.
+            </p>
+        </div>
+
+        <div class="field">
             <label class="field-label" for="language_code">Language Code</label>
             <input id="language_code" class="input" type="number" name="language_code" min="0" max="50"
                    value="<?= $text((int) ($configRow['language_code'] ?? 0)) ?>">

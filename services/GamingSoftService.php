@@ -20,6 +20,9 @@ final class GamingSoftService
 
     private static bool $schemaBootstrapped = false;
 
+    /** @var array<string, mixed> */
+    private static array $cachedConfig = [];
+
     /** Currencies where provider amount is scaled (provider unit → real money divisor). */
     private const CURRENCY_RATIOS = [
         'BDT2' => 1000, 'BRL2' => 1000, 'CDF2' => 1000, 'CNY2' => 1000, 'COP2' => 1000,
@@ -78,7 +81,44 @@ final class GamingSoftService
             }
         }
         self::ensureStagingDefaults($pdo);
+        self::ensureSchemaUpgrades($pdo);
         self::$schemaBootstrapped = true;
+    }
+
+    private static function ensureSchemaUpgrades(PDO $pdo): void
+    {
+        try {
+            $pdo->exec(
+                'ALTER TABLE gamingsoft_config
+                 ADD COLUMN IF NOT EXISTS try_to_idr_rate DECIMAL(12,4) NOT NULL DEFAULT 500.0000'
+            );
+        } catch (Throwable) {
+            try {
+                $cols = $pdo->query("SHOW COLUMNS FROM gamingsoft_config LIKE 'try_to_idr_rate'")?->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                if ($cols === []) {
+                    $pdo->exec(
+                        'ALTER TABLE gamingsoft_config
+                         ADD COLUMN try_to_idr_rate DECIMAL(12,4) NOT NULL DEFAULT 500.0000'
+                    );
+                }
+            } catch (Throwable) {
+            }
+        }
+
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS gamingsoft_member_accounts (
+                    user_id          INT UNSIGNED NOT NULL,
+                    member_account   VARCHAR(50) NOT NULL,
+                    launch_password  CHAR(32) NOT NULL,
+                    created_at       TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at       TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id),
+                    UNIQUE KEY uniq_gs_member_account (member_account)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+        } catch (Throwable) {
+        }
     }
 
     /**
@@ -139,8 +179,9 @@ final class GamingSoftService
         try {
             self::bootstrap($pdo);
             $row = $pdo->query('SELECT * FROM gamingsoft_config WHERE id = 1 LIMIT 1')?->fetch(PDO::FETCH_ASSOC);
+            self::$cachedConfig = is_array($row) ? $row : [];
 
-            return is_array($row) ? $row : [];
+            return self::$cachedConfig;
         } catch (Throwable) {
             return [];
         }
@@ -151,7 +192,7 @@ final class GamingSoftService
         self::bootstrap($pdo);
         $allowed = [
             'operator_code', 'secret_key', 'api_base_url', 'site_endpoint',
-            'currency', 'language_code', 'channel_code', 'callback_allowed_ips',
+            'currency', 'language_code', 'channel_code', 'callback_allowed_ips', 'try_to_idr_rate',
         ];
         $secrets = ['secret_key'];
         $sets = [];
@@ -169,6 +210,10 @@ final class GamingSoftService
             }
             if ($key === 'language_code') {
                 $value = (string) max(0, (int) $value);
+            }
+            if ($key === 'try_to_idr_rate') {
+                $rate = (float) str_replace(',', '.', $value);
+                $value = (string) ($rate > 0 ? round($rate, 4) : self::DEFAULT_TRY_TO_IDR_RATE);
             }
             if ($key === 'api_base_url' || $key === 'site_endpoint') {
                 $value = rtrim($value, '/');
@@ -630,15 +675,38 @@ final class GamingSoftService
 
         $requestTime = self::requestTimeSeconds();
         $gameTypeCandidates = self::launchGameTypeCandidates($gameType, $productGameType);
-        $launchAttempts = [];
-        foreach ($gameTypeCandidates as $typeCandidate) {
-            $launchAttempts[] = ['game_code' => $gameCode, 'game_type' => $typeCandidate];
+        $isLiveLaunch = self::isLiveGameType($gameType) || self::isLiveGameType($productGameType);
+        $siteWalletBalance = self::memberWalletBalance($pdo, $user);
+        $providerWalletBalance = self::toProviderAmount($siteWalletBalance, $currency);
+        if ($providerWalletBalance <= 0) {
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Oyun başlatılamadı: GSC+ oyun cüzdanı bakiyeniz 0 '
+                    . $currency
+                    . '. Site bakiyeniz: '
+                    . number_format($siteWalletBalance, 2, ',', '.')
+                    . ' '
+                    . self::siteWalletCurrency()
+                    . '. TRY→IDR kurunu Admin → GSC+ Ayarlarından kontrol edin.',
+            ];
         }
-        if ($gameCode !== null) {
+
+        $launchAttempts = [];
+        if ($isLiveLaunch && $gameCode !== null) {
             foreach ($gameTypeCandidates as $typeCandidate) {
                 $launchAttempts[] = ['game_code' => null, 'game_type' => $typeCandidate];
             }
         }
+        foreach ($gameTypeCandidates as $typeCandidate) {
+            $launchAttempts[] = ['game_code' => $gameCode, 'game_type' => $typeCandidate];
+        }
+        if ($gameCode !== null && !$isLiveLaunch) {
+            foreach ($gameTypeCandidates as $typeCandidate) {
+                $launchAttempts[] = ['game_code' => null, 'game_type' => $typeCandidate];
+            }
+        }
+        $launchAttempts = self::dedupeLaunchAttempts($launchAttempts);
 
         $response = null;
         $code = -1;
@@ -674,9 +742,13 @@ final class GamingSoftService
                 $gameCode = $attempt['game_code'];
                 break;
             }
-            if (!self::isRecordNotFoundMessage($providerMessage)) {
-                break;
+            if (self::isRecordNotFoundMessage($providerMessage)) {
+                continue;
             }
+            if (self::isRetriableProviderLaunchError($providerMessage)) {
+                continue;
+            }
+            break;
         }
 
         // Agent wallet funded under config currency (IDR) — retry once if launch used another code path.
@@ -710,7 +782,7 @@ final class GamingSoftService
             $currency = $targetCurrency;
         }
 
-        $launchUrl = trim((string) ($response['url'] ?? $response['URL'] ?? ''));
+        $launchUrl = self::extractLaunchUrlFromResponse(is_array($response) ? $response : []);
         $content = trim((string) ($response['content'] ?? $response['Content'] ?? ''));
         if ($code !== 200 && $code !== 0) {
             return [
@@ -718,7 +790,20 @@ final class GamingSoftService
                 'code'    => 422,
                 'message' => self::mapLaunchErrorMessage(
                     $providerMessage !== '' ? $providerMessage : ('code ' . $code),
-                    $currency
+                    $currency,
+                    $siteWalletBalance
+                ),
+                'raw'     => $response,
+            ];
+        }
+        if ($launchUrl !== '' && !self::isLaunchUrlValid($launchUrl)) {
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => self::mapLaunchErrorMessage(
+                    $providerMessage !== '' ? $providerMessage : json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    $currency,
+                    $siteWalletBalance
                 ),
                 'raw'     => $response,
             ];
@@ -866,7 +951,10 @@ final class GamingSoftService
                 ];
                 continue;
             }
-            $balance = self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency);
+            $balance = self::formatProviderBalance(
+                self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency),
+                $currency
+            );
             $data[] = [
                 'member_account' => $member,
                 'product_code'   => $productCode,
@@ -944,7 +1032,10 @@ final class GamingSoftService
 
         // WBET wins are not deposited via /deposit — accept and no-op credit for prize settlements.
         if ($endpoint === 'deposit' && $productCode === self::WBET_PRODUCT_CODE) {
-            $balance = self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency);
+            $balance = self::formatProviderBalance(
+                self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency),
+                $currency
+            );
 
             return [
                 'member_account' => $member,
@@ -957,7 +1048,10 @@ final class GamingSoftService
         }
 
         if ($transactions === []) {
-            $balance = self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency);
+            $balance = self::formatProviderBalance(
+                self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency),
+                $currency
+            );
 
             return [
                 'member_account' => $member,
@@ -1327,7 +1421,7 @@ final class GamingSoftService
         $ratio = self::currencyRatio($providerCurrency);
         $value = $ratio > 1 ? ($converted / $ratio) : $converted;
 
-        return round($value, 4);
+        return self::formatProviderBalance(round($value, 4), $providerCurrency);
     }
 
     /** Convert provider game currency amount (IDR) → site wallet balance (TRY). */
@@ -1352,6 +1446,11 @@ final class GamingSoftService
 
     private static function tryToIdrExchangeRate(): float
     {
+        $cfgRate = self::$cachedConfig['try_to_idr_rate'] ?? null;
+        if ($cfgRate !== null && is_numeric($cfgRate) && (float) $cfgRate > 0) {
+            return (float) $cfgRate;
+        }
+
         $env = getenv('GAMINGSOFT_TRY_TO_IDR_RATE');
         if ($env !== false && is_numeric($env) && (float) $env > 0) {
             return (float) $env;
@@ -1475,21 +1574,55 @@ final class GamingSoftService
     {
         if ($userId > 0) {
             try {
+                $stmt = $pdo->prepare(
+                    'SELECT launch_password FROM gamingsoft_member_accounts WHERE user_id = :id LIMIT 1'
+                );
+                $stmt->execute([':id' => $userId]);
+                $stored = strtolower(trim((string) ($stmt->fetchColumn() ?: '')));
+                if (preg_match('/^[a-f0-9]{32}$/', $stored) === 1) {
+                    return $stored;
+                }
+            } catch (Throwable) {
+            }
+        }
+
+        $password = '';
+        if ($userId > 0) {
+            try {
                 $stmt = $pdo->prepare('SELECT password FROM users WHERE id = :id LIMIT 1');
                 $stmt->execute([':id' => $userId]);
                 $stored = trim((string) ($stmt->fetchColumn() ?: ''));
                 if ($stored !== '') {
                     $lower = strtolower($stored);
                     if (preg_match('/^[a-f0-9]{32}$/', $lower) === 1) {
-                        return $lower;
+                        $password = $lower;
                     }
                 }
             } catch (Throwable) {
             }
         }
+        if ($password === '') {
+            $password = md5($memberAccount . $secretKey);
+        }
 
-        // GSC+ launch-game password = MD5(member password). For bcrypt users use stable derived token.
-        return md5($memberAccount . $secretKey);
+        if ($userId > 0) {
+            try {
+                $pdo->prepare(
+                    'INSERT INTO gamingsoft_member_accounts (user_id, member_account, launch_password)
+                     VALUES (:uid, :ma, :pw)
+                     ON DUPLICATE KEY UPDATE
+                        member_account = VALUES(member_account),
+                        launch_password = VALUES(launch_password)'
+                )->execute([
+                    ':uid' => $userId,
+                    ':ma'  => $memberAccount,
+                    ':pw'  => $password,
+                ]);
+            } catch (Throwable) {
+            }
+        }
+
+        return $password;
     }
 
     private static function userByMemberAccount(PDO $pdo, string $memberAccount): ?array
@@ -1930,8 +2063,174 @@ final class GamingSoftService
             || str_contains($lower, 'insufficient credit');
     }
 
-    private static function mapLaunchErrorMessage(string $providerMessage, string $currency = ''): string
+    /** @param array<int, array{game_code: ?string, game_type: string}> $attempts
+     *  @return array<int, array{game_code: ?string, game_type: string}>
+     */
+    private static function dedupeLaunchAttempts(array $attempts): array
     {
+        $seen = [];
+        $unique = [];
+        foreach ($attempts as $attempt) {
+            $gameCode = $attempt['game_code'];
+            $gameType = strtoupper(trim((string) ($attempt['game_type'] ?? '')));
+            $key = ($gameCode === null ? 'lobby' : strtolower(trim((string) $gameCode))) . '|' . $gameType;
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $unique[] = ['game_code' => $gameCode, 'game_type' => $gameType];
+        }
+
+        return $unique;
+    }
+
+    /** @param array<string, mixed> $response */
+    private static function extractLaunchUrlFromResponse(array $response): string
+    {
+        $url = trim((string) ($response['url'] ?? $response['URL'] ?? ''));
+        if ($url !== '') {
+            return $url;
+        }
+
+        $list = $response['list'] ?? null;
+        if (is_array($list)) {
+            foreach ($list as $candidate) {
+                $candidateUrl = trim((string) $candidate);
+                if ($candidateUrl !== '') {
+                    return $candidateUrl;
+                }
+            }
+        }
+
+        $message = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
+        $parsed = self::decodeProviderErrorJson($message);
+        if ($parsed !== null && is_array($parsed['list'] ?? null)) {
+            foreach ($parsed['list'] as $candidate) {
+                $candidateUrl = trim((string) $candidate);
+                if ($candidateUrl !== '') {
+                    return $candidateUrl;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private static function isLaunchUrlValid(string $url): bool
+    {
+        if ($url === '') {
+            return false;
+        }
+        if (!preg_match('#^https?://#i', $url)) {
+            return false;
+        }
+        if (preg_match('/[?&]token=([^&]*)/i', $url, $matches)) {
+            return trim((string) ($matches[1] ?? '')) !== '';
+        }
+
+        return true;
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function decodeProviderErrorJson(string $message): ?array
+    {
+        $message = trim($message);
+        if ($message === '' || !str_starts_with($message, '{')) {
+            return null;
+        }
+        $decoded = json_decode($message, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    private static function isRetriableProviderLaunchError(string $message): bool
+    {
+        $parsed = self::decodeProviderErrorJson($message);
+        if ($parsed !== null) {
+            $codeId = (int) ($parsed['codeId'] ?? 0);
+            if (in_array($codeId, [406, 407, 408], true)) {
+                return true;
+            }
+            $list = $parsed['list'] ?? [];
+            if (is_array($list)) {
+                foreach ($list as $candidate) {
+                    $candidateUrl = trim((string) $candidate);
+                    if ($candidateUrl !== '' && !self::isLaunchUrlValid($candidateUrl)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return str_contains($message, 'token=') && preg_match('/token=(?:&|$)/', $message) === 1;
+    }
+
+    private static function formatProviderBalance(float $amount, string $providerCurrency): float
+    {
+        $amount = max(0.0, $amount);
+        $providerCurrency = strtoupper(trim($providerCurrency));
+        if (in_array($providerCurrency, ['IDR', 'VND', 'KRW', 'JPY'], true)) {
+            return round($amount, 2);
+        }
+
+        return round($amount, 4);
+    }
+
+    private static function mapLaunchErrorMessage(string $providerMessage, string $currency = '', float $siteBalance = 0.0): string
+    {
+        $parsed = self::decodeProviderErrorJson($providerMessage);
+        if ($parsed !== null) {
+            $codeId = (int) ($parsed['codeId'] ?? 0);
+            if ($codeId === 406) {
+                $limits = is_array($parsed['limits'] ?? null) ? $parsed['limits'] : [];
+                $minIdr = 32000;
+                if (isset($limits[0]) && is_array($limits[0]) && isset($limits[0]['min'])) {
+                    $minIdr = max(1, (int) $limits[0]['min']);
+                }
+                $targetCurrency = $currency !== '' ? $currency : self::STAGING_CURRENCY;
+                $idrBalance = self::toProviderAmount($siteBalance, $targetCurrency);
+                $rate = self::tryToIdrExchangeRate();
+                $message = 'Oyun başlatılamadı: Dream Gaming masa limiti karşılanamadı (minimum '
+                    . number_format($minIdr, 0, ',', '.')
+                    . ' IDR).';
+                if ($idrBalance > 0) {
+                    $message .= ' Oyun cüzdanı bakiyeniz ≈'
+                        . number_format($idrBalance, 0, ',', '.')
+                        . ' IDR ('
+                        . number_format($siteBalance, 2, ',', '.')
+                        . ' '
+                        . self::siteWalletCurrency()
+                        . ').';
+                } else {
+                    $message .= ' GSC+ cüzdanına bakiye iletilemedi — seamless wallet callback yanıtını kontrol edin.';
+                }
+                if ($idrBalance > 0 && $idrBalance < $minIdr) {
+                    $neededTry = $minIdr / $rate;
+                    $message .= ' Bu masa için en az '
+                        . number_format($neededTry, 2, ',', '.')
+                        . ' '
+                        . self::siteWalletCurrency()
+                        . ' gerekir (kur: 1 '
+                        . self::siteWalletCurrency()
+                        . ' = '
+                        . number_format($rate, 0, ',', '.')
+                        . ' IDR).';
+                }
+                $list = $parsed['list'] ?? [];
+                if (is_array($list)) {
+                    foreach ($list as $candidate) {
+                        $candidateUrl = trim((string) $candidate);
+                        if ($candidateUrl !== '' && !self::isLaunchUrlValid($candidateUrl)) {
+                            $message .= ' Boş oyun tokenı: GSC+ bakiye sorgusu başarısız olmuş olabilir (Admin → GSC+ Wallet Logları).';
+                            break;
+                        }
+                    }
+                }
+
+                return $message;
+            }
+        }
+
         $lower = strtolower($providerMessage);
         if ($providerMessage === '') {
             return 'Oyun başlatılamadı.';
