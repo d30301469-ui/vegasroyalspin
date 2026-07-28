@@ -4,9 +4,10 @@ if (session_status() === PHP_SESSION_NONE) {
     metropol_frontend_session_start();
 }
 require_once __DIR__ . '/../core/bootstrap.php';
-require_once SERVICE_PATH . '/SlotGamesQuery.php';
+require_once SERVICE_PATH . '/LiveCasinoQuery.php';
 require_once SERVICE_PATH . '/ProviderDisplayBadgeMap.php';
 require_once SERVICE_PATH . '/CasinoAggregatorService.php';
+require_once SERVICE_PATH . '/GamingSoftService.php';
 
 $searchTerm = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
 $selectedProviders = array_values(array_filter(array_map(
@@ -17,11 +18,11 @@ $currentSort = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
-$result = SlotGamesQuery::liveCasinoPage($searchTerm, $selectedProviders, $limit, $page, $currentSort);
+$result = LiveCasinoQuery::page($searchTerm, $selectedProviders, $limit, $page, $currentSort);
 $games = is_array($result['games'] ?? null) ? $result['games'] : [];
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 
-$allUniqueProviders = SlotGamesQuery::providersForGameType(1);
+$allUniqueProviders = LiveCasinoQuery::providers();
 sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
 
 $totalSlots = (int) ($result['total'] ?? count($games));
@@ -43,8 +44,18 @@ $providerBadges = [
     'creedroomz' => ['OZEL'],
     'vivo' => ['SICAK'],
     'sagaming' => ['SICAK'],
+    'sa gaming' => ['SICAK'],
     'playtech' => ['EN IYI'],
     'netent' => ['SICAK'],
+    'dreamgaming' => ['SICAK'],
+    'dream gaming' => ['SICAK'],
+    'allbet' => ['OZEL'],
+    'wm casino' => ['SICAK'],
+    'wm' => ['SICAK'],
+    'big gaming' => ['SICAK'],
+    'biggaming' => ['SICAK'],
+    'vimplay' => ['OZEL'],
+    'astar' => ['SICAK'],
 ];
 
 $slotPageBaseUrl = '/livecasino';
@@ -52,7 +63,8 @@ $slotPageTitle = 'CANLI CASINO';
 $slotGameType = 1;
 $slotEmptyTitle = 'Canlı casino oyunu bulunamadı';
 $slotEmptyText = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin.';
-$slotApiParams = ['source' => 'aggregator'];
+// Load-more / filters go through LiveCasinoQuery via API source=livecasino
+$slotApiParams = ['source' => 'livecasino'];
 $sliderApiCategory = 'live_casino';
 $slotShowActionButtons = true;
 $slotHideProviders = false;

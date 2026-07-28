@@ -36,7 +36,19 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
     }
     $providers = [];
     try {
-        if ($gameType === 0) {
+        if ($gameType === 1) {
+            admin_require_project_file('services/LiveCasinoQuery.php');
+            foreach (LiveCasinoQuery::providers() as $name) {
+                $name = trim((string) $name);
+                if ($name === '') {
+                    continue;
+                }
+                $providers[] = [
+                    'provider_code' => $name,
+                    'provider_name' => $name,
+                ];
+            }
+        } elseif ($gameType === 0) {
             // BGaming catalogue is slot-only.
             $sql = "SELECT DISTINCT provider AS provider_code, provider AS provider_name
                 FROM bgaming_games
@@ -44,59 +56,28 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
                 ORDER BY provider_name ASC";
             $pStmt = $pdo->query($sql);
             $providers = $pStmt ? $pStmt->fetchAll(PDO::FETCH_ASSOC) : [];
-        }
-        $aggType = $gameType === 1 ? 2 : 1;
-        if ($gameType === 1) {
-            try {
-                CasinoAggregatorService::repairGameTypesFromPayload($pdo);
-            } catch (Throwable) {
+            $aggStmt = $pdo->prepare(
+                "SELECT DISTINCT v.vendor_code AS provider_code, v.vendor_name AS provider_name
+                 FROM casino_aggregator_vendors v
+                 INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
+                 WHERE v.is_active = 1 AND g.is_active = 1 AND g.game_type = 1
+                   AND NOT (" . CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code') . ")
+                 ORDER BY v.vendor_name ASC"
+            );
+            $aggStmt->execute();
+            $seen = [];
+            foreach ($providers as $row) {
+                $seen[(string) ($row['provider_code'] ?? '')] = true;
             }
-        }
-        $liveExtra = $gameType === 1 ? (' OR ' . CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code')) : '';
-        $aggStmt = $pdo->prepare(
-            "SELECT DISTINCT v.vendor_code AS provider_code, v.vendor_name AS provider_name
-             FROM casino_aggregator_vendors v
-             INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
-             WHERE v.is_active = 1 AND g.is_active = 1 AND (g.game_type = :type{$liveExtra})
-             ORDER BY v.vendor_name ASC"
-        );
-        $aggStmt->execute([':type' => $aggType]);
-        $aggRows = $aggStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        $seen = [];
-        foreach ($providers as $row) {
-            $seen[(string) ($row['provider_code'] ?? '')] = true;
-        }
-        foreach ($aggRows as $row) {
-            $code = (string) ($row['provider_code'] ?? '');
-            if ($code === '' || isset($seen[$code])) {
-                continue;
+            foreach ($aggStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $code = (string) ($row['provider_code'] ?? '');
+                if ($code === '' || isset($seen[$code])) {
+                    continue;
+                }
+                $seen[$code] = true;
+                $row['provider_name'] = CasinoAggregatorService::resolveLocalizedLabel($row['provider_name'] ?? '') ?: $code;
+                $providers[] = $row;
             }
-            $seen[$code] = true;
-            $row['provider_name'] = CasinoAggregatorService::resolveLocalizedLabel($row['provider_name'] ?? '') ?: $code;
-            $providers[] = $row;
-        }
-        admin_require_project_file('services/GamingSoftService.php');
-        $gsTypeExpr = "CASE
-            WHEN UPPER(g.game_type) LIKE '%LIVE%'
-              OR UPPER(g.game_type) IN ('SPORT_BOOK','VIRTUAL_SPORT','ESPORT','COCK_FIGHTING')
-            THEN 2 ELSE 1 END";
-        $gsWanted = $gameType === 1 ? 2 : 1;
-        $gsStmt = $pdo->prepare(
-            "SELECT DISTINCT CAST(g.product_code AS CHAR) AS provider_code,
-                    COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
-             FROM gamingsoft_games g
-             LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
-             WHERE g.is_active = 1 AND ({$gsTypeExpr}) = :type
-             ORDER BY provider_name ASC"
-        );
-        $gsStmt->execute([':type' => $gsWanted]);
-        foreach ($gsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
-            $code = (string) ($row['provider_code'] ?? '');
-            if ($code === '' || isset($seen[$code])) {
-                continue;
-            }
-            $seen[$code] = true;
-            $providers[] = $row;
         }
     } catch (Throwable) {}
     $memberEnvelope(200, [
@@ -151,9 +132,51 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     }
     $onlyFeatured = (string) ($_GET['is_featured'] ?? '') === '1'
         || in_array(strtolower((string) ($_GET['sort'] ?? '')), ['popular', 'liked'], true);
-    // Optional source restriction (matches SlotGamesQuery::combinedCatalogPage):
-    // 'bgaming' -> only the direct BGaming catalog. Empty -> all sources.
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));
+    $sort = strtolower(trim((string) ($_GET['sort'] ?? '')));
+
+    // Live casino catalogue is owned by LiveCasinoQuery (not SlotGamesQuery).
+    if ($gameType === 1 || in_array($source, ['livecasino', 'live', 'live_casino'], true)) {
+        admin_require_project_file('services/LiveCasinoQuery.php');
+        $liveResult = LiveCasinoQuery::page(
+            $search,
+            $providerList,
+            $limit,
+            $page,
+            $onlyFeatured ? 'popular' : $sort,
+            [
+                'source' => in_array($source, ['gamingsoft', 'gsc', 'gsc+', 'aggregator'], true) ? $source : '',
+                'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
+            ]
+        );
+        $games = is_array($liveResult['games'] ?? null) ? $liveResult['games'] : [];
+        $total = (int) ($liveResult['total'] ?? count($games));
+        $totalPages = (int) ($liveResult['totalPages'] ?? ($total > 0 ? (int) ceil($total / $limit) : 0));
+        $memberEnvelope(200, [
+            'success' => true,
+            'code'    => 200,
+            'message' => 'Oyun listesi',
+            'data'    => [
+                'games'       => $games,
+                'items'       => $games,
+                'total'       => $total,
+                'page'        => $page,
+                'limit'       => $limit,
+                'perPage'     => $limit,
+                'total_pages' => $totalPages,
+                'pagination'  => [
+                    'page'       => $page,
+                    'perPage'    => $limit,
+                    'limit'      => $limit,
+                    'offset'     => $offset,
+                    'total'      => $total,
+                    'totalPages' => $totalPages,
+                    'hasNext'    => !empty($liveResult['hasNext']),
+                    'hasPrev'    => $page > 1,
+                ],
+            ],
+        ]);
+    }
 
     // IMPORTANT: Serve from local DB only. Never call SlotGamesQuery here —
     // that class HTTP-calls this same games.php endpoint and recurses until 503.
@@ -206,8 +229,9 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     if ($source === '' || $source === 'gamingsoft') {
         admin_require_project_file('services/GamingSoftService.php');
         $gsTypeExpr = "CASE
-            WHEN UPPER(g.game_type) LIKE '%LIVE%'
-              OR UPPER(g.game_type) IN ('SPORT_BOOK','VIRTUAL_SPORT','ESPORT','COCK_FIGHTING')
+            WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+              OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
+              OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
             THEN 2 ELSE 1 END";
         $gsTypeClause = $gameType === 1
             ? "({$gsTypeExpr}) = 2"

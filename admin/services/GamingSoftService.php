@@ -219,17 +219,24 @@ final class GamingSoftService
     public static function normalizeGameTypeToCatalog(string $gameType): int
     {
         $t = strtoupper(trim($gameType));
-        if (
-            str_contains($t, 'LIVE')
-            || $t === 'SPORT_BOOK'
-            || $t === 'VIRTUAL_SPORT'
-            || $t === 'ESPORT'
-            || $t === 'COCK_FIGHTING'
-        ) {
+        if (self::isLiveGameType($t)) {
             return 2;
         }
 
         return 1;
+    }
+
+    public static function isLiveGameType(string $gameType): bool
+    {
+        $t = strtoupper(trim($gameType));
+        if ($t === '') {
+            return false;
+        }
+
+        return $t === 'LIVE_CASINO'
+            || $t === 'LIVE_CASINO_PREMIUM'
+            || str_starts_with($t, 'LIVE_CASINO')
+            || str_contains($t, 'LIVE_CASINO');
     }
 
     // ─── Operator outbound ───────────────────────────────────────────
@@ -352,6 +359,8 @@ final class GamingSoftService
                 ]);
                 $games = is_array($response['provider_games'] ?? null) ? $response['provider_games'] : [];
                 $entryType = (int) ($product['entry_type'] ?? 1);
+                $productGameType = strtoupper(trim((string) ($product['game_type'] ?? '')));
+                $syncedForProduct = 0;
                 foreach ($games as $game) {
                     if (!is_array($game)) {
                         continue;
@@ -366,7 +375,7 @@ final class GamingSoftService
                         ':pc'     => (int) ($game['product_code'] ?? $pc),
                         ':gc'     => $gameCode,
                         ':name'   => trim((string) ($game['game_name'] ?? $gameCode)),
-                        ':gtype'  => strtoupper(trim((string) ($game['game_type'] ?? $product['game_type'] ?? ''))),
+                        ':gtype'  => strtoupper(trim((string) ($game['game_type'] ?? $productGameType))),
                         ':img'    => trim((string) ($game['image_url'] ?? '')) ?: null,
                         ':cur'    => strtoupper(trim((string) ($game['support_currency'] ?? ''))),
                         ':status' => $status,
@@ -374,6 +383,31 @@ final class GamingSoftService
                         ':entry'  => $entryType,
                         ':raw'    => json_encode($game, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                         ':active' => $active,
+                    ]);
+                    $gameCount++;
+                    $syncedForProduct++;
+                }
+
+                // Lobby-only products (entry_type=2) need a launchable catalog tile.
+                // Also seed a lobby tile for live products that returned no individual games.
+                if ($entryType === 2 || ($syncedForProduct === 0 && self::isLiveGameType($productGameType))) {
+                    $lobbyName = trim((string) ($product['product_name'] ?? $product['provider'] ?? '')) ?: ('Product ' . $pc);
+                    $insert->execute([
+                        ':pc'     => $pc,
+                        ':gc'     => '__lobby__',
+                        ':name'   => $lobbyName . ($entryType === 2 ? ' Lobby' : ' Lobby'),
+                        ':gtype'  => $productGameType !== '' ? $productGameType : 'LIVE_CASINO',
+                        ':img'    => null,
+                        ':cur'    => '',
+                        ':status' => 'ACTIVATED',
+                        ':fr'     => 0,
+                        ':entry'  => max(2, $entryType),
+                        ':raw'    => json_encode([
+                            'synthetic' => true,
+                            'entry_type' => max(2, $entryType),
+                            'product_code' => $pc,
+                        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        ':active' => 1,
                     ]);
                     $gameCount++;
                 }
@@ -413,6 +447,35 @@ final class GamingSoftService
         );
         $gameStmt->execute([':pc' => $parsed['product_code'], ':gc' => $parsed['game_code']]);
         $gameRow = $gameStmt->fetch(PDO::FETCH_ASSOC);
+
+        // Synthetic lobby tiles may exist only as products (LiveCasinoQuery).
+        $isLobbyCode = strcasecmp($parsed['game_code'], '__lobby__') === 0
+            || strcasecmp($parsed['game_code'], 'lobby') === 0;
+        if ((!is_array($gameRow) || (int) ($gameRow['is_active'] ?? 0) !== 1) && $isLobbyCode) {
+            $prodStmt = $pdo->prepare(
+                'SELECT product_code, product_name, provider, game_type, entry_type, is_active, status
+                 FROM gamingsoft_products
+                 WHERE product_code = :pc
+                 LIMIT 1'
+            );
+            $prodStmt->execute([':pc' => $parsed['product_code']]);
+            $product = $prodStmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($product) && (int) ($product['is_active'] ?? 0) === 1) {
+                $gameRow = [
+                    'product_code' => (int) $product['product_code'],
+                    'game_code' => '__lobby__',
+                    'game_name' => trim((string) ($product['product_name'] ?? $product['provider'] ?? '')) . ' Lobby',
+                    'game_type' => (string) ($product['game_type'] ?? 'LIVE_CASINO'),
+                    'entry_type' => 2,
+                    'product_entry_type' => (int) ($product['entry_type'] ?? 2),
+                    'product_active' => 1,
+                    'product_name' => (string) ($product['product_name'] ?? ''),
+                    'provider' => (string) ($product['provider'] ?? ''),
+                    'is_active' => 1,
+                ];
+            }
+        }
+
         if (!is_array($gameRow) || (int) ($gameRow['is_active'] ?? 0) !== 1) {
             return ['success' => false, 'code' => 404, 'message' => 'Oyun bulunamadı veya pasif.'];
         }
@@ -431,7 +494,9 @@ final class GamingSoftService
         $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'TRY')));
         $gameType = strtoupper(trim((string) ($gameRow['game_type'] ?? 'SLOT')));
         $entryType = (int) ($gameRow['entry_type'] ?? $gameRow['product_entry_type'] ?? 1);
-        $gameCode = $entryType === 2 ? null : (string) $gameRow['game_code'];
+        $rawGameCode = trim((string) ($gameRow['game_code'] ?? ''));
+        $isLobbyCode = $rawGameCode === '' || strcasecmp($rawGameCode, '__lobby__') === 0 || strcasecmp($rawGameCode, 'lobby') === 0;
+        $gameCode = ($entryType === 2 || $isLobbyCode) ? null : $rawGameCode;
 
         $channel = strtolower(trim((string) ($input['channel'] ?? 'desktop')));
         $platform = match (true) {

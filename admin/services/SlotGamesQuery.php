@@ -107,9 +107,16 @@ final class SlotGamesQuery
 
     public static function liveCasinoPage(string $searchTerm, array $providers, int $limit, int $page, string $sort = '', array $extraQuery = []): array
     {
-        $query = array_merge(['source' => 'aggregator'], $extraQuery);
+        // Deprecated path: live casino is owned by LiveCasinoQuery.
+        $livePath = __DIR__ . '/LiveCasinoQuery.php';
+        if (is_file($livePath)) {
+            require_once $livePath;
+        }
+        if (class_exists('LiveCasinoQuery', false)) {
+            return LiveCasinoQuery::page($searchTerm, $providers, $limit, $page, $sort, $extraQuery);
+        }
 
-        return self::gamesPage(1, $searchTerm, $providers, $limit, $page, $sort, $query);
+        return self::gamesPage(1, $searchTerm, $providers, $limit, $page, $sort, $extraQuery);
     }
 
     /**
@@ -525,6 +532,7 @@ final class SlotGamesQuery
                 if ($gameType === 1) {
                     $typeClause = "(g.game_type = {$aggGameType} OR {$liveMatch})";
                 } else {
+                    // Keep live brands out of the slot lobby.
                     $typeClause = "(g.game_type = {$aggGameType} AND NOT {$liveMatch})";
                 }
             }
@@ -553,8 +561,9 @@ final class SlotGamesQuery
                 }
             }
             $gsTypeExpr = "CASE
-                WHEN UPPER(g.game_type) LIKE '%LIVE%'
-                  OR UPPER(g.game_type) IN ('SPORT_BOOK','VIRTUAL_SPORT','ESPORT','COCK_FIGHTING')
+                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+                  OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
+                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
                 THEN 2 ELSE 1 END";
             $gsTypeClause = $gameType === 1
                 ? "({$gsTypeExpr}) = 2"
@@ -664,6 +673,7 @@ final class SlotGamesQuery
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => (string) ($r['game_id'] ?? ''),
                 'name'          => $name,
+                'cover'         => (string) ($media['cover'] ?? $imageUrl),
                 'image_url'     => (string) ($media['cover'] ?? $imageUrl),
                 'cover_fallbacks' => is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [],
                 'image_fallbacks' => is_array($media['image_fallbacks'] ?? null) ? $media['image_fallbacks'] : [],
@@ -763,8 +773,9 @@ final class SlotGamesQuery
                 }
             }
             $gsTypeExpr = "CASE
-                WHEN UPPER(g.game_type) LIKE '%LIVE%'
-                  OR UPPER(g.game_type) IN ('SPORT_BOOK','VIRTUAL_SPORT','ESPORT','COCK_FIGHTING')
+                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+                  OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
+                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
                 THEN 2 ELSE 1 END";
             $gsWanted = $gameType === 1 ? 2 : 1;
             $gsStmt = $pdo->prepare(

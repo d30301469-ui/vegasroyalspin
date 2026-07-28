@@ -74,6 +74,12 @@ final class AdminGamingSoftController extends AdminController
                 require_once dirname(__DIR__, 3) . '/services/SlotGamesQuery.php';
                 SlotGamesQuery::purgeCache();
             }
+            if (class_exists('LiveCasinoQuery', false)) {
+                LiveCasinoQuery::purgeCache();
+            } elseif (is_file(dirname(__DIR__, 3) . '/services/LiveCasinoQuery.php')) {
+                require_once dirname(__DIR__, 3) . '/services/LiveCasinoQuery.php';
+                LiveCasinoQuery::purgeCache();
+            }
             $msg = 'Oyun sync tamamlandı: ' . (int) ($result['game_count'] ?? 0) . ' oyun, '
                 . (int) ($result['product_count'] ?? 0) . ' ürün.';
             $errors = is_array($result['errors'] ?? null) ? $result['errors'] : [];

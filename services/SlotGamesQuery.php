@@ -107,9 +107,16 @@ final class SlotGamesQuery
 
     public static function liveCasinoPage(string $searchTerm, array $providers, int $limit, int $page, string $sort = '', array $extraQuery = []): array
     {
-        $query = array_merge(['source' => 'aggregator'], $extraQuery);
+        // Deprecated path: live casino is owned by LiveCasinoQuery.
+        $livePath = __DIR__ . '/LiveCasinoQuery.php';
+        if (is_file($livePath)) {
+            require_once $livePath;
+        }
+        if (class_exists('LiveCasinoQuery', false)) {
+            return LiveCasinoQuery::page($searchTerm, $providers, $limit, $page, $sort, $extraQuery);
+        }
 
-        return self::gamesPage(1, $searchTerm, $providers, $limit, $page, $sort, $query);
+        return self::gamesPage(1, $searchTerm, $providers, $limit, $page, $sort, $extraQuery);
     }
 
     /**
@@ -554,8 +561,9 @@ final class SlotGamesQuery
                 }
             }
             $gsTypeExpr = "CASE
-                WHEN UPPER(g.game_type) LIKE '%LIVE%'
-                  OR UPPER(g.game_type) IN ('SPORT_BOOK','VIRTUAL_SPORT','ESPORT','COCK_FIGHTING')
+                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+                  OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
+                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
                 THEN 2 ELSE 1 END";
             $gsTypeClause = $gameType === 1
                 ? "({$gsTypeExpr}) = 2"
@@ -765,8 +773,9 @@ final class SlotGamesQuery
                 }
             }
             $gsTypeExpr = "CASE
-                WHEN UPPER(g.game_type) LIKE '%LIVE%'
-                  OR UPPER(g.game_type) IN ('SPORT_BOOK','VIRTUAL_SPORT','ESPORT','COCK_FIGHTING')
+                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+                  OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
+                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
                 THEN 2 ELSE 1 END";
             $gsWanted = $gameType === 1 ? 2 : 1;
             $gsStmt = $pdo->prepare(
