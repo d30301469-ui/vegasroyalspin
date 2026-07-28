@@ -146,8 +146,64 @@ if (!function_exists('memberResolveMailLogoUrl')) {
     }
 }
 
+if (!function_exists('memberResolveDisplayName')) {
+    /**
+     * Üyenin görünen adını çözer (name/surname, first_name/last_name, username).
+     *
+     * @param array<string,mixed>|null $userHint
+     */
+    function memberResolveDisplayName(PDO $pdo, string $toEmail, ?array $userHint = null): string
+    {
+        $row = is_array($userHint) ? $userHint : null;
+        if ($row === null) {
+            try {
+                $stmt = $pdo->prepare(
+                    'SELECT * FROM users WHERE email = :email OR LOWER(email) = LOWER(:email2) LIMIT 1'
+                );
+                $stmt->execute(['email' => $toEmail, 'email2' => $toEmail]);
+                $fetched = $stmt->fetch(PDO::FETCH_ASSOC);
+                if (is_array($fetched)) {
+                    $row = $fetched;
+                }
+            } catch (Throwable) {
+                $row = null;
+            }
+        }
+        if (!is_array($row)) {
+            return 'Değerli Üyemiz';
+        }
+
+        $pick = static function (array $src, array $keys): string {
+            foreach ($keys as $key) {
+                foreach ($src as $field => $value) {
+                    if (strcasecmp((string) $field, $key) === 0) {
+                        $v = trim((string) $value);
+                        if ($v !== '') {
+                            return $v;
+                        }
+                    }
+                }
+            }
+            return '';
+        };
+
+        $first = $pick($row, ['name', 'first_name', 'firstname', 'ad', 'firstName']);
+        $last = $pick($row, ['surname', 'last_name', 'lastname', 'soyad', 'lastName', 'family_name']);
+        $full = trim($first . ' ' . $last);
+        if ($full !== '') {
+            return $full;
+        }
+
+        $username = $pick($row, ['username', 'user_name', 'login']);
+        return $username !== '' ? $username : 'Değerli Üyemiz';
+    }
+}
+
 if (!function_exists('memberSendResetMail')) {
-    function memberSendResetMail(PDO $pdo, string $toEmail, string $token): bool
+    /**
+     * @param array<string,mixed>|null $userHint users satırı (name/surname için)
+     */
+    function memberSendResetMail(PDO $pdo, string $toEmail, string $token, ?array $userHint = null): bool
     {
         $settings = memberMailSettings($pdo);
         $enabled = (int) ($settings['enabled'] ?? $settings['mail_enabled'] ?? 0) === 1;
@@ -159,23 +215,7 @@ if (!function_exists('memberSendResetMail')) {
             $from = 'no-reply@' . (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
         }
 
-        $memberName = '';
-        try {
-            $userStmt = $pdo->prepare('SELECT name, surname, username FROM users WHERE email = :email LIMIT 1');
-            $userStmt->execute(['email' => $toEmail]);
-            $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
-            if (is_array($userRow)) {
-                $memberName = trim(trim((string) ($userRow['name'] ?? '')) . ' ' . trim((string) ($userRow['surname'] ?? '')));
-                if ($memberName === '') {
-                    $memberName = trim((string) ($userRow['username'] ?? ''));
-                }
-            }
-        } catch (Throwable) {
-            $memberName = '';
-        }
-        if ($memberName === '') {
-            $memberName = 'Değerli Üyemiz';
-        }
+        $memberName = memberResolveDisplayName($pdo, $toEmail, $userHint);
 
         $companyName = trim((string) ($settings['company_name'] ?? ''));
         if ($companyName === '') {
@@ -226,15 +266,15 @@ if (!function_exists('memberSendResetMail')) {
                 }
 
                 $siteUrl = memberResetBaseUrl();
-                // Eski Ingilizce/fatura sablonu DB'de kalmissa varsayilan Turkce temayi ezmesin.
+                // Eski / uyumsuz özel sablonlar ad-soyadi gostermez; markali varsayilana dus.
                 $customHtml = trim((string) ($settings['reset_template_html'] ?? ''));
                 if ($customHtml !== '' && (
-                    stripos($customHtml, 'You recently requested') !== false
+                    stripos($customHtml, '{{MEMBER_NAME}}') === false
+                    || stripos($customHtml, 'You recently requested') !== false
                     || stripos($customHtml, 'Reset your password') !== false
                     || stripos($customHtml, 'this invoice') !== false
                     || stripos($customHtml, 'Cheers,') !== false
                     || stripos($customHtml, 'Hi {$name}') !== false
-                    || stripos($customHtml, 'Hi {$name},') !== false
                 )) {
                     $customHtml = '';
                 }
@@ -247,17 +287,22 @@ if (!function_exists('memberSendResetMail')) {
                     'member_name' => $memberName,
                 ];
 
+                $safeName = htmlspecialchars($memberName, ENT_QUOTES, 'UTF-8');
                 $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
-                $bodyHtml = '<p style="margin:0 0 16px 0;">'
-                    . $safeCompany . ' hesabınız için şifre sıfırlama talebinde bulundunuz. '
-                    . 'Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz. '
-                    . '<strong>Bu bağlantı 1 saat geçerlidir.</strong>'
+                $bodyHtml = '<p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:#d7c6ef;">'
+                    . $safeCompany . ' hesabınız için şifre sıfırlama talebi alındı. '
+                    . 'Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.'
                     . '</p>'
-                    . '<p style="margin:0;color:#4a5568;font-size:15px;">Bu talebi siz oluşturmadıysanız bu e-postayı güvenle yok sayabilirsiniz.</p>';
+                    . '<p style="margin:0;font-size:14px;line-height:1.7;color:#b39dcc;">'
+                    . '<strong style="color:#ec46aa;">Bu bağlantı 1 saat geçerlidir.</strong> '
+                    . 'Talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.'
+                    . '</p>';
+                // safeName body icinde de gorunsun (ozel sablon BODY_HTML kullanirsa)
+                $bodyHtml = '<p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;color:#d7c6ef;">Merhaba <strong style="color:#ffffff;">' . $safeName . '</strong>,</p>' . $bodyHtml;
                 $htmlBody = metropol_mail_render_template(
                     $siteUrl,
                     $companyName . ' şifre sıfırlama bağlantınız hazır',
-                    'Merhaba ' . $memberName . ',',
+                    'Şifre Sıfırlama',
                     $bodyHtml,
                     'Şifremi Sıfırla',
                     $link,
@@ -853,15 +898,15 @@ if ($method === 'POST' && ($route === 'forgot_password.php' || $route === 'auth/
     }
     try {
         $pdo = AdminDatabase::pdo();
-        $userStmt = $pdo->prepare('SELECT id, email FROM users WHERE email = :email LIMIT 1');
-        $userStmt->execute(['email' => $email]);
+        $userStmt = $pdo->prepare('SELECT id, email, name, surname, username FROM users WHERE email = :email OR LOWER(email) = LOWER(:email2) LIMIT 1');
+        $userStmt->execute(['email' => $email, 'email2' => $email]);
         $user = $userStmt->fetch(PDO::FETCH_ASSOC);
         if (is_array($user)) {
             $token = bin2hex(random_bytes(32));
             $pdo->prepare(
                 'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
             )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
-            memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token);
+            memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token, $user);
         } else {
             memberLogOutboundMail($pdo, $email, 'Vegasroyalspin — Şifre Sıfırlama', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
         }
@@ -926,15 +971,15 @@ if ($method === 'POST' && ($route === 'password_reset.php' || $route === 'auth/p
         }
         try {
             $pdo = AdminDatabase::pdo();
-            $userStmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
-            $userStmt->execute(['email' => $email]);
+            $userStmt = $pdo->prepare('SELECT id, email, name, surname, username FROM users WHERE email = :email OR LOWER(email) = LOWER(:email2) LIMIT 1');
+            $userStmt->execute(['email' => $email, 'email2' => $email]);
             $user = $userStmt->fetch(PDO::FETCH_ASSOC);
             if (is_array($user)) {
                 $token = bin2hex(random_bytes(32));
                 $pdo->prepare(
                     'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
                 )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
-                memberSendResetMail($pdo, $email, $token);
+                memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token, $user);
             } else {
                 memberLogOutboundMail($pdo, $email, 'Vegasroyalspin — Şifre Sıfırlama', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
             }

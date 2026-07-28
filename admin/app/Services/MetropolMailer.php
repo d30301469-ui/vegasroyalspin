@@ -465,16 +465,21 @@ if (!function_exists('metropol_mail_render_template')) {
         $ctaLabel = $ctaLabel !== null && trim($ctaLabel) !== '' ? $ctaLabel : 'Şifremi Sıfırla';
         $ctaUrl = $ctaUrl !== null && trim($ctaUrl) !== '' ? trim($ctaUrl) : '#';
 
-        $greetingLine = '<h1 style="margin:0 0 24px 0;font-size:36px;line-height:1.2;color:#10131a;font-weight:800;">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</h1>';
+        $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
+        $safeMember = htmlspecialchars($memberName, ENT_QUOTES, 'UTF-8');
+        $safeHeading = htmlspecialchars($heading, ENT_QUOTES, 'UTF-8');
+        $safePreheader = htmlspecialchars($preheader, ENT_QUOTES, 'UTF-8');
+        $safeCtaLabel = htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8');
+        $safeCtaUrl = htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8');
+        $safeSupport = htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8');
+        $safeSite = htmlspecialchars($siteUrl !== '' ? $siteUrl : '#', ENT_QUOTES, 'UTF-8');
+        $safeLogo = htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8');
 
         $logoHtml = '';
         if ($logoUrl !== '') {
-            $logoHtml = '<a href="' . htmlspecialchars($siteUrl !== '' ? $siteUrl : '#', ENT_QUOTES, 'UTF-8') . '" target="_blank" style="text-decoration:none;">'
-                . '<img src="' . htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . '" width="72" height="72" style="display:block;width:72px;height:72px;max-width:72px;border:0;outline:none;text-decoration:none;border-radius:14px;">'
-                . '</a>'
-                . '<div style="margin-top:14px;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:1.2;color:#10131a;font-weight:800;">' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . '</div>';
-        } else {
-            $logoHtml = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:1.2;color:#10131a;font-weight:800;">' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . '</div>';
+            $logoHtml = '<a href="' . $safeSite . '" target="_blank" style="text-decoration:none;display:inline-block;">'
+                . '<img src="' . $safeLogo . '" alt="' . $safeCompany . '" width="64" height="64" style="display:block;width:64px;height:64px;border:0;border-radius:16px;outline:none;">'
+                . '</a>';
         }
 
         $addressHtml = nl2br(htmlspecialchars($companyAddress, ENT_QUOTES, 'UTF-8'));
@@ -483,19 +488,19 @@ if (!function_exists('metropol_mail_render_template')) {
         $customTemplate = trim((string) ($options['template_html'] ?? ''));
         if ($customTemplate !== '') {
             $tokens = [
-                '{{PREHEADER}}' => htmlspecialchars($preheader, ENT_QUOTES, 'UTF-8'),
-                '{{HEADING}}' => htmlspecialchars($heading, ENT_QUOTES, 'UTF-8'),
+                '{{PREHEADER}}' => $safePreheader,
+                '{{HEADING}}' => $safeHeading,
                 '{{BODY_HTML}}' => $bodyHtml,
-                '{{CTA_LABEL}}' => htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8'),
-                '{{CTA_URL}}' => htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8'),
-                '{{COMPANY_NAME}}' => htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8'),
-                '{{MEMBER_NAME}}' => htmlspecialchars($memberName, ENT_QUOTES, 'UTF-8'),
-                '{{SUPPORT_EMAIL}}' => htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8'),
-                '{{SUPPORT_EMAIL_LINK}}' => 'mailto:' . htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8'),
+                '{{CTA_LABEL}}' => $safeCtaLabel,
+                '{{CTA_URL}}' => $safeCtaUrl,
+                '{{COMPANY_NAME}}' => $safeCompany,
+                '{{MEMBER_NAME}}' => $safeMember,
+                '{{SUPPORT_EMAIL}}' => $safeSupport,
+                '{{SUPPORT_EMAIL_LINK}}' => 'mailto:' . $safeSupport,
                 '{{YEAR}}' => $year,
                 '{{COMPANY_ADDRESS_HTML}}' => $addressHtml,
                 '{{LOGO_HTML}}' => $logoHtml,
-                '{{FALLBACK_URL}}' => htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8'),
+                '{{FALLBACK_URL}}' => $safeCtaUrl,
             ];
             return strtr($customTemplate, $tokens);
         }
@@ -505,49 +510,54 @@ if (!function_exists('metropol_mail_render_template')) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . ' — Şifre Sıfırlama</title>
+<title>' . $safeCompany . ' — Şifre Sıfırlama</title>
 </head>
-<body style="margin:0;padding:0;background-color:#dce0e6;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;">' . htmlspecialchars($preheader, ENT_QUOTES, 'UTF-8') . '</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#dce0e6;padding:46px 18px;">
+<body style="margin:0;padding:0;background-color:#0a0719;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">' . $safePreheader . '</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a0719;background-image:linear-gradient(180deg,#0a0719 0%,#000b24 100%);padding:40px 16px;">
 <tr>
 <td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:760px;background-color:#f7f8fa;border-radius:12px;overflow:hidden;border:1px solid #d6dbe3;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:linear-gradient(160deg,#1b0c49 0%,#0b0b24 55%,#09123f 100%);border-radius:18px;overflow:hidden;border:1px solid rgba(236,70,170,.35);box-shadow:0 18px 50px rgba(0,0,0,.45);">
     <tr>
-        <td align="center" bgcolor="#f7f8fa" style="padding:50px 32px 34px 32px;background-color:#f7f8fa;border-radius:4px 4px 0 0;">
+        <td style="height:4px;background:linear-gradient(90deg,#850f83 0%,#ec46aa 50%,#9e13a0 100%);font-size:0;line-height:0;">&nbsp;</td>
+    </tr>
+    <tr>
+        <td align="center" style="padding:36px 28px 18px 28px;">
             ' . $logoHtml . '
+            <div style="margin-top:16px;font-family:Arial,Helvetica,sans-serif;font-size:26px;line-height:1.2;color:#ffffff;font-weight:800;letter-spacing:.02em;">' . $safeCompany . '</div>
+            <div style="margin-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#b39dcc;">Güvenli hesap erişimi</div>
         </td>
     </tr>
     <tr>
-        <td style="padding:0 58px 0 58px;font-family:Arial,Helvetica,sans-serif;">
-            ' . $greetingLine . '
-            <div style="font-size:16px;line-height:1.7;color:#4a5568;font-weight:400;">' . $bodyHtml . '</div>
+        <td style="padding:8px 28px 0 28px;font-family:Arial,Helvetica,sans-serif;">
+            <h1 style="margin:0 0 18px 0;font-size:28px;line-height:1.25;color:#ffffff;font-weight:800;">' . $safeHeading . '</h1>
+            <div style="font-size:16px;line-height:1.7;color:#d7c6ef;">' . $bodyHtml . '</div>
         </td>
     </tr>
     <tr>
-        <td align="center" style="padding:36px 58px 44px 58px;">
+        <td align="center" style="padding:28px 28px 12px 28px;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                    <td align="center" bgcolor="#1553d6" style="border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,.12);">
-                        <a href="' . htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" style="display:inline-block;padding:18px 42px;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:1;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;background-color:#1553d6;">' . htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8') . '</a>
+                    <td align="center" style="border-radius:10px;background:linear-gradient(135deg,#850f83 0%,#9e13a0 55%,#ec46aa 100%);">
+                        <a href="' . $safeCtaUrl . '" target="_blank" style="display:inline-block;padding:16px 36px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">' . $safeCtaLabel . '</a>
                     </td>
                 </tr>
             </table>
         </td>
     </tr>
     <tr>
-        <td style="padding:0 58px 42px 58px;font-family:Arial,Helvetica,sans-serif;">
-            <p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;color:#4a5568;">Sorunuz olursa bu e-postaya yanıt verebilir veya <a href="mailto:' . htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') . '" style="color:#1553d6;text-decoration:underline;">destek ekibimize</a> yazabilirsiniz.</p>
-            <p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;color:#4a5568;">Saygılarımızla,<br>' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . ' Ekibi</p>
-            <hr style="border:none;border-top:1px solid #d7dde6;margin:42px 0 34px 0;">
-            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#4a5568;">Buton çalışmıyorsa aşağıdaki bağlantıyı tarayıcınıza kopyalayıp yapıştırın.</p>
-            <p style="margin:0;font-size:14px;line-height:1.7;color:#4a5568;word-break:break-all;">' . htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8') . '</p>
+        <td style="padding:20px 28px 32px 28px;font-family:Arial,Helvetica,sans-serif;">
+            <p style="margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#b39dcc;">Sorunuz olursa bu e-postaya yanıt verin veya <a href="mailto:' . $safeSupport . '" style="color:#ec46aa;text-decoration:underline;">destek ekibimize</a> yazın.</p>
+            <p style="margin:0 0 18px 0;font-size:14px;line-height:1.7;color:#d7c6ef;">Saygılarımızla,<br><strong style="color:#ffffff;">' . $safeCompany . ' Ekibi</strong></p>
+            <hr style="border:none;border-top:1px solid rgba(236,70,170,.22);margin:22px 0;">
+            <p style="margin:0 0 8px 0;font-size:12px;line-height:1.6;color:#8f7aa8;">Buton çalışmazsa bağlantıyı tarayıcınıza yapıştırın:</p>
+            <p style="margin:0;font-size:12px;line-height:1.6;color:#b39dcc;word-break:break-all;">' . $safeCtaUrl . '</p>
         </td>
     </tr>
     <tr>
-        <td align="center" style="padding:36px 24px 44px 24px;background-color:#dce0e6;">
-            <p style="margin:0 0 12px 0;font-size:13px;line-height:1.6;color:#8a97aa;font-family:Arial,Helvetica,sans-serif;">&copy; ' . $year . ' ' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . '. Tüm hakları saklıdır.</p>
-            <p style="margin:0;font-size:13px;line-height:1.65;color:#8a97aa;font-family:Arial,Helvetica,sans-serif;">' . $addressHtml . '</p>
+        <td align="center" style="padding:18px 24px 28px 24px;background:rgba(0,0,0,.28);">
+            <p style="margin:0 0 8px 0;font-size:12px;line-height:1.6;color:#8f7aa8;font-family:Arial,Helvetica,sans-serif;">&copy; ' . $year . ' ' . $safeCompany . '. Tüm hakları saklıdır.</p>
+            <p style="margin:0;font-size:12px;line-height:1.6;color:#8f7aa8;font-family:Arial,Helvetica,sans-serif;">' . $addressHtml . '</p>
         </td>
     </tr>
 </table>
