@@ -1454,21 +1454,25 @@ final class GamingSoftService
             return $row;
         }
 
+        $providerMatch = $provider !== '' ? $provider : $productName;
+        $nameMatch = $productName !== '' ? $productName : $provider;
         $lookup = $pdo->prepare(
             'SELECT * FROM gamingsoft_products
              WHERE is_active = 1
                AND currency = :cur
                AND (
-                    provider = :provider OR product_name = :provider
-                    OR provider = :pname OR product_name = :pname
+                    provider = :provider1 OR product_name = :provider2
+                    OR provider = :pname1 OR product_name = :pname2
                )
              ORDER BY synced_at DESC, id DESC
              LIMIT 1'
         );
         $lookup->execute([
-            ':cur'      => $targetCurrency,
-            ':provider' => $provider !== '' ? $provider : $productName,
-            ':pname'    => $productName !== '' ? $productName : $provider,
+            ':cur'        => $targetCurrency,
+            ':provider1'  => $providerMatch,
+            ':provider2'  => $providerMatch,
+            ':pname1'     => $nameMatch,
+            ':pname2'     => $nameMatch,
         ]);
         $match = $lookup->fetch(PDO::FETCH_ASSOC);
 

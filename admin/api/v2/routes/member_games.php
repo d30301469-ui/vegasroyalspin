@@ -1030,10 +1030,21 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         }
         $memberEnvelope($httpCode, $result);
     } catch (Throwable $exception) {
+        $providerLabel = 'Oyun';
+        $launchGameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
+        if ($launchGameId !== '') {
+            if (GamingSoftService::ownsGameId($launchGameId)) {
+                $providerLabel = 'GamingSoft';
+            } elseif (CasinoAggregatorService::ownsGameId($launchGameId)) {
+                $providerLabel = 'Casino Aggregator';
+            } elseif (BgamingService::ownsGameId($launchGameId)) {
+                $providerLabel = 'BGaming';
+            }
+        }
         $memberEnvelope(422, [
             'success' => false,
             'code' => 422,
-            'message' => 'BGaming oyun başlatma hatası: ' . $exception->getMessage(),
+            'message' => $providerLabel . ' oyun başlatma hatası: ' . $exception->getMessage(),
             'error' => $exception->getMessage(),
         ]);
     }
