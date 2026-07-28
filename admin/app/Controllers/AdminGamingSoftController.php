@@ -84,4 +84,17 @@ final class AdminGamingSoftController extends AdminController
         }
         $this->redirect(AdminAuth::url('/gamingsoft/settings'));
     }
+
+    private function flash(string $message): void
+    {
+        $_SESSION['admin_flash'] = $message;
+    }
+
+    private function pullFlash(): string
+    {
+        $message = (string) ($_SESSION['admin_flash'] ?? '');
+        unset($_SESSION['admin_flash']);
+
+        return $message;
+    }
 }
