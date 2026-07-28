@@ -509,6 +509,25 @@ final class SlotGamesQuery
         }
         $aggGameType = $gameType === 1 ? 2 : 1;
         if ($source === '' || $source === 'aggregator') {
+            if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
+                static $liveGamesRepaired = false;
+                if (!$liveGamesRepaired) {
+                    $liveGamesRepaired = true;
+                    try {
+                        CasinoAggregatorService::repairGameTypesFromPayload($pdo);
+                    } catch (Throwable) {
+                    }
+                }
+            }
+            $typeClause = "g.game_type = {$aggGameType}";
+            if (class_exists('CasinoAggregatorService', false)) {
+                $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
+                if ($gameType === 1) {
+                    $typeClause = "(g.game_type = {$aggGameType} OR {$liveMatch})";
+                } else {
+                    $typeClause = "(g.game_type = {$aggGameType} AND NOT {$liveMatch})";
+                }
+            }
             $union[] = "SELECT
                     CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
@@ -522,7 +541,7 @@ final class SlotGamesQuery
                     COALESCE(g.raw_payload, '') AS raw_payload
                 FROM casino_aggregator_games g
                 INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
-                WHERE g.is_active = 1 AND v.is_active = 1 AND g.game_type = {$aggGameType}";
+                WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
         }
 
         if ($union === []) {
@@ -690,11 +709,15 @@ final class SlotGamesQuery
                     }
                 }
             }
+            $liveExtra = '';
+            if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
+                $liveExtra = ' OR ' . CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
+            }
             $aggStmt = $pdo->prepare(
                 "SELECT DISTINCT COALESCE(NULLIF(v.vendor_name, ''), v.vendor_code) AS provider_name
                  FROM casino_aggregator_vendors v
                  INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
-                 WHERE v.is_active = 1 AND g.is_active = 1 AND g.game_type = :type
+                 WHERE v.is_active = 1 AND g.is_active = 1 AND (g.game_type = :type{$liveExtra})
                  ORDER BY provider_name ASC"
             );
             $aggStmt->execute([':type' => $aggType]);

@@ -77,16 +77,23 @@ final class CasinoAggregatorService
 
     /**
      * Normalize Operator API / DB gameType to 1 (Slot) or 2 (Live Casino).
-     * Falls back to vendorCode hints (e.g. live-evolution) when the value is missing.
+     * Falls back to vendorCode hints (e.g. live-evolution / evolution) when the value is missing.
      */
     public static function normalizeGameType(mixed $value, ?string $vendorCode = null): int
     {
-        if (is_int($value) || is_float($value) || (is_string($value) && is_numeric(trim($value)))) {
+        $vendor = strtolower(trim((string) ($vendorCode ?? '')));
+        $hasExplicitNumeric = is_int($value) || is_float($value) || (is_string($value) && is_numeric(trim($value)));
+        if ($hasExplicitNumeric) {
             $n = (int) $value;
             if ($n === 2) {
                 return 2;
             }
             if ($n === 1) {
+                // Explicit slot type still yields to live-only vendor brands
+                // (Evolution tables are often tagged 1 incorrectly by GetVendors).
+                if (self::isLiveCasinoVendorCode($vendor) && !self::isSlotOnlyVendorCode($vendor)) {
+                    return 2;
+                }
                 return 1;
             }
         }
@@ -103,27 +110,83 @@ final class CasinoAggregatorService
                 return 2;
             }
             if ($raw === '1' || str_contains($raw, 'slot')) {
+                if (self::isLiveCasinoVendorCode($vendor) && !self::isSlotOnlyVendorCode($vendor)) {
+                    return 2;
+                }
                 return 1;
             }
         }
 
-        $vendor = strtolower(trim((string) ($vendorCode ?? '')));
-        if ($vendor !== '') {
-            if (
-                str_starts_with($vendor, 'live-')
-                || str_starts_with($vendor, 'live_')
-                || str_contains($vendor, 'livecasino')
-                || str_contains($vendor, 'live-casino')
-                || str_contains($vendor, 'live_casino')
-            ) {
-                return 2;
-            }
-            if (str_starts_with($vendor, 'slot-') || str_starts_with($vendor, 'slot_')) {
-                return 1;
-            }
+        if (self::isLiveCasinoVendorCode($vendor)) {
+            return 2;
+        }
+        if (self::isSlotOnlyVendorCode($vendor)) {
+            return 1;
         }
 
         return 1;
+    }
+
+    /** Live-casino brands / vendor codes (Evolution ≠ Evoplay). */
+    public static function isLiveCasinoVendorCode(string $vendorCode): bool
+    {
+        $vendor = strtolower(trim($vendorCode));
+        if ($vendor === '') {
+            return false;
+        }
+        $compact = preg_replace('/[^a-z0-9]+/', '', $vendor) ?? '';
+        if ($compact === '') {
+            return false;
+        }
+
+        if (str_starts_with($vendor, 'live-') || str_starts_with($vendor, 'live_') || str_starts_with($compact, 'live')) {
+            return true;
+        }
+
+        // Evoplay is a slot studio — never treat as Evolution live.
+        if (str_contains($compact, 'evoplay')) {
+            return false;
+        }
+
+        foreach (['evolution', 'ezugi', 'vivo', 'sagaming', 'pragmaticlive', 'livepragmatic', 'authenticgaming', 'tvbet', 'betgames'] as $needle) {
+            if (str_contains($compact, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static function isSlotOnlyVendorCode(string $vendorCode): bool
+    {
+        $vendor = strtolower(trim($vendorCode));
+        if ($vendor === '') {
+            return false;
+        }
+        if (str_starts_with($vendor, 'slot-') || str_starts_with($vendor, 'slot_')) {
+            return true;
+        }
+        $compact = preg_replace('/[^a-z0-9]+/', '', $vendor) ?? '';
+
+        return str_contains($compact, 'evoplay');
+    }
+
+    /**
+     * SQL fragment matching live-casino vendor codes wrongly stored as slots.
+     * Safe for embedding in prepared statements (no user input).
+     */
+    public static function liveVendorSqlMatch(string $vendorColumn = 'g.vendor_code'): string
+    {
+        $col = $vendorColumn;
+        return '('
+            . "LOWER({$col}) LIKE 'live-%' OR LOWER({$col}) LIKE 'live\\_%' OR "
+            . "(LOWER({$col}) LIKE '%evolution%' AND LOWER({$col}) NOT LIKE '%evoplay%') OR "
+            . "LOWER({$col}) LIKE '%ezugi%' OR LOWER({$col}) LIKE '%vivo%' OR "
+            . "LOWER({$col}) LIKE '%sagaming%' OR LOWER({$col}) LIKE '%sa-gaming%' OR "
+            . "LOWER({$col}) LIKE '%pragmaticlive%' OR LOWER({$col}) LIKE '%live-pragmatic%' OR "
+            . "LOWER({$col}) LIKE '%authenticgaming%' OR LOWER({$col}) LIKE '%tvbet%' OR "
+            . "LOWER({$col}) LIKE '%betgames%'"
+            . ')';
     }
 
     private const SIGN_HEADERS = [
@@ -573,7 +636,7 @@ final class CasinoAggregatorService
     }
 
     /**
-     * Reclassify games from stored raw_payload / live-* vendor codes so live
+     * Reclassify games from stored raw_payload / live vendor codes so live
      * casino titles (e.g. Evolution type 2) appear in the live lobby.
      *
      * @return array{updated:int,vendors:int}
@@ -584,6 +647,17 @@ final class CasinoAggregatorService
         $updated = 0;
         $vendorUpdated = 0;
         try {
+            // Fast path: force known live brands to game_type=2 even when API tagged them as slots.
+            $liveMatch = self::liveVendorSqlMatch('vendor_code');
+            $forced = (int) $pdo->exec(
+                "UPDATE casino_aggregator_games
+                 SET game_type = 2
+                 WHERE game_type <> 2 AND {$liveMatch}"
+            );
+            if ($forced > 0) {
+                $updated += $forced;
+            }
+
             $vendorTypeStmt = $pdo->query('SELECT vendor_code, game_type FROM casino_aggregator_vendors');
             $vendorTypes = [];
             foreach ($vendorTypeStmt ? $vendorTypeStmt->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
@@ -619,7 +693,7 @@ final class CasinoAggregatorService
                 $rawType = $payload['gameType'] ?? $payload['game_type'] ?? null;
                 $type = self::normalizeGameType($rawType, $vendor);
                 if (($rawType === null || $rawType === '') && isset($vendorTypes[$vendor])) {
-                    $type = $vendorTypes[$vendor];
+                    $type = self::normalizeGameType($vendorTypes[$vendor], $vendor);
                 }
                 if ($id > 0 && $type !== $current) {
                     $update->execute([':type' => $type, ':id' => $id]);
@@ -633,7 +707,8 @@ final class CasinoAggregatorService
                  WHERE EXISTS (
                     SELECT 1 FROM casino_aggregator_games g
                     WHERE g.vendor_code = v.vendor_code AND g.is_active = 1 AND g.game_type = 2
-                 )'
+                 )
+                 OR ' . self::liveVendorSqlMatch('v.vendor_code')
             );
             if ($vendorUpdated < 0) {
                 $vendorUpdated = 0;
