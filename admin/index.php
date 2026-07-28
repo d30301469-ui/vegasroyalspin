@@ -204,6 +204,10 @@ $router->post('/casino-aggregator/agent-settings/pull', [AdminCasinoAggregatorCo
 $router->get('/casino-aggregator/user-settings', [AdminCasinoAggregatorController::class, 'userSettings']);
 $router->post('/casino-aggregator/user-settings', [AdminCasinoAggregatorController::class, 'updateUserSettings']);
 $router->post('/casino-aggregator/user-settings/pull', [AdminCasinoAggregatorController::class, 'pullUserSettings']);
+$router->get('/casino-aggregator/game-control', [AdminCasinoAggregatorController::class, 'gameControl']);
+$router->post('/casino-aggregator/call-apply', [AdminCasinoAggregatorController::class, 'callApply']);
+$router->post('/casino-aggregator/call-cancel', [AdminCasinoAggregatorController::class, 'callCancel']);
+$router->post('/casino-aggregator/call-list', [AdminCasinoAggregatorController::class, 'callList']);
 $router->get('/megapayz/settings', [AdminMegaPayzController::class, 'settings']);
 $router->post('/megapayz/settings', [AdminMegaPayzController::class, 'updateSettings']);
 $router->get('/megapayz/methods', [AdminMegaPayzController::class, 'methods']);

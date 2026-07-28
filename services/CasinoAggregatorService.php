@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 /**
- * Casino Aggregator — multi-vendor slots & live casino (Operator API v1.0.3).
+ * Casino Aggregator — multi-vendor slots & live casino (Operator API v1.0.3)
+ * + Game Control API v1.0.0.
  *
- * Operator API (we -> provider): GetVendors, GetVendorGames, GetGameUrl,
- *     GetAgentSetting, SetAgentSetting, GetUserSetting, SetUserSetting, ...
- * Wallet Callback (provider -> us): GetBalance, ChangeBalance, UpdateDetail
+ * Operator API: GetVendors, GetVendorGames, GetGameUrl, ...
+ * Game Control: GetCurrentPlayers, GetCallList, CallApply, CallCancel, GetCallHistory,
+ *     GetUserSetting, ChangeUserSetting, GetAgentSetting, ChangeAgentSetting
+ * Wallet Callback: GetBalance, ChangeBalance, UpdateDetail
  */
 final class CasinoAggregatorService
 {
@@ -15,8 +17,8 @@ final class CasinoAggregatorService
     private const DEFAULT_API_BASE = '';
     private static bool $schemaBootstrapped = false;
 
-    /** @var list<string> */
-    public const AGENT_SETTING_KEYS = [
+    /** Appendix 4.12 — AgentSetting categories (key is usually empty). */
+    public const AGENT_SETTING_CATEGORIES = [
         'RoundKey',
         'HideRoundId',
         'HideTournament',
@@ -25,7 +27,22 @@ final class CasinoAggregatorService
         'HighRtp',
     ];
 
-    /** @var list<string> */
+    /** Appendix 4.11 — UserSetting categories (key is usually empty). */
+    public const USER_SETTING_CATEGORIES = [
+        'LowRtp',
+        'HighRtp',
+    ];
+
+    /** @deprecated use AGENT_SETTING_CATEGORIES */
+    public const AGENT_SETTING_KEYS = [
+        'RoundKey',
+        'HideRoundId',
+        'HideTournament',
+        'HideBadge',
+        'LowRtp',
+        'HighRtp',
+    ];
+    /** @deprecated use USER_SETTING_CATEGORIES */
     public const USER_SETTING_KEYS = [
         'LowRtp',
         'HighRtp',
@@ -126,20 +143,36 @@ final class CasinoAggregatorService
     }
 
     /**
-     * Create AgentSetting / UserSetting mirrors.
-     * DDL is inlined (not require()'d) so OPcache cannot serve a stale migration with TEXT DEFAULT.
+     * Create AgentSetting / UserSetting mirrors (Game Control API v1.0.0).
+     * Scoped by vendorCode + gameCode + currencyCode + category (+ empty key).
      */
     private static function ensureSettingsTables(PDO $pdo): void
     {
+        // Rebuild legacy global-only tables that lack vendor_code (doc requires per-game scope).
+        if (self::tableExists($pdo, 'casino_aggregator_agent_settings')
+            && !self::columnExists($pdo, 'casino_aggregator_agent_settings', 'vendor_code')) {
+            $pdo->exec('DROP TABLE casino_aggregator_agent_settings');
+        }
+        if (self::tableExists($pdo, 'casino_aggregator_user_settings')
+            && !self::columnExists($pdo, 'casino_aggregator_user_settings', 'vendor_code')) {
+            $pdo->exec('DROP TABLE casino_aggregator_user_settings');
+        }
+
         if (!self::tableExists($pdo, 'casino_aggregator_agent_settings')) {
             $pdo->exec(
                 'CREATE TABLE casino_aggregator_agent_settings (
-                    setting_key VARCHAR(64) NOT NULL,
+                    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    vendor_code VARCHAR(120) NOT NULL DEFAULT \'\',
+                    game_code VARCHAR(120) NOT NULL DEFAULT \'\',
+                    currency_code VARCHAR(8) NOT NULL DEFAULT \'\',
+                    category VARCHAR(64) NOT NULL,
+                    setting_key VARCHAR(64) NOT NULL DEFAULT \'\',
                     setting_value VARCHAR(512) NOT NULL DEFAULT \'\',
                     synced_at DATETIME NULL DEFAULT NULL,
                     created_at DATETIME NULL DEFAULT NULL,
                     updated_at DATETIME NULL DEFAULT NULL,
-                    PRIMARY KEY (setting_key)
+                    PRIMARY KEY (id),
+                    UNIQUE KEY uniq_ca_agent_setting (vendor_code, game_code, currency_code, category, setting_key)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
             );
         }
@@ -150,31 +183,56 @@ final class CasinoAggregatorService
                     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                     user_id INT UNSIGNED NULL DEFAULT NULL,
                     user_code VARCHAR(120) NOT NULL,
-                    setting_key VARCHAR(64) NOT NULL,
+                    vendor_code VARCHAR(120) NOT NULL DEFAULT \'\',
+                    game_code VARCHAR(120) NOT NULL DEFAULT \'\',
+                    currency_code VARCHAR(8) NOT NULL DEFAULT \'\',
+                    category VARCHAR(64) NOT NULL,
+                    setting_key VARCHAR(64) NOT NULL DEFAULT \'\',
                     setting_value VARCHAR(512) NOT NULL DEFAULT \'\',
                     synced_at DATETIME NULL DEFAULT NULL,
                     created_at DATETIME NULL DEFAULT NULL,
                     updated_at DATETIME NULL DEFAULT NULL,
                     PRIMARY KEY (id),
-                    UNIQUE KEY uniq_casino_agg_user_setting (user_code, setting_key),
-                    KEY idx_casino_agg_user_settings_user (user_id),
-                    KEY idx_casino_agg_user_settings_key (setting_key)
+                    UNIQUE KEY uniq_ca_user_setting (user_code, vendor_code, game_code, currency_code, category, setting_key),
+                    KEY idx_casino_agg_user_settings_user (user_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
             );
         }
 
-        $stmt = $pdo->prepare(
-            'INSERT IGNORE INTO casino_aggregator_agent_settings (setting_key, setting_value) VALUES (:k, :v)'
-        );
-        foreach ([
-            'RoundKey' => '',
-            'HideRoundId' => '0',
-            'HideTournament' => '0',
-            'HideBadge' => '0',
-            'LowRtp' => '',
-            'HighRtp' => '',
-        ] as $key => $value) {
-            $stmt->execute([':k' => $key, ':v' => $value]);
+        if (!self::tableExists($pdo, 'casino_aggregator_call_logs')) {
+            $pdo->exec(
+                'CREATE TABLE casino_aggregator_call_logs (
+                    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    action VARCHAR(40) NOT NULL,
+                    user_code VARCHAR(120) NULL DEFAULT NULL,
+                    vendor_code VARCHAR(120) NULL DEFAULT NULL,
+                    game_code VARCHAR(120) NULL DEFAULT NULL,
+                    call_id BIGINT NULL DEFAULT NULL,
+                    call_rtp DECIMAL(12,4) NULL DEFAULT NULL,
+                    bet_amount DECIMAL(14,2) NULL DEFAULT NULL,
+                    money_amount DECIMAL(14,2) NULL DEFAULT NULL,
+                    status_code SMALLINT NULL DEFAULT NULL,
+                    request_payload TEXT NULL,
+                    response_payload TEXT NULL,
+                    created_at DATETIME NULL DEFAULT NULL,
+                    PRIMARY KEY (id),
+                    KEY idx_ca_call_logs_created (created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+        }
+    }
+
+    private static function columnExists(PDO $pdo, string $table, string $column): bool
+    {
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT 1 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND COLUMN_NAME = :c LIMIT 1'
+            );
+            $stmt->execute([':t' => $table, ':c' => $column]);
+            return (bool) $stmt->fetchColumn();
+        } catch (Throwable) {
+            return false;
         }
     }
 
@@ -1803,22 +1861,61 @@ final class CasinoAggregatorService
         return null;
     }
 
-    // ── Appendix 4: AgentSetting / UserSetting ──────────────────────────────
+    // ── Game Control API v1.0.0 ─────────────────────────────────────────────
 
-    /** @return array<string, string> key => value */
-    public static function getAgentSettings(PDO $pdo): array
+    /**
+     * @param array{vendor_code?:string,game_code?:string,currency_code?:string,vendorCode?:string,gameCode?:string,currencyCode?:string} $context
+     * @return array{vendor_code: string, game_code: string, currency_code: string}
+     */
+    public static function normalizeGameControlContext(PDO $pdo, array $context): array
+    {
+        $cfg = self::config($pdo);
+        $vendor = trim((string) ($context['vendor_code'] ?? $context['vendorCode'] ?? ''));
+        $game = trim((string) ($context['game_code'] ?? $context['gameCode'] ?? ''));
+        $currency = strtoupper(trim((string) ($context['currency_code'] ?? $context['currencyCode'] ?? ($cfg['currency'] ?? 'TRY'))));
+        if ($currency === '') {
+            $currency = 'TRY';
+        }
+        if ($vendor === '' || $game === '') {
+            throw new RuntimeException('vendorCode ve gameCode zorunludur (Game Control API).');
+        }
+        return [
+            'vendor_code'   => $vendor,
+            'game_code'     => $game,
+            'currency_code' => $currency,
+        ];
+    }
+
+    /** @return array<string, string> category => value */
+    public static function getAgentSettings(PDO $pdo, array $context = []): array
     {
         self::bootstrap($pdo);
         $out = [];
-        foreach (self::AGENT_SETTING_KEYS as $key) {
-            $out[$key] = '';
+        foreach (self::AGENT_SETTING_CATEGORIES as $category) {
+            $out[$category] = '';
         }
         try {
-            $rows = $pdo->query('SELECT setting_key, setting_value FROM casino_aggregator_agent_settings')->fetchAll(PDO::FETCH_ASSOC) ?: [];
-            foreach ($rows as $row) {
-                $key = (string) ($row['setting_key'] ?? '');
-                if ($key !== '' && array_key_exists($key, $out)) {
-                    $out[$key] = (string) ($row['setting_value'] ?? '');
+            if ($context !== []) {
+                $ctx = self::normalizeGameControlContext($pdo, $context);
+                $stmt = $pdo->prepare(
+                    'SELECT category, setting_value FROM casino_aggregator_agent_settings
+                     WHERE vendor_code = :v AND game_code = :g AND currency_code = :c AND setting_key = \'\''
+                );
+                $stmt->execute([
+                    ':v' => $ctx['vendor_code'],
+                    ':g' => $ctx['game_code'],
+                    ':c' => $ctx['currency_code'],
+                ]);
+            } else {
+                $stmt = $pdo->query(
+                    'SELECT category, setting_value FROM casino_aggregator_agent_settings
+                     WHERE setting_key = \'\' ORDER BY updated_at DESC, id DESC'
+                );
+            }
+            foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) ?: [] as $row) {
+                $category = (string) ($row['category'] ?? '');
+                if ($category !== '' && array_key_exists($category, $out) && $out[$category] === '') {
+                    $out[$category] = (string) ($row['setting_value'] ?? '');
                 }
             }
         } catch (Throwable) {
@@ -1827,147 +1924,151 @@ final class CasinoAggregatorService
     }
 
     /**
-     * Persist agent settings locally and push each changed key via SetAgentSetting.
+     * ChangeAgentSetting for each category (Appendix 4.12).
      *
-     * @param array<string, mixed> $data
-     * @return array{saved: int, api_ok: int, errors: list<string>}
+     * @param array<string, mixed> $data category => value
+     * @return array{saved: int, api_ok: int, errors: list<string>, context: array<string,string>}
      */
-    public static function setAgentSettings(PDO $pdo, array $data, bool $pushApi = true): array
+    public static function setAgentSettings(PDO $pdo, array $data, bool $pushApi = true, array $context = []): array
     {
         self::bootstrap($pdo);
+        $ctx = self::normalizeGameControlContext($pdo, $context !== [] ? $context : $data);
         $normalized = self::normalizeAgentSettingInput($data);
         $saved = 0;
         $apiOk = 0;
         $errors = [];
+        $cfg = $pushApi ? self::configuredConfig($pdo) : [];
 
         $stmt = $pdo->prepare(
-            'INSERT INTO casino_aggregator_agent_settings (setting_key, setting_value, synced_at)
-             VALUES (:k, :v, NOW())
-             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), synced_at = NOW()'
+            'INSERT INTO casino_aggregator_agent_settings
+                (vendor_code, game_code, currency_code, category, setting_key, setting_value, synced_at, created_at, updated_at)
+             VALUES (:v, :g, :c, :cat, \'\', :val, NOW(), NOW(), NOW())
+             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), synced_at = NOW(), updated_at = NOW()'
         );
 
-        foreach ($normalized as $key => $value) {
-            $stmt->execute([':k' => $key, ':v' => $value]);
+        foreach ($normalized as $category => $value) {
+            $stmt->execute([
+                ':v'   => $ctx['vendor_code'],
+                ':g'   => $ctx['game_code'],
+                ':c'   => $ctx['currency_code'],
+                ':cat' => $category,
+                ':val' => $value,
+            ]);
             $saved++;
 
             if (!$pushApi) {
                 continue;
             }
             try {
-                $cfg = self::configuredConfig($pdo);
                 $response = self::requestWithConfig($cfg, [
-                    'method'    => 'SetAgentSetting',
-                    'token'     => (string) $cfg['api_token'],
-                    'agentCode' => (string) $cfg['agent_code'],
-                    'key'       => $key,
-                    'value'     => $value,
+                    'method'       => 'ChangeAgentSetting',
+                    'token'        => (string) $cfg['api_token'],
+                    'agentCode'    => (string) $cfg['agent_code'],
+                    'gameCode'     => $ctx['game_code'],
+                    'currencyCode' => $ctx['currency_code'],
+                    'vendorCode'   => $ctx['vendor_code'],
+                    'category'     => $category,
+                    'key'          => '',
+                    'value'        => $value,
                 ], 15);
-                self::assertSuccess($response, 'SetAgentSetting:' . $key);
+                self::assertSuccess($response, 'ChangeAgentSetting:' . $category);
                 $apiOk++;
             } catch (Throwable $e) {
-                $errors[] = $key . ': ' . $e->getMessage();
+                $errors[] = $category . ': ' . $e->getMessage();
             }
         }
 
-        return ['saved' => $saved, 'api_ok' => $apiOk, 'errors' => $errors];
+        return ['saved' => $saved, 'api_ok' => $apiOk, 'errors' => $errors, 'context' => $ctx];
     }
 
     /**
-     * Pull agent settings from GetAgentSetting into local mirror.
-     *
-     * @return array{updated: int, values: array<string, string>, errors: list<string>}
+     * @return array{updated: int, values: array<string, string>, errors: list<string>, context: array<string,string>}
      */
-    public static function pullAgentSettings(PDO $pdo): array
+    public static function pullAgentSettings(PDO $pdo, array $context = []): array
     {
         self::bootstrap($pdo);
+        $ctx = self::normalizeGameControlContext($pdo, $context);
         $cfg = self::configuredConfig($pdo);
         $updated = 0;
-        $values = self::getAgentSettings($pdo);
+        $values = self::getAgentSettings($pdo, $ctx);
         $errors = [];
 
-        foreach (self::AGENT_SETTING_KEYS as $key) {
+        foreach (self::AGENT_SETTING_CATEGORIES as $category) {
             try {
                 $response = self::requestWithConfig($cfg, [
-                    'method'    => 'GetAgentSetting',
-                    'token'     => (string) $cfg['api_token'],
-                    'agentCode' => (string) $cfg['agent_code'],
-                    'key'       => $key,
+                    'method'       => 'GetAgentSetting',
+                    'token'        => (string) $cfg['api_token'],
+                    'agentCode'    => (string) $cfg['agent_code'],
+                    'gameCode'     => $ctx['game_code'],
+                    'currencyCode' => $ctx['currency_code'],
+                    'vendorCode'   => $ctx['vendor_code'],
+                    'category'     => $category,
+                    'key'          => '',
                 ], 15);
-                self::assertSuccess($response, 'GetAgentSetting:' . $key);
-                $remote = self::extractSettingValue($response, $key);
+                self::assertSuccess($response, 'GetAgentSetting:' . $category);
+                $remote = self::extractSettingValue($response, $category);
                 if ($remote === null) {
                     continue;
                 }
-                $remote = self::normalizeSettingValue($key, $remote);
+                $remote = self::normalizeSettingValue($category, $remote);
                 $pdo->prepare(
-                    'INSERT INTO casino_aggregator_agent_settings (setting_key, setting_value, synced_at)
-                     VALUES (:k, :v, NOW())
-                     ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), synced_at = NOW()'
-                )->execute([':k' => $key, ':v' => $remote]);
-                $values[$key] = $remote;
+                    'INSERT INTO casino_aggregator_agent_settings
+                        (vendor_code, game_code, currency_code, category, setting_key, setting_value, synced_at, created_at, updated_at)
+                     VALUES (:v, :g, :c, :cat, \'\', :val, NOW(), NOW(), NOW())
+                     ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), synced_at = NOW(), updated_at = NOW()'
+                )->execute([
+                    ':v'   => $ctx['vendor_code'],
+                    ':g'   => $ctx['game_code'],
+                    ':c'   => $ctx['currency_code'],
+                    ':cat' => $category,
+                    ':val' => $remote,
+                ]);
+                $values[$category] = $remote;
                 $updated++;
             } catch (Throwable $e) {
-                $errors[] = $key . ': ' . $e->getMessage();
+                $errors[] = $category . ': ' . $e->getMessage();
             }
         }
 
-        // Fallback: one bulk Get without key
-        if ($updated === 0 && $errors !== []) {
-            try {
-                $response = self::requestWithConfig($cfg, [
-                    'method'    => 'GetAgentSetting',
-                    'token'     => (string) $cfg['api_token'],
-                    'agentCode' => (string) $cfg['agent_code'],
-                ], 15);
-                if ((int) ($response['status'] ?? -1) === 0) {
-                    $bulk = self::extractSettingMap($response);
-                    foreach ($bulk as $key => $value) {
-                        if (!in_array($key, self::AGENT_SETTING_KEYS, true)) {
-                            continue;
-                        }
-                        $value = self::normalizeSettingValue($key, $value);
-                        $pdo->prepare(
-                            'INSERT INTO casino_aggregator_agent_settings (setting_key, setting_value, synced_at)
-                             VALUES (:k, :v, NOW())
-                             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), synced_at = NOW()'
-                        )->execute([':k' => $key, ':v' => $value]);
-                        $values[$key] = $value;
-                        $updated++;
-                    }
-                    if ($updated > 0) {
-                        $errors = [];
-                    }
-                }
-            } catch (Throwable $e) {
-                $errors[] = 'bulk: ' . $e->getMessage();
-            }
-        }
-
-        return ['updated' => $updated, 'values' => $values, 'errors' => $errors];
+        return ['updated' => $updated, 'values' => $values, 'errors' => $errors, 'context' => $ctx];
     }
 
     /** @return array<string, string> */
-    public static function getUserSettings(PDO $pdo, string $userCode): array
+    public static function getUserSettings(PDO $pdo, string $userCode, array $context = []): array
     {
         self::bootstrap($pdo);
         $userCode = trim($userCode);
         $out = [];
-        foreach (self::USER_SETTING_KEYS as $key) {
-            $out[$key] = '';
+        foreach (self::USER_SETTING_CATEGORIES as $category) {
+            $out[$category] = '';
         }
         if ($userCode === '') {
             return $out;
         }
         try {
-            $stmt = $pdo->prepare(
-                'SELECT setting_key, setting_value FROM casino_aggregator_user_settings
-                 WHERE user_code = :c'
-            );
-            $stmt->execute([':c' => $userCode]);
+            if ($context !== []) {
+                $ctx = self::normalizeGameControlContext($pdo, $context);
+                $stmt = $pdo->prepare(
+                    'SELECT category, setting_value FROM casino_aggregator_user_settings
+                     WHERE user_code = :u AND vendor_code = :v AND game_code = :g AND currency_code = :c AND setting_key = \'\''
+                );
+                $stmt->execute([
+                    ':u' => $userCode,
+                    ':v' => $ctx['vendor_code'],
+                    ':g' => $ctx['game_code'],
+                    ':c' => $ctx['currency_code'],
+                ]);
+            } else {
+                $stmt = $pdo->prepare(
+                    'SELECT category, setting_value FROM casino_aggregator_user_settings
+                     WHERE user_code = :u AND setting_key = \'\' ORDER BY updated_at DESC, id DESC'
+                );
+                $stmt->execute([':u' => $userCode]);
+            }
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
-                $key = (string) ($row['setting_key'] ?? '');
-                if ($key !== '' && array_key_exists($key, $out)) {
-                    $out[$key] = (string) ($row['setting_value'] ?? '');
+                $category = (string) ($row['category'] ?? '');
+                if ($category !== '' && array_key_exists($category, $out) && $out[$category] === '') {
+                    $out[$category] = (string) ($row['setting_value'] ?? '');
                 }
             }
         } catch (Throwable) {
@@ -1977,9 +2078,9 @@ final class CasinoAggregatorService
 
     /**
      * @param array<string, mixed> $data
-     * @return array{saved: int, api_ok: int, errors: list<string>, user_code: string, user_id: ?int}
+     * @return array{saved: int, api_ok: int, errors: list<string>, user_code: string, user_id: ?int, context: array<string,string>}
      */
-    public static function setUserSettings(PDO $pdo, string $userCode, array $data, bool $pushApi = true): array
+    public static function setUserSettings(PDO $pdo, string $userCode, array $data, bool $pushApi = true, array $context = []): array
     {
         self::bootstrap($pdo);
         $resolved = self::resolveUserCode($pdo, $userCode);
@@ -1988,26 +2089,33 @@ final class CasinoAggregatorService
         }
         $code = $resolved['user_code'];
         $userId = $resolved['user_id'];
+        $ctx = self::normalizeGameControlContext($pdo, $context !== [] ? $context : $data);
         $normalized = self::normalizeUserSettingInput($data);
         $saved = 0;
         $apiOk = 0;
         $errors = [];
+        $cfg = $pushApi ? self::configuredConfig($pdo) : [];
 
         $stmt = $pdo->prepare(
-            'INSERT INTO casino_aggregator_user_settings (user_id, user_code, setting_key, setting_value, synced_at)
-             VALUES (:uid, :ucode, :k, :v, NOW())
+            'INSERT INTO casino_aggregator_user_settings
+                (user_id, user_code, vendor_code, game_code, currency_code, category, setting_key, setting_value, synced_at, created_at, updated_at)
+             VALUES (:uid, :ucode, :v, :g, :c, :cat, \'\', :val, NOW(), NOW(), NOW())
              ON DUPLICATE KEY UPDATE
                 user_id = VALUES(user_id),
                 setting_value = VALUES(setting_value),
-                synced_at = NOW()'
+                synced_at = NOW(),
+                updated_at = NOW()'
         );
 
-        foreach ($normalized as $key => $value) {
+        foreach ($normalized as $category => $value) {
             $stmt->execute([
                 ':uid'   => $userId,
                 ':ucode' => $code,
-                ':k'     => $key,
-                ':v'     => $value,
+                ':v'     => $ctx['vendor_code'],
+                ':g'     => $ctx['game_code'],
+                ':c'     => $ctx['currency_code'],
+                ':cat'   => $category,
+                ':val'   => $value,
             ]);
             $saved++;
 
@@ -2015,19 +2123,22 @@ final class CasinoAggregatorService
                 continue;
             }
             try {
-                $cfg = self::configuredConfig($pdo);
                 $response = self::requestWithConfig($cfg, [
-                    'method'    => 'SetUserSetting',
-                    'token'     => (string) $cfg['api_token'],
-                    'agentCode' => (string) $cfg['agent_code'],
-                    'userCode'  => $code,
-                    'key'       => $key,
-                    'value'     => $value,
+                    'method'       => 'ChangeUserSetting',
+                    'token'        => (string) $cfg['api_token'],
+                    'agentCode'    => (string) $cfg['agent_code'],
+                    'userCode'     => $code,
+                    'gameCode'     => $ctx['game_code'],
+                    'currencyCode' => $ctx['currency_code'],
+                    'vendorCode'   => $ctx['vendor_code'],
+                    'category'     => $category,
+                    'key'          => '',
+                    'value'        => $value,
                 ], 15);
-                self::assertSuccess($response, 'SetUserSetting:' . $key);
+                self::assertSuccess($response, 'ChangeUserSetting:' . $category);
                 $apiOk++;
             } catch (Throwable $e) {
-                $errors[] = $key . ': ' . $e->getMessage();
+                $errors[] = $category . ': ' . $e->getMessage();
             }
         }
 
@@ -2037,13 +2148,14 @@ final class CasinoAggregatorService
             'errors'    => $errors,
             'user_code' => $code,
             'user_id'   => $userId,
+            'context'   => $ctx,
         ];
     }
 
     /**
-     * @return array{updated: int, values: array<string, string>, errors: list<string>, user_code: string, user_id: ?int}
+     * @return array{updated: int, values: array<string, string>, errors: list<string>, user_code: string, user_id: ?int, context: array<string,string>}
      */
-    public static function pullUserSettings(PDO $pdo, string $userCode): array
+    public static function pullUserSettings(PDO $pdo, string $userCode, array $context = []): array
     {
         self::bootstrap($pdo);
         $resolved = self::resolveUserCode($pdo, $userCode);
@@ -2052,43 +2164,53 @@ final class CasinoAggregatorService
         }
         $code = $resolved['user_code'];
         $userId = $resolved['user_id'];
+        $ctx = self::normalizeGameControlContext($pdo, $context);
         $cfg = self::configuredConfig($pdo);
         $updated = 0;
-        $values = self::getUserSettings($pdo, $code);
+        $values = self::getUserSettings($pdo, $code, $ctx);
         $errors = [];
 
-        foreach (self::USER_SETTING_KEYS as $key) {
+        foreach (self::USER_SETTING_CATEGORIES as $category) {
             try {
                 $response = self::requestWithConfig($cfg, [
-                    'method'    => 'GetUserSetting',
-                    'token'     => (string) $cfg['api_token'],
-                    'agentCode' => (string) $cfg['agent_code'],
-                    'userCode'  => $code,
-                    'key'       => $key,
+                    'method'       => 'GetUserSetting',
+                    'token'        => (string) $cfg['api_token'],
+                    'agentCode'    => (string) $cfg['agent_code'],
+                    'userCode'     => $code,
+                    'gameCode'     => $ctx['game_code'],
+                    'currencyCode' => $ctx['currency_code'],
+                    'vendorCode'   => $ctx['vendor_code'],
+                    'category'     => $category,
+                    'key'          => '',
                 ], 15);
-                self::assertSuccess($response, 'GetUserSetting:' . $key);
-                $remote = self::extractSettingValue($response, $key);
+                self::assertSuccess($response, 'GetUserSetting:' . $category);
+                $remote = self::extractSettingValue($response, $category);
                 if ($remote === null) {
                     continue;
                 }
-                $remote = self::normalizeSettingValue($key, $remote);
+                $remote = self::normalizeSettingValue($category, $remote);
                 $pdo->prepare(
-                    'INSERT INTO casino_aggregator_user_settings (user_id, user_code, setting_key, setting_value, synced_at)
-                     VALUES (:uid, :ucode, :k, :v, NOW())
+                    'INSERT INTO casino_aggregator_user_settings
+                        (user_id, user_code, vendor_code, game_code, currency_code, category, setting_key, setting_value, synced_at, created_at, updated_at)
+                     VALUES (:uid, :ucode, :v, :g, :c, :cat, \'\', :val, NOW(), NOW(), NOW())
                      ON DUPLICATE KEY UPDATE
                         user_id = VALUES(user_id),
                         setting_value = VALUES(setting_value),
-                        synced_at = NOW()'
+                        synced_at = NOW(),
+                        updated_at = NOW()'
                 )->execute([
                     ':uid'   => $userId,
                     ':ucode' => $code,
-                    ':k'     => $key,
-                    ':v'     => $remote,
+                    ':v'     => $ctx['vendor_code'],
+                    ':g'     => $ctx['game_code'],
+                    ':c'     => $ctx['currency_code'],
+                    ':cat'   => $category,
+                    ':val'   => $remote,
                 ]);
-                $values[$key] = $remote;
+                $values[$category] = $remote;
                 $updated++;
             } catch (Throwable $e) {
-                $errors[] = $key . ': ' . $e->getMessage();
+                $errors[] = $category . ': ' . $e->getMessage();
             }
         }
 
@@ -2098,6 +2220,7 @@ final class CasinoAggregatorService
             'errors'    => $errors,
             'user_code' => $code,
             'user_id'   => $userId,
+            'context'   => $ctx,
         ];
     }
 
@@ -2107,15 +2230,223 @@ final class CasinoAggregatorService
         self::bootstrap($pdo);
         $limit = max(1, min(200, $limit));
         try {
-            $sql = "SELECT s.user_id, s.user_code, s.setting_key, s.setting_value, s.synced_at, s.updated_at,
+            $sql = "SELECT s.user_id, s.user_code, s.vendor_code, s.game_code, s.currency_code,
+                           s.category, s.setting_key, s.setting_value, s.synced_at, s.updated_at,
                            u.username
                     FROM casino_aggregator_user_settings s
                     LEFT JOIN users u ON u.id = s.user_id
-                    ORDER BY s.updated_at DESC
+                    ORDER BY s.updated_at DESC, s.id DESC
                     LIMIT {$limit}";
             return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } catch (Throwable) {
             return [];
+        }
+    }
+
+    /** @return list<array{vendor_code:string,vendor_name:string}> */
+    public static function listVendors(PDO $pdo, bool $activeOnly = true): array
+    {
+        self::bootstrap($pdo);
+        try {
+            $sql = 'SELECT vendor_code, vendor_name FROM casino_aggregator_vendors';
+            if ($activeOnly) {
+                $sql .= ' WHERE is_active = 1';
+            }
+            $sql .= ' ORDER BY vendor_name ASC, vendor_code ASC';
+            return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /** @return list<array{vendor_code:string,game_code:string,game_name:string}> */
+    public static function listGamesForVendor(PDO $pdo, string $vendorCode, int $limit = 500): array
+    {
+        self::bootstrap($pdo);
+        $vendorCode = trim($vendorCode);
+        if ($vendorCode === '') {
+            return [];
+        }
+        $limit = max(1, min(2000, $limit));
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT vendor_code, game_code, game_name FROM casino_aggregator_games
+                 WHERE vendor_code = :v AND is_active = 1
+                 ORDER BY game_name ASC LIMIT {$limit}"
+            );
+            $stmt->execute([':v' => $vendorCode]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /** GetCurrentPlayers */
+    public static function getCurrentPlayers(PDO $pdo, string $vendorCode): array
+    {
+        self::bootstrap($pdo);
+        $vendorCode = trim($vendorCode);
+        if ($vendorCode === '') {
+            throw new RuntimeException('vendorCode zorunludur.');
+        }
+        $cfg = self::configuredConfig($pdo);
+        $response = self::requestWithConfig($cfg, [
+            'method'     => 'GetCurrentPlayers',
+            'token'      => (string) $cfg['api_token'],
+            'agentCode'  => (string) $cfg['agent_code'],
+            'vendorCode' => $vendorCode,
+        ], 20);
+        self::assertSuccess($response, 'GetCurrentPlayers');
+        $players = is_array($response['playerInfos'] ?? null) ? $response['playerInfos'] : [];
+        return ['players' => $players, 'raw' => $response];
+    }
+
+    /** GetCallList */
+    public static function getCallList(PDO $pdo, string $vendorCode, string $gameCode, string $callType): array
+    {
+        self::bootstrap($pdo);
+        $cfg = self::configuredConfig($pdo);
+        $response = self::requestWithConfig($cfg, [
+            'method'     => 'GetCallList',
+            'token'      => (string) $cfg['api_token'],
+            'agentCode'  => (string) $cfg['agent_code'],
+            'vendorCode' => trim($vendorCode),
+            'gameCode'   => trim($gameCode),
+            'callType'   => trim($callType),
+        ], 20);
+        self::assertSuccess($response, 'GetCallList');
+        $calls = is_array($response['calls'] ?? null) ? $response['calls'] : [];
+        return ['calls' => $calls, 'raw' => $response];
+    }
+
+    /** CallApply */
+    public static function callApply(PDO $pdo, array $input): array
+    {
+        self::bootstrap($pdo);
+        $cfg = self::configuredConfig($pdo);
+        $payload = [
+            'method'       => 'CallApply',
+            'token'        => (string) $cfg['api_token'],
+            'agentCode'    => (string) $cfg['agent_code'],
+            'userCode'     => trim((string) ($input['userCode'] ?? $input['user_code'] ?? '')),
+            'gameCode'     => trim((string) ($input['gameCode'] ?? $input['game_code'] ?? '')),
+            'currencyCode' => strtoupper(trim((string) ($input['currencyCode'] ?? $input['currency_code'] ?? ($cfg['currency'] ?? 'TRY')))),
+            'vendorCode'   => trim((string) ($input['vendorCode'] ?? $input['vendor_code'] ?? '')),
+            'callRtp'      => (float) ($input['callRtp'] ?? $input['call_rtp'] ?? 0),
+            'betAmount'    => (float) ($input['betAmount'] ?? $input['bet_amount'] ?? 0),
+            'callType'     => trim((string) ($input['callType'] ?? $input['call_type'] ?? '0')),
+        ];
+        foreach (['userCode', 'gameCode', 'vendorCode'] as $req) {
+            if ($payload[$req] === '') {
+                throw new RuntimeException($req . ' zorunludur.');
+            }
+        }
+        $response = self::requestWithConfig($cfg, $payload, 20);
+        self::assertSuccess($response, 'CallApply');
+        self::logCallAction($pdo, 'CallApply', $payload, $response, (int) ($response['callId'] ?? 0) ?: null, (float) ($response['calledMoney'] ?? 0));
+        return [
+            'called_money' => (float) ($response['calledMoney'] ?? 0),
+            'call_id'      => (int) ($response['callId'] ?? 0),
+            'raw'          => $response,
+        ];
+    }
+
+    /** CallCancel */
+    public static function callCancel(PDO $pdo, array $input): array
+    {
+        self::bootstrap($pdo);
+        $cfg = self::configuredConfig($pdo);
+        $payload = [
+            'method'       => 'CallCancel',
+            'token'        => (string) $cfg['api_token'],
+            'agentCode'    => (string) $cfg['agent_code'],
+            'userCode'     => trim((string) ($input['userCode'] ?? $input['user_code'] ?? '')),
+            'gameCode'     => trim((string) ($input['gameCode'] ?? $input['game_code'] ?? '')),
+            'currencyCode' => strtoupper(trim((string) ($input['currencyCode'] ?? $input['currency_code'] ?? ($cfg['currency'] ?? 'TRY')))),
+            'vendorCode'   => trim((string) ($input['vendorCode'] ?? $input['vendor_code'] ?? '')),
+            'callRtp'      => (float) ($input['callRtp'] ?? $input['call_rtp'] ?? 0),
+            'betAmount'    => (float) ($input['betAmount'] ?? $input['bet_amount'] ?? 0),
+            'callId'       => (int) ($input['callId'] ?? $input['call_id'] ?? 0),
+        ];
+        if ($payload['callId'] <= 0) {
+            throw new RuntimeException('callId zorunludur.');
+        }
+        $response = self::requestWithConfig($cfg, $payload, 20);
+        self::assertSuccess($response, 'CallCancel');
+        self::logCallAction($pdo, 'CallCancel', $payload, $response, $payload['callId'], (float) ($response['canceledMoney'] ?? 0));
+        return [
+            'canceled_money' => (float) ($response['canceledMoney'] ?? 0),
+            'raw'            => $response,
+        ];
+    }
+
+    /** GetCallHistory */
+    public static function getCallHistory(PDO $pdo, array $input): array
+    {
+        self::bootstrap($pdo);
+        $cfg = self::configuredConfig($pdo);
+        $payload = [
+            'method'     => 'GetCallHistory',
+            'token'      => (string) $cfg['api_token'],
+            'agentCode'  => (string) $cfg['agent_code'],
+            'vendorCode' => trim((string) ($input['vendorCode'] ?? $input['vendor_code'] ?? '')),
+            'startTime'  => trim((string) ($input['startTime'] ?? $input['start_time'] ?? '')),
+            'endTime'    => trim((string) ($input['endTime'] ?? $input['end_time'] ?? '')),
+            'offset'     => max(0, (int) ($input['offset'] ?? 0)),
+            'limit'      => max(1, min(200, (int) ($input['limit'] ?? 10))),
+        ];
+        if ($payload['vendorCode'] === '' || $payload['startTime'] === '' || $payload['endTime'] === '') {
+            throw new RuntimeException('vendorCode, startTime ve endTime zorunludur (UTC+0).');
+        }
+        $response = self::requestWithConfig($cfg, $payload, 25);
+        self::assertSuccess($response, 'GetCallHistory');
+        $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+        return ['data' => $data, 'raw' => $response];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function recentCallLogs(PDO $pdo, int $limit = 40): array
+    {
+        self::bootstrap($pdo);
+        $limit = max(1, min(200, $limit));
+        try {
+            return $pdo->query(
+                "SELECT * FROM casino_aggregator_call_logs ORDER BY id DESC LIMIT {$limit}"
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /** @param array<string, mixed> $request @param array<string, mixed> $response */
+    private static function logCallAction(
+        PDO $pdo,
+        string $action,
+        array $request,
+        array $response,
+        ?int $callId,
+        float $money
+    ): void {
+        try {
+            $pdo->prepare(
+                'INSERT INTO casino_aggregator_call_logs
+                    (action, user_code, vendor_code, game_code, call_id, call_rtp, bet_amount, money_amount,
+                     status_code, request_payload, response_payload, created_at)
+                 VALUES (:a, :u, :v, :g, :cid, :rtp, :bet, :money, :st, :req, :res, NOW())'
+            )->execute([
+                ':a'     => $action,
+                ':u'     => (string) ($request['userCode'] ?? ''),
+                ':v'     => (string) ($request['vendorCode'] ?? ''),
+                ':g'     => (string) ($request['gameCode'] ?? ''),
+                ':cid'   => $callId,
+                ':rtp'   => isset($request['callRtp']) ? (float) $request['callRtp'] : null,
+                ':bet'   => isset($request['betAmount']) ? (float) $request['betAmount'] : null,
+                ':money' => $money,
+                ':st'    => isset($response['status']) ? (int) $response['status'] : null,
+                ':req'   => json_encode($request, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ':res'   => json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+        } catch (Throwable) {
         }
     }
 
@@ -2154,15 +2485,15 @@ final class CasinoAggregatorService
     private static function normalizeAgentSettingInput(array $data): array
     {
         $out = [];
-        foreach (self::AGENT_SETTING_KEYS as $key) {
-            if (!array_key_exists($key, $data) && !array_key_exists(strtolower($key), $data)) {
+        foreach (self::AGENT_SETTING_CATEGORIES as $category) {
+            if (!array_key_exists($category, $data) && !array_key_exists(strtolower($category), $data)) {
                 continue;
             }
-            $raw = $data[$key] ?? $data[strtolower($key)] ?? '';
+            $raw = $data[$category] ?? $data[strtolower($category)] ?? '';
             if (is_bool($raw)) {
                 $raw = $raw ? '1' : '0';
             }
-            $out[$key] = self::normalizeSettingValue($key, (string) $raw);
+            $out[$category] = self::normalizeSettingValue($category, (string) $raw);
         }
         if ($out === []) {
             throw new RuntimeException('Kaydedilecek agent ayarı yok.');
@@ -2177,12 +2508,12 @@ final class CasinoAggregatorService
     private static function normalizeUserSettingInput(array $data): array
     {
         $out = [];
-        foreach (self::USER_SETTING_KEYS as $key) {
-            if (!array_key_exists($key, $data) && !array_key_exists(strtolower($key), $data)) {
+        foreach (self::USER_SETTING_CATEGORIES as $category) {
+            if (!array_key_exists($category, $data) && !array_key_exists(strtolower($category), $data)) {
                 continue;
             }
-            $raw = $data[$key] ?? $data[strtolower($key)] ?? '';
-            $out[$key] = self::normalizeSettingValue($key, (string) $raw);
+            $raw = $data[$category] ?? $data[strtolower($category)] ?? '';
+            $out[$category] = self::normalizeSettingValue($category, (string) $raw);
         }
         if ($out === []) {
             throw new RuntimeException('Kaydedilecek kullanıcı ayarı yok.');
@@ -2190,26 +2521,26 @@ final class CasinoAggregatorService
         return $out;
     }
 
-    private static function normalizeSettingValue(string $key, string $value): string
+    private static function normalizeSettingValue(string $category, string $value): string
     {
         $value = trim($value);
-        if (in_array($key, ['HideRoundId', 'HideTournament', 'HideBadge'], true)) {
+        if (in_array($category, ['HideRoundId', 'HideTournament', 'HideBadge'], true)) {
             return in_array($value, ['1', 'true', 'on', 'yes'], true) ? '1' : '0';
         }
-        if (in_array($key, ['LowRtp', 'HighRtp'], true)) {
+        if (in_array($category, ['LowRtp', 'HighRtp', 'TargetRtp'], true)) {
             if ($value === '') {
                 return '';
             }
             if (!is_numeric($value)) {
-                throw new RuntimeException($key . ' sayısal olmalıdır (0–1).');
+                throw new RuntimeException($category . ' sayısal olmalıdır (0–1).');
             }
             $num = (float) $value;
             if ($num < 0 || $num > 1) {
-                throw new RuntimeException($key . ' 0 ile 1 arasında olmalıdır.');
+                throw new RuntimeException($category . ' 0 ile 1 arasında olmalıdır.');
             }
             return rtrim(rtrim(number_format($num, 4, '.', ''), '0'), '.') ?: '0';
         }
-        if ($key === 'RoundKey') {
+        if ($category === 'RoundKey') {
             $parts = preg_split('/\s*,\s*/', $value) ?: [];
             $clean = [];
             foreach ($parts as $part) {
@@ -2224,16 +2555,19 @@ final class CasinoAggregatorService
     }
 
     /** @param array<string, mixed> $response */
-    private static function extractSettingValue(array $response, string $key): ?string
+    private static function extractSettingValue(array $response, string $category): ?string
     {
-        foreach (['value', 'settingValue', 'setting_value'] as $field) {
+        if (array_key_exists('value', $response) && $response['value'] !== null) {
+            return trim((string) $response['value']);
+        }
+        foreach (['settingValue', 'setting_value'] as $field) {
             if (array_key_exists($field, $response) && $response[$field] !== null && $response[$field] !== '') {
                 return trim((string) $response[$field]);
             }
         }
         $map = self::extractSettingMap($response);
-        if (array_key_exists($key, $map)) {
-            return $map[$key];
+        if (array_key_exists($category, $map)) {
+            return $map[$category];
         }
         return null;
     }
@@ -2256,14 +2590,12 @@ final class CasinoAggregatorService
             if (!is_array($candidate)) {
                 continue;
             }
-            // list of {key,value}
-            $isList = array_is_list($candidate);
-            if ($isList) {
+            if (array_is_list($candidate)) {
                 foreach ($candidate as $row) {
                     if (!is_array($row)) {
                         continue;
                     }
-                    $k = trim((string) ($row['key'] ?? $row['setting_key'] ?? $row['category'] ?? ''));
+                    $k = trim((string) ($row['category'] ?? $row['key'] ?? $row['setting_key'] ?? ''));
                     if ($k === '') {
                         continue;
                     }

@@ -96,14 +96,25 @@ final class AdminCasinoAggregatorController extends AdminController
         $this->requirePermission('casino-aggregator-settings');
         $pdo = AdminDatabase::pdo();
         CasinoAggregatorService::bootstrap($pdo);
+        $config = CasinoAggregatorService::config($pdo);
+        $context = $this->readGameContext($_GET, $config);
+        $vendors = CasinoAggregatorService::listVendors($pdo);
+        $games = $context['vendor_code'] !== ''
+            ? CasinoAggregatorService::listGamesForVendor($pdo, $context['vendor_code'])
+            : [];
 
         $this->view('casino-aggregator/agent-settings', [
             'title'          => 'Casino Aggregator Agent Kontrolleri',
             'active'         => 'datatable',
             'moduleKey'      => 'casino-aggregator-settings',
             'crumbs'         => 'Games | Casino Aggregator | Agent Settings',
-            'configRow'      => CasinoAggregatorService::config($pdo),
-            'agentSettings'  => CasinoAggregatorService::getAgentSettings($pdo),
+            'configRow'      => $config,
+            'context'        => $context,
+            'vendors'        => $vendors,
+            'games'          => $games,
+            'agentSettings'  => ($context['vendor_code'] !== '' && $context['game_code'] !== '')
+                ? CasinoAggregatorService::getAgentSettings($pdo, $context)
+                : array_fill_keys(CasinoAggregatorService::AGENT_SETTING_CATEGORIES, ''),
             'responseCodes'  => CasinoAggregatorService::RESPONSE_CODES,
             'gameTypes'      => CasinoAggregatorService::GAME_TYPES,
             'flash'          => $this->pullFlash(),
@@ -115,7 +126,7 @@ final class AdminCasinoAggregatorController extends AdminController
         $this->requirePermission('casino-aggregator-settings');
         $this->ensurePost();
         $pdo = AdminDatabase::pdo();
-
+        $context = $this->readGameContext($_POST, CasinoAggregatorService::config($pdo));
         $payload = [
             'RoundKey'       => (string) ($_POST['RoundKey'] ?? ''),
             'HideRoundId'    => isset($_POST['HideRoundId']) ? '1' : '0',
@@ -126,8 +137,8 @@ final class AdminCasinoAggregatorController extends AdminController
         ];
 
         try {
-            $result = CasinoAggregatorService::setAgentSettings($pdo, $payload, true);
-            $msg = 'Agent ayarları kaydedildi (' . (int) ($result['saved'] ?? 0) . ' alan).'
+            $result = CasinoAggregatorService::setAgentSettings($pdo, $payload, true, $context);
+            $msg = 'ChangeAgentSetting tamamlandı (' . (int) ($result['saved'] ?? 0) . ' kategori).'
                 . ' API: ' . (int) ($result['api_ok'] ?? 0) . ' başarılı.';
             $errors = is_array($result['errors'] ?? null) ? $result['errors'] : [];
             if ($errors !== []) {
@@ -137,16 +148,22 @@ final class AdminCasinoAggregatorController extends AdminController
         } catch (Throwable $exception) {
             $this->flash('Agent ayarı kaydedilemedi: ' . $exception->getMessage());
         }
-        $this->redirect(AdminAuth::url('/casino-aggregator/agent-settings'));
+        $this->redirect(AdminAuth::url('/casino-aggregator/agent-settings?' . http_build_query([
+            'vendor_code' => $context['vendor_code'],
+            'game_code' => $context['game_code'],
+            'currency_code' => $context['currency_code'],
+        ])));
     }
 
     public function pullAgentSettings(): void
     {
         $this->requirePermission('casino-aggregator-settings');
         $this->ensurePost();
+        $pdo = AdminDatabase::pdo();
+        $context = $this->readGameContext($_POST, CasinoAggregatorService::config($pdo));
         try {
-            $result = CasinoAggregatorService::pullAgentSettings(AdminDatabase::pdo());
-            $msg = 'Agent ayarları çekildi: ' . (int) ($result['updated'] ?? 0) . ' alan güncellendi.';
+            $result = CasinoAggregatorService::pullAgentSettings($pdo, $context);
+            $msg = 'GetAgentSetting: ' . (int) ($result['updated'] ?? 0) . ' kategori güncellendi.';
             $errors = is_array($result['errors'] ?? null) ? $result['errors'] : [];
             if ($errors !== []) {
                 $msg .= ' Uyarı: ' . implode(' | ', array_slice($errors, 0, 3));
@@ -155,7 +172,11 @@ final class AdminCasinoAggregatorController extends AdminController
         } catch (Throwable $exception) {
             $this->flash('Agent ayarı çekilemedi: ' . $exception->getMessage());
         }
-        $this->redirect(AdminAuth::url('/casino-aggregator/agent-settings'));
+        $this->redirect(AdminAuth::url('/casino-aggregator/agent-settings?' . http_build_query([
+            'vendor_code' => $context['vendor_code'],
+            'game_code' => $context['game_code'],
+            'currency_code' => $context['currency_code'],
+        ])));
     }
 
     public function userSettings(): void
@@ -163,6 +184,8 @@ final class AdminCasinoAggregatorController extends AdminController
         $this->requirePermission('casino-aggregator-settings');
         $pdo = AdminDatabase::pdo();
         CasinoAggregatorService::bootstrap($pdo);
+        $config = CasinoAggregatorService::config($pdo);
+        $context = $this->readGameContext($_GET, $config);
 
         $lookup = trim((string) ($_GET['user'] ?? $_GET['user_code'] ?? ''));
         $resolved = $lookup !== '' ? CasinoAggregatorService::resolveUserCode($pdo, $lookup) : null;
@@ -179,16 +202,24 @@ final class AdminCasinoAggregatorController extends AdminController
             }
         }
 
+        $hasScope = $context['vendor_code'] !== '' && $context['game_code'] !== '';
         $this->view('casino-aggregator/user-settings', [
             'title'         => 'Casino Aggregator Kullanıcı RTP',
             'active'        => 'datatable',
             'moduleKey'     => 'casino-aggregator-settings',
             'crumbs'        => 'Games | Casino Aggregator | User Settings',
-            'configRow'     => CasinoAggregatorService::config($pdo),
+            'configRow'     => $config,
+            'context'       => $context,
+            'vendors'       => CasinoAggregatorService::listVendors($pdo),
+            'games'         => $context['vendor_code'] !== ''
+                ? CasinoAggregatorService::listGamesForVendor($pdo, $context['vendor_code'])
+                : [],
             'lookup'        => $lookup,
             'userRow'       => $userRow,
             'userCode'      => $userCode,
-            'userSettings'  => $userCode !== '' ? CasinoAggregatorService::getUserSettings($pdo, $userCode) : ['LowRtp' => '', 'HighRtp' => ''],
+            'userSettings'  => ($userCode !== '' && $hasScope)
+                ? CasinoAggregatorService::getUserSettings($pdo, $userCode, $context)
+                : array_fill_keys(CasinoAggregatorService::USER_SETTING_CATEGORIES, ''),
             'recentRows'    => CasinoAggregatorService::recentUserSettings($pdo, 60),
             'flash'         => $this->pullFlash(),
         ]);
@@ -198,15 +229,17 @@ final class AdminCasinoAggregatorController extends AdminController
     {
         $this->requirePermission('casino-aggregator-settings');
         $this->ensurePost();
+        $pdo = AdminDatabase::pdo();
         $userCode = trim((string) ($_POST['user_code'] ?? $_POST['user'] ?? ''));
+        $context = $this->readGameContext($_POST, CasinoAggregatorService::config($pdo));
         $payload = [
             'LowRtp'  => (string) ($_POST['LowRtp'] ?? ''),
             'HighRtp' => (string) ($_POST['HighRtp'] ?? ''),
         ];
 
         try {
-            $result = CasinoAggregatorService::setUserSettings(AdminDatabase::pdo(), $userCode, $payload, true);
-            $msg = 'Kullanıcı ayarları kaydedildi (userCode=' . (string) ($result['user_code'] ?? '') . ').'
+            $result = CasinoAggregatorService::setUserSettings($pdo, $userCode, $payload, true, $context);
+            $msg = 'ChangeUserSetting tamamlandı (userCode=' . (string) ($result['user_code'] ?? '') . ').'
                 . ' API: ' . (int) ($result['api_ok'] ?? 0) . ' başarılı.';
             $errors = is_array($result['errors'] ?? null) ? $result['errors'] : [];
             if ($errors !== []) {
@@ -218,17 +251,24 @@ final class AdminCasinoAggregatorController extends AdminController
             $this->flash('Kullanıcı ayarı kaydedilemedi: ' . $exception->getMessage());
             $redirectUser = $userCode;
         }
-        $this->redirect(AdminAuth::url('/casino-aggregator/user-settings?user=' . rawurlencode($redirectUser)));
+        $this->redirect(AdminAuth::url('/casino-aggregator/user-settings?' . http_build_query([
+            'user' => $redirectUser,
+            'vendor_code' => $context['vendor_code'],
+            'game_code' => $context['game_code'],
+            'currency_code' => $context['currency_code'],
+        ])));
     }
 
     public function pullUserSettings(): void
     {
         $this->requirePermission('casino-aggregator-settings');
         $this->ensurePost();
+        $pdo = AdminDatabase::pdo();
         $userCode = trim((string) ($_POST['user_code'] ?? $_POST['user'] ?? ''));
+        $context = $this->readGameContext($_POST, CasinoAggregatorService::config($pdo));
         try {
-            $result = CasinoAggregatorService::pullUserSettings(AdminDatabase::pdo(), $userCode);
-            $msg = 'Kullanıcı ayarları çekildi: ' . (int) ($result['updated'] ?? 0) . ' alan.'
+            $result = CasinoAggregatorService::pullUserSettings($pdo, $userCode, $context);
+            $msg = 'GetUserSetting: ' . (int) ($result['updated'] ?? 0) . ' kategori.'
                 . ' userCode=' . (string) ($result['user_code'] ?? '');
             $errors = is_array($result['errors'] ?? null) ? $result['errors'] : [];
             if ($errors !== []) {
@@ -240,7 +280,131 @@ final class AdminCasinoAggregatorController extends AdminController
             $this->flash('Kullanıcı ayarı çekilemedi: ' . $exception->getMessage());
             $redirectUser = $userCode;
         }
-        $this->redirect(AdminAuth::url('/casino-aggregator/user-settings?user=' . rawurlencode($redirectUser)));
+        $this->redirect(AdminAuth::url('/casino-aggregator/user-settings?' . http_build_query([
+            'user' => $redirectUser,
+            'vendor_code' => $context['vendor_code'],
+            'game_code' => $context['game_code'],
+            'currency_code' => $context['currency_code'],
+        ])));
+    }
+
+    public function gameControl(): void
+    {
+        $this->requirePermission('casino-aggregator-settings');
+        $pdo = AdminDatabase::pdo();
+        CasinoAggregatorService::bootstrap($pdo);
+        $config = CasinoAggregatorService::config($pdo);
+        $vendorCode = trim((string) ($_GET['vendor_code'] ?? ''));
+        $players = [];
+        $playersError = '';
+        if ($vendorCode !== '') {
+            try {
+                $players = CasinoAggregatorService::getCurrentPlayers($pdo, $vendorCode)['players'] ?? [];
+            } catch (Throwable $e) {
+                $playersError = $e->getMessage();
+            }
+        }
+
+        $history = [];
+        $historyError = '';
+        $histVendor = trim((string) ($_GET['hist_vendor'] ?? $vendorCode));
+        $startTime = trim((string) ($_GET['start_time'] ?? gmdate('Y-m-d H:i:s', time() - 86400)));
+        $endTime = trim((string) ($_GET['end_time'] ?? gmdate('Y-m-d H:i:s')));
+        if ($histVendor !== '' && isset($_GET['load_history'])) {
+            try {
+                $history = CasinoAggregatorService::getCallHistory($pdo, [
+                    'vendor_code' => $histVendor,
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'offset' => 0,
+                    'limit' => 50,
+                ])['data'] ?? [];
+            } catch (Throwable $e) {
+                $historyError = $e->getMessage();
+            }
+        }
+
+        $this->view('casino-aggregator/game-control', [
+            'title'         => 'Casino Aggregator Game Control',
+            'active'        => 'datatable',
+            'moduleKey'     => 'casino-aggregator-settings',
+            'crumbs'        => 'Games | Casino Aggregator | Game Control',
+            'configRow'     => $config,
+            'vendors'       => CasinoAggregatorService::listVendors($pdo),
+            'vendorCode'    => $vendorCode,
+            'players'       => is_array($players) ? $players : [],
+            'playersError'  => $playersError,
+            'history'       => is_array($history) ? $history : [],
+            'historyError'  => $historyError,
+            'histVendor'    => $histVendor,
+            'startTime'     => $startTime,
+            'endTime'       => $endTime,
+            'callLogs'      => CasinoAggregatorService::recentCallLogs($pdo, 40),
+            'flash'         => $this->pullFlash(),
+        ]);
+    }
+
+    public function callApply(): void
+    {
+        $this->requirePermission('casino-aggregator-settings');
+        $this->ensurePost();
+        $vendor = trim((string) ($_POST['vendor_code'] ?? ''));
+        try {
+            $result = CasinoAggregatorService::callApply(AdminDatabase::pdo(), $_POST);
+            $this->flash('CallApply OK — callId=' . (int) ($result['call_id'] ?? 0)
+                . ', calledMoney=' . (string) ($result['called_money'] ?? 0));
+        } catch (Throwable $e) {
+            $this->flash('CallApply hata: ' . $e->getMessage());
+        }
+        $this->redirect(AdminAuth::url('/casino-aggregator/game-control?vendor_code=' . rawurlencode($vendor)));
+    }
+
+    public function callCancel(): void
+    {
+        $this->requirePermission('casino-aggregator-settings');
+        $this->ensurePost();
+        $vendor = trim((string) ($_POST['vendor_code'] ?? ''));
+        try {
+            $result = CasinoAggregatorService::callCancel(AdminDatabase::pdo(), $_POST);
+            $this->flash('CallCancel OK — canceledMoney=' . (string) ($result['canceled_money'] ?? 0));
+        } catch (Throwable $e) {
+            $this->flash('CallCancel hata: ' . $e->getMessage());
+        }
+        $this->redirect(AdminAuth::url('/casino-aggregator/game-control?vendor_code=' . rawurlencode($vendor)));
+    }
+
+    public function callList(): void
+    {
+        $this->requirePermission('casino-aggregator-settings');
+        $this->ensurePost();
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            if (!AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+                http_response_code(419);
+                echo json_encode(['ok' => false, 'message' => 'CSRF'], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            $result = CasinoAggregatorService::getCallList(
+                AdminDatabase::pdo(),
+                (string) ($_POST['vendor_code'] ?? ''),
+                (string) ($_POST['game_code'] ?? ''),
+                (string) ($_POST['call_type'] ?? '0')
+            );
+            echo json_encode(['ok' => true, 'calls' => $result['calls'] ?? []], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /** @param array<string, mixed> $src @param array<string, mixed> $config */
+    private function readGameContext(array $src, array $config): array
+    {
+        return [
+            'vendor_code'   => trim((string) ($src['vendor_code'] ?? $src['vendorCode'] ?? '')),
+            'game_code'     => trim((string) ($src['game_code'] ?? $src['gameCode'] ?? '')),
+            'currency_code' => strtoupper(trim((string) ($src['currency_code'] ?? $src['currencyCode'] ?? ($config['currency'] ?? 'TRY')))),
+        ];
     }
 
     private function ensurePost(): void
