@@ -29,7 +29,7 @@ $memberUserById ??= static fn (\PDO $p, int $id): ?array => null;
 if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/providers', 'live-casino/providers', 'games-provider', 'games_provider.php'], true)) {
     $pdo = AdminDatabase::pdo();
     admin_require_project_file('services/CasinoAggregatorService.php');
-    // 0 = slot lobby (BGaming), 1 = live casino.
+    // 0 = slot lobby, 1 = live casino.
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
     if ($route === 'live-casino/providers') {
         $gameType = 1;
@@ -186,21 +186,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     // Also: never UNION branches that mix JSON columns (raw_payload / image_fallbacks)
     // with VARCHAR literals — MySQL rejects the mix and the old catch{} returned an empty list.
     $branches = [];
-    if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
-        $branches[] = "SELECT
-                CONCAT('bgaming:', identifier) AS game_id,
-                title AS name,
-                provider AS provider,
-                provider AS provider_code,
-                COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
-                CAST('' AS CHAR) AS image_fallbacks,
-                is_featured AS is_featured,
-                'bgaming' AS source,
-                CAST(id AS CHAR) AS row_id,
-                CAST('' AS CHAR) AS raw_payload
-            FROM bgaming_games
-            WHERE is_active = 1";
-    }
+    // Frontend slot lobby policy: only Casino Aggregator is exposed publicly.
     $aggGameType = $gameType === 1 ? 2 : 1;
     if ($source === '' || $source === 'aggregator') {
         if ($gameType === 1) {
@@ -209,12 +195,13 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             } catch (Throwable) {
             }
         }
-        $typeClause = "g.game_type = {$aggGameType}";
+        // Historical aggregator slot rows can be stored as game_type=0.
+        $typeClause = $gameType === 1 ? "g.game_type = {$aggGameType}" : "(g.game_type IN (0, {$aggGameType}))";
         $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
         if ($gameType === 1) {
             $typeClause = "(g.game_type = {$aggGameType} OR {$liveMatch})";
         } else {
-            $typeClause = "(g.game_type = {$aggGameType} AND NOT {$liveMatch})";
+            $typeClause = "((g.game_type IN (0, {$aggGameType})) AND NOT {$liveMatch})";
         }
         $branches[] = "SELECT
                 CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
@@ -231,7 +218,9 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
             WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
     }
-    if ($source === '' || $source === 'gamingsoft') {
+    // Frontend slot lobby policy: GamingSoft is not shown on slots.
+    // Keep GamingSoft branch for live-casino requests only.
+    if ($gameType === 1 && ($source === '' || $source === 'gamingsoft')) {
         admin_require_project_file('services/GamingSoftService.php');
         $gsTypeExpr = "CASE
             WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM','LC','LIVE','LIVE CASINO','LIVE-CASINO')
@@ -349,7 +338,9 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             $imageUrl = (string) ($media['cover'] ?? '');
             $imageFallbacks = is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [];
             $gameIdStr = (string) ($r['game_id'] ?? '');
-            $gsParsed = GamingSoftService::parseGameId($gameIdStr);
+            $gsParsed = class_exists('GamingSoftService', false)
+                ? GamingSoftService::parseGameId($gameIdStr)
+                : null;
             $allGames[] = [
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => $gameIdStr,
