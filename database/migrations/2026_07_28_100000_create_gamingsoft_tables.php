@@ -13,6 +13,10 @@ return static function (PDO $pdo): void {
     };
 
     $apiBase = str_replace("'", "''", $envDefault('GAMINGSOFT_API_BASE_URL', 'https://staging.gsimw.com'));
+    $operator = str_replace("'", "''", $envDefault('GAMINGSOFT_OPERATOR_CODE', 'VGY1'));
+    $secret = str_replace("'", "''", $envDefault('GAMINGSOFT_SECRET_KEY', 'zS5CzH7U224nMVgMaghYsY'));
+    $site = str_replace("'", "''", $envDefault('GAMINGSOFT_SITE_ENDPOINT', 'https://admin.vegasroyalspin.com'));
+    $currency = str_replace("'", "''", $envDefault('GAMINGSOFT_CURRENCY', 'IDR'));
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS gamingsoft_config (
@@ -21,7 +25,7 @@ return static function (PDO $pdo): void {
             secret_key           VARCHAR(255) NOT NULL DEFAULT '',
             api_base_url         VARCHAR(255) NOT NULL DEFAULT '{$apiBase}',
             site_endpoint        VARCHAR(255) NOT NULL DEFAULT '',
-            currency             VARCHAR(16) NOT NULL DEFAULT 'TRY',
+            currency             VARCHAR(16) NOT NULL DEFAULT 'IDR',
             language_code        INT NOT NULL DEFAULT 0,
             channel_code         VARCHAR(32) NOT NULL DEFAULT 'gscp',
             callback_allowed_ips TEXT NULL,
@@ -193,6 +197,6 @@ return static function (PDO $pdo): void {
     $pdo->exec(
         "INSERT IGNORE INTO gamingsoft_config
             (id, operator_code, secret_key, api_base_url, site_endpoint, currency, language_code, channel_code, is_active)
-         VALUES (1, '', '', '{$apiBase}', '', 'TRY', 0, 'gscp', 0)"
+         VALUES (1, '{$operator}', '{$secret}', '{$apiBase}', '{$site}', '{$currency}', 0, 'gscp', 1)"
     );
 };

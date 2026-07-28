@@ -23,7 +23,7 @@ $isActive = !empty($configRow['is_active']) && $configRow['is_active'] !== '0';
     <div class="hero-text">
         <span class="eyebrow">Oyunlar · Gaming Soft</span>
         <h1 class="hero-title">Gaming Soft <span class="accent">(GSC+ v2.0.6)</span></h1>
-        <p class="hero-sub">Seamless wallet callback, product/game sync ve launch-game entegrasyonu.</p>
+        <p class="hero-sub">Seamless wallet callback, product/game sync ve launch-game entegrasyonu. Staging: VGY1 · IDR/IDR2/CNY/VND/VND2.</p>
     </div>
     <div class="hero-actions">
         <button class="btn btn--primary" type="submit" form="gamingSoftSettingsForm">Ayarları Kaydet</button>
@@ -43,7 +43,7 @@ $isActive = !empty($configRow['is_active']) && $configRow['is_active'] !== '0';
             <label class="field-label" for="operator_code">Operator Code</label>
             <input id="operator_code" class="input" type="text" name="operator_code"
                    value="<?= $text($configRow['operator_code'] ?? '') ?>" maxlength="32" autocomplete="off">
-            <p class="gs-help">GSC+ tarafından verilen 4+ karakter operatör kodu.</p>
+            <p class="gs-help">GSC+ Agency Code (staging: <code>VGY1</code> / VEGASROYALSPIN).</p>
         </div>
 
         <div class="field">
@@ -51,7 +51,7 @@ $isActive = !empty($configRow['is_active']) && $configRow['is_active'] !== '0';
             <input id="api_base_url" class="input" type="url" name="api_base_url"
                    value="<?= $text($configRow['api_base_url'] ?? '') ?>"
                    placeholder="https://staging.gsimw.com" autocomplete="off">
-            <p class="gs-help">Örn. GSC+: https://staging.gsimw.com — Aurora: https://staging-idr.pglsucs.com</p>
+            <p class="gs-help">Staging: <code>https://staging.gsimw.com</code></p>
         </div>
 
         <div class="field">
@@ -64,9 +64,12 @@ $isActive = !empty($configRow['is_active']) && $configRow['is_active'] !== '0';
         <div class="field">
             <label class="field-label" for="currency">Currency</label>
             <input id="currency" class="input" type="text" name="currency"
-                   value="<?= $text(strtoupper(trim((string) ($configRow['currency'] ?? 'TRY')))) ?>"
+                   value="<?= $text(strtoupper(trim((string) ($configRow['currency'] ?? 'IDR')))) ?>"
                    maxlength="16" autocomplete="off">
-            <p class="gs-help">Sağlayıcı ile sözleşilen currency code (örn. TRY, IDR, IDR2).</p>
+            <p class="gs-help">
+                Staging açık: <code>IDR</code>, <code>IDR2</code> (1:1000), <code>CNY</code>, <code>VND</code>, <code>VND2</code> (1:1000).
+                Varsayılan test currency: <code>IDR</code>.
+            </p>
         </div>
 
         <div class="field">

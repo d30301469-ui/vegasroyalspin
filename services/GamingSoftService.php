@@ -40,6 +40,13 @@ final class GamingSoftService
         'uk' => 31, 'hi' => 39, 'ms' => 36,
     ];
 
+    public const STAGING_OPERATOR_CODE = 'VGY1';
+    public const STAGING_API_BASE_URL = 'https://staging.gsimw.com';
+    public const STAGING_SITE_ENDPOINT = 'https://admin.vegasroyalspin.com';
+    public const STAGING_CURRENCY = 'IDR';
+    /** Staging currencies enabled by GSC+ for VGY1. */
+    public const STAGING_CURRENCIES = ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'];
+
     public static function bootstrap(PDO $pdo): void
     {
         if (self::$schemaBootstrapped) {
@@ -56,7 +63,61 @@ final class GamingSoftService
         if (is_callable($runner)) {
             $runner($pdo);
         }
+        self::ensureStagingDefaults($pdo);
         self::$schemaBootstrapped = true;
+    }
+
+    /**
+     * Apply VGY1 staging credentials when config row is still empty.
+     * Secret can also be provided via GAMINGSOFT_SECRET_KEY env.
+     */
+    private static function ensureStagingDefaults(PDO $pdo): void
+    {
+        try {
+            $row = $pdo->query('SELECT * FROM gamingsoft_config WHERE id = 1 LIMIT 1')?->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($row)) {
+                return;
+            }
+
+            $envSecret = trim((string) (getenv('GAMINGSOFT_SECRET_KEY') ?: ''));
+            $stagingSecret = $envSecret !== '' ? $envSecret : 'zS5CzH7U224nMVgMaghYsY';
+
+            $operator = trim((string) ($row['operator_code'] ?? ''));
+            $secret = trim((string) ($row['secret_key'] ?? ''));
+            $apiBase = trim((string) ($row['api_base_url'] ?? ''));
+            $site = trim((string) ($row['site_endpoint'] ?? ''));
+            $currency = strtoupper(trim((string) ($row['currency'] ?? '')));
+
+            // Only seed when not yet configured (empty operator or empty secret).
+            if ($operator !== '' && $secret !== '') {
+                return;
+            }
+
+            $pdo->prepare(
+                'UPDATE gamingsoft_config SET
+                    operator_code = :op,
+                    secret_key = :sk,
+                    api_base_url = :api,
+                    site_endpoint = :site,
+                    currency = :cur,
+                    language_code = :lang,
+                    channel_code = :ch,
+                    is_active = 1
+                 WHERE id = 1'
+            )->execute([
+                ':op'   => $operator !== '' ? $operator : self::STAGING_OPERATOR_CODE,
+                ':sk'   => $secret !== '' ? $secret : $stagingSecret,
+                ':api'  => $apiBase !== '' ? rtrim($apiBase, '/') : self::STAGING_API_BASE_URL,
+                ':site' => $site !== '' ? rtrim($site, '/') : self::STAGING_SITE_ENDPOINT,
+                ':cur'  => $currency !== '' && $currency !== 'TRY' ? $currency : self::STAGING_CURRENCY,
+                ':lang' => (int) ($row['language_code'] ?? 0),
+                ':ch'   => trim((string) ($row['channel_code'] ?? '')) !== ''
+                    ? trim((string) $row['channel_code'])
+                    : 'gscp',
+            ]);
+        } catch (Throwable $e) {
+            error_log('GamingSoft staging defaults: ' . $e->getMessage());
+        }
     }
 
     public static function config(PDO $pdo): array
