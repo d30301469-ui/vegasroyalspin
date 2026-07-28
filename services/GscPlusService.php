@@ -1071,21 +1071,67 @@ final class GscPlusService
             }
         }
 
-        try {
-            $response = self::operatorRequest($pdo, 'POST', '/api/operators/launch-game', $body);
-        } catch (Throwable $e) {
-            return ['success' => false, 'code' => 422, 'message' => 'GSC+ launch hatası: ' . $e->getMessage()];
+        // A handful of live-table sub-vendors (behind DreamGaming/product 1052 and
+        // similar "dd"-style front-ends) intermittently answer launch-game with a
+        // table/limit selection payload carrying an empty token instead of a ready
+        // URL. Treating that as success used to leak the raw JSON into the game
+        // iframe and leave the player stuck on the provider's own generic
+        // "please re-login" page. One retry clears most of these; if it doesn't,
+        // fail cleanly and keep the evidence instead of guessing from screenshots.
+        $maxAttempts = 2;
+        $response = [];
+        $url = '';
+        $content = '';
+        $failureMessage = '';
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                $response = self::operatorRequest($pdo, 'POST', '/api/operators/launch-game', $body);
+            } catch (Throwable $e) {
+                $failureMessage = 'GSC+ launch hatası: ' . $e->getMessage();
+                $response = [];
+                if ($attempt < $maxAttempts) {
+                    usleep(200000);
+                    continue;
+                }
+                break;
+            }
+
+            $code = (int) ($response['code'] ?? 0);
+            $url = trim((string) ($response['url'] ?? $response['URL'] ?? ''));
+            $content = (string) ($response['content'] ?? $response['Content'] ?? '');
+
+            if ($code !== 200 && $code !== 0) {
+                $msg = trim((string) ($response['message'] ?? $response['Message'] ?? 'Launch failed'));
+                $failureMessage = 'GSC+: ' . ($msg !== '' ? $msg : ('code ' . $code));
+            } elseif ($url === '' && $content === '') {
+                $failureMessage = 'GSC+ launch URL dönmedi.';
+            } elseif (($issue = self::describeUnusableLaunchPayload($response, $url, $content)) !== null) {
+                $failureMessage = 'Sağlayıcı geçerli bir oyun oturumu döndürmedi (' . $issue . ').';
+            } else {
+                $failureMessage = '';
+                break;
+            }
+
+            if ($attempt < $maxAttempts) {
+                usleep(200000);
+            }
         }
 
-        $code = (int) ($response['code'] ?? 0);
-        $url = trim((string) ($response['url'] ?? $response['URL'] ?? ''));
-        $content = (string) ($response['content'] ?? $response['Content'] ?? '');
-        if ($code !== 200 && $code !== 0) {
-            $msg = trim((string) ($response['message'] ?? $response['Message'] ?? 'Launch failed'));
-            return ['success' => false, 'code' => 422, 'message' => 'GSC+: ' . ($msg !== '' ? $msg : ('code ' . $code))];
-        }
-        if ($url === '' && $content === '') {
-            return ['success' => false, 'code' => 422, 'message' => 'GSC+ launch URL dönmedi.'];
+        if ($failureMessage !== '') {
+            self::logLaunchFailure(
+                $pdo,
+                $userId,
+                $memberAccount,
+                $productCode,
+                $isLobby ? null : $gameCode,
+                $gameType,
+                $currency,
+                $platform,
+                $body,
+                $response !== [] ? $response : null,
+                $failureMessage
+            );
+            return ['success' => false, 'code' => 422, 'message' => $failureMessage];
         }
 
         $pdo->prepare(
@@ -1828,6 +1874,75 @@ final class GscPlusService
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────
+
+    /**
+     * Scans the whole decoded response (not just url/content) because the
+     * table/limit selection payload has been observed both as the top-level
+     * body and nested inside the "message" field. Returns a short, user-safe
+     * reason string when the payload is unusable, null when it looks fine.
+     *
+     * @param array<string, mixed> $response
+     */
+    private static function describeUnusableLaunchPayload(array $response, string $url, string $content): ?string
+    {
+        if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return 'geçersiz URL formatı';
+        }
+
+        $haystack = $url . ' ' . $content . ' ' . json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (preg_match('/token=(?=&|"|\'|\\\\"|$)/', $haystack)) {
+            return 'boş oturum jetonu (token)';
+        }
+        if (str_contains($haystack, '"codeId"') && str_contains($haystack, '"limits"')) {
+            return 'masa/limit seçim yanıtı';
+        }
+
+        return null;
+    }
+
+    /**
+     * Only successful launches used to be recorded, so a provider outage left no
+     * trail beyond a player's screenshot. Failures are now persisted the same way
+     * (gsc_sessions.status distinguishes them) so gsc_diagnose.php can surface them.
+     *
+     * @param array<string, mixed> $requestBody
+     * @param array<string, mixed>|null $response
+     */
+    private static function logLaunchFailure(
+        PDO $pdo,
+        int $userId,
+        string $memberAccount,
+        int $productCode,
+        ?string $gameCode,
+        string $gameType,
+        string $currency,
+        string $platform,
+        array $requestBody,
+        ?array $response,
+        string $message
+    ): void {
+        try {
+            $pdo->prepare(
+                'INSERT INTO gsc_sessions
+                    (user_id, member_account, product_code, game_code, game_type, currency, platform, launch_url, request_payload, response_payload, status, error_message)
+                 VALUES (:uid, :member, :product, :game, :gtype, :cur, :platform, NULL, :req, :res, :status, :err)'
+            )->execute([
+                ':uid' => $userId,
+                ':member' => $memberAccount,
+                ':product' => $productCode,
+                ':game' => $gameCode,
+                ':gtype' => $gameType,
+                ':cur' => $currency,
+                ':platform' => $platform,
+                ':req' => json_encode($requestBody, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ':res' => $response !== null ? json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+                ':status' => 'error',
+                ':err' => $message,
+            ]);
+        } catch (Throwable $e) {
+            error_log('[GSC+] launch failure log write failed: ' . $e->getMessage());
+        }
+    }
 
     public static function memberAccountFromUser(array $user): string
     {

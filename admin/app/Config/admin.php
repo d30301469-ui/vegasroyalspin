@@ -240,7 +240,7 @@ return [
             'table' => 'gsc_sessions',
             'active' => 'datatable',
             'crumbs' => 'Gaming Soft | Sessions',
-            'columns' => ['id', 'user_id', 'member_account', 'product_code', 'game_code', 'game_type', 'currency', 'platform', 'created_at'],
+            'columns' => ['id', 'user_id', 'member_account', 'product_code', 'game_code', 'game_type', 'currency', 'platform', 'status', 'error_message', 'created_at'],
             'search_placeholder' => 'Kullanıcı veya oyun ara...',
         ],
         'gamingsoft-transactions' => [

@@ -258,11 +258,38 @@ if (!is_array($probeUser)) {
                 $ok ? 'ACILDI ' : 'HATA   ',
                 (string) ($res['code'] ?? '-'),
                 $ok
-                    ? ('url=' . (mb_strlen((string) ($res['url'] ?? '')) > 0 ? 'var' : 'YOK'))
+                    ? ('url=' . (mb_strlen((string) ($res['game_url'] ?? '')) > 0 ? 'var' : 'YOK'))
                     : mb_substr((string) ($res['message'] ?? ''), 0, 90)
             );
         } catch (Throwable $e) {
             printf("  %-22s %-30s ISTISNA %s\n", (string) $row['provider'], $gameId, $e->getMessage());
         }
     }
+}
+
+echo "\n== Son basarisiz launch'lar (gsc_sessions, son 24 saat) ==\n";
+try {
+    $stmt = $pdo->query(
+        "SELECT product_code, game_code, member_account, error_message, created_at
+         FROM gsc_sessions
+         WHERE status = 'error' AND created_at >= (NOW() - INTERVAL 1 DAY)
+         ORDER BY id DESC LIMIT 20"
+    );
+    $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    if ($rows === []) {
+        echo "  Kayit yok.\n";
+    } else {
+        foreach ($rows as $row) {
+            printf(
+                "  %-6s %-30s %-16s %-50s %s\n",
+                (string) $row['product_code'],
+                (string) ($row['game_code'] ?? '-'),
+                (string) $row['member_account'],
+                mb_substr((string) $row['error_message'], 0, 50),
+                (string) $row['created_at']
+            );
+        }
+    }
+} catch (Throwable $e) {
+    echo '  Sorgu hatasi (migration henuz calismamis olabilir): ' . $e->getMessage() . "\n";
 }

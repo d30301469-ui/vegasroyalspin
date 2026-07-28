@@ -170,12 +170,27 @@ return static function (PDO $pdo): void {
             launch_url       TEXT NULL,
             request_payload  JSON NULL,
             response_payload JSON NULL,
+            status           VARCHAR(16) NOT NULL DEFAULT 'success',
+            error_message    TEXT NULL,
             created_at       TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY idx_gsc_sess_user (user_id),
-            KEY idx_gsc_sess_created (created_at)
+            KEY idx_gsc_sess_created (created_at),
+            KEY idx_gsc_sess_status (status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+
+    // Only successful launches used to be recorded, so a broken provider payload
+    // (empty token, table/limit selection JSON) left no trail beyond a player's
+    // screenshot. status/error_message let failed attempts be persisted too.
+    if (!$columnExists($pdo, 'gsc_sessions', 'status')) {
+        try {
+            $pdo->exec("ALTER TABLE gsc_sessions ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'success' AFTER response_payload");
+            $pdo->exec('ALTER TABLE gsc_sessions ADD COLUMN error_message TEXT NULL AFTER status');
+            $pdo->exec('ALTER TABLE gsc_sessions ADD KEY idx_gsc_sess_status (status)');
+        } catch (Throwable) {
+        }
+    }
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS gsc_transactions (
