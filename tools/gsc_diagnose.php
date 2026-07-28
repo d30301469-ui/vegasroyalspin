@@ -96,15 +96,20 @@ echo "\n== Canli lobi sorgusu (LiveCasinoQuery) ==\n";
 require_once BASE_PATH . '/services/CasinoAggregatorService.php';
 require_once BASE_PATH . '/services/LiveCasinoQuery.php';
 
-// tableExists prepared SHOW ifadeleri kullaniyor; once bunlarin calistigini dogrula.
+// Tablo varligi + collation: UNION'i bozan collation uyusmazligi burada gorunur.
 foreach (['gsc_games', 'casino_aggregator_games', 'casino_aggregator_vendors'] as $table) {
     try {
-        $stmt = $pdo->prepare('SHOW TABLES LIKE :t');
+        $stmt = $pdo->prepare(
+            'SELECT TABLE_COLLATION
+             FROM INFORMATION_SCHEMA.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t
+             LIMIT 1'
+        );
         $stmt->execute([':t' => $table]);
-        $exists = (bool) $stmt->fetchColumn();
-        printf("  %-28s %s\n", $table, $exists ? 'var' : 'YOK');
+        $collation = $stmt->fetchColumn();
+        printf("  %-28s %s\n", $table, $collation === false ? 'YOK' : 'var, collation=' . (string) $collation);
     } catch (Throwable $e) {
-        printf("  %-28s SHOW hatasi: %s\n", $table, $e->getMessage());
+        printf("  %-28s probe hatasi: %s\n", $table, $e->getMessage());
     }
 }
 

@@ -20,12 +20,20 @@ return static function (PDO $pdo): void {
         $currency = 'IDR';
     }
 
+    // SHOW rejects placeholders on some MySQL builds ("error near '?'"), which made
+    // both probes answer false: the stale unique key was then never dropped.
+    // INFORMATION_SCHEMA is a plain SELECT and binds everywhere.
     $columnExists = static function (PDO $pdo, string $table, string $column): bool {
         try {
-            $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE :col");
-            $stmt->execute([':col' => $column]);
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :tbl AND COLUMN_NAME = :col
+                 LIMIT 1'
+            );
+            $stmt->execute([':tbl' => $table, ':col' => $column]);
 
-            return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+            return (bool) $stmt->fetchColumn();
         } catch (Throwable) {
             return false;
         }
@@ -33,10 +41,15 @@ return static function (PDO $pdo): void {
 
     $indexExists = static function (PDO $pdo, string $table, string $index): bool {
         try {
-            $stmt = $pdo->prepare("SHOW INDEX FROM `{$table}` WHERE Key_name = :idx");
-            $stmt->execute([':idx' => $index]);
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM INFORMATION_SCHEMA.STATISTICS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :tbl AND INDEX_NAME = :idx
+                 LIMIT 1'
+            );
+            $stmt->execute([':tbl' => $table, ':idx' => $index]);
 
-            return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+            return (bool) $stmt->fetchColumn();
         } catch (Throwable) {
             return false;
         }

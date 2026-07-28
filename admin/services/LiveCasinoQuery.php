@@ -454,11 +454,20 @@ final class LiveCasinoQuery
             return $cache[$key];
         }
         try {
-            $stmt = $pdo->prepare('SHOW TABLES LIKE :t');
+            // SHOW does not accept placeholders on every MySQL build ("error near '?'"),
+            // and the swallowed failure made every table look missing, which emptied
+            // the lobby. INFORMATION_SCHEMA is a plain SELECT and always binds.
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM INFORMATION_SCHEMA.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t
+                 LIMIT 1'
+            );
             $stmt->execute([':t' => $table]);
             $cache[$key] = (bool) $stmt->fetchColumn();
             return $cache[$key];
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            error_log("[LiveCasino] table probe failed for {$table}: " . $e->getMessage());
             $cache[$key] = false;
             return false;
         }

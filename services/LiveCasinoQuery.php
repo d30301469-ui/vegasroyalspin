@@ -127,6 +127,16 @@ final class LiveCasinoQuery
     }
 
     /**
+     * Branch queries share one parameter bag, so only the placeholders a branch
+     * actually contains may be bound. The lookahead keeps :search from matching
+     * :search2.
+     */
+    private static function sqlUsesParam(string $sql, string $param): bool
+    {
+        return (bool) preg_match('/' . preg_quote($param, '/') . '(?![0-9A-Za-z_])/', $sql);
+    }
+
+    /**
      * @param list<string> $providerList
      * @return array<string, mixed>|null
      */
@@ -147,7 +157,7 @@ final class LiveCasinoQuery
             }
 
             $offset = ($page - 1) * $limit;
-            $unions = [];
+            $branches = [];
             $params = [];
 
             if ($hasAggregator) {
@@ -177,7 +187,7 @@ final class LiveCasinoQuery
                 }
 
                 $aggWhereSql = ' WHERE ' . implode(' AND ', $aggWhere);
-                $unions[] = "SELECT
+                $branches['aggregator'] = "SELECT
                     CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
                     COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
@@ -217,7 +227,7 @@ final class LiveCasinoQuery
                     $gscWhere[] = '(' . implode(' OR ', $gscProviderClauses) . ')';
                 }
                 $gscWhereSql = ' WHERE ' . implode(' AND ', $gscWhere);
-                $unions[] = "SELECT
+                $branches['gsc'] = "SELECT
                     CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
                     COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
@@ -230,35 +240,68 @@ final class LiveCasinoQuery
                  {$gscWhereSql}";
             }
 
-            if ($unions === []) {
+            if ($branches === []) {
                 return self::emptyResult($limit, $page);
             }
 
-            $unionSql = '(' . implode(' UNION ALL ', $unions) . ') AS catalog';
-            $countStmt = $pdo->prepare("SELECT COUNT(*) FROM {$unionSql}");
-            foreach ($params as $k => $v) {
-                $countStmt->bindValue($k, $v);
-            }
-            $countStmt->execute();
-            $total = (int) $countStmt->fetchColumn();
+            // Each source is queried on its own instead of through one UNION: a
+            // single broken branch (missing column, collation mismatch between the
+            // two tables) used to make the whole lobby report zero games.
+            $total = 0;
+            $rows = [];
+            $failed = 0;
+            // Enough rows per branch to order the merged result correctly up to
+            // the requested page.
+            $cap = $offset + $limit;
 
-            $order = 'is_featured DESC, name ASC';
-            $rowsStmt = $pdo->prepare(
-                "SELECT * FROM {$unionSql}
-                 ORDER BY {$order}
-                 LIMIT :limit OFFSET :offset"
-            );
-            foreach ($params as $k => $v) {
-                $rowsStmt->bindValue($k, $v);
+            foreach ($branches as $label => $sql) {
+                try {
+                    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM ({$sql}) AS catalog");
+                    foreach ($params as $k => $v) {
+                        if (self::sqlUsesParam($sql, $k)) {
+                            $countStmt->bindValue($k, $v);
+                        }
+                    }
+                    $countStmt->execute();
+                    $total += (int) $countStmt->fetchColumn();
+
+                    $rowsStmt = $pdo->prepare(
+                        "SELECT * FROM ({$sql}) AS catalog
+                         ORDER BY is_featured DESC, name ASC
+                         LIMIT :cap"
+                    );
+                    foreach ($params as $k => $v) {
+                        if (self::sqlUsesParam($sql, $k)) {
+                            $rowsStmt->bindValue($k, $v);
+                        }
+                    }
+                    $rowsStmt->bindValue(':cap', max(1, $cap), PDO::PARAM_INT);
+                    $rowsStmt->execute();
+                    foreach ($rowsStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                        $rows[] = is_array($row) ? $row : [];
+                    }
+                } catch (Throwable $e) {
+                    $failed++;
+                    error_log("[LiveCasino] {$label} branch failed: " . $e->getMessage());
+                }
             }
-            $rowsStmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-            $rowsStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-            $rowsStmt->execute();
-            $rows = $rowsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($failed === count($branches)) {
+                return null;
+            }
+
+            usort($rows, static function (array $a, array $b): int {
+                $featured = (int) ($b['is_featured'] ?? 0) <=> (int) ($a['is_featured'] ?? 0);
+                if ($featured !== 0) {
+                    return $featured;
+                }
+
+                return strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
+            });
 
             $games = [];
-            foreach ($rows as $row) {
-                $mapped = self::mapRow(is_array($row) ? $row : []);
+            foreach (array_slice($rows, $offset, $limit) as $row) {
+                $mapped = self::mapRow($row);
                 if ($mapped !== null) {
                     $games[] = $mapped;
                 }
@@ -526,11 +569,20 @@ final class LiveCasinoQuery
             return $cache[$key];
         }
         try {
-            $stmt = $pdo->prepare('SHOW TABLES LIKE :t');
+            // SHOW does not accept placeholders on every MySQL build ("error near '?'"),
+            // and the swallowed failure made every table look missing, which emptied
+            // the lobby. INFORMATION_SCHEMA is a plain SELECT and always binds.
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM INFORMATION_SCHEMA.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t
+                 LIMIT 1'
+            );
             $stmt->execute([':t' => $table]);
             $cache[$key] = (bool) $stmt->fetchColumn();
             return $cache[$key];
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            error_log("[LiveCasino] table probe failed for {$table}: " . $e->getMessage());
             $cache[$key] = false;
             return false;
         }
