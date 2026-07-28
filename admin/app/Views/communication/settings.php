@@ -72,6 +72,12 @@ $emailSection = 'settings';
                 <input id="smtp_password" class="input" type="password" name="smtp_password" placeholder="Değiştirmek için yeni şifre girin">
                 <div class="field-help">Boş bırakırsan mevcut şifre korunur.</div>
             </div>
+            <div class="field span-2">
+                <div class="field-help" style="margin-top:4px;">
+                    Gelen e-postalar (IMAP) aynı host üzerinden okunur: <code>mail.vegasroyalspin.com:993</code>.
+                    Kullanıcı olarak <code>noreply@vegasroyalspin.com</code> ve mailbox şifresini girin.
+                </div>
+            </div>
         </div>
         <div class="form-actions">
             <span class="spacer"></span>

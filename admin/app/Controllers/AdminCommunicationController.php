@@ -14,12 +14,20 @@ final class AdminCommunicationController extends AdminController
     {
         $this->requirePermission('email');
         $this->ensureMailTables();
+        $settings = $this->mailSettingsRow();
+        require_once ADMIN_APP_PATH . '/Services/MetropolMailInbox.php';
+        $inbox = metropol_mail_fetch_inbox($settings, 50);
+        $mailbox = trim((string) ($settings['smtp_user'] ?? $settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+
         $this->view('communication/email', [
             'title' => 'Gelen e-postalar',
             'active' => 'email',
             'crumbs' => 'E-posta | Gelen e-postalar',
             'emailSection' => 'inbox',
-            'messages' => $this->rows('member_inbox_messages', 'created_at'),
+            'mailbox' => $mailbox,
+            'inboxOk' => !empty($inbox['ok']),
+            'inboxError' => (string) ($inbox['error'] ?? ''),
+            'messages' => is_array($inbox['messages'] ?? null) ? $inbox['messages'] : [],
         ]);
     }
 
