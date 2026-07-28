@@ -438,19 +438,17 @@ final class LiveCasinoQuery
 
             if (self::tableExists($pdo, 'gamingsoft_games')) {
                 $gsLive = self::gamingSoftLiveSql('g.game_type');
-                $prodLive = self::gamingSoftLiveSql('p.game_type');
-                $gsNonLive = self::gamingSoftNonLiveSql('g.game_type');
                 $gsCurrency = self::gamingSoftCatalogCurrencySql();
                 $gsStmt = $pdo->query(
                     "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
                      FROM gamingsoft_games g
                      INNER JOIN gamingsoft_products p
                         ON p.product_code = g.product_code
+                       AND UPPER(TRIM(p.game_type)) = UPPER(TRIM(g.game_type))
                        AND p.is_active = 1
                        AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                      WHERE g.is_active = 1
-                       AND ({$gsLive} OR {$prodLive})
-                       AND NOT ({$gsNonLive} AND NOT {$prodLive})
+                       AND {$gsLive}
                      ORDER BY provider_name ASC"
                 );
                 foreach (($gsStmt ? $gsStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
@@ -559,11 +557,11 @@ final class LiveCasinoQuery
     private static function gamingSoftGamesSelectSql(): string
     {
         $liveGame = self::gamingSoftLiveSql('g.game_type');
-        $liveProduct = self::gamingSoftLiveSql('p.game_type');
-        $nonLiveGame = self::gamingSoftNonLiveSql('g.game_type');
         $gsCurrency = self::gamingSoftCatalogCurrencySql();
 
-        // Live casino page: only GSC+ live products/tables — never slot catalogue rows.
+        // Only rows whose own game_type is live. Do NOT join a sibling LIVE product
+        // row for the same product_code (e.g. Pragmatic 1006 SLOT + LIVE_CASINO_PREMIUM)
+        // or slot tables leak into /livecasino and fail launch.
         return "SELECT
                     CONCAT('gamingsoft:', g.product_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
@@ -579,12 +577,12 @@ final class LiveCasinoQuery
                 FROM gamingsoft_games g
                 INNER JOIN gamingsoft_products p
                     ON p.product_code = g.product_code
+                   AND UPPER(TRIM(p.game_type)) = UPPER(TRIM(g.game_type))
                    AND p.is_active = 1
                    AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                 WHERE g.is_active = 1
                   AND g.game_code <> '__lobby__'
-                  AND ({$liveGame} OR {$liveProduct})
-                  AND NOT ({$nonLiveGame} AND NOT {$liveProduct})";
+                  AND {$liveGame}";
     }
 
     /**

@@ -498,19 +498,20 @@ final class SlotGamesQuery
         $source       = strtolower(trim((string) ($query['source'] ?? '')));
 
         $union = [];
+        $c = 'utf8mb4_unicode_ci';
         // BGaming catalog is slot-only; include only on the slot lobby.
         if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
             $union[] = "SELECT
-                    CONCAT('bgaming:', identifier) AS game_id,
-                    title AS name,
-                    provider AS provider,
-                    provider AS provider_code,
-                    COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
-                    CAST('' AS CHAR) AS image_fallbacks,
+                    CONVERT(CONCAT('bgaming:', identifier) USING utf8mb4) COLLATE {$c} AS game_id,
+                    CONVERT(title USING utf8mb4) COLLATE {$c} AS name,
+                    CONVERT(provider USING utf8mb4) COLLATE {$c} AS provider,
+                    CONVERT(provider USING utf8mb4) COLLATE {$c} AS provider_code,
+                    CONVERT(COALESCE(NULLIF(thumbnail_url, ''), '') USING utf8mb4) COLLATE {$c} AS image_url,
+                    CONVERT('' USING utf8mb4) COLLATE {$c} AS image_fallbacks,
                     is_featured AS is_featured,
-                    'bgaming' AS source,
-                    CAST(id AS CHAR) AS row_id,
-                    CAST('' AS CHAR) AS raw_payload
+                    CONVERT('bgaming' USING utf8mb4) COLLATE {$c} AS source,
+                    CONVERT(CAST(id AS CHAR) USING utf8mb4) COLLATE {$c} AS row_id,
+                    CONVERT('' USING utf8mb4) COLLATE {$c} AS raw_payload
                 FROM bgaming_games
                 WHERE is_active = 1";
         }
@@ -537,16 +538,16 @@ final class SlotGamesQuery
                 }
             }
             $union[] = "SELECT
-                    CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
-                    g.game_name AS name,
-                    COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
-                    g.vendor_code AS provider_code,
-                    COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                    CAST('' AS CHAR) AS image_fallbacks,
+                    CONVERT(CONCAT('aggregator:', g.vendor_code, ':', g.game_code) USING utf8mb4) COLLATE {$c} AS game_id,
+                    CONVERT(g.game_name USING utf8mb4) COLLATE {$c} AS name,
+                    CONVERT(COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) USING utf8mb4) COLLATE {$c} AS provider,
+                    CONVERT(g.vendor_code USING utf8mb4) COLLATE {$c} AS provider_code,
+                    CONVERT(COALESCE(NULLIF(g.image_url, ''), '') USING utf8mb4) COLLATE {$c} AS image_url,
+                    CONVERT('' USING utf8mb4) COLLATE {$c} AS image_fallbacks,
                     g.is_featured AS is_featured,
-                    'aggregator' AS source,
-                    CAST(g.id AS CHAR) AS row_id,
-                    CAST('' AS CHAR) AS raw_payload
+                    CONVERT('aggregator' USING utf8mb4) COLLATE {$c} AS source,
+                    CONVERT(CAST(g.id AS CHAR) USING utf8mb4) COLLATE {$c} AS row_id,
+                    CONVERT('' USING utf8mb4) COLLATE {$c} AS raw_payload
                 FROM casino_aggregator_games g
                 INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
                 WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
