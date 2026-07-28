@@ -38,10 +38,29 @@ $emailSection = 'sent';
                 </thead>
                 <tbody>
                     <?php foreach ($mailLogs as $log): ?>
+                        <?php
+                        $status = strtolower(trim((string) ($log['status'] ?? '')));
+                        if ($status === 'sent' || $status === 'success' || $status === 'ok') {
+                            $statusBadge = 'dot success';
+                            $statusLabel = 'Başarılı';
+                        } elseif ($status === 'failed' || $status === 'error') {
+                            $statusBadge = 'dot danger';
+                            $statusLabel = 'Hata';
+                        } elseif ($status === 'not_configured') {
+                            $statusBadge = 'dot warning';
+                            $statusLabel = 'Yapılandırılmadı';
+                        } elseif ($status === 'queued') {
+                            $statusBadge = 'dot info';
+                            $statusLabel = 'Kuyrukta';
+                        } else {
+                            $statusBadge = 'dot warning';
+                            $statusLabel = $status !== '' ? $status : 'Bilinmiyor';
+                        }
+                        ?>
                         <tr>
                             <td><?= htmlspecialchars((string) ($log['to_email'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) ($log['subject'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string) ($log['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><span class="badge <?= htmlspecialchars($statusBadge, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?></span></td>
                             <td><?= htmlspecialchars((string) ($log['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         </tr>
                     <?php endforeach; ?>
