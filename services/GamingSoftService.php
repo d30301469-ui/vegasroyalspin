@@ -844,6 +844,20 @@ final class GamingSoftService
             return ['success' => false, 'code' => 422, 'message' => 'Oyun URL/content döndürmedi.', 'raw' => $response];
         }
 
+        // Pragmatic/Efinity: GSC may return code=200 + URL while provider session was never
+        // created (seamless wallet failure / product not enabled). Detect before redirecting.
+        if ($launchUrl !== '') {
+            $providerSessionError = self::probeProviderLaunchSession($launchUrl);
+            if ($providerSessionError !== null) {
+                return [
+                    'success' => false,
+                    'code'    => 422,
+                    'message' => $providerSessionError,
+                    'raw'     => $response,
+                ];
+            }
+        }
+
         try {
             $pdo->prepare(
                 'INSERT INTO gamingsoft_sessions
@@ -1785,20 +1799,37 @@ final class GamingSoftService
             return false;
         }
 
-        $requestTime = trim((string) self::payloadValue($payload, ['request_time', 'Request_Time', 'requestTime']));
-        // Doc: TimeSpan in seconds (not ms). Tolerate numeric JSON values.
-        if ($requestTime !== '' && is_numeric($requestTime)) {
-            $asFloat = (float) $requestTime;
-            if ($asFloat > 20000000000) {
-                // milliseconds → seconds
-                $requestTime = (string) (int) floor($asFloat / 1000);
-            } else {
-                $requestTime = (string) (int) $asFloat;
-            }
-        }
+        $requestTimeRaw = trim((string) self::payloadValue($payload, ['request_time', 'Request_Time', 'requestTime']));
         $sign = strtolower(trim((string) self::payloadValue($payload, ['sign', 'Sign', 'SIGNATURE'])));
-        if ($requestTime === '' || $sign === '') {
+        if ($requestTimeRaw === '' || $sign === '') {
             return false;
+        }
+
+        // GSC+ seamless docs use seconds; some paths send milliseconds.
+        // Sign must be checked against the EXACT request_time string GSC hashed —
+        // never only against a converted value (that caused false 1004 → Un-Authorized).
+        $requestTimeCandidates = [];
+        $addTime = static function (string $value) use (&$requestTimeCandidates): void {
+            $value = trim($value);
+            if ($value === '' || in_array($value, $requestTimeCandidates, true)) {
+                return;
+            }
+            $requestTimeCandidates[] = $value;
+        };
+        $addTime($requestTimeRaw);
+        if (is_numeric($requestTimeRaw)) {
+            $asFloat = (float) $requestTimeRaw;
+            if ($asFloat > 0) {
+                $addTime((string) (int) $asFloat);
+                // ms → seconds (and keep original ms above)
+                if ($asFloat > 20000000000) {
+                    $addTime((string) (int) floor($asFloat / 1000));
+                }
+            }
+            // Pure digit strings: also try trimming ms without float precision loss.
+            if (preg_match('/^\d{13,17}$/', $requestTimeRaw) === 1) {
+                $addTime(substr($requestTimeRaw, 0, -3));
+            }
         }
 
         $operators = [];
@@ -1828,9 +1859,11 @@ final class GamingSoftService
         foreach ($secrets as $sk) {
             foreach ($operators as $operator) {
                 foreach ($actions as $methodName) {
-                    $expected = md5($operator . $requestTime . $methodName . $sk);
-                    if (hash_equals($expected, $sign)) {
-                        return true;
+                    foreach ($requestTimeCandidates as $requestTime) {
+                        $expected = md5($operator . $requestTime . $methodName . $sk);
+                        if (hash_equals($expected, $sign)) {
+                            return true;
+                        }
                     }
                 }
             }
@@ -2303,6 +2336,154 @@ final class GamingSoftService
         }
 
         return true;
+    }
+
+    /**
+     * Detect broken Pragmatic/Efinity sessions (GSC returns URL but provider rejects).
+     * Returns Turkish error message, or null when OK / not applicable.
+     */
+    private static function probeProviderLaunchSession(string $launchUrl): ?string
+    {
+        $host = strtolower((string) (parse_url($launchUrl, PHP_URL_HOST) ?? ''));
+        if ($host === '' || (!str_contains($host, 'efinity') && !str_contains($host, 'prerelease-env.biz'))) {
+            return null;
+        }
+
+        try {
+            $ch = curl_init($launchUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT        => 12,
+                CURLOPT_CONNECTTIMEOUT => 6,
+                CURLOPT_USERAGENT      => 'Mozilla/5.0',
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+            self::applyCaInfo($ch);
+            $html = (string) curl_exec($ch);
+            curl_close($ch);
+            if ($html === '') {
+                return null;
+            }
+
+            $componentLaunchUrl = '';
+            if (preg_match('/componentLaunchUrl:"((?:\\\\.|[^"\\\\])*)"/', $html, $m) === 1) {
+                $decoded = json_decode('"' . $m[1] . '"');
+                $componentLaunchUrl = is_string($decoded) ? $decoded : stripcslashes($m[1]);
+            }
+
+            $ssid = '';
+            if (preg_match('/[?&]ssid=([^&]+)/i', $launchUrl, $m) === 1) {
+                $ssid = urldecode($m[1]);
+            } elseif (preg_match('/ssid:"([^"]+)"/', $html, $m) === 1) {
+                $ssid = $m[1];
+            }
+
+            if ($ssid !== '') {
+                $ch2 = curl_init('https://efinity.prerelease-env.biz/gs2c/SingleSessionAPI/data');
+                curl_setopt_array($ch2, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST           => true,
+                    CURLOPT_TIMEOUT        => 10,
+                    CURLOPT_CONNECTTIMEOUT => 5,
+                    CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+                    CURLOPT_POSTFIELDS     => http_build_query(['ssid' => $ssid]),
+                    CURLOPT_SSL_VERIFYPEER => true,
+                ]);
+                self::applyCaInfo($ch2);
+                $sessionRaw = (string) curl_exec($ch2);
+                curl_close($ch2);
+                $session = json_decode($sessionRaw, true);
+                if (is_array($session) && (int) ($session['error'] ?? 0) !== 0) {
+                    $desc = trim((string) ($session['description'] ?? ''));
+                    if ($desc !== '' || str_contains(strtolower($sessionRaw), 'session not found')) {
+                        return 'Pragmatic oturumu oluşmadı (Session not found). '
+                            . 'GSC+ launch URL veriyor ama sağlayıcı session yaratamıyor. '
+                            . 'Kontrol: 1) GSC+ panel callback = '
+                            . 'https://admin.vegasroyalspin.com/api/v2/gamingsoft-wallet '
+                            . '2) Admin → Wallet Logları (balance code=0 olmalı) '
+                            . '3) GSC+ destek: VGY1 için Pragmatic Live (product 1006) seamless aktivasyonu / credit mode.';
+                    }
+                }
+            }
+
+            if ($componentLaunchUrl !== '') {
+                $ch3 = curl_init($componentLaunchUrl);
+                curl_setopt_array($ch3, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT        => 12,
+                    CURLOPT_CONNECTTIMEOUT => 6,
+                    CURLOPT_USERAGENT      => 'Mozilla/5.0',
+                    CURLOPT_SSL_VERIFYPEER => true,
+                ]);
+                self::applyCaInfo($ch3);
+                $body = (string) curl_exec($ch3);
+                $http = (int) curl_getinfo($ch3, CURLINFO_HTTP_CODE);
+                curl_close($ch3);
+                if ($http >= 400 || stripos($body, 'Un-Authorized') !== false || stripos($body, 're-log in') !== false) {
+                    return 'Pragmatic GameLaunch Un-Authorized. '
+                        . 'Bu GSC+ staging (VGY1) / Pragmatic prerelease tarafında oturum reddediliyor — '
+                        . 'sadece launch URL üretmek yetmiyor. GSC+ destek ile product 1006 + seamless wallet '
+                        . 'callback doğrulatın. Agent wallet: Admin → GSC+ Ayarları (buy-in bakiyesi).';
+                }
+            }
+        } catch (Throwable) {
+            return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Operator agent wallet (3.12). Buy-in mode (is_credit=false) needs IDR float.
+     *
+     * @return array{ok:bool,is_credit:?bool,currencies:array<int,array{currency:string,balance:float}>,message:string}
+     */
+    public static function fetchAgentWalletBalance(PDO $pdo): array
+    {
+        try {
+            $cfg = self::activeConfig($pdo);
+        } catch (Throwable $e) {
+            return ['ok' => false, 'is_credit' => null, 'currencies' => [], 'message' => $e->getMessage()];
+        }
+
+        // Doc: request_time milliseconds; sign = md5(request_time + secret + getwalletcurrencies + operator)
+        $requestTimeMs = (string) (int) round(microtime(true) * 1000);
+        $sign = md5(
+            $requestTimeMs
+            . trim((string) ($cfg['secret_key'] ?? ''))
+            . 'getwalletcurrencies'
+            . trim((string) ($cfg['operator_code'] ?? ''))
+        );
+
+        try {
+            $response = self::operatorGet($cfg, '/api/operators/wallet-balance', [
+                'operator_code' => (string) $cfg['operator_code'],
+                'sign'          => $sign,
+                'request_time'  => $requestTimeMs,
+            ], 15);
+        } catch (Throwable $e) {
+            return ['ok' => false, 'is_credit' => null, 'currencies' => [], 'message' => $e->getMessage()];
+        }
+
+        $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+        $currencies = [];
+        foreach (($data['currencies'] ?? []) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $currencies[] = [
+                'currency' => strtoupper(trim((string) ($row['currency'] ?? ''))),
+                'balance'  => (float) ($row['current_balance'] ?? 0),
+            ];
+        }
+
+        return [
+            'ok'         => true,
+            'is_credit'  => array_key_exists('is_credit', $data) ? (bool) $data['is_credit'] : null,
+            'currencies' => $currencies,
+            'message'    => trim((string) ($response['message'] ?? 'Success')),
+        ];
     }
 
     /** @return array<string, mixed>|null */

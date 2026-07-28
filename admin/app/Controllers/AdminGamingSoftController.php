@@ -31,6 +31,7 @@ final class AdminGamingSoftController extends AdminController
             'crumbs'            => 'Games | Gaming Soft',
             'configRow'         => GamingSoftService::config($pdo),
             'callbackUrl'       => GamingSoftService::callbackBaseUrl($pdo),
+            'agentWallet'       => GamingSoftService::fetchAgentWalletBalance($pdo),
             'productsCount'     => $productsCount,
             'gamesCount'        => $gamesCount,
             'activeGamesCount'  => $activeGamesCount,

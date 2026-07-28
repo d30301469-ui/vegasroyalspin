@@ -134,6 +134,39 @@ $isActive = !empty($configRow['is_active']) && $configRow['is_active'] !== '0';
             </p>
         </div>
 
+        <?php
+        $agentWallet = is_array($agentWallet ?? null) ? $agentWallet : [];
+        $agentOk = !empty($agentWallet['ok']);
+        $isCredit = $agentWallet['is_credit'] ?? null;
+        ?>
+        <div class="gs-card">
+            <div style="font-weight:700;margin-bottom:10px">Agent Wallet (GSC+ 3.12)</div>
+            <?php if (!$agentOk): ?>
+                <p class="gs-help"><?= $text($agentWallet['message'] ?? 'Agent bakiyesi alınamadı.') ?></p>
+            <?php else: ?>
+                <div class="gs-stat">
+                    <span>Mod</span>
+                    <strong><?= $isCredit === true ? 'Credit' : ($isCredit === false ? 'Buy-in' : '?') ?></strong>
+                </div>
+                <?php foreach (($agentWallet['currencies'] ?? []) as $curRow): ?>
+                    <?php if (!is_array($curRow)) {
+                        continue;
+                    } ?>
+                    <div class="gs-stat">
+                        <span><?= $text($curRow['currency'] ?? '') ?></span>
+                        <strong><?= $text(number_format((float) ($curRow['balance'] ?? 0), 2, '.', ',')) ?></strong>
+                    </div>
+                <?php endforeach; ?>
+                <?php if ($isCredit === false): ?>
+                    <p class="gs-help" style="margin-top:10px">
+                        Buy-in modunda agent IDR bakiyesi düşükse Pragmatic
+                        <code>Un-Authorized / re-log in</code> verebilir. GSC+ destekten credit mode
+                        veya agent top-up isteyin.
+                    </p>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+
         <form class="gs-card" method="post" action="<?= $text(AdminAuth::url('/gamingsoft/sync-products')) ?>">
             <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
             <div style="font-weight:700;margin-bottom:8px">Product Sync</div>
