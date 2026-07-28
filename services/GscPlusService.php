@@ -602,6 +602,18 @@ final class GscPlusService
                         'message' => 'Invalid action',
                     ];
                 }
+                // Doc: CANCEL/ROLLBACK must confirm the referenced bet exists → 1006 otherwise.
+                if (in_array($action, ['CANCEL', 'ROLLBACK'], true)
+                    && !self::wagerExists($pdo, trim((string) ($tx['wager_code'] ?? '')))
+                ) {
+                    $pdo->rollBack();
+                    return [
+                        'before_balance' => $batchBefore,
+                        'balance' => $batchBefore,
+                        'code' => 1006,
+                        'message' => self::WALLET_CODES[1006],
+                    ];
+                }
                 $providerAmount = (float) ($tx['amount'] ?? 0);
                 $deltaWallet = self::resolveWalletDelta($direction, $action, $providerAmount, $currency);
                 $before = $balance;
@@ -717,6 +729,23 @@ final class GscPlusService
         return in_array($action, self::DEBIT_ACTIONS, true)
             || in_array($action, self::CREDIT_ACTIONS, true)
             || in_array($action, self::SIGNED_ACTIONS, true);
+    }
+
+    /** Wager is known if seen in wallet transactions or pushed bet data. */
+    private static function wagerExists(PDO $pdo, string $wagerCode): bool
+    {
+        if ($wagerCode === '') {
+            return false;
+        }
+        $stmt = $pdo->prepare('SELECT id FROM gsc_transactions WHERE wager_code = :w LIMIT 1');
+        $stmt->execute([':w' => $wagerCode]);
+        if ($stmt->fetchColumn() !== false) {
+            return true;
+        }
+        $stmt = $pdo->prepare('SELECT id FROM gsc_wagers WHERE wager_code = :w LIMIT 1');
+        $stmt->execute([':w' => $wagerCode]);
+
+        return $stmt->fetchColumn() !== false;
     }
 
     private static function resolveWalletDelta(string $direction, string $action, float $providerAmount, string $currency): float
