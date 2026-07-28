@@ -772,12 +772,17 @@ final class GscPlusService
     private static function walletPushBetData(PDO $pdo, array $payload, array $cfg): array
     {
         $wagers = is_array($payload['wagers'] ?? null) ? $payload['wagers'] : [];
+        $memberMissing = false;
         foreach ($wagers as $wager) {
             if (!is_array($wager)) {
                 continue;
             }
             $code = trim((string) ($wager['wager_code'] ?? ''));
             if ($code === '') {
+                continue;
+            }
+            if (self::userByMemberAccount($pdo, trim((string) ($wager['member_account'] ?? ''))) === null) {
+                $memberMissing = true;
                 continue;
             }
             $currency = strtoupper(trim((string) ($wager['currency'] ?? $cfg['currency'] ?? 'TRY')));
@@ -828,6 +833,9 @@ final class GscPlusService
             ]);
 
             self::creditManualPayoutWager($pdo, $wager, $code, $currency);
+        }
+        if ($memberMissing) {
+            return ['code' => 1000, 'message' => self::WALLET_CODES[1000]];
         }
         return ['code' => 0, 'message' => ''];
     }
