@@ -2,12 +2,20 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/BackendApiClient.php';
+
 /**
  * Dedicated live-casino catalogue query (GSC+ GamingSoft + Casino Aggregator live).
  * Do not use SlotGamesQuery for /livecasino — this service owns that surface.
+ *
+ * On API-only frontends (FRONTEND_API_ONLY), falls back to BackendApiClient
+ * the same way SlotGamesQuery does for slots.
  */
 final class LiveCasinoQuery
 {
+    public const GAMES_PATH = 'games.php';
+    public const PROVIDERS_PATH = 'games_provider.php';
+
     private const CACHE_TTL_SEC = 90;
 
     /** @return list<string> */
@@ -64,7 +72,6 @@ final class LiveCasinoQuery
     ): array {
         $limit = min(100, max(1, $limit));
         $page = max(1, $page);
-        $offset = ($page - 1) * $limit;
         $searchTerm = trim($searchTerm);
         $cleanProviders = array_values(array_filter(array_map(
             static fn ($x): string => trim((string) $x),
@@ -73,20 +80,95 @@ final class LiveCasinoQuery
 
         $currency = strtoupper(trim((string) ($extraQuery['currency'] ?? '')));
         $source = strtolower(trim((string) ($extraQuery['source'] ?? '')));
-        if ($source === 'live' || $source === 'livecasino') {
+        if ($source === 'live' || $source === 'livecasino' || $source === 'live_casino') {
             $source = '';
         }
+
+        $forceLocal = !empty($extraQuery['force_local'])
+            || (defined('METROPOL_ADMIN_PANEL') && METROPOL_ADMIN_PANEL);
+
+        if (!$forceLocal && self::shouldUseRemoteApi()) {
+            return self::pageViaApi($searchTerm, $cleanProviders, $limit, $page, $sort, $currency, $source);
+        }
+
+        $local = self::pageFromDatabase($searchTerm, $cleanProviders, $limit, $page, $sort, $currency, $source);
+        if ($local !== null) {
+            return $local;
+        }
+
+        if ($forceLocal) {
+            return self::emptyResult($limit, $page, true);
+        }
+
+        return self::pageViaApi($searchTerm, $cleanProviders, $limit, $page, $sort, $currency, $source);
+    }
+
+    /** @return list<string> */
+    public static function providers(array $extraQuery = []): array
+    {
+        $forceLocal = !empty($extraQuery['force_local'])
+            || (defined('METROPOL_ADMIN_PANEL') && METROPOL_ADMIN_PANEL);
+
+        if (!$forceLocal && self::shouldUseRemoteApi()) {
+            return self::providersViaApi();
+        }
+
+        $local = self::providersFromDatabase();
+        if ($local !== null) {
+            return $local;
+        }
+
+        if ($forceLocal) {
+            return [];
+        }
+
+        return self::providersViaApi();
+    }
+
+    public static function purgeCache(): void
+    {
+        // Reserved for future file/redis cache; no-op for now.
+    }
+
+    private static function shouldUseRemoteApi(): bool
+    {
+        return function_exists('frontend_database_allowed') && !frontend_database_allowed();
+    }
+
+    /**
+     * @param list<string> $cleanProviders
+     * @return array<string, mixed>|null
+     */
+    private static function pageFromDatabase(
+        string $searchTerm,
+        array $cleanProviders,
+        int $limit,
+        int $page,
+        string $sort,
+        string $currency,
+        string $source
+    ): ?array {
+        $offset = ($page - 1) * $limit;
 
         try {
             $pdo = self::pdo();
             self::ensureDependencies();
 
             $union = [];
-            if ($source === '' || $source === 'gamingsoft' || $source === 'gsc' || $source === 'gsc+') {
-                $union[] = self::gamingSoftGamesSelectSql();
-                $union[] = self::gamingSoftLobbyProductsSelectSql();
+            $hasGsGames = self::tableExists($pdo, 'gamingsoft_games');
+            $hasGsProducts = self::tableExists($pdo, 'gamingsoft_products');
+            $hasAggGames = self::tableExists($pdo, 'casino_aggregator_games');
+            $hasAggVendors = self::tableExists($pdo, 'casino_aggregator_vendors');
+
+            if (($source === '' || $source === 'gamingsoft' || $source === 'gsc' || $source === 'gsc+')) {
+                if ($hasGsGames) {
+                    $union[] = self::gamingSoftGamesSelectSql();
+                }
+                if ($hasGsProducts) {
+                    $union[] = self::gamingSoftLobbyProductsSelectSql();
+                }
             }
-            if ($source === '' || $source === 'aggregator') {
+            if (($source === '' || $source === 'aggregator') && $hasAggGames && $hasAggVendors) {
                 $union[] = self::aggregatorLiveSelectSql();
             }
 
@@ -173,50 +255,169 @@ final class LiveCasinoQuery
                 'apiError'   => false,
             ];
         } catch (Throwable $e) {
-            error_log('LiveCasinoQuery::page error: ' . $e->getMessage());
+            error_log('LiveCasinoQuery::pageFromDatabase error: ' . $e->getMessage());
 
-            return self::emptyResult($limit, $page, true);
+            return null;
         }
     }
 
-    /** @return list<string> */
-    public static function providers(): array
+    /**
+     * @param list<string> $cleanProviders
+     * @return array<string, mixed>
+     */
+    private static function pageViaApi(
+        string $searchTerm,
+        array $cleanProviders,
+        int $limit,
+        int $page,
+        string $sort,
+        string $currency,
+        string $source
+    ): array {
+        $query = [
+            'game_type' => 1,
+            'page' => $page,
+            'limit' => $limit,
+            // Backend LiveCasinoQuery must hit DB, not recurse into another frontend.
+            'force_local' => 1,
+        ];
+        if ($searchTerm !== '') {
+            $query['search'] = $searchTerm;
+        }
+        if ($cleanProviders !== []) {
+            $query['providers'] = $cleanProviders;
+            $query['provider'] = $cleanProviders[0];
+        }
+        if ($sort !== '') {
+            $query['sort'] = $sort;
+        }
+        if ($currency !== '') {
+            $query['currency'] = $currency;
+        }
+        if (in_array($source, ['gamingsoft', 'gsc', 'gsc+', 'aggregator'], true)) {
+            $query['source'] = $source;
+        }
+
+        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query, null, 8);
+        if ($j === null) {
+            return self::emptyResult($limit, $page, true);
+        }
+
+        $success = $j['success'] ?? null;
+        if ($success !== true && $success !== 1 && $success !== '1' && $success !== 'true') {
+            return self::emptyResult($limit, $page, true);
+        }
+
+        $data = isset($j['data']) && is_array($j['data']) ? $j['data'] : [];
+        $gamesRaw = $data['games'] ?? $data['items'] ?? [];
+        if (!is_array($gamesRaw)) {
+            $gamesRaw = [];
+        }
+
+        $games = [];
+        foreach ($gamesRaw as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            // API already returns mapped rows; normalise key aliases for the slot template.
+            $gameId = trim((string) ($row['game_id'] ?? $row['id'] ?? ''));
+            $name = trim((string) ($row['game_name'] ?? $row['name'] ?? ''));
+            if ($gameId === '' || $name === '') {
+                continue;
+            }
+            $cover = trim((string) ($row['cover'] ?? $row['image_url'] ?? ''));
+            $fallbacks = is_array($row['cover_fallbacks'] ?? null)
+                ? $row['cover_fallbacks']
+                : (is_array($row['image_fallbacks'] ?? null) ? $row['image_fallbacks'] : []);
+            $games[] = [
+                'id' => $gameId,
+                'game_id' => $gameId,
+                'game_name' => $name,
+                'name' => $name,
+                'cover' => $cover,
+                'cover_fallbacks' => $fallbacks,
+                'image_url' => $cover,
+                'has_demo' => !empty($row['has_demo']),
+                'provider_code' => (string) ($row['provider_code'] ?? ''),
+                'provider' => (string) ($row['provider'] ?? ''),
+                'source' => (string) ($row['source'] ?? 'gamingsoft'),
+                'is_featured' => !empty($row['is_featured']) ? 1 : 0,
+                'support_currency' => (string) ($row['support_currency'] ?? ''),
+            ];
+        }
+
+        $pagination = isset($data['pagination']) && is_array($data['pagination']) ? $data['pagination'] : [];
+        $total = max(0, (int) ($pagination['total'] ?? $data['total'] ?? count($games)));
+        $perPage = max(1, (int) ($pagination['perPage'] ?? $pagination['limit'] ?? $data['perPage'] ?? $limit));
+        $pageRet = max(1, (int) ($pagination['page'] ?? $data['page'] ?? $page));
+        $hasNext = array_key_exists('hasNext', $pagination)
+            ? !empty($pagination['hasNext'])
+            : (($pageRet * $perPage) < $total);
+        $totalPages = (int) ($pagination['totalPages'] ?? $data['total_pages'] ?? ($total > 0 ? (int) ceil($total / $perPage) : 0));
+
+        return [
+            'games' => $games,
+            'items' => $games,
+            'total' => $total,
+            'page' => $pageRet,
+            'perPage' => $perPage,
+            'hasNext' => $hasNext,
+            'totalPages' => $totalPages,
+            'apiError' => false,
+        ];
+    }
+
+    /** @return list<string>|null */
+    private static function providersFromDatabase(): ?array
     {
         try {
             $pdo = self::pdo();
             self::ensureDependencies();
             $names = [];
 
-            $gsLive = self::gamingSoftLiveSql('g.game_type');
-            $gsStmt = $pdo->query(
-                "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
-                 FROM gamingsoft_games g
-                 LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
-                 WHERE g.is_active = 1 AND {$gsLive}
-                 ORDER BY provider_name ASC"
-            );
-            foreach (($gsStmt ? $gsStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
-                $name = self::normalizeProviderLabel((string) ($row['provider_name'] ?? ''));
-                if ($name !== '') {
-                    $names[$name] = $name;
+            if (self::tableExists($pdo, 'gamingsoft_games')) {
+                $gsLive = self::gamingSoftLiveSql('g.game_type');
+                $prodLive = self::gamingSoftLiveSql('p.game_type');
+                $gsStmt = $pdo->query(
+                    "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
+                     FROM gamingsoft_games g
+                     LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
+                     WHERE g.is_active = 1
+                       AND ({$gsLive} OR EXISTS (
+                            SELECT 1 FROM gamingsoft_products px
+                            WHERE px.product_code = g.product_code AND {$prodLive}
+                       ))
+                     ORDER BY provider_name ASC"
+                );
+                foreach (($gsStmt ? $gsStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+                    $name = self::normalizeProviderLabel((string) ($row['provider_name'] ?? ''));
+                    if ($name !== '') {
+                        $names[$name] = $name;
+                    }
                 }
             }
 
-            $prodLive = self::gamingSoftLiveSql('p.game_type');
-            $prodStmt = $pdo->query(
-                "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(p.product_code AS CHAR)) AS provider_name
-                 FROM gamingsoft_products p
-                 WHERE p.is_active = 1 AND {$prodLive}
-                 ORDER BY provider_name ASC"
-            );
-            foreach (($prodStmt ? $prodStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
-                $name = self::normalizeProviderLabel((string) ($row['provider_name'] ?? ''));
-                if ($name !== '') {
-                    $names[$name] = $name;
+            if (self::tableExists($pdo, 'gamingsoft_products')) {
+                $prodLive = self::gamingSoftLiveSql('p.game_type');
+                $prodStmt = $pdo->query(
+                    "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(p.product_code AS CHAR)) AS provider_name
+                     FROM gamingsoft_products p
+                     WHERE p.is_active = 1 AND {$prodLive}
+                     ORDER BY provider_name ASC"
+                );
+                foreach (($prodStmt ? $prodStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+                    $name = self::normalizeProviderLabel((string) ($row['provider_name'] ?? ''));
+                    if ($name !== '') {
+                        $names[$name] = $name;
+                    }
                 }
             }
 
-            if (class_exists('CasinoAggregatorService', false)) {
+            if (
+                class_exists('CasinoAggregatorService', false)
+                && self::tableExists($pdo, 'casino_aggregator_vendors')
+                && self::tableExists($pdo, 'casino_aggregator_games')
+            ) {
                 $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
                 $aggStmt = $pdo->query(
                     "SELECT DISTINCT COALESCE(NULLIF(v.vendor_name, ''), v.vendor_code) AS provider_name
@@ -239,21 +440,62 @@ final class LiveCasinoQuery
 
             return $out;
         } catch (Throwable $e) {
-            error_log('LiveCasinoQuery::providers error: ' . $e->getMessage());
+            error_log('LiveCasinoQuery::providersFromDatabase error: ' . $e->getMessage());
 
-            return [];
+            return null;
         }
     }
 
-    public static function purgeCache(): void
+    /** @return list<string> */
+    private static function providersViaApi(): array
     {
-        // Reserved for future file/redis cache; no-op for now.
+        $j = BackendApiClient::request(
+            'GET',
+            BackendApiClient::SVC_GAMES,
+            self::PROVIDERS_PATH,
+            ['game_type' => 1, 'force_local' => 1],
+            null,
+            5
+        );
+        if ($j === null) {
+            return [];
+        }
+
+        $u = BackendApiClient::unwrap($j);
+        $raw = $u['providers'] ?? $u['items'] ?? $j['providers'] ?? [];
+        if (!is_array($raw)) {
+            $data = isset($j['data']) && is_array($j['data']) ? $j['data'] : [];
+            $raw = $data['providers'] ?? $data['items'] ?? [];
+        }
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $providers = [];
+        foreach ($raw as $row) {
+            if (is_string($row) && $row !== '') {
+                $providers[] = self::normalizeProviderLabel($row);
+            } elseif (is_array($row)) {
+                $name = trim((string) ($row['provider_name'] ?? $row['provider'] ?? $row['provider_code'] ?? ''));
+                if ($name !== '') {
+                    $providers[] = self::normalizeProviderLabel($name);
+                }
+            }
+        }
+
+        $providers = array_values(array_unique(array_filter($providers)));
+        sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $providers;
     }
 
     private static function gamingSoftGamesSelectSql(): string
     {
-        $live = self::gamingSoftLiveSql('g.game_type');
+        $liveGame = self::gamingSoftLiveSql('g.game_type');
+        $liveProduct = self::gamingSoftLiveSql('p.game_type');
 
+        // Include rows tagged live on the game OR belonging to a live product
+        // (covers mis-tagged game_type after sync).
         return "SELECT
                     CONCAT('gamingsoft:', g.product_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
@@ -267,7 +509,8 @@ final class LiveCasinoQuery
                     COALESCE(g.raw_payload, '') AS raw_payload
                 FROM gamingsoft_games g
                 LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
-                WHERE g.is_active = 1 AND {$live}";
+                WHERE g.is_active = 1
+                  AND ({$liveGame} OR {$liveProduct})";
     }
 
     /**
@@ -355,19 +598,19 @@ final class LiveCasinoQuery
         }
 
         return [
-            'id'              => $gameId,
-            'game_id'         => $gameId,
-            'game_name'       => $name,
-            'name'            => $name,
-            'cover'           => $imageUrl,
+            'id' => $gameId,
+            'game_id' => $gameId,
+            'game_name' => $name,
+            'name' => $name,
+            'cover' => $imageUrl,
             'cover_fallbacks' => $fallbacks,
-            'image_url'       => $imageUrl,
-            'has_demo'        => false,
-            'provider_code'   => (string) ($row['provider_code'] ?? ''),
-            'provider'        => $provider,
-            'source'          => (string) ($row['source'] ?? 'gamingsoft'),
-            'is_featured'     => !empty($row['is_featured']) ? 1 : 0,
-            'support_currency'=> (string) ($row['support_currency'] ?? ''),
+            'image_url' => $imageUrl,
+            'has_demo' => false,
+            'provider_code' => (string) ($row['provider_code'] ?? ''),
+            'provider' => $provider,
+            'source' => (string) ($row['source'] ?? 'gamingsoft'),
+            'is_featured' => !empty($row['is_featured']) ? 1 : 0,
+            'support_currency' => (string) ($row['support_currency'] ?? ''),
         ];
     }
 
@@ -391,14 +634,14 @@ final class LiveCasinoQuery
     private static function emptyResult(int $limit, int $page, bool $apiError = false): array
     {
         return [
-            'games'      => [],
-            'items'      => [],
-            'total'      => 0,
-            'page'       => $page,
-            'perPage'    => $limit,
-            'hasNext'    => false,
+            'games' => [],
+            'items' => [],
+            'total' => 0,
+            'page' => $page,
+            'perPage' => $limit,
+            'hasNext' => false,
             'totalPages' => 0,
-            'apiError'   => $apiError,
+            'apiError' => $apiError,
         ];
     }
 
@@ -430,13 +673,31 @@ final class LiveCasinoQuery
         }
     }
 
+    private static function tableExists(PDO $pdo, string $table): bool
+    {
+        $table = preg_replace('/[^a-zA-Z0-9_]/', '', $table) ?? '';
+        if ($table === '') {
+            return false;
+        }
+        try {
+            $pdo->query('SELECT 1 FROM `' . $table . '` LIMIT 0');
+
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
     private static function pdo(): PDO
     {
         if (class_exists('AdminDatabase', false)) {
             return AdminDatabase::pdo();
         }
-        if (defined('ADMIN_APP_PATH') && is_file(ADMIN_APP_PATH . '/Core/AdminDatabase.php')) {
-            require_once ADMIN_APP_PATH . '/Core/AdminDatabase.php';
+        $adminApp = defined('ADMIN_APP_PATH')
+            ? ADMIN_APP_PATH
+            : dirname(__DIR__) . '/admin/app';
+        if (is_file($adminApp . '/Core/AdminDatabase.php')) {
+            require_once $adminApp . '/Core/AdminDatabase.php';
             if (class_exists('AdminDatabase', false)) {
                 return AdminDatabase::pdo();
             }

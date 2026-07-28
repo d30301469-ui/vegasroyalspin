@@ -38,7 +38,7 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
     try {
         if ($gameType === 1) {
             admin_require_project_file('services/LiveCasinoQuery.php');
-            foreach (LiveCasinoQuery::providers() as $name) {
+            foreach (LiveCasinoQuery::providers(['force_local' => true]) as $name) {
                 $name = trim((string) $name);
                 if ($name === '') {
                     continue;
@@ -145,6 +145,8 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             $page,
             $onlyFeatured ? 'popular' : $sort,
             [
+                // Always hit local DB on the admin API host — never recurse via BackendApiClient.
+                'force_local' => true,
                 'source' => in_array($source, ['gamingsoft', 'gsc', 'gsc+', 'aggregator'], true) ? $source : '',
                 'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
             ]
