@@ -111,6 +111,22 @@ final class LiveCasinoQuery
     }
 
     /**
+     * BackendApiClient::request() returns the decoded member envelope as-is and
+     * never adds an "ok" flag, so success has to be read from the envelope the
+     * same way BackendConnectivityProbe does.
+     *
+     * @param array<string, mixed>|null $json
+     */
+    private static function envelopeOk(?array $json): bool
+    {
+        if (!is_array($json)) {
+            return false;
+        }
+
+        return !empty($json['success']) || (int) ($json['code'] ?? 0) === 200;
+    }
+
+    /**
      * @param list<string> $providerList
      * @return array<string, mixed>|null
      */
@@ -211,7 +227,10 @@ final class LiveCasinoQuery
                 'totalPages' => $totalPages,
                 'apiError' => false,
             ];
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            // A swallowed failure here is indistinguishable from an empty catalogue,
+            // which hid a total live-lobby outage; leave a trace.
+            error_log('[LiveCasino] page query failed: ' . $e->getMessage());
             return null;
         }
     }
@@ -249,7 +268,7 @@ final class LiveCasinoQuery
         }
 
         $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query, null, 8);
-        if (!is_array($j) || empty($j['ok'])) {
+        if (!self::envelopeOk($j)) {
             return self::emptyResult($limit, $page, true);
         }
 
@@ -315,7 +334,8 @@ final class LiveCasinoQuery
             $providers = array_values(array_unique(array_filter($providers)));
             sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
             return $providers;
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            error_log('[LiveCasino] provider query failed: ' . $e->getMessage());
             return null;
         }
     }
@@ -324,7 +344,7 @@ final class LiveCasinoQuery
     private static function providersViaApi(): array
     {
         $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::PROVIDERS_PATH, ['source' => 'livecasino'], null, 8);
-        if (!is_array($j) || empty($j['ok'])) {
+        if (!self::envelopeOk($j)) {
             return [];
         }
         $u = BackendApiClient::unwrap($j);
@@ -334,7 +354,11 @@ final class LiveCasinoQuery
         $items = is_array($u['providers'] ?? null) ? $u['providers'] : (is_array($u['items'] ?? null) ? $u['items'] : []);
         $providers = [];
         foreach ($items as $item) {
-            $name = trim((string) $item);
+            // The route answers with {provider_code, provider_name} objects; older
+            // callers returned plain names.
+            $name = is_array($item)
+                ? trim((string) ($item['provider_name'] ?? $item['name'] ?? $item['provider_code'] ?? ''))
+                : trim((string) $item);
             if ($name !== '') {
                 $providers[] = $name;
             }

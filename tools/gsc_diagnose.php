@@ -92,6 +92,79 @@ foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
     );
 }
 
+echo "\n== Canli lobi sorgusu (LiveCasinoQuery) ==\n";
+require_once BASE_PATH . '/services/CasinoAggregatorService.php';
+require_once BASE_PATH . '/services/LiveCasinoQuery.php';
+
+// tableExists prepared SHOW ifadeleri kullaniyor; once bunlarin calistigini dogrula.
+foreach (['gsc_games', 'casino_aggregator_games', 'casino_aggregator_vendors'] as $table) {
+    try {
+        $stmt = $pdo->prepare('SHOW TABLES LIKE :t');
+        $stmt->execute([':t' => $table]);
+        $exists = (bool) $stmt->fetchColumn();
+        printf("  %-28s %s\n", $table, $exists ? 'var' : 'YOK');
+    } catch (Throwable $e) {
+        printf("  %-28s SHOW hatasi: %s\n", $table, $e->getMessage());
+    }
+}
+
+// pageFromDatabase ile ayni UNION'i calistir; istisnalar yutulmadan gosterilir.
+$liveTypes = "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')";
+$gscSelect = "SELECT
+        CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
+        g.game_name AS name,
+        COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
+        CAST(g.product_code AS CHAR) AS provider_code,
+        COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+        CAST('' AS CHAR) AS image_fallbacks,
+        g.is_featured AS is_featured,
+        'gsc' AS source
+     FROM gsc_games g
+     WHERE g.is_active = 1 AND (g.game_code <> '_lobby' OR g.entry_type = 2) AND {$liveTypes}";
+
+$liveMatch = class_exists('CasinoAggregatorService', false)
+    ? CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code')
+    : '0';
+$aggSelect = "SELECT
+        CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
+        g.game_name AS name,
+        COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
+        g.vendor_code AS provider_code,
+        COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+        CAST('' AS CHAR) AS image_fallbacks,
+        g.is_featured AS is_featured,
+        'aggregator' AS source
+     FROM casino_aggregator_games g
+     INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
+     WHERE g.is_active = 1 AND v.is_active = 1 AND (g.game_type = 2 OR {$liveMatch})";
+
+foreach ([
+    'sadece gsc' => $gscSelect,
+    'sadece aggregator' => $aggSelect,
+    'birlesik UNION' => '(' . $aggSelect . ') UNION ALL (' . $gscSelect . ')',
+] as $label => $sql) {
+    try {
+        $n = (int) $pdo->query("SELECT COUNT(*) FROM ({$sql}) AS catalog")->fetchColumn();
+        printf("  %-20s %d satir\n", $label, $n);
+    } catch (Throwable $e) {
+        printf("  %-20s SQL HATASI: %s\n", $label, $e->getMessage());
+    }
+}
+
+$result = LiveCasinoQuery::page('', [], 12, 1, '', ['force_local' => true]);
+printf(
+    "  LiveCasinoQuery::page -> total=%d, donen=%d, apiError=%s\n",
+    (int) ($result['total'] ?? 0),
+    count((array) ($result['games'] ?? [])),
+    !empty($result['apiError']) ? 'true' : 'false'
+);
+$bySource = [];
+foreach ((array) ($result['games'] ?? []) as $game) {
+    $src = is_array($game) ? (string) ($game['source'] ?? '?') : '?';
+    $bySource[$src] = ($bySource[$src] ?? 0) + 1;
+}
+echo '  source dagilimi: ' . json_encode($bySource) . "\n";
+
 echo "\n== Launch cozumlemesi (aktif canli oyunlardan ornek) ==\n";
 $stmt = $pdo->query(
     "SELECT product_code, game_code, game_name, support_currency, product_currency
