@@ -315,6 +315,16 @@ final class GamingSoftService
 
         $pdo->exec('UPDATE gamingsoft_config SET products_synced_at = NOW() WHERE id = 1');
 
+        // Drop stale rows synced under another currency (e.g. CNY) so launch/catalog stay on IDR.
+        try {
+            $deactivate = $pdo->prepare(
+                'UPDATE gamingsoft_products SET is_active = 0
+                 WHERE currency <> :cur AND currency <> \'\''
+            );
+            $deactivate->execute([':cur' => $targetCurrency]);
+        } catch (Throwable) {
+        }
+
         return ['product_count' => $count, 'skipped_other_currency' => $skipped, 'currency' => $targetCurrency];
     }
 
@@ -322,9 +332,12 @@ final class GamingSoftService
     {
         self::bootstrap($pdo);
         $cfg = self::activeConfig($pdo);
+        $targetCurrency = self::resolveOperatorCurrency($cfg);
 
-        $sql = 'SELECT product_code, game_type, entry_type, product_name, provider FROM gamingsoft_products WHERE is_active = 1';
-        $params = [];
+        $sql = 'SELECT product_code, game_type, entry_type, product_name, provider, currency
+                FROM gamingsoft_products
+                WHERE is_active = 1 AND (currency = :cur OR currency = \'\')';
+        $params = [':cur' => $targetCurrency];
         if ($productCode !== null && $productCode > 0) {
             $sql .= ' AND product_code = :pc';
             $params[':pc'] = $productCode;
@@ -506,22 +519,19 @@ final class GamingSoftService
         $memberAccount = self::memberAccountFromUser($user);
         $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
 
-        // Product row is authoritative for launch mode (entry_type) and game_type.
-        $productStmt = $pdo->prepare(
-            'SELECT product_code, product_name, provider, game_type, currency, entry_type, is_active, status
-             FROM gamingsoft_products
-             WHERE product_code = :pc
-             LIMIT 1'
+        // Product row is authoritative for launch mode (entry_type).
+        $targetCurrency = self::resolveOperatorCurrency($cfg);
+        $productRow = self::resolveLaunchProduct(
+            $pdo,
+            (int) $parsed['product_code'],
+            $targetCurrency,
+            is_array($gameRow) ? $gameRow : []
         );
-        $productStmt->execute([':pc' => $parsed['product_code']]);
-        $productRow = $productStmt->fetch(PDO::FETCH_ASSOC);
-        if (!is_array($productRow)) {
-            $productRow = [];
-        }
+        $launchProductCode = (int) ($productRow['product_code'] ?? $parsed['product_code']);
 
-        $productGameType = self::normalizeProviderGameType((string) ($productRow['game_type'] ?? ''));
-        $gameRowType = self::normalizeProviderGameType((string) ($gameRow['game_type'] ?? ''));
-        $gameType = $productGameType !== '' ? $productGameType : ($gameRowType !== '' ? $gameRowType : 'SLOT');
+        $productGameType = strtoupper(trim((string) ($productRow['game_type'] ?? '')));
+        $gameRowType = self::gameTypeFromRow(is_array($gameRow) ? $gameRow : [], $productRow);
+        $gameType = $gameRowType !== '' ? $gameRowType : ($productGameType !== '' ? $productGameType : 'SLOT');
 
         $productEntryType = (int) ($productRow['entry_type'] ?? 0);
         $gameEntryType = (int) ($gameRow['entry_type'] ?? $gameRow['product_entry_type'] ?? 0);
@@ -539,7 +549,6 @@ final class GamingSoftService
             $gameCode = null;
         }
 
-        $targetCurrency = self::resolveOperatorCurrency($cfg);
         $currency = self::pickLaunchCurrency(
             (string) ($productRow['currency'] ?? $gameRow['product_currency'] ?? ''),
             (string) ($gameRow['support_currency'] ?? ''),
@@ -572,80 +581,74 @@ final class GamingSoftService
         }
 
         $requestTime = self::requestTimeSeconds();
-        $payload = self::buildLaunchPayload(
-            $cfg,
-            $memberAccount,
-            $nickname,
-            $currency,
-            $gameCode,
-            (int) $parsed['product_code'],
-            $gameType,
-            $languageCode,
-            $ip !== '' ? $ip : '127.0.0.1',
-            $platform,
-            $lobbyUrl,
-            $requestTime
-        );
-
-        try {
-            $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
-        } catch (Throwable $e) {
-            return ['success' => false, 'code' => 503, 'message' => 'GSC+ API bağlantı hatası: ' . $e->getMessage()];
+        $gameTypeCandidates = self::launchGameTypeCandidates($gameType, $productGameType);
+        $launchAttempts = [];
+        foreach ($gameTypeCandidates as $typeCandidate) {
+            $launchAttempts[] = ['game_code' => $gameCode, 'game_type' => $typeCandidate];
+        }
+        if ($gameCode !== null) {
+            foreach ($gameTypeCandidates as $typeCandidate) {
+                $launchAttempts[] = ['game_code' => null, 'game_type' => $typeCandidate];
+            }
         }
 
-        $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
-        $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
-
-        // If direct game_code is unknown to GSC+, retry once as product lobby launch.
-        if (($code !== 200 && $code !== 0)
-            && $gameCode !== null
-            && self::isRecordNotFoundMessage($providerMessage)
-            && ($entryType === 2 || self::isLiveGameType($gameType))
-        ) {
-            $retryTime = self::requestTimeSeconds();
+        $response = null;
+        $code = -1;
+        $providerMessage = '';
+        $payload = [];
+        foreach ($launchAttempts as $attempt) {
+            $requestTime = self::requestTimeSeconds();
             $payload = self::buildLaunchPayload(
                 $cfg,
                 $memberAccount,
                 $nickname,
                 $currency,
-                null,
-                (int) $parsed['product_code'],
-                $gameType,
+                $attempt['game_code'],
+                $launchProductCode,
+                $attempt['game_type'],
                 $languageCode,
                 $ip !== '' ? $ip : '127.0.0.1',
                 $platform,
                 $lobbyUrl,
-                $retryTime
+                $requestTime
             );
             try {
                 $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
             } catch (Throwable $e) {
                 return ['success' => false, 'code' => 503, 'message' => 'GSC+ API bağlantı hatası: ' . $e->getMessage()];
             }
+
             $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
             $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
-            $gameCode = null;
+            if ($code === 200 || $code === 0) {
+                $gameType = $attempt['game_type'];
+                $gameCode = $attempt['game_code'];
+                break;
+            }
+            if (!self::isRecordNotFoundMessage($providerMessage)) {
+                break;
+            }
         }
 
-        // Wrong launch currency (e.g. CNY product row while VGY1 credit is IDR) surfaces as agent balance error.
+        // Agent wallet funded under config currency (IDR) — retry once if launch used another code path.
         if (($code !== 200 && $code !== 0)
             && self::isAgentBalanceMessage($providerMessage)
             && $currency !== $targetCurrency
         ) {
-            $retryTime = self::requestTimeSeconds();
+            $requestTime = self::requestTimeSeconds();
             $payload = self::buildLaunchPayload(
                 $cfg,
                 $memberAccount,
                 $nickname,
                 $targetCurrency,
                 $gameCode,
-                (int) $parsed['product_code'],
+                $launchProductCode,
                 $gameType,
                 $languageCode,
                 $ip !== '' ? $ip : '127.0.0.1',
                 $platform,
                 $lobbyUrl,
-                $retryTime
+                $requestTime
             );
             try {
                 $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
@@ -683,7 +686,7 @@ final class GamingSoftService
                 ':uid'  => $userId,
                 ':uname'=> $nickname,
                 ':ma'   => $memberAccount,
-                ':pc'   => (int) $parsed['product_code'],
+                ':pc'   => $launchProductCode,
                 ':gc'   => $gameCode,
                 ':gt'   => $gameType,
                 ':cur'  => $currency,
@@ -1370,6 +1373,108 @@ final class GamingSoftService
         }
     }
 
+    /** @param array<string, mixed> $gameRow @param array<string, mixed> $productRow */
+    private static function gameTypeFromRow(array $gameRow, array $productRow): string
+    {
+        $fromGame = strtoupper(trim((string) ($gameRow['game_type'] ?? '')));
+        if ($fromGame !== '') {
+            return $fromGame;
+        }
+
+        $raw = trim((string) ($gameRow['raw_payload'] ?? ''));
+        if ($raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $fromRaw = strtoupper(trim((string) ($decoded['game_type'] ?? '')));
+                if ($fromRaw !== '') {
+                    return $fromRaw;
+                }
+            }
+        }
+
+        return strtoupper(trim((string) ($productRow['game_type'] ?? '')));
+    }
+
+    /** @return list<string> */
+    private static function launchGameTypeCandidates(string $primaryType, string $productType): array
+    {
+        $candidates = [];
+        $add = static function (string $value) use (&$candidates): void {
+            $value = strtoupper(trim($value));
+            if ($value === '') {
+                return;
+            }
+            if (!in_array($value, $candidates, true)) {
+                $candidates[] = $value;
+            }
+        };
+
+        $add($primaryType);
+        $add($productType);
+        $add(self::normalizeProviderGameType($primaryType));
+        $add(self::normalizeProviderGameType($productType));
+
+        if (self::isLiveGameType($primaryType) || self::isLiveGameType($productType)) {
+            foreach (['LIVE_CASINO', 'LIVE_CASINO_PREMIUM', 'LC', 'LIVE'] as $liveType) {
+                $add($liveType);
+            }
+        }
+
+        if ($candidates === []) {
+            $candidates[] = 'SLOT';
+        }
+
+        return $candidates;
+    }
+
+    /**
+     * Resolve the IDR (config) product row; map stale CNY product_code to the active provider product if needed.
+     *
+     * @param array<string, mixed> $gameRow
+     * @return array<string, mixed>
+     */
+    private static function resolveLaunchProduct(PDO $pdo, int $productCode, string $targetCurrency, array $gameRow): array
+    {
+        $stmt = $pdo->prepare('SELECT * FROM gamingsoft_products WHERE product_code = :pc LIMIT 1');
+        $stmt->execute([':pc' => $productCode]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = is_array($row) ? $row : [];
+
+        $rowCurrency = strtoupper(trim((string) ($row['currency'] ?? '')));
+        if ($row !== []
+            && (int) ($row['is_active'] ?? 0) === 1
+            && ($rowCurrency === '' || $rowCurrency === $targetCurrency)
+        ) {
+            return $row;
+        }
+
+        $provider = trim((string) ($row['provider'] ?? $gameRow['provider'] ?? ''));
+        $productName = trim((string) ($row['product_name'] ?? $gameRow['product_name'] ?? ''));
+        if ($provider === '' && $productName === '') {
+            return $row;
+        }
+
+        $lookup = $pdo->prepare(
+            'SELECT * FROM gamingsoft_products
+             WHERE is_active = 1
+               AND currency = :cur
+               AND (
+                    provider = :provider OR product_name = :provider
+                    OR provider = :pname OR product_name = :pname
+               )
+             ORDER BY synced_at DESC, id DESC
+             LIMIT 1'
+        );
+        $lookup->execute([
+            ':cur'      => $targetCurrency,
+            ':provider' => $provider !== '' ? $provider : $productName,
+            ':pname'    => $productName !== '' ? $productName : $provider,
+        ]);
+        $match = $lookup->fetch(PDO::FETCH_ASSOC);
+
+        return is_array($match) ? $match : $row;
+    }
+
     private static function normalizeProviderGameType(string $gameType): string
     {
         $t = strtoupper(trim($gameType));
@@ -1505,8 +1610,9 @@ final class GamingSoftService
         }
 
         if (self::isRecordNotFoundMessage($providerMessage)) {
-            return 'Oyun başlatılamadı: GSC+ kaydı bulunamadı (product/game_code/currency uyuşmazlığı). '
-                . 'Admin → GSC+ ürün/oyun sync çalıştırın; live ürünlerde lobby (entry_type=2) ile deneyin.';
+            return 'Oyun başlatılamadı: GSC+ kaydı bulunamadı (product_code/game_code/game_type). '
+                . 'Admin → GSC+ Ayarları Currency=IDR, ardından Product Sync + Oyun Sync çalıştırın. '
+                . 'Canlı ürünlerde mümkünse lobby (entry_type=2) deneyin.';
         }
 
         return 'Oyun başlatılamadı: ' . $providerMessage;
