@@ -374,10 +374,10 @@ final class AdminCasinoAggregatorController extends AdminController
         $vendor = trim((string) ($_POST['vendor_code'] ?? ''));
         try {
             $result = CasinoAggregatorService::callApply(AdminDatabase::pdo(), $_POST);
-            $this->flash('CallApply OK — callId=' . (int) ($result['call_id'] ?? 0)
+            $this->flash('CallApply başarılı — callId=' . (int) ($result['call_id'] ?? 0)
                 . ', calledMoney=' . (string) ($result['called_money'] ?? 0));
         } catch (Throwable $e) {
-            $this->flash('CallApply hata: ' . $e->getMessage());
+            $this->flash('CallApply başarısız: ' . $e->getMessage());
         }
         $this->redirect(AdminAuth::url('/casino-aggregator/game-control?vendor_code=' . rawurlencode($vendor)));
     }
@@ -389,9 +389,9 @@ final class AdminCasinoAggregatorController extends AdminController
         $vendor = trim((string) ($_POST['vendor_code'] ?? ''));
         try {
             $result = CasinoAggregatorService::callCancel(AdminDatabase::pdo(), $_POST);
-            $this->flash('CallCancel OK — canceledMoney=' . (string) ($result['canceled_money'] ?? 0));
+            $this->flash('CallCancel başarılı — canceledMoney=' . (string) ($result['canceled_money'] ?? 0));
         } catch (Throwable $e) {
-            $this->flash('CallCancel hata: ' . $e->getMessage());
+            $this->flash('CallCancel başarısız: ' . $e->getMessage());
         }
         $this->redirect(AdminAuth::url('/casino-aggregator/game-control?vendor_code=' . rawurlencode($vendor)));
     }
