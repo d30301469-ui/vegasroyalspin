@@ -3,9 +3,22 @@
 $configRow = is_array($configRow ?? null) ? $configRow : [];
 $flash = trim((string) ($flash ?? ''));
 $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
-$currencyValue = strtoupper(trim((string) ($configRow['currency'] ?? 'TRY')));
+$currencyValue = strtoupper(trim((string) ($configRow['currency'] ?? '')));
+if ($currencyValue === '') {
+    $currencyValue = GscPlusService::DEFAULT_CURRENCY;
+}
 $callbackUrl = (string) ($callbackUrl ?? '');
 $callbackAlias = (string) ($callbackAlias ?? '');
+
+$agentWallet = is_array($agentWallet ?? null) ? $agentWallet : null;
+$contractedCurrencies = [];
+foreach (($agentWallet['currencies'] ?? []) as $walletRow) {
+    $code = strtoupper(trim((string) ($walletRow['currency'] ?? '')));
+    if ($code !== '') {
+        $contractedCurrencies[] = $code;
+    }
+}
+$currencyMismatch = $contractedCurrencies !== [] && !in_array($currencyValue, $contractedCurrencies, true);
 ?>
 <style>
     .gsc-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
@@ -60,6 +73,14 @@ $callbackAlias = (string) ($callbackAlias ?? '');
             <div class="field">
                 <label class="field-label" for="currency">Currency</label>
                 <input id="currency" class="input" type="text" name="currency" value="<?= $text($currencyValue) ?>" maxlength="16">
+                <?php if ($contractedCurrencies !== []): ?>
+                    <p class="gsc-help">
+                        Sözleşmeli: <code><?= $text(implode(', ', $contractedCurrencies)) ?></code>
+                        <?php if ($currencyMismatch): ?>
+                            <br><strong>Uyarı:</strong> <?= $text($currencyValue) ?> agent cüzdanında tanımlı değil; launch-game reddedilir.
+                        <?php endif; ?>
+                    </p>
+                <?php endif; ?>
             </div>
             <div class="field">
                 <label class="field-label" for="language_code">Language Code</label>
@@ -101,7 +122,6 @@ $callbackAlias = (string) ($callbackAlias ?? '');
             <strong><?= $text($configRow['games_synced_at'] ?? '—') ?></strong>
         </div>
 
-        <?php $agentWallet = is_array($agentWallet ?? null) ? $agentWallet : null; ?>
         <?php if ($agentWallet !== null): ?>
             <div style="margin-top:16px">
                 <div class="field-label">Agent Wallet (<?= !empty($agentWallet['is_credit']) ? 'credit' : 'buy-in' ?>)</div>
