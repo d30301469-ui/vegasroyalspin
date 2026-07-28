@@ -218,10 +218,14 @@ final class LiveCasinoQuery
                 if ($providerList !== []) {
                     $gscProviderClauses = [];
                     foreach ($providerList as $idx => $provider) {
+                        // Native prepares reject a named placeholder used twice, so the
+                        // provider value is bound once per column it is compared against.
                         $pk = ':gsc_provider_' . $idx;
+                        $nk = ':gsc_provider_name_' . $idx;
                         $ck = ':gsc_provider_code_' . $idx;
-                        $gscProviderClauses[] = "(g.provider = {$pk} OR CAST(g.product_code AS CHAR) = {$ck} OR g.product_name = {$pk})";
+                        $gscProviderClauses[] = "(g.provider = {$pk} OR CAST(g.product_code AS CHAR) = {$ck} OR g.product_name = {$nk})";
                         $params[$pk] = $provider;
+                        $params[$nk] = $provider;
                         $params[$ck] = $provider;
                     }
                     $gscWhere[] = '(' . implode(' OR ', $gscProviderClauses) . ')';
