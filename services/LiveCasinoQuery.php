@@ -665,9 +665,15 @@ final class LiveCasinoQuery
             $fallbacks = is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [];
         }
 
+        $parsedGs = class_exists('GamingSoftService', false) ? GamingSoftService::parseGameId($gameId) : null;
+        $productCode = is_array($parsedGs) ? (int) ($parsedGs['product_code'] ?? 0) : 0;
+        $providerGameCode = is_array($parsedGs) ? (string) ($parsedGs['game_code'] ?? '') : '';
+
         return [
             'id' => $gameId,
             'game_id' => $gameId,
+            'product_code' => $productCode > 0 ? $productCode : (string) ($row['provider_code'] ?? ''),
+            'game_code' => $providerGameCode !== '' ? $providerGameCode : '',
             'game_name' => $name,
             'name' => $name,
             'cover' => $imageUrl,

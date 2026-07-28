@@ -348,9 +348,13 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             $media = CasinoAggregatorService::hydrateGameMedia($r);
             $imageUrl = (string) ($media['cover'] ?? '');
             $imageFallbacks = is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [];
+            $gameIdStr = (string) ($r['game_id'] ?? '');
+            $gsParsed = GamingSoftService::parseGameId($gameIdStr);
             $allGames[] = [
                 'id'            => (string) ($r['row_id'] ?? ''),
-                'game_id'       => (string) ($r['game_id'] ?? ''),
+                'game_id'       => $gameIdStr,
+                'product_code'  => is_array($gsParsed) ? (int) ($gsParsed['product_code'] ?? 0) : 0,
+                'game_code'     => is_array($gsParsed) ? (string) ($gsParsed['game_code'] ?? '') : '',
                 'name'          => $gameName,
                 'title'         => $gameName,
                 'cover'         => $imageUrl,
@@ -960,6 +964,24 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                     $gameId = 'bgaming:' . $gameId;
                 }
             } catch (Throwable) {
+            }
+            if (!CasinoAggregatorService::ownsGameId($gameId) && !GamingSoftService::ownsGameId($gameId)) {
+                try {
+                    if (ctype_digit($gameId)) {
+                        $gsById = $resolvePdo->prepare(
+                            'SELECT product_code, game_code FROM gamingsoft_games WHERE id = :id LIMIT 1'
+                        );
+                        $gsById->execute([':id' => (int) $gameId]);
+                        $gsRow = $gsById->fetch(PDO::FETCH_ASSOC);
+                        if (is_array($gsRow)) {
+                            $gameId = GamingSoftService::buildGameId(
+                                (int) ($gsRow['product_code'] ?? 0),
+                                (string) ($gsRow['game_code'] ?? '')
+                            );
+                        }
+                    }
+                } catch (Throwable) {
+                }
             }
             if (!CasinoAggregatorService::ownsGameId($gameId) && !GamingSoftService::ownsGameId($gameId)) {
                 try {

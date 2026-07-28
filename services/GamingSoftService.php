@@ -693,15 +693,15 @@ final class GamingSoftService
         }
 
         $launchAttempts = [];
-        if ($isLiveLaunch && $gameCode !== null) {
-            foreach ($gameTypeCandidates as $typeCandidate) {
-                $launchAttempts[] = ['game_code' => null, 'game_type' => $typeCandidate];
-            }
-        }
         foreach ($gameTypeCandidates as $typeCandidate) {
             $launchAttempts[] = ['game_code' => $gameCode, 'game_type' => $typeCandidate];
         }
-        if ($gameCode !== null && !$isLiveLaunch) {
+        // Lobby fallback only when product supports it (entry_type=2) or no direct table was requested.
+        if ($gameCode === null || $useLobbyLaunch || $entryType === 2) {
+            foreach ($gameTypeCandidates as $typeCandidate) {
+                $launchAttempts[] = ['game_code' => null, 'game_type' => $typeCandidate];
+            }
+        } elseif (!$isLiveLaunch) {
             foreach ($gameTypeCandidates as $typeCandidate) {
                 $launchAttempts[] = ['game_code' => null, 'game_type' => $typeCandidate];
             }
@@ -743,6 +743,9 @@ final class GamingSoftService
                 break;
             }
             if (self::isRecordNotFoundMessage($providerMessage)) {
+                continue;
+            }
+            if (self::isInvalidGameCodeMessage($providerMessage)) {
                 continue;
             }
             if (self::isRetriableProviderLaunchError($providerMessage)) {
@@ -2054,6 +2057,16 @@ final class GamingSoftService
             || str_contains($lower, 'product not found');
     }
 
+    private static function isInvalidGameCodeMessage(string $message): bool
+    {
+        $lower = strtolower(trim($message));
+
+        return str_contains($lower, 'invalid game code')
+            || str_contains($lower, 'invalid game_code')
+            || str_contains($lower, 'game code is invalid')
+            || str_contains($lower, 'gamecode is invalid');
+    }
+
     private static function isAgentBalanceMessage(string $message): bool
     {
         $lower = strtolower(trim($message));
@@ -2250,6 +2263,12 @@ final class GamingSoftService
             return 'Oyun başlatılamadı: GSC+ kaydı bulunamadı (product_code/game_code/game_type). '
                 . 'Admin → GSC+ Ayarları Currency=IDR, ardından Product Sync + Oyun Sync çalıştırın. '
                 . 'Canlı ürünlerde mümkünse lobby (entry_type=2) deneyin.';
+        }
+
+        if (self::isInvalidGameCodeMessage($providerMessage)) {
+            return 'Oyun başlatılamadı: GSC+ geçersiz oyun kodu (invalid game code). '
+                . 'Katalogdaki game_code güncel değil — Admin → GSC+ → Product Sync + Oyun Sync çalıştırın. '
+                . 'Canlı casino lobisi için ürün kartını (Lobby) kullanın.';
         }
 
         return 'Oyun başlatılamadı: ' . $providerMessage;

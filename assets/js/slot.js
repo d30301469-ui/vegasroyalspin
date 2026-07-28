@@ -397,6 +397,36 @@
         return '/play?game_id=' + encodeURIComponent(id) + '&mode=real&wallet=main';
     }
 
+    function resolveLaunchGameId(game) {
+        if (!game || typeof game !== 'object') {
+            return '';
+        }
+        var gid = String(game.game_id || game.gameId || '').trim();
+        if (gid.indexOf('gamingsoft:') === 0 || gid.indexOf('aggregator:') === 0 || gid.indexOf('bgaming:') === 0) {
+            return gid;
+        }
+        if (gid.indexOf(':') !== -1) {
+            return gid;
+        }
+        var source = String(game.source || '').trim().toLowerCase();
+        var productCode = String(game.product_code || game.provider_code || '').trim();
+        var gameCode = String(game.game_code || game.slug || '').trim();
+        if ((source === 'gamingsoft' || source === 'gsc' || source === 'gsc+') && productCode !== '' && gameCode !== '') {
+            return 'gamingsoft:' + productCode + ':' + gameCode;
+        }
+        if (source === 'aggregator' && productCode !== '' && gameCode !== '') {
+            return 'aggregator:' + productCode + ':' + gameCode;
+        }
+        if (source === 'bgaming' && gameCode !== '') {
+            return 'bgaming:' + gameCode;
+        }
+        var slug = String(game.slug || '').trim();
+        if (slug !== '') {
+            return slug;
+        }
+        return gid;
+    }
+
     function playUrlFun(gameId) {
         var id = String(gameId || '');
         return '/play?game_id=' + encodeURIComponent(id) + '&mode=fun';
@@ -506,7 +536,7 @@
         }));
         const cover = escapeHtml(preferCompatibleCover(coverSource));
         const fallbackAttr = fallbacks.length ? ' data-fallbacks="' + escapeHtml(JSON.stringify(fallbacks)) + '" data-fallback-idx="0"' : '';
-        const gameId = String(game.game_id || '');
+        const gameId = resolveLaunchGameId(game);
         const gameIdEsc = escapeHtml(gameId);
         const catalogIdRaw = game.id != null && String(game.id).trim() !== '' ? String(game.id) : '';
         const catalogAttr = catalogIdRaw !== '' ? ' data-catalog-id="' + escapeHtml(catalogIdRaw) + '"' : '';
@@ -585,7 +615,9 @@
             }));
             var mapped = {
                 id: game.id,
-                game_id: game.game_id || game.slug || game.id,
+                game_id: resolveLaunchGameId(game),
+                game_code: game.game_code || '',
+                product_code: game.product_code || game.provider_code || '',
                 game_name: game.name || game.game_name || '',
                 cover: cover,
                 cover_fallbacks: fallbacks,
