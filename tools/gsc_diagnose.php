@@ -188,3 +188,81 @@ foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
         $supports ? 'OK' : 'DESTEKLENMIYOR'
     );
 }
+
+echo "\n== Cuzdan callback trafigi (gsc_wallet_logs, son 20) ==\n";
+$stmt = $pdo->query(
+    'SELECT method, member_account, http_status, status_code, error_code, created_at
+     FROM gsc_wallet_logs
+     ORDER BY id DESC LIMIT 20'
+);
+$rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+if ($rows === []) {
+    echo "  KAYIT YOK -> saglayici callback URL'sine hic istek gelmemis.\n";
+} else {
+    printf("  %-14s %-18s %-5s %-6s %-14s %s\n", 'method', 'member', 'http', 'code', 'error', 'tarih');
+    foreach ($rows as $row) {
+        printf(
+            "  %-14s %-18s %-5s %-6s %-14s %s\n",
+            (string) $row['method'],
+            (string) ($row['member_account'] ?? '-'),
+            (string) $row['http_status'],
+            (string) ($row['status_code'] ?? '-'),
+            (string) ($row['error_code'] ?? '-'),
+            (string) $row['created_at']
+        );
+    }
+}
+
+echo "\n  method + error_code dagilimi (son 24 saat):\n";
+$stmt = $pdo->query(
+    'SELECT method, COALESCE(error_code, "-") AS err, COUNT(*) AS n
+     FROM gsc_wallet_logs
+     WHERE created_at >= (NOW() - INTERVAL 1 DAY)
+     GROUP BY method, err
+     ORDER BY n DESC'
+);
+foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+    printf("    %-14s %-14s %d\n", (string) $row['method'], (string) $row['err'], (int) $row['n']);
+}
+
+echo "\n== Canli launch denemesi (aktif her canli urun icin 1 oyun) ==\n";
+$userStmt = $pdo->query('SELECT id, username, balance, banned FROM users WHERE banned = 0 ORDER BY id DESC LIMIT 1');
+$probeUser = $userStmt ? $userStmt->fetch(PDO::FETCH_ASSOC) : false;
+if (!is_array($probeUser)) {
+    echo "  Test icin uygun kullanici bulunamadi.\n";
+} else {
+    printf(
+        "  kullanici: %s (id=%d, bakiye=%s) -> member_account=%s\n\n",
+        (string) $probeUser['username'],
+        (int) $probeUser['id'],
+        (string) $probeUser['balance'],
+        GscPlusService::memberAccountFromUser($probeUser)
+    );
+
+    $stmt = $pdo->query(
+        "SELECT product_code, provider, MIN(game_code) AS game_code, MIN(game_name) AS game_name
+         FROM gsc_games
+         WHERE is_active = 1 AND UPPER(game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+         GROUP BY product_code, provider
+         ORDER BY product_code"
+    );
+    foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+        $gameId = GscPlusService::buildGameId((int) $row['product_code'], (string) $row['game_code']);
+        try {
+            $res = GscPlusService::launch($pdo, $probeUser, ['game_id' => $gameId, 'platform' => 'WEB']);
+            $ok = !empty($res['success']);
+            printf(
+                "  %-22s %-30s %s code=%-5s %s\n",
+                (string) $row['provider'],
+                $gameId,
+                $ok ? 'ACILDI ' : 'HATA   ',
+                (string) ($res['code'] ?? '-'),
+                $ok
+                    ? ('url=' . (mb_strlen((string) ($res['url'] ?? '')) > 0 ? 'var' : 'YOK'))
+                    : mb_substr((string) ($res['message'] ?? ''), 0, 90)
+            );
+        } catch (Throwable $e) {
+            printf("  %-22s %-30s ISTISNA %s\n", (string) $row['provider'], $gameId, $e->getMessage());
+        }
+    }
+}
