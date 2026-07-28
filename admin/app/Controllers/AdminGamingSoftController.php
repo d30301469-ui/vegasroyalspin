@@ -91,4 +91,25 @@ final class AdminGamingSoftController extends AdminController
         }
         $this->redirect(AdminAuth::url('/gamingsoft/settings'));
     }
+
+    private function ensurePost(): void
+    {
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+    }
+
+    private function flash(string $message): void
+    {
+        $_SESSION['admin_flash'] = $message;
+    }
+
+    private function pullFlash(): string
+    {
+        $message = (string) ($_SESSION['admin_flash'] ?? '');
+        unset($_SESSION['admin_flash']);
+        return $message;
+    }
 }
