@@ -1211,14 +1211,30 @@ final class GscPlusService
         }
 
         $games = 0;
+        $startedAt = date('Y-m-d H:i:s');
+        $syncedProducts = 0;
         foreach (array_unique(array_map('intval', $liveProducts)) as $productCode) {
             if ($productCode <= 0) {
                 continue;
             }
             try {
                 $games += (int) self::syncGames($pdo, $productCode)['count'];
+                $syncedProducts++;
             } catch (Throwable $e) {
                 $errors[] = 'product ' . $productCode . ': ' . $e->getMessage();
+            }
+        }
+
+        // Deactivate stale live rows (e.g. leftovers from a previous currency).
+        if ($syncedProducts > 0 && $errors === []) {
+            try {
+                $pdo->prepare(
+                    "UPDATE gsc_games SET is_active = 0
+                     WHERE UPPER(game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+                       AND (synced_at IS NULL OR synced_at < :started)"
+                )->execute([':started' => $startedAt]);
+            } catch (Throwable $e) {
+                $errors[] = 'stale cleanup: ' . $e->getMessage();
             }
         }
 

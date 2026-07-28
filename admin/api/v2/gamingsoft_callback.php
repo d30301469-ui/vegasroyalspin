@@ -119,6 +119,12 @@ if ($endpoint === 'synccatalog') {
             echo json_encode(['code' => 1004, 'message' => 'API signature is invalid'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
+        // Optional: switch the catalog currency (e.g. staging IDR) before syncing,
+        // so game active-flags are recalculated for the correct currency.
+        $newCurrency = strtoupper(trim((string) ($payload['currency'] ?? '')));
+        if ($newCurrency !== '' && GscPlusService::isSupportedCurrency($newCurrency)) {
+            GscPlusService::updateConfig($pdo, ['currency' => $newCurrency]);
+        }
         set_time_limit(300);
         $result = GscPlusService::syncLiveCasinoCatalog($pdo);
         http_response_code(200);
