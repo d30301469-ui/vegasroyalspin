@@ -4,20 +4,16 @@ $flash = trim((string) ($flash ?? ''));
 $emailSection = 'send';
 $oldMode = trim((string) ($oldMode ?? 'single'));
 $oldToEmail = trim((string) ($oldToEmail ?? ''));
-$memberEmails = is_array($memberEmails ?? null) ? $memberEmails : [];
-$memberEmailCount = (int) ($memberEmailCount ?? count($memberEmails));
-$oldToEmails = trim((string) ($oldToEmails ?? ''));
-if ($oldToEmails === '' && $memberEmails !== []) {
-    $oldToEmails = implode("\n", $memberEmails);
-}
+$memberEmailCount = (int) ($memberEmailCount ?? 0);
 $oldSubject = trim((string) ($oldSubject ?? ''));
 $oldBody = trim((string) ($oldBody ?? ''));
+$isBulk = $oldMode === 'bulk';
 ?>
 <section class="hero">
     <div class="hero-text">
         <span class="eyebrow">E-posta</span>
         <h1 class="hero-title">E-posta <span class="accent">gönder</span></h1>
-        <p class="hero-sub">Tek alıcı veya tüm kullanıcıları kapsayan toplu gönderim. Üye bulunan adreslere gelen kutusu mesajı da düşer.</p>
+        <p class="hero-sub">Tek alıcı: yalnızca girdiğiniz bir üyeye. Toplu: veritabanındaki tüm üyelere.</p>
     </div>
 </section>
 
@@ -57,30 +53,39 @@ $oldBody = trim((string) ($oldBody ?? ''));
         <div class="form-grid">
             <div class="field span-2">
                 <label class="field-label">Gönderim tipi</label>
-                <div style="display:flex;flex-wrap:wrap;gap:14px;padding-top:6px;">
-                    <label style="display:inline-flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
-                        <input type="radio" name="send_mode" value="single" <?= $oldMode !== 'bulk' ? 'checked' : '' ?> data-compose-mode>
-                        Tek alıcı
+                <div style="display:flex;flex-wrap:wrap;gap:10px;padding-top:6px;">
+                    <label class="compose-mode-card" style="flex:1;min-width:220px;display:block;padding:12px 14px;border:1px solid rgba(0,0,0,.12);border-radius:12px;cursor:pointer;">
+                        <span style="display:flex;align-items:center;gap:8px;font-weight:700;">
+                            <input type="radio" name="send_mode" value="single" <?= !$isBulk ? 'checked' : '' ?> data-compose-mode>
+                            Tek mail
+                        </span>
+                        <span class="field-help" style="display:block;margin:6px 0 0;">Sadece girdiğiniz bir üye e-postasına gider.</span>
                     </label>
-                    <label style="display:inline-flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
-                        <input type="radio" name="send_mode" value="bulk" <?= $oldMode === 'bulk' ? 'checked' : '' ?> data-compose-mode>
-                        Toplu gönderim
+                    <label class="compose-mode-card" style="flex:1;min-width:220px;display:block;padding:12px 14px;border:1px solid rgba(0,0,0,.12);border-radius:12px;cursor:pointer;">
+                        <span style="display:flex;align-items:center;gap:8px;font-weight:700;">
+                            <input type="radio" name="send_mode" value="bulk" <?= $isBulk ? 'checked' : '' ?> data-compose-mode>
+                            Toplu mail
+                        </span>
+                        <span class="field-help" style="display:block;margin:6px 0 0;">Veritabanındaki tüm üyelere gider (<?= (int) $memberEmailCount ?> adres).</span>
                     </label>
                 </div>
             </div>
 
-            <div class="field span-2" data-compose-single <?= $oldMode === 'bulk' ? 'hidden' : '' ?>>
-                <label class="field-label" for="to_email">Alıcı e-posta</label>
-                <input id="to_email" class="input" type="email" name="to_email" placeholder="uye@ornek.com" value="<?= htmlspecialchars($oldToEmail, ENT_QUOTES, 'UTF-8') ?>" <?= $oldMode === 'bulk' ? '' : 'required' ?>>
+            <div class="field span-2" data-compose-single <?= $isBulk ? 'hidden' : '' ?>>
+                <label class="field-label" for="to_email">Üye e-posta</label>
+                <input id="to_email" class="input" type="email" name="to_email" placeholder="uye@ornek.com" value="<?= htmlspecialchars($oldToEmail, ENT_QUOTES, 'UTF-8') ?>" <?= $isBulk ? 'disabled' : 'required' ?>>
+                <p class="field-help">Tek mail modunda yalnızca bu adrese gönderilir.</p>
             </div>
 
-            <div class="field span-2" data-compose-bulk <?= $oldMode === 'bulk' ? '' : 'hidden' ?>>
-                <label class="field-label" for="to_emails">
-                    Alıcı listesi
-                    <span class="badge primary" style="margin-left:8px;"><?= (int) $memberEmailCount ?> kullanıcı</span>
-                </label>
-                <textarea id="to_emails" class="textarea" name="to_emails" rows="10" readonly><?= htmlspecialchars($oldToEmails, ENT_QUOTES, 'UTF-8') ?></textarea>
-                <p class="field-help">Veritabanındaki e-postası olan tüm kullanıcılar otomatik eklenir. Liste salt okunurdur; gönderimde sunucu yeniden veritabanından çeker.</p>
+            <div class="field span-2" data-compose-bulk <?= $isBulk ? '' : 'hidden' ?>>
+                <label class="field-label">Alıcılar</label>
+                <div style="padding:14px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:rgba(0,0,0,.02);">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span class="badge primary"><?= (int) $memberEmailCount ?> üye</span>
+                        <strong>Tüm kullanıcılar</strong>
+                    </div>
+                    <p class="field-help" style="margin:8px 0 0;">Toplu mail, veritabanındaki e-postası olan bütün üyelere otomatik gönderilir. Tek tek adres girilmez.</p>
+                </div>
             </div>
 
             <div class="field span-2">
@@ -96,7 +101,7 @@ $oldBody = trim((string) ($oldBody ?? ''));
             <span class="spacer"></span>
             <a class="btn btn--ghost" href="<?= htmlspecialchars(AdminAuth::url('/email/inbox'), ENT_QUOTES, 'UTF-8') ?>">Vazgeç</a>
             <button class="btn btn--primary" type="submit" data-compose-submit>
-                <?= $oldMode === 'bulk' ? 'Toplu gönder' : 'Gönder' ?>
+                <?= $isBulk ? 'Tüm üyelere gönder' : 'Tek üye gönder' ?>
             </button>
         </div>
     </form>
@@ -121,6 +126,7 @@ $oldBody = trim((string) ($oldBody ?? ''));
         if (singleWrap) singleWrap.hidden = isBulk;
         if (bulkWrap) bulkWrap.hidden = !isBulk;
         if (toEmail) {
+            toEmail.disabled = isBulk;
             if (isBulk) {
                 toEmail.removeAttribute('required');
             } else {
@@ -128,7 +134,7 @@ $oldBody = trim((string) ($oldBody ?? ''));
             }
         }
         if (submitBtn) {
-            submitBtn.textContent = isBulk ? 'Toplu gönder' : 'Gönder';
+            submitBtn.textContent = isBulk ? 'Tüm üyelere gönder' : 'Tek üye gönder';
         }
     }
 

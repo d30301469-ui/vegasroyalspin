@@ -83,9 +83,7 @@ final class AdminCommunicationController extends AdminController
             'crumbs' => 'E-posta | E-posta gönder',
             'emailSection' => 'send',
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
-            'memberEmails' => $memberEmails,
             'memberEmailCount' => count($memberEmails),
-            'oldToEmails' => implode("\n", $memberEmails),
         ]);
         unset($_SESSION['admin_flash']);
     }
@@ -432,44 +430,29 @@ final class AdminCommunicationController extends AdminController
         if ($mode !== 'bulk') {
             $mode = 'single';
         }
-        $maxRecipients = 5000;
-
-        $recipients = [];
-        if ($mode === 'bulk') {
-            // Toplu gönderimde veritabanındaki tüm kullanıcı e-postaları otomatik eklenir;
-            // textarea'daki ek adresler de birleştirilir.
-            $recipients = $this->memberRecipientEmails();
-            foreach ($this->parseRecipientEmails((string) ($_POST['to_emails'] ?? '')) as $extraEmail) {
-                $recipients[] = $extraEmail;
-            }
-            $recipients = $this->normalizeRecipientEmails($recipients);
-        } else {
-            $single = trim((string) ($_POST['to_email'] ?? ''));
-            if ($single !== '') {
-                $recipients = $this->normalizeRecipientEmails([$single]);
-            }
-        }
 
         if ($subject === '' || $body === '') {
             $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: konu ve mesaj zorunludur.';
             $this->redirect(AdminAuth::url('/email/send'));
         }
 
-        if ($recipients === []) {
-            $_SESSION['admin_flash'] = $mode === 'bulk'
-                ? 'Mesaj gönderilemedi: veritabanında geçerli e-postası olan kullanıcı bulunamadı.'
-                : 'Mesaj gönderilemedi: geçerli bir alıcı e-postası girin.';
-            $this->redirect(AdminAuth::url('/email/send'));
-        }
-
-        if (count($recipients) > $maxRecipients) {
-            $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: tek seferde en fazla ' . $maxRecipients . ' alıcıya gönderim yapılabilir. Seçilen: ' . count($recipients);
-            $this->redirect(AdminAuth::url('/email/send'));
-        }
-
+        // Tek mail: yalnızca 1 adres. Toplu: yalnızca veritabanındaki tüm üyeler.
+        $recipients = [];
         if ($mode === 'bulk') {
+            $recipients = $this->normalizeRecipientEmails($this->memberRecipientEmails());
+            if ($recipients === []) {
+                $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: veritabanında geçerli e-postası olan kullanıcı bulunamadı.';
+                $this->redirect(AdminAuth::url('/email/send'));
+            }
             @set_time_limit(0);
             @ini_set('max_execution_time', '0');
+        } else {
+            $single = strtolower(trim((string) ($_POST['to_email'] ?? '')));
+            if ($single === '' || filter_var($single, FILTER_VALIDATE_EMAIL) === false) {
+                $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: geçerli bir üye e-postası girin.';
+                $this->redirect(AdminAuth::url('/email/send'));
+            }
+            $recipients = [$single];
         }
 
         $settings = $this->mailSettingsRow();
