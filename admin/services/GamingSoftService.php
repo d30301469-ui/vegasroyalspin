@@ -119,6 +119,27 @@ final class GamingSoftService
             );
         } catch (Throwable) {
         }
+
+        foreach ([
+            'agent_wallet_json TEXT NULL',
+            'agent_wallet_synced_at TIMESTAMP NULL DEFAULT NULL',
+        ] as $colDef) {
+            $colName = trim(explode(' ', $colDef)[0] ?? '');
+            if ($colName === '') {
+                continue;
+            }
+            try {
+                $pdo->exec('ALTER TABLE gamingsoft_config ADD COLUMN IF NOT EXISTS ' . $colDef);
+            } catch (Throwable) {
+                try {
+                    $cols = $pdo->query("SHOW COLUMNS FROM gamingsoft_config LIKE " . $pdo->quote($colName))?->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                    if ($cols === []) {
+                        $pdo->exec('ALTER TABLE gamingsoft_config ADD COLUMN ' . $colDef);
+                    }
+                } catch (Throwable) {
+                }
+            }
+        }
     }
 
     /**
@@ -707,6 +728,28 @@ final class GamingSoftService
             ];
         }
 
+        // Refresh agent wallet cache before launch (buy-in float check).
+        self::refreshAgentWalletCache($pdo, true);
+        $agentCap = self::agentCurrencyCap($pdo, $currency);
+        if ($agentCap !== null && $agentCap <= 0) {
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Oyun başlatılamadı: GSC+ agent wallet ('
+                    . $currency
+                    . ') bakiyesi 0 — buy-in modunda Pragmatic oturumu açılamaz. '
+                    . 'Admin → GSC+ Ayarları → Agent Wallet; GSC+ destekten credit mode veya agent top-up isteyin.',
+            ];
+        }
+        if ($agentCap !== null && $providerWalletBalance > $agentCap) {
+            // Still launch — seamless getBalance will report capped amount.
+            error_log(
+                'GamingSoft launch: player provider balance '
+                . $providerWalletBalance . ' ' . $currency
+                . ' exceeds agent float ' . $agentCap . ' — capping seamless balance'
+            );
+        }
+
         $launchAttempts = [];
         foreach ($gameTypeCandidates as $typeCandidate) {
             $launchAttempts[] = ['game_code' => $gameCode, 'game_type' => $typeCandidate];
@@ -1018,6 +1061,9 @@ final class GamingSoftService
                 self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency),
                 $currency
             );
+            // Buy-in mode: never report more than agent float — Pragmatic rejects sessions
+            // when seamless balance exceeds agent wallet (Un-Authorized / Session not found).
+            $balance = self::capProviderBalanceToAgent($pdo, $balance, $currency);
             $data[] = [
                 'member_account' => $member,
                 'product_code'   => $productCode,
@@ -1095,8 +1141,9 @@ final class GamingSoftService
 
         // WBET wins are not deposited via /deposit — accept and no-op credit for prize settlements.
         if ($endpoint === 'deposit' && $productCode === self::WBET_PRODUCT_CODE) {
-            $balance = self::formatProviderBalance(
-                self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency),
+            $balance = self::providerBalanceForResponse(
+                $pdo,
+                self::memberWalletBalance($pdo, $user),
                 $currency
             );
 
@@ -1111,8 +1158,9 @@ final class GamingSoftService
         }
 
         if ($transactions === []) {
-            $balance = self::formatProviderBalance(
-                self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency),
+            $balance = self::providerBalanceForResponse(
+                $pdo,
+                self::memberWalletBalance($pdo, $user),
                 $currency
             );
 
@@ -1262,8 +1310,8 @@ final class GamingSoftService
                 return [
                     'member_account' => $member,
                     'product_code'   => $productCode,
-                    'before_balance' => self::toProviderAmount($dupBefore, $currency),
-                    'balance'        => self::toProviderAmount($dupAfter, $currency),
+                    'before_balance' => self::providerBalanceForResponse($pdo, $dupBefore, $currency),
+                    'balance'        => self::providerBalanceForResponse($pdo, $dupAfter, $currency),
                     'code'           => 1003,
                     'message'        => 'Duplicate API transactions',
                 ];
@@ -1272,8 +1320,8 @@ final class GamingSoftService
             return [
                 'member_account' => $member,
                 'product_code'   => $productCode,
-                'before_balance' => self::toProviderAmount($beforeReal, $currency),
-                'balance'        => self::toProviderAmount($currentReal, $currency),
+                'before_balance' => self::providerBalanceForResponse($pdo, $beforeReal, $currency),
+                'balance'        => self::providerBalanceForResponse($pdo, $currentReal, $currency),
                 'code'           => 0,
                 'message'        => '',
             ];
@@ -1290,8 +1338,8 @@ final class GamingSoftService
                 return [
                     'member_account' => $member,
                     'product_code'   => $productCode,
-                    'before_balance' => self::toProviderAmount($bal, $currency),
-                    'balance'        => self::toProviderAmount($bal, $currency),
+                    'before_balance' => self::providerBalanceForResponse($pdo, $bal, $currency),
+                    'balance'        => self::providerBalanceForResponse($pdo, $bal, $currency),
                     'code'           => 1003,
                     'message'        => 'Duplicate API transactions',
                 ];
@@ -2380,29 +2428,39 @@ final class GamingSoftService
             }
 
             if ($ssid !== '') {
-                $ch2 = curl_init('https://efinity.prerelease-env.biz/gs2c/SingleSessionAPI/data');
-                curl_setopt_array($ch2, [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST           => true,
-                    CURLOPT_TIMEOUT        => 10,
-                    CURLOPT_CONNECTTIMEOUT => 5,
-                    CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
-                    CURLOPT_POSTFIELDS     => http_build_query(['ssid' => $ssid]),
-                    CURLOPT_SSL_VERIFYPEER => true,
-                ]);
-                self::applyCaInfo($ch2);
-                $sessionRaw = (string) curl_exec($ch2);
-                curl_close($ch2);
-                $session = json_decode($sessionRaw, true);
+                $sessionRaw = '';
+                $session = null;
+                for ($attempt = 0; $attempt < 2; $attempt++) {
+                    if ($attempt > 0) {
+                        usleep(1500000);
+                    }
+                    $ch2 = curl_init('https://efinity.prerelease-env.biz/gs2c/SingleSessionAPI/data');
+                    curl_setopt_array($ch2, [
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST           => true,
+                        CURLOPT_TIMEOUT        => 10,
+                        CURLOPT_CONNECTTIMEOUT => 5,
+                        CURLOPT_HTTPHEADER     => [
+                            'Content-Type: application/x-www-form-urlencoded',
+                            'Referer: ' . $launchUrl,
+                        ],
+                        CURLOPT_POSTFIELDS     => http_build_query(['ssid' => $ssid]),
+                        CURLOPT_SSL_VERIFYPEER => true,
+                    ]);
+                    self::applyCaInfo($ch2);
+                    $sessionRaw = (string) curl_exec($ch2);
+                    curl_close($ch2);
+                    $session = json_decode($sessionRaw, true);
+                    if (!is_array($session) || (int) ($session['error'] ?? 0) === 0) {
+                        break;
+                    }
+                }
                 if (is_array($session) && (int) ($session['error'] ?? 0) !== 0) {
                     $desc = trim((string) ($session['description'] ?? ''));
                     if ($desc !== '' || str_contains(strtolower($sessionRaw), 'session not found')) {
                         return 'Pragmatic oturumu oluşmadı (Session not found). '
-                            . 'GSC+ launch URL veriyor ama sağlayıcı session yaratamıyor. '
-                            . 'Kontrol: 1) GSC+ panel callback = '
-                            . 'https://admin.vegasroyalspin.com/api/v2/gamingsoft-wallet '
-                            . '2) Admin → Wallet Logları (balance code=0 olmalı) '
-                            . '3) GSC+ destek: VGY1 için Pragmatic Live (product 1006) seamless aktivasyonu / credit mode.';
+                            . 'Buy-in agent IDR bakiyesi yetersiz olabilir veya GSC+ Pragmatic seamless henüz aktif değil. '
+                            . 'Admin → GSC+ Ayarları → Agent Wallet (top-up / credit mode) ve Wallet Logları (balance code=0).';
                     }
                 }
             }
@@ -2422,9 +2480,8 @@ final class GamingSoftService
                 curl_close($ch3);
                 if ($http >= 400 || stripos($body, 'Un-Authorized') !== false || stripos($body, 're-log in') !== false) {
                     return 'Pragmatic GameLaunch Un-Authorized. '
-                        . 'Bu GSC+ staging (VGY1) / Pragmatic prerelease tarafında oturum reddediliyor — '
-                        . 'sadece launch URL üretmek yetmiyor. GSC+ destek ile product 1006 + seamless wallet '
-                        . 'callback doğrulatın. Agent wallet: Admin → GSC+ Ayarları (buy-in bakiyesi).';
+                        . 'Agent wallet buy-in float veya GSC+ Pragmatic (1006) aktivasyonunu kontrol edin '
+                        . '(Admin → GSC+ Ayarları → Agent Wallet).';
                 }
             }
         } catch (Throwable) {
@@ -2478,12 +2535,128 @@ final class GamingSoftService
             ];
         }
 
-        return [
+        $result = [
             'ok'         => true,
             'is_credit'  => array_key_exists('is_credit', $data) ? (bool) $data['is_credit'] : null,
             'currencies' => $currencies,
             'message'    => trim((string) ($response['message'] ?? 'Success')),
         ];
+        self::persistAgentWalletCache($pdo, $result);
+
+        return $result;
+    }
+
+    /**
+     * @param array{ok?:bool,is_credit:?bool,currencies:array<int,array{currency:string,balance:float}>,message?:string} $snapshot
+     */
+    private static function persistAgentWalletCache(PDO $pdo, array $snapshot): void
+    {
+        if (empty($snapshot['ok'])) {
+            return;
+        }
+        try {
+            $pdo->prepare(
+                'UPDATE gamingsoft_config
+                 SET agent_wallet_json = :j, agent_wallet_synced_at = NOW()
+                 WHERE id = 1'
+            )->execute([
+                ':j' => json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+            self::$cachedConfig = [];
+        } catch (Throwable) {
+        }
+    }
+
+    /**
+     * @return array{ok?:bool,is_credit:?bool,currencies:array<int,array{currency:string,balance:float}>}|null
+     */
+    private static function readAgentWalletCache(PDO $pdo, int $maxAgeSeconds = 300): ?array
+    {
+        try {
+            $row = $pdo->query(
+                'SELECT agent_wallet_json, agent_wallet_synced_at FROM gamingsoft_config WHERE id = 1 LIMIT 1'
+            )?->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($row)) {
+                return null;
+            }
+            $synced = trim((string) ($row['agent_wallet_synced_at'] ?? ''));
+            if ($synced !== '') {
+                $syncedTs = strtotime($synced);
+                if ($syncedTs !== false && (time() - $syncedTs) > $maxAgeSeconds) {
+                    return null;
+                }
+            }
+            $decoded = json_decode((string) ($row['agent_wallet_json'] ?? ''), true);
+            if (!is_array($decoded) || empty($decoded['ok'])) {
+                return null;
+            }
+
+            return $decoded;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /** Refresh cache from GSC+ when missing/stale. */
+    private static function refreshAgentWalletCache(PDO $pdo, bool $force = false): void
+    {
+        if (!$force && self::readAgentWalletCache($pdo, 120) !== null) {
+            return;
+        }
+        self::fetchAgentWalletBalance($pdo);
+    }
+
+    /**
+     * Max reportable player balance in buy-in mode (null = no cap / credit mode / unknown).
+     */
+    private static function agentCurrencyCap(PDO $pdo, string $currency): ?float
+    {
+        $currency = strtoupper(trim($currency));
+        $snap = self::readAgentWalletCache($pdo, 600);
+        if ($snap === null) {
+            // Avoid live GSC call inside wallet callback hot path — use stale up to 30m if needed.
+            $snap = self::readAgentWalletCache($pdo, 1800);
+        }
+        if ($snap === null) {
+            return null;
+        }
+        if (($snap['is_credit'] ?? null) === true) {
+            return null;
+        }
+        foreach (($snap['currencies'] ?? []) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            if (strtoupper(trim((string) ($row['currency'] ?? ''))) === $currency) {
+                return max(0.0, (float) ($row['balance'] ?? 0));
+            }
+        }
+
+        // Buy-in but currency missing on agent wallet → treat as 0 float.
+        if (($snap['is_credit'] ?? null) === false) {
+            return 0.0;
+        }
+
+        return null;
+    }
+
+    private static function capProviderBalanceToAgent(PDO $pdo, float $balance, string $currency): float
+    {
+        $cap = self::agentCurrencyCap($pdo, $currency);
+        if ($cap === null) {
+            return self::formatProviderBalance($balance, $currency);
+        }
+
+        return self::formatProviderBalance(min(max(0.0, $balance), $cap), $currency);
+    }
+
+    private static function providerBalanceForResponse(PDO $pdo, float $siteWalletAmount, string $currency): float
+    {
+        return self::capProviderBalanceToAgent(
+            $pdo,
+            self::toProviderAmount($siteWalletAmount, $currency),
+            $currency
+        );
     }
 
     /** @return array<string, mixed>|null */
