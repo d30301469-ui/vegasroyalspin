@@ -77,7 +77,7 @@ final class CasinoAggregatorService
 
     /**
      * Normalize Operator API / DB gameType to 1 (Slot) or 2 (Live Casino).
-     * Falls back to vendorCode hints (e.g. live-evolution / evolution) when the value is missing.
+     * Falls back to vendorCode hints (e.g. casino-evolution / live-*) when the value is missing.
      */
     public static function normalizeGameType(mixed $value, ?string $vendorCode = null): int
     {
@@ -139,7 +139,16 @@ final class CasinoAggregatorService
             return false;
         }
 
-        if (str_starts_with($vendor, 'live-') || str_starts_with($vendor, 'live_') || str_starts_with($compact, 'live')) {
+        // Aggregator naming: casino-* / live-* = live casino, slot-* = slots.
+        // Example: casino-evolution → "Evolution Gaming"
+        if (
+            str_starts_with($vendor, 'casino-')
+            || str_starts_with($vendor, 'casino_')
+            || str_starts_with($compact, 'casino')
+            || str_starts_with($vendor, 'live-')
+            || str_starts_with($vendor, 'live_')
+            || str_starts_with($compact, 'live')
+        ) {
             return true;
         }
 
@@ -173,12 +182,14 @@ final class CasinoAggregatorService
 
     /**
      * SQL fragment matching live-casino vendor codes wrongly stored as slots.
+     * Aggregator uses codes like casino-evolution for Evolution Gaming.
      * Safe for embedding in prepared statements (no user input).
      */
     public static function liveVendorSqlMatch(string $vendorColumn = 'g.vendor_code'): string
     {
         $col = $vendorColumn;
         return '('
+            . "LOWER({$col}) LIKE 'casino-%' OR LOWER({$col}) LIKE 'casino\\_%' OR "
             . "LOWER({$col}) LIKE 'live-%' OR LOWER({$col}) LIKE 'live\\_%' OR "
             . "(LOWER({$col}) LIKE '%evolution%' AND LOWER({$col}) NOT LIKE '%evoplay%') OR "
             . "LOWER({$col}) LIKE '%ezugi%' OR LOWER({$col}) LIKE '%vivo%' OR "
