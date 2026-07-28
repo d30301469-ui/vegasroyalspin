@@ -591,6 +591,15 @@ final class GamingSoftService
         $memberAccount = self::memberAccountFromUser($user);
         $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
         $launchPassword = self::memberLaunchPassword($pdo, $userId, $memberAccount, (string) $cfg['secret_key']);
+        $memberAccountCandidates = [$memberAccount];
+        $usernameAccount = trim((string) ($user['username'] ?? ''));
+        if ($usernameAccount !== '' && strlen($usernameAccount) <= 50) {
+            $memberAccountCandidates[] = $usernameAccount;
+        }
+        $memberAccountCandidates = array_values(array_unique(array_filter(
+            array_map(static fn ($v): string => trim((string) $v), $memberAccountCandidates),
+            static fn (string $v): bool => $v !== ''
+        )));
 
         // Product row is authoritative for launch mode (entry_type) and game_type.
         $targetCurrency = self::resolveOperatorCurrency($cfg);
@@ -712,46 +721,56 @@ final class GamingSoftService
         $code = -1;
         $providerMessage = '';
         $payload = [];
-        foreach ($launchAttempts as $attempt) {
-            $requestTime = self::requestTimeSeconds();
-            $payload = self::buildLaunchPayload(
-                $cfg,
-                $memberAccount,
-                $launchPassword,
-                $nickname,
-                $currency,
-                $attempt['game_code'],
-                $launchProductCode,
-                $attempt['game_type'],
-                $languageCode,
-                $ip !== '' ? $ip : '127.0.0.1',
-                $platform,
-                $lobbyUrl,
-                $requestTime
-            );
-            try {
-                $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
-            } catch (Throwable $e) {
-                return ['success' => false, 'code' => 503, 'message' => 'GSC+ API bağlantı hatası: ' . $e->getMessage()];
-            }
+        $resolvedMemberAccount = $memberAccount;
+        $resolvedLaunchPassword = $launchPassword;
+        foreach ($memberAccountCandidates as $memberAttempt) {
+            $memberAttemptPassword = self::memberLaunchPassword($pdo, $userId, $memberAttempt, (string) $cfg['secret_key']);
+            foreach ($launchAttempts as $attempt) {
+                $requestTime = self::requestTimeSeconds();
+                $payload = self::buildLaunchPayload(
+                    $cfg,
+                    $memberAttempt,
+                    $memberAttemptPassword,
+                    $nickname,
+                    $currency,
+                    $attempt['game_code'],
+                    $launchProductCode,
+                    $attempt['game_type'],
+                    $languageCode,
+                    $ip !== '' ? $ip : '127.0.0.1',
+                    $platform,
+                    $lobbyUrl,
+                    $requestTime
+                );
+                try {
+                    $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
+                } catch (Throwable $e) {
+                    return ['success' => false, 'code' => 503, 'message' => 'GSC+ API bağlantı hatası: ' . $e->getMessage()];
+                }
 
-            $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
-            $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
-            if ($code === 200 || $code === 0) {
-                $gameType = $attempt['game_type'];
-                $gameCode = $attempt['game_code'];
-                break;
+                $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
+                $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
+                if ($code === 200 || $code === 0) {
+                    $gameType = $attempt['game_type'];
+                    $gameCode = $attempt['game_code'];
+                    $resolvedMemberAccount = $memberAttempt;
+                    $resolvedLaunchPassword = $memberAttemptPassword;
+                    break 2;
+                }
+                if (self::isRecordNotFoundMessage($providerMessage)) {
+                    continue;
+                }
+                if (self::isInvalidGameCodeMessage($providerMessage)) {
+                    continue;
+                }
+                if (self::isRetriableProviderLaunchError($providerMessage)) {
+                    continue;
+                }
+                if (self::isNotLoggedInMessage($providerMessage)) {
+                    continue;
+                }
+                break 2;
             }
-            if (self::isRecordNotFoundMessage($providerMessage)) {
-                continue;
-            }
-            if (self::isInvalidGameCodeMessage($providerMessage)) {
-                continue;
-            }
-            if (self::isRetriableProviderLaunchError($providerMessage)) {
-                continue;
-            }
-            break;
         }
 
         // Agent wallet funded under config currency (IDR) — retry once if launch used another code path.
@@ -762,8 +781,8 @@ final class GamingSoftService
             $requestTime = self::requestTimeSeconds();
             $payload = self::buildLaunchPayload(
                 $cfg,
-                $memberAccount,
-                $launchPassword,
+                $resolvedMemberAccount,
+                $resolvedLaunchPassword,
                 $nickname,
                 $targetCurrency,
                 $gameCode,
@@ -823,7 +842,7 @@ final class GamingSoftService
             )->execute([
                 ':uid'  => $userId,
                 ':uname'=> $nickname,
-                ':ma'   => $memberAccount,
+                ':ma'   => $resolvedMemberAccount,
                 ':pc'   => $launchProductCode,
                 ':gc'   => $gameCode,
                 ':gt'   => $gameType,
@@ -1575,20 +1594,6 @@ final class GamingSoftService
 
     private static function memberLaunchPassword(PDO $pdo, int $userId, string $memberAccount, string $secretKey): string
     {
-        if ($userId > 0) {
-            try {
-                $stmt = $pdo->prepare(
-                    'SELECT launch_password FROM gamingsoft_member_accounts WHERE user_id = :id LIMIT 1'
-                );
-                $stmt->execute([':id' => $userId]);
-                $stored = strtolower(trim((string) ($stmt->fetchColumn() ?: '')));
-                if (preg_match('/^[a-f0-9]{32}$/', $stored) === 1) {
-                    return $stored;
-                }
-            } catch (Throwable) {
-            }
-        }
-
         $password = '';
         if ($userId > 0) {
             try {
@@ -1604,6 +1609,21 @@ final class GamingSoftService
             } catch (Throwable) {
             }
         }
+
+        if ($userId > 0) {
+            try {
+                $stmt = $pdo->prepare(
+                    'SELECT launch_password FROM gamingsoft_member_accounts WHERE user_id = :id LIMIT 1'
+                );
+                $stmt->execute([':id' => $userId]);
+                $stored = strtolower(trim((string) ($stmt->fetchColumn() ?: '')));
+                if ($password === '' && preg_match('/^[a-f0-9]{32}$/', $stored) === 1) {
+                    return $stored;
+                }
+            } catch (Throwable) {
+            }
+        }
+
         if ($password === '') {
             $password = md5($memberAccount . $secretKey);
         }
@@ -2067,6 +2087,16 @@ final class GamingSoftService
             || str_contains($lower, 'gamecode is invalid');
     }
 
+    private static function isNotLoggedInMessage(string $message): bool
+    {
+        $lower = strtolower(trim($message));
+
+        return str_contains($lower, 'not logged in')
+            || str_contains($lower, 'not login')
+            || str_contains($lower, 'please login')
+            || str_contains($lower, 'not authorized');
+    }
+
     private static function isAgentBalanceMessage(string $message): bool
     {
         $lower = strtolower(trim($message));
@@ -2269,6 +2299,11 @@ final class GamingSoftService
             return 'Oyun başlatılamadı: GSC+ geçersiz oyun kodu (invalid game code). '
                 . 'Katalogdaki game_code güncel değil — Admin → GSC+ → Product Sync + Oyun Sync çalıştırın. '
                 . 'Canlı casino lobisi için ürün kartını (Lobby) kullanın.';
+        }
+        if (self::isNotLoggedInMessage($providerMessage)) {
+            return 'Oyun başlatılamadı: Sağlayıcı oturumu doğrulanamadı (not logged in). '
+                . 'Member account / launch password eşleşmesini yeniledik; tekrar deneyin. '
+                . 'Devam ederse Admin → GSC+ Wallet Logları bölümünde balance çağrılarının code=0 döndüğünü kontrol edin.';
         }
 
         return 'Oyun başlatılamadı: ' . $providerMessage;
