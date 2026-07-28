@@ -226,8 +226,20 @@ if (!function_exists('memberSendResetMail')) {
                 }
 
                 $siteUrl = memberResetBaseUrl();
+                // Eski Ingilizce/fatura sablonu DB'de kalmissa varsayilan Turkce temayi ezmesin.
+                $customHtml = trim((string) ($settings['reset_template_html'] ?? ''));
+                if ($customHtml !== '' && (
+                    stripos($customHtml, 'You recently requested') !== false
+                    || stripos($customHtml, 'Reset your password') !== false
+                    || stripos($customHtml, 'this invoice') !== false
+                    || stripos($customHtml, 'Cheers,') !== false
+                    || stripos($customHtml, 'Hi {$name}') !== false
+                    || stripos($customHtml, 'Hi {$name},') !== false
+                )) {
+                    $customHtml = '';
+                }
                 $templateOptions = [
-                    'template_html' => (string) ($settings['reset_template_html'] ?? ''),
+                    'template_html' => $customHtml,
                     'company_name' => $companyName,
                     'support_email' => $supportEmail,
                     'company_address' => (string) ($settings['company_address'] ?? ''),
