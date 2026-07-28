@@ -178,7 +178,9 @@ final class LiveCasinoQuery
             if ($hasGsc) {
                 $gscWhere = [
                     'g.is_active = 1',
-                    "g.game_code <> '_lobby'",
+                    // Lobby-entry products (entry_type=2) only expose a synthetic
+                    // "_lobby" row, which must stay visible as the product card.
+                    "(g.game_code <> '_lobby' OR g.entry_type = 2)",
                     "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')",
                 ];
                 if ($searchTerm !== '') {
@@ -334,30 +336,47 @@ final class LiveCasinoQuery
         try {
             self::ensureDependencies();
             $pdo = self::pdo();
-            if (!self::tableExists($pdo, 'casino_aggregator_vendors') || !self::tableExists($pdo, 'casino_aggregator_games')) {
-                return [];
-            }
-            $liveMatch = class_exists('CasinoAggregatorService', false)
-                ? CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code')
-                : '0';
-            $stmt = $pdo->query(
-                "SELECT DISTINCT COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider_name
-                 FROM casino_aggregator_games g
-                 INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
-                 WHERE g.is_active = 1 AND v.is_active = 1
-                   AND (g.game_type = 2 OR {$liveMatch})
-                 ORDER BY provider_name ASC"
-            );
             $providers = [];
-            foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
-                $name = trim((string) ($row['provider_name'] ?? ''));
-                if ($name === '') {
-                    continue;
+
+            if (self::tableExists($pdo, 'casino_aggregator_vendors') && self::tableExists($pdo, 'casino_aggregator_games')) {
+                $liveMatch = class_exists('CasinoAggregatorService', false)
+                    ? CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code')
+                    : '0';
+                $stmt = $pdo->query(
+                    "SELECT DISTINCT COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider_name
+                     FROM casino_aggregator_games g
+                     INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
+                     WHERE g.is_active = 1 AND v.is_active = 1
+                       AND (g.game_type = 2 OR {$liveMatch})
+                     ORDER BY provider_name ASC"
+                );
+                foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+                    $name = trim((string) ($row['provider_name'] ?? ''));
+                    if ($name === '') {
+                        continue;
+                    }
+                    $providers[] = class_exists('CasinoAggregatorService', false)
+                        ? CasinoAggregatorService::resolveLocalizedLabel($name)
+                        : $name;
                 }
-                $providers[] = class_exists('CasinoAggregatorService', false)
-                    ? CasinoAggregatorService::resolveLocalizedLabel($name)
-                    : $name;
             }
+
+            if (self::tableExists($pdo, 'gsc_games')) {
+                $stmt = $pdo->query(
+                    "SELECT DISTINCT COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
+                     FROM gsc_games g
+                     WHERE g.is_active = 1 AND (g.game_code <> '_lobby' OR g.entry_type = 2)
+                       AND UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+                     ORDER BY provider_name ASC"
+                );
+                foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+                    $name = trim((string) ($row['provider_name'] ?? ''));
+                    if ($name !== '') {
+                        $providers[] = $name;
+                    }
+                }
+            }
+
             $providers = array_values(array_unique(array_filter($providers)));
             sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
             return $providers;
@@ -369,7 +388,8 @@ final class LiveCasinoQuery
     /** @return list<string> */
     private static function providersViaApi(): array
     {
-        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::PROVIDERS_PATH, ['source' => 'livecasino'], null, 8);
+        // The provider route selects the live-casino list via game_type=1.
+        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::PROVIDERS_PATH, ['source' => 'livecasino', 'game_type' => 1], null, 8);
         if (!is_array($j) || empty($j['ok'])) {
             return [];
         }

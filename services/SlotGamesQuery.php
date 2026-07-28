@@ -525,10 +525,10 @@ final class SlotGamesQuery
                 WHERE g.is_active = 1";
         }
 
-        if (($source === '' || $source === 'gsc') && self::tableHasColumn($pdo, 'gsc_games', 'game_code')) {
-            $gscTypeClause = $gameType === 1
-                ? "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')"
-                : "UPPER(g.game_type) NOT IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM','SPORT_BOOK','VIRTUAL_SPORT','ESPORT')";
+        // GSC+ integration is live-casino only for now: GSC games never appear in
+        // the slot lobby (gameType 0), only in the live casino lobby (gameType 1).
+        if ($gameType === 1 && ($source === '' || $source === 'gsc') && self::tableHasColumn($pdo, 'gsc_games', 'game_code')) {
+            $gscTypeClause = "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')";
             $union[] = "SELECT
                     CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
@@ -541,7 +541,7 @@ final class SlotGamesQuery
                     CAST(g.id AS CHAR) AS row_id,
                     CAST('' AS CHAR) AS raw_payload
                 FROM gsc_games g
-                WHERE g.is_active = 1 AND g.game_code <> '_lobby' AND {$gscTypeClause}";
+                WHERE g.is_active = 1 AND (g.game_code <> '_lobby' OR g.entry_type = 2) AND {$gscTypeClause}";
         }
 
         $aggGameType = $gameType === 1 ? 2 : 1;

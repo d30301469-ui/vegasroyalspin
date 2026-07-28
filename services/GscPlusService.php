@@ -1190,7 +1190,16 @@ final class GscPlusService
         $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'TRY')));
 
         if ($onlyProductCode !== null && $onlyProductCode > 0) {
-            $products = [['product_code' => $onlyProductCode, 'game_type' => '', 'entry_type' => 1, 'provider' => '', 'product_name' => '']];
+            // Prefer the synced product row so provider/product_name/entry_type stay accurate.
+            $stmt = $pdo->prepare(
+                'SELECT product_code, game_type, entry_type, provider, product_name
+                 FROM gsc_products WHERE product_code = :pc LIMIT 1'
+            );
+            $stmt->execute([':pc' => $onlyProductCode]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            $products = is_array($row)
+                ? [$row]
+                : [['product_code' => $onlyProductCode, 'game_type' => '', 'entry_type' => 1, 'provider' => '', 'product_name' => '']];
         } else {
             $prodStmt = $pdo->query(
                 'SELECT product_code, game_type, entry_type, provider, product_name
