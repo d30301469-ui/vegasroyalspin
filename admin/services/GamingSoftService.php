@@ -590,13 +590,20 @@ final class GamingSoftService
         $userId = (int) $user['id'];
         $memberAccount = self::memberAccountFromUser($user);
         $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
+        $memberAccountCandidates = [$memberAccount];
+        if ($nickname !== '' && $nickname !== $memberAccount && strlen($nickname) <= 50) {
+            $memberAccountCandidates[] = $nickname;
+        }
         $launchPassword = self::memberLaunchPassword($pdo, $userId, $memberAccount, (string) $cfg['secret_key']);
-        $launchPasswordCandidates = self::memberLaunchPasswordCandidates(
-            $pdo,
-            $userId,
-            $memberAccount,
-            (string) $cfg['secret_key']
-        );
+        $launchPasswordCandidatesByAccount = [];
+        foreach ($memberAccountCandidates as $accountCandidate) {
+            $launchPasswordCandidatesByAccount[$accountCandidate] = self::memberLaunchPasswordCandidates(
+                $pdo,
+                $userId,
+                $accountCandidate,
+                (string) $cfg['secret_key']
+            );
+        }
 
         // Product row is authoritative for launch mode (entry_type) and game_type.
         $targetCurrency = self::resolveOperatorCurrency($cfg);
@@ -720,51 +727,57 @@ final class GamingSoftService
         $payload = [];
         $resolvedMemberAccount = $memberAccount;
         $resolvedLaunchPassword = $launchPassword;
-        foreach ($launchPasswordCandidates as $memberAttemptPassword) {
-            foreach ($launchAttempts as $attempt) {
-                $requestTime = self::requestTimeSeconds();
-                $payload = self::buildLaunchPayload(
-                    $cfg,
-                    $memberAccount,
-                    $memberAttemptPassword,
-                    $nickname,
-                    $currency,
-                    $attempt['game_code'],
-                    $launchProductCode,
-                    $attempt['game_type'],
-                    $languageCode,
-                    $ip !== '' ? $ip : '127.0.0.1',
-                    $platform,
-                    $lobbyUrl,
-                    $requestTime
-                );
-                try {
-                    $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
-                } catch (Throwable $e) {
-                    return ['success' => false, 'code' => 503, 'message' => 'GSC+ API bağlantı hatası: ' . $e->getMessage()];
-                }
+        foreach ($memberAccountCandidates as $accountCandidate) {
+            $passwordCandidates = $launchPasswordCandidatesByAccount[$accountCandidate] ?? [md5($accountCandidate . (string) $cfg['secret_key'])];
+            foreach ($passwordCandidates as $memberAttemptPassword) {
+                foreach ($launchAttempts as $attempt) {
+                    $requestTime = self::requestTimeSeconds();
+                    $payload = self::buildLaunchPayload(
+                        $cfg,
+                        $accountCandidate,
+                        $memberAttemptPassword,
+                        $nickname,
+                        $currency,
+                        $attempt['game_code'],
+                        $launchProductCode,
+                        $attempt['game_type'],
+                        $languageCode,
+                        $ip !== '' ? $ip : '127.0.0.1',
+                        $platform,
+                        $lobbyUrl,
+                        $requestTime
+                    );
+                    try {
+                        $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
+                    } catch (Throwable $e) {
+                        return ['success' => false, 'code' => 503, 'message' => 'GSC+ API bağlantı hatası: ' . $e->getMessage()];
+                    }
 
-                $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
-                $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
-                if ($code === 200 || $code === 0) {
-                    $gameType = $attempt['game_type'];
-                    $gameCode = $attempt['game_code'];
-                    $resolvedLaunchPassword = $memberAttemptPassword;
+                    $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
+                    $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
+                    if ($code === 200 || $code === 0) {
+                        $gameType = $attempt['game_type'];
+                        $gameCode = $attempt['game_code'];
+                        $resolvedMemberAccount = $accountCandidate;
+                        $resolvedLaunchPassword = $memberAttemptPassword;
+                        self::persistLaunchPassword($pdo, $userId, $resolvedMemberAccount, $resolvedLaunchPassword);
+                        break 3;
+                    }
+                    if (self::isRecordNotFoundMessage($providerMessage)) {
+                        continue;
+                    }
+                    if (self::isInvalidGameCodeMessage($providerMessage)) {
+                        continue;
+                    }
+                    if (self::isRetriableProviderLaunchError($providerMessage)) {
+                        continue;
+                    }
+                    if (self::isNotLoggedInMessage($providerMessage)) {
+                        continue;
+                    }
+                    // Hard provider error for this account/password — try next account.
                     break 2;
                 }
-                if (self::isRecordNotFoundMessage($providerMessage)) {
-                    continue;
-                }
-                if (self::isInvalidGameCodeMessage($providerMessage)) {
-                    continue;
-                }
-                if (self::isRetriableProviderLaunchError($providerMessage)) {
-                    continue;
-                }
-                if (self::isNotLoggedInMessage($providerMessage)) {
-                    continue;
-                }
-                break 2;
             }
         }
 
@@ -1423,6 +1436,10 @@ final class GamingSoftService
         return round($real, 4);
     }
 
+    /**
+     * GSC+ scaled currencies (IDR2 1:1000, VND3 1:100, TWD5 130:1, …).
+     * Doc: operator must convert before returning balances when ratio ≠ 1:1.
+     */
     private static function currencyRatio(string $currency): int
     {
         $currency = strtoupper(trim($currency));
@@ -1430,31 +1447,48 @@ final class GamingSoftService
         return self::CURRENCY_RATIOS[$currency] ?? 1;
     }
 
-    /** Convert site wallet balance (TRY) → provider game currency amount (IDR). */
+    /** IDR2→IDR, VND3→VND, TRY2→TRY, TWD5→TWD (base ISO for FX). */
+    private static function providerBaseCurrency(string $currency): string
+    {
+        $currency = strtoupper(trim($currency));
+        if (preg_match('/^([A-Z]{3})\d+$/', $currency, $m) === 1) {
+            return (string) $m[1];
+        }
+
+        return $currency;
+    }
+
+    /**
+     * Site wallet (TRY) → GSC+ provider units (IDR / IDR2 / …).
+     * Example: 100 TRY × 500 = 50_000 IDR; IDR2 → 50.0 (÷1000).
+     */
     private static function toProviderAmount(float $siteWalletAmount, string $providerCurrency): float
     {
         $providerCurrency = strtoupper(trim($providerCurrency));
-        $converted = self::siteBalanceToProvider($siteWalletAmount, $providerCurrency);
+        $baseAmount = self::siteBalanceToBase($siteWalletAmount, $providerCurrency);
         $ratio = self::currencyRatio($providerCurrency);
-        $value = $ratio > 1 ? ($converted / $ratio) : $converted;
+        $value = $ratio > 1 ? ($baseAmount / $ratio) : $baseAmount;
 
         return self::formatProviderBalance(round($value, 4), $providerCurrency);
     }
 
-    /** Convert provider game currency amount (IDR) → site wallet balance (TRY). */
+    /**
+     * GSC+ provider units → site wallet (TRY).
+     * Example: 50 IDR2 × 1000 = 50_000 IDR ÷ 500 = 100 TRY.
+     */
     private static function fromProviderAmount(float $providerAmount, string $providerCurrency): float
     {
         $providerCurrency = strtoupper(trim($providerCurrency));
         $ratio = self::currencyRatio($providerCurrency);
-        $providerUnits = $ratio > 1 ? ($providerAmount * $ratio) : $providerAmount;
+        $baseAmount = $ratio > 1 ? ($providerAmount * $ratio) : $providerAmount;
 
-        return round(self::providerBalanceToSite($providerUnits, $providerCurrency), 4);
+        return round(self::baseBalanceToSite($baseAmount, $providerCurrency), 4);
     }
 
     private static function siteWalletCurrency(): string
     {
         $env = strtoupper(trim((string) (getenv('SITE_WALLET_CURRENCY') ?: getenv('DEFAULT_CURRENCY') ?: '')));
-        if ($env !== '' && $env !== 'TRY') {
+        if ($env !== '') {
             return $env;
         }
 
@@ -1476,34 +1510,35 @@ final class GamingSoftService
         return self::DEFAULT_TRY_TO_IDR_RATE;
     }
 
-    private static function siteBalanceToProvider(float $siteAmount, string $providerCurrency): float
+    /** FX: 1 site unit → N base provider units (IDR for IDR/IDR2). */
+    private static function exchangeRateSiteToBase(string $baseCurrency): float
     {
         $siteCurrency = self::siteWalletCurrency();
-        $providerCurrency = strtoupper(trim($providerCurrency));
-        if ($siteCurrency === $providerCurrency) {
-            return $siteAmount;
+        $baseCurrency = strtoupper(trim($baseCurrency));
+        if ($siteCurrency === $baseCurrency) {
+            return 1.0;
         }
-        if ($siteCurrency === 'TRY' && $providerCurrency === 'IDR') {
-            return $siteAmount * self::tryToIdrExchangeRate();
+        // Staging: site TRY, GSC+ game wallet IDR / IDR2 / IDR3.
+        if ($siteCurrency === 'TRY' && $baseCurrency === 'IDR') {
+            return self::tryToIdrExchangeRate();
         }
 
-        return $siteAmount;
+        return 1.0;
     }
 
-    private static function providerBalanceToSite(float $providerAmount, string $providerCurrency): float
+    private static function siteBalanceToBase(float $siteAmount, string $providerCurrency): float
     {
-        $siteCurrency = self::siteWalletCurrency();
-        $providerCurrency = strtoupper(trim($providerCurrency));
-        if ($siteCurrency === $providerCurrency) {
-            return $providerAmount;
-        }
-        if ($siteCurrency === 'TRY' && $providerCurrency === 'IDR') {
-            $rate = self::tryToIdrExchangeRate();
+        $base = self::providerBaseCurrency($providerCurrency);
 
-            return $rate > 0 ? ($providerAmount / $rate) : $providerAmount;
-        }
+        return $siteAmount * self::exchangeRateSiteToBase($base);
+    }
 
-        return $providerAmount;
+    private static function baseBalanceToSite(float $baseAmount, string $providerCurrency): float
+    {
+        $base = self::providerBaseCurrency($providerCurrency);
+        $rate = self::exchangeRateSiteToBase($base);
+
+        return $rate > 0 ? ($baseAmount / $rate) : $baseAmount;
     }
 
     private static function walletSourceColumn(PDO $pdo, int $userId): string
@@ -1594,7 +1629,13 @@ final class GamingSoftService
         return $candidates[0] ?? md5($memberAccount . $secretKey);
     }
 
-    /** @return list<string> */
+    /**
+     * Stable GSC+ launch password (MD5).
+     * Priority: stored gamingsoft_member_accounts → derived md5(member+secret).
+     * Never rotate with users.password — that breaks provider sessions ("re-log in").
+     *
+     * @return list<string>
+     */
     private static function memberLaunchPasswordCandidates(PDO $pdo, int $userId, string $memberAccount, string $secretKey): array
     {
         $candidates = [];
@@ -1608,16 +1649,7 @@ final class GamingSoftService
             }
         };
 
-        if ($userId > 0) {
-            try {
-                $stmt = $pdo->prepare('SELECT password FROM users WHERE id = :id LIMIT 1');
-                $stmt->execute([':id' => $userId]);
-                $stored = trim((string) ($stmt->fetchColumn() ?: ''));
-                $add($stored);
-            } catch (Throwable) {
-            }
-        }
-
+        $stored = '';
         if ($memberAccount !== '') {
             try {
                 $stmt = $pdo->prepare(
@@ -1630,29 +1662,62 @@ final class GamingSoftService
             } catch (Throwable) {
             }
         }
-
-        $derived = md5($memberAccount . $secretKey);
-        $add($derived);
-
-        $password = $candidates[0] ?? $derived;
-        if ($userId > 0) {
+        if ($stored === '' && $userId > 0) {
             try {
-                $pdo->prepare(
-                    'INSERT INTO gamingsoft_member_accounts (user_id, member_account, launch_password)
-                     VALUES (:uid, :ma, :pw)
-                     ON DUPLICATE KEY UPDATE
-                        member_account = VALUES(member_account),
-                        launch_password = VALUES(launch_password)'
-                )->execute([
-                    ':uid' => $userId,
-                    ':ma'  => $memberAccount,
-                    ':pw'  => $password,
-                ]);
+                $stmt = $pdo->prepare(
+                    'SELECT launch_password FROM gamingsoft_member_accounts
+                     WHERE user_id = :uid LIMIT 1'
+                );
+                $stmt->execute([':uid' => $userId]);
+                $stored = trim((string) ($stmt->fetchColumn() ?: ''));
+                $add($stored);
             } catch (Throwable) {
             }
         }
 
+        $derived = md5($memberAccount . $secretKey);
+        $add($derived);
+
+        // Last-resort: legacy MD5 site password (only if already GSC+-compatible).
+        // Never promote this to stored unless a launch with it succeeds.
+        if ($userId > 0) {
+            try {
+                $stmt = $pdo->prepare('SELECT password FROM users WHERE id = :id LIMIT 1');
+                $stmt->execute([':id' => $userId]);
+                $add(trim((string) ($stmt->fetchColumn() ?: '')));
+            } catch (Throwable) {
+            }
+        }
+
+        // First launch only: persist derived password and never overwrite later
+        // unless a successful launch reports a different working password.
+        if ($userId > 0 && $stored === '') {
+            self::persistLaunchPassword($pdo, $userId, $memberAccount, $derived);
+        }
+
         return $candidates !== [] ? $candidates : [$derived];
+    }
+
+    private static function persistLaunchPassword(PDO $pdo, int $userId, string $memberAccount, string $password): void
+    {
+        $password = strtolower(trim($password));
+        if ($userId <= 0 || $memberAccount === '' || preg_match('/^[a-f0-9]{32}$/', $password) !== 1) {
+            return;
+        }
+        try {
+            $pdo->prepare(
+                'INSERT INTO gamingsoft_member_accounts (user_id, member_account, launch_password)
+                 VALUES (:uid, :ma, :pw)
+                 ON DUPLICATE KEY UPDATE
+                    member_account = VALUES(member_account),
+                    launch_password = VALUES(launch_password)'
+            )->execute([
+                ':uid' => $userId,
+                ':ma'  => $memberAccount,
+                ':pw'  => $password,
+            ]);
+        } catch (Throwable) {
+        }
     }
 
     private static function userByMemberAccount(PDO $pdo, string $memberAccount): ?array
@@ -1662,6 +1727,28 @@ final class GamingSoftService
             return null;
         }
         try {
+            // Prefer explicit GSC+ member mapping (stable password / account).
+            try {
+                $map = $pdo->prepare(
+                    'SELECT user_id FROM gamingsoft_member_accounts
+                     WHERE member_account = :ma LIMIT 1'
+                );
+                $map->execute([':ma' => $memberAccount]);
+                $mappedId = (int) ($map->fetchColumn() ?: 0);
+                if ($mappedId > 0) {
+                    $stmt = $pdo->prepare('SELECT * FROM users WHERE id = :id LIMIT 1');
+                    $stmt->execute([':id' => $mappedId]);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if (is_array($row)) {
+                        $walletCol = self::walletSourceColumn($pdo, $mappedId);
+                        $row['wallet_balance'] = self::readWalletColumnAmount($row, $walletCol);
+
+                        return $row;
+                    }
+                }
+            } catch (Throwable) {
+            }
+
             if (ctype_digit($memberAccount)) {
                 $stmt = $pdo->prepare('SELECT * FROM users WHERE id = :id LIMIT 1');
                 $stmt->execute([':id' => (int) $memberAccount]);
@@ -2015,15 +2102,15 @@ final class GamingSoftService
             $cfgCurrency = self::STAGING_CURRENCY;
         }
 
-        // Operator config currency is the funded agent wallet (VGY1 staging = IDR).
-        if (in_array($cfgCurrency, self::STAGING_CURRENCIES, true)) {
-            return $cfgCurrency;
-        }
-
+        // Prefer the product's own staging currency (e.g. Big Gaming = IDR2).
         foreach (self::splitCurrencyCandidates($productCurrency . ' ' . $supportCurrency) as $candidate) {
             if (in_array($candidate, self::STAGING_CURRENCIES, true)) {
                 return $candidate;
             }
+        }
+
+        if (in_array($cfgCurrency, self::STAGING_CURRENCIES, true)) {
+            return $cfgCurrency;
         }
 
         return $cfgCurrency !== '' ? $cfgCurrency : self::STAGING_CURRENCY;
@@ -2101,7 +2188,11 @@ final class GamingSoftService
         return str_contains($lower, 'not logged in')
             || str_contains($lower, 'not login')
             || str_contains($lower, 'please login')
-            || str_contains($lower, 'not authorized');
+            || str_contains($lower, 'please try to re-log')
+            || str_contains($lower, 're-log in')
+            || str_contains($lower, 'relog')
+            || str_contains($lower, 'not authorized')
+            || (str_contains($lower, 'processing your request') && str_contains($lower, 'launch the game'));
     }
 
     private static function isAgentBalanceMessage(string $message): bool
@@ -2308,9 +2399,10 @@ final class GamingSoftService
                 . 'Canlı casino lobisi için ürün kartını (Lobby) kullanın.';
         }
         if (self::isNotLoggedInMessage($providerMessage)) {
-            return 'Oyun başlatılamadı: Sağlayıcı oturumu doğrulanamadı (not logged in). '
-                . 'Member account / launch password eşleşmesini yeniledik; tekrar deneyin. '
-                . 'Devam ederse Admin → GSC+ Wallet Logları bölümünde balance çağrılarının code=0 döndüğünü kontrol edin.';
+            return 'Oyun başlatılamadı: Sağlayıcı oturumu / seamless wallet doğrulanamadı. '
+                . 'Site cüzdanı TRY → GSC+ cüzdanı IDR dönüşümü ve sabit launch password kullanılıyor. '
+                . 'Tekrar deneyin; devam ederse Admin → GSC+ Wallet Loglarında balance çağrılarının code=0 '
+                . 've IDR bakiyesinin (TRY × kur) döndüğünü kontrol edin.';
         }
 
         return 'Oyun başlatılamadı: ' . $providerMessage;
