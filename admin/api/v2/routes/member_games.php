@@ -185,16 +185,58 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     //
     // Also: never UNION branches that mix JSON columns (raw_payload / image_fallbacks)
     // with VARCHAR literals — MySQL rejects the mix and the old catch{} returned an empty list.
+    $tableHasColumn = static function (PDO $pdo, string $table, string $column): bool {
+        static $cache = [];
+        $key = strtolower($table . '.' . $column);
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = :table
+                   AND COLUMN_NAME = :column
+                 LIMIT 1'
+            );
+            $stmt->execute([
+                ':table' => $table,
+                ':column' => $column,
+            ]);
+            $cache[$key] = (bool) $stmt->fetchColumn();
+        } catch (Throwable) {
+            $cache[$key] = false;
+        }
+
+        return $cache[$key];
+    };
+
     $branches = [];
     if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
+        $titleCol = $tableHasColumn($pdo, 'bgaming_games', 'title')
+            ? 'title'
+            : ($tableHasColumn($pdo, 'bgaming_games', 'name') ? 'name' : '');
+        $providerCol = $tableHasColumn($pdo, 'bgaming_games', 'provider')
+            ? 'provider'
+            : ($tableHasColumn($pdo, 'bgaming_games', 'producer') ? 'producer' : '');
+        $imageCol = $tableHasColumn($pdo, 'bgaming_games', 'thumbnail_url')
+            ? 'thumbnail_url'
+            : ($tableHasColumn($pdo, 'bgaming_games', 'image_url') ? 'image_url' : '');
+        $featuredExpr = $tableHasColumn($pdo, 'bgaming_games', 'is_featured') ? 'g.is_featured' : '0';
+        $nameExpr = $titleCol !== '' ? "COALESCE(NULLIF(g.{$titleCol}, ''), g.identifier)" : 'g.identifier';
+        $providerExpr = $providerCol !== '' ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'BGaming')" : "'BGaming'";
+        $providerCodeExpr = $providerCol !== '' ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'bgaming')" : "'bgaming'";
+        $imageExpr = $imageCol !== '' ? "COALESCE(NULLIF(g.{$imageCol}, ''), '')" : "CAST('' AS CHAR)";
+
         $branches[] = "SELECT
                 CONCAT('bgaming:', g.identifier) AS game_id,
-                COALESCE(NULLIF(g.title, ''), g.identifier) AS name,
-                COALESCE(NULLIF(g.provider, ''), 'BGaming') AS provider,
-                COALESCE(NULLIF(g.provider, ''), 'bgaming') AS provider_code,
-                COALESCE(NULLIF(g.thumbnail_url, ''), '') AS image_url,
+                {$nameExpr} AS name,
+                {$providerExpr} AS provider,
+                {$providerCodeExpr} AS provider_code,
+                {$imageExpr} AS image_url,
                 CAST('' AS CHAR) AS image_fallbacks,
-                g.is_featured AS is_featured,
+                {$featuredExpr} AS is_featured,
                 'bgaming' AS source,
                 CAST(g.id AS CHAR) AS row_id,
                 CAST('' AS CHAR) AS raw_payload

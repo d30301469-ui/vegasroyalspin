@@ -501,14 +501,15 @@ final class SlotGamesQuery
         // Dedicated BGaming page (`source=bgaming`) must keep serving BGaming
         // catalogue rows from local DB.
         if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
+            $bgamingCols = self::bgamingCatalogColumns($pdo);
             $union[] = "SELECT
                     CONCAT('bgaming:', g.identifier) AS game_id,
-                    COALESCE(NULLIF(g.title, ''), g.identifier) AS name,
-                    COALESCE(NULLIF(g.provider, ''), 'BGaming') AS provider,
-                    COALESCE(NULLIF(g.provider, ''), 'bgaming') AS provider_code,
-                    COALESCE(NULLIF(g.thumbnail_url, ''), '') AS image_url,
+                    {$bgamingCols['nameExpr']} AS name,
+                    {$bgamingCols['providerExpr']} AS provider,
+                    {$bgamingCols['providerCodeExpr']} AS provider_code,
+                    {$bgamingCols['imageExpr']} AS image_url,
                     CAST('' AS CHAR) AS image_fallbacks,
-                    g.is_featured AS is_featured,
+                    {$bgamingCols['featuredExpr']} AS is_featured,
                     'bgaming' AS source,
                     CAST(g.id AS CHAR) AS row_id,
                     CAST('' AS CHAR) AS raw_payload
@@ -739,6 +740,71 @@ final class SlotGamesQuery
         $providers = array_values(array_unique(array_filter($providers)));
         sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
         return $providers;
+    }
+
+    /**
+     * Resolve BGaming catalogue column mappings across schema variants.
+     *
+     * @return array{nameExpr:string,providerExpr:string,providerCodeExpr:string,imageExpr:string,featuredExpr:string}
+     */
+    private static function bgamingCatalogColumns(PDO $pdo): array
+    {
+        $titleCol = self::tableHasColumn($pdo, 'bgaming_games', 'title')
+            ? 'title'
+            : (self::tableHasColumn($pdo, 'bgaming_games', 'name') ? 'name' : '');
+        $providerCol = self::tableHasColumn($pdo, 'bgaming_games', 'provider')
+            ? 'provider'
+            : (self::tableHasColumn($pdo, 'bgaming_games', 'producer') ? 'producer' : '');
+        $imageCol = self::tableHasColumn($pdo, 'bgaming_games', 'thumbnail_url')
+            ? 'thumbnail_url'
+            : (self::tableHasColumn($pdo, 'bgaming_games', 'image_url') ? 'image_url' : '');
+
+        return [
+            'nameExpr' => $titleCol !== ''
+                ? "COALESCE(NULLIF(g.{$titleCol}, ''), g.identifier)"
+                : 'g.identifier',
+            'providerExpr' => $providerCol !== ''
+                ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'BGaming')"
+                : "'BGaming'",
+            'providerCodeExpr' => $providerCol !== ''
+                ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'bgaming')"
+                : "'bgaming'",
+            'imageExpr' => $imageCol !== ''
+                ? "COALESCE(NULLIF(g.{$imageCol}, ''), '')"
+                : "CAST('' AS CHAR)",
+            'featuredExpr' => self::tableHasColumn($pdo, 'bgaming_games', 'is_featured')
+                ? 'g.is_featured'
+                : '0',
+        ];
+    }
+
+    private static function tableHasColumn(PDO $pdo, string $table, string $column): bool
+    {
+        static $cache = [];
+        $key = strtolower($table . '.' . $column);
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = :table
+                   AND COLUMN_NAME = :column
+                 LIMIT 1'
+            );
+            $stmt->execute([
+                ':table' => $table,
+                ':column' => $column,
+            ]);
+            $cache[$key] = (bool) $stmt->fetchColumn();
+        } catch (Throwable) {
+            $cache[$key] = false;
+        }
+
+        return $cache[$key];
     }
 
     /**
