@@ -283,8 +283,10 @@ final class GscPlusService
 
     /**
      * Convert wallet storage amount → provider (GSC) amount.
-     * IDR2/VND2 (1:1000): format base currency first, then ÷ ratio (4 decimals).
-     * Ensures GetBalance(IDR2) === GetBalance(IDR) / 1000 at 4 dp.
+     * IDR2/VND2 (1:1000): format the base (IDR) value, then divide by the ratio
+     * WITHOUT re-rounding. The GSC testcase computes base/1000 in float64 and
+     * compares strictly, so returning round(x/1000, 4) fails whenever the
+     * division is not exactly representable (e.g. 90598.2/1000).
      */
     public static function toProviderAmount(float $walletAmount, string $currency): float
     {
@@ -294,7 +296,7 @@ final class GscPlusService
             $baseCurrency = self::providerBaseCurrency($currency);
             $baseAmount = self::formatProviderBalance($walletAmount, $baseCurrency);
 
-            return self::formatProviderBalance($baseAmount / $ratio, $currency);
+            return $baseAmount / $ratio;
         }
 
         return self::formatProviderBalance($walletAmount, $currency);
