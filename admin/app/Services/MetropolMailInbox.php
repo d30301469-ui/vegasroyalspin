@@ -23,27 +23,60 @@ if (!function_exists('metropol_mail_fetch_inbox')) {
         if (!metropol_mail_imap_available()) {
             return [
                 'ok' => false,
-                'error' => 'PHP imap eklentisi yüklü değil. Sunucuda php-imap kurun (örn. apt install php-imap && service restart).',
+                'error' => 'PHP imap eklentisi yüklü değil. Sunucuda php-imap kurun (örn. apt install php-imap && systemctl restart php*-fpm).',
                 'messages' => [],
             ];
         }
 
-        $host = trim((string) ($settings['smtp_host'] ?? ''));
-        $user = trim((string) ($settings['smtp_user'] ?? ''));
-        $pass = (string) ($settings['smtp_password'] ?? '');
+        if (isset($settings['imap_enabled']) && (int) $settings['imap_enabled'] === 0) {
+            return [
+                'ok' => false,
+                'error' => 'IMAP gelen kutusu pasif. E-posta → Ayarlar bölümünden IMAP’i aktif edin.',
+                'messages' => [],
+            ];
+        }
+
+        $host = trim((string) ($settings['imap_host'] ?? ''));
+        if ($host === '') {
+            $host = trim((string) ($settings['smtp_host'] ?? ''));
+        }
+        $port = (int) ($settings['imap_port'] ?? 0);
+        if ($port <= 0) {
+            $port = 993;
+        }
+        $user = trim((string) ($settings['imap_user'] ?? ''));
+        if ($user === '') {
+            $user = trim((string) ($settings['smtp_user'] ?? ''));
+        }
         if ($user === '') {
             $user = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
         }
+        $pass = (string) ($settings['imap_password'] ?? '');
+        if ($pass === '') {
+            $pass = (string) ($settings['smtp_password'] ?? '');
+        }
+        $encryption = strtolower(trim((string) ($settings['imap_encryption'] ?? 'ssl')));
+        if ($encryption === '') {
+            $encryption = 'ssl';
+        }
+
         if ($host === '' || $user === '' || $pass === '') {
             return [
                 'ok' => false,
-                'error' => 'IMAP için SMTP Host, Kullanıcı ve Şifre ayarları gerekli (E-posta → Ayarlar).',
+                'error' => 'IMAP Host, Kullanıcı ve Şifre gerekli. E-posta → Ayarlar → Gelen kutusu (IMAP) alanlarını doldurun.',
                 'messages' => [],
             ];
         }
 
         $host = preg_replace('/^(ssl|tls):\/\//i', '', $host) ?: $host;
-        $mailbox = '{' . $host . ':993/imap/ssl/novalidate-cert}INBOX';
+        if ($encryption === 'ssl') {
+            $flags = '/imap/ssl/novalidate-cert';
+        } elseif ($encryption === 'tls') {
+            $flags = '/imap/tls/novalidate-cert';
+        } else {
+            $flags = '/imap/notls';
+        }
+        $mailbox = '{' . $host . ':' . $port . $flags . '}INBOX';
 
         $inbox = @imap_open($mailbox, $user, $pass, 0, 1);
         if ($inbox === false) {
@@ -51,7 +84,7 @@ if (!function_exists('metropol_mail_fetch_inbox')) {
             return [
                 'ok' => false,
                 'error' => 'IMAP bağlantısı kurulamadı' . ($err !== '' ? ': ' . $err : '.')
-                    . ' Host=' . $host . ' User=' . $user . ' Port=993',
+                    . ' Host=' . $host . ' User=' . $user . ' Port=' . $port . ' Enc=' . $encryption,
                 'messages' => [],
             ];
         }

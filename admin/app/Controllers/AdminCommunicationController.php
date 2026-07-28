@@ -17,7 +17,7 @@ final class AdminCommunicationController extends AdminController
         $settings = $this->mailSettingsRow();
         require_once ADMIN_APP_PATH . '/Services/MetropolMailInbox.php';
         $inbox = metropol_mail_fetch_inbox($settings, 50);
-        $mailbox = trim((string) ($settings['smtp_user'] ?? $settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+        $mailbox = trim((string) ($settings['imap_user'] ?? $settings['smtp_user'] ?? $settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
 
         $this->view('communication/email', [
             'title' => 'Gelen e-postalar',
@@ -238,6 +238,19 @@ final class AdminCommunicationController extends AdminController
             ? $smtpPasswordInput
             : (string) ($existing['smtp_password'] ?? '');
 
+        $imapEnabled = isset($_POST['imap_enabled']) ? 1 : 0;
+        $imapHost = $this->sanitizeSmtpField((string) ($_POST['imap_host'] ?? ''));
+        $imapPort = (int) ($_POST['imap_port'] ?? 0);
+        $imapUser = $this->sanitizeSmtpField((string) ($_POST['imap_user'] ?? ''));
+        $imapPasswordInput = $this->sanitizeSmtpField((string) ($_POST['imap_password'] ?? ''));
+        $imapPassword = $imapPasswordInput !== ''
+            ? $imapPasswordInput
+            : (string) ($existing['imap_password'] ?? '');
+        $imapEncryption = strtolower(trim((string) ($_POST['imap_encryption'] ?? 'ssl')));
+        if (!in_array($imapEncryption, ['ssl', 'tls', 'none'], true)) {
+            $imapEncryption = 'ssl';
+        }
+
         try {
             $pdo = AdminDatabase::pdo();
             if (is_array($existing) && isset($existing['id'])) {
@@ -251,6 +264,12 @@ final class AdminCommunicationController extends AdminController
                          smtp_port = :smtp_port,
                          smtp_user = :smtp_user,
                          smtp_password = :smtp_password,
+                         imap_enabled = :imap_enabled,
+                         imap_host = :imap_host,
+                         imap_port = :imap_port,
+                         imap_user = :imap_user,
+                         imap_password = :imap_password,
+                         imap_encryption = :imap_encryption,
                          updated_at = NOW()
                      WHERE id = :id'
                 );
@@ -264,13 +283,19 @@ final class AdminCommunicationController extends AdminController
                     'smtp_port' => $smtpPort > 0 ? $smtpPort : null,
                     'smtp_user' => $smtpUser,
                     'smtp_password' => $smtpPassword,
+                    'imap_enabled' => $imapEnabled,
+                    'imap_host' => $imapHost,
+                    'imap_port' => $imapPort > 0 ? $imapPort : 993,
+                    'imap_user' => $imapUser,
+                    'imap_password' => $imapPassword,
+                    'imap_encryption' => $imapEncryption,
                 ]);
             } else {
                 $stmt = $pdo->prepare(
                     'INSERT INTO mail_settings
-                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, company_name, support_email, company_address, reset_template_html, updated_at)
+                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, imap_enabled, imap_host, imap_port, imap_user, imap_password, imap_encryption, company_name, support_email, company_address, reset_template_html, updated_at)
                      VALUES
-                     (:enabled, :mail_enabled, :from_email, :mail_from_address, :smtp_host, :smtp_port, :smtp_user, :smtp_password, :company_name, :support_email, :company_address, :reset_template_html, NOW())'
+                     (:enabled, :mail_enabled, :from_email, :mail_from_address, :smtp_host, :smtp_port, :smtp_user, :smtp_password, :imap_enabled, :imap_host, :imap_port, :imap_user, :imap_password, :imap_encryption, :company_name, :support_email, :company_address, :reset_template_html, NOW())'
                 );
                 $stmt->execute([
                     'enabled' => $enabled,
@@ -281,6 +306,12 @@ final class AdminCommunicationController extends AdminController
                     'smtp_port' => $smtpPort > 0 ? $smtpPort : null,
                     'smtp_user' => $smtpUser,
                     'smtp_password' => $smtpPassword,
+                    'imap_enabled' => $imapEnabled,
+                    'imap_host' => $imapHost,
+                    'imap_port' => $imapPort > 0 ? $imapPort : 993,
+                    'imap_user' => $imapUser,
+                    'imap_password' => $imapPassword,
+                    'imap_encryption' => $imapEncryption,
                     'company_name' => 'Vegasroyalspin',
                     'support_email' => '',
                     'company_address' => '',
