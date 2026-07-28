@@ -444,7 +444,8 @@ final class GamingSoftService
         }
 
         $gameStmt = $pdo->prepare(
-            'SELECT g.*, p.product_name, p.provider, p.entry_type AS product_entry_type, p.is_active AS product_active, p.status AS product_status
+            'SELECT g.*, p.product_name, p.provider, p.currency AS product_currency,
+                    p.entry_type AS product_entry_type, p.is_active AS product_active, p.status AS product_status
              FROM gamingsoft_games g
              LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
              WHERE g.product_code = :pc AND g.game_code = :gc
@@ -458,7 +459,7 @@ final class GamingSoftService
             || strcasecmp($parsed['game_code'], 'lobby') === 0;
         if ((!is_array($gameRow) || (int) ($gameRow['is_active'] ?? 0) !== 1) && $isLobbyCode) {
             $prodStmt = $pdo->prepare(
-                'SELECT product_code, product_name, provider, game_type, entry_type, is_active, status
+                'SELECT product_code, product_name, provider, game_type, currency, entry_type, is_active, status
                  FROM gamingsoft_products
                  WHERE product_code = :pc
                  LIMIT 1'
@@ -476,6 +477,7 @@ final class GamingSoftService
                     'product_active' => 1,
                     'product_name' => (string) ($product['product_name'] ?? ''),
                     'provider' => (string) ($product['provider'] ?? ''),
+                    'product_currency' => (string) ($product['currency'] ?? ''),
                     'is_active' => 1,
                 ];
             }
@@ -496,12 +498,46 @@ final class GamingSoftService
         $userId = (int) $user['id'];
         $memberAccount = self::memberAccountFromUser($user);
         $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
-        $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'TRY')));
-        $gameType = strtoupper(trim((string) ($gameRow['game_type'] ?? 'SLOT')));
-        $entryType = (int) ($gameRow['entry_type'] ?? $gameRow['product_entry_type'] ?? 1);
-        $rawGameCode = trim((string) ($gameRow['game_code'] ?? ''));
-        $isLobbyCode = $rawGameCode === '' || strcasecmp($rawGameCode, '__lobby__') === 0 || strcasecmp($rawGameCode, 'lobby') === 0;
-        $gameCode = ($entryType === 2 || $isLobbyCode) ? null : $rawGameCode;
+
+        // Product row is authoritative for launch mode (entry_type) and game_type.
+        $productStmt = $pdo->prepare(
+            'SELECT product_code, product_name, provider, game_type, currency, entry_type, is_active, status
+             FROM gamingsoft_products
+             WHERE product_code = :pc
+             LIMIT 1'
+        );
+        $productStmt->execute([':pc' => $parsed['product_code']]);
+        $productRow = $productStmt->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($productRow)) {
+            $productRow = [];
+        }
+
+        $productGameType = self::normalizeProviderGameType((string) ($productRow['game_type'] ?? ''));
+        $gameRowType = self::normalizeProviderGameType((string) ($gameRow['game_type'] ?? ''));
+        $gameType = $productGameType !== '' ? $productGameType : ($gameRowType !== '' ? $gameRowType : 'SLOT');
+
+        $productEntryType = (int) ($productRow['entry_type'] ?? 0);
+        $gameEntryType = (int) ($gameRow['entry_type'] ?? $gameRow['product_entry_type'] ?? 0);
+        $entryType = $productEntryType > 0 ? $productEntryType : ($gameEntryType > 0 ? $gameEntryType : 1);
+
+        $rawGameCode = trim((string) ($gameRow['game_code'] ?? $parsed['game_code']));
+        $isLobbyCode = $rawGameCode === ''
+            || strcasecmp($rawGameCode, '__lobby__') === 0
+            || strcasecmp($rawGameCode, 'lobby') === 0;
+
+        // entry_type=2 => lobby only (omit game_code). Never send synthetic __lobby__ codes to GSC+.
+        $useLobbyLaunch = $entryType === 2 || $isLobbyCode;
+        $gameCode = $useLobbyLaunch ? null : $rawGameCode;
+        if ($gameCode !== null && $gameCode === '') {
+            $gameCode = null;
+        }
+
+        $productCurrency = self::pickLaunchCurrency(
+            (string) ($productRow['currency'] ?? $gameRow['product_currency'] ?? ''),
+            (string) ($gameRow['support_currency'] ?? ''),
+            (string) ($cfg['currency'] ?? self::STAGING_CURRENCY)
+        );
+        $currency = $productCurrency;
 
         $channel = strtolower(trim((string) ($input['channel'] ?? 'desktop')));
         $platform = match (true) {
@@ -529,22 +565,20 @@ final class GamingSoftService
         }
 
         $requestTime = self::requestTimeSeconds();
-        $payload = [
-            'operator_code'      => (string) $cfg['operator_code'],
-            'member_account'     => $memberAccount,
-            'password'           => self::memberPassword($memberAccount, (string) $cfg['secret_key']),
-            'nickname'           => $nickname,
-            'currency'           => $currency,
-            'game_code'          => $gameCode,
-            'product_code'       => (int) $parsed['product_code'],
-            'game_type'          => $gameType,
-            'language_code'      => $languageCode,
-            'ip'                 => $ip !== '' ? $ip : '127.0.0.1',
-            'platform'           => $platform,
-            'sign'               => self::operatorSign($cfg, 'launchgame', $requestTime),
-            'request_time'       => $requestTime,
-            'operator_lobby_url' => $lobbyUrl,
-        ];
+        $payload = self::buildLaunchPayload(
+            $cfg,
+            $memberAccount,
+            $nickname,
+            $currency,
+            $gameCode,
+            (int) $parsed['product_code'],
+            $gameType,
+            $languageCode,
+            $ip !== '' ? $ip : '127.0.0.1',
+            $platform,
+            $lobbyUrl,
+            $requestTime
+        );
 
         try {
             $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
@@ -553,13 +587,49 @@ final class GamingSoftService
         }
 
         $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
+        $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
+
+        // If direct game_code is unknown to GSC+, retry once as product lobby launch.
+        if (($code !== 200 && $code !== 0)
+            && $gameCode !== null
+            && self::isRecordNotFoundMessage($providerMessage)
+            && ($entryType === 2 || self::isLiveGameType($gameType))
+        ) {
+            $retryTime = self::requestTimeSeconds();
+            $payload = self::buildLaunchPayload(
+                $cfg,
+                $memberAccount,
+                $nickname,
+                $currency,
+                null,
+                (int) $parsed['product_code'],
+                $gameType,
+                $languageCode,
+                $ip !== '' ? $ip : '127.0.0.1',
+                $platform,
+                $lobbyUrl,
+                $retryTime
+            );
+            try {
+                $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
+            } catch (Throwable $e) {
+                return ['success' => false, 'code' => 503, 'message' => 'GSC+ API bağlantı hatası: ' . $e->getMessage()];
+            }
+            $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
+            $providerMessage = trim((string) ($response['message'] ?? $response['Message'] ?? ''));
+            $gameCode = null;
+        }
+
         $launchUrl = trim((string) ($response['url'] ?? $response['URL'] ?? ''));
         $content = trim((string) ($response['content'] ?? $response['Content'] ?? ''));
         if ($code !== 200 && $code !== 0) {
             return [
                 'success' => false,
                 'code'    => 422,
-                'message' => 'Oyun başlatılamadı: ' . trim((string) ($response['message'] ?? $response['Message'] ?? ('code ' . $code))),
+                'message' => self::mapLaunchErrorMessage(
+                    $providerMessage !== '' ? $providerMessage : ('code ' . $code),
+                    $currency
+                ),
                 'raw'     => $response,
             ];
         }
@@ -1261,6 +1331,116 @@ final class GamingSoftService
         } catch (Throwable) {
             return time();
         }
+    }
+
+    private static function normalizeProviderGameType(string $gameType): string
+    {
+        $t = strtoupper(trim($gameType));
+        if ($t === '' || $t === 'LC' || $t === 'LIVE' || $t === 'LIVE CASINO' || $t === 'LIVE-CASINO') {
+            return $t === '' ? '' : 'LIVE_CASINO';
+        }
+
+        return $t;
+    }
+
+    private static function pickLaunchCurrency(string $productCurrency, string $supportCurrency, string $cfgCurrency): string
+    {
+        $candidates = [];
+        foreach ([$productCurrency, $supportCurrency, $cfgCurrency, self::STAGING_CURRENCY] as $raw) {
+            foreach (preg_split('/[,\s|;]+/', strtoupper(trim($raw))) ?: [] as $part) {
+                $part = trim((string) $part);
+                if ($part !== '' && !in_array($part, $candidates, true)) {
+                    $candidates[] = $part;
+                }
+            }
+        }
+
+        foreach ($candidates as $candidate) {
+            if (in_array($candidate, self::STAGING_CURRENCIES, true)) {
+                return $candidate;
+            }
+        }
+
+        return $candidates[0] ?? self::STAGING_CURRENCY;
+    }
+
+    /**
+     * @param array<string, mixed> $cfg
+     * @return array<string, mixed>
+     */
+    private static function buildLaunchPayload(
+        array $cfg,
+        string $memberAccount,
+        string $nickname,
+        string $currency,
+        ?string $gameCode,
+        int $productCode,
+        string $gameType,
+        int $languageCode,
+        string $ip,
+        string $platform,
+        string $lobbyUrl,
+        int $requestTime
+    ): array {
+        $payload = [
+            'operator_code'      => (string) $cfg['operator_code'],
+            'member_account'     => $memberAccount,
+            'password'           => self::memberPassword($memberAccount, (string) $cfg['secret_key']),
+            'nickname'           => $nickname,
+            'currency'           => $currency,
+            'product_code'       => $productCode,
+            'game_type'          => $gameType,
+            'language_code'      => $languageCode,
+            'ip'                 => $ip,
+            'platform'           => $platform,
+            'sign'               => self::operatorSign($cfg, 'launchgame', $requestTime),
+            'request_time'       => $requestTime,
+            'operator_lobby_url' => $lobbyUrl,
+        ];
+
+        // Docs: game_code required only for direct play (entry_type=1). Omit for lobby.
+        if ($gameCode !== null && trim($gameCode) !== '') {
+            $payload['game_code'] = trim($gameCode);
+        }
+
+        return $payload;
+    }
+
+    private static function isRecordNotFoundMessage(string $message): bool
+    {
+        $lower = strtolower(trim($message));
+
+        return $lower === 'record not found'
+            || str_contains($lower, 'record not found')
+            || str_contains($lower, 'game not found')
+            || str_contains($lower, 'product not found');
+    }
+
+    private static function mapLaunchErrorMessage(string $providerMessage, string $currency = ''): string
+    {
+        $lower = strtolower($providerMessage);
+        if ($providerMessage === '') {
+            return 'Oyun başlatılamadı.';
+        }
+
+        // GSC+ agency credit — not the player's seamless wallet balance.
+        if (str_contains($lower, 'insufficient agent balance')
+            || str_contains($lower, 'agent balance')
+            || str_contains($lower, 'insufficient credit')
+        ) {
+            $cur = $currency !== '' ? $currency : self::STAGING_CURRENCY;
+
+            return 'Oyun başlatılamadı: GSC+ acente bakiyesi yetersiz'
+                . ' (operator VGY1 / para birimi ' . $cur . ').'
+                . ' Bu üye cüzdanı değil; staging hesabınıza kredi için GSC+ destek ile iletişime geçin.';
+        }
+
+        if (self::isRecordNotFoundMessage($providerMessage)) {
+            return 'Oyun başlatılamadı: GSC+ kaydı bulunamadı (product/game_code/currency uyuşmazlığı). '
+                . 'Admin → GSC+ ürün/oyun sync çalıştırın; live ürünlerde lobby (entry_type=2) ile deneyin.';
+        }
+
+        return 'Oyun başlatılamadı: ' . $providerMessage;
     }
 
     private static function activeConfig(PDO $pdo): array
