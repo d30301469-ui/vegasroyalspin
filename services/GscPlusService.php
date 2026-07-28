@@ -1275,6 +1275,25 @@ final class GscPlusService
         return $status;
     }
 
+    /**
+     * GSC game lists report support_currency as "ALL", a single code ("IDR")
+     * or a comma-separated list ("MYR,IDR,PHP"). Empty means unrestricted.
+     */
+    public static function gameSupportsCurrency(string $supportCurrency, string $currency): bool
+    {
+        $supportCurrency = strtoupper(trim($supportCurrency));
+        if ($supportCurrency === '' || $supportCurrency === 'ALL') {
+            return true;
+        }
+        $currency = strtoupper(trim($currency));
+        foreach (explode(',', $supportCurrency) as $candidate) {
+            if (trim($candidate) === $currency) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** @return array{count:int,products:int} */
     public static function syncGames(PDO $pdo, ?int $onlyProductCode = null): array
     {
@@ -1349,12 +1368,10 @@ final class GscPlusService
                     continue;
                 }
                 $supportCurrency = strtoupper(trim((string) ($game['support_currency'] ?? '')));
-                if ($supportCurrency !== '' && $supportCurrency !== $currency) {
-                    // Keep other currencies but mark inactive for our primary currency lobby.
-                }
                 $status = strtoupper(trim((string) ($game['status'] ?? 'ACTIVATED')));
                 $active = in_array($status, ['ACTIVATED', 'ACTIVAT'], true) ? 1 : 0;
-                if ($supportCurrency !== '' && $supportCurrency !== $currency) {
+                if (!self::gameSupportsCurrency($supportCurrency, $currency)) {
+                    // Keep other-currency rows for reference, but hide them from our lobby.
                     $active = 0;
                 }
                 $pdo->prepare(
