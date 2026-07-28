@@ -5,7 +5,8 @@ declare(strict_types=1);
 /**
  * Casino Aggregator — multi-vendor slots & live casino (Operator API v1.0.3).
  *
- * Operator API (we -> provider): GetVendors, GetVendorGames, GetGameUrl, ...
+ * Operator API (we -> provider): GetVendors, GetVendorGames, GetGameUrl,
+ *     GetAgentSetting, SetAgentSetting, GetUserSetting, SetUserSetting, ...
  * Wallet Callback (provider -> us): GetBalance, ChangeBalance, UpdateDetail
  */
 final class CasinoAggregatorService
@@ -13,6 +14,50 @@ final class CasinoAggregatorService
     public const GAME_ID_PREFIX = 'aggregator:';
     private const DEFAULT_API_BASE = '';
     private static bool $schemaBootstrapped = false;
+
+    /** @var list<string> */
+    public const AGENT_SETTING_KEYS = [
+        'RoundKey',
+        'HideRoundId',
+        'HideTournament',
+        'HideBadge',
+        'LowRtp',
+        'HighRtp',
+    ];
+
+    /** @var list<string> */
+    public const USER_SETTING_KEYS = [
+        'LowRtp',
+        'HighRtp',
+    ];
+
+    /** Appendix 1 — API Response Codes */
+    public const RESPONSE_CODES = [
+        0  => ['msg' => 'SUCCESS', 'description' => 'Success'],
+        1  => ['msg' => 'INTERNAL_ERROR', 'description' => 'Server internal error'],
+        2  => ['msg' => 'INVALID_ACTION', 'description' => 'Request error'],
+        3  => ['msg' => 'INVALID_AGENT', 'description' => 'Agent error'],
+        4  => ['msg' => 'BLOCK_AGENT', 'description' => 'Blocked agent'],
+        5  => ['msg' => 'INVALID_USER', 'description' => 'User error'],
+        6  => ['msg' => 'BLOCK_USER', 'description' => 'Blocked user'],
+        7  => ['msg' => 'DUPLICATE_USER', 'description' => 'Duplicate users'],
+        8  => ['msg' => 'INSUFFICIENT_MONEY', 'description' => 'Insufficient balance'],
+        12 => ['msg' => 'INVALID_VENDOR', 'description' => 'Vendor error'],
+        13 => ['msg' => 'INVALID_PARAMETER', 'description' => 'Invalid request parameter'],
+        14 => ['msg' => 'NETWORK_ERROR', 'description' => 'Network error'],
+        15 => ['msg' => 'MAINTENANCE', 'description' => 'System under maintenance'],
+        18 => ['msg' => 'INVALID_WAGER', 'description' => 'Invalid transaction or wager ID'],
+        20 => ['msg' => 'INVALID_TIME', 'description' => 'Invalid time format or range'],
+        21 => ['msg' => 'DUPLICATE_REQUESTKEY', 'description' => 'Duplicate request key (for duplicate prevention)'],
+        22 => ['msg' => 'TIMEOUT_ERROR', 'description' => 'Request timed out'],
+    ];
+
+    /** Appendix 2 — Game type */
+    public const GAME_TYPES = [
+        1 => 'Slot',
+        2 => 'Live Casino',
+    ];
+
     private const SIGN_HEADERS = [
         'HTTP_X_SIGNATURE',
         'HTTP_X_SIGN',
@@ -46,6 +91,11 @@ final class CasinoAggregatorService
             }
         } catch (Throwable) {
         }
+
+        try {
+            self::runSettingsMigration($pdo);
+        } catch (Throwable) {
+        }
     }
 
     public static function createSchema(PDO $pdo): void
@@ -55,11 +105,26 @@ final class CasinoAggregatorService
             $runner = require $migration;
             if (is_callable($runner)) {
                 $runner($pdo);
-                return;
+            } else {
+                throw new RuntimeException('Casino aggregator migration dosyası bulunamadı.');
             }
+        } else {
+            throw new RuntimeException('Casino aggregator migration dosyası bulunamadı.');
         }
 
-        throw new RuntimeException('Casino aggregator migration dosyası bulunamadı.');
+        self::runSettingsMigration($pdo);
+    }
+
+    private static function runSettingsMigration(PDO $pdo): void
+    {
+        $migration = dirname(__DIR__) . '/database/migrations/2026_07_28_000000_casino_aggregator_settings.php';
+        if (!is_readable($migration)) {
+            return;
+        }
+        $runner = require $migration;
+        if (is_callable($runner)) {
+            $runner($pdo);
+        }
     }
 
     private static function ensureDefaultConfig(PDO $pdo): void
@@ -1668,6 +1733,484 @@ final class CasinoAggregatorService
         return null;
     }
 
+    // ── Appendix 4: AgentSetting / UserSetting ──────────────────────────────
+
+    /** @return array<string, string> key => value */
+    public static function getAgentSettings(PDO $pdo): array
+    {
+        self::bootstrap($pdo);
+        $out = [];
+        foreach (self::AGENT_SETTING_KEYS as $key) {
+            $out[$key] = '';
+        }
+        try {
+            $rows = $pdo->query('SELECT setting_key, setting_value FROM casino_aggregator_agent_settings')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            foreach ($rows as $row) {
+                $key = (string) ($row['setting_key'] ?? '');
+                if ($key !== '' && array_key_exists($key, $out)) {
+                    $out[$key] = (string) ($row['setting_value'] ?? '');
+                }
+            }
+        } catch (Throwable) {
+        }
+        return $out;
+    }
+
+    /**
+     * Persist agent settings locally and push each changed key via SetAgentSetting.
+     *
+     * @param array<string, mixed> $data
+     * @return array{saved: int, api_ok: int, errors: list<string>}
+     */
+    public static function setAgentSettings(PDO $pdo, array $data, bool $pushApi = true): array
+    {
+        self::bootstrap($pdo);
+        $normalized = self::normalizeAgentSettingInput($data);
+        $saved = 0;
+        $apiOk = 0;
+        $errors = [];
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO casino_aggregator_agent_settings (setting_key, setting_value, synced_at)
+             VALUES (:k, :v, NOW())
+             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), synced_at = NOW()'
+        );
+
+        foreach ($normalized as $key => $value) {
+            $stmt->execute([':k' => $key, ':v' => $value]);
+            $saved++;
+
+            if (!$pushApi) {
+                continue;
+            }
+            try {
+                $cfg = self::configuredConfig($pdo);
+                $response = self::requestWithConfig($cfg, [
+                    'method'    => 'SetAgentSetting',
+                    'token'     => (string) $cfg['api_token'],
+                    'agentCode' => (string) $cfg['agent_code'],
+                    'key'       => $key,
+                    'value'     => $value,
+                ], 15);
+                self::assertSuccess($response, 'SetAgentSetting:' . $key);
+                $apiOk++;
+            } catch (Throwable $e) {
+                $errors[] = $key . ': ' . $e->getMessage();
+            }
+        }
+
+        return ['saved' => $saved, 'api_ok' => $apiOk, 'errors' => $errors];
+    }
+
+    /**
+     * Pull agent settings from GetAgentSetting into local mirror.
+     *
+     * @return array{updated: int, values: array<string, string>, errors: list<string>}
+     */
+    public static function pullAgentSettings(PDO $pdo): array
+    {
+        self::bootstrap($pdo);
+        $cfg = self::configuredConfig($pdo);
+        $updated = 0;
+        $values = self::getAgentSettings($pdo);
+        $errors = [];
+
+        foreach (self::AGENT_SETTING_KEYS as $key) {
+            try {
+                $response = self::requestWithConfig($cfg, [
+                    'method'    => 'GetAgentSetting',
+                    'token'     => (string) $cfg['api_token'],
+                    'agentCode' => (string) $cfg['agent_code'],
+                    'key'       => $key,
+                ], 15);
+                self::assertSuccess($response, 'GetAgentSetting:' . $key);
+                $remote = self::extractSettingValue($response, $key);
+                if ($remote === null) {
+                    continue;
+                }
+                $remote = self::normalizeSettingValue($key, $remote);
+                $pdo->prepare(
+                    'INSERT INTO casino_aggregator_agent_settings (setting_key, setting_value, synced_at)
+                     VALUES (:k, :v, NOW())
+                     ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), synced_at = NOW()'
+                )->execute([':k' => $key, ':v' => $remote]);
+                $values[$key] = $remote;
+                $updated++;
+            } catch (Throwable $e) {
+                $errors[] = $key . ': ' . $e->getMessage();
+            }
+        }
+
+        // Fallback: one bulk Get without key
+        if ($updated === 0 && $errors !== []) {
+            try {
+                $response = self::requestWithConfig($cfg, [
+                    'method'    => 'GetAgentSetting',
+                    'token'     => (string) $cfg['api_token'],
+                    'agentCode' => (string) $cfg['agent_code'],
+                ], 15);
+                if ((int) ($response['status'] ?? -1) === 0) {
+                    $bulk = self::extractSettingMap($response);
+                    foreach ($bulk as $key => $value) {
+                        if (!in_array($key, self::AGENT_SETTING_KEYS, true)) {
+                            continue;
+                        }
+                        $value = self::normalizeSettingValue($key, $value);
+                        $pdo->prepare(
+                            'INSERT INTO casino_aggregator_agent_settings (setting_key, setting_value, synced_at)
+                             VALUES (:k, :v, NOW())
+                             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), synced_at = NOW()'
+                        )->execute([':k' => $key, ':v' => $value]);
+                        $values[$key] = $value;
+                        $updated++;
+                    }
+                    if ($updated > 0) {
+                        $errors = [];
+                    }
+                }
+            } catch (Throwable $e) {
+                $errors[] = 'bulk: ' . $e->getMessage();
+            }
+        }
+
+        return ['updated' => $updated, 'values' => $values, 'errors' => $errors];
+    }
+
+    /** @return array<string, string> */
+    public static function getUserSettings(PDO $pdo, string $userCode): array
+    {
+        self::bootstrap($pdo);
+        $userCode = trim($userCode);
+        $out = [];
+        foreach (self::USER_SETTING_KEYS as $key) {
+            $out[$key] = '';
+        }
+        if ($userCode === '') {
+            return $out;
+        }
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT setting_key, setting_value FROM casino_aggregator_user_settings
+                 WHERE user_code = :c'
+            );
+            $stmt->execute([':c' => $userCode]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $key = (string) ($row['setting_key'] ?? '');
+                if ($key !== '' && array_key_exists($key, $out)) {
+                    $out[$key] = (string) ($row['setting_value'] ?? '');
+                }
+            }
+        } catch (Throwable) {
+        }
+        return $out;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array{saved: int, api_ok: int, errors: list<string>, user_code: string, user_id: ?int}
+     */
+    public static function setUserSettings(PDO $pdo, string $userCode, array $data, bool $pushApi = true): array
+    {
+        self::bootstrap($pdo);
+        $resolved = self::resolveUserCode($pdo, $userCode);
+        if ($resolved === null) {
+            throw new RuntimeException('Kullanıcı bulunamadı: ' . $userCode);
+        }
+        $code = $resolved['user_code'];
+        $userId = $resolved['user_id'];
+        $normalized = self::normalizeUserSettingInput($data);
+        $saved = 0;
+        $apiOk = 0;
+        $errors = [];
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO casino_aggregator_user_settings (user_id, user_code, setting_key, setting_value, synced_at)
+             VALUES (:uid, :ucode, :k, :v, NOW())
+             ON DUPLICATE KEY UPDATE
+                user_id = VALUES(user_id),
+                setting_value = VALUES(setting_value),
+                synced_at = NOW()'
+        );
+
+        foreach ($normalized as $key => $value) {
+            $stmt->execute([
+                ':uid'   => $userId,
+                ':ucode' => $code,
+                ':k'     => $key,
+                ':v'     => $value,
+            ]);
+            $saved++;
+
+            if (!$pushApi) {
+                continue;
+            }
+            try {
+                $cfg = self::configuredConfig($pdo);
+                $response = self::requestWithConfig($cfg, [
+                    'method'    => 'SetUserSetting',
+                    'token'     => (string) $cfg['api_token'],
+                    'agentCode' => (string) $cfg['agent_code'],
+                    'userCode'  => $code,
+                    'key'       => $key,
+                    'value'     => $value,
+                ], 15);
+                self::assertSuccess($response, 'SetUserSetting:' . $key);
+                $apiOk++;
+            } catch (Throwable $e) {
+                $errors[] = $key . ': ' . $e->getMessage();
+            }
+        }
+
+        return [
+            'saved'     => $saved,
+            'api_ok'    => $apiOk,
+            'errors'    => $errors,
+            'user_code' => $code,
+            'user_id'   => $userId,
+        ];
+    }
+
+    /**
+     * @return array{updated: int, values: array<string, string>, errors: list<string>, user_code: string, user_id: ?int}
+     */
+    public static function pullUserSettings(PDO $pdo, string $userCode): array
+    {
+        self::bootstrap($pdo);
+        $resolved = self::resolveUserCode($pdo, $userCode);
+        if ($resolved === null) {
+            throw new RuntimeException('Kullanıcı bulunamadı: ' . $userCode);
+        }
+        $code = $resolved['user_code'];
+        $userId = $resolved['user_id'];
+        $cfg = self::configuredConfig($pdo);
+        $updated = 0;
+        $values = self::getUserSettings($pdo, $code);
+        $errors = [];
+
+        foreach (self::USER_SETTING_KEYS as $key) {
+            try {
+                $response = self::requestWithConfig($cfg, [
+                    'method'    => 'GetUserSetting',
+                    'token'     => (string) $cfg['api_token'],
+                    'agentCode' => (string) $cfg['agent_code'],
+                    'userCode'  => $code,
+                    'key'       => $key,
+                ], 15);
+                self::assertSuccess($response, 'GetUserSetting:' . $key);
+                $remote = self::extractSettingValue($response, $key);
+                if ($remote === null) {
+                    continue;
+                }
+                $remote = self::normalizeSettingValue($key, $remote);
+                $pdo->prepare(
+                    'INSERT INTO casino_aggregator_user_settings (user_id, user_code, setting_key, setting_value, synced_at)
+                     VALUES (:uid, :ucode, :k, :v, NOW())
+                     ON DUPLICATE KEY UPDATE
+                        user_id = VALUES(user_id),
+                        setting_value = VALUES(setting_value),
+                        synced_at = NOW()'
+                )->execute([
+                    ':uid'   => $userId,
+                    ':ucode' => $code,
+                    ':k'     => $key,
+                    ':v'     => $remote,
+                ]);
+                $values[$key] = $remote;
+                $updated++;
+            } catch (Throwable $e) {
+                $errors[] = $key . ': ' . $e->getMessage();
+            }
+        }
+
+        return [
+            'updated'   => $updated,
+            'values'    => $values,
+            'errors'    => $errors,
+            'user_code' => $code,
+            'user_id'   => $userId,
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function recentUserSettings(PDO $pdo, int $limit = 50): array
+    {
+        self::bootstrap($pdo);
+        $limit = max(1, min(200, $limit));
+        try {
+            $sql = "SELECT s.user_id, s.user_code, s.setting_key, s.setting_value, s.synced_at, s.updated_at,
+                           u.username
+                    FROM casino_aggregator_user_settings s
+                    LEFT JOIN users u ON u.id = s.user_id
+                    ORDER BY s.updated_at DESC
+                    LIMIT {$limit}";
+            return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /** @return array{user_code: string, user_id: ?int}|null */
+    public static function resolveUserCode(PDO $pdo, string $input): ?array
+    {
+        $input = trim($input);
+        if ($input === '') {
+            return null;
+        }
+        try {
+            if (ctype_digit($input)) {
+                $stmt = $pdo->prepare('SELECT id, username FROM users WHERE id = :id LIMIT 1');
+                $stmt->execute([':id' => (int) $input]);
+            } else {
+                $stmt = $pdo->prepare('SELECT id, username FROM users WHERE username = :u LIMIT 1');
+                $stmt->execute([':u' => $input]);
+            }
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($row)) {
+                return null;
+            }
+            return [
+                'user_code' => (string) (int) $row['id'],
+                'user_id'   => (int) $row['id'],
+            ];
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, string>
+     */
+    private static function normalizeAgentSettingInput(array $data): array
+    {
+        $out = [];
+        foreach (self::AGENT_SETTING_KEYS as $key) {
+            if (!array_key_exists($key, $data) && !array_key_exists(strtolower($key), $data)) {
+                continue;
+            }
+            $raw = $data[$key] ?? $data[strtolower($key)] ?? '';
+            if (is_bool($raw)) {
+                $raw = $raw ? '1' : '0';
+            }
+            $out[$key] = self::normalizeSettingValue($key, (string) $raw);
+        }
+        if ($out === []) {
+            throw new RuntimeException('Kaydedilecek agent ayarı yok.');
+        }
+        return $out;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, string>
+     */
+    private static function normalizeUserSettingInput(array $data): array
+    {
+        $out = [];
+        foreach (self::USER_SETTING_KEYS as $key) {
+            if (!array_key_exists($key, $data) && !array_key_exists(strtolower($key), $data)) {
+                continue;
+            }
+            $raw = $data[$key] ?? $data[strtolower($key)] ?? '';
+            $out[$key] = self::normalizeSettingValue($key, (string) $raw);
+        }
+        if ($out === []) {
+            throw new RuntimeException('Kaydedilecek kullanıcı ayarı yok.');
+        }
+        return $out;
+    }
+
+    private static function normalizeSettingValue(string $key, string $value): string
+    {
+        $value = trim($value);
+        if (in_array($key, ['HideRoundId', 'HideTournament', 'HideBadge'], true)) {
+            return in_array($value, ['1', 'true', 'on', 'yes'], true) ? '1' : '0';
+        }
+        if (in_array($key, ['LowRtp', 'HighRtp'], true)) {
+            if ($value === '') {
+                return '';
+            }
+            if (!is_numeric($value)) {
+                throw new RuntimeException($key . ' sayısal olmalıdır (0–1).');
+            }
+            $num = (float) $value;
+            if ($num < 0 || $num > 1) {
+                throw new RuntimeException($key . ' 0 ile 1 arasında olmalıdır.');
+            }
+            return rtrim(rtrim(number_format($num, 4, '.', ''), '0'), '.') ?: '0';
+        }
+        if ($key === 'RoundKey') {
+            $parts = preg_split('/\s*,\s*/', $value) ?: [];
+            $clean = [];
+            foreach ($parts as $part) {
+                $part = trim((string) $part);
+                if ($part !== '') {
+                    $clean[] = $part;
+                }
+            }
+            return implode(',', $clean);
+        }
+        return $value;
+    }
+
+    /** @param array<string, mixed> $response */
+    private static function extractSettingValue(array $response, string $key): ?string
+    {
+        foreach (['value', 'settingValue', 'setting_value'] as $field) {
+            if (array_key_exists($field, $response) && $response[$field] !== null && $response[$field] !== '') {
+                return trim((string) $response[$field]);
+            }
+        }
+        $map = self::extractSettingMap($response);
+        if (array_key_exists($key, $map)) {
+            return $map[$key];
+        }
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $response
+     * @return array<string, string>
+     */
+    private static function extractSettingMap(array $response): array
+    {
+        $candidates = [
+            $response['settings'] ?? null,
+            $response['setting'] ?? null,
+            $response['data'] ?? null,
+            $response['agentSetting'] ?? null,
+            $response['userSetting'] ?? null,
+        ];
+        $map = [];
+        foreach ($candidates as $candidate) {
+            if (!is_array($candidate)) {
+                continue;
+            }
+            // list of {key,value}
+            $isList = array_is_list($candidate);
+            if ($isList) {
+                foreach ($candidate as $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+                    $k = trim((string) ($row['key'] ?? $row['setting_key'] ?? $row['category'] ?? ''));
+                    if ($k === '') {
+                        continue;
+                    }
+                    $map[$k] = trim((string) ($row['value'] ?? $row['setting_value'] ?? ''));
+                }
+                continue;
+            }
+            foreach ($candidate as $k => $v) {
+                if (!is_string($k) || is_array($v)) {
+                    continue;
+                }
+                $map[$k] = trim((string) $v);
+            }
+        }
+        return $map;
+    }
+
     public static function launch(PDO $pdo, ?array $user, array $input): array
     {
         try {
@@ -1927,10 +2470,18 @@ final class CasinoAggregatorService
 
     private static function assertSuccess(array $response, string $context): void
     {
-        if ((int) ($response['status'] ?? -1) === 0) {
+        $status = (int) ($response['status'] ?? -1);
+        if ($status === 0) {
             return;
         }
-        throw new RuntimeException($context . ': ' . (string) ($response['msg'] ?? 'API hatası'));
+        $msg = trim((string) ($response['msg'] ?? ''));
+        if ($msg === '' && isset(self::RESPONSE_CODES[$status])) {
+            $msg = self::RESPONSE_CODES[$status]['msg'];
+        }
+        if ($msg === '') {
+            $msg = 'API hatası';
+        }
+        throw new RuntimeException($context . ': ' . $msg . ' (status ' . $status . ')');
     }
 
     private static function signMessage(string $message, string $privateKeyB64): string
@@ -2041,6 +2592,9 @@ final class CasinoAggregatorService
         if ($user === null) {
             return ['status' => 5, 'msg' => 'INVALID_USER'];
         }
+        if ((int) ($user['banned'] ?? 0) === 1) {
+            return ['status' => 6, 'msg' => 'BLOCK_USER', '__user_id' => (int) $user['id']];
+        }
         return [
             'status'    => 0,
             'msg'       => 'SUCCESS',
@@ -2054,6 +2608,9 @@ final class CasinoAggregatorService
         $user = self::userByCode($pdo, (string) ($payload['userCode'] ?? ''));
         if ($user === null) {
             return ['status' => 5, 'msg' => 'INVALID_USER'];
+        }
+        if ((int) ($user['banned'] ?? 0) === 1) {
+            return ['status' => 6, 'msg' => 'BLOCK_USER', '__user_id' => (int) $user['id']];
         }
         $userId = (int) $user['id'];
         $txnCode = trim((string) ($payload['txnCode'] ?? ''));
@@ -2082,12 +2639,16 @@ final class CasinoAggregatorService
 
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare('SELECT id, username, balance FROM users WHERE id = :id AND banned = 0 LIMIT 1 FOR UPDATE');
+            $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
             $stmt->execute([':id' => $userId]);
             $locked = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!is_array($locked)) {
                 $pdo->rollBack();
                 return ['status' => 5, 'msg' => 'INVALID_USER', '__user_id' => $userId];
+            }
+            if ((int) ($locked['banned'] ?? 0) === 1) {
+                $pdo->rollBack();
+                return ['status' => 6, 'msg' => 'BLOCK_USER', '__user_id' => $userId];
             }
 
             $before = round((float) $locked['balance'], 2);
@@ -2177,7 +2738,7 @@ final class CasinoAggregatorService
         }
         $column = ctype_digit($userCode) ? 'id' : 'username';
         try {
-            $stmt = $pdo->prepare("SELECT id, username, balance FROM users WHERE {$column} = :v AND banned = 0 LIMIT 1");
+            $stmt = $pdo->prepare("SELECT id, username, balance, banned FROM users WHERE {$column} = :v LIMIT 1");
             $stmt->execute([':v' => $userCode]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return is_array($row) ? $row : null;

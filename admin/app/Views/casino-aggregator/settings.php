@@ -149,6 +149,18 @@ $apiMode = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 'seam
         </form>
 
         <div class="ca-card">
+            <div style="font-weight:700;margin-bottom:12px">Oyun Kontrolleri</div>
+            <div class="ca-stat">
+                <span>Agent Kontrolleri</span>
+                <a href="<?= $text(AdminAuth::url('/casino-aggregator/agent-settings')) ?>" class="btn btn--xs">Aç</a>
+            </div>
+            <div class="ca-stat">
+                <span>Kullanıcı RTP</span>
+                <a href="<?= $text(AdminAuth::url('/casino-aggregator/user-settings')) ?>" class="btn btn--xs">Aç</a>
+            </div>
+        </div>
+
+        <div class="ca-card">
             <div style="font-weight:700;margin-bottom:12px">Modüller</div>
             <?php
             $moduleLinks = [
