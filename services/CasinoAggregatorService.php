@@ -2392,6 +2392,7 @@ final class CasinoAggregatorService
     {
         self::bootstrap($pdo);
         $cfg = self::configuredConfig($pdo);
+        $moneyAmount = (float) ($input['moneyAmount'] ?? $input['money_amount'] ?? $input['calledMoney'] ?? $input['called_money'] ?? 0);
         $payload = [
             'method'       => 'CallApply',
             'token'        => (string) $cfg['api_token'],
@@ -2409,11 +2410,24 @@ final class CasinoAggregatorService
                 throw new RuntimeException($req . ' zorunludur.');
             }
         }
+        if ($payload['callRtp'] <= 0) {
+            throw new RuntimeException('callRtp zorunludur.');
+        }
+        if ($payload['betAmount'] < 0) {
+            throw new RuntimeException('betAmount geçersiz.');
+        }
+        if ($moneyAmount <= 0) {
+            throw new RuntimeException('Kullanıcıya verilecek kazanç miktarı zorunludur.');
+        }
         $response = self::requestWithConfig($cfg, $payload, 20);
         self::assertSuccess($response, 'CallApply');
-        self::logCallAction($pdo, 'CallApply', $payload, $response, (int) ($response['callId'] ?? 0) ?: null, (float) ($response['calledMoney'] ?? 0));
+        $calledMoney = (float) ($response['calledMoney'] ?? 0);
+        if ($calledMoney <= 0) {
+            $calledMoney = $moneyAmount;
+        }
+        self::logCallAction($pdo, 'CallApply', $payload, $response, (int) ($response['callId'] ?? 0) ?: null, $calledMoney);
         return [
-            'called_money' => (float) ($response['calledMoney'] ?? 0),
+            'called_money' => $calledMoney,
             'call_id'      => (int) ($response['callId'] ?? 0),
             'raw'          => $response,
         ];

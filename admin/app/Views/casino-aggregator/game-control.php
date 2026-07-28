@@ -54,9 +54,13 @@ foreach ($callLogs as $log) {
     .gc-ops { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
     .gc-ops select.input {
         height: 32px; padding: 0 8px; border-radius: 8px; font-size: 12px;
-        width: auto; min-width: 76px; max-width: 120px;
+        width: auto; min-width: 76px; max-width: 140px;
     }
     .gc-ops .gc-id { max-width: 128px; min-width: 96px; }
+    .gc-ops .gc-money {
+        height: 32px; padding: 0 8px; border-radius: 8px; font-size: 12px;
+        width: 96px; min-width: 84px; max-width: 110px;
+    }
     .gc-ops .btn { height: 32px; padding: 0 10px; font-size: 12px; }
     .gc-sep { width:1px; height:22px; background: var(--border); flex:0 0 auto; margin: 0 2px; }
     .gc-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
@@ -70,7 +74,7 @@ foreach ($callLogs as $log) {
     <div class="hero-text">
         <span class="eyebrow">Oyunlar · Casino Aggregator</span>
         <h1 class="hero-title">Game <span class="accent">Control</span></h1>
-        <p class="hero-sub">Canlı oyunculara CallApply / CallCancel — RTP seçip uygula, callId ile iptal et.</p>
+        <p class="hero-sub">Canlı oyunculara CallApply / CallCancel — oran seç, kazanç miktarını gir, uygula.</p>
     </div>
     <div class="hero-actions">
         <span class="badge dot <?= $isActive ? 'success' : 'danger' ?>"><?= $isActive ? 'Aggregator aktif' : 'Aggregator pasif' ?></span>
@@ -192,7 +196,7 @@ foreach ($callLogs as $log) {
                                     <input type="hidden" name="game_code" value="<?= $text($pGame) ?>">
                                     <input type="hidden" name="user_code" value="<?= $text($pUser) ?>">
                                     <input type="hidden" name="currency_code" value="<?= $text($pCur) ?>">
-                                    <input type="hidden" name="bet_amount" value="<?= $text((string) $pBet) ?>">
+                                    <input type="hidden" class="ca-bet-amount" name="bet_amount" value="<?= $text((string) $pBet) ?>">
                                     <input type="hidden" class="ca-call-type-hidden" name="call_type" value="<?= $text($callType) ?>">
 
                                     <select class="input ca-call-type" title="Tip" aria-label="callType">
@@ -200,15 +204,26 @@ foreach ($callLogs as $log) {
                                         <option value="1" <?= $callType === '1' ? 'selected' : '' ?>>Free</option>
                                     </select>
 
-                                    <select name="call_rtp" class="input ca-call-rtp" title="RTP" aria-label="callRtp" <?= $hasCalls ? '' : 'disabled' ?> required>
+                                    <select name="call_rtp" class="input ca-call-rtp" title="Oran (callRtp)" aria-label="callRtp" <?= $hasCalls ? '' : 'disabled' ?> required>
                                         <?php if (!$hasCalls): ?>
-                                            <option value=""><?= $callErr !== '' ? 'Hata' : 'RTP' ?></option>
+                                            <option value=""><?= $callErr !== '' ? 'Hata' : 'Oran' ?></option>
                                         <?php else: ?>
                                             <?php foreach ($callValues as $rtp): ?>
-                                                <option value="<?= $text((string) $rtp) ?>"><?= $text((string) $rtp) ?></option>
+                                                <?php
+                                                $rtpVal = (float) $rtp;
+                                                $estMoney = round($pBet * $rtpVal, 2);
+                                                ?>
+                                                <option value="<?= $text((string) $rtp) ?>" data-money="<?= $text((string) $estMoney) ?>">
+                                                    ×<?= $text(rtrim(rtrim(number_format($rtpVal, 4, '.', ''), '0'), '.') ?: '0') ?> → <?= $text(number_format($estMoney, 2, '.', '')) ?>
+                                                </option>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
                                     </select>
+
+                                    <input class="input gc-money ca-money-amount" type="number" name="money_amount" step="0.01" min="0.01"
+                                           title="Kazanç miktarı" aria-label="Kazanç miktarı" placeholder="Kazanç"
+                                           value="<?= $hasCalls && $pBet > 0 ? $text((string) round($pBet * (float) $callValues[0], 2)) : '' ?>"
+                                           <?= $hasCalls ? 'required' : 'disabled' ?>>
 
                                     <button class="btn btn--primary btn--sm ca-apply-btn" type="submit" <?= $hasCalls ? '' : 'disabled' ?>>Apply</button>
                                 </form>
@@ -392,24 +407,74 @@ foreach ($callLogs as $log) {
         }
     }
 
-    function fill(sel, calls, emptyLabel) {
+    function panelBet(panel) {
+        var betInput = panel.querySelector('.ca-bet-amount');
+        var bet = betInput ? parseFloat(betInput.value || '0') : 0;
+        return Number.isFinite(bet) ? bet : 0;
+    }
+
+    function formatRatio(v) {
+        var n = Number(v);
+        if (!Number.isFinite(n)) return String(v);
+        return String(n);
+    }
+
+    function formatMoney(v) {
+        var n = Number(v);
+        if (!Number.isFinite(n)) return '0.00';
+        return n.toFixed(2);
+    }
+
+    function syncMoneyFromRtp(panel) {
+        var rtpSel = panel.querySelector('.ca-call-rtp');
+        var moneyInput = panel.querySelector('.ca-money-amount');
+        if (!rtpSel || !moneyInput) return;
+        var opt = rtpSel.options[rtpSel.selectedIndex];
+        if (!opt || !opt.value) {
+            moneyInput.value = '';
+            return;
+        }
+        var money = opt.getAttribute('data-money');
+        if (money == null || money === '') {
+            money = formatMoney(panelBet(panel) * parseFloat(opt.value || '0'));
+        }
+        moneyInput.value = money;
+    }
+
+    function fillRtp(sel, calls, bet, emptyLabel, withMoneyLabels) {
         if (!sel) return;
         sel.innerHTML = '';
         if (!calls.length) {
-            var o = document.createElement('option');
-            o.value = '';
-            o.textContent = emptyLabel || 'RTP';
-            sel.appendChild(o);
+            var empty = document.createElement('option');
+            empty.value = '';
+            empty.textContent = emptyLabel || 'Oran';
+            sel.appendChild(empty);
             sel.disabled = true;
             return;
         }
         calls.forEach(function (v) {
+            var rtp = Number(v);
+            var money = Number.isFinite(rtp) ? Math.round(bet * rtp * 100) / 100 : 0;
             var o = document.createElement('option');
             o.value = String(v);
-            o.textContent = String(v);
+            o.setAttribute('data-money', formatMoney(money));
+            o.textContent = withMoneyLabels
+                ? ('×' + formatRatio(v) + ' → ' + formatMoney(money))
+                : formatRatio(v);
             sel.appendChild(o);
         });
         sel.disabled = false;
+    }
+
+    function setMoneyEnabled(panel, enabled) {
+        var moneyInput = panel.querySelector('.ca-money-amount');
+        var btn = panel.querySelector('.ca-apply-btn');
+        if (moneyInput) {
+            moneyInput.disabled = !enabled;
+            moneyInput.required = enabled;
+            if (!enabled) moneyInput.value = '';
+        }
+        if (btn) btn.disabled = !enabled;
     }
 
     function loadCalls(panel) {
@@ -428,20 +493,25 @@ foreach ($callLogs as $log) {
             .then(function (data) {
                 if (!data || !data.ok) throw new Error((data && data.message) || 'GetCallList başarısız');
                 var calls = Array.isArray(data.calls) ? data.calls : [];
-                fill(panel.querySelector('.ca-call-rtp'), calls, 'RTP');
-                fill(panel.querySelector('.ca-cancel-rtp'), calls, 'RTP');
-                var btn = panel.querySelector('.ca-apply-btn');
-                if (btn) btn.disabled = !calls.length;
-                if (!calls.length) {
-                    toast('warning', 'Bu tip için RTP listesi boş.');
+                var bet = panelBet(panel);
+                fillRtp(panel.querySelector('.ca-call-rtp'), calls, bet, 'Oran', true);
+                fillRtp(panel.querySelector('.ca-cancel-rtp'), calls, bet, 'Oran', false);
+                setMoneyEnabled(panel, calls.length > 0);
+                if (calls.length) {
+                    syncMoneyFromRtp(panel);
+                } else {
+                    toast('warning', 'Bu tip için oran listesi boş.');
                 }
             });
     }
 
     document.querySelectorAll('.ca-call-panel').forEach(function (panel) {
         var typeSel = panel.querySelector('.ca-call-type');
+        var rtpSel = panel.querySelector('.ca-call-rtp');
+        var applyForm = panel.querySelector('.ca-apply-form');
         var cancelId = panel.querySelector('.ca-cancel-id');
         var cancelRtp = panel.querySelector('.ca-cancel-rtp');
+
         if (typeSel) {
             typeSel.addEventListener('change', function () {
                 var hidden = panel.querySelector('.ca-call-type-hidden');
@@ -451,6 +521,25 @@ foreach ($callLogs as $log) {
                 });
             });
         }
+
+        if (rtpSel) {
+            rtpSel.addEventListener('change', function () {
+                syncMoneyFromRtp(panel);
+            });
+        }
+
+        if (applyForm) {
+            applyForm.addEventListener('submit', function (event) {
+                var moneyInput = panel.querySelector('.ca-money-amount');
+                var money = moneyInput ? parseFloat(moneyInput.value || '0') : 0;
+                if (!Number.isFinite(money) || money <= 0) {
+                    event.preventDefault();
+                    toast('error', 'Kullanıcıya verilecek kazanç miktarı zorunludur.');
+                    if (moneyInput) moneyInput.focus();
+                }
+            });
+        }
+
         if (cancelId && cancelRtp) {
             cancelId.addEventListener('change', function () {
                 var opt = cancelId.options[cancelId.selectedIndex];
