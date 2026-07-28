@@ -4,16 +4,20 @@ $flash = trim((string) ($flash ?? ''));
 $emailSection = 'send';
 $oldMode = trim((string) ($oldMode ?? 'single'));
 $oldToEmail = trim((string) ($oldToEmail ?? ''));
+$memberEmails = is_array($memberEmails ?? null) ? $memberEmails : [];
+$memberEmailCount = (int) ($memberEmailCount ?? count($memberEmails));
 $oldToEmails = trim((string) ($oldToEmails ?? ''));
+if ($oldToEmails === '' && $memberEmails !== []) {
+    $oldToEmails = implode("\n", $memberEmails);
+}
 $oldSubject = trim((string) ($oldSubject ?? ''));
 $oldBody = trim((string) ($oldBody ?? ''));
-$oldIncludeAllMembers = !empty($oldIncludeAllMembers);
 ?>
 <section class="hero">
     <div class="hero-text">
         <span class="eyebrow">E-posta</span>
         <h1 class="hero-title">E-posta <span class="accent">gönder</span></h1>
-        <p class="hero-sub">Tek alıcı veya toplu liste ile SMTP üzerinden e-posta gönderir; üye bulunan adreslere gelen kutusu mesajı da düşer.</p>
+        <p class="hero-sub">Tek alıcı veya tüm kullanıcıları kapsayan toplu gönderim. Üye bulunan adreslere gelen kutusu mesajı da düşer.</p>
     </div>
 </section>
 
@@ -71,13 +75,12 @@ $oldIncludeAllMembers = !empty($oldIncludeAllMembers);
             </div>
 
             <div class="field span-2" data-compose-bulk <?= $oldMode === 'bulk' ? '' : 'hidden' ?>>
-                <label class="field-label" for="to_emails">Alıcı listesi</label>
-                <textarea id="to_emails" class="textarea" name="to_emails" rows="6" placeholder="her satira bir e-posta&#10;veya virgul / noktali virgul ile ayirin"><?= htmlspecialchars($oldToEmails, ENT_QUOTES, 'UTF-8') ?></textarea>
-                <p class="field-help">Maksimum 200 adres. Geçersiz satırlar atlanır. Aynı adres bir kez gönderilir.</p>
-                <label style="display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-weight:600;cursor:pointer;">
-                    <input type="checkbox" name="include_all_members" value="1" <?= $oldIncludeAllMembers ? 'checked' : '' ?>>
-                    Banlı olmayan tüm üyelerin e-postasını da ekle
+                <label class="field-label" for="to_emails">
+                    Alıcı listesi
+                    <span class="badge primary" style="margin-left:8px;"><?= (int) $memberEmailCount ?> kullanıcı</span>
                 </label>
+                <textarea id="to_emails" class="textarea" name="to_emails" rows="10" readonly><?= htmlspecialchars($oldToEmails, ENT_QUOTES, 'UTF-8') ?></textarea>
+                <p class="field-help">Veritabanındaki e-postası olan tüm kullanıcılar otomatik eklenir. Liste salt okunurdur; gönderimde sunucu yeniden veritabanından çeker.</p>
             </div>
 
             <div class="field span-2">
