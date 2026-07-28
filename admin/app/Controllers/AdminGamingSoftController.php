@@ -12,11 +12,13 @@ final class AdminGamingSoftController extends AdminController
 
         $productsCount = 0;
         $gamesCount = 0;
+        $activeGamesCount = 0;
         $sessionsCount = 0;
         $transactionsCount = 0;
         try {
             $productsCount = (int) $pdo->query('SELECT COUNT(*) FROM gamingsoft_products')->fetchColumn();
             $gamesCount = (int) $pdo->query('SELECT COUNT(*) FROM gamingsoft_games')->fetchColumn();
+            $activeGamesCount = (int) $pdo->query('SELECT COUNT(*) FROM gamingsoft_games WHERE is_active = 1')->fetchColumn();
             $sessionsCount = (int) $pdo->query('SELECT COUNT(*) FROM gamingsoft_sessions')->fetchColumn();
             $transactionsCount = (int) $pdo->query('SELECT COUNT(*) FROM gamingsoft_transactions')->fetchColumn();
         } catch (Throwable) {
@@ -31,7 +33,7 @@ final class AdminGamingSoftController extends AdminController
             'callbackUrl'       => GamingSoftService::callbackBaseUrl($pdo),
             'productsCount'     => $productsCount,
             'gamesCount'        => $gamesCount,
-            'activeGamesCount'  => (int) $pdo->query('SELECT COUNT(*) FROM gamingsoft_games WHERE is_active = 1')->fetchColumn(),
+            'activeGamesCount'  => $activeGamesCount,
             'sessionsCount'     => $sessionsCount,
             'transactionsCount' => $transactionsCount,
             'flash'             => $this->pullFlash(),
@@ -83,6 +85,15 @@ final class AdminGamingSoftController extends AdminController
             $this->flash('Oyun sync hatası: ' . $exception->getMessage());
         }
         $this->redirect(AdminAuth::url('/gamingsoft/settings'));
+    }
+
+    private function ensurePost(): void
+    {
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
     }
 
     private function flash(string $message): void
