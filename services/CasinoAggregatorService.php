@@ -2316,7 +2316,75 @@ final class CasinoAggregatorService
         ], 20);
         self::assertSuccess($response, 'GetCallList');
         $calls = is_array($response['calls'] ?? null) ? $response['calls'] : [];
-        return ['calls' => $calls, 'raw' => $response];
+        $normalized = [];
+        foreach ($calls as $call) {
+            if (is_numeric($call)) {
+                $normalized[] = (float) $call;
+            }
+        }
+        return ['calls' => $normalized, 'raw' => $response, 'call_type' => trim($callType)];
+    }
+
+    /**
+     * Normalize GetCurrentPlayers.requestType → GetCallList.callType.
+     * Spec examples use "0"/"1"; vendors may send "action=doSpin".
+     */
+    public static function normalizeCallType(string $requestType): string
+    {
+        $t = trim($requestType);
+        if ($t === '0' || $t === '1') {
+            return $t;
+        }
+        $lower = strtolower($t);
+        if (str_contains($lower, 'free')) {
+            return '1';
+        }
+        return '0';
+    }
+
+    /**
+     * Try GetCallList with normalized type, then raw, then 0/1 fallbacks.
+     *
+     * @return array{calls: list<float>, call_type: string, error: string}
+     */
+    public static function resolveCallListOptions(
+        PDO $pdo,
+        string $vendorCode,
+        string $gameCode,
+        string $requestType
+    ): array {
+        $candidates = [];
+        $normalized = self::normalizeCallType($requestType);
+        $raw = trim($requestType);
+        foreach ([$normalized, $raw, '0', '1'] as $type) {
+            if ($type === '' || in_array($type, $candidates, true)) {
+                continue;
+            }
+            $candidates[] = $type;
+        }
+
+        $lastError = '';
+        foreach ($candidates as $type) {
+            try {
+                $result = self::getCallList($pdo, $vendorCode, $gameCode, $type);
+                $calls = is_array($result['calls'] ?? null) ? $result['calls'] : [];
+                if ($calls !== []) {
+                    return [
+                        'calls'     => $calls,
+                        'call_type' => $type,
+                        'error'     => '',
+                    ];
+                }
+            } catch (Throwable $e) {
+                $lastError = $e->getMessage();
+            }
+        }
+
+        return [
+            'calls'     => [],
+            'call_type' => $normalized,
+            'error'     => $lastError !== '' ? $lastError : 'GetCallList boş döndü.',
+        ];
     }
 
     /** CallApply */

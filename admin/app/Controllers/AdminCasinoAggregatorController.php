@@ -297,9 +297,32 @@ final class AdminCasinoAggregatorController extends AdminController
         $vendorCode = trim((string) ($_GET['vendor_code'] ?? ''));
         $players = [];
         $playersError = '';
+        $callOptions = [];
         if ($vendorCode !== '') {
             try {
                 $players = CasinoAggregatorService::getCurrentPlayers($pdo, $vendorCode)['players'] ?? [];
+                if (!is_array($players)) {
+                    $players = [];
+                }
+                foreach ($players as $idx => $player) {
+                    if (!is_array($player)) {
+                        continue;
+                    }
+                    $pVendor = trim((string) ($player['vendorCode'] ?? $vendorCode));
+                    $pGame = trim((string) ($player['gameCode'] ?? ''));
+                    $pType = (string) ($player['requestType'] ?? '0');
+                    $cacheKey = $pVendor . '|' . $pGame . '|' . $pType;
+                    if (!isset($callOptions[$cacheKey])) {
+                        $callOptions[$cacheKey] = CasinoAggregatorService::resolveCallListOptions(
+                            $pdo,
+                            $pVendor,
+                            $pGame,
+                            $pType
+                        );
+                    }
+                    $players[$idx]['_call_options'] = $callOptions[$cacheKey];
+                    $players[$idx]['_call_type'] = (string) ($callOptions[$cacheKey]['call_type'] ?? CasinoAggregatorService::normalizeCallType($pType));
+                }
             } catch (Throwable $e) {
                 $playersError = $e->getMessage();
             }
@@ -376,21 +399,25 @@ final class AdminCasinoAggregatorController extends AdminController
     public function callList(): void
     {
         $this->requirePermission('casino-aggregator-settings');
-        $this->ensurePost();
         header('Content-Type: application/json; charset=utf-8');
         try {
-            if (!AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
                 http_response_code(419);
                 echo json_encode(['ok' => false, 'message' => 'CSRF'], JSON_UNESCAPED_UNICODE);
                 return;
             }
-            $result = CasinoAggregatorService::getCallList(
+            $result = CasinoAggregatorService::resolveCallListOptions(
                 AdminDatabase::pdo(),
                 (string) ($_POST['vendor_code'] ?? ''),
                 (string) ($_POST['game_code'] ?? ''),
-                (string) ($_POST['call_type'] ?? '0')
+                (string) ($_POST['call_type'] ?? $_POST['request_type'] ?? '0')
             );
-            echo json_encode(['ok' => true, 'calls' => $result['calls'] ?? []], JSON_UNESCAPED_UNICODE);
+            echo json_encode([
+                'ok'        => true,
+                'calls'     => $result['calls'] ?? [],
+                'call_type' => $result['call_type'] ?? '0',
+                'error'     => $result['error'] ?? '',
+            ], JSON_UNESCAPED_UNICODE);
         } catch (Throwable $e) {
             http_response_code(422);
             echo json_encode(['ok' => false, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
