@@ -498,8 +498,24 @@ final class SlotGamesQuery
         $source       = strtolower(trim((string) ($query['source'] ?? '')));
 
         $union = [];
-        // Slot lobby policy: only Casino Aggregator games are public.
-        // BGaming stays available for backend/admin flows, but not frontend slots.
+        // Dedicated BGaming page (`source=bgaming`) must keep serving BGaming
+        // catalogue rows from local DB.
+        if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
+            $union[] = "SELECT
+                    CONCAT('bgaming:', g.identifier) AS game_id,
+                    COALESCE(NULLIF(g.title, ''), g.identifier) AS name,
+                    COALESCE(NULLIF(g.provider, ''), 'BGaming') AS provider,
+                    COALESCE(NULLIF(g.provider, ''), 'bgaming') AS provider_code,
+                    COALESCE(NULLIF(g.thumbnail_url, ''), '') AS image_url,
+                    CAST('' AS CHAR) AS image_fallbacks,
+                    g.is_featured AS is_featured,
+                    'bgaming' AS source,
+                    CAST(g.id AS CHAR) AS row_id,
+                    CAST('' AS CHAR) AS raw_payload
+                FROM bgaming_games g
+                WHERE g.is_active = 1";
+        }
+
         $aggGameType = $gameType === 1 ? 2 : 1;
         if ($source === '' || $source === 'aggregator') {
             if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {

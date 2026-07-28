@@ -186,7 +186,24 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     // Also: never UNION branches that mix JSON columns (raw_payload / image_fallbacks)
     // with VARCHAR literals — MySQL rejects the mix and the old catch{} returned an empty list.
     $branches = [];
-    // Frontend slot lobby policy: only Casino Aggregator is exposed publicly.
+    if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
+        $branches[] = "SELECT
+                CONCAT('bgaming:', g.identifier) AS game_id,
+                COALESCE(NULLIF(g.title, ''), g.identifier) AS name,
+                COALESCE(NULLIF(g.provider, ''), 'BGaming') AS provider,
+                COALESCE(NULLIF(g.provider, ''), 'bgaming') AS provider_code,
+                COALESCE(NULLIF(g.thumbnail_url, ''), '') AS image_url,
+                CAST('' AS CHAR) AS image_fallbacks,
+                g.is_featured AS is_featured,
+                'bgaming' AS source,
+                CAST(g.id AS CHAR) AS row_id,
+                CAST('' AS CHAR) AS raw_payload
+            FROM bgaming_games g
+            WHERE g.is_active = 1";
+    }
+
+    // Frontend slot lobby keeps serving aggregator games, while dedicated BGaming
+    // pages use `source=bgaming` to fetch only BGaming rows.
     $aggGameType = $gameType === 1 ? 2 : 1;
     if ($source === '' || $source === 'aggregator') {
         if ($gameType === 1) {
