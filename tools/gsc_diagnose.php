@@ -226,6 +226,10 @@ foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
 }
 
 echo "\n== Canli launch denemesi (aktif her canli urun icin 1 oyun) ==\n";
+echo "  NOT: CLI'da CF-Connecting-IP/X-Forwarded-For/REMOTE_ADDR bulunmaz, launch()\n";
+echo "  burada 127.0.0.1 gonderir. Gercek tarayicidan farkli bir IP gider; asagidaki\n";
+echo "  'ACILDI' sonuclari GSC+ API'nin kabul ettigini gosterir, tarayicida\n";
+echo "  saglayicinin (orn. Pragmatic) IP tutarliligini kontrol edip etmedigini degil.\n\n";
 $userStmt = $pdo->query('SELECT id, username, balance, banned FROM users WHERE banned = 0 ORDER BY id DESC LIMIT 1');
 $probeUser = $userStmt ? $userStmt->fetch(PDO::FETCH_ASSOC) : false;
 if (!is_array($probeUser)) {

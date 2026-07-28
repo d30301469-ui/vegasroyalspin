@@ -1035,7 +1035,17 @@ final class GscPlusService
         $gameType = strtoupper(trim((string) ($gameRow['game_type'] ?? 'SLOT')));
         $platform = self::resolvePlatform($input);
         $languageCode = (int) ($cfg['language_code'] ?? 0);
-        $ip = trim((string) ($input['ip'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'));
+        // The frontend never sends an explicit "ip" field, so this fell straight
+        // through to $_SERVER['REMOTE_ADDR'] — the Cloudflare edge IP on this
+        // stack, not the player's. Providers that IP-lock a launched session
+        // (Pragmatic Play games showing "It seems you are not logged in." right
+        // after opening match this exactly) then reject it because the IP sent
+        // at launch never matches the player's real IP once the game client
+        // connects. Same detection chain BgamingService already relies on.
+        $ip = trim((string) ($input['ip'] ?? ''));
+        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            $ip = self::clientIp();
+        }
         $lobbyUrl = self::resolveLobbyUrl($cfg, $input);
 
         $requestTime = (string) time();
@@ -1942,6 +1952,33 @@ final class GscPlusService
         } catch (Throwable $e) {
             error_log('[GSC+] launch failure log write failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Prefers the project-wide metropol_cloudflare_client_ip() (config/cloudflare.php)
+     * used everywhere else this stack cares about the real visitor IP; falls back to
+     * the same CF-Connecting-IP → X-Forwarded-For → REMOTE_ADDR chain BgamingService
+     * uses if that helper isn't loaded in this request.
+     */
+    private static function clientIp(): string
+    {
+        if (function_exists('metropol_cloudflare_client_ip')) {
+            $ip = metropol_cloudflare_client_ip();
+            if ($ip !== '') {
+                return $ip;
+            }
+        }
+        foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'] as $key) {
+            $value = trim((string) ($_SERVER[$key] ?? ''));
+            if ($value === '') {
+                continue;
+            }
+            $ip = trim(explode(',', $value)[0]);
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+        return '127.0.0.1';
     }
 
     public static function memberAccountFromUser(array $user): string
