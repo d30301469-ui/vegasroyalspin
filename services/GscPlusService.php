@@ -593,6 +593,15 @@ final class GscPlusService
                 }
 
                 $action = strtoupper(trim((string) ($tx['action'] ?? '')));
+                if (!self::isKnownAction($action)) {
+                    $pdo->rollBack();
+                    return [
+                        'before_balance' => $batchBefore,
+                        'balance' => $batchBefore,
+                        'code' => 999,
+                        'message' => 'Invalid action',
+                    ];
+                }
                 $providerAmount = (float) ($tx['amount'] ?? 0);
                 $deltaWallet = self::resolveWalletDelta($direction, $action, $providerAmount, $currency);
                 $before = $balance;
@@ -700,6 +709,14 @@ final class GscPlusService
             }
             throw $e;
         }
+    }
+
+    /** Only the appendix Transaction Action Types are accepted (e.g. rejects INVALID_ACTION). */
+    private static function isKnownAction(string $action): bool
+    {
+        return in_array($action, self::DEBIT_ACTIONS, true)
+            || in_array($action, self::CREDIT_ACTIONS, true)
+            || in_array($action, self::SIGNED_ACTIONS, true);
     }
 
     private static function resolveWalletDelta(string $direction, string $action, float $providerAmount, string $currency): float
