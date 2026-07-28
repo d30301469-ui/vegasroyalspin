@@ -7,6 +7,7 @@ require_once __DIR__ . '/../core/bootstrap.php';
 require_once SERVICE_PATH . '/LiveCasinoQuery.php';
 require_once SERVICE_PATH . '/ProviderDisplayBadgeMap.php';
 require_once SERVICE_PATH . '/CasinoAggregatorService.php';
+require_once SERVICE_PATH . '/GamingSoftService.php';
 
 $searchTerm = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
 $selectedProviders = array_values(array_filter(array_map(

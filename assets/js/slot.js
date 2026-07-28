@@ -402,7 +402,7 @@
             return '';
         }
         var gid = String(game.game_id || game.gameId || '').trim();
-        if (gid.indexOf('aggregator:') === 0 || gid.indexOf('bgaming:') === 0) {
+        if (gid.indexOf('gamingsoft:') === 0 || gid.indexOf('aggregator:') === 0 || gid.indexOf('bgaming:') === 0) {
             return gid;
         }
         if (gid.indexOf(':') !== -1) {
@@ -411,6 +411,9 @@
         var source = String(game.source || '').trim().toLowerCase();
         var productCode = String(game.product_code || game.provider_code || '').trim();
         var gameCode = String(game.game_code || game.slug || '').trim();
+        if ((source === 'gamingsoft' || source === 'gsc' || source === 'gsc+') && productCode !== '' && gameCode !== '') {
+            return 'gamingsoft:' + productCode + ':' + gameCode;
+        }
         if (source === 'aggregator' && productCode !== '' && gameCode !== '') {
             return 'aggregator:' + productCode + ':' + gameCode;
         }

@@ -26,6 +26,8 @@ $isWriteProtectedTable = in_array($table, [
     'bgaming_config',
     'bgaming_transactions',
     'bgaming_wallet_logs',
+    'gamingsoft_wallet_logs',
+    'gamingsoft_transactions',
     'casino_aggregator_wallet_logs',
 ], true);
 $actionColumnWidth = in_array($moduleKey, ['withdrawals', 'promocode-requests'], true)

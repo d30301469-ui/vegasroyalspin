@@ -29,7 +29,7 @@ $memberUserById ??= static fn (\PDO $p, int $id): ?array => null;
 if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/providers', 'live-casino/providers', 'games-provider', 'games_provider.php'], true)) {
     $pdo = AdminDatabase::pdo();
     admin_require_project_file('services/CasinoAggregatorService.php');
-    // 0 = slot lobby, 1 = live casino.
+    // 0 = slot lobby (BGaming), 1 = live casino.
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
     if ($route === 'live-casino/providers') {
         $gameType = 1;
@@ -147,7 +147,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             [
                 // Always hit local DB on the admin API host — never recurse via BackendApiClient.
                 'force_local' => true,
-                'source' => in_array($source, ['aggregator'], true) ? $source : '',
+                'source' => in_array($source, ['gamingsoft', 'gsc', 'gsc+', 'aggregator'], true) ? $source : '',
                 'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
             ]
         );
@@ -185,67 +185,22 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     //
     // Also: never UNION branches that mix JSON columns (raw_payload / image_fallbacks)
     // with VARCHAR literals — MySQL rejects the mix and the old catch{} returned an empty list.
-    $tableHasColumn = static function (PDO $pdo, string $table, string $column): bool {
-        static $cache = [];
-        $key = strtolower($table . '.' . $column);
-        if (array_key_exists($key, $cache)) {
-            return $cache[$key];
-        }
-        try {
-            $stmt = $pdo->prepare(
-                'SELECT 1
-                 FROM INFORMATION_SCHEMA.COLUMNS
-                 WHERE TABLE_SCHEMA = DATABASE()
-                   AND TABLE_NAME = :table
-                   AND COLUMN_NAME = :column
-                 LIMIT 1'
-            );
-            $stmt->execute([
-                ':table' => $table,
-                ':column' => $column,
-            ]);
-            $cache[$key] = (bool) $stmt->fetchColumn();
-        } catch (Throwable) {
-            $cache[$key] = false;
-        }
-
-        return $cache[$key];
-    };
-
     $branches = [];
     if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
-        $titleCol = $tableHasColumn($pdo, 'bgaming_games', 'title')
-            ? 'title'
-            : ($tableHasColumn($pdo, 'bgaming_games', 'name') ? 'name' : '');
-        $providerCol = $tableHasColumn($pdo, 'bgaming_games', 'provider')
-            ? 'provider'
-            : ($tableHasColumn($pdo, 'bgaming_games', 'producer') ? 'producer' : '');
-        $imageCol = $tableHasColumn($pdo, 'bgaming_games', 'thumbnail_url')
-            ? 'thumbnail_url'
-            : ($tableHasColumn($pdo, 'bgaming_games', 'image_url') ? 'image_url' : '');
-        $featuredExpr = $tableHasColumn($pdo, 'bgaming_games', 'is_featured') ? 'g.is_featured' : '0';
-        $nameExpr = $titleCol !== '' ? "COALESCE(NULLIF(g.{$titleCol}, ''), g.identifier)" : 'g.identifier';
-        $providerExpr = $providerCol !== '' ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'BGaming')" : "'BGaming'";
-        $providerCodeExpr = $providerCol !== '' ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'bgaming')" : "'bgaming'";
-        $imageExpr = $imageCol !== '' ? "COALESCE(NULLIF(g.{$imageCol}, ''), '')" : "CAST('' AS CHAR)";
-
         $branches[] = "SELECT
-                CONCAT('bgaming:', g.identifier) AS game_id,
-                {$nameExpr} AS name,
-                {$providerExpr} AS provider,
-                {$providerCodeExpr} AS provider_code,
-                {$imageExpr} AS image_url,
+                CONCAT('bgaming:', identifier) AS game_id,
+                title AS name,
+                provider AS provider,
+                provider AS provider_code,
+                COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
                 CAST('' AS CHAR) AS image_fallbacks,
-                {$featuredExpr} AS is_featured,
+                is_featured AS is_featured,
                 'bgaming' AS source,
-                CAST(g.id AS CHAR) AS row_id,
+                CAST(id AS CHAR) AS row_id,
                 CAST('' AS CHAR) AS raw_payload
-            FROM bgaming_games g
-            WHERE g.is_active = 1";
+            FROM bgaming_games
+            WHERE is_active = 1";
     }
-
-    // Frontend slot lobby keeps serving aggregator games, while dedicated BGaming
-    // pages use `source=bgaming` to fetch only BGaming rows.
     $aggGameType = $gameType === 1 ? 2 : 1;
     if ($source === '' || $source === 'aggregator') {
         if ($gameType === 1) {
@@ -254,13 +209,12 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             } catch (Throwable) {
             }
         }
-        // Historical aggregator slot rows can be stored as game_type=0.
-        $typeClause = $gameType === 1 ? "g.game_type = {$aggGameType}" : "(g.game_type IN (0, {$aggGameType}))";
+        $typeClause = "g.game_type = {$aggGameType}";
         $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
         if ($gameType === 1) {
             $typeClause = "(g.game_type = {$aggGameType} OR {$liveMatch})";
         } else {
-            $typeClause = "((g.game_type IN (0, {$aggGameType})) AND NOT {$liveMatch})";
+            $typeClause = "(g.game_type = {$aggGameType} AND NOT {$liveMatch})";
         }
         $branches[] = "SELECT
                 CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
@@ -277,6 +231,33 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
             WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
     }
+    if ($source === '' || $source === 'gamingsoft') {
+        admin_require_project_file('services/GamingSoftService.php');
+        $gsTypeExpr = "CASE
+            WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM','LC','LIVE','LIVE CASINO','LIVE-CASINO')
+              OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
+              OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
+              OR UPPER(TRIM(g.game_type)) LIKE '%LIVE CASINO%'
+            THEN 2 ELSE 1 END";
+        $gsTypeClause = $gameType === 1
+            ? "({$gsTypeExpr}) = 2"
+            : "({$gsTypeExpr}) = 1";
+        $branches[] = "SELECT
+                CONCAT('gamingsoft:', g.product_code, ':', g.game_code) AS game_id,
+                g.game_name AS name,
+                COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
+                CAST(g.product_code AS CHAR) AS provider_code,
+                COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                CAST('' AS CHAR) AS image_fallbacks,
+                g.is_featured AS is_featured,
+                'gamingsoft' AS source,
+                CAST(g.id AS CHAR) AS row_id,
+                CAST('' AS CHAR) AS raw_payload
+            FROM gamingsoft_games g
+            LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
+            WHERE g.is_active = 1 AND {$gsTypeClause}";
+    }
+
     if ($branches === []) {
         $memberEnvelope(200, [
             'success' => true,
@@ -368,11 +349,12 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             $imageUrl = (string) ($media['cover'] ?? '');
             $imageFallbacks = is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [];
             $gameIdStr = (string) ($r['game_id'] ?? '');
+            $gsParsed = GamingSoftService::parseGameId($gameIdStr);
             $allGames[] = [
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => $gameIdStr,
-                'product_code'  => 0,
-                'game_code'     => '',
+                'product_code'  => is_array($gsParsed) ? (int) ($gsParsed['product_code'] ?? 0) : 0,
+                'game_code'     => is_array($gsParsed) ? (string) ($gsParsed['game_code'] ?? '') : '',
                 'name'          => $gameName,
                 'title'         => $gameName,
                 'cover'         => $imageUrl,
@@ -964,13 +946,15 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         $gameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
 
         // Some catalogue links pass the bare provider game id without a
-        // "bgaming:" / "aggregator:" prefix. Resolve the owning provider from the
+        // "bgaming:" / "aggregator:" / "gamingsoft:" prefix. Resolve the owning provider from the
         // database so the launch still routes correctly.
         admin_require_project_file('services/CasinoAggregatorService.php');
+        admin_require_project_file('services/GamingSoftService.php');
         if (
             $gameId !== ''
             && !BgamingService::ownsGameId($gameId)
             && !CasinoAggregatorService::ownsGameId($gameId)
+            && !GamingSoftService::ownsGameId($gameId)
         ) {
             $resolvePdo = AdminDatabase::pdo();
             try {
@@ -981,7 +965,25 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                 }
             } catch (Throwable) {
             }
-            if (!CasinoAggregatorService::ownsGameId($gameId)) {
+            if (!CasinoAggregatorService::ownsGameId($gameId) && !GamingSoftService::ownsGameId($gameId)) {
+                try {
+                    if (ctype_digit($gameId)) {
+                        $gsById = $resolvePdo->prepare(
+                            'SELECT product_code, game_code FROM gamingsoft_games WHERE id = :id LIMIT 1'
+                        );
+                        $gsById->execute([':id' => (int) $gameId]);
+                        $gsRow = $gsById->fetch(PDO::FETCH_ASSOC);
+                        if (is_array($gsRow)) {
+                            $gameId = GamingSoftService::buildGameId(
+                                (int) ($gsRow['product_code'] ?? 0),
+                                (string) ($gsRow['game_code'] ?? '')
+                            );
+                        }
+                    }
+                } catch (Throwable) {
+                }
+            }
+            if (!CasinoAggregatorService::ownsGameId($gameId) && !GamingSoftService::ownsGameId($gameId)) {
                 try {
                     $parts = explode(':', $gameId, 2);
                     if (count($parts) === 2) {
@@ -996,7 +998,32 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                 } catch (Throwable) {
                 }
             }
+            if (!CasinoAggregatorService::ownsGameId($gameId) && !GamingSoftService::ownsGameId($gameId)) {
+                try {
+                    $parts = explode(':', $gameId, 2);
+                    if (count($parts) === 2 && is_numeric($parts[0])) {
+                        $gsStmt = $resolvePdo->prepare(
+                            'SELECT 1 FROM gamingsoft_games WHERE product_code = :pc AND game_code = :gc LIMIT 1'
+                        );
+                        $gsStmt->execute([':pc' => (int) $parts[0], ':gc' => $parts[1]]);
+                        if ($gsStmt->fetchColumn()) {
+                            $gameId = GamingSoftService::buildGameId((int) $parts[0], $parts[1]);
+                        }
+                    }
+                } catch (Throwable) {
+                }
+            }
             $input['game_id'] = $gameId;
+        }
+
+        if (GamingSoftService::ownsGameId($gameId)) {
+            $result = GamingSoftService::launch(AdminDatabase::pdo(), $user, $input);
+            $result = $normalizeLaunchResult($result, $requestedOpenMode);
+            $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
+            if ($httpCode >= 500 && $httpCode !== 503) {
+                $httpCode = 422;
+            }
+            $memberEnvelope($httpCode, $result);
         }
 
         if (CasinoAggregatorService::ownsGameId($gameId)) {
@@ -1028,7 +1055,9 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         $providerLabel = 'Oyun';
         $launchGameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
         if ($launchGameId !== '') {
-            if (CasinoAggregatorService::ownsGameId($launchGameId)) {
+            if (GamingSoftService::ownsGameId($launchGameId)) {
+                $providerLabel = 'GamingSoft';
+            } elseif (CasinoAggregatorService::ownsGameId($launchGameId)) {
                 $providerLabel = 'Casino Aggregator';
             } elseif (BgamingService::ownsGameId($launchGameId)) {
                 $providerLabel = 'BGaming';
