@@ -44,6 +44,22 @@ if (!function_exists('metropol_mail_fetch_inbox')) {
     function metropol_mail_fetch_inbox(array $settings, int $limit = 40): array
     {
         if (!metropol_mail_imap_available()) {
+            $disabled = (string) ini_get('disable_functions');
+            $imapDisabled = extension_loaded('imap')
+                && (
+                    stripos($disabled, 'imap_open') !== false
+                    || !function_exists('imap_open')
+                );
+            if ($imapDisabled) {
+                return [
+                    'ok' => false,
+                    'error' => 'IMAP eklentisi yüklü ama imap_open disable_functions ile engellenmiş. '
+                        . 'aaPanel → App Store → PHP 8.3 → Settings → Disable Function(s) listesinden '
+                        . 'imap_open satırını sil → Save → PHP-FPM 83 Restart. '
+                        . 'Tanı: ' . metropol_mail_imap_diagnostics(),
+                    'messages' => [],
+                ];
+            }
             return [
                 'ok' => false,
                 'error' => 'PHP imap eklentisi bu site PHP sürecinde yok. '
