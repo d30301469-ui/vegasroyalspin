@@ -591,15 +591,12 @@ final class GamingSoftService
         $memberAccount = self::memberAccountFromUser($user);
         $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
         $launchPassword = self::memberLaunchPassword($pdo, $userId, $memberAccount, (string) $cfg['secret_key']);
-        $memberAccountCandidates = [$memberAccount];
-        $usernameAccount = trim((string) ($user['username'] ?? ''));
-        if ($usernameAccount !== '' && strlen($usernameAccount) <= 50) {
-            $memberAccountCandidates[] = $usernameAccount;
-        }
-        $memberAccountCandidates = array_values(array_unique(array_filter(
-            array_map(static fn ($v): string => trim((string) $v), $memberAccountCandidates),
-            static fn (string $v): bool => $v !== ''
-        )));
+        $launchPasswordCandidates = self::memberLaunchPasswordCandidates(
+            $pdo,
+            $userId,
+            $memberAccount,
+            (string) $cfg['secret_key']
+        );
 
         // Product row is authoritative for launch mode (entry_type) and game_type.
         $targetCurrency = self::resolveOperatorCurrency($cfg);
@@ -723,13 +720,12 @@ final class GamingSoftService
         $payload = [];
         $resolvedMemberAccount = $memberAccount;
         $resolvedLaunchPassword = $launchPassword;
-        foreach ($memberAccountCandidates as $memberAttempt) {
-            $memberAttemptPassword = self::memberLaunchPassword($pdo, $userId, $memberAttempt, (string) $cfg['secret_key']);
+        foreach ($launchPasswordCandidates as $memberAttemptPassword) {
             foreach ($launchAttempts as $attempt) {
                 $requestTime = self::requestTimeSeconds();
                 $payload = self::buildLaunchPayload(
                     $cfg,
-                    $memberAttempt,
+                    $memberAccount,
                     $memberAttemptPassword,
                     $nickname,
                     $currency,
@@ -753,7 +749,6 @@ final class GamingSoftService
                 if ($code === 200 || $code === 0) {
                     $gameType = $attempt['game_type'];
                     $gameCode = $attempt['game_code'];
-                    $resolvedMemberAccount = $memberAttempt;
                     $resolvedLaunchPassword = $memberAttemptPassword;
                     break 2;
                 }
@@ -1594,40 +1589,52 @@ final class GamingSoftService
 
     private static function memberLaunchPassword(PDO $pdo, int $userId, string $memberAccount, string $secretKey): string
     {
-        $password = '';
+        $candidates = self::memberLaunchPasswordCandidates($pdo, $userId, $memberAccount, $secretKey);
+
+        return $candidates[0] ?? md5($memberAccount . $secretKey);
+    }
+
+    /** @return list<string> */
+    private static function memberLaunchPasswordCandidates(PDO $pdo, int $userId, string $memberAccount, string $secretKey): array
+    {
+        $candidates = [];
+        $add = static function (string $value) use (&$candidates): void {
+            $value = strtolower(trim($value));
+            if (preg_match('/^[a-f0-9]{32}$/', $value) !== 1) {
+                return;
+            }
+            if (!in_array($value, $candidates, true)) {
+                $candidates[] = $value;
+            }
+        };
+
         if ($userId > 0) {
             try {
                 $stmt = $pdo->prepare('SELECT password FROM users WHERE id = :id LIMIT 1');
                 $stmt->execute([':id' => $userId]);
                 $stored = trim((string) ($stmt->fetchColumn() ?: ''));
-                if ($stored !== '') {
-                    $lower = strtolower($stored);
-                    if (preg_match('/^[a-f0-9]{32}$/', $lower) === 1) {
-                        $password = $lower;
-                    }
-                }
+                $add($stored);
             } catch (Throwable) {
             }
         }
 
-        if ($userId > 0) {
+        if ($memberAccount !== '') {
             try {
                 $stmt = $pdo->prepare(
-                    'SELECT launch_password FROM gamingsoft_member_accounts WHERE user_id = :id LIMIT 1'
+                    'SELECT launch_password FROM gamingsoft_member_accounts
+                     WHERE member_account = :ma LIMIT 1'
                 );
-                $stmt->execute([':id' => $userId]);
-                $stored = strtolower(trim((string) ($stmt->fetchColumn() ?: '')));
-                if ($password === '' && preg_match('/^[a-f0-9]{32}$/', $stored) === 1) {
-                    return $stored;
-                }
+                $stmt->execute([':ma' => $memberAccount]);
+                $stored = trim((string) ($stmt->fetchColumn() ?: ''));
+                $add($stored);
             } catch (Throwable) {
             }
         }
 
-        if ($password === '') {
-            $password = md5($memberAccount . $secretKey);
-        }
+        $derived = md5($memberAccount . $secretKey);
+        $add($derived);
 
+        $password = $candidates[0] ?? $derived;
         if ($userId > 0) {
             try {
                 $pdo->prepare(
@@ -1645,7 +1652,7 @@ final class GamingSoftService
             }
         }
 
-        return $password;
+        return $candidates !== [] ? $candidates : [$derived];
     }
 
     private static function userByMemberAccount(PDO $pdo, string $memberAccount): ?array
