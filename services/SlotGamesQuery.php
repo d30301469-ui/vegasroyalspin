@@ -14,6 +14,14 @@ if (!class_exists('CasinoAggregatorService', false)) {
         require_once $aggregatorServicePath;
     }
 }
+if (!class_exists('GscPlusService', false)) {
+    $gscServicePath = is_file(__DIR__ . '/GscPlusService.php')
+        ? __DIR__ . '/GscPlusService.php'
+        : dirname(__DIR__) . '/services/GscPlusService.php';
+    if (is_file($gscServicePath)) {
+        require_once $gscServicePath;
+    }
+}
 
 final class SlotGamesQuery
 {
@@ -515,6 +523,25 @@ final class SlotGamesQuery
                     CAST('' AS CHAR) AS raw_payload
                 FROM bgaming_games g
                 WHERE g.is_active = 1";
+        }
+
+        if (($source === '' || $source === 'gsc') && self::tableHasColumn($pdo, 'gsc_games', 'game_code')) {
+            $gscTypeClause = $gameType === 1
+                ? "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')"
+                : "UPPER(g.game_type) NOT IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM','SPORT_BOOK','VIRTUAL_SPORT','ESPORT')";
+            $union[] = "SELECT
+                    CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
+                    g.game_name AS name,
+                    COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
+                    CAST(g.product_code AS CHAR) AS provider_code,
+                    COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                    CAST('' AS CHAR) AS image_fallbacks,
+                    g.is_featured AS is_featured,
+                    'gsc' AS source,
+                    CAST(g.id AS CHAR) AS row_id,
+                    CAST('' AS CHAR) AS raw_payload
+                FROM gsc_games g
+                WHERE g.is_active = 1 AND g.game_code <> '_lobby' AND {$gscTypeClause}";
         }
 
         $aggGameType = $gameType === 1 ? 2 : 1;

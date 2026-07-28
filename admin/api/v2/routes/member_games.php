@@ -967,10 +967,12 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         // "bgaming:" / "aggregator:" prefix. Resolve the owning provider from the
         // database so the launch still routes correctly.
         admin_require_project_file('services/CasinoAggregatorService.php');
+        admin_require_project_file('services/GscPlusService.php');
         if (
             $gameId !== ''
             && !BgamingService::ownsGameId($gameId)
             && !CasinoAggregatorService::ownsGameId($gameId)
+            && !GscPlusService::ownsGameId($gameId)
         ) {
             $resolvePdo = AdminDatabase::pdo();
             try {
@@ -981,7 +983,7 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                 }
             } catch (Throwable) {
             }
-            if (!CasinoAggregatorService::ownsGameId($gameId)) {
+            if (!CasinoAggregatorService::ownsGameId($gameId) && !GscPlusService::ownsGameId($gameId)) {
                 try {
                     $parts = explode(':', $gameId, 2);
                     if (count($parts) === 2) {
@@ -991,12 +993,30 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                         $aggStmt->execute([':v' => $parts[0], ':g' => $parts[1]]);
                         if ($aggStmt->fetchColumn()) {
                             $gameId = CasinoAggregatorService::buildGameId($parts[0], $parts[1]);
+                        } elseif (ctype_digit($parts[0])) {
+                            $gscStmt = $resolvePdo->prepare(
+                                'SELECT 1 FROM gsc_games WHERE product_code = :p AND game_code = :g LIMIT 1'
+                            );
+                            $gscStmt->execute([':p' => (int) $parts[0], ':g' => $parts[1]]);
+                            if ($gscStmt->fetchColumn()) {
+                                $gameId = GscPlusService::buildGameId((int) $parts[0], $parts[1]);
+                            }
                         }
                     }
                 } catch (Throwable) {
                 }
             }
             $input['game_id'] = $gameId;
+        }
+
+        if (GscPlusService::ownsGameId($gameId)) {
+            $result = GscPlusService::launch(AdminDatabase::pdo(), $user, $input);
+            $result = $normalizeLaunchResult($result, $requestedOpenMode);
+            $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
+            if ($httpCode >= 500 && $httpCode !== 503) {
+                $httpCode = 422;
+            }
+            $memberEnvelope($httpCode, $result);
         }
 
         if (CasinoAggregatorService::ownsGameId($gameId)) {
@@ -1028,7 +1048,9 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         $providerLabel = 'Oyun';
         $launchGameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
         if ($launchGameId !== '') {
-            if (CasinoAggregatorService::ownsGameId($launchGameId)) {
+            if (class_exists('GscPlusService', false) && GscPlusService::ownsGameId($launchGameId)) {
+                $providerLabel = 'GSC+';
+            } elseif (CasinoAggregatorService::ownsGameId($launchGameId)) {
                 $providerLabel = 'Casino Aggregator';
             } elseif (BgamingService::ownsGameId($launchGameId)) {
                 $providerLabel = 'BGaming';

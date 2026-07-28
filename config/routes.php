@@ -34,6 +34,11 @@ return static function (Router $router): void {
         $router->any('/api/v2/casino-aggregator-wallet', [$aggregator, '__invoke'], $backend);
         $router->any('/api/v2/casino-aggregator-wallet/{any}', [$aggregator, '__invoke'], $backend);
     }
+    if (class_exists(\App\Http\Controllers\Callback\GamingSoftCallbackController::class)) {
+        $gamingSoft = new \App\Http\Controllers\Callback\GamingSoftCallbackController();
+        $router->any('/api/v2/gamingsoft-wallet', [$gamingSoft, '__invoke'], $backend);
+        $router->any('/api/v2/gamingsoft-wallet/{any}', [$gamingSoft, '__invoke'], $backend);
+    }
     $router->any('/api/v2/{any}', [new PublicMemberApiController(), '__invoke'], $security);
     $router->any('/api/member/{any}', [new PublicMemberApiController(), '__invoke'], $security);
     $router->any('/api/content/{any}', [new PublicMemberApiController(), 'content'], $security);

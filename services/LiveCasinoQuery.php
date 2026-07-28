@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/BackendApiClient.php';
 
 /**
- * Live casino catalogue query (Casino Aggregator only).
+ * Live casino catalogue query (Casino Aggregator + GSC+).
  */
 final class LiveCasinoQuery
 {
@@ -124,52 +124,44 @@ final class LiveCasinoQuery
         try {
             self::ensureDependencies();
             $pdo = self::pdo();
-            if (!self::tableExists($pdo, 'casino_aggregator_games') || !self::tableExists($pdo, 'casino_aggregator_vendors')) {
+            $hasAggregator = self::tableExists($pdo, 'casino_aggregator_games') && self::tableExists($pdo, 'casino_aggregator_vendors');
+            $hasGsc = self::tableExists($pdo, 'gsc_games');
+            if (!$hasAggregator && !$hasGsc) {
                 return self::emptyResult($limit, $page);
             }
 
             $offset = ($page - 1) * $limit;
+            $unions = [];
             $params = [];
-            $where = ["g.is_active = 1", "v.is_active = 1"];
-            $liveMatch = class_exists('CasinoAggregatorService', false)
-                ? CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code')
-                : '0';
-            $where[] = "(g.game_type = 2 OR {$liveMatch})";
 
-            if ($searchTerm !== '') {
-                $where[] = '(g.game_name LIKE :search OR v.vendor_name LIKE :search2 OR g.game_code LIKE :search3)';
-                $params[':search'] = '%' . $searchTerm . '%';
-                $params[':search2'] = '%' . $searchTerm . '%';
-                $params[':search3'] = '%' . $searchTerm . '%';
-            }
+            if ($hasAggregator) {
+                $aggWhere = ["g.is_active = 1", "v.is_active = 1"];
+                $liveMatch = class_exists('CasinoAggregatorService', false)
+                    ? CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code')
+                    : '0';
+                $aggWhere[] = "(g.game_type = 2 OR {$liveMatch})";
 
-            if ($providerList !== []) {
-                $providerClauses = [];
-                foreach ($providerList as $idx => $provider) {
-                    $pk = ':provider_' . $idx;
-                    $ck = ':provider_code_' . $idx;
-                    $providerClauses[] = "(v.vendor_name = {$pk} OR g.vendor_code = {$ck})";
-                    $params[$pk] = $provider;
-                    $params[$ck] = $provider;
+                if ($searchTerm !== '') {
+                    $aggWhere[] = '(g.game_name LIKE :search OR v.vendor_name LIKE :search2 OR g.game_code LIKE :search3)';
+                    $params[':search'] = '%' . $searchTerm . '%';
+                    $params[':search2'] = '%' . $searchTerm . '%';
+                    $params[':search3'] = '%' . $searchTerm . '%';
                 }
-                $where[] = '(' . implode(' OR ', $providerClauses) . ')';
-            }
 
-            $whereSql = ' WHERE ' . implode(' AND ', $where);
-            $countStmt = $pdo->prepare(
-                "SELECT COUNT(*) FROM casino_aggregator_games g
-                 INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
-                 {$whereSql}"
-            );
-            foreach ($params as $k => $v) {
-                $countStmt->bindValue($k, $v);
-            }
-            $countStmt->execute();
-            $total = (int) $countStmt->fetchColumn();
+                if ($providerList !== []) {
+                    $providerClauses = [];
+                    foreach ($providerList as $idx => $provider) {
+                        $pk = ':provider_' . $idx;
+                        $ck = ':provider_code_' . $idx;
+                        $providerClauses[] = "(v.vendor_name = {$pk} OR g.vendor_code = {$ck})";
+                        $params[$pk] = $provider;
+                        $params[$ck] = $provider;
+                    }
+                    $aggWhere[] = '(' . implode(' OR ', $providerClauses) . ')';
+                }
 
-            $order = strtolower(trim($sort)) === 'popular' ? 'g.is_featured DESC, g.game_name ASC' : 'g.is_featured DESC, g.game_name ASC';
-            $rowsStmt = $pdo->prepare(
-                "SELECT
+                $aggWhereSql = ' WHERE ' . implode(' AND ', $aggWhere);
+                $unions[] = "SELECT
                     CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
                     COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider,
@@ -180,7 +172,61 @@ final class LiveCasinoQuery
                     'aggregator' AS source
                  FROM casino_aggregator_games g
                  INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
-                 {$whereSql}
+                 {$aggWhereSql}";
+            }
+
+            if ($hasGsc) {
+                $gscWhere = [
+                    'g.is_active = 1',
+                    "g.game_code <> '_lobby'",
+                    "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')",
+                ];
+                if ($searchTerm !== '') {
+                    $gscWhere[] = '(g.game_name LIKE :gsc_search OR g.provider LIKE :gsc_search2 OR g.game_code LIKE :gsc_search3)';
+                    $params[':gsc_search'] = '%' . $searchTerm . '%';
+                    $params[':gsc_search2'] = '%' . $searchTerm . '%';
+                    $params[':gsc_search3'] = '%' . $searchTerm . '%';
+                }
+                if ($providerList !== []) {
+                    $gscProviderClauses = [];
+                    foreach ($providerList as $idx => $provider) {
+                        $pk = ':gsc_provider_' . $idx;
+                        $ck = ':gsc_provider_code_' . $idx;
+                        $gscProviderClauses[] = "(g.provider = {$pk} OR CAST(g.product_code AS CHAR) = {$ck} OR g.product_name = {$pk})";
+                        $params[$pk] = $provider;
+                        $params[$ck] = $provider;
+                    }
+                    $gscWhere[] = '(' . implode(' OR ', $gscProviderClauses) . ')';
+                }
+                $gscWhereSql = ' WHERE ' . implode(' AND ', $gscWhere);
+                $unions[] = "SELECT
+                    CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
+                    g.game_name AS name,
+                    COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
+                    CAST(g.product_code AS CHAR) AS provider_code,
+                    COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                    CAST('' AS CHAR) AS image_fallbacks,
+                    g.is_featured AS is_featured,
+                    'gsc' AS source
+                 FROM gsc_games g
+                 {$gscWhereSql}";
+            }
+
+            if ($unions === []) {
+                return self::emptyResult($limit, $page);
+            }
+
+            $unionSql = '(' . implode(' UNION ALL ', $unions) . ') AS catalog';
+            $countStmt = $pdo->prepare("SELECT COUNT(*) FROM {$unionSql}");
+            foreach ($params as $k => $v) {
+                $countStmt->bindValue($k, $v);
+            }
+            $countStmt->execute();
+            $total = (int) $countStmt->fetchColumn();
+
+            $order = 'is_featured DESC, name ASC';
+            $rowsStmt = $pdo->prepare(
+                "SELECT * FROM {$unionSql}
                  ORDER BY {$order}
                  LIMIT :limit OFFSET :offset"
             );
@@ -405,6 +451,12 @@ final class LiveCasinoQuery
     {
         if (!class_exists('CasinoAggregatorService', false)) {
             $path = dirname(__DIR__) . '/services/CasinoAggregatorService.php';
+            if (is_file($path)) {
+                require_once $path;
+            }
+        }
+        if (!class_exists('GscPlusService', false)) {
+            $path = dirname(__DIR__) . '/services/GscPlusService.php';
             if (is_file($path)) {
                 require_once $path;
             }
