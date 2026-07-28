@@ -424,43 +424,44 @@ final class AdminCommunicationController extends AdminController
         $this->ensureMailTables();
         $subject = trim((string) ($_POST['subject'] ?? ''));
         $body = trim((string) ($_POST['body'] ?? ''));
-        $email = trim((string) ($_POST['to_email'] ?? ''));
+        $mode = strtolower(trim((string) ($_POST['send_mode'] ?? 'single')));
+        if ($mode !== 'bulk') {
+            $mode = 'single';
+        }
+        $includeAllMembers = isset($_POST['include_all_members']);
+        $maxRecipients = 200;
 
-        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: geçerli bir alıcı e-postası girin.';
+        $recipients = [];
+        if ($mode === 'bulk') {
+            $recipients = $this->parseRecipientEmails((string) ($_POST['to_emails'] ?? ''));
+            if ($includeAllMembers) {
+                foreach ($this->memberRecipientEmails() as $memberEmail) {
+                    $recipients[] = $memberEmail;
+                }
+            }
+            $recipients = $this->normalizeRecipientEmails($recipients);
+        } else {
+            $single = trim((string) ($_POST['to_email'] ?? ''));
+            if ($single !== '') {
+                $recipients = $this->normalizeRecipientEmails([$single]);
+            }
+        }
+
+        if ($subject === '' || $body === '') {
+            $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: konu ve mesaj zorunludur.';
             $this->redirect(AdminAuth::url('/email/send'));
         }
 
-        // Admin compose mesajını üye gelen kutusuna da yaz.
-        // E-posta ile kullanıcı bulunursa user_id eşlenir; bulunamazsa global mesaj olarak bırakılır.
-        try {
-            $pdo = AdminDatabase::pdo();
-            $userId = null;
-            try {
-                $userStmt = $pdo->prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1');
-                $userStmt->execute(['email' => $email]);
-                $resolvedUserId = (int) $userStmt->fetchColumn();
-                if ($resolvedUserId > 0) {
-                    $userId = $resolvedUserId;
-                }
-            } catch (Throwable) {
-                $userId = null;
-            }
+        if ($recipients === []) {
+            $_SESSION['admin_flash'] = $mode === 'bulk'
+                ? 'Mesaj gönderilemedi: geçerli en az bir alıcı e-postası girin veya üye listesini işaretleyin.'
+                : 'Mesaj gönderilemedi: geçerli bir alıcı e-postası girin.';
+            $this->redirect(AdminAuth::url('/email/send'));
+        }
 
-            $inboxStmt = $pdo->prepare(
-                'INSERT INTO member_inbox_messages (user_id, title, body, link_url, priority, is_active, starts_at, ends_at, created_at, updated_at)
-                 VALUES (:user_id, :title, :body, :link_url, :priority, :is_active, NULL, NULL, NOW(), NOW())'
-            );
-            $inboxStmt->execute([
-                'user_id' => $userId,
-                'title' => $subject !== '' ? $subject : 'Yeni mesaj',
-                'body' => $body,
-                'link_url' => null,
-                'priority' => 0,
-                'is_active' => 1,
-            ]);
-        } catch (Throwable) {
-            // Inbox insert başarısız olsa da mail akışı devam etsin.
+        if (count($recipients) > $maxRecipients) {
+            $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: tek seferde en fazla ' . $maxRecipients . ' alıcıya gönderim yapılabilir. Seçilen: ' . count($recipients);
+            $this->redirect(AdminAuth::url('/email/send'));
         }
 
         $settings = $this->mailSettingsRow();
@@ -470,11 +471,8 @@ final class AdminCommunicationController extends AdminController
             $from = trim((string) ($settings['smtp_user'] ?? ''));
         }
 
-        $ok = false;
-        $error = '';
-        if (!$enabled) {
-            $error = 'mail_disabled';
-        } else {
+        $htmlBody = '';
+        if ($enabled) {
             require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
             $siteUrl = $this->frontendSiteUrl();
             $templateOptions = $this->mailTemplateOptions($settings);
@@ -488,31 +486,140 @@ final class AdminCommunicationController extends AdminController
                 $siteUrl !== '' ? $siteUrl : 'https://vegasroyalspin.com',
                 $templateOptions
             );
-            $ok = metropol_mail_send($settings, $from, $email, $subject, $body, $error, $htmlBody);
         }
 
-        try {
-            $stmt = AdminDatabase::pdo()->prepare(
-                'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
-                 VALUES (:admin_id, :to_email, :subject, :body_preview, :status, NOW())'
-            );
-            $user = AdminAuth::user();
-            $preview = $ok ? $body : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $body);
-            $stmt->execute([
-                'admin_id' => (int) ($user['id'] ?? 0),
-                'to_email' => $email,
-                'subject' => $subject,
-                'body_preview' => substr($preview, 0, 500),
-                'status' => $ok ? 'sent' : ($enabled ? 'failed' : 'not_configured'),
-            ]);
-            $_SESSION['admin_flash'] = $ok
+        $adminUser = AdminAuth::user();
+        $adminId = (int) ($adminUser['id'] ?? 0);
+        $sentCount = 0;
+        $failedCount = 0;
+        $lastError = '';
+        $failedSamples = [];
+
+        foreach ($recipients as $email) {
+            $this->writeMemberInboxMessage($email, $subject, $body);
+
+            $ok = false;
+            $error = '';
+            if (!$enabled) {
+                $error = 'mail_disabled';
+            } else {
+                $ok = metropol_mail_send($settings, $from, $email, $subject, $body, $error, $htmlBody);
+            }
+
+            if ($ok) {
+                $sentCount++;
+            } else {
+                $failedCount++;
+                $lastError = $error !== '' ? $error : 'send_failed';
+                if (count($failedSamples) < 5) {
+                    $failedSamples[] = $email . ' (' . $lastError . ')';
+                }
+            }
+
+            try {
+                $stmt = AdminDatabase::pdo()->prepare(
+                    'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
+                     VALUES (:admin_id, :to_email, :subject, :body_preview, :status, NOW())'
+                );
+                $preview = $ok ? $body : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $body);
+                $stmt->execute([
+                    'admin_id' => $adminId,
+                    'to_email' => $email,
+                    'subject' => $subject,
+                    'body_preview' => substr($preview, 0, 500),
+                    'status' => $ok ? 'sent' : ($enabled ? 'failed' : 'not_configured'),
+                ]);
+            } catch (Throwable) {
+            }
+        }
+
+        if (count($recipients) === 1) {
+            $_SESSION['admin_flash'] = $sentCount === 1
                 ? 'Mesaj gönderildi.'
-                : ('Mesaj gönderilemedi: ' . ($error !== '' ? $error : 'mail gönderimi pasif') . $this->mailErrorHint($error));
-        } catch (Throwable $exception) {
-            $_SESSION['admin_flash'] = 'Mesaj kaydedilemedi: ' . $exception->getMessage();
+                : ('Mesaj gönderilemedi: ' . ($lastError !== '' ? $lastError : 'mail gönderimi pasif') . $this->mailErrorHint($lastError));
+        } else {
+            $lines = [
+                'Toplu gönderim özeti: ' . $sentCount . ' başarılı, ' . $failedCount . ' hatalı (toplam ' . count($recipients) . ').',
+            ];
+            if ($failedSamples !== []) {
+                $lines[] = 'Örnek hatalar: ' . implode('; ', $failedSamples);
+                $lines[] = trim($this->mailErrorHint($lastError));
+            }
+            $_SESSION['admin_flash'] = trim(implode("\n", array_filter($lines)));
         }
 
         $this->redirect(AdminAuth::url('/email/send'));
+    }
+
+    /** @return list<string> */
+    private function parseRecipientEmails(string $raw): array
+    {
+        $parts = preg_split('/[\s,;]+/u', $raw) ?: [];
+        return $this->normalizeRecipientEmails($parts);
+    }
+
+    /**
+     * @param list<string>|array<int, string> $emails
+     * @return list<string>
+     */
+    private function normalizeRecipientEmails(array $emails): array
+    {
+        $out = [];
+        foreach ($emails as $email) {
+            $email = strtolower(trim((string) $email));
+            if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                continue;
+            }
+            $out[$email] = $email;
+        }
+
+        return array_values($out);
+    }
+
+    /** @return list<string> */
+    private function memberRecipientEmails(): array
+    {
+        try {
+            $stmt = AdminDatabase::pdo()->query(
+                'SELECT email FROM users
+                 WHERE email IS NOT NULL AND email <> \'\'
+                   AND COALESCE(banned, 0) = 0
+                 ORDER BY id ASC
+                 LIMIT 5000'
+            );
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+            return is_array($rows) ? array_map('strval', $rows) : [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private function writeMemberInboxMessage(string $email, string $subject, string $body): void
+    {
+        try {
+            $pdo = AdminDatabase::pdo();
+            $userStmt = $pdo->prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1');
+            $userStmt->execute(['email' => $email]);
+            $resolvedUserId = (int) $userStmt->fetchColumn();
+            if ($resolvedUserId <= 0) {
+                return;
+            }
+
+            $inboxStmt = $pdo->prepare(
+                'INSERT INTO member_inbox_messages (user_id, title, body, link_url, priority, is_active, starts_at, ends_at, created_at, updated_at)
+                 VALUES (:user_id, :title, :body, :link_url, :priority, :is_active, NULL, NULL, NOW(), NOW())'
+            );
+            $inboxStmt->execute([
+                'user_id' => $resolvedUserId,
+                'title' => $subject !== '' ? $subject : 'Yeni mesaj',
+                'body' => $body,
+                'link_url' => null,
+                'priority' => 0,
+                'is_active' => 1,
+            ]);
+        } catch (Throwable) {
+            // Inbox insert başarısız olsa da mail akışı devam etsin.
+        }
     }
 
     public function chat(): void
