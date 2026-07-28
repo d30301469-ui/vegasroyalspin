@@ -24,6 +24,16 @@ final class AdminGamingSoftController extends AdminController
         } catch (Throwable) {
         }
 
+        $agentWallet = null;
+        $agentWalletError = '';
+        if (GscPlusService::isConfigured($pdo)) {
+            try {
+                $agentWallet = GscPlusService::agentWalletBalance($pdo);
+            } catch (Throwable $exception) {
+                $agentWalletError = $exception->getMessage();
+            }
+        }
+
         $this->view('gamingsoft/settings', [
             'title' => 'Gaming Soft (GSC+) Ayarları',
             'active' => 'datatable',
@@ -35,6 +45,8 @@ final class AdminGamingSoftController extends AdminController
             'transactionsCount' => $transactionsCount,
             'callbackUrl' => $backendBase . '/api/v2/gamingsoft-wallet',
             'callbackAlias' => $backendBase . '/api/v2/gamingsoft-wallet/v1/api/seamless',
+            'agentWallet' => $agentWallet,
+            'agentWalletError' => $agentWalletError,
             'flash' => $this->pullFlash(),
         ]);
     }

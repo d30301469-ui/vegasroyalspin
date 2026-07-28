@@ -101,6 +101,21 @@ $callbackAlias = (string) ($callbackAlias ?? '');
             <strong><?= $text($configRow['games_synced_at'] ?? '—') ?></strong>
         </div>
 
+        <?php $agentWallet = is_array($agentWallet ?? null) ? $agentWallet : null; ?>
+        <?php if ($agentWallet !== null): ?>
+            <div style="margin-top:16px">
+                <div class="field-label">Agent Wallet (<?= !empty($agentWallet['is_credit']) ? 'credit' : 'buy-in' ?>)</div>
+                <?php foreach (($agentWallet['currencies'] ?? []) as $walletRow): ?>
+                    <div class="gsc-stat">
+                        <span><?= $text($walletRow['currency'] ?? '') ?></span>
+                        <strong><?= $text(number_format((float) ($walletRow['current_balance'] ?? 0), 4, '.', ',')) ?></strong>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php elseif (trim((string) ($agentWalletError ?? '')) !== ''): ?>
+            <p class="gsc-help" style="margin-top:12px">Agent wallet sorgulanamadı: <?= $text($agentWalletError) ?></p>
+        <?php endif; ?>
+
         <div class="gsc-actions" style="margin-top:16px">
             <form method="post" action="<?= $text(AdminAuth::url('/gamingsoft/sync-products')) ?>">
                 <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">

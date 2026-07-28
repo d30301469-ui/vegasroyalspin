@@ -84,6 +84,12 @@ final class GscPlusService
         'ROLLBACK', 'ADJUSTMENT', 'RESETTLED',
     ];
 
+    /**
+     * WBET winnings are not sent via /deposit; the operator must credit the
+     * player manually after the /pushbetdata SETTLED notification (doc 2.3).
+     */
+    private const MANUAL_PAYOUT_PRODUCTS = [1040];
+
     private static bool $schemaBootstrapped = false;
 
     public static function bootstrap(PDO $pdo): void
@@ -591,7 +597,9 @@ final class GscPlusService
                 $deltaWallet = self::resolveWalletDelta($direction, $action, $providerAmount, $currency);
                 $before = $balance;
                 $after = round($before + $deltaWallet, 4);
-                if ($after < 0) {
+                // GSC appendix: RESETTLED may legitimately push a balance negative
+                // (fractional sportsbook corrections) and must not be rejected.
+                if ($after < 0 && $action !== 'RESETTLED') {
                     $pdo->rollBack();
                     return [
                         'before_balance' => $batchBefore,
@@ -772,8 +780,85 @@ final class GscPlusService
                 ':payload' => isset($wager['payload']) ? json_encode($wager['payload'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
                 ':raw'     => json_encode($wager, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
+
+            self::creditManualPayoutWager($pdo, $wager, $code, $currency);
         }
         return ['code' => 0, 'message' => ''];
+    }
+
+    /**
+     * WBET-style products pay winnings only via pushbetdata; credit the prize
+     * once per wager_code (idempotent through gsc_transactions unique txn id).
+     */
+    private static function creditManualPayoutWager(PDO $pdo, array $wager, string $wagerCode, string $currency): void
+    {
+        $productCode = (int) ($wager['product_code'] ?? 0);
+        if (!in_array($productCode, self::MANUAL_PAYOUT_PRODUCTS, true)) {
+            return;
+        }
+        if (strtoupper(trim((string) ($wager['wager_status'] ?? ''))) !== 'SETTLED') {
+            return;
+        }
+        $prizeWallet = self::toWalletAmount((float) ($wager['prize_amount'] ?? 0), $currency);
+        if ($prizeWallet <= 0) {
+            return;
+        }
+        $user = self::userByMemberAccount($pdo, trim((string) ($wager['member_account'] ?? '')));
+        if ($user === null) {
+            return;
+        }
+        $txnId = 'wbet:' . $wagerCode;
+
+        $pdo->beginTransaction();
+        try {
+            $dup = $pdo->prepare('SELECT id FROM gsc_transactions WHERE transaction_id = :id LIMIT 1');
+            $dup->execute([':id' => $txnId]);
+            if ($dup->fetchColumn() !== false) {
+                $pdo->rollBack();
+                return;
+            }
+            $stmt = $pdo->prepare('SELECT id, username, balance FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
+            $stmt->execute([':id' => (int) $user['id']]);
+            $locked = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($locked)) {
+                $pdo->rollBack();
+                return;
+            }
+            $before = round((float) $locked['balance'], 4);
+            $after = round($before + $prizeWallet, 4);
+            $pdo->prepare('UPDATE users SET balance = :bal WHERE id = :id')
+                ->execute([':bal' => $after, ':id' => (int) $locked['id']]);
+            $pdo->prepare(
+                'INSERT INTO gsc_transactions
+                    (user_id, member_account, transaction_id, action, wager_code, wager_status, round_id,
+                     product_code, game_code, game_type, amount, prize_amount, before_balance, after_balance,
+                     currency, direction, raw_payload)
+                 VALUES
+                    (:uid, :member, :txn, \'SETTLED\', :wager, \'SETTLED\', :round, :product, :game, :gtype,
+                     :amount, :prize, :before, :after, :cur, \'deposit\', :raw)'
+            )->execute([
+                ':uid'     => (int) $locked['id'],
+                ':member'  => (string) ($locked['username'] ?? ''),
+                ':txn'     => $txnId,
+                ':wager'   => $wagerCode,
+                ':round'   => trim((string) ($wager['round_id'] ?? '')) ?: null,
+                ':product' => $productCode,
+                ':game'    => trim((string) ($wager['game_code'] ?? '')) ?: null,
+                ':gtype'   => trim((string) ($wager['game_type'] ?? '')) ?: null,
+                ':amount'  => $prizeWallet,
+                ':prize'   => $prizeWallet,
+                ':before'  => $before,
+                ':after'   => $after,
+                ':cur'     => $currency,
+                ':raw'     => json_encode($wager, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('[GSC+] WBET payout ' . $wagerCode . ': ' . $e->getMessage());
+        }
     }
 
     // ─── Operator API ───────────────────────────────────────────────────
@@ -929,6 +1014,48 @@ final class GscPlusService
                 'content' => $content !== '' && $url === '' ? $content : null,
             ],
             'game_url' => $launchUrl,
+        ];
+    }
+
+    /**
+     * 3.12 Wallet Balance Inquiry — agent wallet balances per contracted currency.
+     *
+     * @return array{is_credit:bool,currencies:list<array{currency:string,current_balance:float,updated_at:string}>}
+     */
+    public static function agentWalletBalance(PDO $pdo): array
+    {
+        $cfg = self::activeConfig($pdo);
+        $requestTime = (string) (int) round(microtime(true) * 1000);
+        $operatorCode = (string) $cfg['operator_code'];
+        $sign = self::operatorSign($requestTime, (string) $cfg['secret_key'], 'getwalletcurrencies', $operatorCode);
+        $query = http_build_query([
+            'operator_code' => $operatorCode,
+            'sign' => $sign,
+            'request_time' => $requestTime,
+        ]);
+        $response = self::operatorRequest($pdo, 'GET', '/api/operators/wallet-balance?' . $query);
+        $code = (int) ($response['code'] ?? -1);
+        if ($code !== 0) {
+            throw new RuntimeException(
+                'GSC+ wallet-balance: ' . trim((string) ($response['message'] ?? ('code ' . $code)))
+            );
+        }
+        $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+        $currencies = [];
+        foreach ((is_array($data['currencies'] ?? null) ? $data['currencies'] : []) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $currencies[] = [
+                'currency' => strtoupper(trim((string) ($row['currency'] ?? ''))),
+                'current_balance' => (float) ($row['current_balance'] ?? 0),
+                'updated_at' => (string) ($row['updated_at'] ?? ''),
+            ];
+        }
+
+        return [
+            'is_credit' => (bool) ($data['is_credit'] ?? false),
+            'currencies' => $currencies,
         ];
     }
 
