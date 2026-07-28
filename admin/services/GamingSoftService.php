@@ -1,0 +1,1296 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Gaming Soft / GSC+ API v2.0.6 — seamless wallet + operator APIs.
+ *
+ * Callback base: /api/v2/gamingsoft-wallet
+ *   POST .../v1/api/seamless/balance|withdraw|deposit|pushbetdata
+ *
+ * Operator API (outbound):
+ *   launch-game, available-products, provider-games, ...
+ */
+final class GamingSoftService
+{
+    public const GAME_ID_PREFIX = 'gamingsoft:';
+
+    /** Product that pays out via pushbetdata instead of /deposit. */
+    private const WBET_PRODUCT_CODE = 1040;
+
+    private static bool $schemaBootstrapped = false;
+
+    /** Currencies where provider amount is scaled (provider unit → real money divisor). */
+    private const CURRENCY_RATIOS = [
+        'BDT2' => 1000, 'BRL2' => 1000, 'CDF2' => 1000, 'CNY2' => 1000, 'COP2' => 1000,
+        'EUR2' => 1000, 'HKD2' => 1000, 'IDR2' => 1000, 'IDR3' => 100, 'INR2' => 1000,
+        'IRR2' => 1000, 'JPY2' => 1000, 'KHR2' => 1000, 'KRW2' => 1000, 'LAK2' => 1000,
+        'LBP2' => 1000, 'MAD2' => 1000, 'MMK2' => 1000, 'MMK3' => 100, 'MNT2' => 1000,
+        'MXN2' => 1000, 'MYR2' => 1000, 'MYR3' => 100, 'NGN2' => 1000, 'NPR2' => 1000,
+        'PHP2' => 1000, 'PKR2' => 1000, 'PYG2' => 1000, 'SGD2' => 1000, 'THB2' => 1000,
+        'TRY2' => 1000, 'TWD2' => 1000, 'TZS2' => 1000, 'UGX2' => 1000, 'USD2' => 1000,
+        'USDT2' => 1000, 'UZS2' => 1000, 'VND2' => 1000, 'VND3' => 100,
+    ];
+
+    private const LANG_MAP = [
+        'en' => 0, 'zh-tw' => 1, 'zh-hant' => 1, 'zh' => 2, 'zh-cn' => 2, 'zh-hans' => 2,
+        'th' => 3, 'id' => 4, 'in' => 4, 'ja' => 5, 'ko' => 6, 'vi' => 7, 'de' => 8,
+        'es' => 9, 'fr' => 10, 'ru' => 11, 'pt' => 12, 'my' => 13, 'da' => 14, 'fi' => 15,
+        'it' => 16, 'nl' => 17, 'no' => 18, 'pl' => 19, 'ro' => 20, 'sv' => 21, 'tr' => 0,
+        'uk' => 31, 'hi' => 39, 'ms' => 36,
+    ];
+
+    public static function bootstrap(PDO $pdo): void
+    {
+        if (self::$schemaBootstrapped) {
+            return;
+        }
+        $migration = dirname(__DIR__) . '/database/migrations/2026_07_28_100000_create_gamingsoft_tables.php';
+        if (!is_readable($migration)) {
+            $migration = dirname(__DIR__) . '/admin/database/migrations/2026_07_28_100000_create_gamingsoft_tables.php';
+        }
+        if (!is_readable($migration)) {
+            throw new RuntimeException('GamingSoft migration dosyası bulunamadı.');
+        }
+        $runner = require $migration;
+        if (is_callable($runner)) {
+            $runner($pdo);
+        }
+        self::$schemaBootstrapped = true;
+    }
+
+    public static function config(PDO $pdo): array
+    {
+        try {
+            self::bootstrap($pdo);
+            $row = $pdo->query('SELECT * FROM gamingsoft_config WHERE id = 1 LIMIT 1')?->fetch(PDO::FETCH_ASSOC);
+
+            return is_array($row) ? $row : [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    public static function updateConfig(PDO $pdo, array $data): void
+    {
+        self::bootstrap($pdo);
+        $allowed = [
+            'operator_code', 'secret_key', 'api_base_url', 'site_endpoint',
+            'currency', 'language_code', 'channel_code', 'callback_allowed_ips',
+        ];
+        $secrets = ['secret_key'];
+        $sets = [];
+        $params = [];
+        foreach ($allowed as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+            $value = trim((string) $data[$key]);
+            if (in_array($key, $secrets, true) && $value === '') {
+                continue;
+            }
+            if ($key === 'currency') {
+                $value = strtoupper($value) ?: 'TRY';
+            }
+            if ($key === 'language_code') {
+                $value = (string) max(0, (int) $value);
+            }
+            if ($key === 'api_base_url' || $key === 'site_endpoint') {
+                $value = rtrim($value, '/');
+            }
+            $sets[] = "`{$key}` = :{$key}";
+            $params[":{$key}"] = $value;
+        }
+        $sets[] = 'is_active = :is_active';
+        $params[':is_active'] = (!empty($data['is_active']) && $data['is_active'] !== '0') ? 1 : 0;
+        if ($sets === []) {
+            return;
+        }
+        $pdo->prepare('UPDATE gamingsoft_config SET ' . implode(', ', $sets) . ' WHERE id = 1')->execute($params);
+    }
+
+    public static function isConfigured(PDO $pdo): bool
+    {
+        $cfg = self::config($pdo);
+
+        return trim((string) ($cfg['operator_code'] ?? '')) !== ''
+            && trim((string) ($cfg['secret_key'] ?? '')) !== ''
+            && trim((string) ($cfg['api_base_url'] ?? '')) !== '';
+    }
+
+    public static function callbackBaseUrl(PDO $pdo): string
+    {
+        $cfg = self::config($pdo);
+        $site = rtrim(trim((string) ($cfg['site_endpoint'] ?? '')), '/');
+        if ($site === '') {
+            $site = self::backendEndpoint();
+        }
+
+        return $site . '/api/v2/gamingsoft-wallet';
+    }
+
+    public static function ownsGameId(string $gameId): bool
+    {
+        return str_starts_with(strtolower(trim($gameId)), strtolower(self::GAME_ID_PREFIX));
+    }
+
+    public static function buildGameId(int|string $productCode, string $gameCode): string
+    {
+        return self::GAME_ID_PREFIX . (int) $productCode . ':' . trim($gameCode);
+    }
+
+    /** @return array{product_code:int, game_code:string}|null */
+    public static function parseGameId(string $gameId): ?array
+    {
+        $gameId = trim($gameId);
+        if (!self::ownsGameId($gameId)) {
+            return null;
+        }
+        $rest = substr($gameId, strlen(self::GAME_ID_PREFIX));
+        $parts = explode(':', $rest, 2);
+        if (count($parts) !== 2 || !is_numeric($parts[0]) || trim($parts[1]) === '') {
+            return null;
+        }
+
+        return ['product_code' => (int) $parts[0], 'game_code' => trim($parts[1])];
+    }
+
+    public static function normalizeGameTypeToCatalog(string $gameType): int
+    {
+        $t = strtoupper(trim($gameType));
+        if (
+            str_contains($t, 'LIVE')
+            || $t === 'SPORT_BOOK'
+            || $t === 'VIRTUAL_SPORT'
+            || $t === 'ESPORT'
+            || $t === 'COCK_FIGHTING'
+        ) {
+            return 2;
+        }
+
+        return 1;
+    }
+
+    // ─── Operator outbound ───────────────────────────────────────────
+
+    public static function syncProducts(PDO $pdo): array
+    {
+        self::bootstrap($pdo);
+        $cfg = self::activeConfig($pdo);
+        $response = self::operatorGet($cfg, '/api/operators/available-products', [
+            'operator_code' => (string) $cfg['operator_code'],
+            'sign'          => self::operatorSign($cfg, 'productlist'),
+            'request_time'  => self::requestTimeSeconds(),
+        ]);
+
+        $products = [];
+        if (isset($response[0]) && is_array($response[0])) {
+            $products = $response;
+        } elseif (is_array($response['data'] ?? null)) {
+            $products = $response['data'];
+        } elseif (is_array($response['products'] ?? null)) {
+            $products = $response['products'];
+        }
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO gamingsoft_products
+                (product_code, product_id, provider_id, provider, product_name, game_type, currency, status, entry_type, is_active, synced_at)
+             VALUES (:pc, :pid, :prid, :prov, :pname, :gtype, :cur, :status, :entry, 1, NOW())
+             ON DUPLICATE KEY UPDATE
+                product_id = VALUES(product_id),
+                provider_id = VALUES(provider_id),
+                provider = VALUES(provider),
+                product_name = VALUES(product_name),
+                game_type = VALUES(game_type),
+                currency = VALUES(currency),
+                status = VALUES(status),
+                entry_type = VALUES(entry_type),
+                is_active = IF(VALUES(status) = \'ACTIVATED\', 1, is_active),
+                synced_at = NOW()'
+        );
+
+        $count = 0;
+        foreach ($products as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $code = (int) ($row['product_code'] ?? 0);
+            if ($code <= 0) {
+                continue;
+            }
+            $status = strtoupper(trim((string) ($row['status'] ?? '')));
+            $stmt->execute([
+                ':pc'    => $code,
+                ':pid'   => isset($row['product_id']) ? (int) $row['product_id'] : null,
+                ':prid'  => isset($row['provider_id']) ? (int) $row['provider_id'] : null,
+                ':prov'  => trim((string) ($row['provider'] ?? '')),
+                ':pname' => trim((string) ($row['product_name'] ?? $row['provider'] ?? '')),
+                ':gtype' => strtoupper(trim((string) ($row['game_type'] ?? ''))),
+                ':cur'   => strtoupper(trim((string) ($row['currency'] ?? ''))),
+                ':status'=> $status,
+                ':entry' => (int) ($row['entry_type'] ?? 1),
+            ]);
+            $count++;
+        }
+
+        $pdo->exec('UPDATE gamingsoft_config SET products_synced_at = NOW() WHERE id = 1');
+
+        return ['product_count' => $count];
+    }
+
+    public static function syncGames(PDO $pdo, ?int $productCode = null): array
+    {
+        self::bootstrap($pdo);
+        $cfg = self::activeConfig($pdo);
+
+        $sql = 'SELECT product_code, game_type, entry_type, product_name, provider FROM gamingsoft_products WHERE is_active = 1';
+        $params = [];
+        if ($productCode !== null && $productCode > 0) {
+            $sql .= ' AND product_code = :pc';
+            $params[':pc'] = $productCode;
+        }
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if ($products === []) {
+            self::syncProducts($pdo);
+            $stmt->execute($params);
+            $products = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        }
+
+        $insert = $pdo->prepare(
+            'INSERT INTO gamingsoft_games
+                (product_code, game_code, game_name, game_type, image_url, support_currency, status, allow_free_round, entry_type, raw_payload, is_active, synced_at)
+             VALUES (:pc, :gc, :name, :gtype, :img, :cur, :status, :fr, :entry, :raw, :active, NOW())
+             ON DUPLICATE KEY UPDATE
+                game_name = VALUES(game_name),
+                game_type = VALUES(game_type),
+                image_url = VALUES(image_url),
+                support_currency = VALUES(support_currency),
+                status = VALUES(status),
+                allow_free_round = VALUES(allow_free_round),
+                entry_type = VALUES(entry_type),
+                raw_payload = VALUES(raw_payload),
+                is_active = VALUES(is_active),
+                synced_at = NOW()'
+        );
+
+        $gameCount = 0;
+        $errors = [];
+        foreach ($products as $product) {
+            $pc = (int) ($product['product_code'] ?? 0);
+            if ($pc <= 0) {
+                continue;
+            }
+            try {
+                $response = self::operatorGet($cfg, '/api/operators/provider-games', [
+                    'product_code'  => $pc,
+                    'operator_code' => (string) $cfg['operator_code'],
+                    'sign'          => self::operatorSign($cfg, 'gamelist'),
+                    'request_time'  => self::requestTimeSeconds(),
+                ]);
+                $games = is_array($response['provider_games'] ?? null) ? $response['provider_games'] : [];
+                $entryType = (int) ($product['entry_type'] ?? 1);
+                foreach ($games as $game) {
+                    if (!is_array($game)) {
+                        continue;
+                    }
+                    $gameCode = trim((string) ($game['game_code'] ?? ''));
+                    if ($gameCode === '') {
+                        continue;
+                    }
+                    $status = strtoupper(trim((string) ($game['status'] ?? 'ACTIVATED')));
+                    $active = str_starts_with($status, 'ACTIVAT') ? 1 : 0;
+                    $insert->execute([
+                        ':pc'     => (int) ($game['product_code'] ?? $pc),
+                        ':gc'     => $gameCode,
+                        ':name'   => trim((string) ($game['game_name'] ?? $gameCode)),
+                        ':gtype'  => strtoupper(trim((string) ($game['game_type'] ?? $product['game_type'] ?? ''))),
+                        ':img'    => trim((string) ($game['image_url'] ?? '')) ?: null,
+                        ':cur'    => strtoupper(trim((string) ($game['support_currency'] ?? ''))),
+                        ':status' => $status,
+                        ':fr'     => !empty($game['allow_free_round']) ? 1 : 0,
+                        ':entry'  => $entryType,
+                        ':raw'    => json_encode($game, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        ':active' => $active,
+                    ]);
+                    $gameCount++;
+                }
+            } catch (Throwable $e) {
+                $errors[] = $pc . ': ' . $e->getMessage();
+            }
+        }
+
+        $pdo->exec('UPDATE gamingsoft_config SET games_synced_at = NOW() WHERE id = 1');
+
+        return [
+            'game_count'    => $gameCount,
+            'product_count' => count($products),
+            'errors'        => $errors,
+        ];
+    }
+
+    public static function launch(PDO $pdo, ?array $user, array $input): array
+    {
+        try {
+            $cfg = self::activeConfig($pdo);
+        } catch (Throwable $e) {
+            return ['success' => false, 'code' => 503, 'message' => $e->getMessage()];
+        }
+
+        $parsed = self::parseGameId(trim((string) ($input['game_id'] ?? $input['gameId'] ?? '')));
+        if ($parsed === null) {
+            return ['success' => false, 'code' => 404, 'message' => 'Geçersiz GamingSoft oyun kimliği.'];
+        }
+
+        $gameStmt = $pdo->prepare(
+            'SELECT g.*, p.product_name, p.provider, p.entry_type AS product_entry_type, p.is_active AS product_active, p.status AS product_status
+             FROM gamingsoft_games g
+             LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
+             WHERE g.product_code = :pc AND g.game_code = :gc
+             LIMIT 1'
+        );
+        $gameStmt->execute([':pc' => $parsed['product_code'], ':gc' => $parsed['game_code']]);
+        $gameRow = $gameStmt->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($gameRow) || (int) ($gameRow['is_active'] ?? 0) !== 1) {
+            return ['success' => false, 'code' => 404, 'message' => 'Oyun bulunamadı veya pasif.'];
+        }
+        if (isset($gameRow['product_active']) && (int) $gameRow['product_active'] !== 1) {
+            return ['success' => false, 'code' => 503, 'message' => 'Ürün bakımda veya pasif.'];
+        }
+
+        $isGuest = !is_array($user) || (int) ($user['id'] ?? 0) <= 0;
+        if ($isGuest) {
+            return ['success' => false, 'code' => 401, 'message' => 'GamingSoft için giriş gerekli.'];
+        }
+
+        $userId = (int) $user['id'];
+        $memberAccount = self::memberAccountFromUser($user);
+        $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
+        $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'TRY')));
+        $gameType = strtoupper(trim((string) ($gameRow['game_type'] ?? 'SLOT')));
+        $entryType = (int) ($gameRow['entry_type'] ?? $gameRow['product_entry_type'] ?? 1);
+        $gameCode = $entryType === 2 ? null : (string) $gameRow['game_code'];
+
+        $channel = strtolower(trim((string) ($input['channel'] ?? 'desktop')));
+        $platform = match (true) {
+            in_array($channel, ['mobile', 'm'], true) => 'MOBILE',
+            in_array($channel, ['desktop', 'pc'], true) => 'DESKTOP',
+            default => 'WEB',
+        };
+
+        $langInput = strtolower(trim((string) ($input['lang'] ?? '')));
+        $languageCode = (int) ($cfg['language_code'] ?? 0);
+        if ($langInput !== '' && isset(self::LANG_MAP[$langInput])) {
+            $languageCode = self::LANG_MAP[$langInput];
+        }
+
+        $lobbyUrl = trim((string) ($input['home_url'] ?? $input['operator_lobby_url'] ?? ''));
+        if ($lobbyUrl === '') {
+            $lobbyUrl = defined('SITE_URL') && trim((string) SITE_URL) !== ''
+                ? rtrim((string) SITE_URL, '/')
+                : ('https://' . (string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+        }
+
+        $ip = trim((string) ($input['ip'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'));
+        if (str_contains($ip, ',')) {
+            $ip = trim(explode(',', $ip)[0]);
+        }
+
+        $requestTime = self::requestTimeSeconds();
+        $payload = [
+            'operator_code'      => (string) $cfg['operator_code'],
+            'member_account'     => $memberAccount,
+            'password'           => self::memberPassword($memberAccount, (string) $cfg['secret_key']),
+            'nickname'           => $nickname,
+            'currency'           => $currency,
+            'game_code'          => $gameCode,
+            'product_code'       => (int) $parsed['product_code'],
+            'game_type'          => $gameType,
+            'language_code'      => $languageCode,
+            'ip'                 => $ip !== '' ? $ip : '127.0.0.1',
+            'platform'           => $platform,
+            'sign'               => self::operatorSign($cfg, 'launchgame', $requestTime),
+            'request_time'       => $requestTime,
+            'operator_lobby_url' => $lobbyUrl,
+        ];
+
+        try {
+            $response = self::operatorPost($cfg, '/api/operators/launch-game', $payload, 25);
+        } catch (Throwable $e) {
+            return ['success' => false, 'code' => 503, 'message' => 'GSC+ API bağlantı hatası: ' . $e->getMessage()];
+        }
+
+        $code = (int) ($response['code'] ?? $response['Code'] ?? -1);
+        $launchUrl = trim((string) ($response['url'] ?? $response['URL'] ?? ''));
+        $content = trim((string) ($response['content'] ?? $response['Content'] ?? ''));
+        if ($code !== 200 && $code !== 0) {
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Oyun başlatılamadı: ' . trim((string) ($response['message'] ?? $response['Message'] ?? ('code ' . $code))),
+                'raw'     => $response,
+            ];
+        }
+        if ($launchUrl === '' && $content === '') {
+            return ['success' => false, 'code' => 422, 'message' => 'Oyun URL/content döndürmedi.', 'raw' => $response];
+        }
+
+        try {
+            $pdo->prepare(
+                'INSERT INTO gamingsoft_sessions
+                    (user_id, username, member_account, product_code, game_code, game_type, currency, platform, launch_url, request_payload, response_payload)
+                 VALUES (:uid, :uname, :ma, :pc, :gc, :gt, :cur, :plat, :url, :req, :res)'
+            )->execute([
+                ':uid'  => $userId,
+                ':uname'=> $nickname,
+                ':ma'   => $memberAccount,
+                ':pc'   => (int) $parsed['product_code'],
+                ':gc'   => $gameCode,
+                ':gt'   => $gameType,
+                ':cur'  => $currency,
+                ':plat' => $platform,
+                ':url'  => $launchUrl !== '' ? $launchUrl : null,
+                ':req'  => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ':res'  => json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+        } catch (Throwable) {
+        }
+
+        $data = [
+            'open_mode' => 'iframe',
+            'mode'      => 'real',
+        ];
+        if ($launchUrl !== '') {
+            $data['game_url'] = $launchUrl;
+            $data['launch_url'] = $launchUrl;
+        }
+        if ($content !== '') {
+            $data['content'] = $content;
+            if ($launchUrl === '') {
+                $data['open_mode'] = 'html';
+            }
+        }
+
+        return [
+            'success'  => true,
+            'code'     => 200,
+            'message'  => 'Oyun başlatıldı.',
+            'data'     => $data,
+            'game_url' => $launchUrl,
+        ];
+    }
+
+    // ─── Seamless wallet callbacks ───────────────────────────────────
+
+    public static function wallet(PDO $pdo, string $endpoint, array $payload, string $rawBody = ''): array
+    {
+        $start = microtime(true);
+        $endpoint = strtolower(trim($endpoint, '/'));
+        $endpoint = preg_replace('#^v1/api/seamless/#', '', $endpoint) ?? $endpoint;
+        $endpoint = match ($endpoint) {
+            'getbalance', 'get_balance' => 'balance',
+            'push-bet-data', 'push_bet_data' => 'pushbetdata',
+            default => $endpoint,
+        };
+
+        $httpStatus = 200;
+        $body = ['code' => 999, 'message' => 'Internal Server Error'];
+
+        try {
+            self::bootstrap($pdo);
+            if (!self::verifySeamlessSign($pdo, $payload, $endpoint)) {
+                $body = $endpoint === 'pushbetdata'
+                    ? ['code' => 1004, 'message' => 'API signature is invalid']
+                    : ['data' => []];
+                // Always return structured batch errors when possible
+                if ($endpoint !== 'pushbetdata') {
+                    $body = self::batchErrorResponse($payload, 1004, 'API signature is invalid');
+                }
+            } elseif (!self::isOperatorMatch($pdo, $payload)) {
+                $body = $endpoint === 'pushbetdata'
+                    ? ['code' => 1002, 'message' => 'API proxy key error']
+                    : self::batchErrorResponse($payload, 1002, 'API proxy key error');
+            } else {
+                $body = match ($endpoint) {
+                    'balance' => self::walletBalance($pdo, $payload),
+                    'withdraw' => self::walletWithdraw($pdo, $payload),
+                    'deposit' => self::walletDeposit($pdo, $payload),
+                    'pushbetdata' => self::walletPushBetData($pdo, $payload),
+                    default => ['code' => 999, 'message' => 'Unknown endpoint'],
+                };
+            }
+        } catch (Throwable $e) {
+            error_log('GamingSoft wallet error: ' . $e->getMessage());
+            $body = $endpoint === 'pushbetdata'
+                ? ['code' => 999, 'message' => 'Internal Server Error']
+                : self::batchErrorResponse($payload, 999, 'Internal Server Error');
+            $httpStatus = 500;
+        }
+
+        try {
+            self::logWallet($pdo, $endpoint, null, '', $httpStatus, (int) ($body['code'] ?? 0), null,
+                (int) round((microtime(true) - $start) * 1000), $payload, $body);
+        } catch (Throwable) {
+        }
+
+        return ['status' => $httpStatus, 'body' => $body];
+    }
+
+    private static function walletBalance(PDO $pdo, array $payload): array
+    {
+        $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
+        $cfg = self::config($pdo);
+        if ($currency === '') {
+            $currency = strtoupper((string) ($cfg['currency'] ?? 'TRY'));
+        }
+
+        $data = [];
+        $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
+        foreach ($batch as $req) {
+            if (!is_array($req)) {
+                continue;
+            }
+            $member = trim((string) ($req['member_account'] ?? ''));
+            $productCode = (int) ($req['product_code'] ?? $req['Product_code'] ?? 0);
+            $user = self::userByMemberAccount($pdo, $member);
+            if ($user === null) {
+                $data[] = [
+                    'member_account' => $member,
+                    'product_code'   => $productCode,
+                    'balance'        => 0,
+                    'code'           => 1000,
+                    'message'        => 'API member does not exist',
+                ];
+                continue;
+            }
+            if ((int) ($user['banned'] ?? 0) === 1) {
+                $data[] = [
+                    'member_account' => $member,
+                    'product_code'   => $productCode,
+                    'balance'        => 0,
+                    'code'           => 1000,
+                    'message'        => 'API member does not exist',
+                ];
+                continue;
+            }
+            $balance = self::toProviderAmount((float) ($user['balance'] ?? 0), $currency);
+            $data[] = [
+                'member_account' => $member,
+                'product_code'   => $productCode,
+                'balance'        => $balance,
+                'code'           => 0,
+                'message'        => '',
+            ];
+        }
+
+        return ['data' => $data];
+    }
+
+    private static function walletWithdraw(PDO $pdo, array $payload): array
+    {
+        return self::walletMoneyBatch($pdo, $payload, 'withdraw');
+    }
+
+    private static function walletDeposit(PDO $pdo, array $payload): array
+    {
+        return self::walletMoneyBatch($pdo, $payload, 'deposit');
+    }
+
+    private static function walletMoneyBatch(PDO $pdo, array $payload, string $endpoint): array
+    {
+        $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
+        $cfg = self::config($pdo);
+        if ($currency === '') {
+            $currency = strtoupper((string) ($cfg['currency'] ?? 'TRY'));
+        }
+
+        $data = [];
+        $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
+        foreach ($batch as $req) {
+            if (!is_array($req)) {
+                continue;
+            }
+            $data[] = self::applyMemberTransactions($pdo, $req, $currency, $endpoint);
+        }
+
+        return ['data' => $data];
+    }
+
+    /** @param array<string, mixed> $req */
+    private static function applyMemberTransactions(PDO $pdo, array $req, string $currency, string $endpoint): array
+    {
+        $member = trim((string) ($req['member_account'] ?? ''));
+        $productCode = (int) ($req['product_code'] ?? $req['Product_code'] ?? 0);
+        $gameType = strtoupper(trim((string) ($req['game_type'] ?? '')));
+        $transactions = is_array($req['transactions'] ?? null) ? $req['transactions'] : [];
+
+        $user = self::userByMemberAccount($pdo, $member);
+        if ($user === null) {
+            return [
+                'member_account' => $member,
+                'product_code'   => $productCode,
+                'before_balance' => 0,
+                'balance'        => 0,
+                'code'           => 1000,
+                'message'        => 'API member does not exist',
+            ];
+        }
+        if ((int) ($user['banned'] ?? 0) === 1) {
+            return [
+                'member_account' => $member,
+                'product_code'   => $productCode,
+                'before_balance' => 0,
+                'balance'        => 0,
+                'code'           => 1000,
+                'message'        => 'API member does not exist',
+            ];
+        }
+
+        $userId = (int) $user['id'];
+        $username = (string) ($user['username'] ?? $member);
+
+        // WBET wins are not deposited via /deposit — accept and no-op credit for prize settlements.
+        if ($endpoint === 'deposit' && $productCode === self::WBET_PRODUCT_CODE) {
+            $balance = self::toProviderAmount((float) ($user['balance'] ?? 0), $currency);
+
+            return [
+                'member_account' => $member,
+                'product_code'   => $productCode,
+                'before_balance' => $balance,
+                'balance'        => $balance,
+                'code'           => 0,
+                'message'        => '',
+            ];
+        }
+
+        if ($transactions === []) {
+            $balance = self::toProviderAmount((float) ($user['balance'] ?? 0), $currency);
+
+            return [
+                'member_account' => $member,
+                'product_code'   => $productCode,
+                'before_balance' => $balance,
+                'balance'        => $balance,
+                'code'           => 0,
+                'message'        => '',
+            ];
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $lock = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
+            $lock->execute([':id' => $userId]);
+            $locked = $lock->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($locked)) {
+                $pdo->rollBack();
+
+                return [
+                    'member_account' => $member,
+                    'product_code'   => $productCode,
+                    'before_balance' => 0,
+                    'balance'        => 0,
+                    'code'           => 1000,
+                    'message'        => 'API member does not exist',
+                ];
+            }
+
+            $beforeReal = round((float) $locked['balance'], 4);
+            $currentReal = $beforeReal;
+            $applied = 0;
+            $duplicates = 0;
+            $lastDuplicateBalances = null;
+
+            foreach ($transactions as $tx) {
+                if (!is_array($tx)) {
+                    continue;
+                }
+                $txnId = trim((string) ($tx['id'] ?? ''));
+                if ($txnId === '') {
+                    $pdo->rollBack();
+
+                    return [
+                        'member_account' => $member,
+                        'product_code'   => $productCode,
+                        'before_balance' => self::toProviderAmount($beforeReal, $currency),
+                        'balance'        => self::toProviderAmount($beforeReal, $currency),
+                        'code'           => 999,
+                        'message'        => 'Missing transaction id',
+                    ];
+                }
+
+                $existing = $pdo->prepare(
+                    'SELECT before_balance, after_balance FROM gamingsoft_transactions WHERE txn_id = :id LIMIT 1'
+                );
+                $existing->execute([':id' => $txnId]);
+                $prev = $existing->fetch(PDO::FETCH_ASSOC);
+                if (is_array($prev)) {
+                    $duplicates++;
+                    $lastDuplicateBalances = $prev;
+                    continue;
+                }
+
+                $action = strtoupper(trim((string) ($tx['action'] ?? '')));
+                $providerAmount = (float) ($tx['amount'] ?? 0);
+                $deltaReal = self::deltaFromAction($endpoint, $action, $providerAmount, $currency);
+                $afterReal = round($currentReal + $deltaReal, 4);
+                if ($afterReal < 0) {
+                    $pdo->rollBack();
+
+                    return [
+                        'member_account' => $member,
+                        'product_code'   => $productCode,
+                        'before_balance' => self::toProviderAmount($beforeReal, $currency),
+                        'balance'        => self::toProviderAmount($beforeReal, $currency),
+                        'code'           => 1001,
+                        'message'        => 'API member balance is insufficient',
+                    ];
+                }
+
+                $pdo->prepare(
+                    'INSERT INTO gamingsoft_transactions
+                        (user_id, username, member_account, txn_id, wager_code, round_id, product_code, game_code, game_type,
+                         action, wager_status, wager_type, amount, bet_amount, valid_bet_amount, prize_amount, tip_amount,
+                         before_balance, after_balance, currency, endpoint, settled_at, raw_payload)
+                     VALUES
+                        (:uid, :uname, :ma, :txn, :wager, :round, :pc, :gc, :gt,
+                         :action, :wstatus, :wtype, :amt, :bet, :vbet, :prize, :tip,
+                         :before, :after, :cur, :ep, :settled, :raw)'
+                )->execute([
+                    ':uid'     => $userId,
+                    ':uname'   => $username,
+                    ':ma'      => $member,
+                    ':txn'     => $txnId,
+                    ':wager'   => trim((string) ($tx['wager_code'] ?? '')) ?: null,
+                    ':round'   => trim((string) ($tx['round_id'] ?? '')) ?: null,
+                    ':pc'      => $productCode ?: null,
+                    ':gc'      => trim((string) ($tx['game_code'] ?? '')) ?: null,
+                    ':gt'      => $gameType !== '' ? $gameType : (strtoupper(trim((string) ($tx['game_type'] ?? ''))) ?: null),
+                    ':action'  => $action,
+                    ':wstatus' => strtoupper(trim((string) ($tx['wager_status'] ?? ''))) ?: null,
+                    ':wtype'   => strtoupper(trim((string) ($tx['wager_type'] ?? ''))) ?: null,
+                    ':amt'     => round($deltaReal, 4),
+                    ':bet'     => self::fromProviderAmount((float) ($tx['bet_amount'] ?? 0), $currency),
+                    ':vbet'    => self::fromProviderAmount((float) ($tx['valid_bet_amount'] ?? 0), $currency),
+                    ':prize'   => self::fromProviderAmount((float) ($tx['prize_amount'] ?? 0), $currency),
+                    ':tip'     => self::fromProviderAmount((float) ($tx['tip_amount'] ?? 0), $currency),
+                    ':before'  => $currentReal,
+                    ':after'   => $afterReal,
+                    ':cur'     => $currency,
+                    ':ep'      => $endpoint,
+                    ':settled' => isset($tx['settled_at']) ? (int) $tx['settled_at'] : null,
+                    ':raw'     => json_encode($tx, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]);
+
+                if (class_exists('WageringService', false)) {
+                    if ($endpoint === 'withdraw' && $deltaReal < 0 && in_array($action, ['BET', 'TIP'], true)) {
+                        WageringService::registerBet($pdo, $userId, abs($deltaReal));
+                    } elseif (in_array($action, ['CANCEL', 'ROLLBACK'], true) && $deltaReal > 0) {
+                        WageringService::reverseBet($pdo, $userId, abs($deltaReal));
+                    }
+                }
+
+                $currentReal = $afterReal;
+                $applied++;
+            }
+
+            if ($applied > 0) {
+                $pdo->prepare('UPDATE users SET balance = :bal WHERE id = :id')->execute([
+                    ':bal' => $currentReal,
+                    ':id'  => $userId,
+                ]);
+            }
+            $pdo->commit();
+
+            if ($applied === 0 && $duplicates > 0) {
+                $dupBefore = (float) ($lastDuplicateBalances['before_balance'] ?? $beforeReal);
+                $dupAfter = (float) ($lastDuplicateBalances['after_balance'] ?? $beforeReal);
+
+                return [
+                    'member_account' => $member,
+                    'product_code'   => $productCode,
+                    'before_balance' => self::toProviderAmount($dupBefore, $currency),
+                    'balance'        => self::toProviderAmount($dupAfter, $currency),
+                    'code'           => 1003,
+                    'message'        => 'Duplicate API transactions',
+                ];
+            }
+
+            return [
+                'member_account' => $member,
+                'product_code'   => $productCode,
+                'before_balance' => self::toProviderAmount($beforeReal, $currency),
+                'balance'        => self::toProviderAmount($currentReal, $currency),
+                'code'           => 0,
+                'message'        => '',
+            ];
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if (str_contains($e->getMessage(), '1062') || stripos($e->getMessage(), 'Duplicate') !== false) {
+                $balStmt = $pdo->prepare('SELECT balance FROM users WHERE id = :id LIMIT 1');
+                $balStmt->execute([':id' => $userId]);
+                $bal = (float) ($balStmt->fetchColumn() ?: 0);
+
+                return [
+                    'member_account' => $member,
+                    'product_code'   => $productCode,
+                    'before_balance' => self::toProviderAmount($bal, $currency),
+                    'balance'        => self::toProviderAmount($bal, $currency),
+                    'code'           => 1003,
+                    'message'        => 'Duplicate API transactions',
+                ];
+            }
+            throw $e;
+        }
+    }
+
+    private static function walletPushBetData(PDO $pdo, array $payload): array
+    {
+        $wagers = is_array($payload['wagers'] ?? null) ? $payload['wagers'] : [];
+        $upsert = $pdo->prepare(
+            'INSERT INTO gamingsoft_wagers
+                (user_id, member_account, wager_code, round_id, product_code, game_code, game_type, wager_type, wager_status,
+                 bet_amount, valid_bet_amount, prize_amount, tip_amount, currency, channel_code, settled_at, created_at_ms, payload, raw_payload)
+             VALUES
+                (:uid, :ma, :wc, :rid, :pc, :gc, :gt, :wt, :ws,
+                 :bet, :vbet, :prize, :tip, :cur, :ch, :settled, :created, :payload, :raw)
+             ON DUPLICATE KEY UPDATE
+                user_id = VALUES(user_id),
+                round_id = VALUES(round_id),
+                product_code = VALUES(product_code),
+                game_code = VALUES(game_code),
+                game_type = VALUES(game_type),
+                wager_type = VALUES(wager_type),
+                wager_status = VALUES(wager_status),
+                bet_amount = VALUES(bet_amount),
+                valid_bet_amount = VALUES(valid_bet_amount),
+                prize_amount = VALUES(prize_amount),
+                tip_amount = VALUES(tip_amount),
+                currency = VALUES(currency),
+                channel_code = VALUES(channel_code),
+                settled_at = VALUES(settled_at),
+                payload = VALUES(payload),
+                raw_payload = VALUES(raw_payload)'
+        );
+
+        foreach ($wagers as $wager) {
+            if (!is_array($wager)) {
+                continue;
+            }
+            $member = trim((string) ($wager['member_account'] ?? ''));
+            $wagerCode = trim((string) ($wager['wager_code'] ?? ''));
+            if ($member === '' || $wagerCode === '') {
+                continue;
+            }
+            $user = self::userByMemberAccount($pdo, $member);
+            $currency = strtoupper(trim((string) ($wager['currency'] ?? ''))) ?: strtoupper((string) (self::config($pdo)['currency'] ?? 'TRY'));
+            $productCode = (int) ($wager['product_code'] ?? 0);
+            $status = strtoupper(trim((string) ($wager['wager_status'] ?? '')));
+            $prize = self::fromProviderAmount((float) ($wager['prize_amount'] ?? 0), $currency);
+
+            $upsert->execute([
+                ':uid'     => $user['id'] ?? null,
+                ':ma'      => $member,
+                ':wc'      => $wagerCode,
+                ':rid'     => trim((string) ($wager['round_id'] ?? '')) ?: null,
+                ':pc'      => $productCode ?: null,
+                ':gc'      => trim((string) ($wager['game_code'] ?? '')) ?: null,
+                ':gt'      => strtoupper(trim((string) ($wager['game_type'] ?? ''))) ?: null,
+                ':wt'      => strtoupper(trim((string) ($wager['wager_type'] ?? ''))) ?: null,
+                ':ws'      => $status ?: null,
+                ':bet'     => self::fromProviderAmount((float) ($wager['bet_amount'] ?? 0), $currency),
+                ':vbet'    => self::fromProviderAmount((float) ($wager['valid_bet_amount'] ?? 0), $currency),
+                ':prize'   => $prize,
+                ':tip'     => self::fromProviderAmount((float) ($wager['tip_amount'] ?? 0), $currency),
+                ':cur'     => $currency,
+                ':ch'      => trim((string) ($wager['channel_code'] ?? '')) ?: null,
+                ':settled' => isset($wager['settled_at']) ? (int) $wager['settled_at'] : null,
+                ':created' => isset($wager['created_at']) ? (int) $wager['created_at'] : null,
+                ':payload' => json_encode($wager['payload'] ?? new stdClass(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ':raw'     => json_encode($wager, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+
+            // WBET: credit prize on SETTLED via pushbetdata (no /deposit).
+            if (
+                $productCode === self::WBET_PRODUCT_CODE
+                && is_array($user)
+                && in_array($status, ['SETTLED', 'RESETTLED'], true)
+                && $prize > 0
+            ) {
+                self::creditWbetPrize($pdo, $user, $wagerCode, $prize, $currency, $wager);
+            }
+        }
+
+        return ['code' => 0, 'message' => ''];
+    }
+
+    /** @param array<string, mixed> $user */
+    private static function creditWbetPrize(PDO $pdo, array $user, string $wagerCode, float $prizeReal, string $currency, array $wager): void
+    {
+        $txnId = 'wbet-push:' . $wagerCode;
+        $exists = $pdo->prepare('SELECT 1 FROM gamingsoft_transactions WHERE txn_id = :id LIMIT 1');
+        $exists->execute([':id' => $txnId]);
+        if ($exists->fetchColumn()) {
+            return;
+        }
+
+        $userId = (int) $user['id'];
+        $pdo->beginTransaction();
+        try {
+            $lock = $pdo->prepare('SELECT id, username, balance FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
+            $lock->execute([':id' => $userId]);
+            $locked = $lock->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($locked)) {
+                $pdo->rollBack();
+
+                return;
+            }
+            $before = round((float) $locked['balance'], 4);
+            $after = round($before + $prizeReal, 4);
+            $pdo->prepare('UPDATE users SET balance = :bal WHERE id = :id')->execute([':bal' => $after, ':id' => $userId]);
+            $pdo->prepare(
+                'INSERT INTO gamingsoft_transactions
+                    (user_id, username, member_account, txn_id, wager_code, round_id, product_code, game_code, game_type,
+                     action, wager_status, amount, prize_amount, before_balance, after_balance, currency, endpoint, raw_payload)
+                 VALUES
+                    (:uid, :uname, :ma, :txn, :wager, :round, :pc, :gc, :gt,
+                     :action, :wstatus, :amt, :prize, :before, :after, :cur, :ep, :raw)'
+            )->execute([
+                ':uid'     => $userId,
+                ':uname'   => (string) ($locked['username'] ?? ''),
+                ':ma'      => trim((string) ($wager['member_account'] ?? '')),
+                ':txn'     => $txnId,
+                ':wager'   => $wagerCode,
+                ':round'   => trim((string) ($wager['round_id'] ?? '')) ?: null,
+                ':pc'      => self::WBET_PRODUCT_CODE,
+                ':gc'      => trim((string) ($wager['game_code'] ?? '')) ?: null,
+                ':gt'      => strtoupper(trim((string) ($wager['game_type'] ?? ''))) ?: null,
+                ':action'  => 'SETTLED',
+                ':wstatus' => 'SETTLED',
+                ':amt'     => $prizeReal,
+                ':prize'   => $prizeReal,
+                ':before'  => $before,
+                ':after'   => $after,
+                ':cur'     => $currency,
+                ':ep'      => 'pushbetdata',
+                ':raw'     => json_encode($wager, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if (!str_contains($e->getMessage(), '1062') && stripos($e->getMessage(), 'Duplicate') === false) {
+                error_log('GamingSoft WBET credit failed: ' . $e->getMessage());
+            }
+        }
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────
+
+    private static function deltaFromAction(string $endpoint, string $action, float $providerAmount, string $currency): float
+    {
+        $real = self::fromProviderAmount(abs($providerAmount), $currency);
+        $signedProvider = self::fromProviderAmount($providerAmount, $currency);
+
+        if (in_array($action, ['ROLLBACK', 'ADJUSTMENT'], true)) {
+            return round($signedProvider, 4);
+        }
+
+        if ($endpoint === 'withdraw') {
+            if (in_array($action, ['CANCEL', 'PRESERVE_REFUND', 'FREEBET'], true)) {
+                return round($real, 4);
+            }
+
+            // BET, TIP, BET_PRESERVE, default → debit
+            return round(-$real, 4);
+        }
+
+        // deposit: SETTLED, JACKPOT, BONUS, PROMO, LEADERBOARD, CANCEL, ...
+        return round($real, 4);
+    }
+
+    private static function currencyRatio(string $currency): int
+    {
+        $currency = strtoupper(trim($currency));
+
+        return self::CURRENCY_RATIOS[$currency] ?? 1;
+    }
+
+    /** Convert internal wallet balance → provider-facing amount. */
+    private static function toProviderAmount(float $realAmount, string $currency): float
+    {
+        $ratio = self::currencyRatio($currency);
+        $value = $ratio > 1 ? ($realAmount / $ratio) : $realAmount;
+
+        return round($value, 4);
+    }
+
+    /** Convert provider amount → internal wallet amount. */
+    private static function fromProviderAmount(float $providerAmount, string $currency): float
+    {
+        $ratio = self::currencyRatio($currency);
+        $value = $ratio > 1 ? ($providerAmount * $ratio) : $providerAmount;
+
+        return round($value, 4);
+    }
+
+    /** @param array<string, mixed> $user */
+    public static function memberAccountFromUser(array $user): string
+    {
+        $username = trim((string) ($user['username'] ?? ''));
+        if ($username !== '' && strlen($username) <= 50) {
+            return $username;
+        }
+
+        return (string) (int) ($user['id'] ?? 0);
+    }
+
+    private static function memberPassword(string $memberAccount, string $secretKey): string
+    {
+        return md5($memberAccount . '|' . $secretKey);
+    }
+
+    private static function userByMemberAccount(PDO $pdo, string $memberAccount): ?array
+    {
+        $memberAccount = trim($memberAccount);
+        if ($memberAccount === '') {
+            return null;
+        }
+        try {
+            if (ctype_digit($memberAccount)) {
+                $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE id = :v OR username = :v2 LIMIT 1');
+                $stmt->execute([':v' => (int) $memberAccount, ':v2' => $memberAccount]);
+            } else {
+                $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE username = :v LIMIT 1');
+                $stmt->execute([':v' => $memberAccount]);
+            }
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return is_array($row) ? $row : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private static function isOperatorMatch(PDO $pdo, array $payload): bool
+    {
+        $cfg = self::config($pdo);
+        $expected = strtoupper(trim((string) ($cfg['operator_code'] ?? '')));
+        $got = strtoupper(trim((string) ($payload['operator_code'] ?? '')));
+        if ($expected === '' || $got === '') {
+            return false;
+        }
+
+        return hash_equals($expected, $got);
+    }
+
+    private static function verifySeamlessSign(PDO $pdo, array $payload, string $endpoint): bool
+    {
+        $cfg = self::config($pdo);
+        $secret = (string) ($cfg['secret_key'] ?? '');
+        $operator = (string) ($cfg['operator_code'] ?? '');
+        if ($secret === '' || $operator === '') {
+            return false;
+        }
+        $action = match ($endpoint) {
+            'balance' => 'getbalance',
+            'withdraw' => 'withdraw',
+            'deposit' => 'deposit',
+            'pushbetdata' => 'pushbetdata',
+            default => $endpoint,
+        };
+        $requestTime = (string) ($payload['request_time'] ?? '');
+        $sign = strtolower(trim((string) ($payload['sign'] ?? '')));
+        if ($requestTime === '' || $sign === '') {
+            return false;
+        }
+        $expected = md5($operator . $requestTime . $action . $secret);
+
+        return hash_equals($expected, $sign);
+    }
+
+    /** @param array<string, mixed> $cfg */
+    private static function operatorSign(array $cfg, string $action, ?int $requestTime = null): string
+    {
+        $requestTime ??= self::requestTimeSeconds();
+
+        return md5((string) $requestTime . (string) ($cfg['secret_key'] ?? '') . $action . (string) ($cfg['operator_code'] ?? ''));
+    }
+
+    private static function requestTimeSeconds(): int
+    {
+        // GSC+ uses GMT+8 second timestamps.
+        try {
+            $dt = new DateTimeImmutable('now', new DateTimeZone('Asia/Shanghai'));
+
+            return (int) $dt->getTimestamp();
+        } catch (Throwable) {
+            return time();
+        }
+    }
+
+    private static function activeConfig(PDO $pdo): array
+    {
+        $cfg = self::config($pdo);
+        if ($cfg === []) {
+            throw new RuntimeException('GamingSoft yapılandırması bulunamadı.');
+        }
+        foreach (['operator_code', 'secret_key', 'api_base_url'] as $k) {
+            if (trim((string) ($cfg[$k] ?? '')) === '') {
+                throw new RuntimeException('GamingSoft yapılandırması eksik: ' . $k);
+            }
+        }
+        if ((int) ($cfg['is_active'] ?? 0) !== 1) {
+            throw new RuntimeException('GamingSoft entegrasyonu pasif.');
+        }
+
+        return $cfg;
+    }
+
+    /** @param array<string, mixed> $cfg */
+    private static function operatorGet(array $cfg, string $path, array $query, int $timeout = 20): array
+    {
+        $url = rtrim((string) $cfg['api_base_url'], '/') . $path . '?' . http_build_query($query);
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => max(10, $timeout),
+            CURLOPT_CONNECTTIMEOUT => 8,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        self::applyCaInfo($ch);
+        $raw = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($raw === false || $err !== '') {
+            throw new RuntimeException('GSC+ GET cURL hatası: ' . $err);
+        }
+        $decoded = json_decode((string) $raw, true);
+        if (!is_array($decoded)) {
+            throw new RuntimeException('GSC+ geçersiz JSON (HTTP ' . $code . '): ' . substr((string) $raw, 0, 200));
+        }
+        if (isset($decoded['code']) && (int) $decoded['code'] !== 0 && (int) $decoded['code'] !== 200) {
+            $msg = trim((string) ($decoded['message'] ?? ''));
+            throw new RuntimeException('GSC+ API hatası: ' . ($msg !== '' ? $msg : ('code ' . $decoded['code'])));
+        }
+
+        return $decoded;
+    }
+
+    /** @param array<string, mixed> $cfg @param array<string, mixed> $payload */
+    private static function operatorPost(array $cfg, string $path, array $payload, int $timeout = 20): array
+    {
+        $url = rtrim((string) $cfg['api_base_url'], '/') . $path;
+        $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $body,
+            CURLOPT_TIMEOUT        => max(10, $timeout),
+            CURLOPT_CONNECTTIMEOUT => 8,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Accept: application/json',
+            ],
+            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        self::applyCaInfo($ch);
+        $raw = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($raw === false || $err !== '') {
+            throw new RuntimeException('GSC+ POST cURL hatası: ' . $err);
+        }
+        $decoded = json_decode((string) $raw, true);
+        if (!is_array($decoded)) {
+            throw new RuntimeException('GSC+ geçersiz JSON (HTTP ' . $code . '): ' . substr((string) $raw, 0, 200));
+        }
+
+        return $decoded;
+    }
+
+    /** @param resource|\CurlHandle $ch */
+    private static function applyCaInfo($ch): void
+    {
+        foreach ([defined('BASE_PATH') ? BASE_PATH . '/config/cacert.pem' : ''] as $caInfo) {
+            if ($caInfo !== '' && is_readable($caInfo)) {
+                curl_setopt($ch, CURLOPT_CAINFO, $caInfo);
+                break;
+            }
+        }
+    }
+
+    private static function backendEndpoint(): string
+    {
+        if (defined('BACKEND_URL') && trim((string) BACKEND_URL) !== '') {
+            return rtrim((string) BACKEND_URL, '/');
+        }
+
+        return rtrim((string) (getenv('BACKEND_URL') ?: getenv('BACKEND_FALLBACK_URL') ?: 'https://admin.vegasroyalspin.com'), '/');
+    }
+
+    /** @param array<string, mixed> $payload */
+    private static function batchErrorResponse(array $payload, int $code, string $message): array
+    {
+        $data = [];
+        $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
+        foreach ($batch as $req) {
+            if (!is_array($req)) {
+                continue;
+            }
+            $data[] = [
+                'member_account' => trim((string) ($req['member_account'] ?? '')),
+                'product_code'   => (int) ($req['product_code'] ?? $req['Product_code'] ?? 0),
+                'before_balance' => 0,
+                'balance'        => 0,
+                'code'           => $code,
+                'message'        => $message,
+            ];
+        }
+        if ($data === []) {
+            return ['data' => [['code' => $code, 'message' => $message, 'balance' => 0]]];
+        }
+
+        return ['data' => $data];
+    }
+
+    private static function logWallet(
+        PDO $pdo,
+        string $method,
+        ?int $userId,
+        string $txnCode,
+        int $httpStatus,
+        ?int $statusCode,
+        ?string $errCode,
+        int $duration,
+        array $request,
+        array $response
+    ): void {
+        $pdo->prepare(
+            'INSERT INTO gamingsoft_wallet_logs
+                (method, user_id, txn_code, http_status, status_code, error_code, duration_ms, request_payload, response_payload)
+             VALUES (:m, :u, :t, :h, :s, :e, :d, :req, :res)'
+        )->execute([
+            ':m'   => $method !== '' ? $method : null,
+            ':u'   => $userId,
+            ':t'   => $txnCode !== '' ? $txnCode : null,
+            ':h'   => $httpStatus,
+            ':s'   => $statusCode,
+            ':e'   => $errCode,
+            ':d'   => $duration,
+            ':req' => json_encode($request, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ':res' => json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ]);
+    }
+}

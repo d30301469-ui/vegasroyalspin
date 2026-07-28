@@ -397,6 +397,9 @@ if (!function_exists('frontend_uri_is_backend_only')) {
             '/MegaPayz/deposit',
             '/bgaming_callback',
             '/casino-callback',
+            '/api/v2/sportsbook-wallet',
+            '/api/v2/gamingsoft-wallet',
+            '/api/v2/casino-aggregator-wallet',
         ];
 
         foreach ($prefixes as $prefix) {
