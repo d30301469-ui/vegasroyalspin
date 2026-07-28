@@ -63,6 +63,16 @@ final class GamingSoftService
         if (is_callable($runner)) {
             $runner($pdo);
         }
+        $upgrade = dirname(__DIR__) . '/database/migrations/2026_07_28_110000_gamingsoft_product_game_type_unique.php';
+        if (!is_readable($upgrade)) {
+            $upgrade = dirname(__DIR__) . '/admin/database/migrations/2026_07_28_110000_gamingsoft_product_game_type_unique.php';
+        }
+        if (is_readable($upgrade)) {
+            $upgradeRunner = require $upgrade;
+            if (is_callable($upgradeRunner)) {
+                $upgradeRunner($pdo);
+            }
+        }
         self::ensureStagingDefaults($pdo);
         self::$schemaBootstrapped = true;
     }
@@ -179,6 +189,14 @@ final class GamingSoftService
             && trim((string) ($cfg['api_base_url'] ?? '')) !== '';
     }
 
+    /** Currency used for catalog sync and launch (VGY1 staging default: IDR). */
+    public static function catalogCurrency(PDO $pdo): string
+    {
+        self::bootstrap($pdo);
+
+        return self::resolveOperatorCurrency(self::config($pdo));
+    }
+
     public static function callbackBaseUrl(PDO $pdo): string
     {
         $cfg = self::config($pdo);
@@ -274,7 +292,6 @@ final class GamingSoftService
                 provider_id = VALUES(provider_id),
                 provider = VALUES(provider),
                 product_name = VALUES(product_name),
-                game_type = VALUES(game_type),
                 currency = VALUES(currency),
                 status = VALUES(status),
                 entry_type = VALUES(entry_type),
@@ -294,7 +311,12 @@ final class GamingSoftService
                 continue;
             }
             $rowCurrency = strtoupper(trim((string) ($row['currency'] ?? '')));
-            if ($rowCurrency !== '' && $rowCurrency !== $targetCurrency) {
+            if (!self::isOperatorProductCurrency($rowCurrency, $targetCurrency)) {
+                $skipped++;
+                continue;
+            }
+            $gameType = strtoupper(trim((string) ($row['game_type'] ?? '')));
+            if ($gameType === '') {
                 $skipped++;
                 continue;
             }
@@ -305,7 +327,7 @@ final class GamingSoftService
                 ':prid'  => isset($row['provider_id']) ? (int) $row['provider_id'] : null,
                 ':prov'  => trim((string) ($row['provider'] ?? '')),
                 ':pname' => trim((string) ($row['product_name'] ?? $row['provider'] ?? '')),
-                ':gtype' => strtoupper(trim((string) ($row['game_type'] ?? ''))),
+                ':gtype' => $gameType,
                 ':cur'   => $rowCurrency !== '' ? $rowCurrency : $targetCurrency,
                 ':status'=> $status,
                 ':entry' => (int) ($row['entry_type'] ?? 1),
@@ -315,15 +337,7 @@ final class GamingSoftService
 
         $pdo->exec('UPDATE gamingsoft_config SET products_synced_at = NOW() WHERE id = 1');
 
-        // Drop stale rows synced under another currency (e.g. CNY) so launch/catalog stay on IDR.
-        try {
-            $deactivate = $pdo->prepare(
-                'UPDATE gamingsoft_products SET is_active = 0
-                 WHERE currency <> :cur AND currency <> \'\''
-            );
-            $deactivate->execute([':cur' => $targetCurrency]);
-        } catch (Throwable) {
-        }
+        self::purgeStaleCatalog($pdo, $targetCurrency);
 
         return ['product_count' => $count, 'skipped_other_currency' => $skipped, 'currency' => $targetCurrency];
     }
@@ -336,7 +350,7 @@ final class GamingSoftService
 
         $sql = 'SELECT product_code, game_type, entry_type, product_name, provider, currency
                 FROM gamingsoft_products
-                WHERE is_active = 1 AND (currency = :cur OR currency = \'\')';
+                WHERE is_active = 1 AND currency = :cur';
         $params = [':cur' => $targetCurrency];
         if ($productCode !== null && $productCode > 0) {
             $sql .= ' AND product_code = :pc';
@@ -376,18 +390,25 @@ final class GamingSoftService
                 continue;
             }
             try {
-                $response = self::operatorGet($cfg, '/api/operators/provider-games', [
+                $productGameType = strtoupper(trim((string) ($product['game_type'] ?? '')));
+                $query = [
                     'product_code'  => $pc,
                     'operator_code' => (string) $cfg['operator_code'],
                     'sign'          => self::operatorSign($cfg, 'gamelist'),
                     'request_time'  => self::requestTimeSeconds(),
-                ]);
+                ];
+                if ($productGameType !== '') {
+                    $query['game_type'] = $productGameType;
+                }
+                $response = self::operatorGet($cfg, '/api/operators/provider-games', $query);
                 $games = is_array($response['provider_games'] ?? null) ? $response['provider_games'] : [];
                 $entryType = (int) ($product['entry_type'] ?? 1);
-                $productGameType = strtoupper(trim((string) ($product['game_type'] ?? '')));
                 $syncedForProduct = 0;
                 foreach ($games as $game) {
                     if (!is_array($game)) {
+                        continue;
+                    }
+                    if (!self::gameSupportsOperatorCurrency($game, $targetCurrency)) {
                         continue;
                     }
                     $gameCode = trim((string) ($game['game_code'] ?? ''));
@@ -442,6 +463,8 @@ final class GamingSoftService
         }
 
         $pdo->exec('UPDATE gamingsoft_config SET games_synced_at = NOW() WHERE id = 1');
+
+        self::purgeStaleCatalog($pdo, $targetCurrency);
 
         return [
             'game_count'    => $gameCount,
@@ -519,14 +542,34 @@ final class GamingSoftService
         $memberAccount = self::memberAccountFromUser($user);
         $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
 
-        // Product row is authoritative for launch mode (entry_type).
+        // Product row is authoritative for launch mode (entry_type) and game_type.
         $targetCurrency = self::resolveOperatorCurrency($cfg);
+        $preferredGameType = self::gameTypeFromRow(is_array($gameRow) ? $gameRow : [], []);
         $productRow = self::resolveLaunchProduct(
             $pdo,
             (int) $parsed['product_code'],
             $targetCurrency,
-            is_array($gameRow) ? $gameRow : []
+            is_array($gameRow) ? $gameRow : [],
+            $preferredGameType
         );
+        $productCurrency = strtoupper(trim((string) ($productRow['currency'] ?? '')));
+        if ($productRow === []
+            || (int) ($productRow['is_active'] ?? 0) !== 1
+            || ($productCurrency !== '' && $productCurrency !== $targetCurrency)
+        ) {
+            return [
+                'success' => false,
+                'code'    => 422,
+                'message' => 'Bu oyun VGY1 staging '
+                    . $targetCurrency
+                    . ' kapsamında değil (product_code='
+                    . (int) $parsed['product_code']
+                    . ($productCurrency !== '' ? ', currency=' . $productCurrency : '')
+                    . '). Admin → GSC+ Ayarları Currency='
+                    . $targetCurrency
+                    . ', ardından Product Sync + Oyun Sync çalıştırın.',
+            ];
+        }
         $launchProductCode = (int) ($productRow['product_code'] ?? $parsed['product_code']);
 
         $productGameType = strtoupper(trim((string) ($productRow['game_type'] ?? '')));
@@ -1409,10 +1452,10 @@ final class GamingSoftService
             }
         };
 
-        $add($primaryType);
         $add($productType);
-        $add(self::normalizeProviderGameType($primaryType));
+        $add($primaryType);
         $add(self::normalizeProviderGameType($productType));
+        $add(self::normalizeProviderGameType($primaryType));
 
         if (self::isLiveGameType($primaryType) || self::isLiveGameType($productType)) {
             foreach (['LIVE_CASINO', 'LIVE_CASINO_PREMIUM', 'LC', 'LIVE'] as $liveType) {
@@ -1433,20 +1476,50 @@ final class GamingSoftService
      * @param array<string, mixed> $gameRow
      * @return array<string, mixed>
      */
-    private static function resolveLaunchProduct(PDO $pdo, int $productCode, string $targetCurrency, array $gameRow): array
-    {
-        $stmt = $pdo->prepare('SELECT * FROM gamingsoft_products WHERE product_code = :pc LIMIT 1');
-        $stmt->execute([':pc' => $productCode]);
+    private static function resolveLaunchProduct(
+        PDO $pdo,
+        int $productCode,
+        string $targetCurrency,
+        array $gameRow,
+        string $preferredGameType = ''
+    ): array {
+        $preferredGameType = strtoupper(trim($preferredGameType));
+
+        if ($preferredGameType !== '') {
+            $exact = $pdo->prepare(
+                'SELECT * FROM gamingsoft_products
+                 WHERE product_code = :pc AND game_type = :gt AND is_active = 1 AND currency = :cur
+                 LIMIT 1'
+            );
+            $exact->execute([
+                ':pc'  => $productCode,
+                ':gt'  => $preferredGameType,
+                ':cur' => $targetCurrency,
+            ]);
+            $exactRow = $exact->fetch(PDO::FETCH_ASSOC);
+            if (is_array($exactRow)) {
+                return $exactRow;
+            }
+        }
+
+        $stmt = $pdo->prepare(
+            'SELECT * FROM gamingsoft_products
+             WHERE product_code = :pc AND is_active = 1 AND currency = :cur
+             ORDER BY synced_at DESC, id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([':pc' => $productCode, ':cur' => $targetCurrency]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $row = is_array($row) ? $row : [];
 
-        $rowCurrency = strtoupper(trim((string) ($row['currency'] ?? '')));
-        if ($row !== []
-            && (int) ($row['is_active'] ?? 0) === 1
-            && ($rowCurrency === '' || $rowCurrency === $targetCurrency)
-        ) {
+        if ($row !== []) {
             return $row;
         }
+
+        $fallback = $pdo->prepare('SELECT * FROM gamingsoft_products WHERE product_code = :pc LIMIT 1');
+        $fallback->execute([':pc' => $productCode]);
+        $row = $fallback->fetch(PDO::FETCH_ASSOC);
+        $row = is_array($row) ? $row : [];
 
         $provider = trim((string) ($row['provider'] ?? $gameRow['provider'] ?? ''));
         $productName = trim((string) ($row['product_name'] ?? $gameRow['product_name'] ?? ''));
@@ -1456,27 +1529,95 @@ final class GamingSoftService
 
         $providerMatch = $provider !== '' ? $provider : $productName;
         $nameMatch = $productName !== '' ? $productName : $provider;
-        $lookup = $pdo->prepare(
-            'SELECT * FROM gamingsoft_products
+        $lookupSql = 'SELECT * FROM gamingsoft_products
              WHERE is_active = 1
                AND currency = :cur
                AND (
                     provider = :provider1 OR product_name = :provider2
                     OR provider = :pname1 OR product_name = :pname2
-               )
-             ORDER BY synced_at DESC, id DESC
-             LIMIT 1'
-        );
-        $lookup->execute([
+               )';
+        $lookupParams = [
             ':cur'        => $targetCurrency,
             ':provider1'  => $providerMatch,
             ':provider2'  => $providerMatch,
             ':pname1'     => $nameMatch,
             ':pname2'     => $nameMatch,
-        ]);
+        ];
+        if ($preferredGameType !== '') {
+            $lookupSql .= ' AND game_type = :gt';
+            $lookupParams[':gt'] = $preferredGameType;
+        }
+        $lookupSql .= ' ORDER BY synced_at DESC, id DESC LIMIT 1';
+        $lookup = $pdo->prepare($lookupSql);
+        $lookup->execute($lookupParams);
         $match = $lookup->fetch(PDO::FETCH_ASSOC);
 
         return is_array($match) ? $match : $row;
+    }
+
+    private static function isOperatorProductCurrency(string $productCurrency, string $operatorCurrency): bool
+    {
+        $productCurrency = strtoupper(trim($productCurrency));
+        $operatorCurrency = strtoupper(trim($operatorCurrency));
+        if ($productCurrency === '') {
+            return true;
+        }
+        if ($productCurrency === $operatorCurrency) {
+            return true;
+        }
+
+        // VGY1 staging wallet is IDR; IDR2/VND2 are separate provider wallets.
+        return false;
+    }
+
+    /** @param array<string, mixed> $game */
+    private static function gameSupportsOperatorCurrency(array $game, string $operatorCurrency): bool
+    {
+        $operatorCurrency = strtoupper(trim($operatorCurrency));
+        $support = strtoupper(trim((string) ($game['support_currency'] ?? '')));
+        if ($support === '' || $operatorCurrency === '') {
+            return true;
+        }
+        if ($support === $operatorCurrency) {
+            return true;
+        }
+
+        foreach (self::splitCurrencyCandidates($support) as $candidate) {
+            if ($candidate === $operatorCurrency) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function purgeStaleCatalog(PDO $pdo, string $targetCurrency): void
+    {
+        $targetCurrency = strtoupper(trim($targetCurrency));
+        if ($targetCurrency === '') {
+            return;
+        }
+
+        try {
+            $pdo->prepare(
+                'UPDATE gamingsoft_products SET is_active = 0
+                 WHERE currency <> :cur AND currency <> \'\''
+            )->execute([':cur' => $targetCurrency]);
+        } catch (Throwable) {
+        }
+
+        try {
+            $pdo->prepare(
+                'UPDATE gamingsoft_games g
+                 LEFT JOIN gamingsoft_products p
+                   ON p.product_code = g.product_code
+                  AND p.is_active = 1
+                  AND p.currency = :cur
+                 SET g.is_active = 0
+                 WHERE p.id IS NULL'
+            )->execute([':cur' => $targetCurrency]);
+        } catch (Throwable) {
+        }
     }
 
     private static function normalizeProviderGameType(string $gameType): string

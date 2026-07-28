@@ -569,6 +569,14 @@ final class SlotGamesQuery
             $gsTypeClause = $gameType === 1
                 ? "({$gsTypeExpr}) = 2"
                 : "({$gsTypeExpr}) = 1";
+            $gsCurrency = GamingSoftService::STAGING_CURRENCY;
+            try {
+                if (class_exists('AdminDatabase', false)) {
+                    $gsCurrency = GamingSoftService::catalogCurrency(AdminDatabase::pdo());
+                }
+            } catch (Throwable) {
+            }
+            $gsCurrency = preg_replace('/[^A-Z0-9]/', '', strtoupper($gsCurrency)) ?: GamingSoftService::STAGING_CURRENCY;
             $union[] = "SELECT
                     CONCAT('gamingsoft:', g.product_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
@@ -581,7 +589,10 @@ final class SlotGamesQuery
                     CAST(g.id AS CHAR) AS row_id,
                     CAST('' AS CHAR) AS raw_payload
                 FROM gamingsoft_games g
-                LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
+                INNER JOIN gamingsoft_products p
+                    ON p.product_code = g.product_code
+                   AND p.is_active = 1
+                   AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                 WHERE g.is_active = 1 AND {$gsTypeClause}";
         }
 
@@ -779,10 +790,21 @@ final class SlotGamesQuery
                   OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
                 THEN 2 ELSE 1 END";
             $gsWanted = $gameType === 1 ? 2 : 1;
+            $gsCurrency = GamingSoftService::STAGING_CURRENCY;
+            try {
+                if (class_exists('AdminDatabase', false)) {
+                    $gsCurrency = GamingSoftService::catalogCurrency(AdminDatabase::pdo());
+                }
+            } catch (Throwable) {
+            }
+            $gsCurrency = preg_replace('/[^A-Z0-9]/', '', strtoupper($gsCurrency)) ?: GamingSoftService::STAGING_CURRENCY;
             $gsStmt = $pdo->prepare(
                 "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
                  FROM gamingsoft_games g
-                 LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
+                 INNER JOIN gamingsoft_products p
+                    ON p.product_code = g.product_code
+                   AND p.is_active = 1
+                   AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                  WHERE g.is_active = 1 AND ({$gsTypeExpr}) = :type
                  ORDER BY provider_name ASC"
             );

@@ -55,6 +55,20 @@ final class LiveCasinoQuery
             . ')';
     }
 
+    private static function gamingSoftCatalogCurrencySql(): string
+    {
+        self::ensureDependencies();
+        $currency = GamingSoftService::STAGING_CURRENCY;
+        try {
+            if (class_exists('GamingSoftService', false) && class_exists('AdminDatabase', false)) {
+                $currency = GamingSoftService::catalogCurrency(AdminDatabase::pdo());
+            }
+        } catch (Throwable) {
+        }
+
+        return preg_replace('/[^A-Z0-9]/', '', strtoupper($currency)) ?: GamingSoftService::STAGING_CURRENCY;
+    }
+
     /**
      * @param list<string> $providers
      * @return array{
@@ -531,6 +545,7 @@ final class LiveCasinoQuery
     {
         $liveGame = self::gamingSoftLiveSql('g.game_type');
         $liveProduct = self::gamingSoftLiveSql('p.game_type');
+        $gsCurrency = self::gamingSoftCatalogCurrencySql();
 
         // Include rows tagged live on the game OR belonging to a live product
         // (covers mis-tagged game_type after sync).
@@ -546,7 +561,10 @@ final class LiveCasinoQuery
                     CAST(g.id AS CHAR) AS row_id,
                     '' AS raw_payload
                 FROM gamingsoft_games g
-                LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
+                INNER JOIN gamingsoft_products p
+                    ON p.product_code = g.product_code
+                   AND p.is_active = 1
+                   AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                 WHERE g.is_active = 1
                   AND ({$liveGame} OR {$liveProduct})";
     }
@@ -558,6 +576,7 @@ final class LiveCasinoQuery
     {
         $live = self::gamingSoftLiveSql('p.game_type');
         $nonLive = "UPPER(TRIM(COALESCE(p.game_type, ''))) IN ('SLOT','FISHING','SPORT_BOOK','SPORTSBOOK','POKER','LOTTERY','OTHER','VIRTUAL_SPORT','ESPORT')";
+        $gsCurrency = self::gamingSoftCatalogCurrencySql();
 
         return "SELECT
                     CONCAT('gamingsoft:', p.product_code, ':__lobby__') AS game_id,
@@ -572,6 +591,7 @@ final class LiveCasinoQuery
                     '' AS raw_payload
                 FROM gamingsoft_products p
                 WHERE p.is_active = 1
+                  AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                   AND ({$live} OR (p.entry_type = 2 AND NOT ({$nonLive})))
                   AND NOT EXISTS (
                       SELECT 1 FROM gamingsoft_games g
