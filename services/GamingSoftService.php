@@ -541,6 +541,7 @@ final class GamingSoftService
         $userId = (int) $user['id'];
         $memberAccount = self::memberAccountFromUser($user);
         $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
+        $launchPassword = self::memberLaunchPassword($pdo, $userId, $memberAccount, (string) $cfg['secret_key']);
 
         // Product row is authoritative for launch mode (entry_type) and game_type.
         $targetCurrency = self::resolveOperatorCurrency($cfg);
@@ -644,6 +645,7 @@ final class GamingSoftService
             $payload = self::buildLaunchPayload(
                 $cfg,
                 $memberAccount,
+                $launchPassword,
                 $nickname,
                 $currency,
                 $attempt['game_code'],
@@ -682,6 +684,7 @@ final class GamingSoftService
             $payload = self::buildLaunchPayload(
                 $cfg,
                 $memberAccount,
+                $launchPassword,
                 $nickname,
                 $targetCurrency,
                 $gameCode,
@@ -784,6 +787,7 @@ final class GamingSoftService
         try {
             self::bootstrap($pdo);
             if (!self::verifySeamlessSign($pdo, $payload, $endpoint)) {
+                error_log('GamingSoft wallet invalid sign: endpoint=' . $endpoint . ' operator=' . (string) ($payload['operator_code'] ?? ''));
                 $body = $endpoint === 'pushbetdata'
                     ? ['code' => 1004, 'message' => 'API signature is invalid']
                     : ['data' => []];
@@ -1324,32 +1328,85 @@ final class GamingSoftService
     /** @param array<string, mixed> $user */
     public static function memberAccountFromUser(array $user): string
     {
+        $userId = (int) ($user['id'] ?? 0);
+        if ($userId > 0) {
+            return (string) $userId;
+        }
+
         $username = trim((string) ($user['username'] ?? ''));
         if ($username !== '' && strlen($username) <= 50) {
             return $username;
         }
 
-        return (string) (int) ($user['id'] ?? 0);
+        return '0';
     }
 
-    private static function memberPassword(string $memberAccount, string $secretKey): string
+    private static function normalizeMemberAccountForLookup(string $memberAccount): string
     {
-        return md5($memberAccount . '|' . $secretKey);
+        $memberAccount = trim($memberAccount);
+        if ($memberAccount === '') {
+            return '';
+        }
+
+        if (preg_match('/^stg_[a-z0-9]{1,12}_(.+)$/i', $memberAccount, $m) === 1) {
+            return trim((string) ($m[1] ?? ''));
+        }
+        if (preg_match('/^[a-z0-9]{1,12}_(.+)$/i', $memberAccount, $m) === 1) {
+            return trim((string) ($m[1] ?? ''));
+        }
+
+        return $memberAccount;
+    }
+
+    private static function memberLaunchPassword(PDO $pdo, int $userId, string $memberAccount, string $secretKey): string
+    {
+        if ($userId > 0) {
+            try {
+                $stmt = $pdo->prepare('SELECT password FROM users WHERE id = :id LIMIT 1');
+                $stmt->execute([':id' => $userId]);
+                $stored = trim((string) ($stmt->fetchColumn() ?: ''));
+                if ($stored !== '') {
+                    $lower = strtolower($stored);
+                    if (preg_match('/^[a-f0-9]{32}$/', $lower) === 1) {
+                        return $lower;
+                    }
+                }
+            } catch (Throwable) {
+            }
+        }
+
+        // GSC+ launch-game password = MD5(member password). For bcrypt users use stable derived token.
+        return md5($memberAccount . $secretKey);
     }
 
     private static function userByMemberAccount(PDO $pdo, string $memberAccount): ?array
     {
-        $memberAccount = trim($memberAccount);
+        $memberAccount = self::normalizeMemberAccountForLookup($memberAccount);
         if ($memberAccount === '') {
             return null;
         }
         try {
             if (ctype_digit($memberAccount)) {
-                $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE id = :v OR username = :v2 LIMIT 1');
-                $stmt->execute([':v' => (int) $memberAccount, ':v2' => $memberAccount]);
+                $stmt = $pdo->prepare(
+                    'SELECT id, username, balance, banned FROM users
+                     WHERE id = :id OR username = :uname OR LOWER(username) = LOWER(:uname2)
+                     LIMIT 1'
+                );
+                $stmt->execute([
+                    ':id'     => (int) $memberAccount,
+                    ':uname'  => $memberAccount,
+                    ':uname2' => $memberAccount,
+                ]);
             } else {
-                $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE username = :v LIMIT 1');
-                $stmt->execute([':v' => $memberAccount]);
+                $stmt = $pdo->prepare(
+                    'SELECT id, username, balance, banned FROM users
+                     WHERE username = :uname OR LOWER(username) = LOWER(:uname2)
+                     LIMIT 1'
+                );
+                $stmt->execute([
+                    ':uname'  => $memberAccount,
+                    ':uname2' => $memberAccount,
+                ]);
             }
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -1375,8 +1432,7 @@ final class GamingSoftService
     {
         $cfg = self::config($pdo);
         $secret = (string) ($cfg['secret_key'] ?? '');
-        $operator = (string) ($cfg['operator_code'] ?? '');
-        if ($secret === '' || $operator === '') {
+        if ($secret === '') {
             return false;
         }
         $action = match ($endpoint) {
@@ -1386,14 +1442,37 @@ final class GamingSoftService
             'pushbetdata' => 'pushbetdata',
             default => $endpoint,
         };
-        $requestTime = (string) ($payload['request_time'] ?? '');
+        $requestTime = trim((string) ($payload['request_time'] ?? ''));
         $sign = strtolower(trim((string) ($payload['sign'] ?? '')));
         if ($requestTime === '' || $sign === '') {
             return false;
         }
-        $expected = md5($operator . $requestTime . $action . $secret);
 
-        return hash_equals($expected, $sign);
+        $operators = [];
+        $fromPayload = trim((string) ($payload['operator_code'] ?? ''));
+        if ($fromPayload !== '') {
+            $operators[] = $fromPayload;
+        }
+        $fromCfg = trim((string) ($cfg['operator_code'] ?? ''));
+        if ($fromCfg !== '') {
+            foreach ([$fromCfg, strtoupper($fromCfg), strtolower($fromCfg)] as $candidate) {
+                if ($candidate !== '' && !in_array($candidate, $operators, true)) {
+                    $operators[] = $candidate;
+                }
+            }
+        }
+        if ($operators === []) {
+            return false;
+        }
+
+        foreach ($operators as $operator) {
+            $expected = md5($operator . $requestTime . $action . $secret);
+            if (hash_equals($expected, $sign)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @param array<string, mixed> $cfg */
@@ -1683,6 +1762,7 @@ final class GamingSoftService
     private static function buildLaunchPayload(
         array $cfg,
         string $memberAccount,
+        string $memberPassword,
         string $nickname,
         string $currency,
         ?string $gameCode,
@@ -1697,12 +1777,12 @@ final class GamingSoftService
         $payload = [
             'operator_code'      => (string) $cfg['operator_code'],
             'member_account'     => $memberAccount,
-            'password'           => self::memberPassword($memberAccount, (string) $cfg['secret_key']),
+            'password'           => $memberPassword,
             'nickname'           => $nickname,
             'currency'           => $currency,
             'product_code'       => $productCode,
             'game_type'          => $gameType,
-            'language_code'      => $languageCode,
+            'language_code'      => (string) $languageCode,
             'ip'                 => $ip,
             'platform'           => $platform,
             'sign'               => self::operatorSign($cfg, 'launchgame', $requestTime),
@@ -1710,8 +1790,10 @@ final class GamingSoftService
             'operator_lobby_url' => $lobbyUrl,
         ];
 
-        // Docs: game_code required only for direct play (entry_type=1). Omit for lobby.
-        if ($gameCode !== null && trim($gameCode) !== '') {
+        // GSC+ doc example uses explicit null for lobby launches.
+        if ($gameCode === null) {
+            $payload['game_code'] = null;
+        } elseif (trim($gameCode) !== '') {
             $payload['game_code'] = trim($gameCode);
         }
 

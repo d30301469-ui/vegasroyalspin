@@ -402,6 +402,13 @@
         if (!data) {
             return null;
         }
+        var content = String(data.content || '').trim();
+        if (content !== '') {
+            return {
+                content: content,
+                openMode: normalizeOpenMode(data.open_mode, 'html')
+            };
+        }
         var url = String(data.game_url || data.launch_url || '').trim();
         if (!url) {
             return null;
@@ -454,6 +461,26 @@
             window.open(url, '_blank', 'noopener,noreferrer');
         };
         el.hidden = false;
+    }
+
+    function openLaunchContent(html, openMode) {
+        var mode = String(openMode || 'html').toLowerCase();
+        if (mode === 'redirect') {
+            document.open();
+            document.write(html);
+            document.close();
+            return;
+        }
+        var frame = document.getElementById('playFrame');
+        clearNewTabFallback();
+        if (!frame) {
+            document.open();
+            document.write(html);
+            document.close();
+            return;
+        }
+        frame.removeAttribute('src');
+        frame.srcdoc = html;
     }
 
     function openLaunchUrl(url, openMode) {
@@ -562,6 +589,11 @@
                 if (x.j.success === true && x.j.data) {
                     var launchTarget = resolveLaunchTarget(x.j.data, launchPayload.open_mode);
                     if (launchTarget) {
+                        if (launchTarget.content) {
+                            openLaunchContent(launchTarget.content, launchTarget.openMode);
+                            notifyFreespinsOnLaunch();
+                            return;
+                        }
                         if (!isSafeLaunchUrl(launchTarget.url)) {
                             showFatal(
                                 (x.j.message && String(x.j.message)) ||
