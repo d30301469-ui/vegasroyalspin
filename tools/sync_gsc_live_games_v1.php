@@ -54,42 +54,8 @@ if (!$force && $liveCount > 0 && $fresh) {
     exit(0);
 }
 
-try {
-    $result = GscPlusService::syncProducts($pdo);
-    echo "Urunler senkronlandi: {$result['count']}\n";
-} catch (Throwable $e) {
-    echo "Urun sync hatasi: {$e->getMessage()}\n";
+$result = GscPlusService::syncLiveCasinoCatalog($pdo);
+echo "Urunler: {$result['products']}, canli urun: {$result['live_products']}, oyun kaydi: {$result['games']}\n";
+foreach ($result['errors'] as $error) {
+    echo "  HATA: {$error}\n";
 }
-
-$liveProducts = [];
-try {
-    $stmt = $pdo->query(
-        "SELECT product_code, product_name, provider FROM gsc_products
-         WHERE is_active = 1 AND UPPER(game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
-         ORDER BY product_code"
-    );
-    $liveProducts = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-} catch (Throwable $e) {
-    echo "Canli urunler okunamadi: {$e->getMessage()}\n";
-    exit(0);
-}
-
-if ($liveProducts === []) {
-    echo "Aktif canli casino urunu bulunamadi.\n";
-    exit(0);
-}
-
-$total = 0;
-foreach ($liveProducts as $product) {
-    $code = (int) ($product['product_code'] ?? 0);
-    $label = trim((string) ($product['provider'] ?? '')) ?: trim((string) ($product['product_name'] ?? '')) ?: (string) $code;
-    try {
-        $result = GscPlusService::syncGames($pdo, $code);
-        $total += (int) $result['count'];
-        echo "  {$label} ({$code}): {$result['count']} oyun\n";
-    } catch (Throwable $e) {
-        echo "  {$label} ({$code}) HATA: {$e->getMessage()}\n";
-    }
-}
-
-echo "Toplam senkronlanan canli oyun kaydi: {$total}\n";

@@ -45,6 +45,12 @@ if ($method === 'OPTIONS') {
 }
 
 if ($endpoint === '' || $endpoint === 'health') {
+    $catalog = [];
+    try {
+        $catalog = GscPlusService::catalogStatus(AdminDatabase::pdo());
+    } catch (Throwable $e) {
+        $catalog = ['error' => $e->getMessage()];
+    }
     http_response_code(200);
     echo json_encode([
         'status' => 'ok',
@@ -56,11 +62,12 @@ if ($endpoint === '' || $endpoint === 'health') {
             'deposit' => '/api/v2/gamingsoft-wallet/v1/api/seamless/deposit',
             'pushbetdata' => '/api/v2/gamingsoft-wallet/v1/api/seamless/pushbetdata',
         ],
+        'catalog' => $catalog,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-$allowed = ['balance', 'withdraw', 'deposit', 'pushbetdata'];
+$allowed = ['balance', 'withdraw', 'deposit', 'pushbetdata', 'synccatalog'];
 if (!in_array($endpoint, $allowed, true)) {
     http_response_code(404);
     echo json_encode(['code' => 999, 'message' => 'NOT_FOUND'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -94,6 +101,33 @@ if (!is_array($payload) || $payload === []) {
 }
 if (!is_array($payload)) {
     $payload = [];
+}
+
+// Signature-protected remote catalog sync (products + live casino games).
+if ($endpoint === 'synccatalog') {
+    try {
+        $pdo = AdminDatabase::pdo();
+        $cfg = GscPlusService::config($pdo);
+        $secretKey = (string) ($cfg['secret_key'] ?? '');
+        $operatorCode = (string) ($cfg['operator_code'] ?? '');
+        if (
+            $secretKey === ''
+            || $operatorCode === ''
+            || !GscPlusService::verifyCallbackSign($payload, 'synccatalog', $secretKey, $operatorCode)
+        ) {
+            http_response_code(200);
+            echo json_encode(['code' => 1004, 'message' => 'API signature is invalid'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+        set_time_limit(300);
+        $result = GscPlusService::syncLiveCasinoCatalog($pdo);
+        http_response_code(200);
+        echo json_encode(['code' => 0, 'message' => ''] + $result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    } catch (Throwable $e) {
+        http_response_code(200);
+        echo json_encode(['code' => 999, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+    exit;
 }
 
 try {

@@ -1183,6 +1183,78 @@ final class GscPlusService
         return ['count' => $count];
     }
 
+    /**
+     * Products + live-casino game lists in one pass (deploy tool / remote sync).
+     *
+     * @return array{products:int,live_products:int,games:int,errors:list<string>}
+     */
+    public static function syncLiveCasinoCatalog(PDO $pdo): array
+    {
+        $errors = [];
+        $productCount = 0;
+        try {
+            $productCount = (int) self::syncProducts($pdo)['count'];
+        } catch (Throwable $e) {
+            $errors[] = 'products: ' . $e->getMessage();
+        }
+
+        $liveProducts = [];
+        try {
+            $stmt = $pdo->query(
+                "SELECT product_code FROM gsc_products
+                 WHERE is_active = 1 AND UPPER(game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+                 ORDER BY product_code"
+            );
+            $liveProducts = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        } catch (Throwable $e) {
+            $errors[] = 'live products: ' . $e->getMessage();
+        }
+
+        $games = 0;
+        foreach (array_unique(array_map('intval', $liveProducts)) as $productCode) {
+            if ($productCode <= 0) {
+                continue;
+            }
+            try {
+                $games += (int) self::syncGames($pdo, $productCode)['count'];
+            } catch (Throwable $e) {
+                $errors[] = 'product ' . $productCode . ': ' . $e->getMessage();
+            }
+        }
+
+        return [
+            'products' => $productCount,
+            'live_products' => count($liveProducts),
+            'games' => $games,
+            'errors' => $errors,
+        ];
+    }
+
+    /** @return array<string,mixed> Catalog counters for diagnostics (health endpoint). */
+    public static function catalogStatus(PDO $pdo): array
+    {
+        $status = [];
+        try {
+            self::bootstrap($pdo);
+            $status['configured'] = self::isConfigured($pdo);
+            $cfg = self::config($pdo);
+            $status['currency'] = (string) ($cfg['currency'] ?? '');
+            $status['products_synced_at'] = (string) ($cfg['products_synced_at'] ?? '');
+            $status['games_synced_at'] = (string) ($cfg['games_synced_at'] ?? '');
+            $status['products_total'] = (int) $pdo->query('SELECT COUNT(*) FROM gsc_products')->fetchColumn();
+            $status['products_live'] = (int) $pdo->query(
+                "SELECT COUNT(*) FROM gsc_products WHERE is_active = 1 AND UPPER(game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')"
+            )->fetchColumn();
+            $status['games_total'] = (int) $pdo->query('SELECT COUNT(*) FROM gsc_games')->fetchColumn();
+            $status['games_live_active'] = (int) $pdo->query(
+                "SELECT COUNT(*) FROM gsc_games WHERE is_active = 1 AND UPPER(game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')"
+            )->fetchColumn();
+        } catch (Throwable $e) {
+            $status['error'] = $e->getMessage();
+        }
+        return $status;
+    }
+
     /** @return array{count:int,products:int} */
     public static function syncGames(PDO $pdo, ?int $onlyProductCode = null): array
     {
