@@ -906,14 +906,10 @@ final class GamingSoftService
         try {
             self::bootstrap($pdo);
             if (!self::verifySeamlessSign($pdo, $payload, $endpoint)) {
-                error_log('GamingSoft wallet invalid sign: endpoint=' . $endpoint . ' operator=' . (string) ($payload['operator_code'] ?? ''));
+                error_log('GamingSoft wallet invalid sign: endpoint=' . $endpoint . ' operator=' . (string) self::payloadValue($payload, ['operator_code', 'Operator_Code']));
                 $body = $endpoint === 'pushbetdata'
                     ? ['code' => 1004, 'message' => 'API signature is invalid']
-                    : ['data' => []];
-                // Always return structured batch errors when possible
-                if ($endpoint !== 'pushbetdata') {
-                    $body = self::batchErrorResponse($payload, 1004, 'API signature is invalid');
-                }
+                    : self::batchErrorResponse($payload, 1004, 'API signature is invalid');
             } elseif (!self::isOperatorMatch($pdo, $payload)) {
                 $body = $endpoint === 'pushbetdata'
                     ? ['code' => 1002, 'message' => 'API proxy key error']
@@ -935,8 +931,17 @@ final class GamingSoftService
             $httpStatus = 500;
         }
 
+        $logStatusCode = (int) ($body['code'] ?? 0);
+        if ($logStatusCode === 0 && isset($body['data'][0]) && is_array($body['data'][0])) {
+            $logStatusCode = (int) ($body['data'][0]['code'] ?? 0);
+        }
+        $logError = null;
+        if ($logStatusCode !== 0) {
+            $logError = (string) ($body['message'] ?? ($body['data'][0]['message'] ?? 'error_' . $logStatusCode));
+        }
+
         try {
-            self::logWallet($pdo, $endpoint, null, '', $httpStatus, (int) ($body['code'] ?? 0), null,
+            self::logWallet($pdo, $endpoint, null, '', $httpStatus, $logStatusCode, $logError,
                 (int) round((microtime(true) - $start) * 1000), $payload, $body);
         } catch (Throwable) {
         }
@@ -1781,7 +1786,7 @@ final class GamingSoftService
     {
         $cfg = self::config($pdo);
         $expected = strtoupper(trim((string) ($cfg['operator_code'] ?? '')));
-        $got = strtoupper(trim((string) ($payload['operator_code'] ?? '')));
+        $got = strtoupper(trim((string) self::payloadValue($payload, ['operator_code', 'Operator_Code', 'operatorCode'])));
         if ($expected === '' || $got === '') {
             return false;
         }
@@ -1792,31 +1797,57 @@ final class GamingSoftService
     private static function verifySeamlessSign(PDO $pdo, array $payload, string $endpoint): bool
     {
         $cfg = self::config($pdo);
-        $secret = (string) ($cfg['secret_key'] ?? '');
-        if ($secret === '') {
+        $secret = trim((string) ($cfg['secret_key'] ?? ''));
+        $envSecret = trim((string) (getenv('GAMINGSOFT_SECRET_KEY') ?: ''));
+        $secrets = [];
+        foreach ([$secret, $envSecret] as $candidate) {
+            if ($candidate !== '' && !in_array($candidate, $secrets, true)) {
+                $secrets[] = $candidate;
+            }
+        }
+        if ($secrets === []) {
             return false;
         }
-        $action = match ($endpoint) {
-            'balance' => 'getbalance',
+
+        // Seamless wallet (OperatorCode first):
+        // MD5(operator_code + request_time + method + secret_key)
+        $action = match (strtolower(trim($endpoint))) {
+            'balance', 'getbalance', 'get_balance' => 'getbalance',
             'withdraw' => 'withdraw',
             'deposit' => 'deposit',
-            'pushbetdata' => 'pushbetdata',
-            default => $endpoint,
+            'pushbetdata', 'push_bet_data', 'push-bet-data' => 'pushbetdata',
+            default => strtolower(trim($endpoint)),
         };
-        $requestTime = trim((string) ($payload['request_time'] ?? ''));
-        $sign = strtolower(trim((string) ($payload['sign'] ?? '')));
+        if ($action === '') {
+            return false;
+        }
+
+        $requestTime = trim((string) self::payloadValue($payload, ['request_time', 'Request_Time', 'requestTime']));
+        // Doc: TimeSpan in seconds (not ms). Tolerate numeric JSON values.
+        if ($requestTime !== '' && is_numeric($requestTime)) {
+            $asFloat = (float) $requestTime;
+            if ($asFloat > 20000000000) {
+                // milliseconds → seconds
+                $requestTime = (string) (int) floor($asFloat / 1000);
+            } else {
+                $requestTime = (string) (int) $asFloat;
+            }
+        }
+        $sign = strtolower(trim((string) self::payloadValue($payload, ['sign', 'Sign', 'SIGNATURE'])));
         if ($requestTime === '' || $sign === '') {
             return false;
         }
 
         $operators = [];
-        $fromPayload = trim((string) ($payload['operator_code'] ?? ''));
-        if ($fromPayload !== '') {
-            $operators[] = $fromPayload;
-        }
-        $fromCfg = trim((string) ($cfg['operator_code'] ?? ''));
-        if ($fromCfg !== '') {
-            foreach ([$fromCfg, strtoupper($fromCfg), strtolower($fromCfg)] as $candidate) {
+        foreach ([
+            self::payloadValue($payload, ['operator_code', 'Operator_Code', 'operatorCode']),
+            $cfg['operator_code'] ?? '',
+        ] as $rawOp) {
+            $rawOp = trim((string) $rawOp);
+            if ($rawOp === '') {
+                continue;
+            }
+            foreach ([$rawOp, strtoupper($rawOp), strtolower($rawOp)] as $candidate) {
                 if ($candidate !== '' && !in_array($candidate, $operators, true)) {
                     $operators[] = $candidate;
                 }
@@ -1826,22 +1857,61 @@ final class GamingSoftService
             return false;
         }
 
-        foreach ($operators as $operator) {
-            $expected = md5($operator . $requestTime . $action . $secret);
-            if (hash_equals($expected, $sign)) {
-                return true;
+        $actions = [$action];
+        if ($action === 'getbalance') {
+            $actions[] = 'balance';
+        }
+
+        foreach ($secrets as $sk) {
+            foreach ($operators as $operator) {
+                foreach ($actions as $methodName) {
+                    $expected = md5($operator . $requestTime . $methodName . $sk);
+                    if (hash_equals($expected, $sign)) {
+                        return true;
+                    }
+                }
             }
         }
 
         return false;
     }
 
+    /**
+     * Case-insensitive first-match for GSC+ payload keys.
+     *
+     * @param array<string, mixed> $payload
+     * @param list<string> $keys
+     */
+    private static function payloadValue(array $payload, array $keys): mixed
+    {
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $payload)) {
+                return $payload[$key];
+            }
+        }
+        $lowerMap = [];
+        foreach ($payload as $k => $v) {
+            if (is_string($k)) {
+                $lowerMap[strtolower($k)] = $v;
+            }
+        }
+        foreach ($keys as $key) {
+            $lk = strtolower($key);
+            if (array_key_exists($lk, $lowerMap)) {
+                return $lowerMap[$lk];
+            }
+        }
+
+        return null;
+    }
+
     /** @param array<string, mixed> $cfg */
     private static function operatorSign(array $cfg, string $action, ?int $requestTime = null): string
     {
         $requestTime ??= self::requestTimeSeconds();
-
-        return md5((string) $requestTime . (string) ($cfg['secret_key'] ?? '') . $action . (string) ($cfg['operator_code'] ?? ''));
+        // Operator APIs (RequestTime first):
+        // MD5(request_time + secret_key + method + operator_code)
+        return md5((string) $requestTime . trim((string) ($cfg['secret_key'] ?? '')) . $action . trim((string) ($cfg['operator_code'] ?? '')));
     }
 
     private static function requestTimeSeconds(): int

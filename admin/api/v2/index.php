@@ -247,7 +247,7 @@ if ($method === 'POST' && in_array($route, ['casino-aggregator-wallet', 'casino_
 }
 
 if (
-    $method === 'POST'
+    in_array($method, ['GET', 'POST'], true)
     && (
         in_array($route, ['gamingsoft-wallet', 'gamingsoft_wallet', 'gamingsoft-wallet.php', 'gamingsoft_callback', 'gamingsoft-callback'], true)
         || str_starts_with(strtolower(trim((string) $route, '/')), 'gamingsoft-wallet/')
@@ -256,6 +256,9 @@ if (
     if (preg_match('#^gamingsoft-wallet(?:\.php)?/?(.*)$#i', trim((string) $route, '/'), $gsRouteMatch)) {
         $_GET['endpoint'] = trim((string) ($gsRouteMatch[1] ?? ''), '/');
     }
+    // member_api_kernel already consumed php://input — pass parsed body through.
+    $GLOBALS['GAMINGSOFT_WALLET_PAYLOAD'] = is_array($payload['body'] ?? null) ? $payload['body'] : [];
+    $GLOBALS['GAMINGSOFT_WALLET_RAW'] = is_string($bodyRaw ?? null) ? $bodyRaw : '';
     require __DIR__ . '/gamingsoft_callback.php';
     exit;
 }
