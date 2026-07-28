@@ -9,7 +9,30 @@ declare(strict_types=1);
 if (!function_exists('metropol_mail_imap_available')) {
     function metropol_mail_imap_available(): bool
     {
-        return function_exists('imap_open');
+        return function_exists('imap_open') && extension_loaded('imap');
+    }
+}
+
+if (!function_exists('metropol_mail_imap_diagnostics')) {
+    function metropol_mail_imap_diagnostics(): string
+    {
+        $lines = [];
+        $lines[] = 'PHP: ' . PHP_VERSION . ' (' . PHP_SAPI . ')';
+        $lines[] = 'extension_loaded(imap): ' . (extension_loaded('imap') ? 'evet' : 'hayir');
+        $lines[] = 'function_exists(imap_open): ' . (function_exists('imap_open') ? 'evet' : 'hayir');
+        $ini = (string) php_ini_loaded_file();
+        if ($ini !== '') {
+            $lines[] = 'php.ini: ' . $ini;
+        }
+        $disabled = (string) ini_get('disable_functions');
+        if ($disabled !== '' && stripos($disabled, 'imap') !== false) {
+            $lines[] = 'disable_functions icinde imap var: ' . $disabled;
+        }
+        $scanned = (string) php_ini_scanned_files();
+        if ($scanned !== '') {
+            $lines[] = 'ek ini: ' . str_replace(["\n", "\r"], ' ', $scanned);
+        }
+        return implode(' | ', $lines);
     }
 }
 
@@ -23,7 +46,9 @@ if (!function_exists('metropol_mail_fetch_inbox')) {
         if (!metropol_mail_imap_available()) {
             return [
                 'ok' => false,
-                'error' => 'PHP imap eklentisi yüklü değil. Sunucuda php-imap kurun (örn. apt install php-imap && systemctl restart php*-fpm).',
+                'error' => 'PHP imap eklentisi bu site PHP sürecinde yok. '
+                    . 'aaPanel > App Store > PHP (sitenin sürümü) > Settings > Install extensions > imap. '
+                    . 'Sonra o sürüme ait PHP-FPM restart. Tanı: ' . metropol_mail_imap_diagnostics(),
                 'messages' => [],
             ];
         }
