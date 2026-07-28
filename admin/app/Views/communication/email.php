@@ -76,7 +76,16 @@ $emailSection = 'inbox';
                             <td><?= htmlspecialchars((string) ($message['date'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
                                 <?php if ($uid > 0): ?>
-                                    <a class="btn btn--ghost" href="<?= htmlspecialchars(AdminAuth::url('/email/inbox/view?uid=' . $uid), ENT_QUOTES, 'UTF-8') ?>">Oku</a>
+                                    <?php
+                                    $viewUrl = AdminAuth::url('/email/inbox/view?uid=' . $uid);
+                                    $subjectTitle = trim((string) ($message['subject'] ?? 'E-posta'));
+                                    ?>
+                                    <a
+                                        class="btn btn--primary"
+                                        href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-admin-modal-url="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-admin-modal-title="<?= htmlspecialchars($subjectTitle !== '' ? $subjectTitle : 'E-posta oku', ENT_QUOTES, 'UTF-8') ?>"
+                                    >Oku</a>
                                 <?php endif; ?>
                             </td>
                         </tr>

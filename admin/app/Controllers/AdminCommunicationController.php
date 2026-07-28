@@ -39,7 +39,7 @@ final class AdminCommunicationController extends AdminController
         $settings = $this->mailSettingsRow();
         require_once ADMIN_APP_PATH . '/Services/MetropolMailInbox.php';
         $result = metropol_mail_fetch_message($settings, $uid);
-        $this->view('communication/email_view', [
+        $data = [
             'title' => 'E-posta oku',
             'active' => 'email',
             'crumbs' => 'E-posta | Gelen e-postalar | Oku',
@@ -47,7 +47,16 @@ final class AdminCommunicationController extends AdminController
             'messageOk' => !empty($result['ok']),
             'messageError' => (string) ($result['error'] ?? ''),
             'message' => is_array($result['message'] ?? null) ? $result['message'] : [],
-        ]);
+        ];
+
+        $isModal = (string) ($_GET['modal'] ?? '') === '1'
+            || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+        if ($isModal) {
+            $this->partial('communication/_email_read', $data);
+            return;
+        }
+
+        $this->view('communication/email_view', $data);
     }
 
     public function sent(): void

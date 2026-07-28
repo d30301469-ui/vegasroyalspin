@@ -329,6 +329,11 @@ $adminUiVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/admin-ui.js') ?: time
             background: var(--bg-card);
             box-shadow: 0 24px 80px rgba(0,0,0,.28);
         }
+        .admin-modal-backdrop:has(.email-read-body) .admin-modal,
+        .admin-modal:has(.email-read-body) {
+            width: min(980px, 100%);
+            max-height: min(90vh, 960px);
+        }
         .admin-modal-head {
             display: flex;
             align-items: center;
