@@ -246,20 +246,6 @@ if ($method === 'POST' && in_array($route, ['casino-aggregator-wallet', 'casino_
     exit;
 }
 
-if (
-    $method === 'POST'
-    && (
-        in_array($route, ['gamingsoft-wallet', 'gamingsoft_wallet', 'gamingsoft-wallet.php', 'gamingsoft_callback', 'gamingsoft-callback'], true)
-        || str_starts_with(strtolower(trim((string) $route, '/')), 'gamingsoft-wallet/')
-    )
-) {
-    if (preg_match('#^gamingsoft-wallet(?:\.php)?/?(.*)$#i', trim((string) $route, '/'), $gsRouteMatch)) {
-        $_GET['endpoint'] = trim((string) ($gsRouteMatch[1] ?? ''), '/');
-    }
-    require __DIR__ . '/gamingsoft_callback.php';
-    exit;
-}
-
 $megaPayzRoute = strtolower(trim((string) $route, '/'));
 if ($method === 'POST' && in_array($megaPayzRoute, ['megapayz-callback', 'megapayz/deposit'], true)) {
     $transport = MegaPayzService::verifyCallbackTransport($_SERVER);

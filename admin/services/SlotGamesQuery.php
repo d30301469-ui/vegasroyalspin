@@ -498,22 +498,8 @@ final class SlotGamesQuery
         $source       = strtolower(trim((string) ($query['source'] ?? '')));
 
         $union = [];
-        // BGaming catalog is slot-only; include only on the slot lobby.
-        if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
-            $union[] = "SELECT
-                    CONCAT('bgaming:', identifier) AS game_id,
-                    title AS name,
-                    provider AS provider,
-                    provider AS provider_code,
-                    COALESCE(NULLIF(thumbnail_url, ''), '') AS image_url,
-                    CAST('' AS CHAR) AS image_fallbacks,
-                    is_featured AS is_featured,
-                    'bgaming' AS source,
-                    CAST(id AS CHAR) AS row_id,
-                    CAST('' AS CHAR) AS raw_payload
-                FROM bgaming_games
-                WHERE is_active = 1";
-        }
+        // Slot lobby policy: only Casino Aggregator games are public.
+        // BGaming stays available for backend/admin flows, but not frontend slots.
         $aggGameType = $gameType === 1 ? 2 : 1;
         if ($source === '' || $source === 'aggregator') {
             if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
@@ -526,14 +512,16 @@ final class SlotGamesQuery
                     }
                 }
             }
-            $typeClause = "g.game_type = {$aggGameType}";
+            // Historical rows may store slot type as 0, while current sync normalizes to 1.
+            // Keep slot lobby tolerant so integration games do not disappear after migrations.
+            $typeClause = $gameType === 1 ? "g.game_type = {$aggGameType}" : "(g.game_type IN (0, {$aggGameType}))";
             if (class_exists('CasinoAggregatorService', false)) {
                 $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
                 if ($gameType === 1) {
                     $typeClause = "(g.game_type = {$aggGameType} OR {$liveMatch})";
                 } else {
                     // Keep live brands out of the slot lobby.
-                    $typeClause = "(g.game_type = {$aggGameType} AND NOT {$liveMatch})";
+                    $typeClause = "((g.game_type IN (0, {$aggGameType})) AND NOT {$liveMatch})";
                 }
             }
             $union[] = "SELECT
@@ -550,50 +538,6 @@ final class SlotGamesQuery
                 FROM casino_aggregator_games g
                 INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
                 WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
-        }
-        if ($source === '' || $source === 'gamingsoft') {
-            if (!class_exists('GamingSoftService', false)) {
-                $gsServicePath = is_file(__DIR__ . '/GamingSoftService.php')
-                    ? __DIR__ . '/GamingSoftService.php'
-                    : dirname(__DIR__) . '/services/GamingSoftService.php';
-                if (is_readable($gsServicePath)) {
-                    require_once $gsServicePath;
-                }
-            }
-            $gsTypeExpr = "CASE
-                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM','LC','LIVE','LIVE CASINO','LIVE-CASINO')
-                  OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
-                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
-                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE CASINO%'
-                THEN 2 ELSE 1 END";
-            $gsTypeClause = $gameType === 1
-                ? "({$gsTypeExpr}) = 2"
-                : "({$gsTypeExpr}) = 1";
-            $gsCurrency = GamingSoftService::STAGING_CURRENCY;
-            try {
-                if (class_exists('AdminDatabase', false)) {
-                    $gsCurrency = GamingSoftService::catalogCurrency(AdminDatabase::pdo());
-                }
-            } catch (Throwable) {
-            }
-            $gsCurrency = preg_replace('/[^A-Z0-9]/', '', strtoupper($gsCurrency)) ?: GamingSoftService::STAGING_CURRENCY;
-            $union[] = "SELECT
-                    CONCAT('gamingsoft:', g.product_code, ':', g.game_code) AS game_id,
-                    g.game_name AS name,
-                    COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
-                    CAST(g.product_code AS CHAR) AS provider_code,
-                    COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                    CAST('' AS CHAR) AS image_fallbacks,
-                    g.is_featured AS is_featured,
-                    'gamingsoft' AS source,
-                    CAST(g.id AS CHAR) AS row_id,
-                    CAST('' AS CHAR) AS raw_payload
-                FROM gamingsoft_games g
-                INNER JOIN gamingsoft_products p
-                    ON p.product_code = g.product_code
-                   AND p.is_active = 1
-                   AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
-                WHERE g.is_active = 1 AND {$gsTypeClause}";
         }
 
         if ($union === []) {
@@ -734,23 +678,7 @@ final class SlotGamesQuery
         $seen = [];
         try {
             $pdo = AdminDatabase::pdo();
-            if ($gameType === 0) {
-                $rows = $pdo->query(
-                    "SELECT DISTINCT provider AS provider_name
-                     FROM bgaming_games
-                     WHERE is_active = 1 AND provider <> ''
-                     ORDER BY provider_name ASC"
-                )->fetchAll(PDO::FETCH_ASSOC);
-                foreach ($rows as $row) {
-                    if (is_array($row) && !empty($row['provider_name'])) {
-                        $name = self::normalizeProviderLabel((string) $row['provider_name']);
-                        if (!isset($seen[$name])) {
-                            $seen[$name] = true;
-                            $providers[] = $name;
-                        }
-                    }
-                }
-            }
+            // Slot lobby policy: do not expose BGaming providers on frontend.
             $aggType = $gameType === 1 ? 2 : 1;
             if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
                 static $liveTypesRepaired = false;
@@ -763,53 +691,23 @@ final class SlotGamesQuery
                 }
             }
             $liveExtra = '';
+            $slotExtra = '';
             if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
                 $liveExtra = ' OR ' . CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
+            }
+            if ($gameType === 0) {
+                // Some older aggregator rows use 0 for slots.
+                $slotExtra = ' OR g.game_type = 0';
             }
             $aggStmt = $pdo->prepare(
                 "SELECT DISTINCT COALESCE(NULLIF(v.vendor_name, ''), v.vendor_code) AS provider_name
                  FROM casino_aggregator_vendors v
                  INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
-                 WHERE v.is_active = 1 AND g.is_active = 1 AND (g.game_type = :type{$liveExtra})
+                 WHERE v.is_active = 1 AND g.is_active = 1 AND (g.game_type = :type{$liveExtra}{$slotExtra})
                  ORDER BY provider_name ASC"
             );
             $aggStmt->execute([':type' => $aggType]);
             foreach ($aggStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                if (!is_array($row) || empty($row['provider_name'])) {
-                    continue;
-                }
-                $name = self::normalizeProviderLabel((string) $row['provider_name']);
-                if (!isset($seen[$name])) {
-                    $seen[$name] = true;
-                    $providers[] = $name;
-                }
-            }
-            $gsTypeExpr = "CASE
-                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
-                  OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
-                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
-                THEN 2 ELSE 1 END";
-            $gsWanted = $gameType === 1 ? 2 : 1;
-            $gsCurrency = GamingSoftService::STAGING_CURRENCY;
-            try {
-                if (class_exists('AdminDatabase', false)) {
-                    $gsCurrency = GamingSoftService::catalogCurrency(AdminDatabase::pdo());
-                }
-            } catch (Throwable) {
-            }
-            $gsCurrency = preg_replace('/[^A-Z0-9]/', '', strtoupper($gsCurrency)) ?: GamingSoftService::STAGING_CURRENCY;
-            $gsStmt = $pdo->prepare(
-                "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
-                 FROM gamingsoft_games g
-                 INNER JOIN gamingsoft_products p
-                    ON p.product_code = g.product_code
-                   AND p.is_active = 1
-                   AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
-                 WHERE g.is_active = 1 AND ({$gsTypeExpr}) = :type
-                 ORDER BY provider_name ASC"
-            );
-            $gsStmt->execute([':type' => $gsWanted]);
-            foreach ($gsStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                 if (!is_array($row) || empty($row['provider_name'])) {
                     continue;
                 }

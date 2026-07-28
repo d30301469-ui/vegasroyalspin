@@ -48,7 +48,6 @@ if (!$isAdminHost && (
     || strpos($uri, '/api/v2/bgaming-wallet') === 0
     || strpos($uri, '/api/v2/megapayz') === 0
     || strpos($uri, '/api/v2/sportsbook-wallet') === 0
-    || strpos($uri, '/api/v2/gamingsoft-wallet') === 0
 )) {
     header('Content-Type: application/json; charset=UTF-8');
     http_response_code(404);

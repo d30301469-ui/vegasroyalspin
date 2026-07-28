@@ -45,8 +45,6 @@
     RewriteRule ^api/v2/bgaming/?(.*)$ api/v2/bgaming_callback.php?endpoint=$1 [L,QSA]
     RewriteRule ^api/v2/sportsbook_callback\.php$ - [L]
     RewriteRule ^api/v2/sportsbook-wallet/?$ api/v2/sportsbook_callback.php [L,QSA]
-    RewriteRule ^api/v2/gamingsoft_callback\.php$ - [L]
-    RewriteRule ^api/v2/gamingsoft-wallet/?(.*)$ api/v2/gamingsoft_callback.php?endpoint=$1 [L,QSA]
     RewriteRule ^api/v2/megapayz-callback/?$ index.php [L,QSA]
     RewriteRule ^[Mm]ega[Pp]ayz/deposit/?$ index.php [L,QSA]
 

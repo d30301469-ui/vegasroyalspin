@@ -412,7 +412,6 @@ if (!function_exists('frontend_uri_is_backend_only')) {
             '/casino-callback',
             '/api/v2/sportsbook-wallet',
             '/api/v2/sportsbook_callback',
-            '/api/v2/gamingsoft-wallet',
             '/api/v2/casino-aggregator-wallet',
         ];
 
