@@ -44,6 +44,10 @@ final class GamingSoftService
     public const STAGING_API_BASE_URL = 'https://staging.gsimw.com';
     public const STAGING_SITE_ENDPOINT = 'https://admin.vegasroyalspin.com';
     public const STAGING_CURRENCY = 'IDR';
+    /** Site member wallet currency (display/deposit currency). */
+    public const SITE_WALLET_CURRENCY = 'TRY';
+    /** Default TRY→IDR multiplier for VGY1 staging when site wallet is TRY but GSC+ game wallet is IDR. */
+    private const DEFAULT_TRY_TO_IDR_RATE = 500.0;
     /** Staging currencies enabled by GSC+ for VGY1. */
     public const STAGING_CURRENCIES = ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'];
 
@@ -862,7 +866,7 @@ final class GamingSoftService
                 ];
                 continue;
             }
-            $balance = self::toProviderAmount((float) ($user['balance'] ?? 0), $currency);
+            $balance = self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency);
             $data[] = [
                 'member_account' => $member,
                 'product_code'   => $productCode,
@@ -940,7 +944,7 @@ final class GamingSoftService
 
         // WBET wins are not deposited via /deposit — accept and no-op credit for prize settlements.
         if ($endpoint === 'deposit' && $productCode === self::WBET_PRODUCT_CODE) {
-            $balance = self::toProviderAmount((float) ($user['balance'] ?? 0), $currency);
+            $balance = self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency);
 
             return [
                 'member_account' => $member,
@@ -953,7 +957,7 @@ final class GamingSoftService
         }
 
         if ($transactions === []) {
-            $balance = self::toProviderAmount((float) ($user['balance'] ?? 0), $currency);
+            $balance = self::toProviderAmount(self::memberWalletBalance($pdo, $user), $currency);
 
             return [
                 'member_account' => $member,
@@ -967,7 +971,11 @@ final class GamingSoftService
 
         $pdo->beginTransaction();
         try {
-            $lock = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
+            $walletColumn = self::userWalletColumnSql(self::walletSourceColumn($pdo, $userId));
+            $lock = $pdo->prepare(
+                "SELECT id, username, `{$walletColumn}` AS wallet_balance, banned
+                 FROM users WHERE id = :id LIMIT 1 FOR UPDATE"
+            );
             $lock->execute([':id' => $userId]);
             $locked = $lock->fetch(PDO::FETCH_ASSOC);
             if (!is_array($locked)) {
@@ -983,7 +991,7 @@ final class GamingSoftService
                 ];
             }
 
-            $beforeReal = round((float) $locked['balance'], 4);
+            $beforeReal = round((float) ($locked['wallet_balance'] ?? 0), 4);
             $currentReal = $beforeReal;
             $applied = 0;
             $duplicates = 0;
@@ -1083,7 +1091,7 @@ final class GamingSoftService
             }
 
             if ($applied > 0) {
-                $pdo->prepare('UPDATE users SET balance = :bal WHERE id = :id')->execute([
+                $pdo->prepare("UPDATE users SET `{$walletColumn}` = :bal WHERE id = :id")->execute([
                     ':bal' => $currentReal,
                     ':id'  => $userId,
                 ]);
@@ -1117,7 +1125,8 @@ final class GamingSoftService
                 $pdo->rollBack();
             }
             if (str_contains($e->getMessage(), '1062') || stripos($e->getMessage(), 'Duplicate') !== false) {
-                $balStmt = $pdo->prepare('SELECT balance FROM users WHERE id = :id LIMIT 1');
+                $walletColumn = self::userWalletColumnSql(self::walletSourceColumn($pdo, $userId));
+                $balStmt = $pdo->prepare("SELECT `{$walletColumn}` FROM users WHERE id = :id LIMIT 1");
                 $balStmt->execute([':id' => $userId]);
                 $bal = (float) ($balStmt->fetchColumn() ?: 0);
 
@@ -1225,9 +1234,12 @@ final class GamingSoftService
         }
 
         $userId = (int) $user['id'];
+        $walletColumn = self::userWalletColumnSql(self::walletSourceColumn($pdo, $userId));
         $pdo->beginTransaction();
         try {
-            $lock = $pdo->prepare('SELECT id, username, balance FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
+            $lock = $pdo->prepare(
+                "SELECT id, username, `{$walletColumn}` AS wallet_balance FROM users WHERE id = :id LIMIT 1 FOR UPDATE"
+            );
             $lock->execute([':id' => $userId]);
             $locked = $lock->fetch(PDO::FETCH_ASSOC);
             if (!is_array($locked)) {
@@ -1235,9 +1247,9 @@ final class GamingSoftService
 
                 return;
             }
-            $before = round((float) $locked['balance'], 4);
+            $before = round((float) ($locked['wallet_balance'] ?? 0), 4);
             $after = round($before + $prizeReal, 4);
-            $pdo->prepare('UPDATE users SET balance = :bal WHERE id = :id')->execute([':bal' => $after, ':id' => $userId]);
+            $pdo->prepare("UPDATE users SET `{$walletColumn}` = :bal WHERE id = :id")->execute([':bal' => $after, ':id' => $userId]);
             $pdo->prepare(
                 'INSERT INTO gamingsoft_transactions
                     (user_id, username, member_account, txn_id, wager_code, round_id, product_code, game_code, game_type,
@@ -1307,22 +1319,123 @@ final class GamingSoftService
         return self::CURRENCY_RATIOS[$currency] ?? 1;
     }
 
-    /** Convert internal wallet balance → provider-facing amount. */
-    private static function toProviderAmount(float $realAmount, string $currency): float
+    /** Convert site wallet balance (TRY) → provider game currency amount (IDR). */
+    private static function toProviderAmount(float $siteWalletAmount, string $providerCurrency): float
     {
-        $ratio = self::currencyRatio($currency);
-        $value = $ratio > 1 ? ($realAmount / $ratio) : $realAmount;
+        $providerCurrency = strtoupper(trim($providerCurrency));
+        $converted = self::siteBalanceToProvider($siteWalletAmount, $providerCurrency);
+        $ratio = self::currencyRatio($providerCurrency);
+        $value = $ratio > 1 ? ($converted / $ratio) : $converted;
 
         return round($value, 4);
     }
 
-    /** Convert provider amount → internal wallet amount. */
-    private static function fromProviderAmount(float $providerAmount, string $currency): float
+    /** Convert provider game currency amount (IDR) → site wallet balance (TRY). */
+    private static function fromProviderAmount(float $providerAmount, string $providerCurrency): float
     {
-        $ratio = self::currencyRatio($currency);
-        $value = $ratio > 1 ? ($providerAmount * $ratio) : $providerAmount;
+        $providerCurrency = strtoupper(trim($providerCurrency));
+        $ratio = self::currencyRatio($providerCurrency);
+        $providerUnits = $ratio > 1 ? ($providerAmount * $ratio) : $providerAmount;
 
-        return round($value, 4);
+        return round(self::providerBalanceToSite($providerUnits, $providerCurrency), 4);
+    }
+
+    private static function siteWalletCurrency(): string
+    {
+        $env = strtoupper(trim((string) (getenv('SITE_WALLET_CURRENCY') ?: getenv('DEFAULT_CURRENCY') ?: '')));
+        if ($env !== '' && $env !== 'TRY') {
+            return $env;
+        }
+
+        return self::SITE_WALLET_CURRENCY;
+    }
+
+    private static function tryToIdrExchangeRate(): float
+    {
+        $env = getenv('GAMINGSOFT_TRY_TO_IDR_RATE');
+        if ($env !== false && is_numeric($env) && (float) $env > 0) {
+            return (float) $env;
+        }
+
+        return self::DEFAULT_TRY_TO_IDR_RATE;
+    }
+
+    private static function siteBalanceToProvider(float $siteAmount, string $providerCurrency): float
+    {
+        $siteCurrency = self::siteWalletCurrency();
+        $providerCurrency = strtoupper(trim($providerCurrency));
+        if ($siteCurrency === $providerCurrency) {
+            return $siteAmount;
+        }
+        if ($siteCurrency === 'TRY' && $providerCurrency === 'IDR') {
+            return $siteAmount * self::tryToIdrExchangeRate();
+        }
+
+        return $siteAmount;
+    }
+
+    private static function providerBalanceToSite(float $providerAmount, string $providerCurrency): float
+    {
+        $siteCurrency = self::siteWalletCurrency();
+        $providerCurrency = strtoupper(trim($providerCurrency));
+        if ($siteCurrency === $providerCurrency) {
+            return $providerAmount;
+        }
+        if ($siteCurrency === 'TRY' && $providerCurrency === 'IDR') {
+            $rate = self::tryToIdrExchangeRate();
+
+            return $rate > 0 ? ($providerAmount / $rate) : $providerAmount;
+        }
+
+        return $providerAmount;
+    }
+
+    private static function walletSourceColumn(PDO $pdo, int $userId): string
+    {
+        if ($userId > 0 && class_exists('WageringService', false)) {
+            try {
+                return WageringService::walletSourceColumn($pdo, $userId);
+            } catch (Throwable) {
+            }
+        }
+
+        return 'balance';
+    }
+
+    private static function userWalletColumnSql(string $column): string
+    {
+        return in_array($column, ['balance', 'bonus_balance'], true) ? $column : 'balance';
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function readWalletColumnAmount(array $row, string $column): float
+    {
+        if ($column === 'bonus_balance') {
+            if (array_key_exists('bonus_balance', $row)) {
+                return (float) $row['bonus_balance'];
+            }
+
+            return (float) ($row['bonus_bakiye'] ?? 0);
+        }
+
+        if (array_key_exists('balance', $row) && $row['balance'] !== null && $row['balance'] !== '') {
+            return (float) $row['balance'];
+        }
+
+        return (float) ($row['ana_bakiye'] ?? 0);
+    }
+
+    /** @param array<string, mixed> $user */
+    private static function memberWalletBalance(PDO $pdo, array $user): float
+    {
+        if (array_key_exists('wallet_balance', $user)) {
+            return (float) $user['wallet_balance'];
+        }
+
+        $userId = (int) ($user['id'] ?? 0);
+        $walletCol = self::walletSourceColumn($pdo, $userId);
+
+        return self::readWalletColumnAmount($user, $walletCol);
     }
 
     /** @param array<string, mixed> $user */
@@ -1387,19 +1500,11 @@ final class GamingSoftService
         }
         try {
             if (ctype_digit($memberAccount)) {
-                $stmt = $pdo->prepare(
-                    'SELECT id, username, balance, banned FROM users
-                     WHERE id = :id OR username = :uname OR LOWER(username) = LOWER(:uname2)
-                     LIMIT 1'
-                );
-                $stmt->execute([
-                    ':id'     => (int) $memberAccount,
-                    ':uname'  => $memberAccount,
-                    ':uname2' => $memberAccount,
-                ]);
+                $stmt = $pdo->prepare('SELECT * FROM users WHERE id = :id LIMIT 1');
+                $stmt->execute([':id' => (int) $memberAccount]);
             } else {
                 $stmt = $pdo->prepare(
-                    'SELECT id, username, balance, banned FROM users
+                    'SELECT * FROM users
                      WHERE username = :uname OR LOWER(username) = LOWER(:uname2)
                      LIMIT 1'
                 );
@@ -1409,8 +1514,14 @@ final class GamingSoftService
                 ]);
             }
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($row)) {
+                return null;
+            }
+            $userId = (int) ($row['id'] ?? 0);
+            $walletCol = self::walletSourceColumn($pdo, $userId);
+            $row['wallet_balance'] = self::readWalletColumnAmount($row, $walletCol);
 
-            return is_array($row) ? $row : null;
+            return $row;
         } catch (Throwable) {
             return null;
         }
