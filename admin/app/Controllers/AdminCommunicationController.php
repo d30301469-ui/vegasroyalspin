@@ -31,6 +31,25 @@ final class AdminCommunicationController extends AdminController
         ]);
     }
 
+    public function inboxView(): void
+    {
+        $this->requirePermission('email');
+        $this->ensureMailTables();
+        $uid = (int) ($_GET['uid'] ?? 0);
+        $settings = $this->mailSettingsRow();
+        require_once ADMIN_APP_PATH . '/Services/MetropolMailInbox.php';
+        $result = metropol_mail_fetch_message($settings, $uid);
+        $this->view('communication/email_view', [
+            'title' => 'E-posta oku',
+            'active' => 'email',
+            'crumbs' => 'E-posta | Gelen e-postalar | Oku',
+            'emailSection' => 'inbox',
+            'messageOk' => !empty($result['ok']),
+            'messageError' => (string) ($result['error'] ?? ''),
+            'message' => is_array($result['message'] ?? null) ? $result['message'] : [],
+        ]);
+    }
+
     public function sent(): void
     {
         $this->requirePermission('email');

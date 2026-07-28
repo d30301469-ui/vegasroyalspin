@@ -62,16 +62,23 @@ $emailSection = 'inbox';
                         <th>Konu</th>
                         <th>Özet</th>
                         <th>Tarih</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($messages as $message): ?>
+                        <?php $uid = (int) ($message['uid'] ?? 0); ?>
                         <tr>
                             <td><?= empty($message['seen']) ? 'Yeni' : 'Okundu' ?></td>
                             <td><?= htmlspecialchars((string) ($message['from'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) ($message['subject'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) ($message['preview'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) ($message['date'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td>
+                                <?php if ($uid > 0): ?>
+                                    <a class="btn btn--ghost" href="<?= htmlspecialchars(AdminAuth::url('/email/inbox/view?uid=' . $uid), ENT_QUOTES, 'UTF-8') ?>">Oku</a>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

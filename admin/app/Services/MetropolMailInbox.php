@@ -43,92 +43,16 @@ if (!function_exists('metropol_mail_fetch_inbox')) {
      */
     function metropol_mail_fetch_inbox(array $settings, int $limit = 40): array
     {
-        if (!metropol_mail_imap_available()) {
-            $disabled = (string) ini_get('disable_functions');
-            $imapDisabled = extension_loaded('imap')
-                && (
-                    stripos($disabled, 'imap_open') !== false
-                    || !function_exists('imap_open')
-                );
-            if ($imapDisabled) {
-                return [
-                    'ok' => false,
-                    'error' => 'IMAP eklentisi yüklü ama imap_open disable_functions ile engellenmiş. '
-                        . 'aaPanel → App Store → PHP 8.3 → Settings → Disable Function(s) listesinden '
-                        . 'imap_open satırını sil → Save → PHP-FPM 83 Restart. '
-                        . 'Tanı: ' . metropol_mail_imap_diagnostics(),
-                    'messages' => [],
-                ];
-            }
+        $conn = metropol_mail_imap_connect($settings);
+        if ($conn['ok'] !== true || !isset($conn['inbox'])) {
             return [
                 'ok' => false,
-                'error' => 'PHP imap eklentisi bu site PHP sürecinde yok. '
-                    . 'aaPanel > App Store > PHP (sitenin sürümü) > Settings > Install extensions > imap. '
-                    . 'Sonra o sürüme ait PHP-FPM restart. Tanı: ' . metropol_mail_imap_diagnostics(),
+                'error' => (string) ($conn['error'] ?? 'IMAP bağlantısı kurulamadı.'),
                 'messages' => [],
             ];
         }
-
-        if (isset($settings['imap_enabled']) && (int) $settings['imap_enabled'] === 0) {
-            return [
-                'ok' => false,
-                'error' => 'IMAP gelen kutusu pasif. E-posta → Ayarlar bölümünden IMAP’i aktif edin.',
-                'messages' => [],
-            ];
-        }
-
-        $host = trim((string) ($settings['imap_host'] ?? ''));
-        if ($host === '') {
-            $host = trim((string) ($settings['smtp_host'] ?? ''));
-        }
-        $port = (int) ($settings['imap_port'] ?? 0);
-        if ($port <= 0) {
-            $port = 993;
-        }
-        $user = trim((string) ($settings['imap_user'] ?? ''));
-        if ($user === '') {
-            $user = trim((string) ($settings['smtp_user'] ?? ''));
-        }
-        if ($user === '') {
-            $user = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
-        }
-        $pass = (string) ($settings['imap_password'] ?? '');
-        if ($pass === '') {
-            $pass = (string) ($settings['smtp_password'] ?? '');
-        }
-        $encryption = strtolower(trim((string) ($settings['imap_encryption'] ?? 'ssl')));
-        if ($encryption === '') {
-            $encryption = 'ssl';
-        }
-
-        if ($host === '' || $user === '' || $pass === '') {
-            return [
-                'ok' => false,
-                'error' => 'IMAP Host, Kullanıcı ve Şifre gerekli. E-posta → Ayarlar → Gelen kutusu (IMAP) alanlarını doldurun.',
-                'messages' => [],
-            ];
-        }
-
-        $host = preg_replace('/^(ssl|tls):\/\//i', '', $host) ?: $host;
-        if ($encryption === 'ssl') {
-            $flags = '/imap/ssl/novalidate-cert';
-        } elseif ($encryption === 'tls') {
-            $flags = '/imap/tls/novalidate-cert';
-        } else {
-            $flags = '/imap/notls';
-        }
-        $mailbox = '{' . $host . ':' . $port . $flags . '}INBOX';
-
-        $inbox = @imap_open($mailbox, $user, $pass, 0, 1);
-        if ($inbox === false) {
-            $err = trim((string) imap_last_error());
-            return [
-                'ok' => false,
-                'error' => 'IMAP bağlantısı kurulamadı' . ($err !== '' ? ': ' . $err : '.')
-                    . ' Host=' . $host . ' User=' . $user . ' Port=' . $port . ' Enc=' . $encryption,
-                'messages' => [],
-            ];
-        }
+        $inbox = $conn['inbox'];
+        $user = (string) ($conn['user'] ?? '');
 
         try {
             $check = imap_check($inbox);
@@ -157,25 +81,17 @@ if (!function_exists('metropol_mail_fetch_inbox')) {
                 }
                 $msgNo = (int) ($item->msgno ?? 0);
                 $uid = (int) ($item->uid ?? 0);
+                if ($uid <= 0 && $msgNo > 0) {
+                    $uid = (int) @imap_uid($inbox, $msgNo);
+                }
                 $subject = metropol_mail_imap_decode_mime((string) ($item->subject ?? '(konu yok)'));
                 $from = metropol_mail_imap_decode_mime((string) ($item->from ?? ''));
                 $date = (string) ($item->date ?? '');
                 $preview = '';
                 if ($msgNo > 0) {
-                    $body = (string) @imap_fetchbody($inbox, $msgNo, '1');
-                    if ($body === '') {
-                        $body = (string) @imap_body($inbox, $msgNo);
-                    }
-                    $structure = @imap_fetchstructure($inbox, $msgNo);
-                    if (is_object($structure) && (int) ($structure->encoding ?? 0) === 3) {
-                        $decoded = base64_decode($body, true);
-                        if (is_string($decoded)) {
-                            $body = $decoded;
-                        }
-                    } elseif (is_object($structure) && (int) ($structure->encoding ?? 0) === 4) {
-                        $body = quoted_printable_decode($body);
-                    }
-                    $preview = trim(preg_replace('/\s+/', ' ', strip_tags($body)) ?? '');
+                    $parts = metropol_mail_imap_extract_bodies($inbox, $msgNo);
+                    $previewSource = $parts['text'] !== '' ? $parts['text'] : strip_tags($parts['html']);
+                    $preview = trim(preg_replace('/\s+/', ' ', $previewSource) ?? '');
                     if (function_exists('mb_substr')) {
                         $preview = mb_substr($preview, 0, 180, 'UTF-8');
                     } else {
@@ -199,6 +115,220 @@ if (!function_exists('metropol_mail_fetch_inbox')) {
         } finally {
             @imap_close($inbox);
         }
+    }
+}
+
+if (!function_exists('metropol_mail_imap_connect')) {
+    /**
+     * @param array<string,mixed> $settings
+     * @return array{ok:bool,error:string,inbox?:resource|\IMAP\Connection,user?:string}
+     */
+    function metropol_mail_imap_connect(array $settings): array
+    {
+        if (!metropol_mail_imap_available()) {
+            $disabled = (string) ini_get('disable_functions');
+            $imapDisabled = extension_loaded('imap')
+                && (
+                    stripos($disabled, 'imap_open') !== false
+                    || !function_exists('imap_open')
+                );
+            if ($imapDisabled) {
+                return [
+                    'ok' => false,
+                    'error' => 'IMAP eklentisi yüklü ama imap_open disable_functions ile engellenmiş. '
+                        . 'aaPanel → PHP 8.3 → Disable Function(s) listesinden imap_open silin. '
+                        . 'Tanı: ' . metropol_mail_imap_diagnostics(),
+                ];
+            }
+            return [
+                'ok' => false,
+                'error' => 'PHP imap eklentisi yok. Tanı: ' . metropol_mail_imap_diagnostics(),
+            ];
+        }
+        if (isset($settings['imap_enabled']) && (int) $settings['imap_enabled'] === 0) {
+            return ['ok' => false, 'error' => 'IMAP gelen kutusu pasif.'];
+        }
+
+        $host = trim((string) ($settings['imap_host'] ?? ''));
+        if ($host === '') {
+            $host = trim((string) ($settings['smtp_host'] ?? ''));
+        }
+        $port = (int) ($settings['imap_port'] ?? 0);
+        if ($port <= 0) {
+            $port = 993;
+        }
+        $user = trim((string) ($settings['imap_user'] ?? ''));
+        if ($user === '') {
+            $user = trim((string) ($settings['smtp_user'] ?? ''));
+        }
+        if ($user === '') {
+            $user = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+        }
+        $pass = (string) ($settings['imap_password'] ?? '');
+        if ($pass === '') {
+            $pass = (string) ($settings['smtp_password'] ?? '');
+        }
+        $encryption = strtolower(trim((string) ($settings['imap_encryption'] ?? 'ssl')));
+        if ($encryption === '') {
+            $encryption = 'ssl';
+        }
+        if ($host === '' || $user === '' || $pass === '') {
+            return ['ok' => false, 'error' => 'IMAP Host/Kullanıcı/Şifre eksik.'];
+        }
+
+        $host = preg_replace('/^(ssl|tls):\/\//i', '', $host) ?: $host;
+        if ($encryption === 'ssl') {
+            $flags = '/imap/ssl/novalidate-cert';
+        } elseif ($encryption === 'tls') {
+            $flags = '/imap/tls/novalidate-cert';
+        } else {
+            $flags = '/imap/notls';
+        }
+        $mailbox = '{' . $host . ':' . $port . $flags . '}INBOX';
+        $inbox = @imap_open($mailbox, $user, $pass, 0, 1);
+        if ($inbox === false) {
+            $err = trim((string) imap_last_error());
+            return [
+                'ok' => false,
+                'error' => 'IMAP bağlantısı kurulamadı' . ($err !== '' ? ': ' . $err : '.')
+                    . ' Host=' . $host . ' User=' . $user . ' Port=' . $port,
+            ];
+        }
+
+        return ['ok' => true, 'error' => '', 'inbox' => $inbox, 'user' => $user];
+    }
+}
+
+if (!function_exists('metropol_mail_fetch_message')) {
+    /**
+     * @param array<string,mixed> $settings
+     * @return array{ok:bool,error:string,message?:array<string,mixed>}
+     */
+    function metropol_mail_fetch_message(array $settings, int $uid): array
+    {
+        if ($uid <= 0) {
+            return ['ok' => false, 'error' => 'Geçersiz mesaj UID.'];
+        }
+        $conn = metropol_mail_imap_connect($settings);
+        if ($conn['ok'] !== true || !isset($conn['inbox'])) {
+            return ['ok' => false, 'error' => (string) ($conn['error'] ?? 'IMAP bağlantısı kurulamadı.')];
+        }
+        $inbox = $conn['inbox'];
+        try {
+            $msgNo = @imap_msgno($inbox, $uid);
+            if ($msgNo <= 0) {
+                return ['ok' => false, 'error' => 'Mesaj bulunamadı (UID=' . $uid . ').'];
+            }
+            $overview = @imap_fetch_overview($inbox, (string) $msgNo, 0);
+            $item = is_array($overview) && isset($overview[0]) && is_object($overview[0]) ? $overview[0] : null;
+            $parts = metropol_mail_imap_extract_bodies($inbox, $msgNo);
+            @imap_setflag_full($inbox, (string) $msgNo, '\\Seen');
+
+            return [
+                'ok' => true,
+                'error' => '',
+                'message' => [
+                    'uid' => $uid,
+                    'msgno' => $msgNo,
+                    'from' => metropol_mail_imap_decode_mime((string) ($item->from ?? '')),
+                    'to' => metropol_mail_imap_decode_mime((string) ($item->to ?? '')),
+                    'subject' => metropol_mail_imap_decode_mime((string) ($item->subject ?? '(konu yok)')),
+                    'date' => (string) ($item->date ?? ''),
+                    'text' => $parts['text'],
+                    'html' => $parts['html'],
+                    'mailbox' => (string) ($conn['user'] ?? ''),
+                ],
+            ];
+        } finally {
+            @imap_close($inbox);
+        }
+    }
+}
+
+if (!function_exists('metropol_mail_imap_decode_part')) {
+    function metropol_mail_imap_decode_part(string $body, int $encoding): string
+    {
+        if ($encoding === 3) {
+            $decoded = base64_decode($body, true);
+            return is_string($decoded) ? $decoded : $body;
+        }
+        if ($encoding === 4) {
+            return quoted_printable_decode($body);
+        }
+        return $body;
+    }
+}
+
+if (!function_exists('metropol_mail_imap_extract_bodies')) {
+    /**
+     * @param resource|\IMAP\Connection $inbox
+     * @return array{text:string,html:string}
+     */
+    function metropol_mail_imap_extract_bodies($inbox, int $msgNo): array
+    {
+        $text = '';
+        $html = '';
+        $structure = @imap_fetchstructure($inbox, $msgNo);
+        if (!is_object($structure)) {
+            $raw = (string) @imap_body($inbox, $msgNo);
+            return ['text' => trim($raw), 'html' => ''];
+        }
+
+        $walk = static function ($struct, string $prefix) use (&$walk, &$text, &$html, $inbox, $msgNo): void {
+            $type = (int) ($struct->type ?? 0);
+            $subtype = strtoupper((string) ($struct->subtype ?? ''));
+            $encoding = (int) ($struct->encoding ?? 0);
+            $parts = is_array($struct->parts ?? null) ? $struct->parts : [];
+
+            if ($parts !== []) {
+                foreach ($parts as $i => $part) {
+                    if (!is_object($part)) {
+                        continue;
+                    }
+                    $partNo = $prefix === '' ? (string) ($i + 1) : ($prefix . '.' . ($i + 1));
+                    $walk($part, $partNo);
+                }
+                return;
+            }
+
+            $partNo = $prefix !== '' ? $prefix : '1';
+            $body = (string) @imap_fetchbody($inbox, $msgNo, $partNo);
+            $body = metropol_mail_imap_decode_part($body, $encoding);
+
+            $charset = 'UTF-8';
+            if (isset($struct->parameters) && is_array($struct->parameters)) {
+                foreach ($struct->parameters as $param) {
+                    if (is_object($param) && strtolower((string) ($param->attribute ?? '')) === 'charset') {
+                        $charset = strtoupper((string) ($param->value ?? 'UTF-8'));
+                        break;
+                    }
+                }
+            }
+            if ($charset !== '' && $charset !== 'UTF-8' && $charset !== 'DEFAULT' && function_exists('mb_convert_encoding')) {
+                $converted = @mb_convert_encoding($body, 'UTF-8', $charset);
+                if (is_string($converted)) {
+                    $body = $converted;
+                }
+            }
+
+            if ($type === 0 && $subtype === 'HTML' && $html === '') {
+                $html = $body;
+            } elseif ($type === 0 && ($subtype === 'PLAIN' || $subtype === '') && $text === '') {
+                $text = $body;
+            } elseif ($type === 0 && $text === '' && $html === '') {
+                $text = $body;
+            }
+        };
+
+        $walk($structure, '');
+
+        if ($text === '' && $html === '') {
+            $raw = (string) @imap_body($inbox, $msgNo);
+            $encoding = (int) ($structure->encoding ?? 0);
+            $text = trim(metropol_mail_imap_decode_part($raw, $encoding));
+        }
+
+        return ['text' => trim($text), 'html' => trim($html)];
     }
 }
 
