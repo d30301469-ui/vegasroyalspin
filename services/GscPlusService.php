@@ -28,7 +28,10 @@ final class GscPlusService
         2000 => 'API product is under maintenance',
     ];
 
-    /** Currency ratio vs wallet storage (GSC appendix). */
+    /**
+     * Currency ratio vs wallet storage (GSC appendix).
+     * IDR2 1:1000 ⇒ provider_balance = wallet_idr / 1000 (4 decimals).
+     */
     private const CURRENCY_RATIOS = [
         'BDT2' => 1000, 'BRL2' => 1000, 'CDF2' => 1000, 'CNY2' => 1000,
         'COP2' => 1000, 'EUR2' => 1000, 'HKD2' => 1000, 'IDR2' => 1000,
@@ -38,9 +41,35 @@ final class GscPlusService
         'MXN2' => 1000, 'MYR2' => 1000, 'MYR3' => 100, 'NGN2' => 1000,
         'NPR2' => 1000, 'PHP2' => 1000, 'PKR2' => 1000, 'PYG2' => 1000,
         'SGD2' => 1000, 'THB2' => 1000, 'TRY2' => 1000, 'TWD2' => 1000,
-        'TZS2' => 1000, 'UGX2' => 1000, 'USD2' => 1000, 'USDT2' => 1000,
-        'UZS2' => 1000, 'VND2' => 1000, 'VND3' => 100,
+        'TWD5' => 130, 'TZS2' => 1000, 'UGX2' => 1000, 'USD2' => 1000,
+        'USDT2' => 1000, 'UZS2' => 1000, 'VND2' => 1000, 'VND3' => 100,
     ];
+
+    /** Base ISO currencies accepted by seamless wallet (plus scaled *2/*3 codes). */
+    private const BASE_CURRENCIES = [
+        'AED', 'AFN', 'ALL', 'AMD', 'ANG', 'AOA', 'ARS', 'AUD', 'AWG', 'AZN',
+        'BAM', 'BBD', 'BDT', 'BGN', 'BHD', 'BIF', 'BMD', 'BND', 'BOB', 'BRL',
+        'BSD', 'BTC', 'BTN', 'BWP', 'BYN', 'BZD', 'CAD', 'CDF', 'CHF', 'CLF',
+        'CLP', 'CNY', 'COP', 'CRC', 'CSD', 'CUC', 'CUP', 'CVE', 'CZK', 'DJF',
+        'DKK', 'DOGE', 'DOP', 'DZD', 'EGP', 'ERN', 'ETB', 'ETH', 'EUR', 'FJD',
+        'FKP', 'FRF', 'FTN', 'GBP', 'GC', 'GEL', 'GGP', 'GHS', 'GIP', 'GMD',
+        'GNF', 'GTQ', 'GYD', 'HKD', 'HNL', 'HRK', 'HTG', 'HUF', 'IDR', 'ILS',
+        'IMP', 'INR', 'IQD', 'IRR', 'ISK', 'JEP', 'JMD', 'JOD', 'JPY', 'KES',
+        'KGS', 'KHR', 'KRW', 'KSH', 'KWD', 'KZT', 'LAK', 'LBP', 'LKR', 'LRD',
+        'LSL', 'LTC', 'LYD', 'MAD', 'MBTC', 'MDL', 'METH', 'MGA', 'MKD', 'MMK',
+        'MNT', 'MOP', 'MRU', 'MVR', 'MWK', 'MXBT', 'MXN', 'MYR', 'MZN', 'NAD',
+        'NGN', 'NIO', 'NOK', 'NOT', 'NPR', 'NTD', 'NZD', 'OMR', 'PAB', 'PEN',
+        'PGK', 'PHP', 'PKR', 'PLN', 'PTI', 'PTV', 'PYG', 'QAR', 'RON', 'RSD',
+        'RUB', 'RWF', 'SAR', 'SBD', 'SC', 'SCR', 'SDG', 'SEK', 'SGD', 'SHP',
+        'SLL', 'SOS', 'SRD', 'SSP', 'STD', 'STN', 'SVC', 'SYP', 'SZL', 'THB',
+        'TJS', 'TMT', 'TND', 'TON', 'TOP', 'TRY', 'TTD', 'TWD', 'TZS', 'UBTC',
+        'UGX', 'USD', 'USDC', 'USDT', 'UYU', 'UZS', 'VES', 'VND', 'VUV', 'WST',
+        'XAF', 'XAG', 'XAU', 'XBT', 'XCD', 'XDR', 'XOF', 'XPD', 'XPF', 'XPT',
+        'YER', 'ZAR', 'ZMW', 'ZWL',
+    ];
+
+    /** VGY1 staging currencies enabled with GSC+. */
+    public const STAGING_CURRENCIES = ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'];
 
     private const DEBIT_ACTIONS = [
         'BET', 'TIP', 'BET_PRESERVE',
@@ -190,20 +219,103 @@ final class GscPlusService
         return (float) (self::CURRENCY_RATIOS[$currency] ?? 1);
     }
 
+    /** Base currency without scale suffix (IDR2 → IDR, MMK3 → MMK). */
+    public static function providerBaseCurrency(string $currency): string
+    {
+        $currency = strtoupper(trim($currency));
+        if (preg_match('/^([A-Z]{3})\d+$/', $currency, $m) === 1) {
+            return (string) $m[1];
+        }
+
+        return $currency;
+    }
+
+    /** True when currency is a known GSC appendix code (rejects e.g. "Testing"). */
+    public static function isSupportedCurrency(string $currency): bool
+    {
+        $currency = strtoupper(trim($currency));
+        if ($currency === '') {
+            return false;
+        }
+        if (isset(self::CURRENCY_RATIOS[$currency])) {
+            return true;
+        }
+        if (in_array($currency, self::BASE_CURRENCIES, true)) {
+            return true;
+        }
+        if (in_array($currency, self::STAGING_CURRENCIES, true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Provider-facing balance precision:
+     * - IDR/VND/KRW/JPY → 2 dp
+     * - scaled *2/*3 (IDR2, VND2, …) → 4 dp
+     */
+    public static function formatProviderBalance(float $amount, string $currency): float
+    {
+        $amount = max(0.0, $amount);
+        $currency = strtoupper(trim($currency));
+        if (self::currencyRatio($currency) > 1) {
+            return (float) number_format($amount, 4, '.', '');
+        }
+        if (in_array($currency, ['IDR', 'VND', 'KRW', 'JPY'], true)) {
+            return (float) number_format($amount, 2, '.', '');
+        }
+
+        return (float) number_format($amount, 4, '.', '');
+    }
+
     /** Convert provider (GSC) amount → wallet storage amount. */
     public static function toWalletAmount(float $providerAmount, string $currency): float
     {
         return round($providerAmount * self::currencyRatio($currency), 4);
     }
 
-    /** Convert wallet storage amount → provider (GSC) amount. */
+    /**
+     * Convert wallet storage amount → provider (GSC) amount.
+     * IDR2/VND2 (1:1000): format base currency first, then ÷ ratio (4 decimals).
+     * Ensures GetBalance(IDR2) === GetBalance(IDR) / 1000 at 4 dp.
+     */
     public static function toProviderAmount(float $walletAmount, string $currency): float
     {
+        $currency = strtoupper(trim($currency));
         $ratio = self::currencyRatio($currency);
-        if ($ratio <= 0) {
-            return round($walletAmount, 4);
+        if ($ratio > 1) {
+            $baseCurrency = self::providerBaseCurrency($currency);
+            $baseAmount = self::formatProviderBalance($walletAmount, $baseCurrency);
+
+            return self::formatProviderBalance($baseAmount / $ratio, $currency);
         }
-        return round($walletAmount / $ratio, 4);
+
+        return self::formatProviderBalance($walletAmount, $currency);
+    }
+
+    /** @return array{code:int,message:string,data:list<array<string,mixed>>} */
+    private static function batchCurrencyError(array $payload, string $message = 'Invalid currency'): array
+    {
+        $data = [];
+        $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
+        foreach ($batch as $req) {
+            if (!is_array($req)) {
+                continue;
+            }
+            $data[] = [
+                'member_account' => trim((string) ($req['member_account'] ?? '')),
+                'product_code' => (int) ($req['product_code'] ?? $req['Product_code'] ?? 0),
+                'balance' => 0,
+                'code' => 999,
+                'message' => $message,
+            ];
+        }
+        if ($data === []) {
+            $data[] = ['balance' => 0, 'code' => 999, 'message' => $message];
+        }
+
+        return ['code' => 999, 'message' => $message, 'data' => $data];
     }
 
     public static function operatorSign(string $requestTime, string $secretKey, string $action, string $operatorCode): string
@@ -300,7 +412,14 @@ final class GscPlusService
 
     private static function walletBalance(PDO $pdo, array $payload, array $cfg): array
     {
-        $currency = strtoupper(trim((string) ($payload['currency'] ?? $cfg['currency'] ?? 'TRY')));
+        $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
+        if ($currency === '') {
+            $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'IDR')));
+        }
+        if (!self::isSupportedCurrency($currency)) {
+            return self::batchCurrencyError($payload, 'Invalid currency');
+        }
+
         $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
         $data = [];
         foreach ($batch as $req) {
@@ -329,7 +448,8 @@ final class GscPlusService
                 'message' => '',
             ];
         }
-        return ['data' => $data];
+
+        return ['code' => 0, 'message' => '', 'data' => $data];
     }
 
     private static function walletWithdraw(PDO $pdo, array $payload, array $cfg): array
@@ -344,7 +464,14 @@ final class GscPlusService
 
     private static function walletMoneyBatch(PDO $pdo, array $payload, array $cfg, string $direction): array
     {
-        $currency = strtoupper(trim((string) ($payload['currency'] ?? $cfg['currency'] ?? 'TRY')));
+        $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
+        if ($currency === '') {
+            $currency = strtoupper(trim((string) ($cfg['currency'] ?? 'IDR')));
+        }
+        if (!self::isSupportedCurrency($currency)) {
+            return self::batchCurrencyError($payload, 'Invalid currency');
+        }
+
         $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
         $data = [];
         foreach ($batch as $req) {
@@ -382,11 +509,12 @@ final class GscPlusService
                 'product_code' => $productCode,
                 'before_balance' => self::toProviderAmount((float) $result['before_balance'], $currency),
                 'balance' => self::toProviderAmount((float) $result['balance'], $currency),
-                'code' => (int) $result['code'],
+                'code' => (int) ($result['code'] ?? 0),
                 'message' => (string) ($result['message'] ?? ''),
             ];
         }
-        return ['data' => $data];
+
+        return ['code' => 0, 'message' => '', 'data' => $data];
     }
 
     /**
