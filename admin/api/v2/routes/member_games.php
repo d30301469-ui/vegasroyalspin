@@ -231,32 +231,6 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
             WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
     }
-    if ($source === '' || $source === 'gamingsoft') {
-        admin_require_project_file('services/GamingSoftService.php');
-        $gsTypeExpr = "CASE
-            WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM','LC','LIVE','LIVE CASINO','LIVE-CASINO')
-              OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
-              OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
-              OR UPPER(TRIM(g.game_type)) LIKE '%LIVE CASINO%'
-            THEN 2 ELSE 1 END";
-        $gsTypeClause = $gameType === 1
-            ? "({$gsTypeExpr}) = 2"
-            : "({$gsTypeExpr}) = 1";
-        $branches[] = "SELECT
-                CONCAT('gamingsoft:', g.product_code, ':', g.game_code) AS game_id,
-                g.game_name AS name,
-                COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
-                CAST(g.product_code AS CHAR) AS provider_code,
-                COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                CAST('' AS CHAR) AS image_fallbacks,
-                g.is_featured AS is_featured,
-                'gamingsoft' AS source,
-                CAST(g.id AS CHAR) AS row_id,
-                CAST('' AS CHAR) AS raw_payload
-            FROM gamingsoft_games g
-            LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
-            WHERE g.is_active = 1 AND {$gsTypeClause}";
-    }
 
     if ($branches === []) {
         $memberEnvelope(200, [
@@ -349,11 +323,11 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             $imageUrl = (string) ($media['cover'] ?? '');
             $imageFallbacks = is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : [];
             $gameIdStr = (string) ($r['game_id'] ?? '');
-            $gsParsed = GamingSoftService::parseGameId($gameIdStr);
+            $gsParsed = class_exists('GamingSoftService', false) ? GamingSoftService::parseGameId($gameIdStr) : null;
             $allGames[] = [
                 'id'            => (string) ($r['row_id'] ?? ''),
                 'game_id'       => $gameIdStr,
-                'product_code'  => is_array($gsParsed) ? (int) ($gsParsed['product_code'] ?? 0) : 0,
+                'product_code'  => is_array($gsParsed) ? (string) ($gsParsed['product_code'] ?? '') : '',
                 'game_code'     => is_array($gsParsed) ? (string) ($gsParsed['game_code'] ?? '') : '',
                 'name'          => $gameName,
                 'title'         => $gameName,
@@ -366,7 +340,7 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 'provider_code' => (string) ($r['provider_code'] ?? ''),
                 'is_featured'   => $featured,
                 'is_popular'    => $featured === 1,
-                'has_demo'      => true,
+                'has_demo'      => (string) ($r['source'] ?? '') !== 'gamingsoft',
                 'category'      => $gameType === 1 ? 'live-casino' : 'slots',
                 'game_type'     => $gameType,
                 'source'        => (string) ($r['source'] ?? ''),

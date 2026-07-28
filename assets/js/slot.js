@@ -409,8 +409,18 @@
             return gid;
         }
         var source = String(game.source || '').trim().toLowerCase();
-        var productCode = String(game.product_code || game.provider_code || '').trim();
+        var productCode = String(game.product_code || '').trim();
         var gameCode = String(game.game_code || game.slug || '').trim();
+        if (productCode === '' || gameCode === '') {
+            var parts = gid.split(':');
+            if (gid.indexOf('gamingsoft:') === 0 && parts.length >= 3) {
+                productCode = parts[1] || productCode;
+                gameCode = parts.slice(2).join(':') || gameCode;
+            }
+        }
+        if (productCode === '' || gameCode === '') {
+            productCode = String(game.provider_code || '').trim();
+        }
         if ((source === 'gamingsoft' || source === 'gsc' || source === 'gsc+') && productCode !== '' && gameCode !== '') {
             return 'gamingsoft:' + productCode + ':' + gameCode;
         }
@@ -553,7 +563,7 @@
             '<div class="game-title-wrap"><p class="game-title-text">' + name + '</p></div>' +
             '<div class="game-actions">' +
             '<a class="play-btn" href="' + escapeHtml(gameUrl) + '" onclick="' + realPlayClickJs(gameUrlJs) + '">OYNA</a>' +
-            '<a class="demo-btn" href="' + escapeHtml(demoUrl) + '" onclick="event.stopPropagation()">DEMO</a>' +
+            (game.has_demo ? ('<a class="demo-btn" href="' + escapeHtml(demoUrl) + '" onclick="event.stopPropagation()">DEMO</a>') : '') +
             '</div>' +
             '</div>'
         ) : '';

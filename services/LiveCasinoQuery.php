@@ -55,6 +55,15 @@ final class LiveCasinoQuery
             . ')';
     }
 
+    /** SQL predicate: column holds a non-live GSC+ type (slot, sports, etc.). */
+    public static function gamingSoftNonLiveSql(string $column = 'g.game_type'): string
+    {
+        return '('
+            . "UPPER(TRIM({$column})) IN ('SLOT','SLOTS','SL','FISHING','FISH','SPORT_BOOK','SPORTSBOOK','POKER','LOTTERY','OTHER','VIRTUAL_SPORT','ESPORT','EGAME','ARCADE','TABLE','TABLE_GAMES')"
+            . " OR UPPER(TRIM({$column})) LIKE 'SLOT%'"
+            . ')';
+    }
+
     private static function gamingSoftCatalogCurrencySql(): string
     {
         self::ensureDependencies();
@@ -430,15 +439,18 @@ final class LiveCasinoQuery
             if (self::tableExists($pdo, 'gamingsoft_games')) {
                 $gsLive = self::gamingSoftLiveSql('g.game_type');
                 $prodLive = self::gamingSoftLiveSql('p.game_type');
+                $gsNonLive = self::gamingSoftNonLiveSql('g.game_type');
+                $gsCurrency = self::gamingSoftCatalogCurrencySql();
                 $gsStmt = $pdo->query(
                     "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
                      FROM gamingsoft_games g
-                     LEFT JOIN gamingsoft_products p ON p.product_code = g.product_code
+                     INNER JOIN gamingsoft_products p
+                        ON p.product_code = g.product_code
+                       AND p.is_active = 1
+                       AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                      WHERE g.is_active = 1
-                       AND ({$gsLive} OR EXISTS (
-                            SELECT 1 FROM gamingsoft_products px
-                            WHERE px.product_code = g.product_code AND {$prodLive}
-                       ))
+                       AND ({$gsLive} OR {$prodLive})
+                       AND NOT ({$gsNonLive} AND NOT {$prodLive})
                      ORDER BY provider_name ASC"
                 );
                 foreach (($gsStmt ? $gsStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
@@ -451,10 +463,13 @@ final class LiveCasinoQuery
 
             if (self::tableExists($pdo, 'gamingsoft_products')) {
                 $prodLive = self::gamingSoftLiveSql('p.game_type');
+                $gsCurrency = self::gamingSoftCatalogCurrencySql();
                 $prodStmt = $pdo->query(
                     "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(p.product_code AS CHAR)) AS provider_name
                      FROM gamingsoft_products p
-                     WHERE p.is_active = 1 AND {$prodLive}
+                     WHERE p.is_active = 1
+                       AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
+                       AND {$prodLive}
                      ORDER BY provider_name ASC"
                 );
                 foreach (($prodStmt ? $prodStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
@@ -545,10 +560,10 @@ final class LiveCasinoQuery
     {
         $liveGame = self::gamingSoftLiveSql('g.game_type');
         $liveProduct = self::gamingSoftLiveSql('p.game_type');
+        $nonLiveGame = self::gamingSoftNonLiveSql('g.game_type');
         $gsCurrency = self::gamingSoftCatalogCurrencySql();
 
-        // Include rows tagged live on the game OR belonging to a live product
-        // (covers mis-tagged game_type after sync).
+        // Live casino page: only GSC+ live products/tables — never slot catalogue rows.
         return "SELECT
                     CONCAT('gamingsoft:', g.product_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
@@ -559,6 +574,7 @@ final class LiveCasinoQuery
                     g.is_featured AS is_featured,
                     'gamingsoft' AS source,
                     CAST(g.id AS CHAR) AS row_id,
+                    g.game_code AS gs_game_code,
                     '' AS raw_payload
                 FROM gamingsoft_games g
                 INNER JOIN gamingsoft_products p
@@ -566,7 +582,9 @@ final class LiveCasinoQuery
                    AND p.is_active = 1
                    AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
                 WHERE g.is_active = 1
-                  AND ({$liveGame} OR {$liveProduct})";
+                  AND g.game_code <> '__lobby__'
+                  AND ({$liveGame} OR {$liveProduct})
+                  AND NOT ({$nonLiveGame} AND NOT {$liveProduct})";
     }
 
     /**
@@ -575,7 +593,6 @@ final class LiveCasinoQuery
     private static function gamingSoftLobbyProductsSelectSql(): string
     {
         $live = self::gamingSoftLiveSql('p.game_type');
-        $nonLive = "UPPER(TRIM(COALESCE(p.game_type, ''))) IN ('SLOT','FISHING','SPORT_BOOK','SPORTSBOOK','POKER','LOTTERY','OTHER','VIRTUAL_SPORT','ESPORT')";
         $gsCurrency = self::gamingSoftCatalogCurrencySql();
 
         return "SELECT
@@ -588,11 +605,12 @@ final class LiveCasinoQuery
                     0 AS is_featured,
                     'gamingsoft' AS source,
                     CONCAT('product-', CAST(p.id AS CHAR)) AS row_id,
+                    '__lobby__' AS gs_game_code,
                     '' AS raw_payload
                 FROM gamingsoft_products p
                 WHERE p.is_active = 1
                   AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
-                  AND ({$live} OR (p.entry_type = 2 AND NOT ({$nonLive})))
+                  AND {$live}
                   AND NOT EXISTS (
                       SELECT 1 FROM gamingsoft_games g
                       WHERE g.product_code = p.product_code
@@ -667,13 +685,16 @@ final class LiveCasinoQuery
 
         $parsedGs = class_exists('GamingSoftService', false) ? GamingSoftService::parseGameId($gameId) : null;
         $productCode = is_array($parsedGs) ? (int) ($parsedGs['product_code'] ?? 0) : 0;
-        $providerGameCode = is_array($parsedGs) ? (string) ($parsedGs['game_code'] ?? '') : '';
+        $providerGameCode = trim((string) ($row['gs_game_code'] ?? ''));
+        if ($providerGameCode === '' && is_array($parsedGs)) {
+            $providerGameCode = (string) ($parsedGs['game_code'] ?? '');
+        }
 
         return [
             'id' => $gameId,
             'game_id' => $gameId,
-            'product_code' => $productCode > 0 ? $productCode : (string) ($row['provider_code'] ?? ''),
-            'game_code' => $providerGameCode !== '' ? $providerGameCode : '',
+            'product_code' => $productCode > 0 ? (string) $productCode : (string) ($row['provider_code'] ?? ''),
+            'game_code' => $providerGameCode,
             'game_name' => $name,
             'name' => $name,
             'cover' => $imageUrl,

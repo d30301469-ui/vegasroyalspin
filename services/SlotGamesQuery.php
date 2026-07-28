@@ -551,50 +551,6 @@ final class SlotGamesQuery
                 INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
                 WHERE g.is_active = 1 AND v.is_active = 1 AND {$typeClause}";
         }
-        if ($source === '' || $source === 'gamingsoft') {
-            if (!class_exists('GamingSoftService', false)) {
-                $gsServicePath = is_file(__DIR__ . '/GamingSoftService.php')
-                    ? __DIR__ . '/GamingSoftService.php'
-                    : dirname(__DIR__) . '/services/GamingSoftService.php';
-                if (is_readable($gsServicePath)) {
-                    require_once $gsServicePath;
-                }
-            }
-            $gsTypeExpr = "CASE
-                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM','LC','LIVE','LIVE CASINO','LIVE-CASINO')
-                  OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
-                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
-                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE CASINO%'
-                THEN 2 ELSE 1 END";
-            $gsTypeClause = $gameType === 1
-                ? "({$gsTypeExpr}) = 2"
-                : "({$gsTypeExpr}) = 1";
-            $gsCurrency = GamingSoftService::STAGING_CURRENCY;
-            try {
-                if (class_exists('AdminDatabase', false)) {
-                    $gsCurrency = GamingSoftService::catalogCurrency(AdminDatabase::pdo());
-                }
-            } catch (Throwable) {
-            }
-            $gsCurrency = preg_replace('/[^A-Z0-9]/', '', strtoupper($gsCurrency)) ?: GamingSoftService::STAGING_CURRENCY;
-            $union[] = "SELECT
-                    CONCAT('gamingsoft:', g.product_code, ':', g.game_code) AS game_id,
-                    g.game_name AS name,
-                    COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
-                    CAST(g.product_code AS CHAR) AS provider_code,
-                    COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                    CAST('' AS CHAR) AS image_fallbacks,
-                    g.is_featured AS is_featured,
-                    'gamingsoft' AS source,
-                    CAST(g.id AS CHAR) AS row_id,
-                    CAST('' AS CHAR) AS raw_payload
-                FROM gamingsoft_games g
-                INNER JOIN gamingsoft_products p
-                    ON p.product_code = g.product_code
-                   AND p.is_active = 1
-                   AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
-                WHERE g.is_active = 1 AND {$gsTypeClause}";
-        }
 
         if ($union === []) {
             return [
@@ -775,41 +731,6 @@ final class SlotGamesQuery
             );
             $aggStmt->execute([':type' => $aggType]);
             foreach ($aggStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                if (!is_array($row) || empty($row['provider_name'])) {
-                    continue;
-                }
-                $name = self::normalizeProviderLabel((string) $row['provider_name']);
-                if (!isset($seen[$name])) {
-                    $seen[$name] = true;
-                    $providers[] = $name;
-                }
-            }
-            $gsTypeExpr = "CASE
-                WHEN UPPER(TRIM(g.game_type)) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
-                  OR UPPER(TRIM(g.game_type)) LIKE 'LIVE\\_CASINO%'
-                  OR UPPER(TRIM(g.game_type)) LIKE '%LIVE\\_CASINO%'
-                THEN 2 ELSE 1 END";
-            $gsWanted = $gameType === 1 ? 2 : 1;
-            $gsCurrency = GamingSoftService::STAGING_CURRENCY;
-            try {
-                if (class_exists('AdminDatabase', false)) {
-                    $gsCurrency = GamingSoftService::catalogCurrency(AdminDatabase::pdo());
-                }
-            } catch (Throwable) {
-            }
-            $gsCurrency = preg_replace('/[^A-Z0-9]/', '', strtoupper($gsCurrency)) ?: GamingSoftService::STAGING_CURRENCY;
-            $gsStmt = $pdo->prepare(
-                "SELECT DISTINCT COALESCE(NULLIF(p.provider, ''), NULLIF(p.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
-                 FROM gamingsoft_games g
-                 INNER JOIN gamingsoft_products p
-                    ON p.product_code = g.product_code
-                   AND p.is_active = 1
-                   AND UPPER(TRIM(p.currency)) = '{$gsCurrency}'
-                 WHERE g.is_active = 1 AND ({$gsTypeExpr}) = :type
-                 ORDER BY provider_name ASC"
-            );
-            $gsStmt->execute([':type' => $gsWanted]);
-            foreach ($gsStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                 if (!is_array($row) || empty($row['provider_name'])) {
                     continue;
                 }

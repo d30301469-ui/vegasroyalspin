@@ -737,7 +737,9 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
                                         </div>
                                         <div class="game-actions">
                                             <a class="play-btn" href="<?= htmlspecialchars($playHref, ENT_QUOTES, 'UTF-8') ?>" onclick="<?= htmlspecialchars($runtimePlayIntentJs, ENT_QUOTES, 'UTF-8') ?>">OYNA</a>
+                                            <?php if (!empty($game['has_demo'])): ?>
                                             <a class="demo-btn" href="<?= htmlspecialchars($demoHref, ENT_QUOTES, 'UTF-8') ?>" onclick="event.stopPropagation()">DEMO</a>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 <?php endif; ?>
