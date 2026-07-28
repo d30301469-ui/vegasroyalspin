@@ -7,14 +7,32 @@ final class AdminCommunicationController extends AdminController
     public function email(): void
     {
         $this->requirePermission('email');
+        $this->redirect(AdminAuth::url('/email/inbox'));
+    }
+
+    public function inbox(): void
+    {
+        $this->requirePermission('email');
         $this->ensureMailTables();
         $this->view('communication/email', [
-            'title' => 'E-posta',
+            'title' => 'Gelen e-postalar',
             'active' => 'email',
-            'crumbs' => 'İletişim | E-posta | Gelen Kutusu',
+            'crumbs' => 'E-posta | Gelen e-postalar',
+            'emailSection' => 'inbox',
             'messages' => $this->rows('member_inbox_messages', 'created_at'),
+        ]);
+    }
+
+    public function sent(): void
+    {
+        $this->requirePermission('email');
+        $this->ensureMailTables();
+        $this->view('communication/sent', [
+            'title' => 'Gönderilen e-posta',
+            'active' => 'email',
+            'crumbs' => 'E-posta | Gönderilen e-posta',
+            'emailSection' => 'sent',
             'mailLogs' => $this->rows('mail_outbound_log', 'created_at'),
-            'settings' => $this->mailSettingsRow(),
         ]);
     }
 
@@ -23,9 +41,10 @@ final class AdminCommunicationController extends AdminController
         $this->requirePermission('email');
         $this->ensureMailTables();
         $this->view('communication/compose', [
-            'title' => 'Mesaj Yaz',
-            'active' => 'compose',
-            'crumbs' => 'İletişim | Mesaj Yaz',
+            'title' => 'E-posta gönder',
+            'active' => 'email',
+            'crumbs' => 'E-posta | E-posta gönder',
+            'emailSection' => 'send',
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
         ]);
         unset($_SESSION['admin_flash']);
@@ -36,15 +55,31 @@ final class AdminCommunicationController extends AdminController
         $this->requirePermission('email');
         $this->ensureMailTables();
         $this->view('communication/settings', [
-            'title' => 'Mail Ayarları',
+            'title' => 'E-posta ayarları',
             'active' => 'email',
-            'crumbs' => 'İletişim | E-posta | Ayarlar',
+            'crumbs' => 'E-posta | Ayarlar',
+            'emailSection' => 'settings',
             'settings' => $this->mailSettingsRow(),
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
             'testResult' => (string) ($_SESSION['admin_mail_test'] ?? ''),
             'dbFingerprint' => $this->dbFingerprint(),
         ]);
         unset($_SESSION['admin_flash'], $_SESSION['admin_mail_test']);
+    }
+
+    public function templates(): void
+    {
+        $this->requirePermission('email');
+        $this->ensureMailTables();
+        $this->view('communication/templates', [
+            'title' => 'E-posta şablonları',
+            'active' => 'email',
+            'crumbs' => 'E-posta | E-posta şablonları',
+            'emailSection' => 'templates',
+            'settings' => $this->mailSettingsRow(),
+            'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
+        ]);
+        unset($_SESSION['admin_flash']);
     }
 
     public function testMail(): void
@@ -194,10 +229,6 @@ final class AdminCommunicationController extends AdminController
         $smtpPassword = $smtpPasswordInput !== ''
             ? $smtpPasswordInput
             : (string) ($existing['smtp_password'] ?? '');
-        $companyName = trim((string) ($_POST['company_name'] ?? ''));
-        $supportEmail = trim((string) ($_POST['support_email'] ?? ''));
-        $companyAddress = trim((string) ($_POST['company_address'] ?? ''));
-        $resetTemplateHtml = (string) ($_POST['reset_template_html'] ?? '');
 
         try {
             $pdo = AdminDatabase::pdo();
@@ -212,10 +243,6 @@ final class AdminCommunicationController extends AdminController
                          smtp_port = :smtp_port,
                          smtp_user = :smtp_user,
                          smtp_password = :smtp_password,
-                         company_name = :company_name,
-                         support_email = :support_email,
-                         company_address = :company_address,
-                         reset_template_html = :reset_template_html,
                          updated_at = NOW()
                      WHERE id = :id'
                 );
@@ -229,10 +256,6 @@ final class AdminCommunicationController extends AdminController
                     'smtp_port' => $smtpPort > 0 ? $smtpPort : null,
                     'smtp_user' => $smtpUser,
                     'smtp_password' => $smtpPassword,
-                    'company_name' => $companyName,
-                    'support_email' => $supportEmail,
-                    'company_address' => $companyAddress,
-                    'reset_template_html' => $resetTemplateHtml,
                 ]);
             } else {
                 $stmt = $pdo->prepare(
@@ -250,19 +273,76 @@ final class AdminCommunicationController extends AdminController
                     'smtp_port' => $smtpPort > 0 ? $smtpPort : null,
                     'smtp_user' => $smtpUser,
                     'smtp_password' => $smtpPassword,
+                    'company_name' => 'Vegasroyalspin',
+                    'support_email' => '',
+                    'company_address' => '',
+                    'reset_template_html' => '',
+                ]);
+            }
+
+            $_SESSION['admin_flash'] = 'E-posta ayarları güncellendi.';
+        } catch (Throwable $exception) {
+            $_SESSION['admin_flash'] = 'Mail ayarları kaydedilemedi: ' . $exception->getMessage();
+        }
+
+        $this->redirect(AdminAuth::url('/email/settings'));
+    }
+
+    public function saveTemplates(): void
+    {
+        $this->requirePermission('email');
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+
+        $this->ensureMailTables();
+        $existing = $this->mailSettingsRow();
+        $companyName = trim((string) ($_POST['company_name'] ?? ''));
+        $supportEmail = trim((string) ($_POST['support_email'] ?? ''));
+        $companyAddress = trim((string) ($_POST['company_address'] ?? ''));
+        $resetTemplateHtml = (string) ($_POST['reset_template_html'] ?? '');
+
+        try {
+            $pdo = AdminDatabase::pdo();
+            if (is_array($existing) && isset($existing['id'])) {
+                $stmt = $pdo->prepare(
+                    'UPDATE mail_settings
+                     SET company_name = :company_name,
+                         support_email = :support_email,
+                         company_address = :company_address,
+                         reset_template_html = :reset_template_html,
+                         updated_at = NOW()
+                     WHERE id = :id'
+                );
+                $stmt->execute([
+                    'id' => (int) $existing['id'],
+                    'company_name' => $companyName,
+                    'support_email' => $supportEmail,
+                    'company_address' => $companyAddress,
+                    'reset_template_html' => $resetTemplateHtml,
+                ]);
+            } else {
+                $stmt = $pdo->prepare(
+                    'INSERT INTO mail_settings
+                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, company_name, support_email, company_address, reset_template_html, updated_at)
+                     VALUES
+                     (0, 0, NULL, NULL, NULL, NULL, NULL, NULL, :company_name, :support_email, :company_address, :reset_template_html, NOW())'
+                );
+                $stmt->execute([
                     'company_name' => $companyName,
                     'support_email' => $supportEmail,
                     'company_address' => $companyAddress,
                     'reset_template_html' => $resetTemplateHtml,
                 ]);
             }
-
-            $_SESSION['admin_flash'] = 'Mail ayarları güncellendi.';
+            $_SESSION['admin_flash'] = 'E-posta şablonları güncellendi.';
         } catch (Throwable $exception) {
-            $_SESSION['admin_flash'] = 'Mail ayarları kaydedilemedi: ' . $exception->getMessage();
+            $_SESSION['admin_flash'] = 'Şablonlar kaydedilemedi: ' . $exception->getMessage();
         }
 
-        $this->redirect(AdminAuth::url('/email/settings'));
+        $this->redirect(AdminAuth::url('/email/templates'));
     }
 
     public function send(): void
@@ -281,7 +361,7 @@ final class AdminCommunicationController extends AdminController
 
         if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: geçerli bir alıcı e-postası girin.';
-            $this->redirect(AdminAuth::url('/compose'));
+            $this->redirect(AdminAuth::url('/email/send'));
         }
 
         // Admin compose mesajını üye gelen kutusuna da yaz.
@@ -365,7 +445,7 @@ final class AdminCommunicationController extends AdminController
             $_SESSION['admin_flash'] = 'Mesaj kaydedilemedi: ' . $exception->getMessage();
         }
 
-        $this->redirect(AdminAuth::url('/compose'));
+        $this->redirect(AdminAuth::url('/email/send'));
     }
 
     public function chat(): void

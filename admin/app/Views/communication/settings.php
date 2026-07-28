@@ -5,156 +5,99 @@ $flash = trim((string) ($flash ?? ''));
 $testResult = trim((string) ($testResult ?? ''));
 $dbFingerprint = trim((string) ($dbFingerprint ?? ''));
 $enabled = !empty($settings['enabled']) || !empty($settings['mail_enabled']);
+$emailSection = 'settings';
 ?>
 <section class="hero">
     <div class="hero-text">
-        <span class="eyebrow">Iletisim · SMTP</span>
-        <h1 class="hero-title">Mail <span class="accent">ayarlari</span></h1>
-        <p class="hero-sub">Sifre sifirlama mail temasi ve SMTP ayarlari bu ekrandan yonetilir.</p>
-    </div>
-    <div class="hero-actions">
-        <a class="btn btn--ghost" href="<?= htmlspecialchars(AdminAuth::url('/email'), ENT_QUOTES, 'UTF-8') ?>">E-posta ekrani</a>
-        <a class="btn btn--ghost" href="#reset-theme">Reset mail temasi</a>
-        <button class="btn btn--primary" type="submit" form="mailSettingsForm">Kaydet</button>
+        <span class="eyebrow">E-posta</span>
+        <h1 class="hero-title">Ayarlar</h1>
+        <p class="hero-sub">SMTP bağlantısı ve gönderen bilgileri.</p>
     </div>
 </section>
 
-<div class="grid">
-    <section class="col-12 card">
-        <div class="card-head">
-            <div class="card-title-wrap">
-                <span class="eyebrow">SMTP</span>
-                <h2 class="card-title">Gonderim Ayarlari</h2>
-            </div>
-            <span class="badge <?= $enabled ? 'dot success' : 'dot danger' ?>"><?= $enabled ? 'Aktif' : 'Pasif' ?></span>
+<?php include __DIR__ . '/_nav.php'; ?>
+
+<?php if ($dbFingerprint !== ''): ?>
+    <div class="field-help" style="margin-bottom:12px;">Bağlı veritabanı: <strong><?= htmlspecialchars($dbFingerprint, ENT_QUOTES, 'UTF-8') ?></strong></div>
+<?php endif; ?>
+
+<?php if ($flash !== ''): ?>
+    <div class="alert <?= stripos($flash, 'kaydedilemedi') !== false ? 'alert--danger' : 'alert--success' ?>" style="display:block;margin-bottom:12px;white-space:pre-wrap;">
+        <?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?>
+    </div>
+<?php endif; ?>
+
+<?php if ($testResult !== ''): ?>
+    <div class="alert <?= stripos($testResult, 'BASARILI') !== false ? 'alert--success' : 'alert--danger' ?>" style="display:block;margin-bottom:12px;white-space:pre-wrap;">
+        <?= htmlspecialchars($testResult, ENT_QUOTES, 'UTF-8') ?>
+    </div>
+<?php endif; ?>
+
+<section class="card">
+    <div class="card-head">
+        <div class="card-title-wrap">
+            <span class="eyebrow">SMTP</span>
+            <h2 class="card-title">Gönderim ayarları</h2>
         </div>
+        <span class="badge <?= $enabled ? 'dot success' : 'dot danger' ?>"><?= $enabled ? 'Aktif' : 'Pasif' ?></span>
+    </div>
 
-        <?php if ($dbFingerprint !== ''): ?>
-            <div class="field-help" style="margin-bottom:12px;">Bu panelin bagli oldugu veritabani: <strong><?= htmlspecialchars($dbFingerprint, ENT_QUOTES, 'UTF-8') ?></strong> (phpMyAdmin'de gordugun DB adiyla ayni olmali)</div>
-        <?php endif; ?>
-
-        <?php
-        $storedHost = trim((string) ($settings['smtp_host'] ?? ''));
-        $storedUser = trim((string) ($settings['smtp_user'] ?? ''));
-        $storedPass = (string) ($settings['smtp_password'] ?? '');
-        $storedPassLen = strlen($storedPass);
-        $storedPassMask = $storedPassLen > 0
-            ? (substr($storedPass, 0, 1) . str_repeat('*', max(0, $storedPassLen - 2)) . ($storedPassLen > 1 ? substr($storedPass, -1) : ''))
-            : '(bos)';
-        ?>
-        <div class="field-help" style="margin-bottom:12px;background:rgba(0,0,0,.04);padding:10px;border-radius:8px;">
-            <strong>Kayitli SMTP bilgileri (dogrulama icin):</strong><br>
-            Host: <code><?= htmlspecialchars($storedHost !== '' ? $storedHost : '(bos)', ENT_QUOTES, 'UTF-8') ?></code><br>
-            Kullanici (tam e-posta olmali): <code><?= htmlspecialchars($storedUser !== '' ? $storedUser : '(bos)', ENT_QUOTES, 'UTF-8') ?></code><br>
-            Sifre: <code><?= htmlspecialchars($storedPassMask, ENT_QUOTES, 'UTF-8') ?></code> (<?= htmlspecialchars($storedPassLen, ENT_QUOTES, 'UTF-8') ?> karakter)
-        </div>
-
-        <?php if ($flash !== ''): ?>
-            <div class="alert <?= stripos($flash, 'kaydedilemedi') !== false ? 'alert--danger' : 'alert--success' ?>" style="display:block;margin-bottom:12px;white-space:pre-wrap;word-break:break-word;">
-                <?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?>
+    <form id="mailSettingsForm" method="post" action="<?= htmlspecialchars(AdminAuth::url('/email/settings'), ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+        <div class="form-grid">
+            <div class="field span-2">
+                <label class="switch" style="display:flex;align-items:center;gap:10px;">
+                    <input type="checkbox" name="enabled" value="1" <?= $enabled ? 'checked' : '' ?>>
+                    <span class="field-label" style="margin:0;">Mail gönderimi aktif</span>
+                </label>
             </div>
-        <?php endif; ?>
-
-        <?php if ($testResult !== ''): ?>
-            <div class="alert <?= stripos($testResult, 'BASARILI') !== false ? 'alert--success' : 'alert--danger' ?>" style="display:block;margin-bottom:12px;white-space:pre-wrap;word-break:break-word;">
-                <?= htmlspecialchars($testResult, ENT_QUOTES, 'UTF-8') ?>
+            <div class="field span-2">
+                <label class="field-label" for="from_email">Gönderen e-posta</label>
+                <input id="from_email" class="input" type="email" name="from_email" placeholder="noreply@vegasroyalspin.com" value="<?= htmlspecialchars((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
             </div>
-        <?php endif; ?>
-
-        <form id="mailSettingsForm" method="post" action="<?= htmlspecialchars(AdminAuth::url('/email/settings'), ENT_QUOTES, 'UTF-8') ?>">
-            <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
-            <div class="form-grid">
-                <div class="field span-2">
-                    <label class="switch" style="display:flex;align-items:center;gap:10px;">
-                        <input type="checkbox" name="enabled" value="1" <?= $enabled ? 'checked' : '' ?>>
-                        <span class="field-label" style="margin:0;">Mail gonderimi aktif</span>
-                    </label>
-                    <div class="field-help">Kapaliysa sifre sifirlama mailleri gonderilmez.</div>
-                </div>
-
-                <div class="field span-2">
-                    <label class="field-label" for="from_email">Gonderen e-posta</label>
-                    <input id="from_email" class="input" type="email" name="from_email" placeholder="noreply@vegasroyalspin.com" value="<?= htmlspecialchars((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                </div>
-
-                <div class="field">
-                    <label class="field-label" for="smtp_host">SMTP Host</label>
-                    <input id="smtp_host" class="input" type="text" name="smtp_host" placeholder="smtp.example.com" value="<?= htmlspecialchars((string) ($settings['smtp_host'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                </div>
-
-                <div class="field">
-                    <label class="field-label" for="smtp_port">SMTP Port</label>
-                    <input id="smtp_port" class="input" type="number" min="1" max="65535" name="smtp_port" placeholder="587" value="<?= htmlspecialchars((string) ($settings['smtp_port'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                </div>
-
-                <div class="field">
-                    <label class="field-label" for="smtp_user">SMTP Kullanici</label>
-                    <input id="smtp_user" class="input" type="text" name="smtp_user" value="<?= htmlspecialchars((string) ($settings['smtp_user'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                </div>
-
-                <div class="field">
-                    <label class="field-label" for="smtp_password">SMTP Sifre</label>
-                    <input id="smtp_password" class="input" type="password" name="smtp_password" placeholder="Degistirmek icin yeni sifre girin">
-                    <div class="field-help">Bos birakirsan mevcut sifre korunur.</div>
-                </div>
-
-                <div id="reset-theme" class="field span-2" style="padding:12px 14px;border:1px dashed rgba(0,0,0,.18);border-radius:8px;background:rgba(0,0,0,.02);">
-                    <strong>Sifre Sifirlama Mail Temasi</strong>
-                    <div class="field-help" style="margin-top:4px;">Asagidaki alanlar, kullanicilara giden reset-password mail tasarimini ve metinlerini belirler.</div>
-                </div>
-
-                <div class="field">
-                    <label class="field-label" for="company_name">Sablon Sirket Adi</label>
-                    <input id="company_name" class="input" type="text" name="company_name" placeholder="Company" value="<?= htmlspecialchars((string) ($settings['company_name'] ?? 'VegasRoyalSpin'), ENT_QUOTES, 'UTF-8') ?>">
-                </div>
-
-                <div class="field">
-                    <label class="field-label" for="support_email">Destek E-postasi</label>
-                    <input id="support_email" class="input" type="email" name="support_email" placeholder="support@vegasroyalspin.com" value="<?= htmlspecialchars((string) ($settings['support_email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                </div>
-
-                <div class="field span-2">
-                    <label class="field-label" for="company_address">Adres (Footer)</label>
-                    <textarea id="company_address" class="input" name="company_address" rows="3" placeholder="1234 Street Rd.&#10;Suite 1234&#10;City, State, ZIP Code"><?= htmlspecialchars((string) ($settings['company_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                </div>
-
-                <div class="field span-2">
-                    <label class="field-label" for="reset_template_html">Reset Mail HTML Sablonu (Opsiyonel)</label>
-                    <textarea id="reset_template_html" class="input" name="reset_template_html" rows="16" placeholder="Bos birakirsan sistem varsayilan reset template'ini kullanir."><?= htmlspecialchars((string) ($settings['reset_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                    <div class="field-help">Desteklenen placeholder'lar: {{PREHEADER}}, {{HEADING}}, {{BODY_HTML}}, {{CTA_LABEL}}, {{CTA_URL}}, {{COMPANY_NAME}}, {{MEMBER_NAME}}, {{SUPPORT_EMAIL}}, {{SUPPORT_EMAIL_LINK}}, {{YEAR}}, {{COMPANY_ADDRESS_HTML}}, {{LOGO_HTML}}, {{FALLBACK_URL}}</div>
-                </div>
+            <div class="field">
+                <label class="field-label" for="smtp_host">SMTP Host</label>
+                <input id="smtp_host" class="input" type="text" name="smtp_host" placeholder="mail.vegasroyalspin.com" value="<?= htmlspecialchars((string) ($settings['smtp_host'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
             </div>
-
-            <div class="form-actions">
-                <span class="badge dot success">mail_settings</span>
-                <span class="spacer"></span>
-                <a class="btn btn--ghost" href="<?= htmlspecialchars(AdminAuth::url('/email'), ENT_QUOTES, 'UTF-8') ?>">Iptal</a>
-                <button class="btn btn--primary" type="submit">Kaydet</button>
+            <div class="field">
+                <label class="field-label" for="smtp_port">SMTP Port</label>
+                <input id="smtp_port" class="input" type="number" min="1" max="65535" name="smtp_port" placeholder="465" value="<?= htmlspecialchars((string) ($settings['smtp_port'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
             </div>
-        </form>
-    </section>
-
-    <section class="col-12 card">
-        <div class="card-head">
-            <div class="card-title-wrap">
-                <span class="eyebrow">Test</span>
-                <h2 class="card-title">Test Mail Gonder</h2>
+            <div class="field">
+                <label class="field-label" for="smtp_user">SMTP Kullanıcı</label>
+                <input id="smtp_user" class="input" type="text" name="smtp_user" value="<?= htmlspecialchars((string) ($settings['smtp_user'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+            </div>
+            <div class="field">
+                <label class="field-label" for="smtp_password">SMTP Şifre</label>
+                <input id="smtp_password" class="input" type="password" name="smtp_password" placeholder="Değiştirmek için yeni şifre girin">
+                <div class="field-help">Boş bırakırsan mevcut şifre korunur.</div>
             </div>
         </div>
-        <p class="field-help" style="margin-bottom:10px;">Ayarlari kaydettikten sonra gercek SMTP baglantisini test eder ve hatayi aninda gosterir.</p>
-        <form method="post" action="<?= htmlspecialchars(AdminAuth::url('/email/settings/test'), ENT_QUOTES, 'UTF-8') ?>">
-            <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
-            <div class="form-grid">
-                <div class="field span-2">
-                    <label class="field-label" for="test_email">Test alici adresi</label>
-                    <input id="test_email" class="input" type="email" name="test_email" placeholder="kendi-mailin@example.com" value="<?= htmlspecialchars((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                    <div class="field-help">Bos birakirsan gonderen adrese test edilir.</div>
-                </div>
+        <div class="form-actions">
+            <span class="spacer"></span>
+            <button class="btn btn--primary" type="submit">Kaydet</button>
+        </div>
+    </form>
+</section>
+
+<section class="card" style="margin-top:16px;">
+    <div class="card-head">
+        <div class="card-title-wrap">
+            <span class="eyebrow">Test</span>
+            <h2 class="card-title">Test mail gönder</h2>
+        </div>
+    </div>
+    <form method="post" action="<?= htmlspecialchars(AdminAuth::url('/email/settings/test'), ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+        <div class="form-grid">
+            <div class="field span-2">
+                <label class="field-label" for="test_email">Test alıcı adresi</label>
+                <input id="test_email" class="input" type="email" name="test_email" placeholder="kendi-mailin@example.com" value="<?= htmlspecialchars((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
             </div>
-            <div class="form-actions">
-                <span class="spacer"></span>
-                <button class="btn btn--primary" type="submit">Test Mail Gonder</button>
-            </div>
-        </form>
-    </section>
-</div>
+        </div>
+        <div class="form-actions">
+            <span class="spacer"></span>
+            <button class="btn btn--primary" type="submit">Test Mail Gönder</button>
+        </div>
+    </form>
+</section>

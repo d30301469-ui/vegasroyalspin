@@ -239,9 +239,15 @@ $router->get('/compliance/audit-log', [AdminComplianceController::class, 'auditL
 $router->get('/permissions', [AdminPermissionController::class, 'index']);
 $router->post('/permissions', [AdminPermissionController::class, 'update']);
 $router->get('/email', [AdminCommunicationController::class, 'email']);
+$router->get('/email/inbox', [AdminCommunicationController::class, 'inbox']);
+$router->get('/email/sent', [AdminCommunicationController::class, 'sent']);
+$router->get('/email/send', [AdminCommunicationController::class, 'compose']);
+$router->post('/email/send', [AdminCommunicationController::class, 'send']);
 $router->get('/email/settings', [AdminCommunicationController::class, 'settings']);
 $router->post('/email/settings', [AdminCommunicationController::class, 'saveSettings']);
 $router->post('/email/settings/test', [AdminCommunicationController::class, 'testMail']);
+$router->get('/email/templates', [AdminCommunicationController::class, 'templates']);
+$router->post('/email/templates', [AdminCommunicationController::class, 'saveTemplates']);
 $router->get('/compose', [AdminCommunicationController::class, 'compose']);
 $router->post('/compose', [AdminCommunicationController::class, 'send']);
 $router->get('/chat', [AdminCommunicationController::class, 'chat']);
