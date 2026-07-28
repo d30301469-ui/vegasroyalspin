@@ -6,6 +6,7 @@ $players = is_array($players ?? null) ? $players : [];
 $history = is_array($history ?? null) ? $history : [];
 $callLogs = is_array($callLogs ?? null) ? $callLogs : [];
 $logUserMap = is_array($logUserMap ?? null) ? $logUserMap : [];
+$logGameMap = is_array($logGameMap ?? null) ? $logGameMap : [];
 $flash = trim((string) ($flash ?? ''));
 $vendorCode = trim((string) ($vendorCode ?? ''));
 $playersError = trim((string) ($playersError ?? ''));
@@ -33,6 +34,17 @@ $localUserLabel = static function (?array $profile, string $fallbackCode) use ($
         $full = $fallbackCode !== '' ? $fallbackCode : '—';
     }
     return $text($full);
+};
+
+$localGameLabel = static function (?array $game, string $fallbackCode) use ($text): string {
+    if (!is_array($game)) {
+        return $text($fallbackCode !== '' ? $fallbackCode : '—');
+    }
+    $name = trim((string) ($game['game_name'] ?? ''));
+    if ($name === '') {
+        $name = $fallbackCode !== '' ? $fallbackCode : '—';
+    }
+    return $text($name);
 };
 
 $statusBadge = static function (mixed $status): array {
@@ -157,7 +169,7 @@ foreach ($callLogs as $log) {
                 <thead>
                 <tr>
                     <th>Kullanıcı</th>
-                    <th>Game</th>
+                    <th>Oyun</th>
                     <th>Tip</th>
                     <th>Bet</th>
                     <th>Balance</th>
@@ -186,6 +198,8 @@ foreach ($callLogs as $log) {
                     $localUser = is_array($p['_local_user'] ?? null) ? $p['_local_user'] : null;
                     $localUsername = is_array($localUser) ? trim((string) ($localUser['username'] ?? '')) : '';
                     $localId = is_array($localUser) ? (int) ($localUser['id'] ?? 0) : 0;
+                    $localGame = is_array($p['_local_game'] ?? null) ? $p['_local_game'] : null;
+                    $gameName = trim((string) ($p['_game_name'] ?? ($localGame['game_name'] ?? '')));
                     ?>
                     <tr>
                         <td>
@@ -202,10 +216,15 @@ foreach ($callLogs as $log) {
                             </div>
                         </td>
                         <td>
-                            <span class="gc-mono"><?= $text($pGame) ?></span>
-                            <?php if ($pCur !== ''): ?>
-                                <span class="badge"><?= $text($pCur) ?></span>
-                            <?php endif; ?>
+                            <div class="gc-user-name"><?= $gameName !== '' ? $text($gameName) : $text($pGame) ?></div>
+                            <div class="gc-user-meta">
+                                <?php if ($pGame !== ''): ?>
+                                    <span class="gc-mono"><?= $text($pGame) ?></span>
+                                <?php endif; ?>
+                                <?php if ($pCur !== ''): ?>
+                                    <span class="badge"><?= $text($pCur) ?></span>
+                                <?php endif; ?>
+                            </div>
                         </td>
                         <td>
                             <span class="<?= $typeBadge ?>" title="<?= $text($pTypeRaw) ?>"><?= $typeLabel ?></span>
@@ -352,7 +371,7 @@ foreach ($callLogs as $log) {
                     <tr>
                         <th>ID</th>
                         <th>Kullanıcı</th>
-                        <th>Game</th>
+                        <th>Oyun</th>
                         <th>RTP</th>
                         <th>Bet</th>
                         <th>Durum</th>
@@ -365,6 +384,9 @@ foreach ($callLogs as $log) {
                         [$badgeClass, $badgeLabel] = $statusBadge($h['status'] ?? '');
                         $hUser = (string) ($h['userCode'] ?? '');
                         $hLocal = is_array($h['_local_user'] ?? null) ? $h['_local_user'] : null;
+                        $hGame = (string) ($h['gameCode'] ?? '');
+                        $hLocalGame = is_array($h['_local_game'] ?? null) ? $h['_local_game'] : null;
+                        $hGameName = trim((string) ($h['_game_name'] ?? ($hLocalGame['game_name'] ?? '')));
                         ?>
                         <tr>
                             <td class="gc-mono"><?= $text((string) ($h['id'] ?? '')) ?></td>
@@ -374,7 +396,12 @@ foreach ($callLogs as $log) {
                                     <div class="gc-user-meta"><span class="gc-mono"><?= $text($hUser) ?></span></div>
                                 <?php endif; ?>
                             </td>
-                            <td class="gc-mono"><?= $text((string) ($h['gameCode'] ?? '')) ?></td>
+                            <td>
+                                <div class="gc-user-name"><?= $hGameName !== '' ? $text($hGameName) : $text($hGame) ?></div>
+                                <?php if ($hGame !== ''): ?>
+                                    <div class="gc-user-meta"><span class="gc-mono"><?= $text($hGame) ?></span></div>
+                                <?php endif; ?>
+                            </td>
                             <td class="gc-num"><span class="badge"><?= $text((string) ($h['rtp'] ?? '')) ?></span></td>
                             <td class="gc-num"><?= $text((string) ($h['betAmount'] ?? '')) ?></td>
                             <td><span class="<?= $text($badgeClass) ?>"><?= $text($badgeLabel) ?></span></td>
@@ -405,6 +432,7 @@ foreach ($callLogs as $log) {
             <tr>
                 <th>İşlem</th>
                 <th>Kullanıcı</th>
+                <th>Oyun</th>
                 <th>Call ID</th>
                 <th>RTP</th>
                 <th>Money</th>
@@ -422,6 +450,11 @@ foreach ($callLogs as $log) {
                 };
                 $logUser = (string) ($log['user_code'] ?? '');
                 $logLocal = is_array($logUserMap[$logUser] ?? null) ? $logUserMap[$logUser] : null;
+                $logVendor = (string) ($log['vendor_code'] ?? '');
+                $logGame = (string) ($log['game_code'] ?? '');
+                $logGameKey = $logVendor . '|' . $logGame;
+                $logLocalGame = is_array($logGameMap[$logGameKey] ?? null) ? $logGameMap[$logGameKey] : null;
+                $logGameName = trim((string) ($logLocalGame['game_name'] ?? ''));
                 ?>
                 <tr>
                     <td><span class="<?= $actionBadge ?>"><?= $text($action) ?></span></td>
@@ -429,6 +462,12 @@ foreach ($callLogs as $log) {
                         <div class="gc-user-name"><?= $localUserLabel($logLocal, $logUser) ?></div>
                         <?php if ($logUser !== ''): ?>
                             <div class="gc-user-meta"><span class="gc-mono"><?= $text($logUser) ?></span></div>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <div class="gc-user-name"><?= $localGameLabel($logLocalGame, $logGame) ?></div>
+                        <?php if ($logGame !== ''): ?>
+                            <div class="gc-user-meta"><span class="gc-mono"><?= $text($logGame) ?></span></div>
                         <?php endif; ?>
                     </td>
                     <td class="gc-mono"><?= $text((string) ($log['call_id'] ?? '')) ?></td>

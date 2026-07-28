@@ -2673,6 +2673,94 @@ final class CasinoAggregatorService
     }
 
     /**
+     * @param list<array{vendor?:string,vendor_code?:string,vendorCode?:string,game?:string,game_code?:string,gameCode?:string}> $pairs
+     * @return array<string, array{vendor_code:string,game_code:string,game_name:string}>
+     */
+    public static function mapLocalGamesByPairs(PDO $pdo, array $pairs): array
+    {
+        $wanted = [];
+        foreach ($pairs as $pair) {
+            if (!is_array($pair)) {
+                continue;
+            }
+            $vendor = trim((string) ($pair['vendor_code'] ?? $pair['vendorCode'] ?? $pair['vendor'] ?? ''));
+            $game = trim((string) ($pair['game_code'] ?? $pair['gameCode'] ?? $pair['game'] ?? ''));
+            if ($vendor === '' || $game === '') {
+                continue;
+            }
+            $wanted[$vendor . "\0" . $game] = [$vendor, $game];
+        }
+        if ($wanted === []) {
+            return [];
+        }
+
+        $map = [];
+        try {
+            $vendors = array_values(array_unique(array_map(static fn (array $p): string => $p[0], $wanted)));
+            $placeholders = implode(',', array_fill(0, count($vendors), '?'));
+            $stmt = $pdo->prepare(
+                "SELECT vendor_code, game_code, game_name
+                 FROM casino_aggregator_games
+                 WHERE vendor_code IN ({$placeholders})"
+            );
+            $stmt->execute($vendors);
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $vendor = trim((string) ($row['vendor_code'] ?? ''));
+                $game = trim((string) ($row['game_code'] ?? ''));
+                if ($vendor === '' || $game === '' || !isset($wanted[$vendor . "\0" . $game])) {
+                    continue;
+                }
+                $name = self::resolveLocalizedLabel($row['game_name'] ?? $game) ?: $game;
+                $map[$vendor . '|' . $game] = [
+                    'vendor_code' => $vendor,
+                    'game_code'   => $game,
+                    'game_name'   => $name,
+                ];
+            }
+        } catch (Throwable) {
+            return [];
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    public static function attachLocalGameNames(PDO $pdo, array $rows): array
+    {
+        $pairs = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $pairs[] = [
+                'vendor_code' => (string) ($row['vendorCode'] ?? $row['vendor_code'] ?? ''),
+                'game_code'   => (string) ($row['gameCode'] ?? $row['game_code'] ?? ''),
+            ];
+        }
+        $map = self::mapLocalGamesByPairs($pdo, $pairs);
+        foreach ($rows as $idx => $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $vendor = trim((string) ($row['vendorCode'] ?? $row['vendor_code'] ?? ''));
+            $game = trim((string) ($row['gameCode'] ?? $row['game_code'] ?? ''));
+            $key = $vendor . '|' . $game;
+            $rows[$idx]['_local_game'] = $map[$key] ?? null;
+            if (isset($map[$key]['game_name'])) {
+                $rows[$idx]['_game_name'] = $map[$key]['game_name'];
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @return array<string, string>
      */
