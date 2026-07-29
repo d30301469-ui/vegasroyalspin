@@ -478,6 +478,8 @@ if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_ga
     admin_require_project_file('services/CasinoAggregatorService.php');
     CasinoAggregatorService::bootstrap($pdo);
     admin_require_project_file('services/DrakonService.php');
+    DrakonService::bootstrap($pdo);
+    admin_require_project_file('services/DrakonService.php');
 
     $source = strtolower(trim((string) ($_GET['source'] ?? $_GET['category'] ?? $_GET['game_type'] ?? 'all')));
     if (in_array($source, ['live', 'livecasino'], true)) {
@@ -923,7 +925,10 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
                       FROM drakon_transactions t
                       LEFT JOIN users u ON u.id = t.user_id
                       LEFT JOIN drakon_games g ON g.game_id = t.game_id
-                      WHERE t.txn_type = 'win' AND t.amount > 0{$drakonPeriodSql}
+                      WHERE t.txn_type = 'win'
+                        AND t.status = 'ok'
+                        AND (COALESCE(t.win_amount, 0) > 0 OR COALESCE(t.amount, 0) > 0)
+                        {$drakonPeriodSql}
                   ) winners_union";
 
     $maskUsername = static function (mixed $value): string {
