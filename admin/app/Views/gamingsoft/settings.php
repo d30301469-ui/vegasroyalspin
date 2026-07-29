@@ -12,13 +12,24 @@ $callbackAlias = (string) ($callbackAlias ?? '');
 
 $agentWallet = is_array($agentWallet ?? null) ? $agentWallet : null;
 $contractedCurrencies = [];
+$walletTotal = 0.0;
 foreach (($agentWallet['currencies'] ?? []) as $walletRow) {
     $code = strtoupper(trim((string) ($walletRow['currency'] ?? '')));
     if ($code !== '') {
         $contractedCurrencies[] = $code;
     }
+    $walletTotal += (float) ($walletRow['current_balance'] ?? 0);
+}
+if ($contractedCurrencies === []) {
+    $contractedCurrencies = GscPlusService::STAGING_CURRENCIES;
 }
 $currencyMismatch = $contractedCurrencies !== [] && !in_array($currencyValue, $contractedCurrencies, true);
+$walletEmpty = $agentWallet !== null && $walletTotal <= 0;
+$currencyChoices = array_values(array_unique(array_merge(
+    GscPlusService::STAGING_CURRENCIES,
+    $contractedCurrencies,
+    $currencyValue !== '' ? [$currencyValue] : []
+)));
 ?>
 <style>
     .gsc-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
@@ -29,6 +40,10 @@ $currencyMismatch = $contractedCurrencies !== [] && !in_array($currencyValue, $c
     .gsc-secret { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .02em; }
     .gsc-help { color: var(--t-muted); font-size: 13px; line-height: 1.45; margin-top: 6px; }
     .gsc-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
+    .gsc-banner { margin-bottom: 16px; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(252,172,0,.35); background: rgba(252,172,0,.08); color: var(--t); font-size: 13px; line-height: 1.5; }
+    .gsc-banner strong { color: #fcac00; }
+    .gsc-banner--danger { border-color: rgba(255,99,115,.45); background: rgba(132,32,41,.18); }
+    .gsc-banner--danger strong { color: #ff8a96; }
     @media (max-width: 900px) { .gsc-grid { grid-template-columns: 1fr; } }
 </style>
 
@@ -47,44 +62,68 @@ $currencyMismatch = $contractedCurrencies !== [] && !in_array($currencyValue, $c
     <div class="alert" style="margin-bottom:16px"><?= $text($flash) ?></div>
 <?php endif; ?>
 
+<div class="gsc-banner">
+    <strong>VGY1 staging:</strong>
+    Operator code <code>VGY1</code>, URL <code>https://staging.gsimw.com</code>.
+    Açık para birimleri: <code><?= $text(implode(', ', GscPlusService::STAGING_CURRENCIES)) ?></code>
+    (IDR2 / VND2 oranı 1:1000). Site görünümü TRY olsa da GSC+ staging’de TRY henüz yok —
+    launch ve wallet <code>IDR</code> (veya ürünün kendi para birimi) ile gider.
+    Resmi / production ortamı GSC+ tarafında hâlâ kurulumda; Pragmatic URL’leri
+    <code>prerelease-env.biz</code> UAT’idir. Kiosk credit (agent wallet) sıfırsa
+    sağlayıcı oturumu “Un-Authorized / not logged in” ile düşer — GSC+ destekten
+    top-up isteyin.
+</div>
+
+<?php if ($walletEmpty): ?>
+    <div class="gsc-banner gsc-banner--danger">
+        <strong>Agent wallet boş:</strong> 3.12 sorgusu tüm sözleşmeli para birimlerinde
+        0 bakiye döndü. Launch URL gelse bile Pragmatic / DreamGaming oturumu reddedebilir.
+        GSC+ customer support’a kiosk credit top-up tutarını iletin.
+    </div>
+<?php endif; ?>
+
 <div class="gsc-grid">
     <form id="gscSettingsForm" class="gsc-card" method="post" action="<?= $text(AdminAuth::url('/gamingsoft/settings')) ?>">
         <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
 
         <div class="field">
             <label class="field-label" for="operator_code">Operator Code</label>
-            <input id="operator_code" class="input" type="text" name="operator_code" value="<?= $text($configRow['operator_code'] ?? '') ?>" maxlength="32" autocomplete="off" required>
-            <p class="gsc-help">GSC+ tarafından verilen agent kodu.</p>
+            <input id="operator_code" class="input" type="text" name="operator_code" value="<?= $text($configRow['operator_code'] ?? '') ?>" maxlength="32" autocomplete="off" required placeholder="VGY1">
+            <p class="gsc-help">GSC+ Agency Code (staging: <code>VGY1</code>).</p>
         </div>
 
         <div class="field">
             <label class="field-label" for="secret_key">Secret Key</label>
             <input id="secret_key" class="input gsc-secret" type="password" name="secret_key" value="" placeholder="<?= trim((string) ($configRow['secret_key'] ?? '')) !== '' ? 'Mevcut secret korunacak' : 'GSC+ secret_key' ?>" autocomplete="new-password">
-            <p class="gsc-help">MD5 imza için kullanılır. Boş bırakılırsa mevcut değer korunur.</p>
+            <p class="gsc-help">MD5 imza için kullanılır. Boş bırakılırsa mevcut değer korunur. Secret’ı git/repo’ya yazmayın.</p>
         </div>
 
         <div class="field">
             <label class="field-label" for="operator_url">Operator URL</label>
             <input id="operator_url" class="input" type="url" name="operator_url" value="<?= $text($configRow['operator_url'] ?? 'https://staging.gsimw.com') ?>" placeholder="https://staging.gsimw.com">
-            <p class="gsc-help">Staging: <code>https://staging.gsimw.com</code> · Aurora: <code>https://staging-idr.pglsucs.com</code></p>
+            <p class="gsc-help">Staging: <code>https://staging.gsimw.com</code> · Production hazır olunca GSC+ yeni URL verecek.</p>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
             <div class="field">
-                <label class="field-label" for="currency">Currency</label>
-                <input id="currency" class="input" type="text" name="currency" value="<?= $text($currencyValue) ?>" maxlength="16">
-                <?php if ($contractedCurrencies !== []): ?>
-                    <p class="gsc-help">
-                        Sözleşmeli: <code><?= $text(implode(', ', $contractedCurrencies)) ?></code>
-                        <?php if ($currencyMismatch): ?>
-                            <br><strong>Uyarı:</strong> <?= $text($currencyValue) ?> agent cüzdanında tanımlı değil; launch-game reddedilir.
-                        <?php endif; ?>
-                    </p>
-                <?php endif; ?>
+                <label class="field-label" for="currency">Primary Currency</label>
+                <select id="currency" class="input" name="currency">
+                    <?php foreach ($currencyChoices as $choice): ?>
+                        <option value="<?= $text($choice) ?>" <?= $choice === $currencyValue ? 'selected' : '' ?>><?= $text($choice) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="gsc-help">
+                    Varsayılan launch tercihi (ürün kendi currency’si ile override edilir).
+                    Sözleşmeli: <code><?= $text(implode(', ', $contractedCurrencies)) ?></code>
+                    <?php if ($currencyMismatch): ?>
+                        <br><strong>Uyarı:</strong> <?= $text($currencyValue) ?> agent cüzdanında tanımlı değil.
+                    <?php endif; ?>
+                </p>
             </div>
             <div class="field">
                 <label class="field-label" for="language_code">Language Code</label>
                 <input id="language_code" class="input" type="number" name="language_code" value="<?= $text((string) (int) ($configRow['language_code'] ?? 0)) ?>" min="0" max="50">
+                <p class="gsc-help">IDR için önerilen: <code>4</code> (Indonesia).</p>
             </div>
             <div class="field">
                 <label class="field-label" for="channel_code">Channel Code</label>

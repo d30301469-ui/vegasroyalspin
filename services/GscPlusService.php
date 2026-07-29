@@ -68,13 +68,61 @@ final class GscPlusService
         'YER', 'ZAR', 'ZMW', 'ZWL',
     ];
 
-    /** VGY1 staging currencies enabled with GSC+. */
+    /** VGY1 staging currencies enabled with GSC+ (TRY/EUR/USD still pending). */
     public const STAGING_CURRENCIES = ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'];
 
     /**
+     * Product codes contracted for VGY1 staging, keyed by currency.
+     * Source: GSC+ onboarding mail (Agency Code VGY1). Official/prod env is
+     * still under construction — only these staging lines are launchable.
+     *
+     * @var array<string, list<int>>
+     */
+    public const STAGING_PRODUCTS_BY_CURRENCY = [
+        'IDR' => [
+            1204, // ADVANT PLAY
+            1220, // ASTAR
+            1154, // BIGPOT
+            1115, // BOOMING GAMES
+            1009, // CQ9
+            1052, // DREAM GAMING
+            1160, // EpicWin
+            1079, // FA CHAI
+            1253, // GAMING PANDA
+            1153, // HACKSAW
+            1197, // HABANERO
+            1018, // LIVE22
+            1070, // BOOONGO
+            1098, // FELIX
+            1097, // FUNTA
+            1006, // PRAGMATIC CASINO (+ BLACKJACK / LIVE_CASINO_PREMIUM)
+            1185, // SA GAMING
+            1250, // UUSLOTS
+            1148, // WOW GAMING
+            1274, // EVOPLAY YFG
+        ],
+        'IDR2' => [
+            1004, // BIG GAMING
+            1167, // BIG TIME GAMING (ASIA)
+        ],
+        'CNY' => [
+            1223, // ALLBET
+            1242, // PLAYTECH (Q6)
+            1020, // WM CASINO
+        ],
+        'VND' => [
+            1264, // VIMPLAY
+        ],
+        'VND2' => [
+            1255, // DRAGOON SOFT
+        ],
+    ];
+
+    /**
      * The agent wallet is funded per currency (3.12 Wallet Balance Inquiry); the
-     * staging agent is contracted in IDR, so IDR — not the site display currency —
-     * is the fallback whenever gsc_config carries no explicit value.
+     * staging agent is contracted primarily in IDR, so IDR — not the site display
+     * currency (TRY) — is the fallback whenever gsc_config carries no explicit value.
+     * TRY products are still pending on GSC+'s side.
      */
     public const DEFAULT_CURRENCY = 'IDR';
 
@@ -142,6 +190,41 @@ final class GscPlusService
         $currency = strtoupper(trim((string) ($cfg['currency'] ?? '')));
 
         return $currency !== '' ? $currency : self::DEFAULT_CURRENCY;
+    }
+
+    /**
+     * Currencies this agent may activate products for. Prefer live agent-wallet
+     * codes when available; otherwise the VGY1 staging set from onboarding.
+     *
+     * @param list<string>|null $walletCurrencies
+     * @return list<string>
+     */
+    public static function contractedCurrencies(?array $walletCurrencies = null): array
+    {
+        $out = [];
+        foreach (($walletCurrencies ?? []) as $code) {
+            $code = strtoupper(trim((string) $code));
+            if ($code !== '' && self::isSupportedCurrency($code) && !in_array($code, $out, true)) {
+                $out[] = $code;
+            }
+        }
+        if ($out !== []) {
+            return $out;
+        }
+
+        return self::STAGING_CURRENCIES;
+    }
+
+    /** True when (product_code, currency) is on the VGY1 staging contract list. */
+    public static function isStagingContractedProduct(int $productCode, string $currency): bool
+    {
+        $currency = strtoupper(trim($currency));
+        $list = self::STAGING_PRODUCTS_BY_CURRENCY[$currency] ?? null;
+        if (!is_array($list)) {
+            return false;
+        }
+
+        return in_array($productCode, $list, true);
     }
 
     public static function config(PDO $pdo): array
@@ -1546,6 +1629,16 @@ final class GscPlusService
         }
 
         $operatorCurrency = self::configCurrency($cfg);
+        $walletCurrencies = null;
+        try {
+            $wallet = self::agentWalletBalance($pdo);
+            $walletCurrencies = array_column($wallet['currencies'] ?? [], 'currency');
+        } catch (Throwable) {
+            // Fall back to the onboarding currency set below.
+        }
+        $allowedCurrencies = self::contractedCurrencies(
+            is_array($walletCurrencies) ? $walletCurrencies : null
+        );
         $count = 0;
         $now = date('Y-m-d H:i:s');
         foreach ($list as $item) {
@@ -1561,11 +1654,18 @@ final class GscPlusService
                 $currency = $operatorCurrency;
             }
             $status = strtoupper(trim((string) ($item['status'] ?? '')));
-            // Each product is contracted in exactly one currency; a product bought in
-            // CNY/VND cannot be launched from an IDR agent wallet, so only the rows
-            // matching the operator currency belong in the lobby.
+            // VGY1 staging contracts products per currency (IDR / IDR2 / CNY / VND /
+            // VND2). Activating only the single gsc_config.currency row hid every
+            // CNY/VND/IDR2 line (ALLBET, WM, BigGaming, …) even though the agent
+            // wallet funds them. Prefer the onboarding allowlist; if the API
+            // returns a product we have not mapped yet, still activate it when
+            // its currency is contracted.
+            $currencyOk = in_array($currency, $allowedCurrencies, true);
+            $productOk = self::isStagingContractedProduct($productCode, $currency)
+                || !isset(self::STAGING_PRODUCTS_BY_CURRENCY[$currency]);
             $isActive = in_array($status, ['ACTIVATED', ''], true)
-                && strcasecmp($currency, $operatorCurrency) === 0;
+                && $currencyOk
+                && $productOk;
             $pdo->prepare(
                 'INSERT INTO gsc_products
                     (product_code, product_id, provider_id, provider, product_name, game_type, currency, status,
