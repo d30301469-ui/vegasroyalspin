@@ -78,13 +78,20 @@ if ($playClientIp === '' || filter_var($playClientIp, FILTER_VALIDATE_IP) === fa
 if ($playClientIp !== '' && filter_var($playClientIp, FILTER_VALIDATE_IP) !== false) {
     $playPayload['ip'] = $playClientIp;
 }
-// Help providers build return/cashier links from the real frontend host.
+// Help providers build return/cashier links from a canonical host.
 $playScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $playHost = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
-if ($playHost !== '') {
-    $playPayload['home_url'] = $playScheme . '://' . $playHost;
+$playCanonicalHome = '';
+if (defined('SITE_URL') && trim((string) SITE_URL) !== '') {
+    $playCanonicalHome = rtrim((string) SITE_URL, '/');
+} elseif ($playHost !== '') {
+    $playCanonicalHome = $playScheme . '://' . $playHost;
 }
-$playPayload['platform'] = $playUaIsMobile ? 'MOBILE' : 'DESKTOP';
+if ($playCanonicalHome !== '') {
+    $playPayload['home_url'] = $playCanonicalHome;
+}
+// GSC docs: WEB, DESKTOP, MOBILE, Widget. Pragmatic UAT is most stable on WEB.
+$playPayload['platform'] = $playUaIsMobile ? 'MOBILE' : 'WEB';
 // GSC+ live providers (Pragmatic staging, DreamGaming, …) set session cookies on
 // their own domain. Chrome blocks those as third-party inside our play iframe and
 // the game shell then shows the provider's "re-log in / Un-Authorized" page even
