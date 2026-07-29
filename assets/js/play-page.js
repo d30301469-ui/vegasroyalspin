@@ -438,6 +438,17 @@
         }
     }
 
+    // Provider launch tokens are usually one-shot, so a blocked frame cannot be
+    // recovered by reusing its URL — ask for a fresh launch in redirect mode and
+    // navigate the top-level window instead.
+    function relaunchTopLevel() {
+        var payload = Object.assign({}, lastLaunchPayload || window.__PLAY_LAUNCH_PAYLOAD__ || {});
+        payload.open_mode = 'redirect';
+        clearNewTabFallback();
+        launchInFlight = false;
+        launchGame(payload);
+    }
+
     function scheduleNewTabFallback(url) {
         clearNewTabFallback();
         newTabFallbackTimer = window.setTimeout(function () {
@@ -453,19 +464,36 @@
     function showNewTabFallback(url) {
         var el = document.getElementById('playNewTabFallback');
         if (!el) {
-            el = document.createElement('button');
+            el = document.createElement('div');
             el.id = 'playNewTabFallback';
-            el.type = 'button';
-            el.textContent = 'Oyun açılmadı mı? Yeni sekmede aç';
-            el.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:5;padding:10px 16px;border-radius:10px;border:1px solid rgba(252,172,0,.5);background:rgba(15,5,34,.92);color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.35);';
+            el.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:5;display:flex;gap:8px;';
+
+            var newTabBtn = document.createElement('button');
+            newTabBtn.type = 'button';
+            newTabBtn.id = 'playNewTabFallbackNewTab';
+            newTabBtn.textContent = 'Oyun açılmadı mı? Yeni sekmede aç';
+            newTabBtn.style.cssText = 'padding:10px 16px;border-radius:10px;border:1px solid rgba(252,172,0,.5);background:rgba(15,5,34,.92);color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.35);';
+            el.appendChild(newTabBtn);
+
+            var sameTabBtn = document.createElement('button');
+            sameTabBtn.type = 'button';
+            sameTabBtn.id = 'playNewTabFallbackSameTab';
+            sameTabBtn.textContent = 'Bu sekmede aç';
+            sameTabBtn.style.cssText = 'padding:10px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(15,5,34,.92);color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.35);';
+            sameTabBtn.onclick = relaunchTopLevel;
+            el.appendChild(sameTabBtn);
+
             var stage = document.querySelector('.play-stage');
             if (stage) {
                 stage.appendChild(el);
             }
         }
-        el.onclick = function () {
-            window.open(url, '_blank', 'noopener,noreferrer');
-        };
+        var openBtn = document.getElementById('playNewTabFallbackNewTab');
+        if (openBtn) {
+            openBtn.onclick = function () {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            };
+        }
         el.hidden = false;
     }
 
@@ -507,6 +535,7 @@
     }
 
     var launchInFlight = false;
+    var lastLaunchPayload = null;
 
     function launchGame(payload, attempt) {
         var launchAttempt = Number(attempt || 0);
@@ -514,6 +543,7 @@
             return;
         }
         launchInFlight = true;
+        lastLaunchPayload = payload || null;
         var loader = document.getElementById('playLoader');
         var frame = document.getElementById('playFrame');
         clearNewTabFallback();
