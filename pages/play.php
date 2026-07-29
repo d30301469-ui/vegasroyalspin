@@ -28,6 +28,7 @@ if ($playMode === '') {
 
 $playLang     = trim((string) ($_GET['lang'] ?? ''));
 $playCurrency = trim((string) ($_GET['currency'] ?? ''));
+$playGameType = strtoupper(trim((string) ($_GET['game_type'] ?? $_GET['gameType'] ?? '')));
 $playRequestedOpenMode = strtolower(trim((string) ($_GET['open_mode'] ?? '')));
 if (!in_array($playRequestedOpenMode, ['iframe', 'redirect'], true)) {
   $playRequestedOpenMode = '';
@@ -108,6 +109,9 @@ if ($playLang !== '') {
 }
 if ($playCurrency !== '') {
     $playPayload['currency'] = $playCurrency;
+}
+if ($playGameType !== '') {
+    $playPayload['game_type'] = $playGameType;
 }
 if ($demoFlag) {
     $playPayload['demo'] = true;

@@ -392,10 +392,14 @@
         return API_ENDPOINT + '?' + params.toString();
     }
 
-    function playUrlReal(gameId) {
+    function playUrlReal(gameId, gameType) {
         var id = String(gameId || '');
         var url = '/play?game_id=' + encodeURIComponent(id) + '&mode=real&wallet=main';
         if (id.toLowerCase().indexOf('gsc:') === 0) {
+            var gtype = String(gameType || '').trim().toUpperCase();
+            if (gtype) {
+                url += '&game_type=' + encodeURIComponent(gtype);
+            }
             url += '&open_mode=redirect';
         }
         return url;
@@ -433,8 +437,10 @@
         return '/play?game_id=' + encodeURIComponent(id) + '&mode=fun';
     }
 
-    function playTargetUrl(gameId) {
-        var play = playUrlReal(gameId);
+    function playTargetUrl(game) {
+        var gameId = resolveLaunchGameId(game);
+        var gameType = game && typeof game === 'object' ? String(game.game_type || '') : '';
+        var play = playUrlReal(gameId, gameType);
         return play;
     }
 
@@ -541,7 +547,7 @@
         const gameIdEsc = escapeHtml(gameId);
         const catalogIdRaw = game.id != null && String(game.id).trim() !== '' ? String(game.id) : '';
         const catalogAttr = catalogIdRaw !== '' ? ' data-catalog-id="' + escapeHtml(catalogIdRaw) + '"' : '';
-        const gameUrl = playTargetUrl(gameId);
+        const gameUrl = playTargetUrl(game);
         const gameUrlJs = gameUrl.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
         const demoUrl = playUrlFun(gameId);
         window.__slotOpenLoginModal = openLoginModal;
@@ -619,6 +625,7 @@
                 game_id: resolveLaunchGameId(game),
                 game_code: game.game_code || '',
                 product_code: game.product_code || game.provider_code || '',
+                game_type: game.game_type || '',
                 game_name: game.name || game.game_name || '',
                 cover: cover,
                 cover_fallbacks: fallbacks,

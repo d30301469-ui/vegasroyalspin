@@ -276,6 +276,7 @@ final class LiveCasinoQuery
                     g.game_name AS name,
                     COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
                     CAST(g.product_code AS CHAR) AS provider_code,
+                    UPPER(COALESCE(NULLIF(g.game_type, ''), '')) AS game_type,
                     COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
                     CAST('' AS CHAR) AS image_fallbacks,
                     g.is_featured AS is_featured,
@@ -626,6 +627,7 @@ final class LiveCasinoQuery
         return [
             'id' => $gameId,
             'game_id' => $gameId,
+            'game_type' => strtoupper(trim((string) ($row['game_type'] ?? ''))),
             'game_name' => $name,
             'name' => $name,
             'cover' => $imageUrl,
