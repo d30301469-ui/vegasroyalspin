@@ -485,8 +485,12 @@
 
     function openLaunchUrl(url, openMode) {
         var mode = String(openMode || 'iframe').toLowerCase();
-        if (mode === 'redirect' || !document.getElementById('playFrame')) {
-            window.location.href = url;
+        var payloadId = String((window.__PLAY_LAUNCH_PAYLOAD__ && window.__PLAY_LAUNCH_PAYLOAD__.game_id) || '');
+        var forceRedirect = mode === 'redirect'
+            || payloadId.toLowerCase().indexOf('gsc:') === 0
+            || !document.getElementById('playFrame');
+        if (forceRedirect) {
+            window.location.replace(url);
             return;
         }
         var frame = document.getElementById('playFrame');

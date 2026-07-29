@@ -94,6 +94,10 @@ $currencyChoices = array_values(array_unique(array_merge(
     5) IDR-only daraltma: <code>/livecasino?currency=IDR</code>.
     6) Test launch: Pragmatic <code>gsc:1006:…</code>, DreamGaming <code>gsc:1052:…</code> (currency=IDR);
        ALLBET/WM için ürün currency CNY.
+    7) “re-log in / Un-Authorized” Pragmatic sayfası gelirse hemen
+       <strong>Wallet Logları</strong> modülüne bakın: balance çağrısı yoksa GSC+ paneline
+       yanlış callback URL verilmiş demektir; 1004 imza, 1000 üye bulunamadı hatasıdır.
+       Doğru callback: <code><?= $text($callbackUrl) ?></code>
 </div>
 
 <?php if ($walletEmpty): ?>

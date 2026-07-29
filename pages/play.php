@@ -74,7 +74,11 @@ $playAuthSharedPath = BASE_PATH . '/assets/js/auth-shared.js';
 $playAuthSharedVer = (string) ((is_file($playAuthSharedPath) ? filemtime($playAuthSharedPath) : '1') . '-' . (is_file($playAuthSharedPath) ? filesize($playAuthSharedPath) : '0'));
 $playMobileUa = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
 $playUaIsMobile = $playMobileUa !== '' && preg_match('/android|iphone|ipad|ipod|mobile|windows phone|opera mini|iemobile/', $playMobileUa) === 1;
-$playBypassShell = $playRequestedOpenMode === 'redirect' || (function_exists('isMobile') && isMobile()) || $playUaIsMobile;
+$playBypassShell = ($playPayload['open_mode'] ?? '') === 'redirect'
+    || $playIsGsc
+    || $playRequestedOpenMode === 'redirect'
+    || (function_exists('isMobile') && isMobile())
+    || $playUaIsMobile;
 
 $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES, 'UTF-8');
 
