@@ -47,9 +47,14 @@ $playPayload = [
     'game_id' => $playGameId,
     'mode'    => $playMode,
 ];
+// GSC+ live providers (Pragmatic staging, DreamGaming, …) set session cookies on
+// their own domain. Chrome blocks those as third-party inside our play iframe and
+// the game shell then shows the provider's "re-log in / Un-Authorized" page even
+// though launch-game itself succeeded. Force a top-level navigation for gsc:*.
+$playIsGsc = str_starts_with(strtolower($playGameId), 'gsc:');
 $playPayload['open_mode'] = $playRequestedOpenMode !== ''
   ? $playRequestedOpenMode
-  : ((function_exists('isMobile') && isMobile()) ? 'redirect' : 'iframe');
+  : ($playIsGsc || (function_exists('isMobile') && isMobile()) ? 'redirect' : 'iframe');
 if ($playMode === 'real' && $playWallet !== '') {
     $playPayload['wallet'] = $playWallet;
 }

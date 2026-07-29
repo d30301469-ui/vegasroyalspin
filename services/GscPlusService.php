@@ -1335,6 +1335,12 @@ final class GscPlusService
         ]);
 
         $launchUrl = $url !== '' ? $url : ('data:text/html;charset=utf-8,' . rawurlencode($content));
+        // Provider URLs need a top-level navigation: session cookies on
+        // efinity.prerelease-env.biz / similar hosts are third-party inside our
+        // play iframe and Chrome blocks them → Pragmatic "Un-Authorized / please
+        // re-log in" HTML even after a successful launch-game. HTML content
+        // launches (no external URL) can still use the iframe/srcdoc path.
+        $openMode = $url !== '' ? 'redirect' : 'iframe';
         return [
             'success' => true,
             'code' => 200,
@@ -1342,11 +1348,12 @@ final class GscPlusService
             'data' => [
                 'game_url' => $launchUrl,
                 'launch_url' => $launchUrl,
-                'open_mode' => 'iframe',
+                'open_mode' => $openMode,
                 'mode' => 'real',
                 'content' => $content !== '' && $url === '' ? $content : null,
             ],
             'game_url' => $launchUrl,
+            'open_mode' => $openMode,
         ];
     }
 
