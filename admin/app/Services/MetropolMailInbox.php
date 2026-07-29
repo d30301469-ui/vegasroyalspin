@@ -36,12 +36,71 @@ if (!function_exists('metropol_mail_imap_diagnostics')) {
     }
 }
 
+if (!function_exists('metropol_mail_imap_configured')) {
+    /**
+     * IMAP icin gerekli alanlarin dolu olup olmadigini ag baglantisi kurmadan kontrol eder.
+     *
+     * @param array<string,mixed> $settings
+     */
+    function metropol_mail_imap_configured(array $settings): bool
+    {
+        if (isset($settings['imap_enabled']) && (int) $settings['imap_enabled'] === 0) {
+            return false;
+        }
+        $host = trim((string) ($settings['imap_host'] ?? '')) !== ''
+            ? trim((string) $settings['imap_host'])
+            : trim((string) ($settings['smtp_host'] ?? ''));
+        $user = trim((string) ($settings['imap_user'] ?? '')) !== ''
+            ? trim((string) $settings['imap_user'])
+            : trim((string) ($settings['smtp_user'] ?? ''));
+        $pass = (string) ($settings['imap_password'] ?? '') !== ''
+            ? (string) $settings['imap_password']
+            : (string) ($settings['smtp_password'] ?? '');
+
+        return $host !== '' && $user !== '' && $pass !== '';
+    }
+}
+
+if (!function_exists('metropol_mail_imap_apply_timeouts')) {
+    /**
+     * IMAP islemlerine ust sinir koyar; aksi halde erisilemeyen bir sunucu
+     * istegi PHP-FPM zaman asimina kadar bloklar ve Apache 503 dondurur.
+     */
+    function metropol_mail_imap_apply_timeouts(int $seconds = 6): void
+    {
+        if (!function_exists('imap_timeout')) {
+            return;
+        }
+        $seconds = max(2, $seconds);
+        @imap_timeout(IMAP_OPENTIMEOUT, $seconds);
+        @imap_timeout(IMAP_READTIMEOUT, $seconds);
+        @imap_timeout(IMAP_WRITETIMEOUT, $seconds);
+        @imap_timeout(IMAP_CLOSETIMEOUT, $seconds);
+    }
+}
+
+if (!function_exists('metropol_mail_imap_port_open')) {
+    /** IMAP portu erisilebilir mi? imap_open'dan once hizli TCP kontrolu. */
+    function metropol_mail_imap_port_open(string $host, int $port, float $timeout = 4.0): bool
+    {
+        $errno = 0;
+        $errstr = '';
+        $socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
+        if ($socket === false) {
+            return false;
+        }
+        @fclose($socket);
+
+        return true;
+    }
+}
+
 if (!function_exists('metropol_mail_fetch_inbox')) {
     /**
      * @param array<string,mixed> $settings mail_settings satırı
      * @return array{ok:bool,error:string,messages:list<array<string,mixed>>}
      */
-    function metropol_mail_fetch_inbox(array $settings, int $limit = 40): array
+    function metropol_mail_fetch_inbox(array $settings, int $limit = 40, float $previewBudget = 6.0): array
     {
         $conn = metropol_mail_imap_connect($settings);
         if ($conn['ok'] !== true || !isset($conn['inbox'])) {
@@ -75,6 +134,7 @@ if (!function_exists('metropol_mail_fetch_inbox')) {
             });
 
             $messages = [];
+            $previewDeadline = microtime(true) + max(0.0, $previewBudget);
             foreach ($overview as $item) {
                 if (!is_object($item)) {
                     continue;
@@ -88,7 +148,9 @@ if (!function_exists('metropol_mail_fetch_inbox')) {
                 $from = metropol_mail_imap_decode_mime((string) ($item->from ?? ''));
                 $date = (string) ($item->date ?? '');
                 $preview = '';
-                if ($msgNo > 0) {
+                // Ozet icin her mesajin govdesi ayri IMAP turu gerektirir; butce
+                // dolunca listeyi ozetsiz tamamlayip sayfayi acik tutuyoruz.
+                if ($msgNo > 0 && microtime(true) < $previewDeadline) {
                     $parts = metropol_mail_imap_extract_bodies($inbox, $msgNo);
                     $previewSource = $parts['text'] !== '' ? $parts['text'] : strip_tags($parts['html']);
                     $preview = trim(preg_replace('/\s+/', ' ', $previewSource) ?? '');
@@ -184,6 +246,15 @@ if (!function_exists('metropol_mail_imap_connect')) {
         } else {
             $flags = '/imap/notls';
         }
+        metropol_mail_imap_apply_timeouts(6);
+        if (!metropol_mail_imap_port_open($host, $port, 4.0)) {
+            return [
+                'ok' => false,
+                'error' => 'IMAP sunucusuna ulasilamadi (' . $host . ':' . $port . ').'
+                    . ' Host/port bilgisini ve sunucunun giden IMAP baglantilarina izin verdigini kontrol edin.',
+            ];
+        }
+
         $mailbox = '{' . $host . ':' . $port . $flags . '}INBOX';
         $inbox = @imap_open($mailbox, $user, $pass, 0, 1);
         if ($inbox === false) {

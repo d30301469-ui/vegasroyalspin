@@ -274,6 +274,7 @@ $router->get('/permissions', [AdminPermissionController::class, 'index']);
 $router->post('/permissions', [AdminPermissionController::class, 'update']);
 $router->get('/email', [AdminCommunicationController::class, 'email']);
 $router->get('/email/inbox', [AdminCommunicationController::class, 'inbox']);
+$router->get('/email/inbox/list', [AdminCommunicationController::class, 'inboxList']);
 $router->get('/email/inbox/view', [AdminCommunicationController::class, 'inboxView']);
 $router->get('/email/sent', [AdminCommunicationController::class, 'sent']);
 $router->get('/email/send', [AdminCommunicationController::class, 'compose']);

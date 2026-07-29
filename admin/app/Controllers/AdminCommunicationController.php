@@ -10,13 +10,17 @@ final class AdminCommunicationController extends AdminController
         $this->redirect(AdminAuth::url('/email/inbox'));
     }
 
+    /**
+     * Sayfa iskeletini IMAP'a hic dokunmadan dondurur; mesaj listesi
+     * /email/inbox/list ucundan asenkron yuklenir. Boylece erisilemeyen bir
+     * IMAP sunucusu e-posta menusunu tamamen kapatmaz (Apache 503).
+     */
     public function inbox(): void
     {
         $this->requirePermission('email');
         $this->ensureMailTables();
         $settings = $this->mailSettingsRow();
         require_once ADMIN_APP_PATH . '/Services/MetropolMailInbox.php';
-        $inbox = metropol_mail_fetch_inbox($settings, 50);
         $mailbox = trim((string) ($settings['imap_user'] ?? $settings['smtp_user'] ?? $settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
 
         $this->view('communication/email', [
@@ -25,6 +29,24 @@ final class AdminCommunicationController extends AdminController
             'crumbs' => 'E-posta | Gelen e-postalar',
             'emailSection' => 'inbox',
             'mailbox' => $mailbox,
+            'imapConfigured' => metropol_mail_imap_configured($settings),
+            'inboxListUrl' => AdminAuth::url('/email/inbox/list'),
+        ]);
+    }
+
+    public function inboxList(): void
+    {
+        $this->requirePermission('email');
+        $settings = $this->mailSettingsRow();
+        require_once ADMIN_APP_PATH . '/Services/MetropolMailInbox.php';
+        @set_time_limit(45);
+        $inbox = metropol_mail_fetch_inbox($settings, 25);
+
+        if (!headers_sent()) {
+            header('Content-Type: text/html; charset=UTF-8');
+            header('Cache-Control: no-store');
+        }
+        $this->partial('communication/_inbox_list', [
             'inboxOk' => !empty($inbox['ok']),
             'inboxError' => (string) ($inbox['error'] ?? ''),
             'messages' => is_array($inbox['messages'] ?? null) ? $inbox['messages'] : [],

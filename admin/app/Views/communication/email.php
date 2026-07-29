@@ -1,9 +1,8 @@
 <?php
 
-$messages = is_array($messages ?? null) ? $messages : [];
 $mailbox = trim((string) ($mailbox ?? ''));
-$inboxOk = !empty($inboxOk);
-$inboxError = trim((string) ($inboxError ?? ''));
+$imapConfigured = !empty($imapConfigured);
+$inboxListUrl = (string) ($inboxListUrl ?? AdminAuth::url('/email/inbox/list'));
 $emailSection = 'inbox';
 ?>
 <section class="hero">
@@ -19,79 +18,93 @@ $emailSection = 'inbox';
         </p>
     </div>
     <div class="hero-actions">
-        <a class="btn btn--ghost" href="<?= htmlspecialchars(AdminAuth::url('/email/inbox'), ENT_QUOTES, 'UTF-8') ?>">Yenile</a>
+        <button class="btn btn--ghost" type="button" data-inbox-reload>Yenile</button>
         <a class="btn btn--primary" href="<?= htmlspecialchars(AdminAuth::url('/email/send'), ENT_QUOTES, 'UTF-8') ?>">E-posta gönder</a>
     </div>
 </section>
 
 <?php include __DIR__ . '/_nav.php'; ?>
 
-<?php if ($inboxError !== ''): ?>
-    <div class="alert alert--danger" style="display:block;margin-bottom:12px;white-space:pre-wrap;">
-        <?= htmlspecialchars($inboxError, ENT_QUOTES, 'UTF-8') ?>
-    </div>
-<?php endif; ?>
-
-<section class="card">
-    <div class="card-head">
-        <div class="card-title-wrap">
-            <span class="eyebrow">IMAP INBOX</span>
-            <h2 class="card-title">
-                Gelen kutusu
-                <span class="badge primary"><?= count($messages) ?></span>
-            </h2>
+<div
+    id="email-inbox-panel"
+    data-inbox-url="<?= htmlspecialchars($inboxListUrl, ENT_QUOTES, 'UTF-8') ?>"
+    data-inbox-configured="<?= $imapConfigured ? '1' : '0' ?>"
+>
+    <?php if (!$imapConfigured): ?>
+        <div class="alert alert--danger" style="display:block;margin-bottom:12px;">
+            IMAP gelen kutusu yapılandırılmamış. E-posta → Ayarlar bölümünden IMAP host, kullanıcı ve şifre bilgilerini girip
+            “IMAP gelen kutusu aktif” seçeneğini işaretleyin.
         </div>
-        <?php if ($inboxOk): ?>
-            <span class="badge dot success">Bağlı</span>
-        <?php else: ?>
-            <span class="badge dot danger">Bağlantı yok</span>
-        <?php endif; ?>
-    </div>
-
-    <?php if ($messages === []): ?>
-        <p class="field-help" style="padding:16px;">
-            <?= $inboxOk ? 'Gelen kutusunda mesaj yok.' : 'Mesajlar listelenemedi. Ayarları ve php-imap eklentisini kontrol edin.' ?>
-        </p>
     <?php else: ?>
-        <div class="table-wrap">
-            <table class="data-table admin-compact-table">
-                <thead>
-                    <tr>
-                        <th>Durum</th>
-                        <th>Gönderen</th>
-                        <th>Konu</th>
-                        <th>Özet</th>
-                        <th>Tarih</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($messages as $message): ?>
-                        <?php $uid = (int) ($message['uid'] ?? 0); ?>
-                        <tr>
-                            <td><?= empty($message['seen']) ? 'Yeni' : 'Okundu' ?></td>
-                            <td><?= htmlspecialchars((string) ($message['from'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string) ($message['subject'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string) ($message['preview'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string) ($message['date'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td>
-                                <?php if ($uid > 0): ?>
-                                    <?php
-                                    $viewUrl = AdminAuth::url('/email/inbox/view?uid=' . $uid);
-                                    $subjectTitle = trim((string) ($message['subject'] ?? 'E-posta'));
-                                    ?>
-                                    <a
-                                        class="btn btn--primary"
-                                        href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>"
-                                        data-admin-modal-url="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>"
-                                        data-admin-modal-title="<?= htmlspecialchars($subjectTitle !== '' ? $subjectTitle : 'E-posta oku', ENT_QUOTES, 'UTF-8') ?>"
-                                    >Oku</a>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+        <section class="card">
+            <div class="card-head">
+                <div class="card-title-wrap">
+                    <span class="eyebrow">IMAP INBOX</span>
+                    <h2 class="card-title">Gelen kutusu</h2>
+                </div>
+                <span class="badge dot">Yükleniyor</span>
+            </div>
+            <p class="field-help" style="padding:16px;">Mesajlar IMAP sunucusundan alınıyor…</p>
+        </section>
     <?php endif; ?>
-</section>
+</div>
+
+<?php if ($imapConfigured): ?>
+<script>
+(function () {
+    var panel = document.getElementById('email-inbox-panel');
+    if (!panel) return;
+    var url = panel.getAttribute('data-inbox-url') || '';
+    if (!url) return;
+    var loading = false;
+
+    function renderError(message) {
+        panel.innerHTML = '';
+        var alert = document.createElement('div');
+        alert.className = 'alert alert--danger';
+        alert.style.display = 'block';
+        alert.textContent = message;
+        panel.appendChild(alert);
+    }
+
+    function load() {
+        if (loading) return;
+        loading = true;
+        var controller = typeof AbortController === 'function' ? new AbortController() : null;
+        var timer = window.setTimeout(function () {
+            if (controller) controller.abort();
+        }, 40000);
+
+        fetch(url, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            signal: controller ? controller.signal : undefined
+        })
+            .then(function (response) {
+                if (!response.ok) throw new Error('http_' + response.status);
+                return response.text();
+            })
+            .then(function (html) {
+                panel.innerHTML = html;
+            })
+            .catch(function () {
+                renderError('Gelen kutusu yüklenemedi. IMAP sunucusu yanıt vermiyor olabilir; “Yenile” ile tekrar deneyin.');
+            })
+            .then(function () {
+                window.clearTimeout(timer);
+                loading = false;
+            });
+    }
+
+    document.addEventListener('click', function (event) {
+        var trigger = event.target.closest ? event.target.closest('[data-inbox-reload]') : null;
+        if (!trigger) return;
+        event.preventDefault();
+        load();
+    });
+
+    load();
+})();
+</script>
+<?php endif; ?>

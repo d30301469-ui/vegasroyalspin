@@ -77,6 +77,7 @@ final class AdminRoutePermission
         '/permissions' => 'permissions',
         '/email' => 'email',
         '/email/inbox' => 'email',
+        '/email/inbox/list' => 'email',
         '/email/inbox/view' => 'email',
         '/email/sent' => 'email',
         '/email/send' => 'email',
