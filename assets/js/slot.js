@@ -394,15 +394,7 @@
 
     function playUrlReal(gameId, gameType) {
         var id = String(gameId || '');
-        var url = '/play?game_id=' + encodeURIComponent(id) + '&mode=real&wallet=main';
-        if (id.toLowerCase().indexOf('gsc:') === 0) {
-            var gtype = String(gameType || '').trim().toUpperCase();
-            if (gtype) {
-                url += '&game_type=' + encodeURIComponent(gtype);
-            }
-            url += '&open_mode=redirect';
-        }
-        return url;
+        return '/play?game_id=' + encodeURIComponent(id) + '&mode=real&wallet=main';
     }
 
     function resolveLaunchGameId(game) {

@@ -533,10 +533,8 @@ final class BackendMemberApiProxy
             $headers[] = 'X-Metropol-Member-Jwt: ' . $browserJwt;
         }
 
-        // GSC+/Pragmatic lock the launched session to the IP sent in launch-game.
-        // Without these, the backend sees 127.0.0.1 / the frontend host and the
-        // player opens the URL from their real IP → Un-Authorized after a
-        // "successful" gsc_sessions row.
+        // Forward visitor IP so providers that bind sessions to launch-game IP
+        // do not see the frontend/proxy address (often 127.0.0.1).
         foreach (self::clientIpForwardHeaders() as $ipHeader) {
             $headers[] = $ipHeader;
         }

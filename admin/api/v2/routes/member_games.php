@@ -37,17 +37,11 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
     $providers = [];
     try {
         if ($gameType === 1) {
-            admin_require_project_file('services/GscPlusService.php');
             admin_require_project_file('services/LiveCasinoQuery.php');
             $providerExtra = [
                 'force_local' => true,
                 'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
             ];
-            if (array_key_exists('gsc_only', $_GET)) {
-                $providerExtra['gsc_only'] = $_GET['gsc_only'];
-            } elseif (GscPlusService::liveLobbyGscOnly()) {
-                $providerExtra['gsc_only'] = 1;
-            }
             foreach (LiveCasinoQuery::providers($providerExtra) as $name) {
                 $name = trim((string) $name);
                 if ($name === '') {
@@ -147,7 +141,6 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
 
     // Live casino catalogue is owned by LiveCasinoQuery (not SlotGamesQuery).
     if ($gameType === 1 || in_array($source, ['livecasino', 'live', 'live_casino'], true)) {
-        admin_require_project_file('services/GscPlusService.php');
         admin_require_project_file('services/LiveCasinoQuery.php');
         $liveExtra = [
             // Always hit local DB on the admin API host — never recurse via BackendApiClient.
@@ -155,11 +148,6 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             'source' => in_array($source, ['aggregator'], true) ? $source : '',
             'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
         ];
-        if (array_key_exists('gsc_only', $_GET)) {
-            $liveExtra['gsc_only'] = $_GET['gsc_only'];
-        } elseif (GscPlusService::liveLobbyGscOnly()) {
-            $liveExtra['gsc_only'] = 1;
-        }
         $liveResult = LiveCasinoQuery::page(
             $search,
             $providerList,
@@ -984,12 +972,10 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         // "bgaming:" / "aggregator:" prefix. Resolve the owning provider from the
         // database so the launch still routes correctly.
         admin_require_project_file('services/CasinoAggregatorService.php');
-        admin_require_project_file('services/GscPlusService.php');
         if (
             $gameId !== ''
             && !BgamingService::ownsGameId($gameId)
             && !CasinoAggregatorService::ownsGameId($gameId)
-            && !GscPlusService::ownsGameId($gameId)
         ) {
             $resolvePdo = AdminDatabase::pdo();
             try {
@@ -1000,7 +986,7 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                 }
             } catch (Throwable) {
             }
-            if (!CasinoAggregatorService::ownsGameId($gameId) && !GscPlusService::ownsGameId($gameId)) {
+            if (!CasinoAggregatorService::ownsGameId($gameId)) {
                 try {
                     $parts = explode(':', $gameId, 2);
                     if (count($parts) === 2) {
@@ -1010,14 +996,6 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                         $aggStmt->execute([':v' => $parts[0], ':g' => $parts[1]]);
                         if ($aggStmt->fetchColumn()) {
                             $gameId = CasinoAggregatorService::buildGameId($parts[0], $parts[1]);
-                        } elseif (ctype_digit($parts[0])) {
-                            $gscStmt = $resolvePdo->prepare(
-                                'SELECT 1 FROM gsc_games WHERE product_code = :p AND game_code = :g LIMIT 1'
-                            );
-                            $gscStmt->execute([':p' => (int) $parts[0], ':g' => $parts[1]]);
-                            if ($gscStmt->fetchColumn()) {
-                                $gameId = GscPlusService::buildGameId((int) $parts[0], $parts[1]);
-                            }
                         }
                     }
 
@@ -1025,7 +1003,7 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                     // "aggregator:vendor:game" yerine sadece çıplak game_code
                     // olarak gönderebiliyor. Prefix yoksa doğrudan katalogdan
                     // vendor+game eşleşmesini bulup normalize et.
-                    if (!CasinoAggregatorService::ownsGameId($gameId) && !GscPlusService::ownsGameId($gameId)) {
+                    if (!CasinoAggregatorService::ownsGameId($gameId)) {
                         $bareCode = trim((string) $gameId);
                         if ($bareCode !== '' && strpos($bareCode, ':') === false) {
                             $aggByCode = $resolvePdo->prepare(
@@ -1050,16 +1028,6 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                 }
             }
             $input['game_id'] = $gameId;
-        }
-
-        if (GscPlusService::ownsGameId($gameId)) {
-            $result = GscPlusService::launch(AdminDatabase::pdo(), $user, $input);
-            $result = $normalizeLaunchResult($result, $requestedOpenMode);
-            $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
-            if ($httpCode >= 500 && $httpCode !== 503) {
-                $httpCode = 422;
-            }
-            $memberEnvelope($httpCode, $result);
         }
 
         if (CasinoAggregatorService::ownsGameId($gameId)) {
@@ -1091,9 +1059,7 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         $providerLabel = 'Oyun';
         $launchGameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
         if ($launchGameId !== '') {
-            if (class_exists('GscPlusService', false) && GscPlusService::ownsGameId($launchGameId)) {
-                $providerLabel = 'GSC+';
-            } elseif (CasinoAggregatorService::ownsGameId($launchGameId)) {
+            if (CasinoAggregatorService::ownsGameId($launchGameId)) {
                 $providerLabel = 'Casino Aggregator';
             } elseif (BgamingService::ownsGameId($launchGameId)) {
                 $providerLabel = 'BGaming';

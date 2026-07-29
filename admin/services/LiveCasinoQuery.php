@@ -5,8 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/BackendApiClient.php';
 
 /**
- * Live casino catalogue query (Casino Aggregator + GSC+).
- * VGY1 staging defaults to GSC-only lobby via GSC_LIVE_LOBBY_ONLY / gsc_only.
+ * Live casino catalogue query (Casino Aggregator).
  */
 final class LiveCasinoQuery
 {
@@ -153,27 +152,15 @@ final class LiveCasinoQuery
         try {
             self::ensureDependencies();
             $pdo = self::pdo();
-            $gscOnly = class_exists('GscPlusService', false)
-                ? GscPlusService::liveLobbyGscOnly($extraQuery)
-                : !empty($extraQuery['gsc_only']);
-            $hasAggregator = !$gscOnly
-                && self::tableExists($pdo, 'casino_aggregator_games')
+            $hasAggregator = self::tableExists($pdo, 'casino_aggregator_games')
                 && self::tableExists($pdo, 'casino_aggregator_vendors');
-            $hasGsc = self::tableExists($pdo, 'gsc_games');
-            if (!$hasAggregator && !$hasGsc) {
+            if (!$hasAggregator) {
                 return self::emptyResult($limit, $page);
             }
 
             $offset = ($page - 1) * $limit;
             $branches = [];
             $params = [];
-            $currencyPrefer = strtoupper(trim((string) ($extraQuery['currency'] ?? '')));
-            $lobbyCurrencies = class_exists('GscPlusService', false)
-                ? GscPlusService::stagingLobbyCurrencyFilter($currencyPrefer !== '' ? $currencyPrefer : null)
-                : ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'];
-            $liveProductCodes = class_exists('GscPlusService', false)
-                ? GscPlusService::stagingLiveProductCodes()
-                : [];
 
             if ($hasAggregator) {
                 $aggWhere = ["g.is_active = 1", "v.is_active = 1"];
@@ -215,81 +202,6 @@ final class LiveCasinoQuery
                  FROM casino_aggregator_games g
                  INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
                  {$aggWhereSql}";
-            }
-
-            if ($hasGsc) {
-                $hasGscGameType = self::columnExists($pdo, 'gsc_games', 'game_type');
-                $gscWhere = [
-                    'g.is_active = 1',
-                    // Lobby-entry products (entry_type=2) only expose a synthetic
-                    // "_lobby" row, which must stay visible as the product card.
-                    "(g.game_code <> '_lobby' OR g.entry_type = 2)",
-                ];
-                if ($hasGscGameType) {
-                    $gscWhere[] = "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')";
-                }
-
-                if ($liveProductCodes !== []) {
-                    $codePlaceholders = [];
-                    foreach ($liveProductCodes as $idx => $code) {
-                        $ck = ':gsc_live_pc_' . $idx;
-                        $codePlaceholders[] = $ck;
-                        $params[$ck] = (int) $code;
-                    }
-                    $gscWhere[] = 'g.product_code IN (' . implode(',', $codePlaceholders) . ')';
-                }
-
-                if (self::columnExists($pdo, 'gsc_games', 'product_currency') && $lobbyCurrencies !== []) {
-                    $curPlaceholders = [];
-                    foreach ($lobbyCurrencies as $idx => $cur) {
-                        $ck = ':gsc_live_cur_' . $idx;
-                        $curPlaceholders[] = $ck;
-                        $params[$ck] = $cur;
-                    }
-                    $gscWhere[] = 'UPPER(TRIM(g.product_currency)) IN (' . implode(',', $curPlaceholders) . ')';
-                }
-
-                if ($searchTerm !== '') {
-                    $gscWhere[] = '(g.game_name LIKE :gsc_search OR g.provider LIKE :gsc_search2 OR g.game_code LIKE :gsc_search3)';
-                    $params[':gsc_search'] = '%' . $searchTerm . '%';
-                    $params[':gsc_search2'] = '%' . $searchTerm . '%';
-                    $params[':gsc_search3'] = '%' . $searchTerm . '%';
-                }
-                if ($providerList !== []) {
-                    $gscProviderClauses = [];
-                    foreach ($providerList as $idx => $provider) {
-                        // Native prepares reject a named placeholder used twice, so the
-                        // provider value is bound once per column it is compared against.
-                        $pk = ':gsc_provider_' . $idx;
-                        $nk = ':gsc_provider_name_' . $idx;
-                        $ck = ':gsc_provider_code_' . $idx;
-                        $gscProviderClauses[] = "(g.provider = {$pk} OR CAST(g.product_code AS CHAR) = {$ck} OR g.product_name = {$nk})";
-                        $params[$pk] = $provider;
-                        $params[$nk] = $provider;
-                        $params[$ck] = $provider;
-                    }
-                    $gscWhere[] = '(' . implode(' OR ', $gscProviderClauses) . ')';
-                }
-                $gscWhereSql = ' WHERE ' . implode(' AND ', $gscWhere);
-                $currencySelect = self::columnExists($pdo, 'gsc_games', 'product_currency')
-                    ? 'COALESCE(NULLIF(g.product_currency, \'\'), \'\')'
-                    : 'CAST(\'\' AS CHAR)';
-                $gameTypeSelect = $hasGscGameType
-                    ? "UPPER(COALESCE(NULLIF(g.game_type, ''), ''))"
-                    : "CAST('' AS CHAR)";
-                $branches['gsc'] = "SELECT
-                    CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
-                    g.game_name AS name,
-                    COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
-                    CAST(g.product_code AS CHAR) AS provider_code,
-                    {$gameTypeSelect} AS game_type,
-                    COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                    CAST('' AS CHAR) AS image_fallbacks,
-                    g.is_featured AS is_featured,
-                    {$currencySelect} AS product_currency,
-                    'gsc' AS source
-                 FROM gsc_games g
-                 {$gscWhereSql}";
             }
 
             if ($branches === []) {
@@ -346,17 +258,6 @@ final class LiveCasinoQuery
                 $featured = (int) ($b['is_featured'] ?? 0) <=> (int) ($a['is_featured'] ?? 0);
                 if ($featured !== 0) {
                     return $featured;
-                }
-                // Prefer IDR contracted rows for VGY1 staging tests.
-                $aIdr = strtoupper(trim((string) ($a['product_currency'] ?? ''))) === 'IDR' ? 1 : 0;
-                $bIdr = strtoupper(trim((string) ($b['product_currency'] ?? ''))) === 'IDR' ? 1 : 0;
-                if ($aIdr !== $bIdr) {
-                    return $bIdr <=> $aIdr;
-                }
-                $aGsc = (($a['source'] ?? '') === 'gsc') ? 1 : 0;
-                $bGsc = (($b['source'] ?? '') === 'gsc') ? 1 : 0;
-                if ($aGsc !== $bGsc) {
-                    return $bGsc <=> $aGsc;
                 }
 
                 return strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
@@ -449,11 +350,6 @@ final class LiveCasinoQuery
         if ($currency !== '') {
             $query['currency'] = $currency;
         }
-        if (array_key_exists('gsc_only', $extraQuery)) {
-            $query['gsc_only'] = $extraQuery['gsc_only'];
-        } elseif (class_exists('GscPlusService', false) && GscPlusService::liveLobbyGscOnly($extraQuery)) {
-            $query['gsc_only'] = 1;
-        }
 
         $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query, null, 8);
         if (!self::envelopeOk($j)) {
@@ -499,20 +395,9 @@ final class LiveCasinoQuery
             self::ensureDependencies();
             $pdo = self::pdo();
             $providers = [];
-            $gscOnly = class_exists('GscPlusService', false)
-                ? GscPlusService::liveLobbyGscOnly($extraQuery)
-                : !empty($extraQuery['gsc_only']);
-            $currencyPrefer = strtoupper(trim((string) ($extraQuery['currency'] ?? '')));
-            $lobbyCurrencies = class_exists('GscPlusService', false)
-                ? GscPlusService::stagingLobbyCurrencyFilter($currencyPrefer !== '' ? $currencyPrefer : null)
-                : ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'];
-            $liveProductCodes = class_exists('GscPlusService', false)
-                ? GscPlusService::stagingLiveProductCodes()
-                : [];
 
             if (
-                !$gscOnly
-                && self::tableExists($pdo, 'casino_aggregator_vendors')
+                self::tableExists($pdo, 'casino_aggregator_vendors')
                 && self::tableExists($pdo, 'casino_aggregator_games')
             ) {
                 $liveMatch = class_exists('CasinoAggregatorService', false)
@@ -537,45 +422,6 @@ final class LiveCasinoQuery
                 }
             }
 
-            if (self::tableExists($pdo, 'gsc_games')) {
-                $where = [
-                    'g.is_active = 1',
-                    "(g.game_code <> '_lobby' OR g.entry_type = 2)",
-                    "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')",
-                ];
-                $params = [];
-                if ($liveProductCodes !== []) {
-                    $ph = [];
-                    foreach ($liveProductCodes as $idx => $code) {
-                        $ck = ':pc_' . $idx;
-                        $ph[] = $ck;
-                        $params[$ck] = (int) $code;
-                    }
-                    $where[] = 'g.product_code IN (' . implode(',', $ph) . ')';
-                }
-                if (self::columnExists($pdo, 'gsc_games', 'product_currency') && $lobbyCurrencies !== []) {
-                    $ph = [];
-                    foreach ($lobbyCurrencies as $idx => $cur) {
-                        $ck = ':cur_' . $idx;
-                        $ph[] = $ck;
-                        $params[$ck] = $cur;
-                    }
-                    $where[] = 'UPPER(TRIM(g.product_currency)) IN (' . implode(',', $ph) . ')';
-                }
-                $sql = 'SELECT DISTINCT COALESCE(NULLIF(g.provider, \'\'), NULLIF(g.product_name, \'\'), CAST(g.product_code AS CHAR)) AS provider_name
-                     FROM gsc_games g
-                     WHERE ' . implode(' AND ', $where) . '
-                     ORDER BY provider_name ASC';
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute($params);
-                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                    $name = trim((string) ($row['provider_name'] ?? ''));
-                    if ($name !== '') {
-                        $providers[] = $name;
-                    }
-                }
-            }
-
             $providers = array_values(array_unique(array_filter($providers)));
             sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
             return $providers;
@@ -596,11 +442,6 @@ final class LiveCasinoQuery
         $currency = strtoupper(trim((string) ($extraQuery['currency'] ?? '')));
         if ($currency !== '') {
             $query['currency'] = $currency;
-        }
-        if (array_key_exists('gsc_only', $extraQuery)) {
-            $query['gsc_only'] = $extraQuery['gsc_only'];
-        } elseif (class_exists('GscPlusService', false) && GscPlusService::liveLobbyGscOnly($extraQuery)) {
-            $query['gsc_only'] = 1;
         }
         $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::PROVIDERS_PATH, $query, null, 8);
         if (!self::envelopeOk($j)) {
@@ -695,19 +536,6 @@ final class LiveCasinoQuery
         ];
         if (!class_exists('CasinoAggregatorService', false)) {
             foreach ($candidates as $path) {
-                if (is_file($path)) {
-                    require_once $path;
-                    break;
-                }
-            }
-        }
-        $gscCandidates = [
-            __DIR__ . '/GscPlusService.php',
-            dirname(__DIR__) . '/services/GscPlusService.php',
-            dirname(__DIR__, 2) . '/services/GscPlusService.php',
-        ];
-        if (!class_exists('GscPlusService', false)) {
-            foreach ($gscCandidates as $path) {
                 if (is_file($path)) {
                     require_once $path;
                     break;

@@ -17,19 +17,10 @@ $currentSort = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
-// VGY1 staging: only list products for currencies that have agent credit.
-// Default IDR — screenshot shows IDR=300000 while CNY/IDR2/VND=0; listing those
-// games made GSC+ answer "insufficient agent balance" and looked like our bug.
-$liveLobbyExtra = [
-    'gsc_only' => 1,
-    'currency' => 'IDR',
-];
+$liveLobbyExtra = [];
 $currencyOverride = strtoupper(trim((string) ($_GET['currency'] ?? '')));
-if ($currencyOverride !== '') {
+if ($currencyOverride !== '' && $currencyOverride !== 'ALL' && $currencyOverride !== '*') {
     $liveLobbyExtra['currency'] = $currencyOverride;
-}
-if ($currencyOverride === 'ALL' || $currencyOverride === '*') {
-    unset($liveLobbyExtra['currency']);
 }
 
 $result = LiveCasinoQuery::page($searchTerm, $selectedProviders, $limit, $page, $currentSort, $liveLobbyExtra);
@@ -80,15 +71,10 @@ $slotEmptyText = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi de
 // Load-more / filters go through LiveCasinoQuery via API source=livecasino
 $slotApiParams = [
     'source' => 'livecasino',
-    'gsc_only' => 1,
 ];
 if (!empty($liveLobbyExtra['currency'])) {
     $slotApiParams['currency'] = $liveLobbyExtra['currency'];
 }
-$slotLobbyBanner = 'GSC+ VGY1 staging · '
-    . (!empty($liveLobbyExtra['currency']) ? $liveLobbyExtra['currency'] : 'tüm currency')
-    . ' lobisi. Agent Wallet’ta yalnızca IDR doluysa CNY/IDR2 oyunları açılmaz — '
-    . 'IDR test: Pragmatic / DreamGaming / SA / Astar. Tümü: ?currency=ALL';
 $sliderApiCategory = 'live_casino';
 $slotShowActionButtons = true;
 $slotHideProviders = false;
@@ -99,4 +85,4 @@ if (defined('SURFACE') && SURFACE === 'mobile' && $mobileLiveCasinoView !== '' &
     return;
 }
 
-require VIEW_PATH . '/pages/slot.php';
+require VIEWS_PATH . '/pages/slot.php';

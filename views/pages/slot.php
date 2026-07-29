@@ -27,16 +27,8 @@ $slotFavoriteKind = $slotGameType === 1 ? 'live' : ((($slotApiParams['source'] ?
 
 $slotPlayTarget = static function (array $game): string {
     $gid = (string) ($game['game_id'] ?? '');
-    $qs = '/play?game_id=' . rawurlencode($gid) . '&mode=real&wallet=main';
-    if (str_starts_with(strtolower($gid), 'gsc:')) {
-        $gtype = strtoupper(trim((string) ($game['game_type'] ?? '')));
-        if ($gtype !== '') {
-            $qs .= '&game_type=' . rawurlencode($gtype);
-        }
-        $qs .= '&open_mode=redirect';
-    }
 
-    return $qs;
+    return '/play?game_id=' . rawurlencode($gid) . '&mode=real&wallet=main';
 };
 $slotDemoHref = static function (array $game): string {
     $gid = (string) ($game['game_id'] ?? '');

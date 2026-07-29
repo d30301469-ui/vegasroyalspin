@@ -405,9 +405,9 @@
         if (!data) {
             return null;
         }
-        // Prefer provider URL over HTML content — GSC sometimes returns both and
+        // Prefer provider URL over HTML content — some providers return both and
         // content-first left players stuck in srcdoc/document.write instead of
-        // top-level navigation to Pragmatic.
+        // top-level navigation.
         var url = String(data.game_url || data.launch_url || data.url || '').trim();
         if (url) {
             return {
@@ -491,13 +491,11 @@
 
     function openLaunchUrl(url, openMode) {
         var mode = String(openMode || 'iframe').toLowerCase();
-        var payloadId = String((window.__PLAY_LAUNCH_PAYLOAD__ && window.__PLAY_LAUNCH_PAYLOAD__.game_id) || '');
         var forceRedirect = mode === 'redirect'
-            || payloadId.toLowerCase().indexOf('gsc:') === 0
             || !document.getElementById('playFrame');
         if (forceRedirect) {
-            // Single navigation only. Pragmatic/GSC tokens are one-shot — a
-            // follow-up location.href after replace reloads playGame.do with the
+            // Single navigation only. Provider tokens are often one-shot — a
+            // follow-up location.href after replace reloads the launch URL with the
             // same token and yields "It seems you are not logged in."
             window.location.replace(url);
             return;
@@ -532,7 +530,7 @@
         } else {
             launchPayload.mode = 'real';
         }
-        // Keep visitor IP from play.php SSR — required for GSC/Pragmatic session bind.
+        // Keep visitor IP from play.php SSR — some providers bind sessions to it.
         if (!launchPayload.ip && window.__PLAY_CLIENT_IP__) {
             launchPayload.ip = String(window.__PLAY_CLIENT_IP__);
         }

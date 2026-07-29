@@ -50,7 +50,7 @@ $playPayload = [
     'game_id' => $playGameId,
     'mode'    => $playMode,
 ];
-// GSC+/Pragmatic bind the launched session to launch-game `ip`. The browser
+// Providers may bind the launched session to launch-game `ip`. The browser
  // hits this frontend (Cloudflare), so we capture the real visitor IP here and
  // send it in the game-launch JSON — the admin API often only sees 127.0.0.1
  // through the internal proxy even when CF headers are forwarded.
@@ -91,16 +91,11 @@ if (defined('SITE_URL') && trim((string) SITE_URL) !== '') {
 if ($playCanonicalHome !== '') {
     $playPayload['home_url'] = $playCanonicalHome;
 }
-// GSC docs: WEB, DESKTOP, MOBILE, Widget. Pragmatic UAT is most stable on WEB.
+// Prefer WEB for desktop; MOBILE for phone UAs.
 $playPayload['platform'] = $playUaIsMobile ? 'MOBILE' : 'WEB';
-// GSC+ live providers (Pragmatic staging, DreamGaming, …) set session cookies on
-// their own domain. Chrome blocks those as third-party inside our play iframe and
-// the game shell then shows the provider's "re-log in / Un-Authorized" page even
-// though launch-game itself succeeded. Force a top-level navigation for gsc:*.
-$playIsGsc = str_starts_with(strtolower($playGameId), 'gsc:');
 $playPayload['open_mode'] = $playRequestedOpenMode !== ''
   ? $playRequestedOpenMode
-  : ($playIsGsc || (function_exists('isMobile') && isMobile()) ? 'redirect' : 'iframe');
+  : ((function_exists('isMobile') && isMobile()) ? 'redirect' : 'iframe');
 if ($playMode === 'real' && $playWallet !== '') {
     $playPayload['wallet'] = $playWallet;
 }
@@ -122,7 +117,6 @@ $playJsVer  = is_readable($playJsPath) ? (string) filemtime($playJsPath) : '1';
 $playAuthSharedPath = BASE_PATH . '/assets/js/auth-shared.js';
 $playAuthSharedVer = (string) ((is_file($playAuthSharedPath) ? filemtime($playAuthSharedPath) : '1') . '-' . (is_file($playAuthSharedPath) ? filesize($playAuthSharedPath) : '0'));
 $playBypassShell = ($playPayload['open_mode'] ?? '') === 'redirect'
-    || $playIsGsc
     || $playRequestedOpenMode === 'redirect'
     || (function_exists('isMobile') && isMobile())
     || $playUaIsMobile;

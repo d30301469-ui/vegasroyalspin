@@ -327,13 +327,6 @@ final class AdminAuth
             'chat', 'compose' => 'email',
             'reports-financial' => 'deposits',
             'reports-charts', 'reports-calendar', 'backoffice-suite' => 'dashboard',
-            'gsc-plus-settings' => 'gamingsoft-settings',
-            'gsc-plus-products' => 'gamingsoft-products',
-            'gsc-plus-games' => 'gamingsoft-games',
-            'gsc-plus-sessions' => 'gamingsoft-sessions',
-            'gsc-plus-transactions' => 'gamingsoft-transactions',
-            'gsc-plus-wagers' => 'gamingsoft-wagers',
-            'gsc-plus-wallet-logs' => 'gamingsoft-wallet-logs',
             default => $permissionKey,
         };
     }
@@ -396,14 +389,6 @@ final class AdminAuth
             'be_pages_admin_access_control' => 'permissions',
             'be_pages_bonus_claims' => 'bonus-claims',
             'be_pages_call_me_requests' => 'call-requests',
-            // GSC+ transient keys during rename → gamingsoft-*
-            'gsc-plus-settings' => 'gamingsoft-settings',
-            'gsc-plus-products' => 'gamingsoft-products',
-            'gsc-plus-games' => 'gamingsoft-games',
-            'gsc-plus-sessions' => 'gamingsoft-sessions',
-            'gsc-plus-transactions' => 'gamingsoft-transactions',
-            'gsc-plus-wagers' => 'gamingsoft-wagers',
-            'gsc-plus-wallet-logs' => 'gamingsoft-wallet-logs',
         ];
     }
 
