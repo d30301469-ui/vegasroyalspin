@@ -606,9 +606,9 @@ final class LiveCasinoQuery
     }
 
     /**
-     * Live predicate for drakon_games. DrakonService also matches the provider
-     * label, which keeps live games visible when the stored game_type predates the
-     * classification; the literal fallback covers hosts where the service is absent.
+     * Live predicate for drakon_games. DrakonService classifies from the provider
+     * label, which is the only category signal Drakon's feed carries; the literal
+     * fallback covers hosts where the service file is absent.
      */
     private static function drakonLiveSql(string $tableAlias = ''): string
     {
@@ -617,7 +617,8 @@ final class LiveCasinoQuery
         }
         $p = $tableAlias !== '' ? rtrim($tableAlias, '.') . '.' : '';
 
-        return "(COALESCE({$p}game_type, 0) = 1 OR LOWER(COALESCE({$p}type, '')) = 'live')";
+        return "(LOWER(COALESCE({$p}provider_name, '')) LIKE '%live%'"
+            . " OR LOWER(COALESCE({$p}type, '')) = 'live')";
     }
 
     private static function pdo(): PDO

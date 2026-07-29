@@ -576,7 +576,8 @@ if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_ga
                         COALESCE(g.game_name, t.game_name, t.game_id) AS game_name,
                         COALESCE(NULLIF(g.provider_name, ''), NULLIF(t.provider_name, ''), 'Drakon') AS provider_name,
                         COALESCE(NULLIF(g.provider_code, ''), NULLIF(t.provider_name, ''), 'drakon') AS provider_code,
-                        COALESCE(g.game_type, 0) AS game_type, t.txn_type, t.amount,
+                        CASE WHEN " . DrakonService::liveGameSqlMatch('g') . " THEN 1 ELSE 0 END AS game_type,
+                        t.txn_type, t.amount,
                         t.bet_amount, t.win_amount, t.after_balance, t.created_at
                  FROM drakon_transactions t
                  LEFT JOIN drakon_games g ON g.game_id = t.game_id

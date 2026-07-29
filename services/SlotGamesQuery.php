@@ -878,9 +878,9 @@ final class SlotGamesQuery
     }
 
     /**
-     * Live predicate for drakon_games; DrakonService also matches the provider
-     * label so rows whose stored game_type predates the classification stay out of
-     * the slot lobby. The literal fallback covers hosts without the service.
+     * Live predicate for drakon_games; DrakonService classifies from the provider
+     * label, which is the only category signal Drakon's feed carries. The literal
+     * fallback covers hosts without the service.
      */
     private static function drakonLiveSql(string $tableAlias = ''): string
     {
@@ -889,7 +889,8 @@ final class SlotGamesQuery
         }
         $p = $tableAlias !== '' ? rtrim($tableAlias, '.') . '.' : '';
 
-        return "(COALESCE({$p}game_type, 0) = 1 OR LOWER(COALESCE({$p}type, '')) = 'live')";
+        return "(LOWER(COALESCE({$p}provider_name, '')) LIKE '%live%'"
+            . " OR LOWER(COALESCE({$p}type, '')) = 'live')";
     }
 
     private static function normalizeProviderLabel(mixed $value): string
