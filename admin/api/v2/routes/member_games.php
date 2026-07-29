@@ -89,7 +89,7 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
                             provider_name
                      FROM drakon_games
                      WHERE is_active = 1 AND provider_name <> ''
-                       AND (COALESCE(game_type, 0) = 0 AND LOWER(COALESCE(type, '')) <> 'live')
+                       AND " . DrakonService::slotGameSqlMatch() . "
                      ORDER BY provider_name ASC"
                 );
                 foreach ($drakonStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
@@ -144,6 +144,7 @@ if ($method === 'GET' && $route === 'casino/categories') {
 if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $pdo      = AdminDatabase::pdo();
     admin_require_project_file('services/CasinoAggregatorService.php');
+    admin_require_project_file('services/DrakonService.php');
     // 0 = slot lobby (BGaming), 1 = live casino.
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
     $page     = max(1, (int) ($_GET['page'] ?? 1));
@@ -275,8 +276,8 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
 
     if ($source === '' || $source === 'drakon') {
         $drakonTypeClause = $gameType === 1
-            ? "(COALESCE(g.game_type, 0) = 1 OR LOWER(COALESCE(g.type, '')) = 'live')"
-            : "(COALESCE(g.game_type, 0) <> 1 AND LOWER(COALESCE(g.type, '')) <> 'live')";
+            ? DrakonService::liveGameSqlMatch('g')
+            : DrakonService::slotGameSqlMatch('g');
         $branches[] = "SELECT
                 CONCAT('drakon:', g.game_id) AS game_id,
                 g.game_name AS name,
@@ -568,7 +569,7 @@ if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_ga
 
         try {
             $drakonHistoryTypeSql = $source === 'slot'
-                ? " AND (COALESCE(g.game_type, 0) = 0 AND LOWER(COALESCE(g.type, '')) <> 'live')"
+                ? ' AND ' . DrakonService::slotGameSqlMatch('g')
                 : '';
             $drakonStmt = $pdo->prepare(
                 "SELECT t.id, t.transaction_id, t.round_id, t.session_id, t.game_id,
@@ -641,7 +642,7 @@ if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_ga
                  FROM drakon_transactions t
                  LEFT JOIN drakon_games g ON g.game_id = t.game_id
                  WHERE t.user_id = :uid
-                   AND (COALESCE(g.game_type, 0) = 1 OR LOWER(COALESCE(g.type, '')) = 'live')
+                   AND " . DrakonService::liveGameSqlMatch('g') . "
                  ORDER BY t.id DESC
                  LIMIT {$fetchLimit}"
             );
@@ -785,7 +786,7 @@ if ($method === 'GET' && ($route === 'games/search' || $route === 'games/search.
         SELECT CONCAT('drakon:', game_id) AS game_id, game_name,
                COALESCE(NULLIF(provider_code, ''), provider_name, 'drakon') AS provider_code,
                COALESCE(NULLIF(provider_name, ''), provider_code, 'Drakon') AS provider_name,
-               CASE WHEN COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live'
+               CASE WHEN " . DrakonService::liveGameSqlMatch() . "
                     THEN 'live_casino' ELSE 'slot' END AS game_category,
                COALESCE(NULLIF(image_url, ''), NULLIF(banner, ''), '') AS image_url,
                'drakon' AS source

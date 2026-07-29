@@ -208,7 +208,7 @@ final class LiveCasinoQuery
             if ($hasDrakon) {
                 $drakonWhere = [
                     'g.is_active = 1',
-                    "(COALESCE(g.game_type, 0) = 1 OR LOWER(COALESCE(g.type, '')) = 'live')",
+                    self::drakonLiveSql('g'),
                 ];
 
                 if ($searchTerm !== '') {
@@ -468,7 +468,7 @@ final class LiveCasinoQuery
                     "SELECT DISTINCT COALESCE(NULLIF(provider_name, ''), provider_code) AS provider_name
                      FROM drakon_games
                      WHERE is_active = 1
-                       AND (COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live')
+                       AND " . self::drakonLiveSql() . "
                        AND COALESCE(NULLIF(provider_name, ''), provider_code) <> ''
                      ORDER BY provider_name ASC"
                 );
@@ -588,19 +588,36 @@ final class LiveCasinoQuery
 
     private static function ensureDependencies(): void
     {
-        $candidates = [
-            __DIR__ . '/CasinoAggregatorService.php',
-            dirname(__DIR__) . '/services/CasinoAggregatorService.php',
-            dirname(__DIR__, 2) . '/services/CasinoAggregatorService.php',
-        ];
-        if (!class_exists('CasinoAggregatorService', false)) {
-            foreach ($candidates as $path) {
+        foreach (['CasinoAggregatorService', 'DrakonService'] as $class) {
+            if (class_exists($class, false)) {
+                continue;
+            }
+            foreach ([
+                __DIR__ . '/' . $class . '.php',
+                dirname(__DIR__) . '/services/' . $class . '.php',
+                dirname(__DIR__, 2) . '/services/' . $class . '.php',
+            ] as $path) {
                 if (is_file($path)) {
                     require_once $path;
                     break;
                 }
             }
         }
+    }
+
+    /**
+     * Live predicate for drakon_games. DrakonService also matches the provider
+     * label, which keeps live games visible when the stored game_type predates the
+     * classification; the literal fallback covers hosts where the service is absent.
+     */
+    private static function drakonLiveSql(string $tableAlias = ''): string
+    {
+        if (class_exists('DrakonService', false)) {
+            return DrakonService::liveGameSqlMatch($tableAlias);
+        }
+        $p = $tableAlias !== '' ? rtrim($tableAlias, '.') . '.' : '';
+
+        return "(COALESCE({$p}game_type, 0) = 1 OR LOWER(COALESCE({$p}type, '')) = 'live')";
     }
 
     private static function pdo(): PDO

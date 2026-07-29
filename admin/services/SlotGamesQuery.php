@@ -15,6 +15,15 @@ if (!class_exists('CasinoAggregatorService', false)) {
     }
 }
 
+if (!class_exists('DrakonService', false)) {
+    $drakonServicePath = is_file(__DIR__ . '/DrakonService.php')
+        ? __DIR__ . '/DrakonService.php'
+        : dirname(__DIR__) . '/services/DrakonService.php';
+    if (is_file($drakonServicePath)) {
+        require_once $drakonServicePath;
+    }
+}
+
 final class SlotGamesQuery
 {
     public const GAMES_PATH = 'games.php';
@@ -519,8 +528,8 @@ final class SlotGamesQuery
 
         if ($source === '' || $source === 'drakon') {
             $drakonTypeClause = $gameType === 1
-                ? "(COALESCE(g.game_type, 0) = 1 OR LOWER(COALESCE(g.type, '')) = 'live')"
-                : "(COALESCE(g.game_type, 0) <> 1 AND LOWER(COALESCE(g.type, '')) <> 'live')";
+                ? self::drakonLiveSql('g')
+                : 'NOT ' . self::drakonLiveSql('g');
             $union[] = "SELECT
                     CONCAT('drakon:', g.game_id) AS game_id,
                     g.game_name AS name,
@@ -758,8 +767,8 @@ final class SlotGamesQuery
                  FROM drakon_games
                  WHERE is_active = 1 AND provider_name <> ''
                    AND " . ($gameType === 1
-                       ? "(COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live')"
-                       : "(COALESCE(game_type, 0) <> 1 AND LOWER(COALESCE(type, '')) <> 'live')") . "
+                       ? self::drakonLiveSql()
+                       : 'NOT ' . self::drakonLiveSql()) . "
                  ORDER BY provider_name ASC"
             );
             $drakonStmt->execute();
@@ -866,6 +875,21 @@ final class SlotGamesQuery
     private static function normalizeGameName(mixed $value): string
     {
         return self::normalizeLocalizedValue($value);
+    }
+
+    /**
+     * Live predicate for drakon_games; DrakonService also matches the provider
+     * label so rows whose stored game_type predates the classification stay out of
+     * the slot lobby. The literal fallback covers hosts without the service.
+     */
+    private static function drakonLiveSql(string $tableAlias = ''): string
+    {
+        if (class_exists('DrakonService', false)) {
+            return DrakonService::liveGameSqlMatch($tableAlias);
+        }
+        $p = $tableAlias !== '' ? rtrim($tableAlias, '.') . '.' : '';
+
+        return "(COALESCE({$p}game_type, 0) = 1 OR LOWER(COALESCE({$p}type, '')) = 'live')";
     }
 
     private static function normalizeProviderLabel(mixed $value): string

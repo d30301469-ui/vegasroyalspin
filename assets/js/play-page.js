@@ -517,6 +517,20 @@
         frame.srcdoc = html;
     }
 
+    // An http:// URL inside our https:// page is mixed content, which browsers
+    // block silently and leaves the player staring at an empty frame — the same
+    // URL still opens fine in its own tab. Upgrade the scheme for the frame only.
+    function frameSafeUrl(url) {
+        var text = String(url || '').trim();
+        if (text.indexOf('//') === 0) {
+            return window.location.protocol + text;
+        }
+        if (window.location.protocol === 'https:' && /^http:\/\//i.test(text)) {
+            return text.replace(/^http:\/\//i, 'https://');
+        }
+        return text;
+    }
+
     function openLaunchUrl(url, openMode) {
         var mode = String(openMode || 'iframe').toLowerCase();
         var forceRedirect = mode === 'redirect'
@@ -530,7 +544,7 @@
         }
         var frame = document.getElementById('playFrame');
         clearNewTabFallback();
-        frame.src = url;
+        frame.src = frameSafeUrl(url);
         scheduleNewTabFallback(url);
     }
 
