@@ -498,8 +498,44 @@ final class SlotGamesQuery
         $source       = strtolower(trim((string) ($query['source'] ?? '')));
 
         $union = [];
-        // Slot lobby policy: only Casino Aggregator games are public.
-        // BGaming stays available for backend/admin flows, but not frontend slots.
+        // Dedicated BGaming page (`source=bgaming`) must keep serving BGaming
+        // catalogue rows from local DB.
+        if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
+            $bgamingCols = self::bgamingCatalogColumns($pdo);
+            $union[] = "SELECT
+                    CONCAT('bgaming:', g.identifier) AS game_id,
+                    {$bgamingCols['nameExpr']} AS name,
+                    {$bgamingCols['providerExpr']} AS provider,
+                    {$bgamingCols['providerCodeExpr']} AS provider_code,
+                    {$bgamingCols['imageExpr']} AS image_url,
+                    CAST('' AS CHAR) AS image_fallbacks,
+                    {$bgamingCols['featuredExpr']} AS is_featured,
+                    'bgaming' AS source,
+                    CAST(g.id AS CHAR) AS row_id,
+                    CAST('' AS CHAR) AS raw_payload
+                FROM bgaming_games g
+                WHERE g.is_active = 1";
+        }
+
+        if ($source === '' || $source === 'drakon') {
+            $drakonTypeClause = $gameType === 1
+                ? "(COALESCE(g.game_type, 0) = 1 OR LOWER(COALESCE(g.type, '')) = 'live')"
+                : "(COALESCE(g.game_type, 0) <> 1 AND LOWER(COALESCE(g.type, '')) <> 'live')";
+            $union[] = "SELECT
+                    CONCAT('drakon:', g.game_id) AS game_id,
+                    g.game_name AS name,
+                    COALESCE(NULLIF(g.provider_name, ''), g.provider_code, 'Drakon') AS provider,
+                    COALESCE(NULLIF(g.provider_code, ''), g.provider_name, 'drakon') AS provider_code,
+                    COALESCE(NULLIF(g.image_url, ''), NULLIF(g.banner, ''), '') AS image_url,
+                    CAST('' AS CHAR) AS image_fallbacks,
+                    g.is_featured AS is_featured,
+                    'drakon' AS source,
+                    CAST(g.id AS CHAR) AS row_id,
+                    CAST('' AS CHAR) AS raw_payload
+                FROM drakon_games g
+                WHERE g.is_active = 1 AND {$drakonTypeClause}";
+        }
+
         $aggGameType = $gameType === 1 ? 2 : 1;
         if ($source === '' || $source === 'aggregator') {
             if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
@@ -717,12 +753,94 @@ final class SlotGamesQuery
                     $providers[] = $name;
                 }
             }
+            $drakonStmt = $pdo->prepare(
+                "SELECT DISTINCT COALESCE(NULLIF(provider_name, ''), provider_code) AS provider_name
+                 FROM drakon_games
+                 WHERE is_active = 1 AND provider_name <> ''
+                   AND " . ($gameType === 1
+                       ? "(COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live')"
+                       : "(COALESCE(game_type, 0) <> 1 AND LOWER(COALESCE(type, '')) <> 'live')") . "
+                 ORDER BY provider_name ASC"
+            );
+            $drakonStmt->execute();
+            foreach ($drakonStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $name = self::normalizeProviderLabel((string) ($row['provider_name'] ?? ''));
+                if ($name !== '' && !isset($seen[$name])) {
+                    $seen[$name] = true;
+                    $providers[] = $name;
+                }
+            }
         } catch (Throwable) {
             return [];
         }
         $providers = array_values(array_unique(array_filter($providers)));
         sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
         return $providers;
+    }
+
+    /**
+     * Resolve BGaming catalogue column mappings across schema variants.
+     *
+     * @return array{nameExpr:string,providerExpr:string,providerCodeExpr:string,imageExpr:string,featuredExpr:string}
+     */
+    private static function bgamingCatalogColumns(PDO $pdo): array
+    {
+        $titleCol = self::tableHasColumn($pdo, 'bgaming_games', 'title')
+            ? 'title'
+            : (self::tableHasColumn($pdo, 'bgaming_games', 'name') ? 'name' : '');
+        $providerCol = self::tableHasColumn($pdo, 'bgaming_games', 'provider')
+            ? 'provider'
+            : (self::tableHasColumn($pdo, 'bgaming_games', 'producer') ? 'producer' : '');
+        $imageCol = self::tableHasColumn($pdo, 'bgaming_games', 'thumbnail_url')
+            ? 'thumbnail_url'
+            : (self::tableHasColumn($pdo, 'bgaming_games', 'image_url') ? 'image_url' : '');
+
+        return [
+            'nameExpr' => $titleCol !== ''
+                ? "COALESCE(NULLIF(g.{$titleCol}, ''), g.identifier)"
+                : 'g.identifier',
+            'providerExpr' => $providerCol !== ''
+                ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'BGaming')"
+                : "'BGaming'",
+            'providerCodeExpr' => $providerCol !== ''
+                ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'bgaming')"
+                : "'bgaming'",
+            'imageExpr' => $imageCol !== ''
+                ? "COALESCE(NULLIF(g.{$imageCol}, ''), '')"
+                : "CAST('' AS CHAR)",
+            'featuredExpr' => self::tableHasColumn($pdo, 'bgaming_games', 'is_featured')
+                ? 'g.is_featured'
+                : '0',
+        ];
+    }
+
+    private static function tableHasColumn(PDO $pdo, string $table, string $column): bool
+    {
+        static $cache = [];
+        $key = strtolower($table . '.' . $column);
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = :table
+                   AND COLUMN_NAME = :column
+                 LIMIT 1'
+            );
+            $stmt->execute([
+                ':table' => $table,
+                ':column' => $column,
+            ]);
+            $cache[$key] = (bool) $stmt->fetchColumn();
+        } catch (Throwable) {
+            $cache[$key] = false;
+        }
+
+        return $cache[$key];
     }
 
     /**

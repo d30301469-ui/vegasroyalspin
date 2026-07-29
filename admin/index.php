@@ -37,6 +37,10 @@ $isLightweightRoute = preg_match('#^/api/v2/(?:bgaming-wallet|bgaming)(?:/.*)?$#
     || str_starts_with($backendPath, '/api/v2/sportsbook-wallet/')
     || $backendPath === '/api/v2/casino-aggregator-wallet'
     || str_starts_with($backendPath, '/api/v2/casino-aggregator-wallet/')
+    || $backendPath === '/api/v2/drakon_callback'
+    || str_starts_with($backendPath, '/api/v2/drakon_callback/')
+    || $backendPath === '/drakon_api'
+    || str_starts_with($backendPath, '/drakon_api/')
     || $backendPath === '/sportsbook_api'
     || str_starts_with($backendPath, '/sportsbook_api/')
     || $backendPath === '/api/v2/internal'
@@ -107,6 +111,17 @@ if ($isLightweightRoute) {
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
         require __DIR__ . '/api/v2/casino_aggregator_callback.php';
+        exit;
+    }
+    if ($backendPath === '/api/v2/drakon_callback'
+        || str_starts_with($backendPath, '/api/v2/drakon_callback/')
+        || $backendPath === '/drakon_api'
+        || str_starts_with($backendPath, '/drakon_api/')
+    ) {
+        require_once __DIR__ . '/app/Core/AdminPaths.php';
+        admin_paths_bootstrap();
+        require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
+        require __DIR__ . '/api/v2/drakon_callback.php';
         exit;
     }
     if ($backendPath === '/api/v2/casino-callback') {
@@ -208,6 +223,15 @@ $router->get('/casino-aggregator/game-control', [AdminCasinoAggregatorController
 $router->post('/casino-aggregator/call-apply', [AdminCasinoAggregatorController::class, 'callApply']);
 $router->post('/casino-aggregator/call-cancel', [AdminCasinoAggregatorController::class, 'callCancel']);
 $router->post('/casino-aggregator/call-list', [AdminCasinoAggregatorController::class, 'callList']);
+$router->get('/drakon/settings', [AdminDrakonController::class, 'settings']);
+$router->post('/drakon/settings', [AdminDrakonController::class, 'updateSettings']);
+$router->post('/drakon/sync-providers', [AdminDrakonController::class, 'syncProviders']);
+$router->post('/drakon/sync-games', [AdminDrakonController::class, 'syncGames']);
+$router->get('/drakon/campaigns', [AdminDrakonController::class, 'campaigns']);
+$router->post('/drakon/campaigns/create', [AdminDrakonController::class, 'createCampaign']);
+$router->post('/drakon/campaigns/cancel', [AdminDrakonController::class, 'cancelCampaign']);
+$router->post('/drakon/campaigns/players/add', [AdminDrakonController::class, 'addPlayers']);
+$router->post('/drakon/campaigns/players/remove', [AdminDrakonController::class, 'removePlayers']);
 $router->get('/megapayz/settings', [AdminMegaPayzController::class, 'settings']);
 $router->post('/megapayz/settings', [AdminMegaPayzController::class, 'updateSettings']);
 $router->get('/megapayz/methods', [AdminMegaPayzController::class, 'methods']);

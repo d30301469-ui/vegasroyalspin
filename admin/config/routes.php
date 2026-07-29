@@ -34,6 +34,13 @@ return static function (Router $router): void {
         $router->any('/api/v2/casino-aggregator-wallet', [$aggregator, '__invoke'], $backend);
         $router->any('/api/v2/casino-aggregator-wallet/{any}', [$aggregator, '__invoke'], $backend);
     }
+    if (class_exists(\App\Http\Controllers\Callback\DrakonCallbackController::class)) {
+        $drakon = new \App\Http\Controllers\Callback\DrakonCallbackController();
+        $router->any('/api/v2/drakon_callback', [$drakon, '__invoke'], $backend);
+        $router->any('/api/v2/drakon_callback/{any}', [$drakon, '__invoke'], $backend);
+        $router->any('/drakon_api', [$drakon, '__invoke'], $backend);
+        $router->any('/drakon_api/{any}', [$drakon, '__invoke'], $backend);
+    }
     $router->any('/api/v2/{any}', [new PublicMemberApiController(), '__invoke'], $security);
     $router->any('/api/member/{any}', [new PublicMemberApiController(), '__invoke'], $security);
     $router->any('/api/content/{any}', [new PublicMemberApiController(), 'content'], $security);

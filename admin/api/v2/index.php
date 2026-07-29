@@ -246,6 +246,18 @@ if ($method === 'POST' && in_array($route, ['casino-aggregator-wallet', 'casino_
     exit;
 }
 
+$drakonRoute = strtolower(trim((string) $route, '/'));
+if ($method === 'POST' && in_array($drakonRoute, [
+    'drakon_callback',
+    'drakon-callback',
+    'drakon_callback.php',
+    'drakon_api',
+    'drakon-api',
+], true)) {
+    require __DIR__ . '/drakon_callback.php';
+    exit;
+}
+
 $megaPayzRoute = strtolower(trim((string) $route, '/'));
 if ($method === 'POST' && in_array($megaPayzRoute, ['megapayz-callback', 'megapayz/deposit'], true)) {
     $transport = MegaPayzService::verifyCallbackTransport($_SERVER);

@@ -517,6 +517,25 @@ final class SlotGamesQuery
                 WHERE g.is_active = 1";
         }
 
+        if ($source === '' || $source === 'drakon') {
+            $drakonTypeClause = $gameType === 1
+                ? "(COALESCE(g.game_type, 0) = 1 OR LOWER(COALESCE(g.type, '')) = 'live')"
+                : "(COALESCE(g.game_type, 0) <> 1 AND LOWER(COALESCE(g.type, '')) <> 'live')";
+            $union[] = "SELECT
+                    CONCAT('drakon:', g.game_id) AS game_id,
+                    g.game_name AS name,
+                    COALESCE(NULLIF(g.provider_name, ''), g.provider_code, 'Drakon') AS provider,
+                    COALESCE(NULLIF(g.provider_code, ''), g.provider_name, 'drakon') AS provider_code,
+                    COALESCE(NULLIF(g.image_url, ''), NULLIF(g.banner, ''), '') AS image_url,
+                    CAST('' AS CHAR) AS image_fallbacks,
+                    g.is_featured AS is_featured,
+                    'drakon' AS source,
+                    CAST(g.id AS CHAR) AS row_id,
+                    CAST('' AS CHAR) AS raw_payload
+                FROM drakon_games g
+                WHERE g.is_active = 1 AND {$drakonTypeClause}";
+        }
+
         $aggGameType = $gameType === 1 ? 2 : 1;
         if ($source === '' || $source === 'aggregator') {
             if ($gameType === 1 && class_exists('CasinoAggregatorService', false)) {
@@ -730,6 +749,23 @@ final class SlotGamesQuery
                 }
                 $name = self::normalizeProviderLabel((string) $row['provider_name']);
                 if (!isset($seen[$name])) {
+                    $seen[$name] = true;
+                    $providers[] = $name;
+                }
+            }
+            $drakonStmt = $pdo->prepare(
+                "SELECT DISTINCT COALESCE(NULLIF(provider_name, ''), provider_code) AS provider_name
+                 FROM drakon_games
+                 WHERE is_active = 1 AND provider_name <> ''
+                   AND " . ($gameType === 1
+                       ? "(COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live')"
+                       : "(COALESCE(game_type, 0) <> 1 AND LOWER(COALESCE(type, '')) <> 'live')") . "
+                 ORDER BY provider_name ASC"
+            );
+            $drakonStmt->execute();
+            foreach ($drakonStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $name = self::normalizeProviderLabel((string) ($row['provider_name'] ?? ''));
+                if ($name !== '' && !isset($seen[$name])) {
                     $seen[$name] = true;
                     $providers[] = $name;
                 }

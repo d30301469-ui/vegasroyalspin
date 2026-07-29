@@ -128,11 +128,15 @@ if ($method === 'GET' && in_array($route, ['loyalty.php', 'loyalty/me', 'loyalty
 if ($method === 'GET' && in_array($route, ['freespins.php', 'me/freespins', 'profile/freespins'], true)) {
     $userId = $memberRequireLogin();
     $tab = strtolower(trim((string) ($_GET['tab'] ?? 'yeni'))) === 'aktif' ? 'aktif' : 'yeni';
+    admin_require_project_file('services/DrakonService.php');
+    $pdo = AdminDatabase::pdo();
+    $items = BgamingService::memberFreespins($pdo, $userId, $tab);
+    $items = array_merge($items, DrakonService::memberFreespins($pdo, $userId, $tab));
     $memberEnvelope(200, [
         'success' => true,
         'code' => 200,
         'message' => 'Freespin listesi',
-        'data' => ['tab' => $tab, 'items' => BgamingService::memberFreespins(AdminDatabase::pdo(), $userId, $tab)],
+        'data' => ['tab' => $tab, 'items' => $items, 'total' => count($items)],
     ]);
 }
 
