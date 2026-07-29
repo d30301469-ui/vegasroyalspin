@@ -42,6 +42,8 @@ if ($demoFlag || in_array($playMode, ['fun', 'demo'], true)) {
 $loggedIn     = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 $hasMemberJwt = !empty($_SESSION['member_jwt']);
 $playIsAuthenticated = $loggedIn || $hasMemberJwt;
+$playMobileUa = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+$playUaIsMobile = $playMobileUa !== '' && preg_match('/android|iphone|ipad|ipod|mobile|windows phone|opera mini|iemobile/', $playMobileUa) === 1;
 
 $playPayload = [
     'game_id' => $playGameId,
@@ -76,6 +78,13 @@ if ($playClientIp === '' || filter_var($playClientIp, FILTER_VALIDATE_IP) === fa
 if ($playClientIp !== '' && filter_var($playClientIp, FILTER_VALIDATE_IP) !== false) {
     $playPayload['ip'] = $playClientIp;
 }
+// Help providers build return/cashier links from the real frontend host.
+$playScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$playHost = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+if ($playHost !== '') {
+    $playPayload['home_url'] = $playScheme . '://' . $playHost;
+}
+$playPayload['platform'] = $playUaIsMobile ? 'MOBILE' : 'DESKTOP';
 // GSC+ live providers (Pragmatic staging, DreamGaming, …) set session cookies on
 // their own domain. Chrome blocks those as third-party inside our play iframe and
 // the game shell then shows the provider's "re-log in / Un-Authorized" page even
@@ -101,8 +110,6 @@ $playJsPath = BASE_PATH . '/assets/js/play-page.js';
 $playJsVer  = is_readable($playJsPath) ? (string) filemtime($playJsPath) : '1';
 $playAuthSharedPath = BASE_PATH . '/assets/js/auth-shared.js';
 $playAuthSharedVer = (string) ((is_file($playAuthSharedPath) ? filemtime($playAuthSharedPath) : '1') . '-' . (is_file($playAuthSharedPath) ? filesize($playAuthSharedPath) : '0'));
-$playMobileUa = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
-$playUaIsMobile = $playMobileUa !== '' && preg_match('/android|iphone|ipad|ipod|mobile|windows phone|opera mini|iemobile/', $playMobileUa) === 1;
 $playBypassShell = ($playPayload['open_mode'] ?? '') === 'redirect'
     || $playIsGsc
     || $playRequestedOpenMode === 'redirect'
@@ -137,6 +144,7 @@ if ($playBypassShell) {
   window.__PLAY_LAUNCH_PAYLOAD__ = <?= json_encode($playPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
   window.__USER_LOGGED_IN__ = <?= $playIsAuthenticated ? 'true' : 'false' ?>;
   window.__HAS_MEMBER_JWT__ = <?= $hasMemberJwt ? 'true' : 'false' ?>;
+  window.__PLAY_CLIENT_IP__ = <?= json_encode((string) ($playPayload['ip'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
   window.__CSRF_TOKEN__ = <?= json_encode((string) ($_SESSION['csrf_token'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
   window.__MEMBER_API_BASE__ = <?= json_encode((string) ($memberApiLayout['__MEMBER_API_BASE__'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
   window.__FRONTEND_DIRECT_MEMBER_API__ = <?= !empty($memberApiLayout['__FRONTEND_DIRECT_MEMBER_API__']) ? 'true' : 'false' ?>;
@@ -425,6 +433,7 @@ $memberApiLayout = metropol_member_api_layout_vars();
 window.__PLAY_LAUNCH_PAYLOAD__ = <?= json_encode($playPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 window.__USER_LOGGED_IN__ = <?= $playIsAuthenticated ? 'true' : 'false' ?>;
 window.__HAS_MEMBER_JWT__ = <?= $hasMemberJwt ? 'true' : 'false' ?>;
+window.__PLAY_CLIENT_IP__ = <?= json_encode((string) ($playPayload['ip'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 window.__CSRF_TOKEN__ = <?= json_encode((string) ($_SESSION['csrf_token'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 window.__MEMBER_API_BASE__ = <?= json_encode((string) ($memberApiLayout['__MEMBER_API_BASE__'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 window.__FRONTEND_DIRECT_MEMBER_API__ = <?= !empty($memberApiLayout['__FRONTEND_DIRECT_MEMBER_API__']) ? 'true' : 'false' ?>;

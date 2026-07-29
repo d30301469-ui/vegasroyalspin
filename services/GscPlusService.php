@@ -2502,9 +2502,11 @@ final class GscPlusService
     /** Client site URL required by launch-game and superlobby/launch. */
     private static function resolveLobbyUrl(array $cfg, array $input): string
     {
-        $lobbyUrl = trim((string) ($cfg['operator_lobby_url'] ?? ''));
+        // Prefer the runtime frontend origin sent by /play; stale admin config
+        // values can produce invalid cashierUrl links in provider launch pages.
+        $lobbyUrl = trim((string) ($input['home_url'] ?? ''));
         if ($lobbyUrl === '') {
-            $lobbyUrl = trim((string) ($input['home_url'] ?? ''));
+            $lobbyUrl = trim((string) ($cfg['operator_lobby_url'] ?? ''));
         }
         if ($lobbyUrl === '') {
             $lobbyUrl = defined('SITE_URL') && trim((string) SITE_URL) !== ''
