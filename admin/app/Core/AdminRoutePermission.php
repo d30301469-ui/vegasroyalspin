@@ -83,6 +83,7 @@ final class AdminRoutePermission
         '/email/settings' => 'email',
         '/email/settings/test' => 'email',
         '/email/templates' => 'email',
+        '/email/templates/preview' => 'email',
         '/compose' => 'email',
         '/chat' => 'email',
         '/support/tickets' => 'support-tickets',

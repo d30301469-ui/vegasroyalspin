@@ -283,6 +283,7 @@ $router->post('/email/settings', [AdminCommunicationController::class, 'saveSett
 $router->post('/email/settings/test', [AdminCommunicationController::class, 'testMail']);
 $router->get('/email/templates', [AdminCommunicationController::class, 'templates']);
 $router->post('/email/templates', [AdminCommunicationController::class, 'saveTemplates']);
+$router->post('/email/templates/preview', [AdminCommunicationController::class, 'previewTemplate']);
 $router->get('/compose', [AdminCommunicationController::class, 'compose']);
 $router->post('/compose', [AdminCommunicationController::class, 'send']);
 $router->get('/chat', [AdminCommunicationController::class, 'chat']);

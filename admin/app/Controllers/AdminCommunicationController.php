@@ -109,12 +109,17 @@ final class AdminCommunicationController extends AdminController
     {
         $this->requirePermission('email');
         $this->ensureMailTables();
+        $settings = $this->mailSettingsRow();
+        require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
         $this->view('communication/templates', [
             'title' => 'E-posta şablonları',
             'active' => 'email',
             'crumbs' => 'E-posta | E-posta şablonları',
             'emailSection' => 'templates',
-            'settings' => $this->mailSettingsRow(),
+            'settings' => $settings,
+            'resetPreviewHtml' => $this->renderMailTemplatePreview('reset', $settings),
+            'welcomePreviewHtml' => $this->renderMailTemplatePreview('welcome', $settings),
+            'previewUrl' => AdminAuth::url('/email/templates/preview'),
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
         ]);
         unset($_SESSION['admin_flash']);
@@ -417,6 +422,35 @@ final class AdminCommunicationController extends AdminController
         }
 
         $this->redirect(AdminAuth::url('/email/templates'));
+    }
+
+    public function previewTemplate(): void
+    {
+        $this->requirePermission('email');
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+
+        $this->ensureMailTables();
+        $type = strtolower(trim((string) ($_POST['template_type'] ?? 'reset')));
+        if ($type !== 'welcome') {
+            $type = 'reset';
+        }
+
+        $settings = $this->mailSettingsRow();
+        $settings['company_name'] = trim((string) ($_POST['company_name'] ?? ($settings['company_name'] ?? '')));
+        $settings['support_email'] = trim((string) ($_POST['support_email'] ?? ($settings['support_email'] ?? '')));
+        $settings['company_address'] = trim((string) ($_POST['company_address'] ?? ($settings['company_address'] ?? '')));
+        $settings['reset_template_html'] = (string) ($_POST['reset_template_html'] ?? ($settings['reset_template_html'] ?? ''));
+        $settings['welcome_template_html'] = (string) ($_POST['welcome_template_html'] ?? ($settings['welcome_template_html'] ?? ''));
+
+        require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
+        header('Content-Type: text/html; charset=UTF-8');
+        echo $this->renderMailTemplatePreview($type, $settings);
+        exit;
     }
 
     public function send(): void
@@ -819,6 +853,64 @@ final class AdminCommunicationController extends AdminController
             'company_address' => (string) ($settings['company_address'] ?? ''),
             'logo_url' => $logoUrl,
         ];
+    }
+
+    /**
+     * @param array<string,mixed> $settings
+     */
+    private function renderMailTemplatePreview(string $type, array $settings): string
+    {
+        if (!function_exists('metropol_mail_render_template')) {
+            return '<!DOCTYPE html><html lang="tr"><body style="font-family:Arial,sans-serif;padding:24px;color:#111;">Önizleme motoru yüklenemedi.</body></html>';
+        }
+
+        $siteUrl = $this->frontendSiteUrl();
+        $options = $this->mailTemplateOptions($settings);
+        $companyName = (string) ($options['company_name'] ?? 'Vegasroyalspin');
+        $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
+        $options['member_name'] = 'Örnek Üye';
+
+        if ($type === 'welcome') {
+            $options['template_html'] = trim((string) ($settings['welcome_template_html'] ?? ''));
+            $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . '<strong style="color:#ffffff;">' . $safeCompany . '</strong> ailesine hoş geldiniz. '
+                . 'Hesabınız başarıyla oluşturuldu; oyunları ve güncel kampanyaları keşfetmeye başlayabilirsiniz.'
+                . '</p>'
+                . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
+                . 'Güvenliğiniz için şifrenizi kimseyle paylaşmayın.'
+                . '</p>';
+
+            return metropol_mail_render_template(
+                $siteUrl,
+                $companyName . ' üyeliğiniz başarıyla oluşturuldu',
+                'Aramıza Hoş Geldiniz!',
+                $bodyHtml,
+                'Siteye Git',
+                $siteUrl !== '' ? $siteUrl : '#',
+                $options
+            );
+        }
+
+        $options['template_html'] = trim((string) ($settings['reset_template_html'] ?? ''));
+        $resetLink = $siteUrl !== '' ? ($siteUrl . '/reset-password?token=preview-token') : '/reset-password?token=preview-token';
+        $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+            . $safeCompany . ' hesabınız için şifre sıfırlama talebi alındı. '
+            . 'Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.'
+            . '</p>'
+            . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
+            . '<strong style="color:#c44bb8;">Bu bağlantı 1 saat geçerlidir.</strong> '
+            . 'Talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.'
+            . '</p>';
+
+        return metropol_mail_render_template(
+            $siteUrl,
+            $companyName . ' şifre sıfırlama bağlantınız hazır',
+            'Şifre Sıfırlama',
+            $bodyHtml,
+            'Şifremi Sıfırla',
+            $resetLink,
+            $options
+        );
     }
 
     /** Non-secret DB fingerprint (host+database only) for admin/frontend DB-parity diagnostics. */
