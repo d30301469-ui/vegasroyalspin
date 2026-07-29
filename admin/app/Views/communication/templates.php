@@ -22,6 +22,44 @@ $placeholders = [
     '{{LOGO_HTML}}' => 'Logo alanı',
     '{{YEAR}}' => 'Yıl',
 ];
+
+$templates = [
+    [
+        'key' => 'reset',
+        'field' => 'reset_template_html',
+        'title' => 'Şifre sıfırlama',
+        'trigger' => 'Üye şifre sıfırlama talebi oluşturduğunda',
+        'help' => 'Boş bırakırsan sistem varsayılan şablonu kullanılır.',
+    ],
+    [
+        'key' => 'welcome',
+        'field' => 'welcome_template_html',
+        'title' => 'Kayıt başarılı',
+        'trigger' => 'Yeni üye kaydı tamamlandığında',
+        'help' => 'Yeni üye kaydı tamamlandığında otomatik gönderilir.',
+    ],
+    [
+        'key' => 'deposit_approved',
+        'field' => 'deposit_approved_template_html',
+        'title' => 'Yatırım onaylandı',
+        'trigger' => 'Para yatırma işlemi onaylandığında',
+        'help' => 'Tutar için {{AMOUNT}} kullanabilirsiniz.',
+    ],
+    [
+        'key' => 'withdraw_approved',
+        'field' => 'withdraw_approved_template_html',
+        'title' => 'Çekim tamamlandı',
+        'trigger' => 'Para çekme işlemi tamamlandığında',
+        'help' => 'Tutar için {{AMOUNT}} kullanabilirsiniz.',
+    ],
+];
+
+$previewMap = [
+    'reset' => $resetPreviewHtml,
+    'welcome' => $welcomePreviewHtml,
+    'deposit_approved' => $depositApprovedPreviewHtml,
+    'withdraw_approved' => $withdrawApprovedPreviewHtml,
+];
 ?>
 <section class="hero">
     <div class="hero-text">
@@ -40,16 +78,48 @@ $placeholders = [
 <?php endif; ?>
 
 <style>
-.tpl-tabs{display:flex;flex-wrap:wrap;gap:8px}
-.tpl-tab{padding:8px 14px;border:1px solid var(--border-soft);border-radius:999px;background:transparent;color:inherit;font-size:13px;font-weight:700;cursor:pointer;opacity:.7}
-.tpl-tab:hover{opacity:1}
-.tpl-tab.is-active{opacity:1;background:#850f83;border-color:#850f83;color:#fff}
-.tpl-panel[hidden]{display:none}
-.tpl-preview{margin-top:10px;border:1px solid var(--border-soft);border-radius:12px;overflow:hidden;background:#0a0719}
-.tpl-preview-frame{display:block;width:100%;height:460px;border:0;background:#0a0719;transition:opacity .15s ease}
+.tpl-list-table{width:100%;border-collapse:collapse}
+.tpl-list-table th{
+    text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);
+    color:var(--t-light);font-family:JetBrains Mono,monospace;font-size:10px;
+    font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+}
+.tpl-list-table td{padding:14px 12px;border-bottom:1px solid var(--border-soft);vertical-align:middle}
+.tpl-list-table tr:last-child td{border-bottom:0}
+.tpl-list-table tbody tr:hover td{background:var(--bg-hover)}
+.tpl-list-name{color:var(--t-base);font-size:14px;font-weight:700;margin:0 0 3px}
+.tpl-list-trigger{color:var(--t-muted);font-size:12.5px;margin:0;line-height:1.4}
+.tpl-list-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.tpl-edit-panel{margin-top:16px;display:none;padding:18px}
+.tpl-edit-panel.is-open{display:block}
 .tpl-hint-list{margin:8px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:4px 16px}
 .tpl-hint-list li{font-size:12px;color:var(--t-muted)}
 .tpl-hint-list code{font-size:12px}
+.tpl-preview-modal-backdrop{
+    position:fixed;inset:0;z-index:130;display:none;place-items:center;padding:20px;
+    background:rgba(15,23,42,.52);backdrop-filter:blur(8px);
+}
+.tpl-preview-modal-backdrop.is-open{display:grid}
+.tpl-preview-modal{
+    width:min(920px,100%);max-height:min(90vh,960px);display:flex;flex-direction:column;
+    overflow:hidden;border:1px solid var(--border);border-radius:16px;background:var(--bg-card);
+    box-shadow:0 24px 80px rgba(0,0,0,.28);
+}
+.tpl-preview-modal-head{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    border-bottom:1px solid var(--border);padding:14px 16px;
+}
+.tpl-preview-modal-head h2{
+    margin:0;color:var(--t-base);font-family:'Inter Tight',Inter,sans-serif;font-size:16px;font-weight:800;
+}
+.tpl-preview-modal-actions{display:flex;align-items:center;gap:8px}
+.tpl-preview-modal-body{padding:0;overflow:hidden;background:#0a0719;min-height:420px}
+.tpl-preview-frame{display:block;width:100%;height:min(70vh,680px);border:0;background:#0a0719;transition:opacity .15s ease}
+body.has-tpl-preview-modal{overflow:hidden}
+@media (max-width:720px){
+    .tpl-list-actions{justify-content:flex-start}
+    .tpl-list-table th:nth-child(2),.tpl-list-table td:nth-child(2){display:none}
+}
 </style>
 
 <form id="mailTemplatesForm" method="post" action="<?= htmlspecialchars(AdminAuth::url('/email/templates'), ENT_QUOTES, 'UTF-8') ?>">
@@ -58,7 +128,7 @@ $placeholders = [
     <section class="card">
         <div class="card-head">
             <div class="card-title-wrap">
-                <span class="eyebrow">Adım 1</span>
+                <span class="eyebrow">Marka</span>
                 <h2 class="card-title">Marka bilgileri</h2>
             </div>
         </div>
@@ -82,58 +152,93 @@ $placeholders = [
     <section class="card" style="margin-top:16px;">
         <div class="card-head">
             <div class="card-title-wrap">
-                <span class="eyebrow">Adım 2</span>
-                <h2 class="card-title">Şablon içeriği</h2>
+                <span class="eyebrow">Şablonlar</span>
+                <h2 class="card-title">Otomatik e-postalar</h2>
             </div>
-            <div class="tpl-tabs" role="tablist">
-                <button class="tpl-tab is-active" type="button" role="tab" aria-selected="true" data-tpl-tab="reset">Şifre sıfırlama</button>
-                <button class="tpl-tab" type="button" role="tab" aria-selected="false" data-tpl-tab="welcome">Kayıt başarılı</button>
-                <button class="tpl-tab" type="button" role="tab" aria-selected="false" data-tpl-tab="deposit_approved">Yatırım onaylandı</button>
-                <button class="tpl-tab" type="button" role="tab" aria-selected="false" data-tpl-tab="withdraw_approved">Çekim tamamlandı</button>
-            </div>
+            <span class="badge dot info"><?= count($templates) ?> şablon</span>
         </div>
 
-        <div class="tpl-panel" data-tpl-panel="reset">
-            <div class="form-grid">
-                <div class="field span-2">
-                    <label class="field-label" for="reset_template_html">Şifre sıfırlama HTML şablonu</label>
-                    <textarea id="reset_template_html" class="input" name="reset_template_html" rows="10" placeholder="Boş bırakırsan sistem varsayılan şablonu kullanılır."><?= htmlspecialchars((string) ($settings['reset_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                    <div class="field-help">Boş bırakırsan hazır tasarım kullanılır; sağdaki önizleme her zaman gerçek maili gösterir.</div>
+        <div class="table-scroll">
+            <table class="tpl-list-table">
+                <thead>
+                    <tr>
+                        <th>Şablon</th>
+                        <th>Durum</th>
+                        <th style="text-align:right;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($templates as $tpl): ?>
+                        <?php
+                        $key = (string) $tpl['key'];
+                        $field = (string) $tpl['field'];
+                        $html = trim((string) ($settings[$field] ?? ''));
+                        $isCustom = $html !== '';
+                        ?>
+                        <tr data-tpl-row="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>">
+                            <td>
+                                <p class="tpl-list-name"><?= htmlspecialchars((string) $tpl['title'], ENT_QUOTES, 'UTF-8') ?></p>
+                                <p class="tpl-list-trigger"><?= htmlspecialchars((string) $tpl['trigger'], ENT_QUOTES, 'UTF-8') ?></p>
+                            </td>
+                            <td>
+                                <span class="badge <?= $isCustom ? 'dot warning' : 'dot success' ?>">
+                                    <?= $isCustom ? 'Özel HTML' : 'Varsayılan' ?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="tpl-list-actions">
+                                    <button
+                                        class="btn btn--ghost btn--sm"
+                                        type="button"
+                                        data-tpl-preview="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>"
+                                    >Önizle</button>
+                                    <button
+                                        class="btn btn--secondary btn--sm"
+                                        type="button"
+                                        data-tpl-edit="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>"
+                                    >Düzenle</button>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php foreach ($templates as $tpl): ?>
+            <?php
+            $key = (string) $tpl['key'];
+            $field = (string) $tpl['field'];
+            $fieldId = $field;
+            ?>
+            <div class="tpl-edit-panel card" data-tpl-edit-panel="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>">
+                <div class="card-head" style="margin-bottom:12px;padding-bottom:12px;">
+                    <div class="card-title-wrap">
+                        <span class="eyebrow">Düzenle</span>
+                        <h2 class="card-title"><?= htmlspecialchars((string) $tpl['title'], ENT_QUOTES, 'UTF-8') ?> HTML şablonu</h2>
+                    </div>
+                    <button class="btn btn--ghost btn--sm" type="button" data-tpl-edit-close>Kapat</button>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="<?= htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8') ?>">HTML içeriği</label>
+                    <textarea
+                        id="<?= htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8') ?>"
+                        class="input"
+                        name="<?= htmlspecialchars($field, ENT_QUOTES, 'UTF-8') ?>"
+                        rows="12"
+                        placeholder="Boş bırakırsan sistem varsayılan şablonu kullanılır."
+                    ><?= htmlspecialchars((string) ($settings[$field] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                    <div class="field-help"><?= htmlspecialchars((string) $tpl['help'], ENT_QUOTES, 'UTF-8') ?></div>
+                </div>
+                <div class="form-actions" style="margin-top:12px;">
+                    <button class="btn btn--ghost" type="button" data-tpl-preview="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>">Önizle</button>
+                    <span class="spacer"></span>
+                    <button class="btn btn--primary" type="submit">Kaydet</button>
                 </div>
             </div>
-        </div>
+        <?php endforeach; ?>
 
-        <div class="tpl-panel" data-tpl-panel="welcome" hidden>
-            <div class="form-grid">
-                <div class="field span-2">
-                    <label class="field-label" for="welcome_template_html">Kayıt başarılı HTML şablonu</label>
-                    <textarea id="welcome_template_html" class="input" name="welcome_template_html" rows="10" placeholder="Boş bırakırsan sistem varsayılan şablonu kullanılır."><?= htmlspecialchars((string) ($settings['welcome_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                    <div class="field-help">Yeni üye kaydı tamamlandığında otomatik gönderilir.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="tpl-panel" data-tpl-panel="deposit_approved" hidden>
-            <div class="form-grid">
-                <div class="field span-2">
-                    <label class="field-label" for="deposit_approved_template_html">Yatırım onaylandı HTML şablonu</label>
-                    <textarea id="deposit_approved_template_html" class="input" name="deposit_approved_template_html" rows="10" placeholder="Boş bırakırsan sistem varsayılan şablonu kullanılır."><?= htmlspecialchars((string) ($settings['deposit_approved_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                    <div class="field-help">Para yatırma işlemi onaylandığında üyeye otomatik gönderilir. Tutar için <code>{{AMOUNT}}</code> kullanabilirsiniz.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="tpl-panel" data-tpl-panel="withdraw_approved" hidden>
-            <div class="form-grid">
-                <div class="field span-2">
-                    <label class="field-label" for="withdraw_approved_template_html">Çekim tamamlandı HTML şablonu</label>
-                    <textarea id="withdraw_approved_template_html" class="input" name="withdraw_approved_template_html" rows="10" placeholder="Boş bırakırsan sistem varsayılan şablonu kullanılır."><?= htmlspecialchars((string) ($settings['withdraw_approved_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                    <div class="field-help">Para çekme işlemi tamamlandığında üyeye otomatik gönderilir. Tutar için <code>{{AMOUNT}}</code> kullanabilirsiniz.</div>
-                </div>
-            </div>
-        </div>
-
-        <details style="margin-top:4px;">
+        <details style="margin-top:16px;">
             <summary class="field-label" style="cursor:pointer;">Kullanılabilir alanlar</summary>
             <ul class="tpl-hint-list">
                 <?php foreach ($placeholders as $token => $label): ?>
@@ -143,96 +248,149 @@ $placeholders = [
         </details>
 
         <div class="form-actions">
-            <button class="btn btn--ghost" type="button" id="mailPreviewRefresh">Önizlemeyi yenile</button>
             <span class="spacer"></span>
-            <button class="btn btn--primary" type="submit">Kaydet</button>
+            <button class="btn btn--primary" type="submit">Tümünü kaydet</button>
         </div>
     </section>
+</form>
 
-    <section class="card" style="margin-top:16px;">
-        <div class="card-head">
-            <div class="card-title-wrap">
-                <span class="eyebrow">Önizleme</span>
-                <h2 class="card-title" id="mailPreviewTitle">Şifre sıfırlama maili</h2>
+<div
+    id="tplPreviewModal"
+    class="tpl-preview-modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tplPreviewModalTitle"
+    hidden
+>
+    <div class="tpl-preview-modal">
+        <div class="tpl-preview-modal-head">
+            <h2 id="tplPreviewModalTitle">E-posta önizlemesi</h2>
+            <div class="tpl-preview-modal-actions">
+                <button class="btn btn--ghost btn--sm" type="button" id="tplPreviewRefresh">Yenile</button>
+                <button class="tpl-preview-modal-close admin-modal-close" type="button" id="tplPreviewClose" aria-label="Kapat">&times;</button>
             </div>
         </div>
-        <div class="tpl-preview">
+        <div class="tpl-preview-modal-body">
             <iframe
-                id="mailPreviewFrame"
+                id="tplPreviewFrame"
                 class="tpl-preview-frame"
                 title="E-posta önizlemesi"
                 sandbox="allow-same-origin"
-                srcdoc="<?= htmlspecialchars($resetPreviewHtml, ENT_QUOTES, 'UTF-8') ?>"
             ></iframe>
         </div>
-        <div class="field-help" style="margin-top:8px;">Örnek üye adıyla oluşturulur; kaydetmeden önce değişikliği görebilirsin.</div>
-    </section>
-</form>
+    </div>
+</div>
 
 <script>
 (function () {
     var form = document.getElementById('mailTemplatesForm');
-    var frame = document.getElementById('mailPreviewFrame');
-    if (!form || !frame) return;
+    var modal = document.getElementById('tplPreviewModal');
+    var frame = document.getElementById('tplPreviewFrame');
+    var titleEl = document.getElementById('tplPreviewModalTitle');
+    if (!form || !modal || !frame) return;
 
     var previewUrl = <?= json_encode($previewUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-    var cache = {
-        reset: <?= json_encode($resetPreviewHtml, JSON_UNESCAPED_UNICODE) ?>,
-        welcome: <?= json_encode($welcomePreviewHtml, JSON_UNESCAPED_UNICODE) ?>,
-        deposit_approved: <?= json_encode($depositApprovedPreviewHtml, JSON_UNESCAPED_UNICODE) ?>,
-        withdraw_approved: <?= json_encode($withdrawApprovedPreviewHtml, JSON_UNESCAPED_UNICODE) ?>
-    };
+    var cache = <?= json_encode($previewMap, JSON_UNESCAPED_UNICODE) ?>;
     var titles = {
-        reset: 'Şifre sıfırlama maili',
-        welcome: 'Kayıt başarılı maili',
-        deposit_approved: 'Yatırım onaylandı maili',
-        withdraw_approved: 'Çekim tamamlandı maili'
+        reset: 'Şifre sıfırlama',
+        welcome: 'Kayıt başarılı',
+        deposit_approved: 'Yatırım onaylandı',
+        withdraw_approved: 'Çekim tamamlandı'
     };
-    var titleEl = document.getElementById('mailPreviewTitle');
     var active = 'reset';
 
-    function activate(type) {
-        active = type;
-        form.querySelectorAll('[data-tpl-tab]').forEach(function (tab) {
-            var isActive = tab.getAttribute('data-tpl-tab') === type;
-            tab.classList.toggle('is-active', isActive);
-            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    function openEdit(type) {
+        form.querySelectorAll('[data-tpl-edit-panel]').forEach(function (panel) {
+            panel.classList.toggle('is-open', panel.getAttribute('data-tpl-edit-panel') === type);
         });
-        form.querySelectorAll('[data-tpl-panel]').forEach(function (panel) {
-            panel.hidden = panel.getAttribute('data-tpl-panel') !== type;
-        });
-        if (titleEl) titleEl.textContent = titles[type] || titles.reset;
-        frame.srcdoc = cache[type] || '';
+        var panel = form.querySelector('[data-tpl-edit-panel="' + type + '"]');
+        if (panel) {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            var textarea = panel.querySelector('textarea');
+            if (textarea) setTimeout(function () { textarea.focus(); }, 120);
+        }
     }
 
-    function refresh() {
+    function closeEdit() {
+        form.querySelectorAll('[data-tpl-edit-panel]').forEach(function (panel) {
+            panel.classList.remove('is-open');
+        });
+    }
+
+    function setFrameHtml(html) {
+        frame.style.opacity = '0.5';
+        frame.srcdoc = html || '';
+        requestAnimationFrame(function () {
+            frame.style.opacity = '1';
+        });
+    }
+
+    function openPreview(type) {
+        active = type;
+        if (titleEl) titleEl.textContent = (titles[type] || 'E-posta') + ' önizlemesi';
+        setFrameHtml(cache[type] || '');
+        modal.hidden = false;
+        modal.classList.add('is-open');
+        document.body.classList.add('has-tpl-preview-modal');
+        refreshPreview(false);
+    }
+
+    function closePreview() {
+        modal.classList.remove('is-open');
+        modal.hidden = true;
+        document.body.classList.remove('has-tpl-preview-modal');
+    }
+
+    function refreshPreview(forceLoading) {
         var type = active;
         var data = new FormData(form);
         data.set('template_type', type);
+        if (forceLoading !== false) frame.style.opacity = '0.5';
 
-        frame.style.opacity = '0.5';
         fetch(previewUrl, { method: 'POST', body: data, credentials: 'same-origin' })
             .then(function (response) {
                 return response.text().then(function (html) {
                     if (!response.ok) throw new Error(html || ('HTTP ' + response.status));
                     cache[type] = html;
-                    if (active === type) frame.srcdoc = html;
+                    if (active === type) setFrameHtml(html);
                 });
             })
             .catch(function (error) {
-                frame.srcdoc = '<!DOCTYPE html><html lang="tr"><body style="font-family:Arial,sans-serif;padding:24px;color:#b00020;">Önizleme alınamadı: '
-                    + String(error && error.message ? error.message : error) + '</body></html>';
+                setFrameHtml('<!DOCTYPE html><html lang="tr"><body style="font-family:Arial,sans-serif;padding:24px;color:#b00020;">Önizleme alınamadı: '
+                    + String(error && error.message ? error.message : error) + '</body></html>');
             })
             .finally(function () {
                 frame.style.opacity = '1';
             });
     }
 
-    form.querySelectorAll('[data-tpl-tab]').forEach(function (tab) {
-        tab.addEventListener('click', function () {
-            activate(String(tab.getAttribute('data-tpl-tab') || 'reset'));
+    form.querySelectorAll('[data-tpl-preview]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openPreview(String(btn.getAttribute('data-tpl-preview') || 'reset'));
         });
     });
-    document.getElementById('mailPreviewRefresh').addEventListener('click', refresh);
+    form.querySelectorAll('[data-tpl-edit]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openEdit(String(btn.getAttribute('data-tpl-edit') || 'reset'));
+        });
+    });
+    form.querySelectorAll('[data-tpl-edit-close]').forEach(function (btn) {
+        btn.addEventListener('click', closeEdit);
+    });
+
+    document.getElementById('tplPreviewClose').addEventListener('click', closePreview);
+    document.getElementById('tplPreviewRefresh').addEventListener('click', function () {
+        refreshPreview(true);
+    });
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal) closePreview();
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+            closePreview();
+        }
+    });
+
+    closeEdit();
 })();
 </script>
