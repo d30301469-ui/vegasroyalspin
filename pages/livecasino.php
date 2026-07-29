@@ -85,4 +85,4 @@ if (defined('SURFACE') && SURFACE === 'mobile' && $mobileLiveCasinoView !== '' &
     return;
 }
 
-require VIEWS_PATH . '/pages/slot.php';
+require VIEW_PATH . '/pages/slot.php';
