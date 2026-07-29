@@ -1311,6 +1311,12 @@ final class GscPlusService
         $gameType = strtoupper(trim((string) ($gameRow['game_type'] ?? 'SLOT')));
         $platform = self::resolvePlatform($input);
         $languageCode = (int) ($cfg['language_code'] ?? 0);
+        // IDR staging: Pragmatic expects Indonesian locale in the launch URL
+        // (language=id). language_code 0 (English) still launches but some UAT
+        // lines reject the session with "not logged in".
+        if ($languageCode === 0 && strtoupper($currency) === 'IDR') {
+            $languageCode = 4;
+        }
         // The frontend never sends an explicit "ip" field, so this fell straight
         // through to $_SERVER['REMOTE_ADDR'] — the Cloudflare edge IP on this
         // stack, not the player's. Providers that IP-lock a launched session

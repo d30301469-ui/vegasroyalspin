@@ -496,15 +496,10 @@
             || payloadId.toLowerCase().indexOf('gsc:') === 0
             || !document.getElementById('playFrame');
         if (forceRedirect) {
-            try {
-                window.location.replace(url);
-            } catch (e) {
-                /* ignore */
-            }
-            // Some mobile browsers ignore replace; force a hard navigation.
-            window.setTimeout(function () {
-                window.location.href = url;
-            }, 200);
+            // Single navigation only. Pragmatic/GSC tokens are one-shot — a
+            // follow-up location.href after replace reloads playGame.do with the
+            // same token and yields "It seems you are not logged in."
+            window.location.replace(url);
             return;
         }
         var frame = document.getElementById('playFrame');
@@ -513,8 +508,14 @@
         scheduleNewTabFallback(url);
     }
 
+    var launchInFlight = false;
+
     function launchGame(payload, attempt) {
         var launchAttempt = Number(attempt || 0);
+        if (launchInFlight && launchAttempt === 0) {
+            return;
+        }
+        launchInFlight = true;
         var loader = document.getElementById('playLoader');
         var frame = document.getElementById('playFrame');
         clearNewTabFallback();
@@ -577,6 +578,7 @@
                     loader.hidden = true;
                 }
                 if (x.status === 401) {
+                    launchInFlight = false;
                     if (launchAttempt < 1 && Shared && typeof Shared.handleMemberAuthFailure === 'function') {
                         Shared.handleMemberAuthFailure().then(function (recovered) {
                             if (recovered) {
@@ -596,6 +598,7 @@
                     return;
                 }
                 if (!x.j) {
+                    launchInFlight = false;
                     var infraMsg =
                         x.status === 502
                             ? 'Backend sunucuya ulaÅŸÄ±lamadÄ± (502). PHP-FPM ve frontend .env (API_BACKEND_INTERNAL_BASE_URL) ayarlarÄ±nÄ± kontrol edin.'
@@ -617,6 +620,7 @@
                             return;
                         }
                         if (!isSafeLaunchUrl(launchTarget.url)) {
+                            launchInFlight = false;
                             showFatal(
                                 (x.j.message && String(x.j.message)) ||
                                     'Gecersiz oyun URL dondu. Ayarlarinizi kontrol edin.'
@@ -631,6 +635,7 @@
                         return;
                     }
                 }
+                launchInFlight = false;
                 var msg =
                     (x.j && x.j.message) ||
                     (x.j && x.j.error) ||
@@ -638,6 +643,7 @@
                 showFatal(msg);
             })
             .catch(function () {
+                launchInFlight = false;
                 if (loader) {
                     loader.hidden = true;
                 }
