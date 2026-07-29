@@ -3524,10 +3524,11 @@ final class CasinoAggregatorService
         if ((int) ($user['banned'] ?? 0) === 1) {
             return ['status' => 6, 'msg' => 'BLOCK_USER', '__user_id' => (int) $user['id']];
         }
+        $walletColumn = self::walletColumnForUser($pdo, (int) ($user['id'] ?? 0));
         return [
             'status'    => 0,
             'msg'       => 'SUCCESS',
-            'balance'   => round((float) ($user['balance'] ?? 0), 2),
+            'balance'   => round((float) ($user[$walletColumn] ?? 0), 2),
             '__user_id' => (int) $user['id'],
         ];
     }
@@ -3547,6 +3548,7 @@ final class CasinoAggregatorService
             return ['status' => 13, 'msg' => 'INVALID_PARAMETER', '__user_id' => $userId];
         }
 
+        $walletColumn = self::walletColumnForUser($pdo, $userId);
         $existing = $pdo->prepare('SELECT after_balance FROM casino_aggregator_transactions WHERE txn_code = :c LIMIT 1');
         $existing->execute([':c' => $txnCode]);
         $prev = $existing->fetchColumn();
@@ -3568,7 +3570,7 @@ final class CasinoAggregatorService
 
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
+            $stmt = $pdo->prepare('SELECT id, username, balance, bonus_balance, banned FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
             $stmt->execute([':id' => $userId]);
             $locked = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!is_array($locked)) {
@@ -3580,14 +3582,14 @@ final class CasinoAggregatorService
                 return ['status' => 6, 'msg' => 'BLOCK_USER', '__user_id' => $userId];
             }
 
-            $before = round((float) $locked['balance'], 2);
+            $before = round((float) ($locked[$walletColumn] ?? 0), 2);
             $after = round($before + $amount, 2);
             if ($after < 0) {
                 $pdo->rollBack();
                 return ['status' => 8, 'msg' => 'INSUFFICIENT_MONEY', 'balance' => $before, '__user_id' => $userId];
             }
 
-            $pdo->prepare('UPDATE users SET balance = :bal WHERE id = :id')->execute([':bal' => $after, ':id' => $userId]);
+            $pdo->prepare("UPDATE users SET {$walletColumn} = :bal WHERE id = :id")->execute([':bal' => $after, ':id' => $userId]);
 
             if (class_exists('WageringService', false)) {
                 if ($type === 'bet' && $amount < 0) {
@@ -3630,7 +3632,7 @@ final class CasinoAggregatorService
                 $pdo->rollBack();
             }
             if (str_contains($e->getMessage(), '1062') || stripos($e->getMessage(), 'Duplicate') !== false) {
-                $balStmt = $pdo->prepare('SELECT balance FROM users WHERE id = :id LIMIT 1');
+                $balStmt = $pdo->prepare("SELECT {$walletColumn} FROM users WHERE id = :id LIMIT 1");
                 $balStmt->execute([':id' => $userId]);
                 return ['status' => 0, 'msg' => 'SUCCESS', 'balance' => round((float) ($balStmt->fetchColumn() ?: 0), 2), '__user_id' => $userId];
             }
@@ -3667,13 +3669,37 @@ final class CasinoAggregatorService
         }
         $column = ctype_digit($userCode) ? 'id' : 'username';
         try {
-            $stmt = $pdo->prepare("SELECT id, username, balance, banned FROM users WHERE {$column} = :v LIMIT 1");
+            $stmt = $pdo->prepare("SELECT id, username, balance, bonus_balance, banned FROM users WHERE {$column} = :v LIMIT 1");
             $stmt->execute([':v' => $userCode]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return is_array($row) ? $row : null;
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private static function walletColumnForUser(PDO $pdo, int $userId): string
+    {
+        if ($userId <= 0) {
+            return 'balance';
+        }
+        try {
+            if (!class_exists('WageringService', false)) {
+                $wageringPath = dirname(__DIR__) . '/services/WageringService.php';
+                if (is_file($wageringPath)) {
+                    require_once $wageringPath;
+                }
+            }
+            if (class_exists('WageringService', false)) {
+                $column = WageringService::walletSourceColumn($pdo, $userId);
+                if ($column === 'bonus_balance') {
+                    return 'bonus_balance';
+                }
+            }
+        } catch (Throwable) {
+        }
+
+        return 'balance';
     }
 
     private static function logWallet(

@@ -715,8 +715,8 @@ final class GscPlusService
                 ];
                 continue;
             }
-            // users.balance is the seamless IDR ledger — report 1:1 (or scaled for IDR2).
-            $walletBal = round((float) ($user['balance'] ?? 0), 4);
+            $walletColumn = self::walletColumnForUser($pdo, (int) ($user['id'] ?? 0));
+            $walletBal = round((float) ($user[$walletColumn] ?? 0), 4);
             $data[] = [
                 'member_account' => $member,
                 'product_code' => $productCode,
@@ -810,14 +810,16 @@ final class GscPlusService
         $userId = (int) $user['id'];
         $member = (string) ($user['username'] ?? '');
 
+        $walletColumn = self::walletColumnForUser($pdo, $userId);
+
         if ($transactions === []) {
-            $bal = round((float) ($user['balance'] ?? 0), 4);
+            $bal = round((float) ($user[$walletColumn] ?? 0), 4);
             return ['before_balance' => $bal, 'balance' => $bal, 'code' => 0, 'message' => ''];
         }
 
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
+            $stmt = $pdo->prepare('SELECT id, username, balance, bonus_balance, banned FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
             $stmt->execute([':id' => $userId]);
             $locked = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!is_array($locked)) {
@@ -826,12 +828,12 @@ final class GscPlusService
             }
             if ((int) ($locked['banned'] ?? 0) === 1) {
                 $pdo->rollBack();
-                $bal = round((float) ($locked['balance'] ?? 0), 4);
+                $bal = round((float) ($locked[$walletColumn] ?? 0), 4);
                 // 1000 is "member does not exist" — banned is an operator decision → 999.
                 return ['before_balance' => $bal, 'balance' => $bal, 'code' => 999, 'message' => 'Member blocked'];
             }
 
-            $batchBefore = round((float) $locked['balance'], 4);
+            $batchBefore = round((float) ($locked[$walletColumn] ?? 0), 4);
             $balance = $batchBefore;
             $duplicates = 0;
             $processed = 0;
@@ -902,7 +904,7 @@ final class GscPlusService
                     ];
                 }
 
-                $pdo->prepare('UPDATE users SET balance = :bal WHERE id = :id')
+                $pdo->prepare("UPDATE users SET {$walletColumn} = :bal WHERE id = :id")
                     ->execute([':bal' => $after, ':id' => $userId]);
 
                 if (class_exists('WageringService', false) || class_exists('WageringService')) {
@@ -984,7 +986,7 @@ final class GscPlusService
                 $pdo->rollBack();
             }
             if (str_contains($e->getMessage(), '1062') || stripos($e->getMessage(), 'Duplicate') !== false) {
-                $balStmt = $pdo->prepare('SELECT balance FROM users WHERE id = :id LIMIT 1');
+                $balStmt = $pdo->prepare("SELECT {$walletColumn} FROM users WHERE id = :id LIMIT 1");
                 $balStmt->execute([':id' => $userId]);
                 $bal = round((float) ($balStmt->fetchColumn() ?: 0), 4);
                 return [
@@ -1153,16 +1155,17 @@ final class GscPlusService
                 $pdo->rollBack();
                 return;
             }
-            $stmt = $pdo->prepare('SELECT id, username, balance FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
+            $walletColumn = self::walletColumnForUser($pdo, (int) $user['id']);
+            $stmt = $pdo->prepare('SELECT id, username, balance, bonus_balance FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
             $stmt->execute([':id' => (int) $user['id']]);
             $locked = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!is_array($locked)) {
                 $pdo->rollBack();
                 return;
             }
-            $before = round((float) $locked['balance'], 4);
+            $before = round((float) ($locked[$walletColumn] ?? 0), 4);
             $after = round($before + $prizeWallet, 4);
-            $pdo->prepare('UPDATE users SET balance = :bal WHERE id = :id')
+            $pdo->prepare("UPDATE users SET {$walletColumn} = :bal WHERE id = :id")
                 ->execute([':bal' => $after, ':id' => (int) $locked['id']]);
             $pdo->prepare(
                 'INSERT INTO gsc_transactions
@@ -2675,21 +2678,21 @@ final class GscPlusService
         if ($member === '') {
             return null;
         }
-        $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE username = :u LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, username, balance, bonus_balance, banned FROM users WHERE username = :u LIMIT 1');
         $stmt->execute([':u' => $member]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (is_array($row)) {
             return $row;
         }
         // Case-insensitive fallback — GSC sometimes lowercases member_account.
-        $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE LOWER(username) = LOWER(:u) LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, username, balance, bonus_balance, banned FROM users WHERE LOWER(username) = LOWER(:u) LIMIT 1');
         $stmt->execute([':u' => $member]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (is_array($row)) {
             return $row;
         }
         if (ctype_digit($member)) {
-            $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE id = :id LIMIT 1');
+            $stmt = $pdo->prepare('SELECT id, username, balance, bonus_balance, banned FROM users WHERE id = :id LIMIT 1');
             $stmt->execute([':id' => (int) $member]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (is_array($row)) {
@@ -2697,6 +2700,30 @@ final class GscPlusService
             }
         }
         return null;
+    }
+
+    private static function walletColumnForUser(PDO $pdo, int $userId): string
+    {
+        if ($userId <= 0) {
+            return 'balance';
+        }
+        try {
+            if (!class_exists('WageringService', false)) {
+                $wageringPath = dirname(__DIR__) . '/services/WageringService.php';
+                if (is_file($wageringPath)) {
+                    require_once $wageringPath;
+                }
+            }
+            if (class_exists('WageringService', false)) {
+                $column = WageringService::walletSourceColumn($pdo, $userId);
+                if ($column === 'bonus_balance') {
+                    return 'bonus_balance';
+                }
+            }
+        } catch (Throwable) {
+        }
+
+        return 'balance';
     }
 
     /**
