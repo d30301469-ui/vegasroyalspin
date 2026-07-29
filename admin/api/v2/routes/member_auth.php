@@ -413,6 +413,7 @@ if (!function_exists('memberSendRegistrationSuccessMail')) {
                 'Siteye Git',
                 $siteUrl,
                 [
+                    'template_html' => trim((string) ($settings['welcome_template_html'] ?? '')),
                     'company_name' => $companyName,
                     'support_email' => $supportEmail,
                     'company_address' => (string) ($settings['company_address'] ?? ''),

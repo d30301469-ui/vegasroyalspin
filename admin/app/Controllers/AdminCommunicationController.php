@@ -323,9 +323,9 @@ final class AdminCommunicationController extends AdminController
             } else {
                 $stmt = $pdo->prepare(
                     'INSERT INTO mail_settings
-                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, imap_enabled, imap_host, imap_port, imap_user, imap_password, imap_encryption, company_name, support_email, company_address, reset_template_html, updated_at)
+                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, imap_enabled, imap_host, imap_port, imap_user, imap_password, imap_encryption, company_name, support_email, company_address, reset_template_html, welcome_template_html, updated_at)
                      VALUES
-                     (:enabled, :mail_enabled, :from_email, :mail_from_address, :smtp_host, :smtp_port, :smtp_user, :smtp_password, :imap_enabled, :imap_host, :imap_port, :imap_user, :imap_password, :imap_encryption, :company_name, :support_email, :company_address, :reset_template_html, NOW())'
+                     (:enabled, :mail_enabled, :from_email, :mail_from_address, :smtp_host, :smtp_port, :smtp_user, :smtp_password, :imap_enabled, :imap_host, :imap_port, :imap_user, :imap_password, :imap_encryption, :company_name, :support_email, :company_address, :reset_template_html, :welcome_template_html, NOW())'
                 );
                 $stmt->execute([
                     'enabled' => $enabled,
@@ -346,6 +346,7 @@ final class AdminCommunicationController extends AdminController
                     'support_email' => '',
                     'company_address' => '',
                     'reset_template_html' => '',
+                    'welcome_template_html' => '',
                 ]);
             }
 
@@ -372,6 +373,7 @@ final class AdminCommunicationController extends AdminController
         $supportEmail = trim((string) ($_POST['support_email'] ?? ''));
         $companyAddress = trim((string) ($_POST['company_address'] ?? ''));
         $resetTemplateHtml = (string) ($_POST['reset_template_html'] ?? '');
+        $welcomeTemplateHtml = (string) ($_POST['welcome_template_html'] ?? '');
 
         try {
             $pdo = AdminDatabase::pdo();
@@ -382,6 +384,7 @@ final class AdminCommunicationController extends AdminController
                          support_email = :support_email,
                          company_address = :company_address,
                          reset_template_html = :reset_template_html,
+                         welcome_template_html = :welcome_template_html,
                          updated_at = NOW()
                      WHERE id = :id'
                 );
@@ -391,19 +394,21 @@ final class AdminCommunicationController extends AdminController
                     'support_email' => $supportEmail,
                     'company_address' => $companyAddress,
                     'reset_template_html' => $resetTemplateHtml,
+                    'welcome_template_html' => $welcomeTemplateHtml,
                 ]);
             } else {
                 $stmt = $pdo->prepare(
                     'INSERT INTO mail_settings
-                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, company_name, support_email, company_address, reset_template_html, updated_at)
+                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, company_name, support_email, company_address, reset_template_html, welcome_template_html, updated_at)
                      VALUES
-                     (0, 0, NULL, NULL, NULL, NULL, NULL, NULL, :company_name, :support_email, :company_address, :reset_template_html, NOW())'
+                     (0, 0, NULL, NULL, NULL, NULL, NULL, NULL, :company_name, :support_email, :company_address, :reset_template_html, :welcome_template_html, NOW())'
                 );
                 $stmt->execute([
                     'company_name' => $companyName,
                     'support_email' => $supportEmail,
                     'company_address' => $companyAddress,
                     'reset_template_html' => $resetTemplateHtml,
+                    'welcome_template_html' => $welcomeTemplateHtml,
                 ]);
             }
             $_SESSION['admin_flash'] = 'E-posta şablonları güncellendi.';
