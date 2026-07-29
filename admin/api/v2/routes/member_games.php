@@ -1027,7 +1027,24 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         }
 
         if (GscPlusService::ownsGameId($gameId)) {
-            $result = GscPlusService::launch(AdminDatabase::pdo(), $user, $input);
+            $gscUser = $user;
+            if (!$isDemo && is_array($user) && (int) ($user['id'] ?? 0) > 0) {
+                // GSC launch password should be derived from the member's operator-side
+                // credential material; the generic member API user helper strips
+                // sensitive fields. Re-load just what's needed for launch.
+                try {
+                    $gscUserStmt = AdminDatabase::pdo()->prepare('SELECT id, username, password FROM users WHERE id = :id LIMIT 1');
+                    $gscUserStmt->execute([':id' => (int) $user['id']]);
+                    $gscRawUser = $gscUserStmt->fetch(PDO::FETCH_ASSOC);
+                    if (is_array($gscRawUser)) {
+                        $gscUser = $user;
+                        $gscUser['password'] = (string) ($gscRawUser['password'] ?? '');
+                    }
+                } catch (Throwable) {
+                    // Keep launch non-blocking; GscPlusService falls back to deterministic password.
+                }
+            }
+            $result = GscPlusService::launch(AdminDatabase::pdo(), is_array($gscUser) ? $gscUser : $user, $input);
             $result = $normalizeLaunchResult($result, $requestedOpenMode);
             $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
             if ($httpCode >= 500 && $httpCode !== 503) {

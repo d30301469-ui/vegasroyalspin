@@ -2519,6 +2519,15 @@ final class GscPlusService
 
     private static function memberPassword(array $cfg, array $user): string
     {
+        // Prefer per-member password material when available. This keeps launch-game
+        // credentials aligned with operator-side member auth instead of a global seed.
+        $stored = trim((string) ($user['password'] ?? ''));
+        if ($stored !== '') {
+            if (preg_match('/^[a-f0-9]{32}$/i', $stored) === 1) {
+                return strtolower($stored);
+            }
+            return md5($stored);
+        }
         $seed = (string) ($cfg['secret_key'] ?? '') . '|' . (int) ($user['id'] ?? 0) . '|' . (string) ($user['username'] ?? '');
         return md5($seed);
     }
