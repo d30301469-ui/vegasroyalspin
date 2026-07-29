@@ -28,6 +28,26 @@ jobs:
               exit 1
             fi
             echo "Deploy verified: $DEPLOYED_SHA"
+
+            # Admin panel DocumentRoot is a separate host. Sync admin/ so
+            # E-posta ayarları / şablonları / API changes actually reach production.
+            ADMIN_HOST="/www/wwwroot/admin.vegasroyalspin.com"
+            if [ -d "$ADMIN_HOST" ] && [ -d /www/wwwroot/vegasroyalspin.com/admin ]; then
+              rsync -a --delete \
+                --exclude '.env' \
+                --exclude '.env.*' \
+                --exclude '.git' \
+                --exclude 'vendor/' \
+                --exclude 'storage/logs/' \
+                --exclude 'storage/cache/' \
+                --exclude 'storage/sessions/' \
+                /www/wwwroot/vegasroyalspin.com/admin/ \
+                "$ADMIN_HOST/"
+              echo "Admin host synced: $ADMIN_HOST"
+            else
+              echo "Admin host sync skipped (missing $ADMIN_HOST or admin/)"
+            fi
+
             php tools/update_menu_bgaming_v2.php || true
             php tools/update_tabbar_v1.php || true
             php deploy/aapanel/remove-legacy-provider-integration.php || true

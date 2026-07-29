@@ -56,18 +56,34 @@ if ($imapEncValue === '') {
     <section class="card">
         <div class="card-head">
             <div class="card-title-wrap">
-                <span class="eyebrow">SMTP</span>
-                <h2 class="card-title">Gönderim ayarları</h2>
+                <span class="eyebrow">Durum</span>
+                <h2 class="card-title">Mail gönderimi</h2>
             </div>
             <span class="badge <?= $enabled ? 'dot success' : 'dot danger' ?>"><?= $enabled ? 'Aktif' : 'Pasif' ?></span>
         </div>
         <div class="form-grid">
             <div class="field span-2">
-                <label class="switch" style="display:flex;align-items:center;gap:10px;">
-                    <input type="checkbox" name="enabled" value="1" <?= $enabled ? 'checked' : '' ?>>
-                    <span class="field-label" style="margin:0;">Mail gönderimi aktif</span>
+                <label class="switch" for="mail_enabled_toggle">
+                    <input id="mail_enabled_toggle" type="checkbox" name="enabled" value="1" <?= $enabled ? 'checked' : '' ?>>
+                    <span class="track" aria-hidden="true"></span>
+                    <span class="field-label" style="margin:0;">Mail gönderimini aktif et</span>
                 </label>
+                <div class="field-help" style="margin-top:8px;">
+                    Kapalıyken kayıt, şifre sıfırlama, yatırım/çekim onay mailleri ve test gönderimi yapılmaz.
+                    Açmadan önce SMTP bilgilerini kaydedin.
+                </div>
             </div>
+        </div>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+        <div class="card-head">
+            <div class="card-title-wrap">
+                <span class="eyebrow">SMTP</span>
+                <h2 class="card-title">Gönderim ayarları</h2>
+            </div>
+        </div>
+        <div class="form-grid">
             <div class="field span-2">
                 <label class="field-label" for="from_email">Gönderen e-posta</label>
                 <input id="from_email" class="input" type="email" name="from_email" placeholder="noreply@vegasroyalspin.com" value="<?= htmlspecialchars((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
@@ -102,8 +118,9 @@ if ($imapEncValue === '') {
         </div>
         <div class="form-grid">
             <div class="field span-2">
-                <label class="switch" style="display:flex;align-items:center;gap:10px;">
-                    <input type="checkbox" name="imap_enabled" value="1" <?= $imapEnabled ? 'checked' : '' ?>>
+                <label class="switch" for="imap_enabled_toggle">
+                    <input id="imap_enabled_toggle" type="checkbox" name="imap_enabled" value="1" <?= $imapEnabled ? 'checked' : '' ?>>
+                    <span class="track" aria-hidden="true"></span>
                     <span class="field-label" style="margin:0;">Gelen kutusu (IMAP) aktif</span>
                 </label>
                 <div class="field-help">Açıkken E-posta → Gelen e-postalar, bu hesap üzerinden okunur.</div>
