@@ -138,7 +138,7 @@ return static function (PDO $pdo): void {
             created_at        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            UNIQUE KEY uniq_gsc_game (product_code, game_code, support_currency),
+            UNIQUE KEY uniq_gsc_game (product_code, game_code, game_type, product_currency),
             KEY idx_gsc_games_product (product_code),
             KEY idx_gsc_games_active (is_active),
             KEY idx_gsc_games_type (game_type),
@@ -153,6 +153,21 @@ return static function (PDO $pdo): void {
         try {
             $pdo->exec("ALTER TABLE gsc_games MODIFY support_currency VARCHAR(64) NOT NULL DEFAULT ''");
             $pdo->exec("ALTER TABLE gsc_games ADD COLUMN product_currency VARCHAR(16) NOT NULL DEFAULT '' AFTER support_currency");
+        } catch (Throwable) {
+        }
+    }
+
+    // LIVE_CASINO vs LIVE_CASINO_PREMIUM share game_codes under product 1006; the
+    // old unique key collapsed them and launch sent the wrong game_type.
+    if (!$indexExists($pdo, 'gsc_games', 'uniq_gsc_game_typed')) {
+        try {
+            if ($indexExists($pdo, 'gsc_games', 'uniq_gsc_game')) {
+                $pdo->exec('ALTER TABLE gsc_games DROP INDEX uniq_gsc_game');
+            }
+            $pdo->exec(
+                'ALTER TABLE gsc_games ADD UNIQUE KEY uniq_gsc_game_typed
+                    (product_code, game_code, game_type, product_currency)'
+            );
         } catch (Throwable) {
         }
     }

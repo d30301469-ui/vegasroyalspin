@@ -1202,16 +1202,29 @@ final class GscPlusService
             // support_currency is a provider-side list ("ALL", "IDR,PHP,MYR"), never a
             // single code, so it must not be matched literally against our currency —
             // syncGames already folded currency support into is_active.
+            $preferType = strtoupper(trim((string) ($input['game_type'] ?? '')));
+            // Prefer LIVE_CASINO over LIVE_CASINO_PREMIUM when the same game_code
+            // collides under uniq(product_code, game_code, support_currency).
             $gameStmt = $pdo->prepare(
                 'SELECT * FROM gsc_games
                  WHERE product_code = :p AND game_code = :g AND is_active = 1
-                 ORDER BY (product_currency = :c) DESC, id ASC
+                 ORDER BY
+                    (product_currency = :c) DESC,
+                    CASE
+                        WHEN :gt <> \'\' AND UPPER(game_type) = :gt2 THEN 0
+                        WHEN UPPER(game_type) = \'LIVE_CASINO\' THEN 1
+                        WHEN UPPER(game_type) LIKE \'LIVE_CASINO%\' THEN 2
+                        ELSE 3
+                    END ASC,
+                    id ASC
                  LIMIT 1'
             );
             $gameStmt->execute([
                 ':p' => $productCode,
                 ':g' => $gameCode,
                 ':c' => $currency,
+                ':gt' => $preferType,
+                ':gt2' => $preferType,
             ]);
             $gameRow = $gameStmt->fetch(PDO::FETCH_ASSOC);
             if (!is_array($gameRow)) {
@@ -2237,22 +2250,9 @@ final class GscPlusService
             ];
         }
 
-        // Buy-in typically reserves against the player's seamless balance in launch currency.
-        if (is_array($user)) {
-            $playerWallet = (float) ($user['balance'] ?? 0);
-            $playerProvider = self::toProviderAmount($playerWallet, $launchCurrency);
-            if ($playerProvider > $agentBal) {
-                return [
-                    'success' => false,
-                    'code' => 422,
-                    'message' => 'Agent ' . $launchCurrency . ' bakiyesi (' . number_format($agentBal, 4, '.', '')
-                        . ') oyuncu seamless bakiyesini (' . number_format($playerProvider, 4, '.', '')
-                        . ' ' . $launchCurrency . ') karşılamıyor. GSC+ buy-in için agent ≥ oyuncu gerekir. '
-                        . 'Agent: ' . $summaryText,
-                ];
-            }
-        }
-
+        // Site player balance must NOT be compared to agent kiosk credit — different
+        // wallets/currencies (TRY display vs IDR agent). That check blocked launches
+        // whenever users.balance numerically exceeded agent IDR.
         return null;
     }
 
