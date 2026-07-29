@@ -565,7 +565,8 @@ final class GscPlusService
             $cfg = self::config($pdo);
             if ((int) ($cfg['is_active'] ?? 0) !== 1) {
                 $body = $errorBody(999, 'Provider inactive');
-                self::logWallet($pdo, $endpoint, null, null, null, 503, 999, 'INACTIVE', $started, $payload, $body);
+                $meta = self::walletLogMeta($pdo, $endpoint, $payload, $body);
+                self::logWallet($pdo, $endpoint, $meta['user_id'], $meta['member_account'], $meta['transaction_id'], 503, 999, 'INACTIVE', $started, $payload, $body);
                 return ['status' => 503, 'body' => $body];
             }
             $operatorCode = trim((string) ($cfg['operator_code'] ?? ''));
@@ -573,12 +574,14 @@ final class GscPlusService
             $reqOp = trim((string) ($payload['operator_code'] ?? ''));
             if ($operatorCode === '' || $secretKey === '' || strcasecmp($reqOp, $operatorCode) !== 0) {
                 $body = $errorBody(1002, self::WALLET_CODES[1002]);
-                self::logWallet($pdo, $endpoint, null, null, null, 200, 1002, 'PROXY_KEY', $started, $payload, $body);
+                $meta = self::walletLogMeta($pdo, $endpoint, $payload, $body);
+                self::logWallet($pdo, $endpoint, $meta['user_id'], $meta['member_account'], $meta['transaction_id'], 200, 1002, 'PROXY_KEY', $started, $payload, $body);
                 return ['status' => 200, 'body' => $body];
             }
             if (!self::verifyCallbackSign($payload, $signAction, $secretKey, $operatorCode)) {
                 $body = $errorBody(1004, self::WALLET_CODES[1004]);
-                self::logWallet($pdo, $endpoint, null, null, null, 200, 1004, 'INVALID_SIGN', $started, $payload, $body);
+                $meta = self::walletLogMeta($pdo, $endpoint, $payload, $body);
+                self::logWallet($pdo, $endpoint, $meta['user_id'], $meta['member_account'], $meta['transaction_id'], 200, 1004, 'INVALID_SIGN', $started, $payload, $body);
                 return ['status' => 200, 'body' => $body];
             }
 
@@ -589,12 +592,38 @@ final class GscPlusService
                 'pushbetdata' => self::walletPushBetData($pdo, $payload, $cfg),
                 default => ['code' => 999, 'message' => 'NOT_FOUND'],
             };
-            self::logWallet($pdo, $endpoint, null, null, null, 200, (int) ($body['code'] ?? 0), null, $started, $payload, $body);
+            $meta = self::walletLogMeta($pdo, $endpoint, $payload, $body);
+            self::logWallet(
+                $pdo,
+                $endpoint,
+                $meta['user_id'],
+                $meta['member_account'],
+                $meta['transaction_id'],
+                200,
+                $meta['status_code'],
+                $meta['error_code'],
+                $started,
+                $payload,
+                $body
+            );
             return ['status' => 200, 'body' => $body];
         } catch (Throwable $e) {
             $body = $errorBody(999, 'Internal Server Error');
             error_log('[GSC+] wallet ' . $endpoint . ': ' . $e->getMessage());
-            self::logWallet($pdo, $endpoint, null, null, null, 500, 999, 'EXCEPTION', $started, $payload, $body + ['error' => $e->getMessage()]);
+            $meta = self::walletLogMeta($pdo, $endpoint, $payload, $body);
+            self::logWallet(
+                $pdo,
+                $endpoint,
+                $meta['user_id'],
+                $meta['member_account'],
+                $meta['transaction_id'],
+                500,
+                999,
+                'EXCEPTION',
+                $started,
+                $payload,
+                $body + ['error' => $e->getMessage()]
+            );
             return ['status' => 200, 'body' => $body];
         }
     }
@@ -961,6 +990,7 @@ final class GscPlusService
     {
         $wagers = is_array($payload['wagers'] ?? null) ? $payload['wagers'] : [];
         $memberMissing = false;
+        $saved = 0;
         foreach ($wagers as $wager) {
             if (!is_array($wager)) {
                 continue;
@@ -1024,10 +1054,13 @@ final class GscPlusService
             ]);
 
             self::creditManualPayoutWager($pdo, $wager, $code, $currency);
+            $saved++;
         }
-        if ($memberMissing) {
+        if ($memberMissing && $saved === 0) {
             return ['code' => 1000, 'message' => self::WALLET_CODES[1000]];
         }
+        // Partial batches (some known members, some unknown) still sync what we can;
+        // returning 1000 for the whole push made GSC treat a healthy session as failed.
         return ['code' => 0, 'message' => ''];
     }
 
@@ -2367,6 +2400,13 @@ final class GscPlusService
         if (is_array($row)) {
             return $row;
         }
+        // Case-insensitive fallback — GSC sometimes lowercases member_account.
+        $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE LOWER(username) = LOWER(:u) LIMIT 1');
+        $stmt->execute([':u' => $member]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row)) {
+            return $row;
+        }
         if (ctype_digit($member)) {
             $stmt = $pdo->prepare('SELECT id, username, balance, banned FROM users WHERE id = :id LIMIT 1');
             $stmt->execute([':id' => (int) $member]);
@@ -2376,6 +2416,88 @@ final class GscPlusService
             }
         }
         return null;
+    }
+
+    /**
+     * Populate gsc_wallet_logs identity columns — previously always NULL because
+     * wallet() never forwarded member/txn from the payload, which hid 1000s.
+     *
+     * @param array<string, mixed> $payload
+     * @param array<string, mixed> $body
+     * @return array{user_id:?int,member_account:?string,transaction_id:?string,status_code:int,error_code:?string}
+     */
+    private static function walletLogMeta(PDO $pdo, string $endpoint, array $payload, array $body): array
+    {
+        $member = '';
+        $txn = '';
+        $status = (int) ($body['code'] ?? 0);
+
+        if ($endpoint === 'pushbetdata') {
+            $wagers = is_array($payload['wagers'] ?? null) ? $payload['wagers'] : [];
+            foreach ($wagers as $wager) {
+                if (!is_array($wager)) {
+                    continue;
+                }
+                if ($member === '') {
+                    $member = trim((string) ($wager['member_account'] ?? ''));
+                }
+                if ($txn === '') {
+                    $txn = trim((string) ($wager['wager_code'] ?? ''));
+                }
+            }
+        } else {
+            $batch = is_array($payload['batch_requests'] ?? null) ? $payload['batch_requests'] : [];
+            foreach ($batch as $req) {
+                if (!is_array($req)) {
+                    continue;
+                }
+                if ($member === '') {
+                    $member = trim((string) ($req['member_account'] ?? ''));
+                }
+                $txs = is_array($req['transactions'] ?? null) ? $req['transactions'] : [];
+                foreach ($txs as $tx) {
+                    if (!is_array($tx)) {
+                        continue;
+                    }
+                    if ($txn === '') {
+                        $txn = trim((string) ($tx['id'] ?? $tx['wager_code'] ?? ''));
+                    }
+                }
+            }
+            // Prefer the worst per-member code so a top-level code:0 with data[].code
+            // 1000 no longer looks like success in the admin datatable.
+            foreach ((is_array($body['data'] ?? null) ? $body['data'] : []) as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                if ($member === '') {
+                    $member = trim((string) ($row['member_account'] ?? ''));
+                }
+                $rowCode = (int) ($row['code'] ?? 0);
+                if ($rowCode !== 0) {
+                    $status = $rowCode;
+                    break;
+                }
+            }
+        }
+
+        $userId = null;
+        if ($member !== '') {
+            $user = self::userByMemberAccount($pdo, $member);
+            if (is_array($user)) {
+                $userId = (int) ($user['id'] ?? 0) ?: null;
+            }
+        }
+
+        $error = $status !== 0 ? (self::WALLET_CODES[$status] ?? ('code_' . $status)) : null;
+
+        return [
+            'user_id' => $userId,
+            'member_account' => $member !== '' ? substr($member, 0, 64) : null,
+            'transaction_id' => $txn !== '' ? substr($txn, 0, 128) : null,
+            'status_code' => $status,
+            'error_code' => $error !== null ? substr($error, 0, 64) : null,
+        ];
     }
 
     /**
