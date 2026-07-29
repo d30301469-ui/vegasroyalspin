@@ -589,8 +589,10 @@ final class GscPlusService
             if ((int) ($cfg['is_active'] ?? 0) !== 1) {
                 $body = $errorBody(999, 'Provider inactive');
                 $meta = self::walletLogMeta($pdo, $endpoint, $payload, $body);
-                self::logWallet($pdo, $endpoint, $meta['user_id'], $meta['member_account'], $meta['transaction_id'], 503, 999, 'INACTIVE', $started, $payload, $body);
-                return ['status' => 503, 'body' => $body];
+                // Seamless wallet protocol: always HTTP 200 with body.code; non-200
+                // makes GSC treat the operator as unreachable and retry/mark down.
+                self::logWallet($pdo, $endpoint, $meta['user_id'], $meta['member_account'], $meta['transaction_id'], 200, 999, 'INACTIVE', $started, $payload, $body);
+                return ['status' => 200, 'body' => $body];
             }
             $operatorCode = trim((string) ($cfg['operator_code'] ?? ''));
             $secretKey = (string) ($cfg['secret_key'] ?? '');
@@ -648,7 +650,7 @@ final class GscPlusService
                 $meta['user_id'],
                 $meta['member_account'],
                 $meta['transaction_id'],
-                500,
+                200,
                 999,
                 'EXCEPTION',
                 $started,
@@ -802,7 +804,8 @@ final class GscPlusService
             if ((int) ($locked['banned'] ?? 0) === 1) {
                 $pdo->rollBack();
                 $bal = round((float) ($locked['balance'] ?? 0), 4);
-                return ['before_balance' => $bal, 'balance' => $bal, 'code' => 1000, 'message' => 'Member blocked'];
+                // 1000 is "member does not exist" — banned is an operator decision → 999.
+                return ['before_balance' => $bal, 'balance' => $bal, 'code' => 999, 'message' => 'Member blocked'];
             }
 
             $batchBefore = round((float) $locked['balance'], 4);
@@ -833,7 +836,7 @@ final class GscPlusService
                 $prev = $existing->fetch(PDO::FETCH_ASSOC);
                 if (is_array($prev)) {
                     $duplicates++;
-                    $balance = round((float) ($prev['after_balance'] ?? $balance), 4);
+                    // Doc 1003: report current balances, never replay historical after_balance.
                     continue;
                 }
 
@@ -847,17 +850,18 @@ final class GscPlusService
                         'message' => 'Invalid action',
                     ];
                 }
-                // Doc: CANCEL/ROLLBACK must confirm the referenced bet exists → 1006 otherwise.
-                if (in_array($action, ['CANCEL', 'ROLLBACK'], true)
-                    && !self::wagerExists($pdo, trim((string) ($tx['wager_code'] ?? '')))
-                ) {
-                    $pdo->rollBack();
-                    return [
-                        'before_balance' => $batchBefore,
-                        'balance' => $batchBefore,
-                        'code' => 1006,
-                        'message' => self::WALLET_CODES[1006],
-                    ];
+                // Doc: CANCEL must confirm the bet exists (BET); ROLLBACK confirms settle/exists.
+                if (in_array($action, ['CANCEL', 'ROLLBACK'], true)) {
+                    $wagerCode = trim((string) ($tx['wager_code'] ?? ''));
+                    if (!self::wagerExists($pdo, $wagerCode)) {
+                        $pdo->rollBack();
+                        return [
+                            'before_balance' => $batchBefore,
+                            'balance' => $batchBefore,
+                            'code' => 1006,
+                            'message' => self::WALLET_CODES[1006],
+                        ];
+                    }
                 }
                 $providerAmount = (float) ($tx['amount'] ?? 0);
                 $deltaWallet = self::resolveWalletDelta($direction, $action, $providerAmount, $currency);
@@ -941,7 +945,7 @@ final class GscPlusService
             if ($duplicates > 0 && $duplicates === $processed) {
                 return [
                     'before_balance' => $batchBefore,
-                    'balance' => $balance,
+                    'balance' => $batchBefore,
                     'code' => 1003,
                     'message' => self::WALLET_CODES[1003],
                 ];
@@ -2350,9 +2354,9 @@ final class GscPlusService
 
     private static function haystackLooksLikeEmptyTokenLaunch(string $haystack): bool
     {
-        return preg_match('/token=(?=&|"|\'|\\\\"|$)/', $haystack) === 1
-            || str_contains($haystack, 'dingdang')
-            || str_contains($haystack, 'ddnewpc');
+        // Only empty token= is unusable. Host names alone (dingdang/ddnewpc) are
+        // valid once GSC returns a real session token.
+        return preg_match('/token=(?=&|"|\'|\\\\"|$)/', $haystack) === 1;
     }
 
     /**
