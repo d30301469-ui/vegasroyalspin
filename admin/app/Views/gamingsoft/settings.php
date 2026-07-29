@@ -25,6 +25,17 @@ if ($contractedCurrencies === []) {
 }
 $currencyMismatch = $contractedCurrencies !== [] && !in_array($currencyValue, $contractedCurrencies, true);
 $walletEmpty = $agentWallet !== null && $walletTotal <= 0;
+$primaryCurrencyBalance = null;
+foreach (($agentWallet['currencies'] ?? []) as $walletRow) {
+    if (strtoupper(trim((string) ($walletRow['currency'] ?? ''))) === $currencyValue) {
+        $primaryCurrencyBalance = (float) ($walletRow['current_balance'] ?? 0);
+        break;
+    }
+}
+$primaryCurrencyEmpty = $agentWallet !== null
+    && $primaryCurrencyBalance !== null
+    && $primaryCurrencyBalance <= 0
+    && !$walletEmpty;
 $currencyChoices = array_values(array_unique(array_merge(
     GscPlusService::STAGING_CURRENCIES,
     $contractedCurrencies,
@@ -90,6 +101,17 @@ $currencyChoices = array_values(array_unique(array_merge(
         <strong>Agent wallet boş:</strong> 3.12 sorgusu tüm sözleşmeli para birimlerinde
         0 bakiye döndü. Launch URL gelse bile Pragmatic / DreamGaming oturumu reddedebilir.
         GSC+ customer support’a kiosk credit top-up tutarını iletin.
+        Bu, sitedeki oyuncu bakiyesinden (seamless) farklıdır — “insufficient agent balance”
+        hatası agent/kiosk cüzdanına aittir; oyuncunun ₺ bakiyesi launch’ı kurtarmaz.
+        Ayrıca currency eşleşmeli: IDR ürün için IDR credit, IDR2 için IDR2, CNY (ALLBET/WM) için CNY.
+    </div>
+<?php elseif ($primaryCurrencyEmpty): ?>
+    <div class="gsc-banner gsc-banner--danger">
+        <strong>Primary currency (<?= $text($currencyValue) ?>) agent bakiyesi 0:</strong>
+        Başka currency’lerde bakiye olabilir ama IDR canlı ürünler (Pragmatic, DreamGaming…)
+        launch için <code><?= $text($currencyValue) ?></code> kiosk credit ister.
+        Sağ paneldeki Agent Wallet satırlarını kontrol edin — “insufficient agent balance”
+        genelde buradaki yanlış currency’den gelir.
     </div>
 <?php endif; ?>
 

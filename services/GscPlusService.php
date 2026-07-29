@@ -1153,7 +1153,14 @@ final class GscPlusService
             if ($status !== '' && !in_array($status, ['ACTIVATED', 'ACTIVAT'], true)) {
                 return ['success' => false, 'code' => 503, 'message' => 'Oyun bakımda veya pasif.'];
             }
-            if (!self::gameSupportsCurrency((string) ($gameRow['support_currency'] ?? ''), $currency)) {
+            // Prefer the row's contracted product_currency before support checks —
+            // checking against gsc_config (IDR) while the row is CNY wrongly blocked
+            // or allowed the wrong wallet path.
+            $rowCurrency = strtoupper(trim((string) ($gameRow['product_currency'] ?? '')));
+            $supportCurrency = $rowCurrency !== '' && self::isSupportedCurrency($rowCurrency)
+                ? $rowCurrency
+                : $currency;
+            if (!self::gameSupportsCurrency((string) ($gameRow['support_currency'] ?? ''), $supportCurrency)) {
                 return ['success' => false, 'code' => 503, 'message' => 'Oyun bu para birimini desteklemiyor.'];
             }
         } else {
@@ -1181,6 +1188,11 @@ final class GscPlusService
         $productCurrency = strtoupper(trim((string) ($gameRow['product_currency'] ?? '')));
         if ($productCurrency !== '' && self::isSupportedCurrency($productCurrency)) {
             $currency = $productCurrency;
+        }
+
+        $agentGate = self::assertAgentFundsLaunch($pdo, $currency, is_array($user) ? $user : null);
+        if ($agentGate !== null) {
+            return $agentGate;
         }
 
         $isGuest = !is_array($user) || (int) ($user['id'] ?? 0) <= 0;
@@ -1273,6 +1285,7 @@ final class GscPlusService
             if ($code !== 200 && $code !== 0) {
                 $msg = trim((string) ($response['message'] ?? $response['Message'] ?? 'Launch failed'));
                 $failureMessage = 'GSC+: ' . ($msg !== '' ? $msg : ('code ' . $code));
+                $failureMessage .= self::agentBalanceHint($pdo, $currency, $msg);
             } elseif ($url === '' && $content === '') {
                 $failureMessage = 'GSC+ launch URL dönmedi.';
             } elseif (($issue = self::describeUnusableLaunchPayload($response, $url, $content)) !== null) {
@@ -2061,6 +2074,130 @@ final class GscPlusService
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────
+
+    /**
+     * Buy-in agent wallet is per currency. Listing CNY/IDR2 games while only IDR
+     * is funded produces GSC+'s opaque "insufficient agent balance". Fail early
+     * with the exact currency mismatch instead.
+     *
+     * @return array{success:bool,code:int,message:string}|null
+     */
+    private static function assertAgentFundsLaunch(PDO $pdo, string $launchCurrency, ?array $user): ?array
+    {
+        $launchCurrency = strtoupper(trim($launchCurrency));
+        if ($launchCurrency === '') {
+            return null;
+        }
+
+        try {
+            $wallet = self::agentWalletBalance($pdo);
+        } catch (Throwable) {
+            // Don't block launch if 3.12 is temporarily down — GSC+ will still answer.
+            return null;
+        }
+
+        $byCode = [];
+        foreach (($wallet['currencies'] ?? []) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $code = strtoupper(trim((string) ($row['currency'] ?? '')));
+            if ($code === '') {
+                continue;
+            }
+            $byCode[$code] = (float) ($row['current_balance'] ?? 0);
+        }
+
+        $agentBal = $byCode[$launchCurrency] ?? null;
+        $summary = [];
+        foreach ($byCode as $code => $bal) {
+            $summary[] = $code . '=' . number_format($bal, 4, '.', '');
+        }
+        $summaryText = $summary !== [] ? implode(', ', $summary) : 'yok';
+
+        if ($agentBal === null) {
+            return [
+                'success' => false,
+                'code' => 422,
+                'message' => 'Bu oyun ' . $launchCurrency . ' ile açılıyor ama agent wallet’ta bu currency yok. '
+                    . 'Mevcut: ' . $summaryText . '. IDR test için Pragmatic/DreamGaming (IDR) seçin; '
+                    . 'ALLBET/WM CNY, BigGaming IDR2 ister.',
+            ];
+        }
+
+        if ($agentBal <= 0) {
+            return [
+                'success' => false,
+                'code' => 422,
+                'message' => 'Agent wallet (buy-in) ' . $launchCurrency . ' bakiyesi 0. '
+                    . 'Sizde IDR dolu olsa bile bu ürün ' . $launchCurrency . ' credit ister. '
+                    . 'Agent: ' . $summaryText,
+            ];
+        }
+
+        // Buy-in typically reserves against the player's seamless balance in launch currency.
+        if (is_array($user)) {
+            $playerWallet = (float) ($user['balance'] ?? 0);
+            $playerProvider = self::toProviderAmount($playerWallet, $launchCurrency);
+            if ($playerProvider > $agentBal) {
+                return [
+                    'success' => false,
+                    'code' => 422,
+                    'message' => 'Agent ' . $launchCurrency . ' bakiyesi (' . number_format($agentBal, 4, '.', '')
+                        . ') oyuncu seamless bakiyesini (' . number_format($playerProvider, 4, '.', '')
+                        . ' ' . $launchCurrency . ') karşılamıyor. GSC+ buy-in için agent ≥ oyuncu gerekir. '
+                        . 'Agent: ' . $summaryText,
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * "insufficient agent balance" is GSC+'s kiosk/agent wallet (3.12), not the
+     * player seamless balance on our site. Append which currency we launched with
+     * and what 3.12 currently reports so ops can see IDR vs IDR2 vs CNY mismatches.
+     */
+    private static function agentBalanceHint(PDO $pdo, string $launchCurrency, string $providerMessage): string
+    {
+        $needle = strtolower($providerMessage);
+        if (
+            !str_contains($needle, 'insufficient')
+            && !str_contains($needle, 'agent balance')
+            && !str_contains($needle, 'not enough')
+        ) {
+            return '';
+        }
+
+        $launchCurrency = strtoupper(trim($launchCurrency));
+        $parts = ['launch_currency=' . ($launchCurrency !== '' ? $launchCurrency : '?')];
+        try {
+            $wallet = self::agentWalletBalance($pdo);
+            $parts[] = !empty($wallet['is_credit']) ? 'mode=credit' : 'mode=buy-in';
+            $matched = null;
+            foreach (($wallet['currencies'] ?? []) as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $code = strtoupper(trim((string) ($row['currency'] ?? '')));
+                $bal = (float) ($row['current_balance'] ?? 0);
+                $parts[] = $code . '=' . $bal;
+                if ($code === $launchCurrency) {
+                    $matched = $bal;
+                }
+            }
+            if ($matched === null && $launchCurrency !== '') {
+                $parts[] = $launchCurrency . '=YOK (bu currency agent wallet’ta yok)';
+            } elseif ($matched !== null && $matched <= 0) {
+                $parts[] = 'Uyarı: ' . $launchCurrency . ' agent bakiyesi 0 — oyuncu bakiyesi değil, GSC+ kiosk credit gerekir';
+            }
+        } catch (Throwable $e) {
+            $parts[] = 'wallet-balance okunamadı: ' . $e->getMessage();
+        }
+
+        return ' [' . implode(', ', $parts) . ']';
+    }
 
     /**
      * Scans the whole decoded response (not just url/content) because the
