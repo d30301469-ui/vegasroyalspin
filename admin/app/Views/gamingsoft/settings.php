@@ -77,8 +77,9 @@ $currencyChoices = array_values(array_unique(array_merge(
     <strong>VGY1 staging:</strong>
     Operator code <code>VGY1</code>, URL <code>https://staging.gsimw.com</code>.
     Açık para birimleri: <code><?= $text(implode(', ', GscPlusService::STAGING_CURRENCIES)) ?></code>
-    (IDR2 / VND2 oranı 1:1000). Site görünümü TRY olsa da GSC+ staging’de TRY henüz yok —
-    launch ve wallet <code>IDR</code> (veya ürünün kendi para birimi) ile gider.
+    (IDR2 / VND2 oranı 1:1000). <strong>users.balance = GSC seamless IDR ledger</strong>
+    (1:1 gönderilir; TRY→IDR kur çevirisi yok). Arayüz ₺ gösterebilir ama wallet/launch
+    GSC’ye her zaman yapılandırılan currency (<code>IDR</code>) ile gider.
     Resmi / production ortamı GSC+ tarafında hâlâ kurulumda; Pragmatic URL’leri
     <code>prerelease-env.biz</code> UAT’idir. Kiosk credit (agent wallet) sıfırsa
     sağlayıcı oturumu “Un-Authorized / not logged in” ile düşer — GSC+ destekten

@@ -140,8 +140,10 @@ final class GscPlusService
 
     /**
      * The agent wallet is funded per currency (3.12 Wallet Balance Inquiry); the
-     * staging agent is contracted primarily in IDR, so IDR — not the site display
-     * currency (TRY) — is the fallback whenever gsc_config carries no explicit value.
+     * staging agent is contracted primarily in IDR. Site player balance
+     * (users.balance) is the seamless ledger in this same currency — sent to GSC
+     * as IDR 1:1 (no TRY→IDR FX). UI may still render a ₺ symbol, but wallet
+     * callbacks never treat the number as TRY.
      * TRY products are still pending on GSC+'s side.
      */
     public const DEFAULT_CURRENCY = 'IDR';
@@ -231,6 +233,32 @@ final class GscPlusService
         $currency = strtoupper(trim((string) ($cfg['currency'] ?? '')));
 
         return $currency !== '' ? $currency : self::DEFAULT_CURRENCY;
+    }
+
+    /**
+     * Currency used for seamless wallet amounts (users.balance ledger).
+     * Site UI may label funds as TRY, but GSC+ staging must receive IDR —
+     * never invent a TRY wallet currency toward the provider.
+     */
+    public static function seamlessLedgerCurrency(array $cfg): string
+    {
+        return self::configCurrency($cfg);
+    }
+
+    /**
+     * Resolve the currency GSC asked for on a wallet callback. Empty or site
+     * display codes (TRY) are coerced to the configured ledger (IDR).
+     */
+    private static function resolveWalletRequestCurrency(array $payload, array $cfg): string
+    {
+        $requested = strtoupper(trim((string) ($payload['currency'] ?? '')));
+        $ledger = self::seamlessLedgerCurrency($cfg);
+        // Site display currency must never leak into GSC wallet math.
+        if ($requested === '' || $requested === 'TRY') {
+            return $ledger;
+        }
+
+        return $requested;
     }
 
     /**
@@ -663,10 +691,7 @@ final class GscPlusService
 
     private static function walletBalance(PDO $pdo, array $payload, array $cfg): array
     {
-        $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
-        if ($currency === '') {
-            $currency = self::configCurrency($cfg);
-        }
+        $currency = self::resolveWalletRequestCurrency($payload, $cfg);
         if (!self::isSupportedCurrency($currency)) {
             return self::batchError($payload, 999, 'Invalid currency', false);
         }
@@ -690,6 +715,7 @@ final class GscPlusService
                 ];
                 continue;
             }
+            // users.balance is the seamless IDR ledger — report 1:1 (or scaled for IDR2).
             $walletBal = round((float) ($user['balance'] ?? 0), 4);
             $data[] = [
                 'member_account' => $member,
@@ -715,10 +741,7 @@ final class GscPlusService
 
     private static function walletMoneyBatch(PDO $pdo, array $payload, array $cfg, string $direction): array
     {
-        $currency = strtoupper(trim((string) ($payload['currency'] ?? '')));
-        if ($currency === '') {
-            $currency = self::configCurrency($cfg);
-        }
+        $currency = self::resolveWalletRequestCurrency($payload, $cfg);
         if (!self::isSupportedCurrency($currency)) {
             return self::batchError($payload, 999, 'Invalid currency', true);
         }
@@ -2250,9 +2273,9 @@ final class GscPlusService
             ];
         }
 
-        // Site player balance must NOT be compared to agent kiosk credit — different
-        // wallets/currencies (TRY display vs IDR agent). That check blocked launches
-        // whenever users.balance numerically exceeded agent IDR.
+        // Player seamless balance (users.balance) is the IDR ledger reported to GSC.
+        // Agent kiosk credit is separate — do not require agent >= full player balance;
+        // GSC enforces agent sufficiency on bet size during play.
         return null;
     }
 
