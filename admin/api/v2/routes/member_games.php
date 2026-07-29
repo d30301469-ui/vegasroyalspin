@@ -1020,6 +1020,32 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                             }
                         }
                     }
+
+                    // Bazı akışlar (özellikle favoriler/eski linkler) game_id'yi
+                    // "aggregator:vendor:game" yerine sadece çıplak game_code
+                    // olarak gönderebiliyor. Prefix yoksa doğrudan katalogdan
+                    // vendor+game eşleşmesini bulup normalize et.
+                    if (!CasinoAggregatorService::ownsGameId($gameId) && !GscPlusService::ownsGameId($gameId)) {
+                        $bareCode = trim((string) $gameId);
+                        if ($bareCode !== '' && strpos($bareCode, ':') === false) {
+                            $aggByCode = $resolvePdo->prepare(
+                                'SELECT vendor_code, game_code
+                                 FROM casino_aggregator_games
+                                 WHERE game_code = :g
+                                 ORDER BY is_active DESC, id DESC
+                                 LIMIT 1'
+                            );
+                            $aggByCode->execute([':g' => $bareCode]);
+                            $aggRow = $aggByCode->fetch(PDO::FETCH_ASSOC);
+                            if (is_array($aggRow)) {
+                                $vendor = trim((string) ($aggRow['vendor_code'] ?? ''));
+                                $code = trim((string) ($aggRow['game_code'] ?? ''));
+                                if ($vendor !== '' && $code !== '') {
+                                    $gameId = CasinoAggregatorService::buildGameId($vendor, $code);
+                                }
+                            }
+                        }
+                    }
                 } catch (Throwable) {
                 }
             }
