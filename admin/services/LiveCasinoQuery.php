@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/BackendApiClient.php';
 
 /**
- * Live casino catalogue query (Casino Aggregator).
+ * Live casino catalogue query (Casino Aggregator + Drakon live games).
  */
 final class LiveCasinoQuery
 {
@@ -154,7 +154,8 @@ final class LiveCasinoQuery
             $pdo = self::pdo();
             $hasAggregator = self::tableExists($pdo, 'casino_aggregator_games')
                 && self::tableExists($pdo, 'casino_aggregator_vendors');
-            if (!$hasAggregator) {
+            $hasDrakon = self::tableExists($pdo, 'drakon_games');
+            if (!$hasAggregator && !$hasDrakon) {
                 return self::emptyResult($limit, $page);
             }
 
@@ -202,6 +203,46 @@ final class LiveCasinoQuery
                  FROM casino_aggregator_games g
                  INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
                  {$aggWhereSql}";
+            }
+
+            if ($hasDrakon) {
+                $drakonWhere = [
+                    'g.is_active = 1',
+                    "(COALESCE(g.game_type, 0) = 1 OR LOWER(COALESCE(g.type, '')) = 'live')",
+                ];
+
+                if ($searchTerm !== '') {
+                    $drakonWhere[] = '(g.game_name LIKE :drakon_search OR g.provider_name LIKE :drakon_search2 OR g.game_code LIKE :drakon_search3)';
+                    $params[':drakon_search'] = '%' . $searchTerm . '%';
+                    $params[':drakon_search2'] = '%' . $searchTerm . '%';
+                    $params[':drakon_search3'] = '%' . $searchTerm . '%';
+                }
+
+                if ($providerList !== []) {
+                    $providerClauses = [];
+                    foreach ($providerList as $idx => $provider) {
+                        $pk = ':drakon_provider_' . $idx;
+                        $ck = ':drakon_provider_code_' . $idx;
+                        $providerClauses[] = "(g.provider_name = {$pk} OR g.provider_code = {$ck})";
+                        $params[$pk] = $provider;
+                        $params[$ck] = $provider;
+                    }
+                    $drakonWhere[] = '(' . implode(' OR ', $providerClauses) . ')';
+                }
+
+                $drakonWhereSql = ' WHERE ' . implode(' AND ', $drakonWhere);
+                $branches['drakon'] = "SELECT
+                    CONCAT('drakon:', g.game_id) AS game_id,
+                    g.game_name AS name,
+                    COALESCE(NULLIF(g.provider_name, ''), NULLIF(g.provider_code, ''), 'Drakon') AS provider,
+                    COALESCE(NULLIF(g.provider_code, ''), NULLIF(g.provider_name, ''), 'drakon') AS provider_code,
+                    COALESCE(NULLIF(g.image_url, ''), NULLIF(g.banner, ''), '') AS image_url,
+                    CAST('' AS CHAR) AS image_fallbacks,
+                    g.is_featured AS is_featured,
+                    CAST('' AS CHAR) AS product_currency,
+                    'drakon' AS source
+                 FROM drakon_games g
+                 {$drakonWhereSql}";
             }
 
             if ($branches === []) {
@@ -422,6 +463,23 @@ final class LiveCasinoQuery
                 }
             }
 
+            if (self::tableExists($pdo, 'drakon_games')) {
+                $stmt = $pdo->query(
+                    "SELECT DISTINCT COALESCE(NULLIF(provider_name, ''), provider_code) AS provider_name
+                     FROM drakon_games
+                     WHERE is_active = 1
+                       AND (COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live')
+                       AND COALESCE(NULLIF(provider_name, ''), provider_code) <> ''
+                     ORDER BY provider_name ASC"
+                );
+                foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+                    $name = trim((string) ($row['provider_name'] ?? ''));
+                    if ($name !== '') {
+                        $providers[] = $name;
+                    }
+                }
+            }
+
             $providers = array_values(array_unique(array_filter($providers)));
             sort($providers, SORT_NATURAL | SORT_FLAG_CASE);
             return $providers;
@@ -478,12 +536,13 @@ final class LiveCasinoQuery
         }
 
         $provider = trim((string) ($row['provider'] ?? ''));
-        if (class_exists('CasinoAggregatorService', false)) {
+        $source = strtolower(trim((string) ($row['source'] ?? 'aggregator')));
+        if ($source === 'aggregator' && class_exists('CasinoAggregatorService', false)) {
             $provider = CasinoAggregatorService::resolveLocalizedLabel($provider);
         }
         $imageUrl = trim((string) ($row['image_url'] ?? ''));
         $fallbacks = [];
-        if (class_exists('CasinoAggregatorService', false)) {
+        if ($source === 'aggregator' && class_exists('CasinoAggregatorService', false)) {
             $media = CasinoAggregatorService::hydrateGameMedia([
                 'image_url' => $imageUrl,
                 'image_fallbacks' => $row['image_fallbacks'] ?? null,
@@ -505,7 +564,7 @@ final class LiveCasinoQuery
             'has_demo' => false,
             'provider_code' => (string) ($row['provider_code'] ?? ''),
             'provider' => $provider,
-            'source' => (string) ($row['source'] ?? 'aggregator'),
+            'source' => $source,
             'is_featured' => !empty($row['is_featured']) ? 1 : 0,
             'support_currency' => strtoupper(trim((string) ($row['product_currency'] ?? $row['support_currency'] ?? ''))),
             'product_currency' => strtoupper(trim((string) ($row['product_currency'] ?? ''))),

@@ -53,32 +53,6 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
                     'provider_name' => $name,
                 ];
             }
-            try {
-                $liveDrakonStmt = $pdo->query(
-                    "SELECT DISTINCT COALESCE(NULLIF(provider_code, ''), provider_name) AS provider_code,
-                            provider_name
-                     FROM drakon_games
-                     WHERE is_active = 1 AND provider_name <> ''
-                       AND (COALESCE(game_type, 0) = 1 OR LOWER(COALESCE(type, '')) = 'live')
-                     ORDER BY provider_name ASC"
-                );
-                $seenLive = [];
-                foreach ($providers as $row) {
-                    $seenLive[(string) ($row['provider_code'] ?? '')] = true;
-                }
-                foreach ($liveDrakonStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
-                    $code = trim((string) ($row['provider_code'] ?? ''));
-                    if ($code === '' || isset($seenLive[$code])) {
-                        continue;
-                    }
-                    $seenLive[$code] = true;
-                    $providers[] = [
-                        'provider_code' => $code,
-                        'provider_name' => (string) ($row['provider_name'] ?? $code),
-                    ];
-                }
-            } catch (Throwable) {
-            }
         } elseif ($gameType === 0) {
             // BGaming catalogue is slot-only.
             $sql = "SELECT DISTINCT provider AS provider_code, provider AS provider_name
