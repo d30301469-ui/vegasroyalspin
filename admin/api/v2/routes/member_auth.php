@@ -199,6 +199,83 @@ if (!function_exists('memberResolveDisplayName')) {
     }
 }
 
+if (!function_exists('memberMailFromAddress')) {
+    /** @param array<string,mixed> $settings */
+    function memberMailFromAddress(array $settings): string
+    {
+        $from = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+        if ($from === '') {
+            $from = trim((string) ($settings['smtp_user'] ?? ''));
+        }
+        if ($from !== '') {
+            return $from;
+        }
+
+        $host = (string) (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+        return 'no-reply@' . $host;
+    }
+}
+
+if (!function_exists('memberDeliverMail')) {
+    /**
+     * @param array<string,mixed> $settings
+     */
+    function memberDeliverMail(
+        PDO $pdo,
+        array $settings,
+        string $toEmail,
+        string $subject,
+        string $messageText,
+        ?string $htmlBody = null,
+        string $toName = ''
+    ): bool {
+        $enabled = (int) ($settings['enabled'] ?? $settings['mail_enabled'] ?? 0) === 1;
+        if (!$enabled) {
+            memberLogOutboundMail($pdo, $toEmail, $subject, '[mail_disabled] ' . $messageText, 'not_configured');
+            return false;
+        }
+
+        $mailerFile = null;
+        if (defined('ADMIN_APP_PATH')) {
+            $candidate = rtrim((string) ADMIN_APP_PATH, '/\\') . '/Services/MetropolMailer.php';
+            if (is_file($candidate)) {
+                $mailerFile = $candidate;
+            }
+        }
+        if ($mailerFile === null) {
+            $candidate = dirname(__DIR__, 3) . '/app/Services/MetropolMailer.php';
+            if (is_file($candidate)) {
+                $mailerFile = $candidate;
+            }
+        }
+        if ($mailerFile !== null) {
+            require_once $mailerFile;
+        }
+
+        $from = memberMailFromAddress($settings);
+        if (function_exists('metropol_mail_send')) {
+            $error = '';
+            $ok = metropol_mail_send($settings, $from, $toEmail, $subject, $messageText, $error, $htmlBody, $toName);
+            $preview = $ok
+                ? $messageText
+                : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $messageText);
+            memberLogOutboundMail($pdo, $toEmail, $subject, $preview, $ok ? 'sent' : 'failed');
+            return $ok;
+        }
+
+        $headers = [
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset=UTF-8',
+            'From: ' . $from,
+            'Reply-To: ' . $from,
+            'X-Mailer: PHP/' . phpversion(),
+        ];
+        $sent = @mail($toEmail, $subject, $messageText, implode("\r\n", $headers));
+        memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, $sent ? 'sent' : 'failed');
+        return $sent;
+    }
+}
+
 if (!function_exists('memberSendResetMail')) {
     /**
      * @param array<string,mixed>|null $userHint users satırı (name/surname için)
@@ -206,15 +283,6 @@ if (!function_exists('memberSendResetMail')) {
     function memberSendResetMail(PDO $pdo, string $toEmail, string $token, ?array $userHint = null): bool
     {
         $settings = memberMailSettings($pdo);
-        $enabled = (int) ($settings['enabled'] ?? $settings['mail_enabled'] ?? 0) === 1;
-        $from = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
-        if ($from === '') {
-            $from = trim((string) ($settings['smtp_user'] ?? ''));
-        }
-        if ($from === '') {
-            $from = 'no-reply@' . (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
-        }
-
         $memberName = memberResolveDisplayName($pdo, $toEmail, $userHint);
 
         $companyName = trim((string) ($settings['company_name'] ?? ''));
@@ -231,103 +299,130 @@ if (!function_exists('memberSendResetMail')) {
             . "Bu bağlantı 1 saat geçerlidir. Talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.\n\n"
             . $companyName . ' Ekibi';
 
-        if (!$enabled) {
-            memberLogOutboundMail($pdo, $toEmail, $subject, '[mail_disabled] ' . $messageText, 'not_configured');
-            return false;
-        }
-
-        // Tek kaynak: admin panel test aracıyla AYNI gönderim motoru (MetropolMailer.php).
-        $mailerFile = null;
-        if (defined('ADMIN_APP_PATH')) {
-            $candidate = rtrim((string) ADMIN_APP_PATH, '/\\') . '/Services/MetropolMailer.php';
-            if (is_file($candidate)) {
-                $mailerFile = $candidate;
-            }
-        }
-        if ($mailerFile === null) {
-            $candidate = dirname(__DIR__, 3) . '/app/Services/MetropolMailer.php';
-            if (is_file($candidate)) {
-                $mailerFile = $candidate;
-            }
-        }
-
-        if ($mailerFile !== null) {
+        $htmlBody = null;
+        $mailerFile = dirname(__DIR__, 3) . '/app/Services/MetropolMailer.php';
+        if (is_file($mailerFile)) {
             require_once $mailerFile;
         }
+        if (function_exists('metropol_mail_render_template')) {
+            $supportEmail = trim((string) ($settings['support_email'] ?? ''));
+            if ($supportEmail === '' || filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false) {
+                $domain = (string) (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: 'vegasroyalspin.com');
+                $supportEmail = 'support@' . $domain;
+            }
 
-        if (function_exists('metropol_mail_send')) {
-            $error = '';
-            $htmlBody = null;
-            if (function_exists('metropol_mail_render_template')) {
-                $supportEmail = trim((string) ($settings['support_email'] ?? ''));
-                if ($supportEmail === '' || filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false) {
-                    $domain = (string) (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: 'vegasroyalspin.com');
-                    $supportEmail = 'support@' . $domain;
-                }
+            $siteUrl = memberResetBaseUrl();
+            // Eski / uyumsuz özel sablonlar ad-soyadi gostermez; markali varsayilana dus.
+            $customHtml = trim((string) ($settings['reset_template_html'] ?? ''));
+            if ($customHtml !== '' && (
+                stripos($customHtml, '{{MEMBER_NAME}}') === false
+                || stripos($customHtml, 'You recently requested') !== false
+                || stripos($customHtml, 'Reset your password') !== false
+                || stripos($customHtml, 'this invoice') !== false
+                || stripos($customHtml, 'Cheers,') !== false
+                || stripos($customHtml, 'Hi {$name}') !== false
+            )) {
+                $customHtml = '';
+            }
+            $templateOptions = [
+                'template_html' => $customHtml,
+                'company_name' => $companyName,
+                'support_email' => $supportEmail,
+                'company_address' => (string) ($settings['company_address'] ?? ''),
+                'logo_url' => memberResolveMailLogoUrl($pdo, $siteUrl),
+                'member_name' => $memberName,
+            ];
 
-                $siteUrl = memberResetBaseUrl();
-                // Eski / uyumsuz özel sablonlar ad-soyadi gostermez; markali varsayilana dus.
-                $customHtml = trim((string) ($settings['reset_template_html'] ?? ''));
-                if ($customHtml !== '' && (
-                    stripos($customHtml, '{{MEMBER_NAME}}') === false
-                    || stripos($customHtml, 'You recently requested') !== false
-                    || stripos($customHtml, 'Reset your password') !== false
-                    || stripos($customHtml, 'this invoice') !== false
-                    || stripos($customHtml, 'Cheers,') !== false
-                    || stripos($customHtml, 'Hi {$name}') !== false
-                )) {
-                    $customHtml = '';
-                }
-                $templateOptions = [
-                    'template_html' => $customHtml,
+            $safeName = htmlspecialchars($memberName, ENT_QUOTES, 'UTF-8');
+            $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
+            $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . $safeCompany . ' hesabınız için şifre sıfırlama talebi alındı. '
+                . 'Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.'
+                . '</p>'
+                . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
+                . '<strong style="color:#c44bb8;">Bu bağlantı 1 saat geçerlidir.</strong> '
+                . 'Talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.'
+                . '</p>';
+            // Isim soyisim sablonda {{MEMBER_NAME}} / ust satirdan gelir; body icine de yedek olarak eklenir.
+            if (stripos($customHtml, '{{MEMBER_NAME}}') === false) {
+                $bodyHtml = '<p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#dcccf3;">Merhaba <strong style="color:#ffffff;">' . $safeName . '</strong>,</p>' . $bodyHtml;
+            }
+            $htmlBody = metropol_mail_render_template(
+                $siteUrl,
+                $companyName . ' şifre sıfırlama bağlantınız hazır',
+                'Şifre Sıfırlama',
+                $bodyHtml,
+                'Şifremi Sıfırla',
+                $link,
+                $templateOptions
+            );
+        }
+
+        return memberDeliverMail($pdo, $settings, $toEmail, $subject, $messageText, $htmlBody, $memberName);
+    }
+}
+
+if (!function_exists('memberSendRegistrationSuccessMail')) {
+    /**
+     * Başarılı üyelik kaydından sonra bilgilendirme e-postası gönderir.
+     *
+     * @param array<string,mixed>|null $userHint
+     */
+    function memberSendRegistrationSuccessMail(PDO $pdo, string $toEmail, ?array $userHint = null): bool
+    {
+        $settings = memberMailSettings($pdo);
+        $memberName = memberResolveDisplayName($pdo, $toEmail, $userHint);
+        $companyName = trim((string) ($settings['company_name'] ?? ''));
+        if ($companyName === '') {
+            $companyName = 'Vegasroyalspin';
+        }
+
+        $subject = $companyName . ' — Kayıt Başarılı';
+        $siteUrl = memberResetBaseUrl();
+        $messageText = 'Merhaba ' . $memberName . ",\n\n"
+            . $companyName . " ailesine hoş geldiniz. Hesabınız başarıyla oluşturuldu.\n"
+            . "Artık hesabınıza giriş yaparak oyunları ve kampanyaları keşfedebilirsiniz.\n\n"
+            . ($siteUrl !== '' ? "Siteye git: " . $siteUrl . "\n\n" : '')
+            . "Güvenliğiniz için şifrenizi kimseyle paylaşmayın.\n\n"
+            . $companyName . ' Ekibi';
+
+        $htmlBody = null;
+        $mailerFile = dirname(__DIR__, 3) . '/app/Services/MetropolMailer.php';
+        if (is_file($mailerFile)) {
+            require_once $mailerFile;
+        }
+        if (function_exists('metropol_mail_render_template')) {
+            $supportEmail = trim((string) ($settings['support_email'] ?? ''));
+            if ($supportEmail === '' || filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false) {
+                $domain = (string) (parse_url($siteUrl, PHP_URL_HOST) ?: 'vegasroyalspin.com');
+                $supportEmail = 'support@' . $domain;
+            }
+            $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
+            $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . '<strong style="color:#ffffff;">' . $safeCompany . '</strong> ailesine hoş geldiniz. '
+                . 'Hesabınız başarıyla oluşturuldu; oyunları ve güncel kampanyaları keşfetmeye başlayabilirsiniz.'
+                . '</p>'
+                . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
+                . 'Güvenliğiniz için şifrenizi kimseyle paylaşmayın.'
+                . '</p>';
+            $htmlBody = metropol_mail_render_template(
+                $siteUrl,
+                $companyName . ' üyeliğiniz başarıyla oluşturuldu',
+                'Aramıza Hoş Geldiniz!',
+                $bodyHtml,
+                'Siteye Git',
+                $siteUrl,
+                [
                     'company_name' => $companyName,
                     'support_email' => $supportEmail,
                     'company_address' => (string) ($settings['company_address'] ?? ''),
                     'logo_url' => memberResolveMailLogoUrl($pdo, $siteUrl),
                     'member_name' => $memberName,
-                ];
-
-                $safeName = htmlspecialchars($memberName, ENT_QUOTES, 'UTF-8');
-                $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
-                $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
-                    . $safeCompany . ' hesabınız için şifre sıfırlama talebi alındı. '
-                    . 'Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.'
-                    . '</p>'
-                    . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
-                    . '<strong style="color:#c44bb8;">Bu bağlantı 1 saat geçerlidir.</strong> '
-                    . 'Talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.'
-                    . '</p>';
-                // Isim soyisim sablonda {{MEMBER_NAME}} / ust satirdan gelir; body icine de yedek olarak eklenir.
-                if (stripos($customHtml, '{{MEMBER_NAME}}') === false) {
-                    $bodyHtml = '<p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#dcccf3;">Merhaba <strong style="color:#ffffff;">' . $safeName . '</strong>,</p>' . $bodyHtml;
-                }
-                $htmlBody = metropol_mail_render_template(
-                    $siteUrl,
-                    $companyName . ' şifre sıfırlama bağlantınız hazır',
-                    'Şifre Sıfırlama',
-                    $bodyHtml,
-                    'Şifremi Sıfırla',
-                    $link,
-                    $templateOptions
-                );
-            }
-            $ok = metropol_mail_send($settings, $from, $toEmail, $subject, $messageText, $error, $htmlBody);
-            $preview = $ok ? $messageText : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $messageText);
-            memberLogOutboundMail($pdo, $toEmail, $subject, $preview, $ok ? 'sent' : 'failed');
-            return $ok;
+                ]
+            );
         }
 
-        // Son çare: paylaşılan mailer hiç yüklenemediyse PHP mail() dene.
-        $headers = [
-            'MIME-Version: 1.0',
-            'Content-Type: text/plain; charset=UTF-8',
-            'From: ' . $from,
-            'Reply-To: ' . $from,
-            'X-Mailer: PHP/' . phpversion(),
-        ];
-        $sent = @mail($toEmail, $subject, $messageText, implode("\r\n", $headers));
-        memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, $sent ? 'sent' : 'failed');
-        return $sent;
+        return memberDeliverMail($pdo, $settings, $toEmail, $subject, $messageText, $htmlBody, $memberName);
     }
 }
 
@@ -700,6 +795,23 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
             'message' => 'Oturum servisi hazır değil. Backend kurulumunu tamamlayın (member_jwt_tokens tablosu).',
             'hint' => 'https://bo-backoffice.site/install — migration çalıştırın',
         ]);
+    }
+    try {
+        memberSendRegistrationSuccessMail($pdo, $email, [
+            'name' => $firstName,
+            'surname' => $surname,
+            'username' => $username,
+            'email' => $email,
+        ]);
+    } catch (Throwable $mailError) {
+        memberLogOutboundMail(
+            $pdo,
+            $email,
+            'Vegasroyalspin — Kayıt Başarılı',
+            '[unexpected_error] ' . $mailError->getMessage(),
+            'failed'
+        );
+        error_log('[member_auth/register] Welcome mail failed: ' . $mailError->getMessage());
     }
     $memberEnvelope(201, [
         'success' => true,

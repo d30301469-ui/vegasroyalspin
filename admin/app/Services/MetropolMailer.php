@@ -529,7 +529,7 @@ if (!function_exists('metropol_mail_render_template')) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="x-apple-disable-message-reformatting">
-<title>' . $safeCompany . ' — Şifre Sıfırlama</title>
+<title>' . $safeCompany . ' — ' . $safeHeading . '</title>
 <style type="text/css">
 @media only screen and (max-width:620px){
   .vrs-wrap{padding:16px 10px !important;}
