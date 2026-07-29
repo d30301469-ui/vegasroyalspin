@@ -246,11 +246,15 @@ if ($method === 'POST' && in_array($route, ['casino-aggregator-wallet', 'casino_
     exit;
 }
 
+// Drakon appends "/drakon_api" to the agent endpoint configured in its panel, so
+// the callback can arrive as "drakon_callback/drakon_api" as well. Match on the
+// first segment and let any suffix through.
 $drakonRoute = strtolower(trim((string) $route, '/'));
-if ($method === 'POST' && in_array($drakonRoute, [
+$drakonSegments = array_values(array_filter(explode('/', $drakonRoute), static fn (string $s): bool => $s !== ''));
+$drakonFirst = preg_replace('/\.php$/', '', (string) ($drakonSegments[0] ?? '')) ?? '';
+if ($method === 'POST' && in_array($drakonFirst, [
     'drakon_callback',
     'drakon-callback',
-    'drakon_callback.php',
     'drakon_api',
     'drakon-api',
 ], true)) {
