@@ -141,6 +141,8 @@ final class AdminCommunicationController extends AdminController
             'settings' => $settings,
             'resetPreviewHtml' => $this->renderMailTemplatePreview('reset', $settings),
             'welcomePreviewHtml' => $this->renderMailTemplatePreview('welcome', $settings),
+            'depositApprovedPreviewHtml' => $this->renderMailTemplatePreview('deposit_approved', $settings),
+            'withdrawApprovedPreviewHtml' => $this->renderMailTemplatePreview('withdraw_approved', $settings),
             'previewUrl' => AdminAuth::url('/email/templates/preview'),
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
         ]);
@@ -350,9 +352,9 @@ final class AdminCommunicationController extends AdminController
             } else {
                 $stmt = $pdo->prepare(
                     'INSERT INTO mail_settings
-                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, imap_enabled, imap_host, imap_port, imap_user, imap_password, imap_encryption, company_name, support_email, company_address, reset_template_html, welcome_template_html, updated_at)
+                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, imap_enabled, imap_host, imap_port, imap_user, imap_password, imap_encryption, company_name, support_email, company_address, reset_template_html, welcome_template_html, deposit_approved_template_html, withdraw_approved_template_html, updated_at)
                      VALUES
-                     (:enabled, :mail_enabled, :from_email, :mail_from_address, :smtp_host, :smtp_port, :smtp_user, :smtp_password, :imap_enabled, :imap_host, :imap_port, :imap_user, :imap_password, :imap_encryption, :company_name, :support_email, :company_address, :reset_template_html, :welcome_template_html, NOW())'
+                     (:enabled, :mail_enabled, :from_email, :mail_from_address, :smtp_host, :smtp_port, :smtp_user, :smtp_password, :imap_enabled, :imap_host, :imap_port, :imap_user, :imap_password, :imap_encryption, :company_name, :support_email, :company_address, :reset_template_html, :welcome_template_html, :deposit_approved_template_html, :withdraw_approved_template_html, NOW())'
                 );
                 $stmt->execute([
                     'enabled' => $enabled,
@@ -374,6 +376,8 @@ final class AdminCommunicationController extends AdminController
                     'company_address' => '',
                     'reset_template_html' => '',
                     'welcome_template_html' => '',
+                    'deposit_approved_template_html' => '',
+                    'withdraw_approved_template_html' => '',
                 ]);
             }
 
@@ -401,6 +405,8 @@ final class AdminCommunicationController extends AdminController
         $companyAddress = trim((string) ($_POST['company_address'] ?? ''));
         $resetTemplateHtml = (string) ($_POST['reset_template_html'] ?? '');
         $welcomeTemplateHtml = (string) ($_POST['welcome_template_html'] ?? '');
+        $depositApprovedTemplateHtml = (string) ($_POST['deposit_approved_template_html'] ?? '');
+        $withdrawApprovedTemplateHtml = (string) ($_POST['withdraw_approved_template_html'] ?? '');
 
         try {
             $pdo = AdminDatabase::pdo();
@@ -412,6 +418,8 @@ final class AdminCommunicationController extends AdminController
                          company_address = :company_address,
                          reset_template_html = :reset_template_html,
                          welcome_template_html = :welcome_template_html,
+                         deposit_approved_template_html = :deposit_approved_template_html,
+                         withdraw_approved_template_html = :withdraw_approved_template_html,
                          updated_at = NOW()
                      WHERE id = :id'
                 );
@@ -422,13 +430,15 @@ final class AdminCommunicationController extends AdminController
                     'company_address' => $companyAddress,
                     'reset_template_html' => $resetTemplateHtml,
                     'welcome_template_html' => $welcomeTemplateHtml,
+                    'deposit_approved_template_html' => $depositApprovedTemplateHtml,
+                    'withdraw_approved_template_html' => $withdrawApprovedTemplateHtml,
                 ]);
             } else {
                 $stmt = $pdo->prepare(
                     'INSERT INTO mail_settings
-                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, company_name, support_email, company_address, reset_template_html, welcome_template_html, updated_at)
+                     (enabled, mail_enabled, from_email, mail_from_address, smtp_host, smtp_port, smtp_user, smtp_password, company_name, support_email, company_address, reset_template_html, welcome_template_html, deposit_approved_template_html, withdraw_approved_template_html, updated_at)
                      VALUES
-                     (0, 0, NULL, NULL, NULL, NULL, NULL, NULL, :company_name, :support_email, :company_address, :reset_template_html, :welcome_template_html, NOW())'
+                     (0, 0, NULL, NULL, NULL, NULL, NULL, NULL, :company_name, :support_email, :company_address, :reset_template_html, :welcome_template_html, :deposit_approved_template_html, :withdraw_approved_template_html, NOW())'
                 );
                 $stmt->execute([
                     'company_name' => $companyName,
@@ -436,6 +446,8 @@ final class AdminCommunicationController extends AdminController
                     'company_address' => $companyAddress,
                     'reset_template_html' => $resetTemplateHtml,
                     'welcome_template_html' => $welcomeTemplateHtml,
+                    'deposit_approved_template_html' => $depositApprovedTemplateHtml,
+                    'withdraw_approved_template_html' => $withdrawApprovedTemplateHtml,
                 ]);
             }
             $_SESSION['admin_flash'] = 'E-posta şablonları güncellendi.';
@@ -458,7 +470,7 @@ final class AdminCommunicationController extends AdminController
 
         $this->ensureMailTables();
         $type = strtolower(trim((string) ($_POST['template_type'] ?? 'reset')));
-        if ($type !== 'welcome') {
+        if (!in_array($type, ['reset', 'welcome', 'deposit_approved', 'withdraw_approved'], true)) {
             $type = 'reset';
         }
 
@@ -468,6 +480,8 @@ final class AdminCommunicationController extends AdminController
         $settings['company_address'] = trim((string) ($_POST['company_address'] ?? ($settings['company_address'] ?? '')));
         $settings['reset_template_html'] = (string) ($_POST['reset_template_html'] ?? ($settings['reset_template_html'] ?? ''));
         $settings['welcome_template_html'] = (string) ($_POST['welcome_template_html'] ?? ($settings['welcome_template_html'] ?? ''));
+        $settings['deposit_approved_template_html'] = (string) ($_POST['deposit_approved_template_html'] ?? ($settings['deposit_approved_template_html'] ?? ''));
+        $settings['withdraw_approved_template_html'] = (string) ($_POST['withdraw_approved_template_html'] ?? ($settings['withdraw_approved_template_html'] ?? ''));
 
         require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
         header('Content-Type: text/html; charset=UTF-8');
@@ -891,6 +905,8 @@ final class AdminCommunicationController extends AdminController
         $companyName = (string) ($options['company_name'] ?? 'Vegasroyalspin');
         $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
         $options['member_name'] = 'Örnek Üye';
+        $historyUrl = $siteUrl !== '' ? ($siteUrl . '/profile/deposit-withdraw-history') : '/profile/deposit-withdraw-history';
+        $sampleAmount = '1.250,00 TRY';
 
         if ($type === 'welcome') {
             $options['template_html'] = trim((string) ($settings['welcome_template_html'] ?? ''));
@@ -909,6 +925,50 @@ final class AdminCommunicationController extends AdminController
                 $bodyHtml,
                 'Siteye Git',
                 $siteUrl !== '' ? $siteUrl : '#',
+                $options
+            );
+        }
+
+        if ($type === 'deposit_approved') {
+            $options['template_html'] = trim((string) ($settings['deposit_approved_template_html'] ?? ''));
+            $options['amount'] = $sampleAmount;
+            $safeAmount = htmlspecialchars($sampleAmount, ENT_QUOTES, 'UTF-8');
+            $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . '<strong style="color:#ffffff;">' . $safeAmount . '</strong> tutarındaki yatırımınız onaylandı ve bakiyenize eklendi.'
+                . '</p>'
+                . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
+                . 'İşlem detaylarını hesabınızdaki geçmiş sayfasından inceleyebilirsiniz.'
+                . '</p>';
+
+            return metropol_mail_render_template(
+                $siteUrl,
+                $companyName . ' — yatırımınız bakiyenize eklendi',
+                'Yatırım Onaylandı',
+                $bodyHtml,
+                'İşlem Geçmişi',
+                $historyUrl,
+                $options
+            );
+        }
+
+        if ($type === 'withdraw_approved') {
+            $options['template_html'] = trim((string) ($settings['withdraw_approved_template_html'] ?? ''));
+            $options['amount'] = $sampleAmount;
+            $safeAmount = htmlspecialchars($sampleAmount, ENT_QUOTES, 'UTF-8');
+            $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . '<strong style="color:#ffffff;">' . $safeAmount . '</strong> tutarındaki çekim talebiniz tamamlandı.'
+                . '</p>'
+                . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
+                . 'Tutar, seçtiğiniz ödeme yöntemine iletildi. İşlem geçmişinizi hesabınızdan kontrol edebilirsiniz.'
+                . '</p>';
+
+            return metropol_mail_render_template(
+                $siteUrl,
+                $companyName . ' — çekim talebiniz tamamlandı',
+                'Çekim Tamamlandı',
+                $bodyHtml,
+                'İşlem Geçmişi',
+                $historyUrl,
                 $options
             );
         }

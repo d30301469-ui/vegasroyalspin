@@ -5,11 +5,14 @@ $flash = trim((string) ($flash ?? ''));
 $emailSection = 'templates';
 $resetPreviewHtml = (string) ($resetPreviewHtml ?? '');
 $welcomePreviewHtml = (string) ($welcomePreviewHtml ?? '');
+$depositApprovedPreviewHtml = (string) ($depositApprovedPreviewHtml ?? '');
+$withdrawApprovedPreviewHtml = (string) ($withdrawApprovedPreviewHtml ?? '');
 $previewUrl = (string) ($previewUrl ?? AdminAuth::url('/email/templates/preview'));
 
 $placeholders = [
     '{{MEMBER_NAME}}' => 'Üyenin adı soyadı',
     '{{COMPANY_NAME}}' => 'Şirket / marka adı',
+    '{{AMOUNT}}' => 'İşlem tutarı (yatırım/çekim)',
     '{{HEADING}}' => 'Mail başlığı',
     '{{BODY_HTML}}' => 'Mail metni',
     '{{CTA_LABEL}}' => 'Buton yazısı',
@@ -85,6 +88,8 @@ $placeholders = [
             <div class="tpl-tabs" role="tablist">
                 <button class="tpl-tab is-active" type="button" role="tab" aria-selected="true" data-tpl-tab="reset">Şifre sıfırlama</button>
                 <button class="tpl-tab" type="button" role="tab" aria-selected="false" data-tpl-tab="welcome">Kayıt başarılı</button>
+                <button class="tpl-tab" type="button" role="tab" aria-selected="false" data-tpl-tab="deposit_approved">Yatırım onaylandı</button>
+                <button class="tpl-tab" type="button" role="tab" aria-selected="false" data-tpl-tab="withdraw_approved">Çekim tamamlandı</button>
             </div>
         </div>
 
@@ -104,6 +109,26 @@ $placeholders = [
                     <label class="field-label" for="welcome_template_html">Kayıt başarılı HTML şablonu</label>
                     <textarea id="welcome_template_html" class="input" name="welcome_template_html" rows="10" placeholder="Boş bırakırsan sistem varsayılan şablonu kullanılır."><?= htmlspecialchars((string) ($settings['welcome_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
                     <div class="field-help">Yeni üye kaydı tamamlandığında otomatik gönderilir.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tpl-panel" data-tpl-panel="deposit_approved" hidden>
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label class="field-label" for="deposit_approved_template_html">Yatırım onaylandı HTML şablonu</label>
+                    <textarea id="deposit_approved_template_html" class="input" name="deposit_approved_template_html" rows="10" placeholder="Boş bırakırsan sistem varsayılan şablonu kullanılır."><?= htmlspecialchars((string) ($settings['deposit_approved_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                    <div class="field-help">Para yatırma işlemi onaylandığında üyeye otomatik gönderilir. Tutar için <code>{{AMOUNT}}</code> kullanabilirsiniz.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tpl-panel" data-tpl-panel="withdraw_approved" hidden>
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label class="field-label" for="withdraw_approved_template_html">Çekim tamamlandı HTML şablonu</label>
+                    <textarea id="withdraw_approved_template_html" class="input" name="withdraw_approved_template_html" rows="10" placeholder="Boş bırakırsan sistem varsayılan şablonu kullanılır."><?= htmlspecialchars((string) ($settings['withdraw_approved_template_html'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                    <div class="field-help">Para çekme işlemi tamamlandığında üyeye otomatik gönderilir. Tutar için <code>{{AMOUNT}}</code> kullanabilirsiniz.</div>
                 </div>
             </div>
         </div>
@@ -153,9 +178,16 @@ $placeholders = [
     var previewUrl = <?= json_encode($previewUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     var cache = {
         reset: <?= json_encode($resetPreviewHtml, JSON_UNESCAPED_UNICODE) ?>,
-        welcome: <?= json_encode($welcomePreviewHtml, JSON_UNESCAPED_UNICODE) ?>
+        welcome: <?= json_encode($welcomePreviewHtml, JSON_UNESCAPED_UNICODE) ?>,
+        deposit_approved: <?= json_encode($depositApprovedPreviewHtml, JSON_UNESCAPED_UNICODE) ?>,
+        withdraw_approved: <?= json_encode($withdrawApprovedPreviewHtml, JSON_UNESCAPED_UNICODE) ?>
     };
-    var titles = { reset: 'Şifre sıfırlama maili', welcome: 'Kayıt başarılı maili' };
+    var titles = {
+        reset: 'Şifre sıfırlama maili',
+        welcome: 'Kayıt başarılı maili',
+        deposit_approved: 'Yatırım onaylandı maili',
+        withdraw_approved: 'Çekim tamamlandı maili'
+    };
     var titleEl = document.getElementById('mailPreviewTitle');
     var active = 'reset';
 

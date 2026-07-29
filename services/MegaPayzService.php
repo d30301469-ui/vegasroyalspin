@@ -1151,6 +1151,7 @@ final class MegaPayzService
                 'success',
                 $historyUrl
             );
+            self::sendPaymentApprovedMail($pdo, $type, $userId, $amount, $currency);
             return;
         }
 
@@ -1166,6 +1167,42 @@ final class MegaPayzService
         }
 
         self::notifyMember($pdo, $userId, $title, $body, 'warning', $historyUrl);
+    }
+
+    private static function sendPaymentApprovedMail(
+        PDO $pdo,
+        string $type,
+        int $userId,
+        float $amount,
+        string $currency = 'TRY'
+    ): void {
+        if ($userId <= 0 || !in_array($type, ['deposit', 'withdraw'], true)) {
+            return;
+        }
+
+        try {
+            if (!class_exists('MemberTransactionalMail', false)) {
+                foreach ([
+                    dirname(__DIR__) . '/admin/app/Services/MemberTransactionalMail.php',
+                    dirname(__DIR__) . '/app/Services/MemberTransactionalMail.php',
+                ] as $file) {
+                    if (is_readable($file)) {
+                        require_once $file;
+                        break;
+                    }
+                }
+            }
+            if (!class_exists('MemberTransactionalMail', false)) {
+                return;
+            }
+            if ($type === 'deposit') {
+                MemberTransactionalMail::sendDepositApproved($pdo, $userId, $amount, $currency);
+            } else {
+                MemberTransactionalMail::sendWithdrawApproved($pdo, $userId, $amount, $currency);
+            }
+        } catch (Throwable) {
+            // Mail hatası ödeme akışını bozmamalı.
+        }
     }
 
     private static function refundWithdraw(PDO $pdo, string $trx, float $amount, int $userId, string $message): void

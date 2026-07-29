@@ -505,6 +505,7 @@ if (!function_exists('metropol_mail_render_template')) {
 
         $customTemplate = trim((string) ($options['template_html'] ?? ''));
         if ($customTemplate !== '') {
+            $safeAmount = htmlspecialchars(trim((string) ($options['amount'] ?? '')), ENT_QUOTES, 'UTF-8');
             $tokens = [
                 '{{PREHEADER}}' => $safePreheader,
                 '{{HEADING}}' => $safeHeading,
@@ -513,6 +514,7 @@ if (!function_exists('metropol_mail_render_template')) {
                 '{{CTA_URL}}' => $safeCtaUrl,
                 '{{COMPANY_NAME}}' => $safeCompany,
                 '{{MEMBER_NAME}}' => $safeMember,
+                '{{AMOUNT}}' => $safeAmount,
                 '{{SUPPORT_EMAIL}}' => $safeSupport,
                 '{{SUPPORT_EMAIL_LINK}}' => 'mailto:' . $safeSupport,
                 '{{YEAR}}' => $year,

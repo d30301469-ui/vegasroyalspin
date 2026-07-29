@@ -40,6 +40,8 @@ return static function (PDO $pdo): void {
             company_address VARCHAR(255) NULL,
             reset_template_html LONGTEXT NULL,
             welcome_template_html LONGTEXT NULL,
+            deposit_approved_template_html LONGTEXT NULL,
+            withdraw_approved_template_html LONGTEXT NULL,
             updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
@@ -79,7 +81,9 @@ return static function (PDO $pdo): void {
             'company_address' => 'ALTER TABLE mail_settings ADD COLUMN company_address VARCHAR(255) NULL AFTER support_email',
             'reset_template_html' => 'ALTER TABLE mail_settings ADD COLUMN reset_template_html LONGTEXT NULL AFTER company_address',
             'welcome_template_html' => 'ALTER TABLE mail_settings ADD COLUMN welcome_template_html LONGTEXT NULL AFTER reset_template_html',
-            'updated_at' => 'ALTER TABLE mail_settings ADD COLUMN updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER welcome_template_html',
+            'deposit_approved_template_html' => 'ALTER TABLE mail_settings ADD COLUMN deposit_approved_template_html LONGTEXT NULL AFTER welcome_template_html',
+            'withdraw_approved_template_html' => 'ALTER TABLE mail_settings ADD COLUMN withdraw_approved_template_html LONGTEXT NULL AFTER deposit_approved_template_html',
+            'updated_at' => 'ALTER TABLE mail_settings ADD COLUMN updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER withdraw_approved_template_html',
         ];
 
         foreach ($required as $column => $sql) {
