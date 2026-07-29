@@ -218,13 +218,16 @@ final class LiveCasinoQuery
             }
 
             if ($hasGsc) {
+                $hasGscGameType = self::columnExists($pdo, 'gsc_games', 'game_type');
                 $gscWhere = [
                     'g.is_active = 1',
                     // Lobby-entry products (entry_type=2) only expose a synthetic
                     // "_lobby" row, which must stay visible as the product card.
                     "(g.game_code <> '_lobby' OR g.entry_type = 2)",
-                    "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')",
                 ];
+                if ($hasGscGameType) {
+                    $gscWhere[] = "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')";
+                }
 
                 if ($liveProductCodes !== []) {
                     $codePlaceholders = [];
@@ -271,12 +274,15 @@ final class LiveCasinoQuery
                 $currencySelect = self::columnExists($pdo, 'gsc_games', 'product_currency')
                     ? 'COALESCE(NULLIF(g.product_currency, \'\'), \'\')'
                     : 'CAST(\'\' AS CHAR)';
+                $gameTypeSelect = $hasGscGameType
+                    ? "UPPER(COALESCE(NULLIF(g.game_type, ''), ''))"
+                    : "CAST('' AS CHAR)";
                 $branches['gsc'] = "SELECT
                     CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
                     COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider,
                     CAST(g.product_code AS CHAR) AS provider_code,
-                    UPPER(COALESCE(NULLIF(g.game_type, ''), '')) AS game_type,
+                    {$gameTypeSelect} AS game_type,
                     COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
                     CAST('' AS CHAR) AS image_fallbacks,
                     g.is_featured AS is_featured,
