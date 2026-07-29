@@ -126,7 +126,9 @@ final class GscPlusService
      */
     public const STAGING_LIVE_PRODUCT_CODES = [
         1006, // PRAGMATIC CASINO (+ LIVE_CASINO_PREMIUM blackjack)
-        1052, // DREAM GAMING
+        // 1052 Dream Gaming omitted: staging launch returns codeId 406 + empty
+        // token URLs (dingdang/ddnewpc) — not a playable session. Keep in
+        // STAGING_PRODUCTS_BY_CURRENCY for catalog sync; hide from live lobby.
         1185, // SA GAMING
         1220, // ASTAR
         1004, // BIG GAMING (IDR2)
@@ -1346,12 +1348,16 @@ final class GscPlusService
 
             if ($code !== 200 && $code !== 0) {
                 $msg = trim((string) ($response['message'] ?? $response['Message'] ?? 'Launch failed'));
-                $failureMessage = 'GSC+: ' . ($msg !== '' ? $msg : ('code ' . $code));
-                $failureMessage .= self::agentBalanceHint($pdo, $currency, $msg);
+                $failureMessage = self::friendlyLaunchFailureMessage($msg, $response, '', '');
+                if ($failureMessage === '') {
+                    $failureMessage = 'GSC+: ' . ($msg !== '' ? $msg : ('code ' . $code));
+                    $failureMessage .= self::agentBalanceHint($pdo, $currency, $msg);
+                }
             } elseif ($url === '' && $content === '') {
                 $failureMessage = 'GSC+ launch URL dönmedi.';
             } elseif (($issue = self::describeUnusableLaunchPayload($response, $url, $content)) !== null) {
-                $failureMessage = 'Sağlayıcı geçerli bir oyun oturumu döndürmedi (' . $issue . ').';
+                $failureMessage = self::friendlyLaunchFailureMessage('', $response, $url, $content)
+                    ?: ('Sağlayıcı geçerli bir oyun oturumu döndürmedi (' . $issue . ').');
             } else {
                 $failureMessage = '';
                 break;
@@ -2306,7 +2312,7 @@ final class GscPlusService
         }
 
         $haystack = $url . ' ' . $content . ' ' . json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if (preg_match('/token=(?=&|"|\'|\\\\"|$)/', $haystack)) {
+        if (self::haystackLooksLikeEmptyTokenLaunch($haystack)) {
             return 'boş oturum jetonu (token)';
         }
         if (str_contains($haystack, '"codeId"') && str_contains($haystack, '"limits"')) {
@@ -2314,6 +2320,39 @@ final class GscPlusService
         }
 
         return null;
+    }
+
+    /**
+     * Dream Gaming / dingdang "ddnewpc" staging often returns codeId 406 with
+     * list URLs like .../direct1.html?token= (empty). Dumping that JSON into the
+     * player UI looks like our bug; map it to a clear Turkish sentence instead.
+     *
+     * @param array<string, mixed> $response
+     */
+    private static function friendlyLaunchFailureMessage(
+        string $providerMessage,
+        array $response,
+        string $url,
+        string $content
+    ): string {
+        $haystack = $providerMessage . ' ' . $url . ' ' . $content . ' '
+            . json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (!self::haystackLooksLikeEmptyTokenLaunch($haystack)
+            && !(str_contains($haystack, '"codeId"') && str_contains($haystack, '"limits"'))
+        ) {
+            return '';
+        }
+
+        return 'Bu sağlayıcı (Dream Gaming / masa seçici) staging’de boş oturum jetonu döndürdü '
+            . '(codeId 406, token=). Cüzdan/callback sorunu değil. Pragmatic Live (1006) veya '
+            . 'SA Gaming (1185) ile deneyin; Dream Gaming için GSC+ staging düzeltmesi gerekir.';
+    }
+
+    private static function haystackLooksLikeEmptyTokenLaunch(string $haystack): bool
+    {
+        return preg_match('/token=(?=&|"|\'|\\\\"|$)/', $haystack) === 1
+            || str_contains($haystack, 'dingdang')
+            || str_contains($haystack, 'ddnewpc');
     }
 
     /**
