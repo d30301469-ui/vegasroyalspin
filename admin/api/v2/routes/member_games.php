@@ -37,8 +37,18 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
     $providers = [];
     try {
         if ($gameType === 1) {
+            admin_require_project_file('services/GscPlusService.php');
             admin_require_project_file('services/LiveCasinoQuery.php');
-            foreach (LiveCasinoQuery::providers(['force_local' => true]) as $name) {
+            $providerExtra = [
+                'force_local' => true,
+                'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
+            ];
+            if (array_key_exists('gsc_only', $_GET)) {
+                $providerExtra['gsc_only'] = $_GET['gsc_only'];
+            } elseif (GscPlusService::liveLobbyGscOnly()) {
+                $providerExtra['gsc_only'] = 1;
+            }
+            foreach (LiveCasinoQuery::providers($providerExtra) as $name) {
                 $name = trim((string) $name);
                 if ($name === '') {
                     continue;
@@ -137,19 +147,26 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
 
     // Live casino catalogue is owned by LiveCasinoQuery (not SlotGamesQuery).
     if ($gameType === 1 || in_array($source, ['livecasino', 'live', 'live_casino'], true)) {
+        admin_require_project_file('services/GscPlusService.php');
         admin_require_project_file('services/LiveCasinoQuery.php');
+        $liveExtra = [
+            // Always hit local DB on the admin API host — never recurse via BackendApiClient.
+            'force_local' => true,
+            'source' => in_array($source, ['aggregator'], true) ? $source : '',
+            'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
+        ];
+        if (array_key_exists('gsc_only', $_GET)) {
+            $liveExtra['gsc_only'] = $_GET['gsc_only'];
+        } elseif (GscPlusService::liveLobbyGscOnly()) {
+            $liveExtra['gsc_only'] = 1;
+        }
         $liveResult = LiveCasinoQuery::page(
             $search,
             $providerList,
             $limit,
             $page,
             $onlyFeatured ? 'popular' : $sort,
-            [
-                // Always hit local DB on the admin API host — never recurse via BackendApiClient.
-                'force_local' => true,
-                'source' => in_array($source, ['aggregator'], true) ? $source : '',
-                'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
-            ]
+            $liveExtra
         );
         $games = is_array($liveResult['games'] ?? null) ? $liveResult['games'] : [];
         $total = (int) ($liveResult['total'] ?? count($games));

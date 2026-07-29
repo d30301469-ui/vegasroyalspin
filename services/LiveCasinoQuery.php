@@ -6,6 +6,7 @@ require_once __DIR__ . '/BackendApiClient.php';
 
 /**
  * Live casino catalogue query (Casino Aggregator + GSC+).
+ * VGY1 staging defaults to GSC-only lobby via GSC_LIVE_LOBBY_ONLY / gsc_only.
  */
 final class LiveCasinoQuery
 {
@@ -63,10 +64,10 @@ final class LiveCasinoQuery
             || (defined('METROPOL_ADMIN_PANEL') && METROPOL_ADMIN_PANEL);
 
         if (!$forceLocal && self::shouldUseRemoteApi()) {
-            return self::pageViaApi($searchTerm, $providerList, $limit, $page, $sort, $source);
+            return self::pageViaApi($searchTerm, $providerList, $limit, $page, $sort, $source, $extraQuery);
         }
 
-        $local = self::pageFromDatabase($searchTerm, $providerList, $limit, $page, $sort);
+        $local = self::pageFromDatabase($searchTerm, $providerList, $limit, $page, $sort, $extraQuery);
         if ($local !== null) {
             return $local;
         }
@@ -75,7 +76,7 @@ final class LiveCasinoQuery
             return self::emptyResult($limit, $page, true);
         }
 
-        return self::pageViaApi($searchTerm, $providerList, $limit, $page, $sort, $source);
+        return self::pageViaApi($searchTerm, $providerList, $limit, $page, $sort, $source, $extraQuery);
     }
 
     /** @return list<string> */
@@ -85,10 +86,10 @@ final class LiveCasinoQuery
             || (defined('METROPOL_ADMIN_PANEL') && METROPOL_ADMIN_PANEL);
 
         if (!$forceLocal && self::shouldUseRemoteApi()) {
-            return self::providersViaApi();
+            return self::providersViaApi($extraQuery);
         }
 
-        $local = self::providersFromDatabase();
+        $local = self::providersFromDatabase($extraQuery);
         if ($local !== null) {
             return $local;
         }
@@ -97,7 +98,7 @@ final class LiveCasinoQuery
             return [];
         }
 
-        return self::providersViaApi();
+        return self::providersViaApi($extraQuery);
     }
 
     public static function purgeCache(): void
@@ -138,6 +139,7 @@ final class LiveCasinoQuery
 
     /**
      * @param list<string> $providerList
+     * @param array<string, mixed> $extraQuery
      * @return array<string, mixed>|null
      */
     private static function pageFromDatabase(
@@ -145,12 +147,18 @@ final class LiveCasinoQuery
         array $providerList,
         int $limit,
         int $page,
-        string $sort
+        string $sort,
+        array $extraQuery = []
     ): ?array {
         try {
             self::ensureDependencies();
             $pdo = self::pdo();
-            $hasAggregator = self::tableExists($pdo, 'casino_aggregator_games') && self::tableExists($pdo, 'casino_aggregator_vendors');
+            $gscOnly = class_exists('GscPlusService', false)
+                ? GscPlusService::liveLobbyGscOnly($extraQuery)
+                : !empty($extraQuery['gsc_only']);
+            $hasAggregator = !$gscOnly
+                && self::tableExists($pdo, 'casino_aggregator_games')
+                && self::tableExists($pdo, 'casino_aggregator_vendors');
             $hasGsc = self::tableExists($pdo, 'gsc_games');
             if (!$hasAggregator && !$hasGsc) {
                 return self::emptyResult($limit, $page);
@@ -159,6 +167,13 @@ final class LiveCasinoQuery
             $offset = ($page - 1) * $limit;
             $branches = [];
             $params = [];
+            $currencyPrefer = strtoupper(trim((string) ($extraQuery['currency'] ?? '')));
+            $lobbyCurrencies = class_exists('GscPlusService', false)
+                ? GscPlusService::stagingLobbyCurrencyFilter($currencyPrefer !== '' ? $currencyPrefer : null)
+                : ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'];
+            $liveProductCodes = class_exists('GscPlusService', false)
+                ? GscPlusService::stagingLiveProductCodes()
+                : [];
 
             if ($hasAggregator) {
                 $aggWhere = ["g.is_active = 1", "v.is_active = 1"];
@@ -195,6 +210,7 @@ final class LiveCasinoQuery
                     COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
                     CAST('' AS CHAR) AS image_fallbacks,
                     g.is_featured AS is_featured,
+                    CAST('' AS CHAR) AS product_currency,
                     'aggregator' AS source
                  FROM casino_aggregator_games g
                  INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
@@ -209,6 +225,27 @@ final class LiveCasinoQuery
                     "(g.game_code <> '_lobby' OR g.entry_type = 2)",
                     "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')",
                 ];
+
+                if ($liveProductCodes !== []) {
+                    $codePlaceholders = [];
+                    foreach ($liveProductCodes as $idx => $code) {
+                        $ck = ':gsc_live_pc_' . $idx;
+                        $codePlaceholders[] = $ck;
+                        $params[$ck] = (int) $code;
+                    }
+                    $gscWhere[] = 'g.product_code IN (' . implode(',', $codePlaceholders) . ')';
+                }
+
+                if (self::columnExists($pdo, 'gsc_games', 'product_currency') && $lobbyCurrencies !== []) {
+                    $curPlaceholders = [];
+                    foreach ($lobbyCurrencies as $idx => $cur) {
+                        $ck = ':gsc_live_cur_' . $idx;
+                        $curPlaceholders[] = $ck;
+                        $params[$ck] = $cur;
+                    }
+                    $gscWhere[] = 'UPPER(TRIM(g.product_currency)) IN (' . implode(',', $curPlaceholders) . ')';
+                }
+
                 if ($searchTerm !== '') {
                     $gscWhere[] = '(g.game_name LIKE :gsc_search OR g.provider LIKE :gsc_search2 OR g.game_code LIKE :gsc_search3)';
                     $params[':gsc_search'] = '%' . $searchTerm . '%';
@@ -231,6 +268,9 @@ final class LiveCasinoQuery
                     $gscWhere[] = '(' . implode(' OR ', $gscProviderClauses) . ')';
                 }
                 $gscWhereSql = ' WHERE ' . implode(' AND ', $gscWhere);
+                $currencySelect = self::columnExists($pdo, 'gsc_games', 'product_currency')
+                    ? 'COALESCE(NULLIF(g.product_currency, \'\'), \'\')'
+                    : 'CAST(\'\' AS CHAR)';
                 $branches['gsc'] = "SELECT
                     CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
                     g.game_name AS name,
@@ -239,6 +279,7 @@ final class LiveCasinoQuery
                     COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
                     CAST('' AS CHAR) AS image_fallbacks,
                     g.is_featured AS is_featured,
+                    {$currencySelect} AS product_currency,
                     'gsc' AS source
                  FROM gsc_games g
                  {$gscWhereSql}";
@@ -299,6 +340,17 @@ final class LiveCasinoQuery
                 if ($featured !== 0) {
                     return $featured;
                 }
+                // Prefer IDR contracted rows for VGY1 staging tests.
+                $aIdr = strtoupper(trim((string) ($a['product_currency'] ?? ''))) === 'IDR' ? 1 : 0;
+                $bIdr = strtoupper(trim((string) ($b['product_currency'] ?? ''))) === 'IDR' ? 1 : 0;
+                if ($aIdr !== $bIdr) {
+                    return $bIdr <=> $aIdr;
+                }
+                $aGsc = (($a['source'] ?? '') === 'gsc') ? 1 : 0;
+                $bGsc = (($b['source'] ?? '') === 'gsc') ? 1 : 0;
+                if ($aGsc !== $bGsc) {
+                    return $bGsc <=> $aGsc;
+                }
 
                 return strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
             });
@@ -332,6 +384,7 @@ final class LiveCasinoQuery
 
     /**
      * @param list<string> $providerList
+     * @param array<string, mixed> $extraQuery
      * @return array<string, mixed>
      */
     private static function pageViaApi(
@@ -340,13 +393,15 @@ final class LiveCasinoQuery
         int $limit,
         int $page,
         string $sort,
-        string $source
+        string $source,
+        array $extraQuery = []
     ): array {
         $query = [
             'game_type' => 1,
             'page' => $page,
             'limit' => $limit,
             'force_local' => 1,
+            'source' => 'livecasino',
         ];
         if ($searchTerm !== '') {
             $query['search'] = $searchTerm;
@@ -360,6 +415,15 @@ final class LiveCasinoQuery
         }
         if ($source === 'aggregator') {
             $query['source'] = 'aggregator';
+        }
+        $currency = strtoupper(trim((string) ($extraQuery['currency'] ?? '')));
+        if ($currency !== '') {
+            $query['currency'] = $currency;
+        }
+        if (array_key_exists('gsc_only', $extraQuery)) {
+            $query['gsc_only'] = $extraQuery['gsc_only'];
+        } elseif (class_exists('GscPlusService', false) && GscPlusService::liveLobbyGscOnly($extraQuery)) {
+            $query['gsc_only'] = 1;
         }
 
         $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::GAMES_PATH, $query, null, 8);
@@ -396,15 +460,32 @@ final class LiveCasinoQuery
         ];
     }
 
-    /** @return list<string>|null */
-    private static function providersFromDatabase(): ?array
+    /**
+     * @param array<string, mixed> $extraQuery
+     * @return list<string>|null
+     */
+    private static function providersFromDatabase(array $extraQuery = []): ?array
     {
         try {
             self::ensureDependencies();
             $pdo = self::pdo();
             $providers = [];
+            $gscOnly = class_exists('GscPlusService', false)
+                ? GscPlusService::liveLobbyGscOnly($extraQuery)
+                : !empty($extraQuery['gsc_only']);
+            $currencyPrefer = strtoupper(trim((string) ($extraQuery['currency'] ?? '')));
+            $lobbyCurrencies = class_exists('GscPlusService', false)
+                ? GscPlusService::stagingLobbyCurrencyFilter($currencyPrefer !== '' ? $currencyPrefer : null)
+                : ['IDR', 'IDR2', 'CNY', 'VND', 'VND2'];
+            $liveProductCodes = class_exists('GscPlusService', false)
+                ? GscPlusService::stagingLiveProductCodes()
+                : [];
 
-            if (self::tableExists($pdo, 'casino_aggregator_vendors') && self::tableExists($pdo, 'casino_aggregator_games')) {
+            if (
+                !$gscOnly
+                && self::tableExists($pdo, 'casino_aggregator_vendors')
+                && self::tableExists($pdo, 'casino_aggregator_games')
+            ) {
                 $liveMatch = class_exists('CasinoAggregatorService', false)
                     ? CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code')
                     : '0';
@@ -428,14 +509,37 @@ final class LiveCasinoQuery
             }
 
             if (self::tableExists($pdo, 'gsc_games')) {
-                $stmt = $pdo->query(
-                    "SELECT DISTINCT COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name
+                $where = [
+                    'g.is_active = 1',
+                    "(g.game_code <> '_lobby' OR g.entry_type = 2)",
+                    "UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')",
+                ];
+                $params = [];
+                if ($liveProductCodes !== []) {
+                    $ph = [];
+                    foreach ($liveProductCodes as $idx => $code) {
+                        $ck = ':pc_' . $idx;
+                        $ph[] = $ck;
+                        $params[$ck] = (int) $code;
+                    }
+                    $where[] = 'g.product_code IN (' . implode(',', $ph) . ')';
+                }
+                if (self::columnExists($pdo, 'gsc_games', 'product_currency') && $lobbyCurrencies !== []) {
+                    $ph = [];
+                    foreach ($lobbyCurrencies as $idx => $cur) {
+                        $ck = ':cur_' . $idx;
+                        $ph[] = $ck;
+                        $params[$ck] = $cur;
+                    }
+                    $where[] = 'UPPER(TRIM(g.product_currency)) IN (' . implode(',', $ph) . ')';
+                }
+                $sql = 'SELECT DISTINCT COALESCE(NULLIF(g.provider, \'\'), NULLIF(g.product_name, \'\'), CAST(g.product_code AS CHAR)) AS provider_name
                      FROM gsc_games g
-                     WHERE g.is_active = 1 AND (g.game_code <> '_lobby' OR g.entry_type = 2)
-                       AND UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
-                     ORDER BY provider_name ASC"
-                );
-                foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+                     WHERE ' . implode(' AND ', $where) . '
+                     ORDER BY provider_name ASC';
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                     $name = trim((string) ($row['provider_name'] ?? ''));
                     if ($name !== '') {
                         $providers[] = $name;
@@ -452,11 +556,24 @@ final class LiveCasinoQuery
         }
     }
 
-    /** @return list<string> */
-    private static function providersViaApi(): array
+    /**
+     * @param array<string, mixed> $extraQuery
+     * @return list<string>
+     */
+    private static function providersViaApi(array $extraQuery = []): array
     {
         // The provider route selects the live-casino list via game_type=1.
-        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::PROVIDERS_PATH, ['source' => 'livecasino', 'game_type' => 1], null, 8);
+        $query = ['source' => 'livecasino', 'game_type' => 1];
+        $currency = strtoupper(trim((string) ($extraQuery['currency'] ?? '')));
+        if ($currency !== '') {
+            $query['currency'] = $currency;
+        }
+        if (array_key_exists('gsc_only', $extraQuery)) {
+            $query['gsc_only'] = $extraQuery['gsc_only'];
+        } elseif (class_exists('GscPlusService', false) && GscPlusService::liveLobbyGscOnly($extraQuery)) {
+            $query['gsc_only'] = 1;
+        }
+        $j = BackendApiClient::request('GET', BackendApiClient::SVC_GAMES, self::PROVIDERS_PATH, $query, null, 8);
         if (!self::envelopeOk($j)) {
             return [];
         }
@@ -519,7 +636,8 @@ final class LiveCasinoQuery
             'provider' => $provider,
             'source' => (string) ($row['source'] ?? 'aggregator'),
             'is_featured' => !empty($row['is_featured']) ? 1 : 0,
-            'support_currency' => '',
+            'support_currency' => strtoupper(trim((string) ($row['product_currency'] ?? $row['support_currency'] ?? ''))),
+            'product_currency' => strtoupper(trim((string) ($row['product_currency'] ?? ''))),
         ];
     }
 
@@ -540,16 +658,30 @@ final class LiveCasinoQuery
 
     private static function ensureDependencies(): void
     {
+        $candidates = [
+            __DIR__ . '/CasinoAggregatorService.php',
+            dirname(__DIR__) . '/services/CasinoAggregatorService.php',
+            dirname(__DIR__, 2) . '/services/CasinoAggregatorService.php',
+        ];
         if (!class_exists('CasinoAggregatorService', false)) {
-            $path = dirname(__DIR__) . '/services/CasinoAggregatorService.php';
-            if (is_file($path)) {
-                require_once $path;
+            foreach ($candidates as $path) {
+                if (is_file($path)) {
+                    require_once $path;
+                    break;
+                }
             }
         }
+        $gscCandidates = [
+            __DIR__ . '/GscPlusService.php',
+            dirname(__DIR__) . '/services/GscPlusService.php',
+            dirname(__DIR__, 2) . '/services/GscPlusService.php',
+        ];
         if (!class_exists('GscPlusService', false)) {
-            $path = dirname(__DIR__) . '/services/GscPlusService.php';
-            if (is_file($path)) {
-                require_once $path;
+            foreach ($gscCandidates as $path) {
+                if (is_file($path)) {
+                    require_once $path;
+                    break;
+                }
             }
         }
     }
@@ -587,6 +719,30 @@ final class LiveCasinoQuery
             return $cache[$key];
         } catch (Throwable $e) {
             error_log("[LiveCasino] table probe failed for {$table}: " . $e->getMessage());
+            $cache[$key] = false;
+            return false;
+        }
+    }
+
+    private static function columnExists(PDO $pdo, string $table, string $column): bool
+    {
+        static $cache = [];
+        $key = strtolower($table . '.' . $column);
+        if (isset($cache[$key])) {
+            return $cache[$key];
+        }
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND COLUMN_NAME = :c
+                 LIMIT 1'
+            );
+            $stmt->execute([':t' => $table, ':c' => $column]);
+            $cache[$key] = (bool) $stmt->fetchColumn();
+            return $cache[$key];
+        } catch (Throwable $e) {
+            error_log("[LiveCasino] column probe failed for {$table}.{$column}: " . $e->getMessage());
             $cache[$key] = false;
             return false;
         }

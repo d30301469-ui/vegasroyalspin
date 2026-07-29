@@ -119,6 +119,24 @@ final class GscPlusService
     ];
 
     /**
+     * VGY1 staging product codes that expose LIVE_CASINO / LIVE_CASINO_PREMIUM
+     * (onboarding LC lines). Slot-only codes stay out of the live lobby filter.
+     *
+     * @var list<int>
+     */
+    public const STAGING_LIVE_PRODUCT_CODES = [
+        1006, // PRAGMATIC CASINO (+ LIVE_CASINO_PREMIUM blackjack)
+        1052, // DREAM GAMING
+        1185, // SA GAMING
+        1220, // ASTAR
+        1004, // BIG GAMING (IDR2)
+        1223, // ALLBET (CNY)
+        1242, // PLAYTECH Q6 (CNY)
+        1020, // WM CASINO (CNY)
+        1264, // VIMPLAY (VND)
+    ];
+
+    /**
      * The agent wallet is funded per currency (3.12 Wallet Balance Inquiry); the
      * staging agent is contracted primarily in IDR, so IDR — not the site display
      * currency (TRY) — is the fallback whenever gsc_config carries no explicit value.
@@ -225,6 +243,65 @@ final class GscPlusService
         }
 
         return in_array($productCode, $list, true);
+    }
+
+    /**
+     * Product codes allowed on the VGY1 staging live-casino lobby.
+     *
+     * @return list<int>
+     */
+    public static function stagingLiveProductCodes(): array
+    {
+        return self::STAGING_LIVE_PRODUCT_CODES;
+    }
+
+    /**
+     * Currencies to include in the live lobby. Empty / unknown prefer → all
+     * staging currencies; a known code (e.g. IDR) narrows the lobby for tests.
+     *
+     * @return list<string>
+     */
+    public static function stagingLobbyCurrencyFilter(?string $prefer = null): array
+    {
+        $prefer = strtoupper(trim((string) $prefer));
+        if ($prefer !== '' && in_array($prefer, self::STAGING_CURRENCIES, true)) {
+            return [$prefer];
+        }
+
+        return self::STAGING_CURRENCIES;
+    }
+
+    /**
+     * When true, Canlı Casino skips the Casino Aggregator branch so the lobby
+     * is only VGY1 GSC+ staging live products. Env GSC_LIVE_LOBBY_ONLY=0 re-enables aggregator.
+     */
+    public static function liveLobbyGscOnly(?array $extraQuery = null): bool
+    {
+        if (is_array($extraQuery) && array_key_exists('gsc_only', $extraQuery)) {
+            $raw = $extraQuery['gsc_only'];
+            if (is_bool($raw)) {
+                return $raw;
+            }
+            $flag = strtolower(trim((string) $raw));
+
+            return in_array($flag, ['1', 'true', 'yes', 'on'], true);
+        }
+
+        foreach (['GSC_LIVE_LOBBY_ONLY'] as $key) {
+            $value = getenv($key);
+            if ($value === false && isset($_ENV[$key])) {
+                $value = (string) $_ENV[$key];
+            }
+            if ($value === false || $value === null || trim((string) $value) === '') {
+                continue;
+            }
+            $flag = strtolower(trim((string) $value));
+
+            return in_array($flag, ['1', 'true', 'yes', 'on'], true);
+        }
+
+        // Staging-first default: hide aggregator until explicitly re-enabled.
+        return true;
     }
 
     public static function config(PDO $pdo): array

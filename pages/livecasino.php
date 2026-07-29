@@ -17,11 +17,21 @@ $currentSort = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
-$result = LiveCasinoQuery::page($searchTerm, $selectedProviders, $limit, $page, $currentSort);
+// VGY1 staging live lobby: GSC+ contracted LC only (aggregator off).
+// Default lists all staging currencies; ?currency=IDR narrows for IDR-only tests.
+$liveLobbyExtra = [
+    'gsc_only' => 1,
+];
+$currencyOverride = strtoupper(trim((string) ($_GET['currency'] ?? '')));
+if ($currencyOverride !== '') {
+    $liveLobbyExtra['currency'] = $currencyOverride;
+}
+
+$result = LiveCasinoQuery::page($searchTerm, $selectedProviders, $limit, $page, $currentSort, $liveLobbyExtra);
 $games = is_array($result['games'] ?? null) ? $result['games'] : [];
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 
-$allUniqueProviders = LiveCasinoQuery::providers();
+$allUniqueProviders = LiveCasinoQuery::providers($liveLobbyExtra);
 sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
 
 $totalSlots = (int) ($result['total'] ?? count($games));
@@ -63,7 +73,16 @@ $slotGameType = 1;
 $slotEmptyTitle = 'Canlı casino oyunu bulunamadı';
 $slotEmptyText = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin.';
 // Load-more / filters go through LiveCasinoQuery via API source=livecasino
-$slotApiParams = ['source' => 'livecasino'];
+$slotApiParams = [
+    'source' => 'livecasino',
+    'gsc_only' => 1,
+];
+if (!empty($liveLobbyExtra['currency'])) {
+    $slotApiParams['currency'] = $liveLobbyExtra['currency'];
+}
+$slotLobbyBanner = 'GSC+ VGY1 staging'
+    . (!empty($liveLobbyExtra['currency']) ? (' · ' . $liveLobbyExtra['currency']) : ' · IDR öncelikli')
+    . ' (site bakiyesi TRY görünebilir; launch/wallet ürün currency’si ile gider)';
 $sliderApiCategory = 'live_casino';
 $slotShowActionButtons = true;
 $slotHideProviders = false;

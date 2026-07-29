@@ -9,6 +9,7 @@ $slotPageTitle = isset($slotPageTitle) ? (string) $slotPageTitle : 'OYUNLAR';
 $slotEmptyTitle = isset($slotEmptyTitle) ? (string) $slotEmptyTitle : 'Slot oyunu bulunamadı';
 $slotEmptyText = isset($slotEmptyText) ? (string) $slotEmptyText : 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin';
 $slotApiParams = isset($slotApiParams) && is_array($slotApiParams) ? $slotApiParams : [];
+$slotLobbyBanner = isset($slotLobbyBanner) ? trim((string) $slotLobbyBanner) : '';
 $searchTerm = isset($searchTerm) ? (string) $searchTerm : '';
 $selectedProviders = isset($selectedProviders) && is_array($selectedProviders) ? $selectedProviders : [];
 $currentSort = isset($currentSort) ? (string) $currentSort : '';
@@ -451,6 +452,12 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
 <?php if ($apiError): ?>
 <div class="alert alert-warning mx-3 my-2" role="alert">
     Oyun listesi şu an yüklenemedi. Backend bağlantısını kontrol edin (<code>API_BACKEND_MAIN_BASE_URL</code>).
+</div>
+<?php endif; ?>
+
+<?php if ($slotLobbyBanner !== ''): ?>
+<div class="alert alert-info mx-3 my-2" role="status" style="border:1px solid rgba(252,172,0,.35);background:rgba(252,172,0,.08);color:inherit">
+    <?= htmlspecialchars($slotLobbyBanner, ENT_QUOTES, 'UTF-8') ?>
 </div>
 <?php endif; ?>
 

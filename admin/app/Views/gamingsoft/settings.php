@@ -74,6 +74,17 @@ $currencyChoices = array_values(array_unique(array_merge(
     top-up isteyin.
 </div>
 
+<div class="gsc-banner">
+    <strong>Canlı Casino checklist:</strong>
+    1) Operator <code>VGY1</code> + secret kaydet, currency <code>IDR</code>, language <code>4</code>, aktif.
+    2) Agent wallet IDR &gt; 0.
+    3) Ürünleri Sync → Oyunları Sync.
+    4) Frontend <code>/livecasino</code> VGY1 LC ürünlerini listeler (<code>GSC_LIVE_LOBBY_ONLY=1</code>).
+    5) IDR-only daraltma: <code>/livecasino?currency=IDR</code>.
+    6) Test launch: Pragmatic <code>gsc:1006:…</code>, DreamGaming <code>gsc:1052:…</code> (currency=IDR);
+       ALLBET/WM için ürün currency CNY.
+</div>
+
 <?php if ($walletEmpty): ?>
     <div class="gsc-banner gsc-banner--danger">
         <strong>Agent wallet boş:</strong> 3.12 sorgusu tüm sözleşmeli para birimlerinde
