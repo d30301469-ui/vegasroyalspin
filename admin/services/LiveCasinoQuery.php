@@ -362,6 +362,28 @@ final class LiveCasinoQuery
                 return strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
             });
 
+            // Provider sync can leave duplicate rows for the same logical live game
+            // (same product/game/type/currency). Keep one to avoid unstable launches.
+            $seen = [];
+            $dedupedRows = [];
+            foreach ($rows as $row) {
+                $key = strtolower(trim((string) ($row['game_id'] ?? '')))
+                    . '|' . strtoupper(trim((string) ($row['game_type'] ?? '')))
+                    . '|' . strtoupper(trim((string) ($row['product_currency'] ?? '')))
+                    . '|' . strtolower(trim((string) ($row['source'] ?? '')));
+                if ($key === '|||') {
+                    $dedupedRows[] = $row;
+                    continue;
+                }
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+                $dedupedRows[] = $row;
+            }
+            $rows = $dedupedRows;
+            $total = count($rows);
+
             $games = [];
             foreach (array_slice($rows, $offset, $limit) as $row) {
                 $mapped = self::mapRow($row);
