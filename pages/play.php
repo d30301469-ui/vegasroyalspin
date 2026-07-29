@@ -47,6 +47,35 @@ $playPayload = [
     'game_id' => $playGameId,
     'mode'    => $playMode,
 ];
+// GSC+/Pragmatic bind the launched session to launch-game `ip`. The browser
+ // hits this frontend (Cloudflare), so we capture the real visitor IP here and
+ // send it in the game-launch JSON — the admin API often only sees 127.0.0.1
+ // through the internal proxy even when CF headers are forwarded.
+if (!function_exists('metropol_cloudflare_client_ip')) {
+    $cfPath = dirname(__DIR__) . '/config/cloudflare.php';
+    if (is_file($cfPath)) {
+        require_once $cfPath;
+    }
+}
+$playClientIp = function_exists('metropol_cloudflare_client_ip') ? metropol_cloudflare_client_ip() : '';
+if ($playClientIp === '' || filter_var($playClientIp, FILTER_VALIDATE_IP) === false) {
+    foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'] as $playIpKey) {
+        $playIpRaw = trim((string) ($_SERVER[$playIpKey] ?? ''));
+        if ($playIpRaw === '') {
+            continue;
+        }
+        if (str_contains($playIpRaw, ',')) {
+            $playIpRaw = trim(explode(',', $playIpRaw, 2)[0]);
+        }
+        if (filter_var($playIpRaw, FILTER_VALIDATE_IP) !== false) {
+            $playClientIp = $playIpRaw;
+            break;
+        }
+    }
+}
+if ($playClientIp !== '' && filter_var($playClientIp, FILTER_VALIDATE_IP) !== false) {
+    $playPayload['ip'] = $playClientIp;
+}
 // GSC+ live providers (Pragmatic staging, DreamGaming, …) set session cookies on
 // their own domain. Chrome blocks those as third-party inside our play iframe and
 // the game shell then shows the provider's "re-log in / Un-Authorized" page even

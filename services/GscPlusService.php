@@ -1322,6 +1322,22 @@ final class GscPlusService
         if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
             $ip = self::clientIp();
         }
+        // Never send loopback/private IPs to GSC when a public visitor IP was
+        // provided by the frontend play page — Pragmatic locks the session to IP.
+        if (!self::isPublicIp($ip)) {
+            $fromInput = trim((string) ($input['ip'] ?? ''));
+            if ($fromInput !== '' && self::isPublicIp($fromInput)) {
+                $ip = $fromInput;
+            }
+        }
+        if (!self::isPublicIp($ip)) {
+            self::fileLog('launch.bad_ip', [
+                'ip' => $ip,
+                'input_ip' => (string) ($input['ip'] ?? ''),
+                'member' => $memberAccount,
+                'game_id' => self::buildGameId($productCode, $isLobby ? '_lobby' : $gameCode),
+            ]);
+        }
         $lobbyUrl = self::resolveLobbyUrl($cfg, $input);
 
         $requestTime = (string) time();
@@ -2441,7 +2457,7 @@ final class GscPlusService
                 return $ip;
             }
         }
-        foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'] as $key) {
+        foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'] as $key) {
             $value = trim((string) ($_SERVER[$key] ?? ''));
             if ($value === '') {
                 continue;
@@ -2452,6 +2468,20 @@ final class GscPlusService
             }
         }
         return '127.0.0.1';
+    }
+
+    private static function isPublicIp(string $ip): bool
+    {
+        $ip = trim($ip);
+        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+
+        return filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        ) !== false;
     }
 
     public static function memberAccountFromUser(array $user): string

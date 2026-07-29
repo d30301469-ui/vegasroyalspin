@@ -531,6 +531,10 @@
         } else {
             launchPayload.mode = 'real';
         }
+        // Keep visitor IP from play.php SSR — required for GSC/Pragmatic session bind.
+        if (!launchPayload.ip && window.__PLAY_CLIENT_IP__) {
+            launchPayload.ip = String(window.__PLAY_CLIENT_IP__);
+        }
 
         fetch(LAUNCH_URL, {
             method: 'POST',
