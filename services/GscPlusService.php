@@ -1307,7 +1307,8 @@ final class GscPlusService
         $userId = (int) $user['id'];
         $memberAccount = self::memberAccountFromUser($user);
         $nickname = trim((string) ($user['username'] ?? ('user_' . $userId)));
-        $password = self::memberPassword($cfg, $user);
+        $passwordCandidates = self::memberPasswordCandidates($pdo, $cfg, $user);
+        $password = $passwordCandidates[0] ?? self::memberPassword($cfg, $user);
         $gameType = strtoupper(trim((string) ($gameRow['game_type'] ?? 'SLOT')));
         $platform = self::resolvePlatform($input);
         $languageCode = (int) ($cfg['language_code'] ?? 0);
@@ -1386,47 +1387,55 @@ final class GscPlusService
         // iframe and leave the player stuck on the provider's own generic
         // "please re-login" page. One retry clears most of these; if it doesn't,
         // fail cleanly and keep the evidence instead of guessing from screenshots.
-        $maxAttempts = 2;
         $response = [];
         $url = '';
         $content = '';
         $failureMessage = '';
-        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-            try {
-                $response = self::operatorRequest($pdo, 'POST', '/api/operators/launch-game', $body);
-            } catch (Throwable $e) {
-                $failureMessage = 'GSC+ launch hatası: ' . $e->getMessage();
-                $response = [];
+        $selectedPasswordTag = 'default';
+        $totalCandidates = max(1, count($passwordCandidates));
+        foreach ($passwordCandidates as $candidateIdx => $candidatePassword) {
+            $selectedPasswordTag = self::passwordCandidateTag($candidateIdx, $totalCandidates);
+            $body['password'] = $candidatePassword;
+            $maxAttempts = 2;
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                try {
+                    $response = self::operatorRequest($pdo, 'POST', '/api/operators/launch-game', $body);
+                } catch (Throwable $e) {
+                    $failureMessage = 'GSC+ launch hatası: ' . $e->getMessage();
+                    $response = [];
+                    if ($attempt < $maxAttempts) {
+                        usleep(200000);
+                        continue;
+                    }
+                    break;
+                }
+
+                $code = (int) ($response['code'] ?? 0);
+                $url = trim((string) ($response['url'] ?? $response['URL'] ?? ''));
+                $content = (string) ($response['content'] ?? $response['Content'] ?? '');
+
+                if ($code !== 200 && $code !== 0) {
+                    $msg = trim((string) ($response['message'] ?? $response['Message'] ?? 'Launch failed'));
+                    $failureMessage = self::friendlyLaunchFailureMessage($msg, $response, '', '');
+                    if ($failureMessage === '') {
+                        $failureMessage = 'GSC+: ' . ($msg !== '' ? $msg : ('code ' . $code));
+                        $failureMessage .= self::agentBalanceHint($pdo, $currency, $msg);
+                    }
+                } elseif ($url === '' && $content === '') {
+                    $failureMessage = 'GSC+ launch URL dönmedi.';
+                } elseif (($issue = self::describeUnusableLaunchPayload($response, $url, $content)) !== null) {
+                    $failureMessage = self::friendlyLaunchFailureMessage('', $response, $url, $content)
+                        ?: ('Sağlayıcı geçerli bir oyun oturumu döndürmedi (' . $issue . ').');
+                } elseif (self::looksLikeUnauthorizedLaunch($url, $content)) {
+                    $failureMessage = 'Sağlayıcı oturumu doğrulamadı (not logged in/un-authorized).';
+                } else {
+                    $failureMessage = '';
+                    break 2;
+                }
+
                 if ($attempt < $maxAttempts) {
                     usleep(200000);
-                    continue;
                 }
-                break;
-            }
-
-            $code = (int) ($response['code'] ?? 0);
-            $url = trim((string) ($response['url'] ?? $response['URL'] ?? ''));
-            $content = (string) ($response['content'] ?? $response['Content'] ?? '');
-
-            if ($code !== 200 && $code !== 0) {
-                $msg = trim((string) ($response['message'] ?? $response['Message'] ?? 'Launch failed'));
-                $failureMessage = self::friendlyLaunchFailureMessage($msg, $response, '', '');
-                if ($failureMessage === '') {
-                    $failureMessage = 'GSC+: ' . ($msg !== '' ? $msg : ('code ' . $code));
-                    $failureMessage .= self::agentBalanceHint($pdo, $currency, $msg);
-                }
-            } elseif ($url === '' && $content === '') {
-                $failureMessage = 'GSC+ launch URL dönmedi.';
-            } elseif (($issue = self::describeUnusableLaunchPayload($response, $url, $content)) !== null) {
-                $failureMessage = self::friendlyLaunchFailureMessage('', $response, $url, $content)
-                    ?: ('Sağlayıcı geçerli bir oyun oturumu döndürmedi (' . $issue . ').');
-            } else {
-                $failureMessage = '';
-                break;
-            }
-
-            if ($attempt < $maxAttempts) {
-                usleep(200000);
             }
         }
 
@@ -1454,6 +1463,7 @@ final class GscPlusService
                 'platform' => $platform,
                 'message' => $failureMessage,
                 'provider_code' => (int) ($response['code'] ?? $response['Code'] ?? 0),
+                'password_mode' => $selectedPasswordTag,
             ]);
             return ['success' => false, 'code' => 422, 'message' => $failureMessage];
         }
@@ -1491,6 +1501,7 @@ final class GscPlusService
             'currency' => $currency,
             'platform' => $platform,
             'ip' => $ip,
+            'password_mode' => $selectedPasswordTag,
             'open_mode' => $openMode,
             'has_url' => $url !== '',
             'url_host' => $url !== '' ? (string) (parse_url($url, PHP_URL_HOST) ?: '') : null,
@@ -2523,6 +2534,117 @@ final class GscPlusService
         // between releases can invalidate previously provisioned provider sessions.
         $seed = (string) ($cfg['secret_key'] ?? '') . '|' . (int) ($user['id'] ?? 0) . '|' . (string) ($user['username'] ?? '');
         return md5($seed);
+    }
+
+    /**
+     * Build deterministic and stored-password-based candidates for launch-game.
+     * Some staging lines persist an account password on first login and reject
+     * subsequent launches when operators rotate formulas.
+     *
+     * @return list<string>
+     */
+    private static function memberPasswordCandidates(PDO $pdo, array $cfg, array $user): array
+    {
+        $candidates = [];
+        $push = static function (string $value) use (&$candidates): void {
+            $value = trim($value);
+            if ($value === '' || in_array($value, $candidates, true)) {
+                return;
+            }
+            $candidates[] = $value;
+        };
+
+        // Primary legacy deterministic formula (historically used in this integration).
+        $push(self::memberPassword($cfg, $user));
+
+        $userId = (int) ($user['id'] ?? 0);
+        if ($userId <= 0) {
+            return $candidates;
+        }
+
+        try {
+            $stmt = $pdo->prepare('SELECT password FROM users WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => $userId]);
+            $stored = trim((string) ($stmt->fetchColumn() ?: ''));
+            if ($stored !== '') {
+                // If the DB field already stores MD5, try it directly first.
+                if (preg_match('/^[a-f0-9]{32}$/i', $stored) === 1) {
+                    $push(strtolower($stored));
+                }
+                // Common bridge strategy: provider-side password = md5(stored value).
+                $push(md5($stored));
+            }
+        } catch (Throwable) {
+            // Launch must not fail because of candidate enrichment.
+        }
+
+        return $candidates !== [] ? $candidates : [self::memberPassword($cfg, $user)];
+    }
+
+    private static function passwordCandidateTag(int $idx, int $total): string
+    {
+        if ($total <= 1) {
+            return 'deterministic';
+        }
+        return $idx === 0 ? 'deterministic' : ('candidate_' . ($idx + 1));
+    }
+
+    private static function looksLikeUnauthorizedLaunch(string $url, string $content): bool
+    {
+        $joined = strtolower($content . ' ' . $url);
+        if (
+            str_contains($joined, 'not logged in')
+            || str_contains($joined, 'un-authorized')
+            || str_contains($joined, 'unauthorized')
+            || str_contains($joined, 're-log in')
+        ) {
+            return true;
+        }
+
+        if ($url === '' || !preg_match('/^https?:\/\//i', $url)) {
+            return false;
+        }
+        $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
+        if ($host === '') {
+            return false;
+        }
+        // Only preflight known staging launch hosts to avoid extra latency elsewhere.
+        if (!str_contains($host, 'prerelease-env.biz') && !str_contains($host, 'efinity')) {
+            return false;
+        }
+        $probe = self::httpProbeBody($url);
+        if ($probe === '') {
+            return false;
+        }
+        $probe = strtolower($probe);
+        return str_contains($probe, 'not logged in')
+            || str_contains($probe, 'un-authorized')
+            || str_contains($probe, 'unauthorized')
+            || str_contains($probe, 're-log in');
+    }
+
+    private static function httpProbeBody(string $url): string
+    {
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return '';
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_TIMEOUT => 6,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_HTTPHEADER => ['Accept: text/html,application/xhtml+xml;q=0.9,*/*;q=0.8'],
+        ]);
+        $raw = curl_exec($ch);
+        curl_close($ch);
+        if (!is_string($raw) || $raw === '') {
+            return '';
+        }
+        return substr($raw, 0, 40000);
     }
 
     private static function resolvePlatform(array $input): string
