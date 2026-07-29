@@ -240,7 +240,7 @@ return [
             'table' => 'drakon_sessions',
             'active' => 'datatable',
             'crumbs' => 'Drakon Casino | Sessions',
-            'columns' => ['id', 'user_id', 'username', 'game_id', 'game_code', 'currency', 'lang', 'mode', 'launch_url', 'created_at'],
+            'columns' => ['id', 'user_id', 'username', 'game_id', 'game_code', 'currency', 'lang', 'mode', 'wallet_source', 'provider_session_id', 'launch_url', 'created_at'],
             'search_placeholder' => 'Kullanıcı veya oyun ara...',
         ],
         'drakon-transactions' => [

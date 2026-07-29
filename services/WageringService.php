@@ -83,7 +83,7 @@ final class WageringService
      * o an aktif olan bonus çevrim hedeflerine işler. $amount her zaman pozitif bahis
      * tutarı olmalıdır.
      */
-    public static function registerBet(PDO $pdo, int $userId, float $amount): void
+    public static function registerBet(PDO $pdo, int $userId, float $amount, ?string $walletSource = null): void
     {
         if ($userId <= 0 || $amount <= 0) {
             return;
@@ -101,7 +101,10 @@ final class WageringService
             error_log('[WageringService] registerBet (account) failed: ' . $e->getMessage());
         }
 
-        if (self::activeWalletMode($pdo, $userId) === 'bonus') {
+        $isBonusWallet = $walletSource !== null
+            ? $walletSource === 'bonus_balance' || $walletSource === 'bonus'
+            : self::activeWalletMode($pdo, $userId) === 'bonus';
+        if ($isBonusWallet) {
             self::applyBonusDelta($pdo, $userId, $amount);
         }
     }
@@ -110,7 +113,7 @@ final class WageringService
      * Bir bahis rollback/refund/cancel edildiğinde ilgili çevrim ilerlemesini geri
      * alır (fazla sayım yapılmaması için).
      */
-    public static function reverseBet(PDO $pdo, int $userId, float $amount): void
+    public static function reverseBet(PDO $pdo, int $userId, float $amount, ?string $walletSource = null): void
     {
         if ($userId <= 0 || $amount <= 0) {
             return;
@@ -128,7 +131,10 @@ final class WageringService
             error_log('[WageringService] reverseBet (account) failed: ' . $e->getMessage());
         }
 
-        if (self::activeWalletMode($pdo, $userId) === 'bonus') {
+        $isBonusWallet = $walletSource !== null
+            ? $walletSource === 'bonus_balance' || $walletSource === 'bonus'
+            : self::activeWalletMode($pdo, $userId) === 'bonus';
+        if ($isBonusWallet) {
             self::applyBonusDelta($pdo, $userId, -$amount);
         }
     }
