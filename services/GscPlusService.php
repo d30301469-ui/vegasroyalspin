@@ -1468,6 +1468,7 @@ final class GscPlusService
             'game_type' => $gameType,
             'currency' => $currency,
             'platform' => $platform,
+            'ip' => $ip,
             'open_mode' => $openMode,
             'has_url' => $url !== '',
             'url_host' => $url !== '' ? (string) (parse_url($url, PHP_URL_HOST) ?: '') : null,

@@ -364,6 +364,9 @@
 
     function isSafeLaunchUrl(url) {
         var text = String(url || '').trim();
+        if (text.indexOf('//') === 0) {
+            text = window.location.protocol + text;
+        }
         if (!/^https?:\/\//i.test(text)) {
             return false;
         }
@@ -402,6 +405,16 @@
         if (!data) {
             return null;
         }
+        // Prefer provider URL over HTML content — GSC sometimes returns both and
+        // content-first left players stuck in srcdoc/document.write instead of
+        // top-level navigation to Pragmatic.
+        var url = String(data.game_url || data.launch_url || data.url || '').trim();
+        if (url) {
+            return {
+                url: url,
+                openMode: normalizeOpenMode(data.open_mode, fallbackOpenMode)
+            };
+        }
         var content = String(data.content || '').trim();
         if (content !== '') {
             return {
@@ -409,14 +422,7 @@
                 openMode: normalizeOpenMode(data.open_mode, 'html')
             };
         }
-        var url = String(data.game_url || data.launch_url || '').trim();
-        if (!url) {
-            return null;
-        }
-        return {
-            url: url,
-            openMode: normalizeOpenMode(data.open_mode, fallbackOpenMode)
-        };
+        return null;
     }
 
     var newTabFallbackTimer = null;
@@ -490,7 +496,15 @@
             || payloadId.toLowerCase().indexOf('gsc:') === 0
             || !document.getElementById('playFrame');
         if (forceRedirect) {
-            window.location.replace(url);
+            try {
+                window.location.replace(url);
+            } catch (e) {
+                /* ignore */
+            }
+            // Some mobile browsers ignore replace; force a hard navigation.
+            window.setTimeout(function () {
+                window.location.href = url;
+            }, 200);
             return;
         }
         var frame = document.getElementById('playFrame');

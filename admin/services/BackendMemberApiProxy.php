@@ -501,11 +501,56 @@ final class BackendMemberApiProxy
             $headers[] = 'X-Metropol-Member-Jwt: ' . $browserJwt;
         }
 
+        foreach (self::clientIpForwardHeaders() as $ipHeader) {
+            $headers[] = $ipHeader;
+        }
+
         if ($routeNorm !== '' && self::isMemberAuthProxyRoute($routeNorm)) {
             $headers = array_merge($headers, self::buildFrontendProxyTrustHeaders());
         }
 
         return $headers;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function clientIpForwardHeaders(): array
+    {
+        $ip = '';
+        if (!function_exists('metropol_cloudflare_client_ip')) {
+            $cf = dirname(__DIR__) . '/config/cloudflare.php';
+            if (is_file($cf)) {
+                require_once $cf;
+            }
+        }
+        if (function_exists('metropol_cloudflare_client_ip')) {
+            $ip = metropol_cloudflare_client_ip();
+        }
+        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'] as $key) {
+                $raw = trim((string) ($_SERVER[$key] ?? ''));
+                if ($raw === '') {
+                    continue;
+                }
+                if (str_contains($raw, ',')) {
+                    $raw = trim(explode(',', $raw, 2)[0]);
+                }
+                if (filter_var($raw, FILTER_VALIDATE_IP) !== false) {
+                    $ip = $raw;
+                    break;
+                }
+            }
+        }
+        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return [];
+        }
+
+        return [
+            'CF-Connecting-IP: ' . $ip,
+            'X-Forwarded-For: ' . $ip,
+            'X-Real-IP: ' . $ip,
+        ];
     }
 
     /**
