@@ -41,6 +41,10 @@ storage/logs/*
 !storage/logs/.gitkeep
 admin/storage/logs/*
 !admin/storage/logs/.gitkeep
+logs/gamingsoft/*
+!logs/gamingsoft/.gitkeep
+!logs/gamingsoft/credentials.local.php.example
+logs/gamingsoft/credentials.local.php
 
 # ----------------------------
 # Runtime cache / generated files

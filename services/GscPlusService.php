@@ -172,7 +172,28 @@ final class GscPlusService
         }
         self::createSchema($pdo);
         self::ensureDefaultConfig($pdo);
+        self::ensureFileLog();
         self::$schemaBootstrapped = true;
+    }
+
+    private static function ensureFileLog(): void
+    {
+        if (class_exists('GscFileLog', false)) {
+            return;
+        }
+        $path = dirname(__DIR__) . '/services/GscFileLog.php';
+        if (is_file($path)) {
+            require_once $path;
+        }
+    }
+
+    /** @param array<string,mixed> $context */
+    private static function fileLog(string $event, array $context = []): void
+    {
+        self::ensureFileLog();
+        if (class_exists('GscFileLog', false)) {
+            GscFileLog::write('gsc', $event, $context);
+        }
     }
 
     private static function createSchema(PDO $pdo): void
@@ -606,10 +627,18 @@ final class GscPlusService
                 $payload,
                 $body
             );
+            self::fileLog('wallet.' . $endpoint, [
+                'member_account' => $meta['member_account'],
+                'transaction_id' => $meta['transaction_id'],
+                'status_code' => $meta['status_code'],
+                'error_code' => $meta['error_code'],
+                'top_code' => (int) ($body['code'] ?? 0),
+            ]);
             return ['status' => 200, 'body' => $body];
         } catch (Throwable $e) {
             $body = $errorBody(999, 'Internal Server Error');
             error_log('[GSC+] wallet ' . $endpoint . ': ' . $e->getMessage());
+            self::fileLog('wallet.exception', ['endpoint' => $endpoint, 'error' => $e->getMessage()]);
             $meta = self::walletLogMeta($pdo, $endpoint, $payload, $body);
             self::logWallet(
                 $pdo,
@@ -1347,6 +1376,17 @@ final class GscPlusService
                 $response !== [] ? $response : null,
                 $failureMessage
             );
+            self::fileLog('launch.fail', [
+                'user_id' => $userId,
+                'member_account' => $memberAccount,
+                'product_code' => $productCode,
+                'game_code' => $isLobby ? null : $gameCode,
+                'game_type' => $gameType,
+                'currency' => $currency,
+                'platform' => $platform,
+                'message' => $failureMessage,
+                'provider_code' => (int) ($response['code'] ?? $response['Code'] ?? 0),
+            ]);
             return ['success' => false, 'code' => 422, 'message' => $failureMessage];
         }
 
@@ -1374,6 +1414,18 @@ final class GscPlusService
         // re-log in" HTML even after a successful launch-game. HTML content
         // launches (no external URL) can still use the iframe/srcdoc path.
         $openMode = $url !== '' ? 'redirect' : 'iframe';
+        self::fileLog('launch.ok', [
+            'user_id' => $userId,
+            'member_account' => $memberAccount,
+            'product_code' => $productCode,
+            'game_code' => $isLobby ? null : $gameCode,
+            'game_type' => $gameType,
+            'currency' => $currency,
+            'platform' => $platform,
+            'open_mode' => $openMode,
+            'has_url' => $url !== '',
+            'url_host' => $url !== '' ? (string) (parse_url($url, PHP_URL_HOST) ?: '') : null,
+        ]);
         return [
             'success' => true,
             'code' => 200,
@@ -2548,11 +2600,23 @@ final class GscPlusService
         $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         if ($errno !== 0) {
+            self::fileLog('operator.http_error', ['method' => $method, 'path' => $path, 'error' => $error]);
             throw new RuntimeException('GSC+ HTTP error: ' . $error);
         }
         $decoded = is_string($raw) ? json_decode($raw, true) : null;
         if (!is_array($decoded)) {
+            self::fileLog('operator.bad_json', ['method' => $method, 'path' => $path, 'http' => $http]);
             throw new RuntimeException('GSC+ invalid JSON response (HTTP ' . $http . ')');
+        }
+        $code = (int) ($decoded['code'] ?? 0);
+        if ($code !== 0 && $code !== 200) {
+            self::fileLog('operator.response_code', [
+                'method' => $method,
+                'path' => $path,
+                'http' => $http,
+                'code' => $code,
+                'message' => (string) ($decoded['message'] ?? ''),
+            ]);
         }
         return $decoded;
     }
