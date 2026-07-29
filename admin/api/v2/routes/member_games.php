@@ -433,7 +433,9 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
                 'provider_code' => (string) ($r['provider_code'] ?? ''),
                 'is_featured'   => $featured,
                 'is_popular'    => $featured === 1,
-                'has_demo'      => true,
+                // Live-dealer tables are streamed from a studio and have no demo
+                // build; offering one only produces a provider launch error.
+                'has_demo'      => $gameType !== 1,
                 'category'      => $gameType === 1 ? 'live-casino' : 'slots',
                 'game_type'     => $gameType,
                 'source'        => (string) ($r['source'] ?? ''),
