@@ -68,9 +68,9 @@ $slotPageTitle = 'CANLI CASINO';
 $slotGameType = 1;
 $slotEmptyTitle = 'Canlı casino oyunu bulunamadı';
 $slotEmptyText = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin.';
-// Load-more / filters go through LiveCasinoQuery via API source=livecasino
+// Load-more / filters go through LiveCasinoQuery — Drakon live games only
 $slotApiParams = [
-    'source' => 'livecasino',
+    'source' => 'drakon',
 ];
 if (!empty($liveLobbyExtra['currency'])) {
     $slotApiParams['currency'] = $liveLobbyExtra['currency'];

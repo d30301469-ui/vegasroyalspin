@@ -163,14 +163,13 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));
     $sort = strtolower(trim((string) ($_GET['sort'] ?? '')));
 
-    // Live casino catalogue is owned by LiveCasinoQuery (not SlotGamesQuery).
-    if (($gameType === 1 || in_array($source, ['livecasino', 'live', 'live_casino'], true))
-        && $source !== 'drakon') {
+    // Live casino catalogue is Drakon live games only (LiveCasinoQuery).
+    if ($gameType === 1 || in_array($source, ['livecasino', 'live', 'live_casino'], true)) {
         admin_require_project_file('services/LiveCasinoQuery.php');
         $liveExtra = [
             // Always hit local DB on the admin API host — never recurse via BackendApiClient.
             'force_local' => true,
-            'source' => in_array($source, ['aggregator'], true) ? $source : '',
+            'source' => 'drakon',
             'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
         ];
         $liveResult = LiveCasinoQuery::page(
