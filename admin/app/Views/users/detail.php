@@ -9,6 +9,7 @@ $games = is_array($games ?? null) ? $games : [];
 $sportsbookCoupons = is_array($sportsbookCoupons ?? null) ? $sportsbookCoupons : [];
 $bonusClaims = is_array($bonusClaims ?? null) ? $bonusClaims : [];
 $activeBonuses = is_array($activeBonuses ?? null) ? $activeBonuses : [];
+$freespins = is_array($freespins ?? null) ? $freespins : [];
 $accountWagering = is_array($accountWagering ?? null) ? $accountWagering : [];
 $activeWalletMode = (string) ($activeWalletMode ?? 'main') === 'bonus' ? 'bonus' : 'main';
 $notes = is_array($notes ?? null) ? $notes : [];
@@ -225,6 +226,7 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
         ['title' => 'Spor kuponları', 'rows' => $sportsbookCoupons, 'columns' => ['id' => 'ID', 'coupon_id' => 'Kupon', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'vendor_code' => 'Vendor', 'game_code' => 'Sport', 'txn_type' => 'Kazanç/Kayıp', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'currency' => 'Para', 'match_result' => 'Maç Sonucu', 'processed_coupon' => 'İşlenmiş Kupon', 'status' => 'Durum', 'created_at' => 'Tarih']],
         ['title' => 'Bonus talepleri', 'rows' => $bonusClaims, 'columns' => ['id' => 'ID', 'bonus_name' => 'Bonus', 'requested_amount' => 'Tutar', 'status' => 'Durum', 'processed_by' => 'İşleyen', 'processed_at' => 'İşlem tarihi', 'created_at' => 'Tarih']],
         ['title' => 'Aktif bonuslar', 'rows' => $activeBonuses, 'columns' => ['id' => 'ID', 'name' => 'Bonus', 'initial_amount' => 'İlk tutar', 'current_bonus_balance' => 'Mevcut', 'cevrim_hedef' => 'Çevrim hedefi', 'cevrim_ilerleme' => 'Çevrim ilerleme', 'cevrim_durumu' => 'Çevrim durumu', 'status' => 'Durum', 'deadline' => 'Deadline', 'created_at' => 'Tarih']],
+        ['title' => 'Freespinler', 'rows' => $freespins, 'columns' => ['provider' => 'Sağlayıcı', 'campaign' => 'Kampanya', 'game' => 'Oyun', 'freespins_total' => 'Verilen', 'freespins_done' => 'Kullanılan', 'win_amount' => 'Kazanç', 'status' => 'Durum', 'valid_until' => 'Son kullanım', 'created_at' => 'Veriliş tarihi']],
     ];
     ?>
     <?php foreach ($sections as $section): ?>

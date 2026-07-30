@@ -55,6 +55,7 @@ final class AdminUserController extends AdminController
             'sportsbookCoupons' => $sportsbookCoupons,
             'bonusClaims' => $this->rows('SELECT id, bonus_name, requested_amount, status, processed_by, processed_at, created_at FROM bonus_claim_requests WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 20', $userId),
             'activeBonuses' => $this->rows('SELECT id, name, initial_amount, current_bonus_balance, wagering_requirement, wagering_target, total_bet_amount, is_complete, status, deadline, created_at FROM user_active_bonuses WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 20', $userId),
+            'freespins' => $this->freespinsForUser($userId),
             'accountWagering' => WageringService::accountProgress(AdminDatabase::pdo(), $userId),
             'activeWalletMode' => WageringService::activeWalletMode(AdminDatabase::pdo(), $userId),
             'notes' => $this->notesForUser($userId),
@@ -374,6 +375,86 @@ final class AdminUserController extends AdminController
         $stmt->execute(['user_id' => $userId]);
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    private function freespinsForUser(int $userId): array
+    {
+        $pdo = AdminDatabase::pdo();
+        $rows = [];
+
+        try {
+            BgamingService::bootstrap($pdo);
+            $stmt = $pdo->prepare(
+                "SELECT
+                    'BGaming' AS provider,
+                    COALESCE(c.title, cp.campaign_code) AS campaign,
+                    COALESCE(c.game_identifier, '-') AS game,
+                    cp.freespins_total AS freespins_total,
+                    cp.freespins_done AS freespins_done,
+                    cp.win_amount,
+                    cp.status,
+                    COALESCE(cp.valid_until, c.expires_at) AS valid_until,
+                    cp.created_at
+                 FROM bgaming_campaign_players cp
+                 INNER JOIN bgaming_campaigns c ON c.campaign_code = cp.campaign_code
+                 WHERE cp.user_id = :user_id
+                   AND cp.status <> 'superseded'
+                   AND c.campaign_type = 'freespin'
+                 ORDER BY cp.created_at DESC
+                 LIMIT 100"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $row['status'] = BgamingService::freespinStatusLabel((string) ($row['status'] ?? ''));
+                $rows[] = $row;
+            }
+        } catch (Throwable $exception) {
+            error_log('[AdminUserController] BGaming freespins could not be loaded: ' . $exception->getMessage());
+        }
+
+        try {
+            DrakonService::bootstrap($pdo);
+            $stmt = $pdo->prepare(
+                "SELECT
+                    CONCAT('Drakon / ', COALESCE(c.vendor, '-')) AS provider,
+                    cp.campaign_code AS campaign,
+                    COALESCE(c.game_ids, '-') AS game,
+                    c.freespins_per_player AS freespins_total,
+                    '-' AS freespins_done,
+                    0 AS win_amount,
+                    cp.status,
+                    c.expires_at AS valid_until,
+                    cp.created_at
+                 FROM drakon_campaign_players cp
+                 INNER JOIN drakon_campaigns c ON c.campaign_code = cp.campaign_code
+                 WHERE cp.user_id = :user_id
+                 ORDER BY cp.created_at DESC
+                 LIMIT 100"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $rows[] = $row;
+            }
+        } catch (Throwable $exception) {
+            error_log('[AdminUserController] Drakon freespins could not be loaded: ' . $exception->getMessage());
+        }
+
+        foreach ($rows as $index => $row) {
+            $expiresAt = (int) ($row['valid_until'] ?? 0);
+            $rows[$index]['valid_until'] = $expiresAt > 0 ? date('d.m.Y H:i', $expiresAt) : '-';
+        }
+        usort(
+            $rows,
+            static fn (array $left, array $right): int => strcmp(
+                (string) ($right['created_at'] ?? ''),
+                (string) ($left['created_at'] ?? '')
+            )
+        );
+
+        return $rows;
     }
 
     private function scalar(string $sql, int $userId): float
