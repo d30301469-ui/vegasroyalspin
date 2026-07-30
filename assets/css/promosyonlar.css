@@ -740,3 +740,56 @@
     }
 }
 
+/* ========== Mobil kart parlaması ========== */
+/* Masaüstünde hover ile tetiklenen mor ışık süzülmesi; dokunmatikte hover
+   olmadığı için aynı efekt kendi kendine döngüye alınır. */
+@keyframes promoCardShine {
+    0%,
+    12% {
+        transform: translateX(0);
+        opacity: 0;
+    }
+
+    18% {
+        opacity: 1;
+    }
+
+    44% {
+        opacity: 1;
+    }
+
+    50%,
+    100% {
+        transform: translateX(286%);
+        opacity: 0;
+    }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 991px) {
+    .page-promotions .bonus-card::after,
+    .page-promotions .bonus-card:hover::after {
+        left: -100%;
+        animation: promoCardShine 5s ease-in-out infinite;
+    }
+
+    .page-promotions .bonus-card:nth-child(2n)::after {
+        animation-delay: 0.45s;
+    }
+
+    .page-promotions .bonus-card:nth-child(3n)::after {
+        animation-delay: 0.9s;
+    }
+
+    .page-promotions .bonus-card:nth-child(4n)::after {
+        animation-delay: 1.35s;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-promotions .bonus-card::after,
+    .page-promotions .bonus-card:hover::after {
+        animation: none;
+        opacity: 0;
+    }
+}
+
