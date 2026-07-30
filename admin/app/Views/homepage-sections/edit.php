@@ -82,7 +82,7 @@ $renderGameRow = static function (string $sectionKey, array $card = []) use ($h,
             <div class="homepage-game-line">
                 <label class="homepage-field homepage-field--title">
                     <span>Oyun adı</span>
-                    <input class="input" name="cards[<?= $h($sectionKey) ?>][title][]" value="<?= $h($title) ?>" placeholder="Örn: Sweet Bonanza 1000">
+                    <input class="input" name="cards[<?= $h($sectionKey) ?>][title][]" value="<?= $h($title) ?>" placeholder="<?= $sectionKey === 'live-casino' ? 'Örn: Lightning Roulette' : 'Örn: Sweet Bonanza 1000' ?>">
                 </label>
                 <label class="homepage-field homepage-field--image">
                     <span>Görsel path / URL</span>
@@ -90,7 +90,7 @@ $renderGameRow = static function (string $sectionKey, array $card = []) use ($h,
                 </label>
                 <label class="homepage-field">
                     <span>Oyun ID / game code</span>
-                    <input class="input" type="text" name="cards[<?= $h($sectionKey) ?>][game_id][]" value="<?= $h((string) ($card['game_id'] ?? '')) ?>" placeholder="vs20fruitswx veya aggregator:slot-pragmatic:vs20fruitswx" autocomplete="off" spellcheck="false">
+                    <input class="input" type="text" name="cards[<?= $h($sectionKey) ?>][game_id][]" value="<?= $h((string) ($card['game_id'] ?? '')) ?>" placeholder="<?= $sectionKey === 'live-casino' ? 'drakon:51096 veya boş (başlığa göre eşlenir)' : 'vs20fruitswx veya aggregator:slot-pragmatic:vs20fruitswx' ?>" autocomplete="off" spellcheck="false">
                 </label>
             </div>
         </div>
@@ -356,7 +356,11 @@ $renderGameRow = static function (string $sectionKey, array $card = []) use ($h,
                         <span class="eyebrow">Oyun Listesi</span>
                         <h2 class="card-title"><?= $h($label) ?></h2>
                         <p class="muted" style="margin:6px 0 0;font-size:12px;line-height:1.45">
-                            Oyun ID: <code>aggregator:vendor:code</code> (Casino Aggregator). Boş bırakılırsa başlığa göre katalogdan eşlenir.
+                            <?php if ($sectionKey === 'live-casino'): ?>
+                                Oyun ID: <code>drakon:12345</code> (Drakon canlı casino). Boş bırakılırsa başlığa göre Drakon katalogundan eşlenir.
+                            <?php else: ?>
+                                Oyun ID: <code>aggregator:vendor:code</code> (Casino Aggregator). Boş bırakılırsa başlığa göre katalogdan eşlenir.
+                            <?php endif; ?>
                         </p>
                         <div class="homepage-section-count"><?= count($cards) ?> kayıt</div>
                     </div>

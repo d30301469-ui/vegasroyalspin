@@ -164,7 +164,10 @@ final class ApiHomepageSections
         if ($normalized['type'] === 'banner') {
             $payload = self::normalizeBannerPayload(is_array($payload) ? $payload : []);
         } elseif ($normalized['type'] === 'games' && is_array($payload)) {
-            $payload = self::hydrateGamesPayloadWithCatalog($payload);
+            $payload = self::hydrateGamesPayloadWithCatalog(
+                $payload,
+                (string) ($normalized['section_key'] ?? '')
+            );
         }
         $normalized['payload'] = ApiMediaUrl::resolveHomepagePayload($payload);
 
@@ -271,15 +274,17 @@ final class ApiHomepageSections
                 'payload' => [
                     'href' => '/livecasino',
                     'items' => [
-                        ['game_id' => 23715, 'title' => 'Treasure Island', 'image_url' => 'assets/games-img/30cdd01c09eb84e33c798041023d2856_casinoGameIcon3.svg', 'alt' => 'Treasure Island', 'size' => 'featured', 'link' => '', 'sort_order' => 10, 'is_active' => true],
-                        ['game_id' => 19999, 'title' => 'Roulette', 'image_url' => 'assets/games-img/game-img4.svg', 'alt' => 'Roulette', 'size' => 'normal', 'link' => '', 'sort_order' => 20, 'is_active' => true],
-                        ['game_id' => 23238, 'title' => 'Pragmatic live - Lobby', 'image_url' => 'assets/games-img/game-img5.svg', 'alt' => 'Live Lobby', 'size' => 'normal', 'link' => '', 'sort_order' => 30, 'is_active' => true],
-                        ['game_id' => 8918, 'title' => 'First Person Lightning Roulette', 'image_url' => 'assets/games-img/game2-img4.jpg', 'alt' => 'First Person Lightning Roulette', 'size' => 'normal', 'link' => '', 'sort_order' => 40, 'is_active' => true],
-                        ['game_id' => 2005, 'title' => 'Spin a Win', 'image_url' => 'assets/games-img/game2-img5.jpeg', 'alt' => 'Spin a Win', 'size' => 'normal', 'link' => '', 'sort_order' => 50, 'is_active' => true],
-                        ['game_id' => 2006, 'title' => 'Live BlackJack', 'image_url' => 'assets/games-img/game2-img6.jpg', 'alt' => 'Live BlackJack', 'size' => 'normal', 'link' => '', 'sort_order' => 60, 'is_active' => true],
-                        ['game_id' => 2007, 'title' => 'Quantum Roulette', 'image_url' => 'assets/games-img/game2-img7.gif', 'alt' => 'Quantum Roulette', 'size' => 'normal', 'link' => '', 'sort_order' => 70, 'is_active' => true],
-                        ['game_id' => 2008, 'title' => 'Super Six Baccarat', 'image_url' => 'assets/games-img/game2-img8.jpg', 'alt' => 'Super Six Baccarat', 'size' => 'normal', 'link' => '', 'sort_order' => 80, 'is_active' => true],
-                        ['game_id' => 2009, 'title' => 'Live Roulette', 'image_url' => 'assets/games-img/game2-img9.jpg', 'alt' => 'Live Roulette', 'size' => 'normal', 'link' => '', 'sort_order' => 90, 'is_active' => true],
+                        // Live-casino tiles must launch via Drakon (`drakon:`). Empty game_id
+                        // is resolved from the Drakon live catalogue by title at hydrate time.
+                        ['game_id' => '', 'title' => 'Treasure Island', 'image_url' => 'assets/games-img/30cdd01c09eb84e33c798041023d2856_casinoGameIcon3.svg', 'alt' => 'Treasure Island', 'size' => 'featured', 'link' => '', 'sort_order' => 10, 'is_active' => true],
+                        ['game_id' => '', 'title' => 'Dream Catcher', 'image_url' => 'assets/games-img/game-img4.svg', 'alt' => 'Dream Catcher', 'size' => 'normal', 'link' => '', 'sort_order' => 20, 'is_active' => true],
+                        ['game_id' => '', 'title' => 'Lightning Roulette', 'image_url' => 'assets/games-img/game-img5.svg', 'alt' => 'Lightning Roulette', 'size' => 'normal', 'link' => '', 'sort_order' => 30, 'is_active' => true],
+                        ['game_id' => '', 'title' => 'First Person Lightning Roulette', 'image_url' => 'assets/games-img/game2-img4.jpg', 'alt' => 'First Person Lightning Roulette', 'size' => 'normal', 'link' => '', 'sort_order' => 40, 'is_active' => true],
+                        ['game_id' => '', 'title' => 'Spin a Win', 'image_url' => 'assets/games-img/game2-img5.jpeg', 'alt' => 'Spin a Win', 'size' => 'normal', 'link' => '', 'sort_order' => 50, 'is_active' => true],
+                        ['game_id' => '', 'title' => 'Blackjack', 'image_url' => 'assets/games-img/game2-img6.jpg', 'alt' => 'Blackjack', 'size' => 'normal', 'link' => '', 'sort_order' => 60, 'is_active' => true],
+                        ['game_id' => '', 'title' => 'Quantum Roulette', 'image_url' => 'assets/games-img/game2-img7.gif', 'alt' => 'Quantum Roulette', 'size' => 'normal', 'link' => '', 'sort_order' => 70, 'is_active' => true],
+                        ['game_id' => '', 'title' => 'Super Six Baccarat', 'image_url' => 'assets/games-img/game2-img8.jpg', 'alt' => 'Super Six Baccarat', 'size' => 'normal', 'link' => '', 'sort_order' => 80, 'is_active' => true],
+                        ['game_id' => '', 'title' => 'Roulette Live', 'image_url' => 'assets/games-img/game2-img9.jpg', 'alt' => 'Roulette Live', 'size' => 'normal', 'link' => '', 'sort_order' => 90, 'is_active' => true],
                     ],
                 ],
                 'sort_order' => 30,
@@ -404,8 +409,8 @@ final class ApiHomepageSections
     }
 
     /**
-     * Homepage casino tiles must launch via aggregator/bgaming string IDs
-     * (e.g. aggregator:slot-pragmatic:vs20olympx), not SoftSwiss integers.
+     * Homepage casino tiles must launch via aggregator/bgaming/drakon string IDs
+     * (e.g. aggregator:slot-pragmatic:vs20olympx or drakon:51096), not SoftSwiss integers.
      *
      * IMPORTANT: never cast to int — (int)"vs20fruitswx" === 0 in PHP.
      */
@@ -428,12 +433,13 @@ final class ApiHomepageSections
     }
 
     /**
-     * Resolve curated CMS cards to playable catalog IDs (aggregator preferred).
+     * Resolve curated CMS cards to playable catalog IDs.
+     * Live-casino section → Drakon only. Casino (slots) section → aggregator/bgaming.
      *
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    public static function hydrateGamesPayloadWithCatalog(array $payload): array
+    public static function hydrateGamesPayloadWithCatalog(array $payload, string $sectionKey = ''): array
     {
         $items = is_array($payload['items'] ?? null) ? $payload['items'] : [];
         if ($items === []) {
@@ -446,15 +452,17 @@ final class ApiHomepageSections
             return $payload;
         }
 
+        $useDrakon = self::isLiveCasinoSectionKey($sectionKey);
+
         foreach ($items as $index => $item) {
             if (!is_array($item)) {
                 continue;
             }
-            $resolved = self::resolveCatalogGameId(
-                $pdo,
-                self::normalizeGameIdValue($item['game_id'] ?? ''),
-                trim((string) ($item['title'] ?? ''))
-            );
+            $gameId = self::normalizeGameIdValue($item['game_id'] ?? '');
+            $title = trim((string) ($item['title'] ?? ''));
+            $resolved = $useDrakon
+                ? self::resolveDrakonLiveGameId($pdo, $gameId, $title)
+                : self::resolveCatalogGameId($pdo, $gameId, $title);
             if ($resolved !== '') {
                 $items[$index]['game_id'] = $resolved;
             }
@@ -465,9 +473,160 @@ final class ApiHomepageSections
         return $payload;
     }
 
+    public static function isLiveCasinoSectionKey(string $sectionKey): bool
+    {
+        $key = strtolower(trim($sectionKey));
+
+        return in_array($key, ['live-casino', 'live_casino', 'livecasino', 'live'], true);
+    }
+
+    private static function ensureDrakonServiceLoaded(): void
+    {
+        if (class_exists('DrakonService', false)) {
+            return;
+        }
+        $candidates = [
+            dirname(__DIR__) . '/services/DrakonService.php',
+            dirname(__DIR__) . '/admin/services/DrakonService.php',
+        ];
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                require_once $path;
+                return;
+            }
+        }
+    }
+
+    private static function drakonLiveSqlPredicate(string $tableAlias = ''): string
+    {
+        self::ensureDrakonServiceLoaded();
+        if (class_exists('DrakonService', false)) {
+            return DrakonService::liveGameSqlMatch($tableAlias);
+        }
+        $p = $tableAlias !== '' ? rtrim($tableAlias, '.') . '.' : '';
+
+        return "(LOWER(COALESCE({$p}provider_name, '')) LIKE '%live%'"
+            . " OR LOWER(COALESCE({$p}provider_code, '')) LIKE '%live%')";
+    }
+
+    /**
+     * Resolve a live-casino homepage tile to a Drakon launch ID (`drakon:{id}`).
+     * Aggregator/bgaming IDs are ignored — live tables must open via Drakon.
+     */
+    private static function resolveDrakonLiveGameId(PDO $pdo, string $gameId, string $title): string
+    {
+        $liveSql = self::drakonLiveSqlPredicate();
+        $notLobby = " AND LOWER(COALESCE(game_name, '')) NOT LIKE '%lobby%'"
+            . " AND LOWER(COALESCE(game_name, '')) NOT LIKE '%acceptance%test%'";
+
+        if ($gameId !== '') {
+            if (str_starts_with($gameId, 'drakon:')) {
+                $raw = substr($gameId, strlen('drakon:'));
+                if ($raw !== '') {
+                    try {
+                        $stmt = $pdo->prepare(
+                            "SELECT game_id FROM drakon_games
+                             WHERE is_active = 1 AND game_id = :id AND {$liveSql}{$notLobby}
+                             LIMIT 1"
+                        );
+                        $stmt->execute([':id' => $raw]);
+                        $found = trim((string) $stmt->fetchColumn());
+                        if ($found !== '') {
+                            return 'drakon:' . $found;
+                        }
+                    } catch (Throwable) {
+                    }
+                }
+                // Keep the curated Drakon ID even if the local catalogue is empty/out of sync.
+                return $gameId;
+            }
+
+            // Bare numeric / game_code / game_id from Drakon catalogue (not aggregator:/bgaming:).
+            if (
+                !str_starts_with($gameId, 'aggregator:')
+                && !str_starts_with($gameId, 'bgaming:')
+            ) {
+                $raw = $gameId;
+                if (str_starts_with(strtolower($raw), 'drakon:')) {
+                    $raw = substr($raw, strlen('drakon:'));
+                }
+                try {
+                    $stmt = $pdo->prepare(
+                        "SELECT game_id FROM drakon_games
+                         WHERE is_active = 1 AND {$liveSql}{$notLobby}
+                           AND (game_id = :id OR game_code = :code)
+                         ORDER BY id ASC
+                         LIMIT 1"
+                    );
+                    $stmt->execute([':id' => $raw, ':code' => $raw]);
+                    $found = trim((string) $stmt->fetchColumn());
+                    if ($found !== '') {
+                        return 'drakon:' . $found;
+                    }
+                } catch (Throwable) {
+                }
+            }
+        }
+
+        if ($title === '') {
+            return str_starts_with($gameId, 'drakon:') ? $gameId : '';
+        }
+
+        $titleNorm = preg_replace('/[™®©]+/u', '', $title) ?? $title;
+        $titleNorm = trim(preg_replace('/\s+/u', ' ', $titleNorm) ?? $titleNorm);
+        if ($titleNorm === '') {
+            return str_starts_with($gameId, 'drakon:') ? $gameId : '';
+        }
+
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT game_id, game_name FROM drakon_games
+                 WHERE is_active = 1 AND {$liveSql}{$notLobby}
+                   AND LOWER(game_name) = LOWER(:title)
+                 ORDER BY id ASC
+                 LIMIT 1"
+            );
+            $stmt->execute([':title' => $titleNorm]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($row)) {
+                $stmt = $pdo->prepare(
+                    "SELECT game_id, game_name FROM drakon_games
+                     WHERE is_active = 1 AND {$liveSql}{$notLobby}
+                       AND LOWER(game_name) LIKE LOWER(:title)
+                     ORDER BY CHAR_LENGTH(game_name) ASC, id ASC
+                     LIMIT 1"
+                );
+                $stmt->execute([':title' => $titleNorm . '%']);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!is_array($row)) {
+                $stmt = $pdo->prepare(
+                    "SELECT game_id, game_name FROM drakon_games
+                     WHERE is_active = 1 AND {$liveSql}{$notLobby}
+                       AND LOWER(game_name) LIKE LOWER(:title)
+                     ORDER BY CHAR_LENGTH(game_name) ASC, id ASC
+                     LIMIT 1"
+                );
+                $stmt->execute([':title' => '%' . $titleNorm . '%']);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            $found = is_array($row) ? trim((string) ($row['game_id'] ?? '')) : '';
+            if ($found !== '') {
+                return 'drakon:' . $found;
+            }
+        } catch (Throwable) {
+        }
+
+        return str_starts_with($gameId, 'drakon:') ? $gameId : '';
+    }
+
     private static function resolveCatalogGameId(PDO $pdo, string $gameId, string $title): string
     {
         if ($gameId !== '') {
+            if (str_starts_with($gameId, 'drakon:')) {
+                // Slot section should not launch Drakon live IDs via this path.
+                return $gameId;
+            }
             if (str_starts_with($gameId, 'aggregator:') || str_starts_with($gameId, 'bgaming:')) {
                 return $gameId;
             }

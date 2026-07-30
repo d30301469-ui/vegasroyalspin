@@ -50,7 +50,11 @@ final class AdminHomepageSectionsController extends AdminController
 
             $payload = $type === 'banner'
                 ? $this->bannerPayload($sectionInput)
-                : $this->gamesPayload($sectionInput, is_array($postedCards[$sectionKey] ?? null) ? $postedCards[$sectionKey] : []);
+                : $this->gamesPayload(
+                    $sectionKey,
+                    $sectionInput,
+                    is_array($postedCards[$sectionKey] ?? null) ? $postedCards[$sectionKey] : []
+                );
 
             $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             if (!is_string($encoded)) {
@@ -178,7 +182,7 @@ final class AdminHomepageSectionsController extends AdminController
         ];
     }
 
-    private function gamesPayload(array $sectionInput, array $cards): array
+    private function gamesPayload(string $sectionKey, array $sectionInput, array $cards): array
     {
         $items = [];
         $titles = is_array($cards['title'] ?? null) ? $cards['title'] : [];
@@ -216,7 +220,7 @@ final class AdminHomepageSectionsController extends AdminController
                         'game_id' => $gameId,
                         'title' => $title,
                     ]],
-                ]);
+                ], $sectionKey);
                 $resolved = trim((string) ($hydrated['items'][0]['game_id'] ?? ''));
                 if ($resolved !== '' && $resolved !== '0') {
                     $gameId = $resolved;
