@@ -54,14 +54,14 @@ final class AdminBgamingController extends AdminController
         $formState = $this->pullFormState();
 
         $this->view('bgaming/campaigns', [
-            'title' => 'BGaming Freespin Kampanyaları',
+            'title' => 'Freespin Ver',
             'active' => 'datatable',
             'moduleKey' => 'bgaming-settings',
-            'crumbs' => 'Games | BGaming Freespin Campaigns',
+            'crumbs' => 'Games | Freespin Ver',
             'configRow' => BgamingService::config($pdo),
             'campaigns' => BgamingService::campaigns($pdo),
             'freespinGames' => BgamingService::freespinCapableGames($pdo),
-            'assignments' => BgamingService::campaignAssignments($pdo, 120),
+            'assignments' => BgamingService::campaignAssignments($pdo, 120, 'freespin'),
             'users' => $this->assignableUsers($pdo),
             'editCampaign' => $editCampaign,
             'oldInput' => is_array($formState['input'] ?? null) ? $formState['input'] : [],
@@ -102,10 +102,10 @@ final class AdminBgamingController extends AdminController
         }
 
         $this->view('bgaming/freespins', [
-            'title' => 'BGaming Freespin Yönetimi',
+            'title' => 'Verilen Freespinler',
             'active' => 'datatable',
             'moduleKey' => 'bgaming-settings',
-            'crumbs' => 'Games | BGaming Freespins',
+            'crumbs' => 'Games | Verilen Freespinler',
             'configRow' => BgamingService::config($pdo),
             'users' => $this->assignableUsers($pdo),
             'freespinGames' => BgamingService::freespinCapableGames($pdo),
@@ -132,13 +132,22 @@ final class AdminBgamingController extends AdminController
         $campaignId = max(0, (int) ($_POST['id'] ?? 0));
         $redirectPath = '/bgaming/campaigns';
         try {
+            $userIds = $_POST['user_ids'] ?? [];
+            if (!is_array($userIds)) {
+                $userIds = [$userIds];
+            }
+            $userIds = array_values(array_filter(array_map('intval', $userIds)));
+            if ($userIds === []) {
+                throw new BgamingCampaignException(['user_ids' => 'En az bir oyuncu seçmelisiniz.']);
+            }
+
             $result = BgamingService::saveCampaignWithAssignments(AdminDatabase::pdo(), $_POST);
             $this->flash($this->campaignSavedMessage($result, $campaignId > 0));
         } catch (BgamingCampaignException $exception) {
-            $this->flashWithInput('Kampanya kaydedilemedi: ' . $exception->getMessage(), $exception->errors());
+            $this->flashWithInput('Kaydedilemedi: ' . $exception->getMessage(), $exception->errors());
             $redirectPath .= $campaignId > 0 ? '?id=' . $campaignId : '';
         } catch (Throwable $exception) {
-            $this->flashWithInput('Kampanya kaydedilemedi: ' . $exception->getMessage(), []);
+            $this->flashWithInput('Kaydedilemedi: ' . $exception->getMessage(), []);
             $redirectPath .= $campaignId > 0 ? '?id=' . $campaignId : '';
         }
 
@@ -155,11 +164,11 @@ final class AdminBgamingController extends AdminController
         try {
             $result = BgamingService::assignCampaign(AdminDatabase::pdo(), $_POST);
             $this->flash($this->assignmentsMessage(
-                'Kampanya ' . (string) ($result['campaign_code'] ?? ''),
+                'Freespin verildi',
                 is_array($result['assignments'] ?? null) ? $result['assignments'] : []
             ));
         } catch (Throwable $exception) {
-            $this->flash('Kullanıcı eklenemedi: ' . $exception->getMessage());
+            $this->flash('Verilemedi: ' . $exception->getMessage());
         }
         $this->redirect(AdminAuth::url('/bgaming/campaigns'));
     }
@@ -171,7 +180,7 @@ final class AdminBgamingController extends AdminController
         $assignmentId = max(0, (int) ($_POST['assignment_id'] ?? 0));
         try {
             $result = BgamingService::retryFreespinAssignment(AdminDatabase::pdo(), $assignmentId);
-            $this->flash($this->assignmentsMessage('Tekrar deneme', [$result]));
+            $this->flash($this->assignmentsMessage('Tekrar denendi', [$result]));
         } catch (Throwable $exception) {
             $this->flash('Tekrar deneme başarısız: ' . $exception->getMessage());
         }
@@ -185,9 +194,9 @@ final class AdminBgamingController extends AdminController
         $assignmentId = max(0, (int) ($_POST['assignment_id'] ?? 0));
         try {
             $result = BgamingService::cancelFreespinAssignment(AdminDatabase::pdo(), $assignmentId);
-            $this->flash('Freespin iptal edildi: ' . (string) ($result['issue_id'] ?? ''));
+            $this->flash('Freespin iptal edildi.');
         } catch (Throwable $exception) {
-            $this->flash('Freespin iptali başarısız: ' . $exception->getMessage());
+            $this->flash('İptal başarısız: ' . $exception->getMessage());
         }
         $this->redirect(AdminAuth::url($this->assignmentReturnPath()));
     }
@@ -205,9 +214,9 @@ final class AdminBgamingController extends AdminController
     private function campaignSavedMessage(array $result, bool $isUpdate): string
     {
         $campaign = is_array($result['campaign'] ?? null) ? $result['campaign'] : [];
-        $prefix = ($isUpdate ? 'Kampanya güncellendi' : 'Kampanya oluşturuldu')
-            . ': ' . (string) ($campaign['title'] ?? '')
-            . ' [' . (string) ($campaign['campaign_code'] ?? '') . ']';
+        $name = trim((string) ($campaign['title'] ?? ''));
+        $prefix = ($isUpdate ? 'Güncellendi' : 'Kaydedildi')
+            . ($name !== '' ? ': ' . $name : '');
 
         return $this->assignmentsMessage($prefix, is_array($result['assignments'] ?? null) ? $result['assignments'] : []);
     }
@@ -218,7 +227,7 @@ final class AdminBgamingController extends AdminController
     private function assignmentsMessage(string $prefix, array $assignments): string
     {
         if ($assignments === []) {
-            return $prefix . '. Kullanıcı seçilmedi, kampanya şablon olarak kaydedildi.';
+            return $prefix . '. Oyuncu seçilmedi.';
         }
 
         $ok = [];
@@ -229,15 +238,15 @@ final class AdminBgamingController extends AdminController
                 $ok[] = $label;
                 continue;
             }
-            $failed[] = $label . ' (' . (string) ($assignment['error'] ?? 'bilinmeyen hata') . ')';
+            $failed[] = $label . ' (' . (string) ($assignment['error'] ?? 'hata') . ')';
         }
 
         $parts = [$prefix . '.'];
         if ($ok !== []) {
-            $parts[] = count($ok) . ' kullanıcıya eklendi: ' . implode(', ', $ok) . '.';
+            $parts[] = count($ok) . ' oyuncuya verildi: ' . implode(', ', $ok) . '.';
         }
         if ($failed !== []) {
-            $parts[] = 'Başarısız: ' . implode(' | ', $failed) . '. Atamalar tablosundan tekrar deneyebilirsiniz.';
+            $parts[] = 'Verilemedi: ' . implode(' | ', $failed) . '. Listeden Tekrar Dene ile deneyin.';
         }
 
         return implode(' ', $parts);
@@ -249,9 +258,9 @@ final class AdminBgamingController extends AdminController
         $this->ensurePost();
         try {
             $result = BgamingService::issueRemoteFreespins(AdminDatabase::pdo(), $_POST);
-            $this->flash('Freespin issue başarılı: ' . (string) ($result['issue_id'] ?? ''));
+            $this->flash('Test freespin gönderildi.');
         } catch (Throwable $exception) {
-            $this->flash('Freespin issue başarısız: ' . $exception->getMessage());
+            $this->flash('Test gönderimi başarısız: ' . $exception->getMessage());
         }
         $this->redirect(AdminAuth::url('/bgaming/freespins'));
     }
@@ -263,9 +272,10 @@ final class AdminBgamingController extends AdminController
         $issueId = trim((string) ($_POST['issue_id'] ?? ''));
         try {
             $result = BgamingService::syncRemoteFreespinStatus(AdminDatabase::pdo(), $issueId);
-            $this->flash('Freespin status sync başarılı: ' . (string) ($result['status'] ?? 'ok'));
+            $status = (string) ($result['status'] ?? 'ok');
+            $this->flash('Durum güncellendi: ' . BgamingService::freespinStatusLabel($status));
         } catch (Throwable $exception) {
-            $this->flash('Freespin status sync başarısız: ' . $exception->getMessage());
+            $this->flash('Durum güncellenemedi: ' . $exception->getMessage());
         }
         $this->redirect(AdminAuth::url('/bgaming/freespins'));
     }
@@ -277,9 +287,9 @@ final class AdminBgamingController extends AdminController
         $issueId = trim((string) ($_POST['issue_id'] ?? ''));
         try {
             BgamingService::cancelRemoteFreespins(AdminDatabase::pdo(), $issueId);
-            $this->flash('Freespin iptal edildi: ' . $issueId);
+            $this->flash('Freespin iptal edildi.');
         } catch (Throwable $exception) {
-            $this->flash('Freespin iptal başarısız: ' . $exception->getMessage());
+            $this->flash('İptal başarısız: ' . $exception->getMessage());
         }
         $this->redirect(AdminAuth::url('/bgaming/freespins'));
     }
