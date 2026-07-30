@@ -810,6 +810,66 @@ body.mobile-site .jp-sub-amount {
   border-radius: 8px;
 }
 
+/* Cercevede dolanan isik — anasayfa oyun kartlari (Casino / Canli Casino) */
+.mobile-site .games-inner .game-item,
+.mobile-site .games-inner .game-cta {
+  isolation: isolate;
+}
+
+.mobile-site .games-inner .game-item::before,
+.mobile-site .games-inner .game-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  padding: 1.5px;
+  box-sizing: border-box;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--jp-border-angle),
+    transparent 0%,
+    transparent 55%,
+    rgba(168, 70, 225, 0.15) 68%,
+    rgba(168, 70, 225, 0.85) 78%,
+    rgba(255, 220, 255, 0.95) 86%,
+    rgba(168, 70, 225, 0.7) 92%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: jpTabBorderSpin 3s linear infinite;
+}
+
+/* Kartlar ayni anda donmesin — dalga etkisi */
+.mobile-site .games-inner > *:nth-child(4n + 2)::before {
+  animation-delay: 0.4s;
+}
+.mobile-site .games-inner > *:nth-child(4n + 3)::before {
+  animation-delay: 0.8s;
+}
+.mobile-site .games-inner > *:nth-child(4n)::before {
+  animation-delay: 1.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-site .games-inner .game-item::before,
+  .mobile-site .games-inner .game-cta::before {
+    animation: none !important;
+  }
+}
+
+html.is-page-leaving .mobile-site .games-inner .game-item::before,
+html.is-page-leaving .mobile-site .games-inner .game-cta::before {
+  animation: none !important;
+}
+
 @media (max-width: 992px) {
   /* 6 ürün banner’ı (3x2): kutular arası boşluk + lig şeridinden ayrım */
   .mobile-site .hm-row-bc:not(.has-slider) {
