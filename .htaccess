@@ -150,6 +150,9 @@
     #     kurulumlarında Apache gerçek api/ klasörüne düşüp 403 üretebilir.
     RewriteRule ^api/ public/index.php [L,QSA]
 
+    # ─── AMP SEO landing: /guncel-giris → guncel-giris/index.php ──
+    RewriteRule ^guncel-giris/?$ guncel-giris/index.php [L,QSA]
+
     # ─── Gerçek dosyalar dokunma; dizinleri front controller'a bırak ──
     # (footer/ gibi gerçek dizinler -d ile doğrudan servis edilip -Indexes/
     #  DirectorySlash Off yüzünden 403/500 üretmesin diye SADECE -f kontrol edilir.)
