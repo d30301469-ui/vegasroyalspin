@@ -696,12 +696,14 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
     $gender = $genderMap[$genderKey] ?? 'Erkek';
 
     $pdo = AdminDatabase::pdo();
-    $dup = $pdo->prepare('SELECT username, email, identity_number FROM users WHERE username = :username OR email = :email OR (:identity_number_check <> "" AND identity_number = :identity_number) LIMIT 1');
+    $dup = $pdo->prepare('SELECT username, email, identity_number, phone FROM users WHERE username = :username OR email = :email OR (:identity_number_check <> "" AND identity_number = :identity_number) OR (:phone_check <> "" AND phone = :phone) LIMIT 1');
     $dup->execute([
         'username' => $username,
         'email' => $email,
         'identity_number_check' => (string) $tc,
         'identity_number' => (string) $tc,
+        'phone_check' => $phoneDigits,
+        'phone' => $phoneDigits,
     ]);
     $exists = $dup->fetch(PDO::FETCH_ASSOC);
     if (is_array($exists)) {
@@ -715,11 +717,14 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
         if ((string) $tc !== '' && (string) ($exists['identity_number'] ?? '') === (string) $tc) {
             $dupErrors['tc'] = 'Bu kimlik numarası zaten kayıtlı.';
         }
+        if ($phoneDigits !== '' && (string) ($exists['phone'] ?? '') === $phoneDigits) {
+            $dupErrors['phone'] = 'Bu telefon numarası zaten kayıtlı.';
+        }
         $memberEnvelope(409, [
             'success' => false,
             'code' => 409,
             'error' => 'DUPLICATE_USER',
-            'message' => 'Kullanıcı adı, e-posta veya kimlik numarası zaten kayıtlı.',
+            'message' => 'Kullanıcı adı, e-posta, telefon veya kimlik numarası zaten kayıtlı.',
             'errors' => $dupErrors,
         ]);
     }

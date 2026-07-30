@@ -1270,12 +1270,14 @@ class ApiAuthController
             $genderApi = trim((string) ($prepared['gender_api'] ?? ''));
             $gender = self::genderLabelFromApiValue($genderApi);
 
-            $check = $pdo->prepare('SELECT username, email, identity_number FROM users WHERE username = :username OR email = :email OR (:identity_number_check <> "" AND identity_number = :identity_number) LIMIT 1');
+            $check = $pdo->prepare('SELECT username, email, identity_number, phone FROM users WHERE username = :username OR email = :email OR (:identity_number_check <> "" AND identity_number = :identity_number) OR (:phone_check <> "" AND phone = :phone) LIMIT 1');
             $check->execute([
                 'username' => $username,
                 'email' => $email,
                 'identity_number_check' => $identityNumber,
                 'identity_number' => $identityNumber,
+                'phone_check' => $phone,
+                'phone' => $phone,
             ]);
             $exists = $check->fetch(\PDO::FETCH_ASSOC);
             if (is_array($exists)) {
@@ -1289,12 +1291,15 @@ class ApiAuthController
                 if ($identityNumber !== '' && (string) ($exists['identity_number'] ?? '') === $identityNumber) {
                     $errors['tc'] = 'Bu kimlik numarası zaten kayıtlı.';
                 }
+                if ($phone !== '' && (string) ($exists['phone'] ?? '') === $phone) {
+                    $errors['phone'] = 'Bu telefon numarası zaten kayıtlı.';
+                }
 
                 return [
                     'success' => false,
                     'code' => 409,
                     'error' => 'DUPLICATE_USER',
-                    'message' => 'Kullanıcı adı, e-posta veya kimlik numarası zaten kayıtlı.',
+                    'message' => 'Kullanıcı adı, e-posta, telefon veya kimlik numarası zaten kayıtlı.',
                     'errors' => $errors,
                 ];
             }
