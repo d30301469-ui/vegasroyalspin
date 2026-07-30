@@ -54,10 +54,10 @@ final class AdminBgamingController extends AdminController
         $formState = $this->pullFormState();
 
         $this->view('bgaming/campaigns', [
-            'title' => 'Freespin Ver',
+            'title' => 'Freespin Oluştur',
             'active' => 'datatable',
             'moduleKey' => 'bgaming-settings',
-            'crumbs' => 'Games | Freespin Ver',
+            'crumbs' => 'Games | Freespin Oluştur',
             'configRow' => BgamingService::config($pdo),
             'campaigns' => BgamingService::campaigns($pdo),
             'freespinGames' => BgamingService::freespinCapableGames($pdo),
@@ -102,10 +102,10 @@ final class AdminBgamingController extends AdminController
         }
 
         $this->view('bgaming/freespins', [
-            'title' => 'Verilen Freespinler',
+            'title' => 'Freespin Listesi',
             'active' => 'datatable',
             'moduleKey' => 'bgaming-settings',
-            'crumbs' => 'Games | Verilen Freespinler',
+            'crumbs' => 'Games | Freespin Listesi',
             'configRow' => BgamingService::config($pdo),
             'users' => $this->assignableUsers($pdo),
             'freespinGames' => BgamingService::freespinCapableGames($pdo),
@@ -164,11 +164,11 @@ final class AdminBgamingController extends AdminController
         try {
             $result = BgamingService::assignCampaign(AdminDatabase::pdo(), $_POST);
             $this->flash($this->assignmentsMessage(
-                'Freespin verildi',
+                'Freespin eklendi',
                 is_array($result['assignments'] ?? null) ? $result['assignments'] : []
             ));
         } catch (Throwable $exception) {
-            $this->flash('Verilemedi: ' . $exception->getMessage());
+            $this->flash('Eklenemedi: ' . $exception->getMessage());
         }
         $this->redirect(AdminAuth::url('/bgaming/campaigns'));
     }
@@ -243,10 +243,10 @@ final class AdminBgamingController extends AdminController
 
         $parts = [$prefix . '.'];
         if ($ok !== []) {
-            $parts[] = count($ok) . ' oyuncuya verildi: ' . implode(', ', $ok) . '.';
+            $parts[] = count($ok) . ' oyuncuya tanımlandı: ' . implode(', ', $ok) . '.';
         }
         if ($failed !== []) {
-            $parts[] = 'Verilemedi: ' . implode(' | ', $failed) . '. Listeden Tekrar Dene ile deneyin.';
+            $parts[] = 'Tanımlanamadı: ' . implode(' | ', $failed) . '. Listeden Tekrar ile deneyin.';
         }
 
         return implode(' ', $parts);
@@ -347,7 +347,8 @@ final class AdminBgamingController extends AdminController
         $stmt = $pdo->query(
             'SELECT id, username, email, name, surname, banned
              FROM users
-             ORDER BY id DESC'
+             ORDER BY id DESC
+             LIMIT 200'
         );
 
         return $stmt !== false ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
