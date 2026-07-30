@@ -1,9 +1,10 @@
 <?php
 
 require_once SERVICE_PATH . '/BackendApiClient.php';
+require_once SERVICE_PATH . '/ReferralAttribution.php';
 
 /**
- * Kayıt öncesi referral tıklamalarını takip eden endpoint.
+ * Kayıt öncesi referral tıklamalarını takip eden endpoint (/r/{code}).
  */
 class ApiSignupTrackerController
 {
@@ -14,22 +15,22 @@ class ApiSignupTrackerController
             metropol_frontend_session_start();
         }
 
-        $ref = isset($_GET['ref']) ? (string) $_GET['ref'] : '';
+        $ref = ReferralAttribution::normalize((string) ($_GET['ref'] ?? ''));
 
-        if ($ref !== '') {
-            $clientIp = function_exists('metropol_cloudflare_client_ip')
-                ? metropol_cloudflare_client_ip()
-                : (string) ($_SERVER['REMOTE_ADDR'] ?? '');
-            BackendApiClient::request('POST', BackendApiClient::SVC_AFFILIATE, '/track-click', [], [
-                'referral_code' => $ref,
-                'ip'            => $clientIp !== '' ? $clientIp : '0.0.0.0',
-            ]);
-            $_SESSION['referral_code'] = $ref;
-            header('Location: ' . SITE_URL . '/?ref=' . urlencode($ref));
+        if ($ref === '') {
+            header('Location: ' . SITE_URL);
             exit;
         }
 
-        header('Location: ' . SITE_URL);
+        ReferralAttribution::remember($ref);
+
+        $clientIp = function_exists('metropol_cloudflare_client_ip')
+            ? metropol_cloudflare_client_ip()
+            : (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+
+        ReferralAttribution::trackClick($ref, $clientIp, SITE_URL . '/?ref=' . rawurlencode($ref));
+
+        header('Location: ' . SITE_URL . '/?ref=' . rawurlencode($ref));
         exit;
     }
 }

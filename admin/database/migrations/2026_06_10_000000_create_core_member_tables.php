@@ -25,6 +25,7 @@ return static function (PDO $pdo): void {
             bonus_code VARCHAR(60) NULL,
             referral_code VARCHAR(40) NULL,
             referred_by_affiliate_id INT UNSIGNED NULL,
+            referred_by_user_id INT UNSIGNED NULL,
             balance DECIMAL(15,2) NOT NULL DEFAULT 0.00,
             bonus_balance DECIMAL(15,2) NOT NULL DEFAULT 0.00,
             is_verified TINYINT(1) NOT NULL DEFAULT 0,
@@ -42,7 +43,9 @@ return static function (PDO $pdo): void {
             KEY idx_users_phone (phone),
             KEY idx_users_verified (is_verified),
             KEY idx_users_banned (banned),
-            KEY idx_users_created (created_at)
+            KEY idx_users_created (created_at),
+            KEY idx_users_referred_by_affiliate (referred_by_affiliate_id),
+            KEY idx_users_referred_by_user (referred_by_user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 

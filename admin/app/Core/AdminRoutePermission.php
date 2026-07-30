@@ -106,6 +106,22 @@ final class AdminRoutePermission
         '/compliance/risk/resolve' => 'compliance-risk',
         '/reports/calendar' => 'dashboard',
         '/reports/charts' => 'dashboard',
+        '/affiliates' => 'affiliates',
+        '/affiliate/detail' => 'affiliates',
+        '/affiliate/update' => 'affiliates',
+        '/affiliate/payment-update' => 'affiliates',
+        '/affiliate/quick-action' => 'affiliates',
+        '/affiliate/commission-add' => 'affiliates',
+        '/affiliate/plans' => 'affiliates',
+        '/affiliate/plan-store' => 'affiliates',
+        '/affiliate/plan-update' => 'affiliates',
+        '/affiliate/plan-delete' => 'affiliates',
+        '/affiliate/payouts' => 'affiliates',
+        '/affiliate/payout-update' => 'affiliates',
+        '/affiliate/materials' => 'affiliates',
+        '/affiliate/material-store' => 'affiliates',
+        '/affiliate/material-delete' => 'affiliates',
+        '/affiliate/reports' => 'affiliate-reports',
     ];
 
     /** @var array<string, string> */

@@ -68,7 +68,11 @@ try {
 require_once CONFIG_PATH . '/db.php';
 require_once SERVICE_PATH . '/BackendApiClient.php';
 require_once SERVICE_PATH . '/MemberLoginService.php';
+require_once SERVICE_PATH . '/ReferralAttribution.php';
 require_once API_PATH . '/bootstrap.php';
+
+// ?ref= ile gelen ziyaretçilerde referans kodunu oturuma/çereze al (kayıt anında kullanılır).
+ReferralAttribution::captureFromRequest();
 require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/helpers.php';
 

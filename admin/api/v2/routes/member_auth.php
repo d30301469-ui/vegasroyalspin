@@ -462,6 +462,8 @@ if (!function_exists('memberEnsureUserTableColumns')) {
             'address'          => 'VARCHAR(500) NULL',
             'bonus_code'       => 'VARCHAR(60) NULL',
             'referral_code'    => 'VARCHAR(40) NULL',
+            'referred_by_affiliate_id' => 'INT UNSIGNED NULL',
+            'referred_by_user_id'      => 'INT UNSIGNED NULL',
             'balance'          => 'DECIMAL(15,2) NOT NULL DEFAULT 0.00',
             'bonus_balance'    => 'DECIMAL(15,2) NOT NULL DEFAULT 0.00',
             'is_verified'      => 'TINYINT(1) NOT NULL DEFAULT 0',
@@ -487,6 +489,8 @@ if (!function_exists('memberEnsureUserTableColumns')) {
         // Ensure critical indices exist
         $indexes = [
             'idx_users_last_login' => 'ALTER TABLE `users` ADD INDEX `idx_users_last_login` (`last_login_at`)',
+            'idx_users_referred_by_affiliate' => 'ALTER TABLE `users` ADD INDEX `idx_users_referred_by_affiliate` (`referred_by_affiliate_id`)',
+            'idx_users_referred_by_user' => 'ALTER TABLE `users` ADD INDEX `idx_users_referred_by_user` (`referred_by_user_id`)',
         ];
         foreach ($indexes as $idx => $sql) {
             try {
@@ -626,6 +630,15 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
     $tc = preg_replace('/\D+/', '', (string) ($input['tc'] ?? $input['tcKimlik'] ?? $input['identity_number'] ?? ''));
     $address = trim((string) ($input['address'] ?? ''));
     $bonusCode = trim((string) ($input['bonus_code'] ?? $input['bonusCode'] ?? ''));
+    $inboundReferral = trim((string) (
+        $input['referral_code']
+        ?? $input['referralCode']
+        ?? $input['ref']
+        ?? $_GET['ref']
+        ?? $_SERVER['HTTP_X_REFERRAL_CODE']
+        ?? $_SESSION['referral_code']
+        ?? ''
+    ));
 
     $errors = [];
     if ($username === '') {
@@ -765,6 +778,19 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
         'address' => $address !== '' ? $address : null,
     ]);
     $userId = (int) $pdo->lastInsertId();
+
+    try {
+        admin_require_project_file('services/AffiliateService.php');
+        AffiliateService::attributeRegistration(
+            $pdo,
+            $userId,
+            $inboundReferral,
+            (string) ($input['client_ip'] ?? $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '')
+        );
+    } catch (Throwable $affiliateError) {
+        error_log('[member_auth/register] Referral attribution failed: ' . $affiliateError->getMessage());
+    }
+
     if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
         $_SESSION['loggedin'] = true;
         $_SESSION['user_id'] = $userId;

@@ -1054,6 +1054,25 @@
             toast(type, msg, title);
         }
 
+        // Referans kodu: önce URL (?ref=), sonra ReferralAttribution çerezi (vrs_ref).
+        function readReferralCode() {
+            var valid = /^[A-Za-z0-9_-]{1,64}$/;
+            try {
+                var fromUrl = new URLSearchParams(window.location.search).get('ref');
+                if (fromUrl && valid.test(fromUrl)) {
+                    return fromUrl;
+                }
+            } catch (e) { /* URLSearchParams yoksa çereze düş */ }
+
+            var match = document.cookie.match(/(?:^|;\s*)vrs_ref=([^;]+)/);
+            if (!match) {
+                return '';
+            }
+            var cookieValue = decodeURIComponent(match[1]);
+
+            return valid.test(cookieValue) ? cookieValue : '';
+        }
+
         form.addEventListener('submit', function (e) {
             e.preventDefault();
             hideRegisterError();
@@ -1096,6 +1115,10 @@
 
             var fd = new FormData(form);
             fd.append('register_submit', '1');
+            var referralCode = readReferralCode();
+            if (referralCode) {
+                fd.set('referral_code', referralCode);
+            }
             if (turnstileToken) {
                 fd.append('turnstile_response', turnstileToken);
                 fd.append('cf-turnstile-response', turnstileToken);

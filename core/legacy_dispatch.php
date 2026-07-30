@@ -62,6 +62,14 @@ if (!$isAdminHost && (
     exit;
 }
 
+// Ortaklık kısa linki: /r/{referral_code} → tıklama kaydı + ana sayfaya yönlendirme.
+if (preg_match('#^/r/([A-Za-z0-9_-]{1,64})$#', $uri, $referralMatches) === 1) {
+    $_GET['ref'] = $referralMatches[1];
+    require_once CONTROLLER_PATH . '/Api/ApiSignupTrackerController.php';
+    (new ApiSignupTrackerController())->index();
+    exit;
+}
+
 if (ayar_bakim_modu_active($ayar) && !maintenance_request_uri_allowed($uri)) {
     http_response_code(503);
     require VIEW_PATH . '/pages/maintenance.php';
@@ -85,6 +93,7 @@ $routes = [
     '/beni-ara'              => ['BeniAraController', 'index'],
     '/login'                 => ['AuthController',   'login'],
     '/register'              => ['AuthController',   'register'],
+    '/kayit'                 => ['AuthController',   'register'],
     '/reset-password'        => ['AuthController',   'resetPasswordPage'],
     '/logout'                => ['AuthController',   'logout'],
     '/payment/megapayz'      => ['PaymentController', 'megapayzDeposit'],

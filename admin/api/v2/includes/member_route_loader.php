@@ -1,6 +1,7 @@
 <?php
 /** Üye API route modülleri — index.php ve member_local.php tarafından include edilir. */
 
+require __DIR__ . '/../routes/affiliate_tracking.php';
 require __DIR__ . '/../routes/member_auth.php';
 require __DIR__ . '/../routes/member_engagement.php';
 require __DIR__ . '/../routes/member_wallet.php';

@@ -103,6 +103,7 @@ final class BackendMemberApiProxy
         }
 
         [$rawBody, $contentType] = self::resolveProxyBody($method);
+        [$rawBody, $contentType] = self::withReferralCode($routeNorm, $method, $rawBody, $contentType);
 
         $sessionOnlyAuth = self::isSessionRoute($route);
         $authorization = (self::shouldSkipProxyAuthorization($routeNorm, $method)
@@ -289,6 +290,46 @@ final class BackendMemberApiProxy
             'reset_password.php',
             'password_reset.php',
         ], true);
+    }
+
+    /**
+     * Kayıt isteğinde referans kodu yoksa oturum/çerezdeki kodu gövdeye ekler.
+     * API host stateless olduğu için ($_SESSION taşınmaz) kod burada iliştirilmelidir.
+     *
+     * @return array{0: string|null, 1: string|null}
+     */
+    private static function withReferralCode(string $routeNorm, string $method, ?string $rawBody, ?string $contentType): array
+    {
+        if (strtoupper($method) !== 'POST' || !in_array($routeNorm, ['auth/register', 'register.php'], true)) {
+            return [$rawBody, $contentType];
+        }
+
+        if (!class_exists('ReferralAttribution', false) && is_readable(BASE_PATH . '/services/ReferralAttribution.php')) {
+            require_once BASE_PATH . '/services/ReferralAttribution.php';
+        }
+        if (!class_exists('ReferralAttribution', false)) {
+            return [$rawBody, $contentType];
+        }
+
+        $code = ReferralAttribution::current();
+        if ($code === '') {
+            return [$rawBody, $contentType];
+        }
+
+        $decoded = json_decode((string) $rawBody, true);
+        if (!is_array($decoded)) {
+            return [$rawBody, $contentType];
+        }
+        if (trim((string) ($decoded['referral_code'] ?? '')) !== '') {
+            return [$rawBody, $contentType];
+        }
+
+        $decoded['referral_code'] = $code;
+        $encoded = json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return $encoded !== false
+            ? [$encoded, 'application/json']
+            : [$rawBody, $contentType];
     }
 
     private static function isPublicDemoGameLaunch(string $routeNorm, string $method, ?string $rawBody): bool

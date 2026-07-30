@@ -256,7 +256,7 @@ if ($method === 'GET' && $route === 'referrals.php') {
     try {
         $refStmt = $pdo->prepare('SELECT id, name AS first_name, surname, username, email, created_at
                                   FROM users
-                                  WHERE referred_by_affiliate_id = :user_id
+                                  WHERE referred_by_user_id = :user_id
                                   ORDER BY created_at DESC
                                   LIMIT 100');
         $refStmt->execute(['user_id' => $userId]);
@@ -266,7 +266,7 @@ if ($method === 'GET' && $route === 'referrals.php') {
     }
     $totalReferred = count($referredUsers);
     try {
-        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE referred_by_affiliate_id = :user_id');
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE referred_by_user_id = :user_id');
         $countStmt->execute(['user_id' => $userId]);
         $totalReferred = (int) $countStmt->fetchColumn();
     } catch (Throwable) {
@@ -306,7 +306,7 @@ if ($method === 'GET' && ($route === 'affiliate/summary' || $route === 'affiliat
     $referralCode = trim((string) $stmt->fetchColumn());
     $totalReferred = 0;
     try {
-        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE referred_by_affiliate_id = :user_id');
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE referred_by_user_id = :user_id');
         $countStmt->execute(['user_id' => $userId]);
         $totalReferred = (int) $countStmt->fetchColumn();
     } catch (Throwable) {

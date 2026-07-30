@@ -293,7 +293,9 @@ final class BackendApiClient
 
         return rtrim(match ($which) {
             self::SVC_MAIN => $mainEffective,
-            self::SVC_AFFILIATE => API_BACKEND_AFFILIATE_BASE_URL,
+            self::SVC_AFFILIATE => API_BACKEND_AFFILIATE_BASE_URL !== ''
+                ? API_BACKEND_AFFILIATE_BASE_URL
+                : $mainEffective,
             self::SVC_CASINO_WALLET => API_BACKEND_CASINO_WALLET_BASE_URL,
             self::SVC_PAYMENT_CALLBACK => API_BACKEND_PAYMENT_CALLBACK_BASE_URL !== ''
                 ? API_BACKEND_PAYMENT_CALLBACK_BASE_URL

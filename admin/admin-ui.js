@@ -282,6 +282,18 @@
                 return;
             }
 
+            var inlineTrigger = closest(event.target, '[data-admin-modal-inline]');
+            if (inlineTrigger) {
+                event.preventDefault();
+                var source = document.querySelector(inlineTrigger.getAttribute('data-admin-modal-inline'));
+                if (!source) {
+                    window.AdminToast.error('Form içeriği bulunamadı.');
+                    return;
+                }
+                openModal(inlineTrigger.getAttribute('data-admin-modal-title') || 'İşlem', source.innerHTML);
+                return;
+            }
+
             var trigger = closest(event.target, '[data-admin-modal-url]');
             if (!trigger) return;
             event.preventDefault();

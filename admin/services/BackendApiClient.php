@@ -154,7 +154,7 @@ final class BackendApiClient
         }
         if ($backendHost === '') {
             $public = self::effectiveMainBaseUrl();
-            $backendHost = strtolower((string) (parse_url($public, PHP_URL_HOST) ?: 'bo-backoffice.site'));
+            $backendHost = strtolower((string) (parse_url($public, PHP_URL_HOST) ?: 'bo-nexthub.site'));
         }
         if (str_starts_with($backendHost, 'api.')) {
             $backendHost = substr($backendHost, 4);
@@ -235,12 +235,12 @@ final class BackendApiClient
         }
 
         $public = self::effectiveMainBaseUrl();
-        $host = strtolower((string) (parse_url($public, PHP_URL_HOST) ?: 'bo-backoffice.site'));
+        $host = strtolower((string) (parse_url($public, PHP_URL_HOST) ?: 'bo-nexthub.site'));
         if (str_starts_with($host, 'api.')) {
             $host = substr($host, 4);
         }
 
-        return $host !== '' ? $host : 'bo-backoffice.site';
+        return $host !== '' ? $host : 'bo-nexthub.site';
     }
 
     /**
@@ -293,7 +293,9 @@ final class BackendApiClient
 
         return rtrim(match ($which) {
             self::SVC_MAIN => $mainEffective,
-            self::SVC_AFFILIATE => API_BACKEND_AFFILIATE_BASE_URL,
+            self::SVC_AFFILIATE => API_BACKEND_AFFILIATE_BASE_URL !== ''
+                ? API_BACKEND_AFFILIATE_BASE_URL
+                : $mainEffective,
             self::SVC_CASINO_WALLET => API_BACKEND_CASINO_WALLET_BASE_URL,
             self::SVC_PAYMENT_CALLBACK => API_BACKEND_PAYMENT_CALLBACK_BASE_URL !== ''
                 ? API_BACKEND_PAYMENT_CALLBACK_BASE_URL

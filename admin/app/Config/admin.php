@@ -538,6 +538,17 @@ return [
             ],
         ],
         [
+            'label' => 'Ortaklık Sistemi',
+            'caption' => 'Ortaklar, komisyon planları ve ödemeler',
+            'items' => [
+                ['key' => 'affiliates', 'text' => 'Ortaklar', 'url' => '/affiliates', 'active' => 'affiliates', 'permission' => 'affiliates', 'icon' => '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
+                ['key' => 'affiliate-plans', 'text' => 'Komisyon Planları', 'url' => '/affiliate/plans', 'active' => 'affiliate-plans', 'permission' => 'affiliates', 'icon' => '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/>'],
+                ['key' => 'affiliate-payouts', 'text' => 'Ortak Ödemeleri', 'url' => '/affiliate/payouts', 'active' => 'affiliate-payouts', 'permission' => 'affiliates', 'icon' => '<path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/>'],
+                ['key' => 'affiliate-materials', 'text' => 'Pazarlama Materyalleri', 'url' => '/affiliate/materials', 'active' => 'affiliate-materials', 'permission' => 'affiliates', 'icon' => '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m3 15 5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="8.5" r="1.5"/>'],
+                ['key' => 'affiliate-reports', 'text' => 'Ortaklık Raporları', 'url' => '/affiliate/reports', 'active' => 'affiliate-reports', 'permission' => 'affiliate-reports', 'icon' => '<path d="M3 3v18h18"/><path d="M7 15h3v3H7zM11 11h3v7h-3zM15 7h3v11h-3z"/>'],
+            ],
+        ],
+        [
             'label' => 'Uyumluluk & Risk',
             'caption' => 'AML ve operasyonel risk uyarıları',
             'items' => [

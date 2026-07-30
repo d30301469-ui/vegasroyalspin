@@ -24,10 +24,10 @@
  *   GET  /users/balance?username=  -> { ana_bakiye }
  *   POST /payments/megapayz/log  { user_id, username, method, amount, trx, status }
  *
- * AFFILIATE:
- *   GET /resolve-referral?ip=
- *   GET /affiliate/by-code?code=
- *   POST /registrations { affiliate_id, user_id, username, email, ip_address }
+ * AFFILIATE (boşsa MAIN kullanılır; uçlar admin/api/v2/routes/affiliate_tracking.php içindedir):
+ *   POST /affiliate/track-click { referral_code, ip, landing_url, user_agent, referrer, country }
+ *   GET  /affiliate/by-code?code=          -> { type, affiliate_id, user_id, referral_code }
+ *   GET  /affiliate/resolve-referral?ip=   -> { referral_code, affiliate_id, type }
  *
  * PAYMENT_CALLBACK (yatırım callback; eski Callback DB):
  *   GET  /users/by-id?id=

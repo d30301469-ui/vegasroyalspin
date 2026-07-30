@@ -448,28 +448,34 @@ class ApiAuthController
             }
             self::registerWriteLog("IP adresi: $ip", 'INFO');
 
-            $resolve = BackendApiClient::request('GET', BackendApiClient::SVC_AFFILIATE, '/resolve-referral', ['ip' => $ip]);
-            $r       = BackendApiClient::unwrap($resolve);
-            if ($r !== [] && !empty($r['referral_code'])) {
-                $referral_code            = (string) $r['referral_code'];
-                $referred_by_affiliate_id = (string) ($r['affiliate_id'] ?? '');
-                self::registerWriteLog("IP'den referral: $referral_code", 'INFO');
+            require_once SERVICE_PATH . '/ReferralAttribution.php';
+            $ref_code = ReferralAttribution::normalize((string) ($_GET['ref'] ?? ''));
+            if ($ref_code === '') {
+                $ref_code = ReferralAttribution::current();
             }
 
-            if ($referral_code === '' && isset($_GET['ref']) && $_GET['ref'] !== '') {
-                $ref_code = trim((string) $_GET['ref']);
-                self::registerWriteLog("URL ref: $ref_code", 'INFO');
+            if ($ref_code !== '') {
+                self::registerWriteLog("Bilinen ref: $ref_code", 'INFO');
                 $aff = BackendApiClient::request('GET', BackendApiClient::SVC_AFFILIATE, '/affiliate/by-code', ['code' => $ref_code]);
                 $ar  = BackendApiClient::unwrap($aff);
-                if ($ar !== [] && isset($ar['id'])) {
-                    $referred_by_affiliate_id = (string) $ar['id'];
-                    $referral_code            = (string) ($ar['referral_code'] ?? $ref_code);
-                    self::registerWriteLog("URL'den referral: $referral_code", 'INFO');
+                $referral_code = (string) ($ar['referral_code'] ?? $ref_code);
+                if ($ar !== [] && !empty($ar['affiliate_id'])) {
+                    $referred_by_affiliate_id = (string) $ar['affiliate_id'];
+                }
+            }
+
+            if ($referral_code === '') {
+                $resolve = BackendApiClient::request('GET', BackendApiClient::SVC_AFFILIATE, '/affiliate/resolve-referral', ['ip' => $ip]);
+                $r       = BackendApiClient::unwrap($resolve);
+                if ($r !== [] && !empty($r['referral_code'])) {
+                    $referral_code            = (string) $r['referral_code'];
+                    $referred_by_affiliate_id = (string) ($r['affiliate_id'] ?? '');
+                    self::registerWriteLog("IP'den referral: $referral_code", 'INFO');
                 }
             }
 
             self::registerWriteLog("Final referral: $referral_code, affiliate: $referred_by_affiliate_id", 'INFO');
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             self::registerWriteLog('Referans çözümleme: ' . $e->getMessage(), 'ERROR');
         }
 
@@ -1342,6 +1348,14 @@ class ApiAuthController
             ]);
 
             $userId = (int) $pdo->lastInsertId();
+
+            try {
+                require_once SERVICE_PATH . '/AffiliateService.php';
+                AffiliateService::attributeRegistration($pdo, $userId, $referralCode);
+            } catch (Throwable $affiliateError) {
+                self::registerWriteLog('Referans eşleştirme: ' . $affiliateError->getMessage(), 'ERROR');
+            }
+
             require_once SERVICE_PATH . '/MemberJwtService.php';
             $jwt = MemberJwtService::issue($pdo, [
                 'id' => $userId,

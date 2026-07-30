@@ -104,13 +104,6 @@ foreach ($specialRoutes as $pattern => $target) {
     }
 }
 
-// Signup tracker: /r/{ref}
-if (preg_match('#^/r/([a-zA-Z0-9_-]+)$#', $trimmedUri, $matches)) {
-    $_GET['ref'] = $matches[1];
-    require __DIR__ . '/signup_tracker.php';
-    return true;
-}
-
 // TÃ¼m diÄŸer istekler â†’ front controller
 require __DIR__ . '/index.php';
 return true;
