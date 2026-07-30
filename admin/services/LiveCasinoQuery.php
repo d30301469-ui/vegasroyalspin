@@ -248,6 +248,12 @@ final class LiveCasinoQuery
                 // lobby entries (the slot lobby drops them the same way).
                 "LOWER(name) NOT LIKE '%acceptance%test%'",
                 "LOWER(game_id) NOT LIKE '%acceptance%test%'",
+                // Drakon's catalogue also carries the studio's own lobby entries
+                // ("Live - Lobby", "Live - Lobby Gameshows"). They are navigation
+                // links, not tables: Drakon reports them as game_type "lobby" with
+                // has_lobby = 0 and answers every launch with its /game-error page,
+                // so listing them only produces tiles that cannot open.
+                "LOWER(name) NOT LIKE '%lobby%'",
             ];
             $categorySql = self::liveCategorySqlMatch($sort);
             if ($categorySql !== '') {

@@ -12,6 +12,14 @@ use PHPUnit\Framework\TestCase;
  */
 final class LiveCasinoLobbyTest extends TestCase
 {
+    /**
+     * The lobby-wide exclusions applied by LiveCasinoQuery::pageFromDatabase to
+     * every source branch.
+     */
+    private const EXCLUSIONS = "LOWER(name) NOT LIKE '%acceptance%test%'
+        AND LOWER(game_id) NOT LIKE '%acceptance%test%'
+        AND LOWER(name) NOT LIKE '%lobby%'";
+
     private PDO $pdo;
 
     protected function setUp(): void
@@ -35,6 +43,8 @@ final class LiveCasinoLobbyTest extends TestCase
             ['drakon:10', 'Sweet Bonanza CandyLand', 0],
             ['drakon:11', 'Acceptance Test Table', 0],
             ['aggregator:x:acceptance-test', 'Studio Table', 0],
+            ['drakon:12', 'Live - Lobby', 0],
+            ['drakon:13', 'Live - Lobby Gameshows', 0],
         ] as [$id, $name, $featured]) {
             $insert->execute([':id' => $id, ':name' => $name, ':featured' => $featured]);
         }
@@ -111,17 +121,28 @@ final class LiveCasinoLobbyTest extends TestCase
     public function testAcceptanceTestRowsAreExcludedByNameAndByGameId(): void
     {
         $kept = $this->pdo
-            ->query(
-                "SELECT name FROM live_games
-                 WHERE LOWER(name) NOT LIKE '%acceptance%test%'
-                   AND LOWER(game_id) NOT LIKE '%acceptance%test%'
-                 ORDER BY game_id"
-            )
+            ->query('SELECT name FROM live_games WHERE ' . self::EXCLUSIONS . ' ORDER BY game_id')
             ->fetchAll(PDO::FETCH_COLUMN);
 
         $this->assertNotContains('Acceptance Test Table', $kept);
         $this->assertNotContains('Studio Table', $kept);
         $this->assertCount(10, $kept);
+    }
+
+    /**
+     * Drakon lists the studio's own lobby entries next to real tables. Drakon
+     * reports them as game_type "lobby" and answers every launch with its
+     * /game-error page, so a tile for one can only ever fail to open.
+     */
+    public function testStudioLobbyEntriesAreExcluded(): void
+    {
+        $kept = $this->pdo
+            ->query('SELECT name FROM live_games WHERE ' . self::EXCLUSIONS . ' ORDER BY game_id')
+            ->fetchAll(PDO::FETCH_COLUMN);
+
+        $this->assertNotContains('Live - Lobby', $kept);
+        $this->assertNotContains('Live - Lobby Gameshows', $kept);
+        $this->assertContains('Lightning Roulette', $kept, 'real tables must survive the exclusion');
     }
 
     /**
@@ -139,18 +160,16 @@ final class LiveCasinoLobbyTest extends TestCase
         $cap = $offset + $limit;
 
         $total = (int) $this->pdo
-            ->query("SELECT COUNT(DISTINCT game_id) FROM live_games WHERE LOWER(name) NOT LIKE '%acceptance%test%'")
+            ->query('SELECT COUNT(DISTINCT game_id) FROM live_games WHERE ' . self::EXCLUSIONS)
             ->fetchColumn();
         $window = $this->pdo
             ->query(
-                "SELECT game_id FROM live_games
-                 WHERE LOWER(name) NOT LIKE '%acceptance%test%'
-                 ORDER BY is_featured DESC, name ASC
-                 LIMIT {$cap}"
+                'SELECT game_id FROM live_games WHERE ' . self::EXCLUSIONS
+                . " ORDER BY is_featured DESC, name ASC LIMIT {$cap}"
             )
             ->fetchAll(PDO::FETCH_COLUMN);
 
-        $this->assertSame(11, $total);
+        $this->assertSame(10, $total);
         $this->assertCount($limit, $window, 'the window is capped and is smaller than the catalogue');
         $this->assertTrue(($offset + $limit) < $total, 'hasNext must stay true while pages remain');
         $this->assertSame(3, (int) ceil($total / $limit));
