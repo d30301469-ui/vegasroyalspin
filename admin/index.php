@@ -285,6 +285,8 @@ $router->post('/email/settings/test', [AdminCommunicationController::class, 'tes
 $router->get('/email/templates', [AdminCommunicationController::class, 'templates']);
 $router->post('/email/templates', [AdminCommunicationController::class, 'saveTemplates']);
 $router->post('/email/templates/preview', [AdminCommunicationController::class, 'previewTemplate']);
+$router->post('/email/templates/custom', [AdminCommunicationController::class, 'saveCustomTemplate']);
+$router->post('/email/templates/custom/delete', [AdminCommunicationController::class, 'deleteCustomTemplate']);
 $router->get('/compose', [AdminCommunicationController::class, 'compose']);
 $router->post('/compose', [AdminCommunicationController::class, 'send']);
 $router->get('/chat', [AdminCommunicationController::class, 'chat']);

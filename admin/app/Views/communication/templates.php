@@ -8,6 +8,9 @@ $welcomePreviewHtml = (string) ($welcomePreviewHtml ?? '');
 $depositApprovedPreviewHtml = (string) ($depositApprovedPreviewHtml ?? '');
 $withdrawApprovedPreviewHtml = (string) ($withdrawApprovedPreviewHtml ?? '');
 $previewUrl = (string) ($previewUrl ?? AdminAuth::url('/email/templates/preview'));
+$customTemplates = is_array($customTemplates ?? null) ? $customTemplates : [];
+$customSaveUrl = (string) ($customSaveUrl ?? AdminAuth::url('/email/templates/custom'));
+$customDeleteUrl = (string) ($customDeleteUrl ?? AdminAuth::url('/email/templates/custom/delete'));
 
 $placeholders = [
     '{{MEMBER_NAME}}' => 'Üyenin adı soyadı',
@@ -161,7 +164,10 @@ body.has-tpl-modal{overflow:hidden}
                 <span class="eyebrow">Şablonlar</span>
                 <h2 class="card-title">Otomatik e-postalar</h2>
             </div>
-            <span class="badge dot info"><?= count($templates) ?> şablon</span>
+            <div class="tpl-list-actions">
+                <span class="badge dot info"><?= count($templates) + count($customTemplates) ?> şablon</span>
+                <button class="btn btn--primary btn--sm" type="button" id="tplCustomAdd">Yeni şablon ekle</button>
+            </div>
         </div>
 
         <div class="table-scroll">
@@ -203,6 +209,32 @@ body.has-tpl-modal{overflow:hidden}
                                         type="button"
                                         data-tpl-edit="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>"
                                     >Düzenle</button>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php foreach ($customTemplates as $custom): ?>
+                        <?php
+                        $customId = (int) ($custom['id'] ?? 0);
+                        $customName = trim((string) ($custom['name'] ?? 'Özel şablon'));
+                        $customSubject = trim((string) ($custom['subject'] ?? ''));
+                        $customActive = (int) ($custom['is_active'] ?? 0) === 1;
+                        ?>
+                        <tr data-custom-template-id="<?= $customId ?>">
+                            <td>
+                                <p class="tpl-list-name"><?= htmlspecialchars($customName, ENT_QUOTES, 'UTF-8') ?></p>
+                                <p class="tpl-list-trigger"><?= htmlspecialchars($customSubject, ENT_QUOTES, 'UTF-8') ?></p>
+                            </td>
+                            <td>
+                                <span class="badge <?= $customActive ? 'dot success' : 'dot danger' ?>">
+                                    <?= $customActive ? 'Aktif · Özel' : 'Pasif · Özel' ?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="tpl-list-actions">
+                                    <button class="btn btn--ghost btn--sm" type="button" data-custom-preview="<?= $customId ?>">Önizle</button>
+                                    <button class="btn btn--secondary btn--sm" type="button" data-custom-edit="<?= $customId ?>">Düzenle</button>
+                                    <button class="btn btn--danger btn--sm" type="button" data-custom-delete="<?= $customId ?>">Sil</button>
                                 </div>
                             </td>
                         </tr>
@@ -273,6 +305,59 @@ body.has-tpl-modal{overflow:hidden}
 </form>
 
 <div
+    id="tplCustomModal"
+    class="tpl-modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tplCustomModalTitle"
+    hidden
+>
+    <form id="tplCustomForm" class="tpl-modal tpl-modal--edit" method="post" action="<?= htmlspecialchars($customSaveUrl, ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" id="custom_template_id" name="custom_template_id" value="0">
+        <div class="tpl-modal-head">
+            <h2 id="tplCustomModalTitle">Yeni şablon ekle</h2>
+            <button class="admin-modal-close" type="button" id="tplCustomClose" aria-label="Kapat">&times;</button>
+        </div>
+        <div class="tpl-modal-body">
+            <div class="form-grid">
+                <div class="field">
+                    <label class="field-label" for="custom_name">Şablon adı</label>
+                    <input id="custom_name" class="input" type="text" name="custom_name" maxlength="190" required placeholder="Örn. Kampanya bildirimi">
+                </div>
+                <div class="field">
+                    <label class="field-label" for="custom_subject">E-posta konusu</label>
+                    <input id="custom_subject" class="input" type="text" name="custom_subject" maxlength="255" required placeholder="Örn. Size özel kampanya">
+                </div>
+                <div class="field span-2">
+                    <label class="field-label" for="custom_template_html">HTML içeriği</label>
+                    <textarea id="custom_template_html" class="input" name="custom_template_html" rows="14" placeholder="Boş bırakırsan sistemin markalı varsayılan tasarımı kullanılır."></textarea>
+                    <div class="field-help">Yukarıdaki kullanılabilir alanları HTML içinde kullanabilirsiniz.</div>
+                </div>
+                <div class="field span-2">
+                    <label class="switch" for="custom_is_active">
+                        <input id="custom_is_active" type="checkbox" name="custom_is_active" value="1" checked>
+                        <span class="track" aria-hidden="true"></span>
+                        <span>Şablon aktif</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="tpl-modal-foot">
+            <button class="btn btn--ghost" type="button" id="tplCustomPreview">Önizle</button>
+            <span class="spacer"></span>
+            <button class="btn btn--ghost" type="button" data-custom-close>Vazgeç</button>
+            <button class="btn btn--primary" type="submit">Kaydet</button>
+        </div>
+    </form>
+</div>
+
+<form id="tplCustomDeleteForm" method="post" action="<?= htmlspecialchars($customDeleteUrl, ENT_QUOTES, 'UTF-8') ?>" hidden>
+    <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" id="delete_custom_template_id" name="custom_template_id" value="0">
+</form>
+
+<div
     id="tplPreviewModal"
     class="tpl-modal-backdrop"
     role="dialog"
@@ -304,13 +389,16 @@ body.has-tpl-modal{overflow:hidden}
     var form = document.getElementById('mailTemplatesForm');
     var previewModal = document.getElementById('tplPreviewModal');
     var editModal = document.getElementById('tplEditModal');
+    var customModal = document.getElementById('tplCustomModal');
+    var customForm = document.getElementById('tplCustomForm');
     var frame = document.getElementById('tplPreviewFrame');
     var previewTitleEl = document.getElementById('tplPreviewModalTitle');
     var editTitleEl = document.getElementById('tplEditModalTitle');
-    if (!form || !previewModal || !editModal || !frame) return;
+    if (!form || !previewModal || !editModal || !customModal || !customForm || !frame) return;
 
     var previewUrl = <?= json_encode($previewUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     var cache = <?= json_encode($previewMap, JSON_UNESCAPED_UNICODE) ?>;
+    var customTemplates = <?= json_encode(array_values($customTemplates), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     var titles = {
         reset: 'Şifre sıfırlama',
         welcome: 'Kayıt başarılı',
@@ -322,8 +410,36 @@ body.has-tpl-modal{overflow:hidden}
     var openedFromEdit = false;
 
     function syncBodyLock() {
-        var anyOpen = previewModal.classList.contains('is-open') || editModal.classList.contains('is-open');
+        var anyOpen = previewModal.classList.contains('is-open')
+            || editModal.classList.contains('is-open')
+            || customModal.classList.contains('is-open');
         document.body.classList.toggle('has-tpl-modal', anyOpen);
+    }
+
+    function customById(id) {
+        return customTemplates.find(function (item) {
+            return Number(item.id || 0) === Number(id || 0);
+        }) || null;
+    }
+
+    function openCustom(template) {
+        var item = template || null;
+        document.getElementById('tplCustomModalTitle').textContent = item ? 'Özel şablonu düzenle' : 'Yeni şablon ekle';
+        document.getElementById('custom_template_id').value = item ? String(item.id || 0) : '0';
+        document.getElementById('custom_name').value = item ? String(item.name || '') : '';
+        document.getElementById('custom_subject').value = item ? String(item.subject || '') : '';
+        document.getElementById('custom_template_html').value = item ? String(item.template_html || '') : '';
+        document.getElementById('custom_is_active').checked = item ? Number(item.is_active || 0) === 1 : true;
+        customModal.hidden = false;
+        customModal.classList.add('is-open');
+        syncBodyLock();
+        setTimeout(function () { document.getElementById('custom_name').focus(); }, 80);
+    }
+
+    function closeCustom() {
+        customModal.classList.remove('is-open');
+        customModal.hidden = true;
+        syncBodyLock();
     }
 
     function openEdit(type) {
@@ -360,7 +476,10 @@ body.has-tpl-modal{overflow:hidden}
     function openPreview(type, fromEdit) {
         active = type;
         openedFromEdit = !!fromEdit;
-        if (previewTitleEl) previewTitleEl.textContent = (titles[type] || 'E-posta') + ' önizlemesi';
+        var previewName = type === 'custom'
+            ? (document.getElementById('custom_name').value || 'Özel şablon')
+            : (titles[type] || 'E-posta');
+        if (previewTitleEl) previewTitleEl.textContent = previewName + ' önizlemesi';
         setFrameHtml(cache[type] || '');
         previewModal.hidden = false;
         previewModal.classList.add('is-open');
@@ -379,6 +498,11 @@ body.has-tpl-modal{overflow:hidden}
         var type = active;
         var data = new FormData(form);
         data.set('template_type', type);
+        if (type === 'custom') {
+            data.set('custom_name', document.getElementById('custom_name').value);
+            data.set('custom_subject', document.getElementById('custom_subject').value);
+            data.set('custom_template_html', document.getElementById('custom_template_html').value);
+        }
         if (forceLoading !== false) frame.style.opacity = '0.5';
 
         fetch(previewUrl, { method: 'POST', body: data, credentials: 'same-origin' })
@@ -411,6 +535,33 @@ body.has-tpl-modal{overflow:hidden}
     form.querySelectorAll('[data-tpl-edit-close]').forEach(function (btn) {
         btn.addEventListener('click', closeEdit);
     });
+    document.getElementById('tplCustomAdd').addEventListener('click', function () {
+        openCustom(null);
+    });
+    document.querySelectorAll('[data-custom-edit]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openCustom(customById(btn.getAttribute('data-custom-edit')));
+        });
+    });
+    document.querySelectorAll('[data-custom-preview]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var item = customById(btn.getAttribute('data-custom-preview'));
+            if (!item) return;
+            document.getElementById('custom_template_id').value = String(item.id || 0);
+            document.getElementById('custom_name').value = String(item.name || '');
+            document.getElementById('custom_subject').value = String(item.subject || '');
+            document.getElementById('custom_template_html').value = String(item.template_html || '');
+            openPreview('custom', false);
+        });
+    });
+    document.querySelectorAll('[data-custom-delete]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var item = customById(btn.getAttribute('data-custom-delete'));
+            if (!item || !window.confirm('“' + String(item.name || 'Bu şablon') + '” silinsin mi?')) return;
+            document.getElementById('delete_custom_template_id').value = String(item.id || 0);
+            document.getElementById('tplCustomDeleteForm').submit();
+        });
+    });
 
     document.getElementById('tplEditClose').addEventListener('click', closeEdit);
     document.getElementById('tplEditPreview').addEventListener('click', function () {
@@ -420,9 +571,19 @@ body.has-tpl-modal{overflow:hidden}
     document.getElementById('tplPreviewRefresh').addEventListener('click', function () {
         refreshPreview(true);
     });
+    document.getElementById('tplCustomClose').addEventListener('click', closeCustom);
+    document.querySelectorAll('[data-custom-close]').forEach(function (btn) {
+        btn.addEventListener('click', closeCustom);
+    });
+    document.getElementById('tplCustomPreview').addEventListener('click', function () {
+        openPreview('custom', false);
+    });
 
     editModal.addEventListener('click', function (event) {
         if (event.target === editModal) closeEdit();
+    });
+    customModal.addEventListener('click', function (event) {
+        if (event.target === customModal) closeCustom();
     });
     previewModal.addEventListener('click', function (event) {
         if (event.target === previewModal) closePreview();
@@ -435,6 +596,10 @@ body.has-tpl-modal{overflow:hidden}
         }
         if (editModal.classList.contains('is-open')) {
             closeEdit();
+            return;
+        }
+        if (customModal.classList.contains('is-open')) {
+            closeCustom();
         }
     });
 })();

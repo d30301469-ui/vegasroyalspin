@@ -143,7 +143,10 @@ final class AdminCommunicationController extends AdminController
             'welcomePreviewHtml' => $this->renderMailTemplatePreview('welcome', $settings),
             'depositApprovedPreviewHtml' => $this->renderMailTemplatePreview('deposit_approved', $settings),
             'withdrawApprovedPreviewHtml' => $this->renderMailTemplatePreview('withdraw_approved', $settings),
+            'customTemplates' => $this->customMailTemplates(),
             'previewUrl' => AdminAuth::url('/email/templates/preview'),
+            'customSaveUrl' => AdminAuth::url('/email/templates/custom'),
+            'customDeleteUrl' => AdminAuth::url('/email/templates/custom/delete'),
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
         ]);
         unset($_SESSION['admin_flash']);
@@ -458,6 +461,89 @@ final class AdminCommunicationController extends AdminController
         $this->redirect(AdminAuth::url('/email/templates'));
     }
 
+    public function saveCustomTemplate(): void
+    {
+        $this->requirePermission('email');
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+
+        $this->ensureMailTables();
+        $id = max(0, (int) ($_POST['custom_template_id'] ?? 0));
+        $name = trim((string) ($_POST['custom_name'] ?? ''));
+        $subject = trim((string) ($_POST['custom_subject'] ?? ''));
+        $templateHtml = trim((string) ($_POST['custom_template_html'] ?? ''));
+        $isActive = isset($_POST['custom_is_active']) ? 1 : 0;
+
+        if ($name === '' || $subject === '') {
+            $_SESSION['admin_flash'] = 'Şablon kaydedilemedi: ad ve e-posta konusu zorunludur.';
+            $this->redirect(AdminAuth::url('/email/templates'));
+        }
+
+        try {
+            $pdo = AdminDatabase::pdo();
+            if ($id > 0) {
+                $stmt = $pdo->prepare(
+                    'UPDATE mail_custom_templates
+                     SET name = :name, subject = :subject, template_html = :template_html,
+                         is_active = :is_active, updated_at = NOW()
+                     WHERE id = :id'
+                );
+                $stmt->execute([
+                    'id' => $id,
+                    'name' => $name,
+                    'subject' => $subject,
+                    'template_html' => $templateHtml,
+                    'is_active' => $isActive,
+                ]);
+                $_SESSION['admin_flash'] = 'Özel e-posta şablonu güncellendi.';
+            } else {
+                $stmt = $pdo->prepare(
+                    'INSERT INTO mail_custom_templates
+                     (name, subject, template_html, is_active, created_at, updated_at)
+                     VALUES (:name, :subject, :template_html, :is_active, NOW(), NOW())'
+                );
+                $stmt->execute([
+                    'name' => $name,
+                    'subject' => $subject,
+                    'template_html' => $templateHtml,
+                    'is_active' => $isActive,
+                ]);
+                $_SESSION['admin_flash'] = 'Yeni e-posta şablonu eklendi.';
+            }
+        } catch (Throwable $exception) {
+            $_SESSION['admin_flash'] = 'Şablon kaydedilemedi: ' . $exception->getMessage();
+        }
+
+        $this->redirect(AdminAuth::url('/email/templates'));
+    }
+
+    public function deleteCustomTemplate(): void
+    {
+        $this->requirePermission('email');
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+
+        $this->ensureMailTables();
+        $id = max(0, (int) ($_POST['custom_template_id'] ?? 0));
+        try {
+            if ($id > 0) {
+                $stmt = AdminDatabase::pdo()->prepare('DELETE FROM mail_custom_templates WHERE id = :id');
+                $stmt->execute(['id' => $id]);
+            }
+            $_SESSION['admin_flash'] = 'Özel e-posta şablonu silindi.';
+        } catch (Throwable $exception) {
+            $_SESSION['admin_flash'] = 'Şablon silinemedi: ' . $exception->getMessage();
+        }
+
+        $this->redirect(AdminAuth::url('/email/templates'));
+    }
+
     public function previewTemplate(): void
     {
         $this->requirePermission('email');
@@ -470,7 +556,7 @@ final class AdminCommunicationController extends AdminController
 
         $this->ensureMailTables();
         $type = strtolower(trim((string) ($_POST['template_type'] ?? 'reset')));
-        if (!in_array($type, ['reset', 'welcome', 'deposit_approved', 'withdraw_approved'], true)) {
+        if (!in_array($type, ['reset', 'welcome', 'deposit_approved', 'withdraw_approved', 'custom'], true)) {
             $type = 'reset';
         }
 
@@ -482,6 +568,11 @@ final class AdminCommunicationController extends AdminController
         $settings['welcome_template_html'] = (string) ($_POST['welcome_template_html'] ?? ($settings['welcome_template_html'] ?? ''));
         $settings['deposit_approved_template_html'] = (string) ($_POST['deposit_approved_template_html'] ?? ($settings['deposit_approved_template_html'] ?? ''));
         $settings['withdraw_approved_template_html'] = (string) ($_POST['withdraw_approved_template_html'] ?? ($settings['withdraw_approved_template_html'] ?? ''));
+        if ($type === 'custom') {
+            $settings['custom_name'] = trim((string) ($_POST['custom_name'] ?? 'Özel şablon'));
+            $settings['custom_subject'] = trim((string) ($_POST['custom_subject'] ?? 'E-posta konusu'));
+            $settings['custom_template_html'] = (string) ($_POST['custom_template_html'] ?? '');
+        }
 
         require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
         header('Content-Type: text/html; charset=UTF-8');
@@ -860,6 +951,21 @@ final class AdminCommunicationController extends AdminController
         }
     }
 
+    /** @return list<array<string,mixed>> */
+    private function customMailTemplates(): array
+    {
+        try {
+            $stmt = AdminDatabase::pdo()->query(
+                'SELECT id, name, subject, template_html, is_active, created_at, updated_at
+                 FROM mail_custom_templates ORDER BY id DESC'
+            );
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            return is_array($rows) ? $rows : [];
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
     /** @param array<string,mixed> $settings */
     private function mailTemplateOptions(array $settings): array
     {
@@ -907,6 +1013,25 @@ final class AdminCommunicationController extends AdminController
         $options['member_name'] = 'Örnek Üye';
         $historyUrl = $siteUrl !== '' ? ($siteUrl . '/profile/deposit-withdraw-history') : '/profile/deposit-withdraw-history';
         $sampleAmount = '1.250,00 TRY';
+
+        if ($type === 'custom') {
+            $name = trim((string) ($settings['custom_name'] ?? 'Özel şablon'));
+            $subject = trim((string) ($settings['custom_subject'] ?? 'E-posta konusu'));
+            $options['template_html'] = trim((string) ($settings['custom_template_html'] ?? ''));
+            $bodyHtml = '<p style="margin:0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . 'Bu alan özel şablonunuzun örnek e-posta içeriğidir.'
+                . '</p>';
+
+            return metropol_mail_render_template(
+                $siteUrl,
+                $subject !== '' ? $subject : $name,
+                $name !== '' ? $name : 'Özel Şablon',
+                $bodyHtml,
+                'Siteye Git',
+                $siteUrl !== '' ? $siteUrl : '#',
+                $options
+            );
+        }
 
         if ($type === 'welcome') {
             $options['template_html'] = trim((string) ($settings['welcome_template_html'] ?? ''));
