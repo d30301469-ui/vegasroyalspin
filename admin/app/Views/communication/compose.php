@@ -103,7 +103,7 @@ $customTemplates = is_array($customTemplates ?? null) ? $customTemplates : [];
                     <?php endforeach; ?>
                 </select>
                 <p class="field-help">
-                    Seçilen özel şablon hem tek mailde hem toplu mailde kullanılır ve kayıtlı konusu otomatik uygulanır.
+                    Seçilen özel şablon hem tek mailde hem toplu mailde kullanılır, kayıtlı konusu otomatik uygulanır ve mesaj alanı zorunlu olmaz.
                 </p>
             </div>
 
@@ -112,9 +112,13 @@ $customTemplates = is_array($customTemplates ?? null) ? $customTemplates : [];
                 <input id="subject" class="input" name="subject" type="text" required value="<?= htmlspecialchars($oldSubject, ENT_QUOTES, 'UTF-8') ?>">
             </div>
             <div class="field span-2">
-                <label class="field-label" for="body">Mesaj</label>
+                <label class="field-label" for="body">
+                    Mesaj
+                    <span data-body-optional hidden style="margin-left:6px;font-weight:600;opacity:.75;">(isteğe bağlı)</span>
+                </label>
                 <textarea id="body" class="textarea" name="body" rows="10" required><?= htmlspecialchars($oldBody, ENT_QUOTES, 'UTF-8') ?></textarea>
                 <p class="field-help">Her üyeye isim-soyisim otomatik eklenir (To: İsim Soyisim &lt;mail&gt;). İsterseniz metinde {{MEMBER_NAME}}, {{ISIM}}, {{SOYISIM}} kullanın; yoksa başına “Merhaba İsim Soyisim,” eklenir.</p>
+                <p class="field-help" data-body-template-help hidden>Hazır şablon seçili: mesaj alanını boş bırakabilirsiniz, şablon içeriği gönderilir. Yazarsanız şablonun {{BODY_HTML}} alanına eklenir.</p>
             </div>
         </div>
         <div class="form-actions">
@@ -138,6 +142,9 @@ $customTemplates = is_array($customTemplates ?? null) ? $customTemplates : [];
     var modes = form.querySelectorAll('[data-compose-mode]');
     var templateSelect = form.querySelector('#custom_template_id');
     var subjectInput = form.querySelector('#subject');
+    var bodyInput = form.querySelector('#body');
+    var bodyOptionalBadge = form.querySelector('[data-body-optional]');
+    var bodyTemplateHelp = form.querySelector('[data-body-template-help]');
 
     function syncMode() {
         var mode = 'single';
@@ -160,16 +167,31 @@ $customTemplates = is_array($customTemplates ?? null) ? $customTemplates : [];
         }
     }
 
+    function syncTemplate() {
+        var usesTemplate = !!templateSelect && parseInt(templateSelect.value, 10) > 0;
+        if (bodyInput) {
+            if (usesTemplate) {
+                bodyInput.removeAttribute('required');
+            } else {
+                bodyInput.setAttribute('required', 'required');
+            }
+        }
+        if (bodyOptionalBadge) bodyOptionalBadge.hidden = !usesTemplate;
+        if (bodyTemplateHelp) bodyTemplateHelp.hidden = !usesTemplate;
+    }
+
     Array.prototype.forEach.call(modes, function (input) {
         input.addEventListener('change', syncMode);
     });
-    if (templateSelect && subjectInput) {
+    if (templateSelect) {
         templateSelect.addEventListener('change', function () {
             var option = templateSelect.options[templateSelect.selectedIndex];
             var templateSubject = option ? String(option.getAttribute('data-template-subject') || '') : '';
-            if (templateSubject !== '') subjectInput.value = templateSubject;
+            if (subjectInput && templateSubject !== '') subjectInput.value = templateSubject;
+            syncTemplate();
         });
     }
     syncMode();
+    syncTemplate();
 })();
 </script>

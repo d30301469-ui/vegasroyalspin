@@ -614,8 +614,13 @@ final class AdminCommunicationController extends AdminController
             $mode = 'single';
         }
 
-        if ($subject === '' || $body === '') {
-            $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: konu ve mesaj zorunludur.';
+        $usesCustomTemplate = is_array($customTemplate);
+        if ($subject === '') {
+            $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: konu zorunludur.';
+            $this->redirect(AdminAuth::url('/email/send'));
+        }
+        if ($body === '' && !$usesCustomTemplate) {
+            $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: mesaj alanı zorunludur (hazır şablon seçilmediğinde).';
             $this->redirect(AdminAuth::url('/email/send'));
         }
 
@@ -671,8 +676,9 @@ final class AdminCommunicationController extends AdminController
                 continue;
             }
 
-            $personalizedBody = $this->personalizeMailBody($body, $firstName, $lastName, $fullName);
-            $this->writeMemberInboxMessage($email, $subject, $personalizedBody);
+            $personalizedBody = $body !== ''
+                ? $this->personalizeMailBody($body, $firstName, $lastName, $fullName)
+                : '';
 
             $ok = false;
             $error = '';
@@ -680,24 +686,37 @@ final class AdminCommunicationController extends AdminController
             if (!$enabled) {
                 $error = 'mail_disabled';
             } else {
-                $bodyHtmlEscaped = nl2br(htmlspecialchars($personalizedBody, ENT_QUOTES, 'UTF-8'));
                 $templateOptions = $templateOptionsBase;
                 $templateOptions['member_name'] = $fullName !== '' ? $fullName : 'Üye';
+                $bodyHtmlBlock = $personalizedBody !== ''
+                    ? '<p style="margin:0;">' . nl2br(htmlspecialchars($personalizedBody, ENT_QUOTES, 'UTF-8')) . '</p>'
+                    : '';
                 $htmlBody = metropol_mail_render_template(
                     $siteUrl,
-                    $subject !== '' ? $subject : 'VegasRoyalSpin bildirimi',
-                    $subject !== '' ? $subject : 'Bildirim',
-                    '<p style="margin:0;">' . $bodyHtmlEscaped . '</p>',
+                    $subject,
+                    $subject,
+                    $bodyHtmlBlock,
                     'Mesaji Gor',
                     $siteUrl !== '' ? $siteUrl : 'https://vegasroyalspin.com',
                     $templateOptions
                 );
+            }
+
+            // Şablon kullanıldığında mesaj alanı boş bırakılabilir; düz metin karşılığı şablondan üretilir.
+            $plainBody = $personalizedBody !== '' ? $personalizedBody : $this->plainTextFromHtml($htmlBody);
+            if ($plainBody === '') {
+                $plainBody = $subject;
+            }
+
+            $this->writeMemberInboxMessage($email, $subject, $plainBody);
+
+            if ($enabled) {
                 $ok = metropol_mail_send(
                     $settings,
                     $from,
                     $email,
                     $subject,
-                    $personalizedBody,
+                    $plainBody,
                     $error,
                     $htmlBody,
                     $fullName
@@ -720,7 +739,7 @@ final class AdminCommunicationController extends AdminController
                     'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
                      VALUES (:admin_id, :to_email, :subject, :body_preview, :status, NOW())'
                 );
-                $preview = $ok ? $personalizedBody : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $personalizedBody);
+                $preview = $ok ? $plainBody : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $plainBody);
                 $logTo = $fullName !== '' ? ($fullName . ' <' . $email . '>') : $email;
                 $stmt->execute([
                     'admin_id' => $adminId,
@@ -882,6 +901,23 @@ final class AdminCommunicationController extends AdminController
         }
 
         return 'Merhaba ' . $fullName . ",\n\n" . $replaced;
+    }
+
+    private function plainTextFromHtml(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        $text = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1>/is', ' ', $html) ?? $html;
+        $text = preg_replace('/<br\s*\/?>/i', "\n", $text) ?? $text;
+        $text = preg_replace('/<\/(p|div|tr|h1|h2|h3|li)>/i', "\n", $text) ?? $text;
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/[ \t\x{00A0}]+/u', ' ', $text) ?? $text;
+        $text = preg_replace('/\n\s*\n\s*\n+/u', "\n\n", $text) ?? $text;
+        $lines = array_map('trim', explode("\n", $text));
+
+        return trim(implode("\n", $lines));
     }
 
     private function writeMemberInboxMessage(string $email, string $subject, string $body): void
