@@ -106,6 +106,10 @@ final class AdminCommunicationController extends AdminController
             'emailSection' => 'send',
             'flash' => (string) ($_SESSION['admin_flash'] ?? ''),
             'memberEmailCount' => count($memberEmails),
+            'customTemplates' => array_values(array_filter(
+                $this->customMailTemplates(),
+                static fn (array $template): bool => (int) ($template['is_active'] ?? 0) === 1
+            )),
         ]);
         unset($_SESSION['admin_flash']);
     }
@@ -592,6 +596,19 @@ final class AdminCommunicationController extends AdminController
         $this->ensureMailTables();
         $subject = trim((string) ($_POST['subject'] ?? ''));
         $body = trim((string) ($_POST['body'] ?? ''));
+        $customTemplateId = max(0, (int) ($_POST['custom_template_id'] ?? 0));
+        $customTemplate = null;
+        if ($customTemplateId > 0) {
+            $customTemplate = $this->customMailTemplateById($customTemplateId, true);
+            if ($customTemplate === null) {
+                $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: seçilen şablon bulunamadı veya pasif.';
+                $this->redirect(AdminAuth::url('/email/send'));
+            }
+            $templateSubject = trim((string) ($customTemplate['subject'] ?? ''));
+            if ($templateSubject !== '') {
+                $subject = $templateSubject;
+            }
+        }
         $mode = strtolower(trim((string) ($_POST['send_mode'] ?? 'single')));
         if ($mode !== 'bulk') {
             $mode = 'single';
@@ -635,6 +652,9 @@ final class AdminCommunicationController extends AdminController
 
         $siteUrl = $this->frontendSiteUrl();
         $templateOptionsBase = $this->mailTemplateOptions($settings);
+        if (is_array($customTemplate)) {
+            $templateOptionsBase['template_html'] = trim((string) ($customTemplate['template_html'] ?? ''));
+        }
         $adminUser = AdminAuth::user();
         $adminId = (int) ($adminUser['id'] ?? 0);
         $sentCount = 0;
@@ -963,6 +983,29 @@ final class AdminCommunicationController extends AdminController
             return is_array($rows) ? $rows : [];
         } catch (Throwable) {
             return [];
+        }
+    }
+
+    /** @return array<string,mixed>|null */
+    private function customMailTemplateById(int $id, bool $activeOnly = false): ?array
+    {
+        if ($id <= 0) {
+            return null;
+        }
+
+        try {
+            $sql = 'SELECT id, name, subject, template_html, is_active, created_at, updated_at
+                    FROM mail_custom_templates WHERE id = :id';
+            if ($activeOnly) {
+                $sql .= ' AND is_active = 1';
+            }
+            $sql .= ' LIMIT 1';
+            $stmt = AdminDatabase::pdo()->prepare($sql);
+            $stmt->execute(['id' => $id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return is_array($row) ? $row : null;
+        } catch (Throwable) {
+            return null;
         }
     }
 

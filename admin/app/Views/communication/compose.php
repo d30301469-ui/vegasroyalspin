@@ -8,6 +8,7 @@ $memberEmailCount = (int) ($memberEmailCount ?? 0);
 $oldSubject = trim((string) ($oldSubject ?? ''));
 $oldBody = trim((string) ($oldBody ?? ''));
 $isBulk = $oldMode === 'bulk';
+$customTemplates = is_array($customTemplates ?? null) ? $customTemplates : [];
 ?>
 <section class="hero">
     <div class="hero-text">
@@ -89,6 +90,24 @@ $isBulk = $oldMode === 'bulk';
             </div>
 
             <div class="field span-2">
+                <label class="field-label" for="custom_template_id">Hazır şablon</label>
+                <select id="custom_template_id" class="input" name="custom_template_id">
+                    <option value="0">Şablon kullanma</option>
+                    <?php foreach ($customTemplates as $template): ?>
+                        <option
+                            value="<?= (int) ($template['id'] ?? 0) ?>"
+                            data-template-subject="<?= htmlspecialchars((string) ($template['subject'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                        >
+                            <?= htmlspecialchars((string) ($template['name'] ?? 'Özel şablon'), ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="field-help">
+                    Seçilen özel şablon hem tek mailde hem toplu mailde kullanılır ve kayıtlı konusu otomatik uygulanır.
+                </p>
+            </div>
+
+            <div class="field span-2">
                 <label class="field-label" for="subject">Konu</label>
                 <input id="subject" class="input" name="subject" type="text" required value="<?= htmlspecialchars($oldSubject, ENT_QUOTES, 'UTF-8') ?>">
             </div>
@@ -117,6 +136,8 @@ $isBulk = $oldMode === 'bulk';
     var toEmail = form.querySelector('#to_email');
     var submitBtn = form.querySelector('[data-compose-submit]');
     var modes = form.querySelectorAll('[data-compose-mode]');
+    var templateSelect = form.querySelector('#custom_template_id');
+    var subjectInput = form.querySelector('#subject');
 
     function syncMode() {
         var mode = 'single';
@@ -142,6 +163,13 @@ $isBulk = $oldMode === 'bulk';
     Array.prototype.forEach.call(modes, function (input) {
         input.addEventListener('change', syncMode);
     });
+    if (templateSelect && subjectInput) {
+        templateSelect.addEventListener('change', function () {
+            var option = templateSelect.options[templateSelect.selectedIndex];
+            var templateSubject = option ? String(option.getAttribute('data-template-subject') || '') : '';
+            if (templateSubject !== '') subjectInput.value = templateSubject;
+        });
+    }
     syncMode();
 })();
 </script>
