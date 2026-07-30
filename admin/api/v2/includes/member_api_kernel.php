@@ -726,9 +726,10 @@ $memberStateChangingRoutes = [
     'kyc/source-of-funds' => true,
     'notifications/read-all' => true,
     'notifications/settings' => true,
-        'responsible-gaming/limits' => true,
-        'responsible-gaming/cool-off' => true,
-        'responsible-gaming/self-exclusion' => true,
+    'loyalty/redeem' => true,
+    'responsible-gaming/limits' => true,
+    'responsible-gaming/cool-off' => true,
+    'responsible-gaming/self-exclusion' => true,
     'support/tickets' => true,
 ];
 $memberStateChangingPatterns = [

@@ -79,12 +79,10 @@
     }
 
     function favoriteApiBase(kind) {
-        if (kind === "bgaming") {
-            return null;
-        }
         if (kind === "live") {
             return "/api/v2/favorite-live-casino";
         }
+        // slot + bgaming catalog favorites share the slot favorites endpoint
         return "/api/v2/favorite-slots";
     }
 
@@ -98,6 +96,21 @@
                 icon.classList.toggle("fas", on);
             }
         }
+    }
+
+    function favoriteMetadata(item, gameId) {
+        var image = item.querySelector("img");
+        var provider = item.querySelector("[data-provider], .providerBadgeBlock, .provider-name");
+        return {
+            game_id: gameId,
+            game_name: (item.getAttribute("data-game-name")
+                || (image && (image.getAttribute("title") || image.getAttribute("alt")))
+                || "").trim(),
+            image_url: (image && (image.currentSrc || image.getAttribute("src") || image.getAttribute("data-src")) || "").trim(),
+            provider: (item.getAttribute("data-provider")
+                || (provider && (provider.getAttribute("data-provider") || provider.textContent))
+                || "").trim(),
+        };
     }
 
     document.addEventListener("click", function (e) {
@@ -116,14 +129,13 @@
             return;
         }
         var kind = resolveFavoriteKind(item);
-        var apiBase = favoriteApiBase(kind);
-        if (!apiBase) {
-            toastWarn("BGaming oyunlarÄ± iÃ§in favori henÃ¼z desteklenmiyor.");
-            return;
+        if (kind === "bgaming") {
+            kind = "slot";
         }
+        var apiBase = favoriteApiBase(kind);
         var gameId = extractGameId(item);
         if (!gameId) {
-            toastWarn("Bu oyun iÃ§in katalog kimliÄŸi yok; favori eklenemiyor.");
+            toastWarn("Bu oyun için katalog kimliği yok; favori eklenemiyor.");
             return;
         }
         var isFav = fav.classList.contains("is-favorite");
@@ -157,7 +169,7 @@
             credentials: "same-origin",
             headers: memberAuthHeaders({ Accept: "application/json", "Content-Type": "application/json" }),
             cache: "no-store",
-            body: JSON.stringify({ game_id: gameId }),
+            body: JSON.stringify(favoriteMetadata(item, gameId)),
         })
             .then(function (r) {
                 return r.json();

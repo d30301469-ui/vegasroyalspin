@@ -1196,71 +1196,18 @@ if ($method === 'POST' && in_array($route, ['password_update.php', 'account/pass
     ]);
 }
 
-if (in_array($method, ['GET', 'POST'], true) && $route === 'two_factor.php') {
-    $userId = $memberRequireLogin();
-    if ($method === 'GET') {
-        $memberEnvelope(200, [
-            'success' => true,
-            'code' => 200,
-            'message' => 'İki aşamalı doğrulama durumu',
-            'data' => ['enabled' => !empty($_SESSION['twofa_enabled'])],
-        ]);
-    }
-    $input = $memberInput($payload);
-    $enabledRaw = $input['enabled'] ?? $input['twofa_enabled'] ?? $input['twoFactorEnabled'] ?? false;
-    $enabled = in_array($enabledRaw, [true, 1, '1', 'true', 'on', 'yes'], true);
-    $_SESSION['twofa_enabled'] = $enabled;
-    $memberEnvelope(200, [
-        'success' => true,
-        'code' => 200,
-        'message' => $enabled ? 'İki aşamalı doğrulama etkinleştirildi.' : 'İki aşamalı doğrulama kapatıldı.',
+if (
+    (in_array($method, ['GET', 'POST'], true) && $route === 'two_factor.php')
+    || ($method === 'POST' && in_array($route, ['auth/2fa/enable', 'auth/2fa/verify'], true))
+) {
+    $memberRequireLogin();
+    $memberEnvelope(501, [
+        'success' => false,
+        'code' => 501,
+        'message' => 'İki aşamalı doğrulama henüz kullanıma hazır değildir.',
         'data' => [
-            'user_id' => $userId,
-            'enabled' => $enabled,
-        ],
-        'enabled' => $enabled,
-    ]);
-}
-
-if ($method === 'POST' && $route === 'auth/2fa/enable') {
-    $userId = $memberRequireLogin();
-    $input = $memberInput($payload);
-    $enabledRaw = $input['enabled'] ?? $input['twofa_enabled'] ?? $input['twoFactorEnabled'] ?? true;
-    $enabled = in_array($enabledRaw, [true, 1, '1', 'true', 'on', 'yes'], true);
-    $_SESSION['twofa_enabled'] = $enabled;
-    $memberEnvelope(200, [
-        'success' => true,
-        'code' => 200,
-        'message' => $enabled ? 'İki aşamalı doğrulama etkinleştirildi.' : 'İki aşamalı doğrulama kapatıldı.',
-        'data' => [
-            'user_id' => $userId,
-            'enabled' => $enabled,
-            'method' => 'session_stub',
-        ],
-    ]);
-}
-
-if ($method === 'POST' && $route === 'auth/2fa/verify') {
-    $userId = $memberRequireLogin();
-    $input = $memberInput($payload);
-    $code = trim((string) ($input['code'] ?? $input['otp'] ?? $input['token'] ?? ''));
-    if ($code === '') {
-        $memberEnvelope(422, [
-            'success' => false,
-            'code' => 422,
-            'message' => 'Doğrulama kodu zorunludur.',
-            'data' => ['errors' => ['code' => ['Kod zorunludur.']]],
-        ]);
-    }
-    $_SESSION['twofa_verified'] = true;
-    $memberEnvelope(200, [
-        'success' => true,
-        'code' => 200,
-        'message' => 'İki aşamalı doğrulama tamamlandı.',
-        'data' => [
-            'user_id' => $userId,
-            'verified' => true,
-            'method' => 'session_stub',
+            'enabled' => false,
+            'available' => false,
         ],
     ]);
 }

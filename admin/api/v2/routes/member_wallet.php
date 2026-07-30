@@ -370,7 +370,26 @@ if (in_array($method, ['GET', 'POST'], true) && ($route === 'deposit_payment.php
         $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'Kullanıcı bulunamadı.']);
     }
     if ($method === 'GET') {
-        $memberEnvelope(200, MegaPayzService::withdrawForm($pdo, $user));
+        if ($route === 'withdraw_payment.php') {
+            $memberEnvelope(200, MegaPayzService::withdrawForm($pdo, $user));
+        }
+        $methods = MegaPayzService::methods($pdo);
+        if ($route === 'deposit_payment.php') {
+            $methods = array_values(array_filter(
+                $methods,
+                static fn (array $item): bool => !empty($item['deposit_enabled'])
+            ));
+        }
+        $memberEnvelope(200, [
+            'success' => true,
+            'code' => 200,
+            'message' => $route === 'deposit_payment.php' ? 'Yatırım yöntemleri' : 'Ödeme yöntemleri',
+            'data' => [
+                'methods' => $methods,
+                'payment_methods' => $methods,
+                'currency' => 'TRY',
+            ],
+        ]);
     }
     $input = $memberInput($payload);
     $amount = round((float) str_replace(',', '.', (string) ($input['amount'] ?? '0')), 2);

@@ -1054,45 +1054,125 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
     }
 }
 if (in_array($route, ['favorite_slots.php', 'favorite_live_casino.php', 'favorite-slots', 'favorite-live-casino'], true)) {
-    $memberRequireLogin();
+    $userId = $memberRequireLogin();
+    $pdo = AdminDatabase::pdo();
+    $kind = in_array($route, ['favorite_live_casino.php', 'favorite-live-casino'], true) ? 'live' : 'slot';
 
     if ($method === 'GET') {
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $limit = min(200, max(1, (int) ($_GET['limit'] ?? 50)));
+        $offset = ($page - 1) * $limit;
+        $countStmt = $pdo->prepare(
+            'SELECT COUNT(*) FROM member_game_favorites WHERE user_id = :user_id AND kind = :kind'
+        );
+        $countStmt->execute(['user_id' => $userId, 'kind' => $kind]);
+        $total = (int) $countStmt->fetchColumn();
+        $listStmt = $pdo->prepare(
+            'SELECT game_id, game_name, image_url, provider, created_at
+             FROM member_game_favorites
+             WHERE user_id = :user_id AND kind = :kind
+             ORDER BY id DESC
+             LIMIT :limit OFFSET :offset'
+        );
+        $listStmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $listStmt->bindValue(':kind', $kind);
+        $listStmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $listStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $listStmt->execute();
+        $games = array_map(static function (array $row): array {
+            return [
+                'game_id' => (string) ($row['game_id'] ?? ''),
+                'name' => (string) ($row['game_name'] ?? ''),
+                'game_name' => (string) ($row['game_name'] ?? ''),
+                'image_url' => (string) ($row['image_url'] ?? ''),
+                'cover' => (string) ($row['image_url'] ?? ''),
+                'provider' => (string) ($row['provider'] ?? ''),
+                'created_at' => $row['created_at'] ?? null,
+            ];
+        }, $listStmt->fetchAll(PDO::FETCH_ASSOC) ?: []);
+        $totalPages = max(1, (int) ceil($total / $limit));
         $memberEnvelope(200, [
             'success' => true,
             'code' => 200,
             'message' => 'Favori oyunlar',
             'data' => [
-                'items' => [],
-                'games' => [],
+                'items' => $games,
+                'games' => $games,
                 'pagination' => [
                     'page' => $page,
                     'limit' => $limit,
-                    'total' => 0,
-                    'total_pages' => 1,
-                    'has_next' => false,
-                    'has_prev' => false,
+                    'total' => $total,
+                    'total_pages' => $totalPages,
+                    'has_next' => $page < $totalPages,
+                    'has_prev' => $page > 1,
                 ],
             ],
         ]);
     }
 
     if ($method === 'POST') {
+        $input = $memberInput($payload);
+        $gameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? ''));
+        if ($gameId === '') {
+            $memberEnvelope(422, [
+                'success' => false,
+                'code' => 422,
+                'message' => 'Oyun kimliği zorunludur.',
+            ]);
+        }
+        $existsStmt = $pdo->prepare(
+            'SELECT 1 FROM member_game_favorites
+             WHERE user_id = :user_id AND kind = :kind AND game_id = :game_id LIMIT 1'
+        );
+        $existsStmt->execute(['user_id' => $userId, 'kind' => $kind, 'game_id' => $gameId]);
+        $alreadyFavorite = (bool) $existsStmt->fetchColumn();
+        $saveStmt = $pdo->prepare(
+            'INSERT INTO member_game_favorites
+                (user_id, kind, game_id, game_name, image_url, provider)
+             VALUES
+                (:user_id, :kind, :game_id, :game_name, :image_url, :provider)
+             ON DUPLICATE KEY UPDATE
+                game_name = VALUES(game_name),
+                image_url = VALUES(image_url),
+                provider = VALUES(provider),
+                updated_at = CURRENT_TIMESTAMP'
+        );
+        $saveStmt->execute([
+            'user_id' => $userId,
+            'kind' => $kind,
+            'game_id' => substr($gameId, 0, 120),
+            'game_name' => substr(trim((string) ($input['game_name'] ?? $input['name'] ?? '')), 0, 255),
+            'image_url' => substr(trim((string) ($input['image_url'] ?? $input['cover'] ?? '')), 0, 500),
+            'provider' => substr(trim((string) ($input['provider'] ?? '')), 0, 120),
+        ]);
         $memberEnvelope(200, [
             'success' => true,
             'code' => 200,
             'message' => 'Favorilere eklendi.',
-            'data' => ['favorited' => true, 'already_favorite' => false],
+            'data' => ['favorited' => true, 'already_favorite' => $alreadyFavorite],
         ]);
     }
 
     if ($method === 'DELETE') {
+        $input = $memberInput($payload);
+        $gameId = trim((string) ($_GET['game_id'] ?? $_GET['gameId'] ?? $input['game_id'] ?? $input['gameId'] ?? ''));
+        if ($gameId === '') {
+            $memberEnvelope(422, [
+                'success' => false,
+                'code' => 422,
+                'message' => 'Oyun kimliği zorunludur.',
+            ]);
+        }
+        $deleteStmt = $pdo->prepare(
+            'DELETE FROM member_game_favorites
+             WHERE user_id = :user_id AND kind = :kind AND game_id = :game_id'
+        );
+        $deleteStmt->execute(['user_id' => $userId, 'kind' => $kind, 'game_id' => $gameId]);
         $memberEnvelope(200, [
             'success' => true,
             'code' => 200,
             'message' => 'Favorilerden kaldırıldı.',
-            'data' => ['favorited' => false, 'removed' => false],
+            'data' => ['favorited' => false, 'removed' => $deleteStmt->rowCount() > 0],
         ]);
     }
 
@@ -1100,16 +1180,6 @@ if (in_array($route, ['favorite_slots.php', 'favorite_live_casino.php', 'favorit
         'success' => false,
         'code' => 405,
         'message' => 'Method desteklenmiyor.',
-    ]);
-}
-if ($method === 'GET' && in_array($route, ['freespins.php', 'me/freespins', 'profile/freespins'], true)) {
-    $memberRequireLogin();
-    $tab = trim((string) ($_GET['tab'] ?? ''));
-    $memberEnvelope(200, [
-        'success' => true,
-        'code' => 200,
-        'message' => 'Freespin listesi',
-        'data' => ['items' => [], 'total' => 0, 'tab' => $tab ?: 'yeni'],
     ]);
 }
 

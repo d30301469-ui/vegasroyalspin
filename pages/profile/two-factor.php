@@ -20,21 +20,6 @@ if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
 }
 $_SESSION['csrf_token'] = $_SESSION[$csrfKey];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'], $_POST['action']) && $_POST['ajax'] === '1' && $_POST['action'] === 'twofa_toggle') {
-    header('Content-Type: application/json; charset=utf-8');
-    $csrf = (string) ($_POST['csrf_token'] ?? $_POST['_token'] ?? '');
-    if ($csrf === '' || !hash_equals((string) $_SESSION['csrf_token'], $csrf)) {
-        echo json_encode(['success' => false, 'message' => 'Güvenlik doğrulaması başarısız. Lütfen sayfayı yenileyip tekrar deneyin.']);
-        exit;
-    }
-    $enabled = isset($_POST['enabled']) && $_POST['enabled'] === '1';
-    $_SESSION['twofa_enabled'] = $enabled;
-    echo json_encode(['success' => true, 'enabled' => $enabled]);
-    exit;
-}
-
-$twofaEnabled = !empty($_SESSION['twofa_enabled']);
-
 $username = $_SESSION['username'];
 $user_id = $_SESSION['user_id'] ?? null;
 
@@ -62,7 +47,7 @@ include __DIR__ . '/../../views/partials/profile-page-frame-open.php';
         include __DIR__ . '/../../views/partials/profile-content-shell-open.php';
         ?>
             <div class="profile-security-single profile-security-single--twofa" id="2fa">
-                <p class="twofa-status" id="twofa-status"><?php echo $twofaEnabled ? 'İki faktörlü kimlik doğrulama etkin.' : 'İki faktörlü kimlik doğrulama kapatıldı'; ?></p>
+                <p class="twofa-status" id="twofa-status">İki faktörlü kimlik doğrulama yakında kullanıma açılacaktır.</p>
                 <div class="twofa-activate-row">
                     <div class="twofa-left-col">
                         <div class="twofa-icon-wrap">
@@ -80,7 +65,7 @@ include __DIR__ . '/../../views/partials/profile-page-frame-open.php';
                         <span class="twofa-activate-label">İKİ FAKTÖRLÜ DOĞRULAMAYI ETKİNLEŞTİR</span>
                     </div>
                     <label class="twofa-toggle">
-                        <input type="checkbox" class="twofa-toggle-input" id="twofaToggle" data-csrf-token="<?php echo htmlspecialchars((string) $_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo $twofaEnabled ? 'checked' : ''; ?> aria-describedby="twofa-status">
+                        <input type="checkbox" class="twofa-toggle-input" id="twofaToggle" disabled aria-disabled="true" aria-describedby="twofa-status">
                         <span class="twofa-toggle-slider"></span>
                     </label>
                 </div>

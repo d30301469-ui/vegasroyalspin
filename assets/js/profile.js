@@ -2125,7 +2125,7 @@
     function initTwoFactorToggle() {
         var toggle = document.getElementById('twofaToggle');
         var statusEl = document.getElementById('twofa-status');
-        if (!toggle || !statusEl || toggle.getAttribute('data-twofa-bound') === '1') return;
+        if (!toggle || !statusEl || toggle.disabled || toggle.getAttribute('data-twofa-bound') === '1') return;
         toggle.setAttribute('data-twofa-bound', '1');
 
         function setStatus(on) {
@@ -3016,22 +3016,7 @@
                 if (methods.length) {
                     window.__WITHDRAW_PAYMENT_METHODS_ENRICH__ = methods;
                     attachWithdrawPaymentIdsByLabel(methods);
-                    return;
                 }
-                return fetch(apiUrl('/api/v2/withdraw-payment'), {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
-                    body: JSON.stringify({ lang: 'tr' })
-                })
-                    .then(function(r2) { return r2.json().catch(function() { return null; }); })
-                    .then(function(env2) {
-                        var m2 = env2 && env2.success && env2.data ? extractWithdrawPaymentMethodsFromData(env2.data) : [];
-                        if (m2.length) {
-                            window.__WITHDRAW_PAYMENT_METHODS_ENRICH__ = m2;
-                            attachWithdrawPaymentIdsByLabel(m2);
-                        }
-                    });
             })
             .catch(function() {});
     }
@@ -4655,7 +4640,10 @@
                     if (response.status === 'success') {
                         if (response.referral_code) {
                             $('#userReferralCode').text(response.referral_code);
-                            $('#shareLink').text(window.location.origin + '/?ref=' + response.referral_code);
+                            var shareLink = response.data && response.data.share_link
+                                ? response.data.share_link
+                                : window.location.origin + '/register?ref=' + encodeURIComponent(response.referral_code);
+                            $('#shareLink').text(shareLink);
                         } else {
                             $('#userReferralCode').text('Referans kodu bulunamadı.');
                             $('#shareLink').text('N/A');

@@ -1,4 +1,5 @@
-# /api — security + v2 front controller routing.
+# /admin/api — security + local v2 front controller routing.
+# This file lives under admin/api/, so v2/index.php is local (NOT ../admin/api/v2).
 <IfModule mod_authz_core.c>
     Require all granted
 </IfModule>
@@ -16,14 +17,6 @@
     RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
     RewriteRule (^|/)[^/]+\.(?:log|sql|sqlite|db|bak|backup|old|orig|save|swp|tmp|env|ini|conf|config|pem|key|crt|p12|pfx|ps1|sh|bat|cmd|py|zip|tar|gz|tgz|7z|rar)$ - [F,L,NC]
 
-    # Monorepo deployment: admin/api/v2/index.php exists → route all v2/* requests to it.
-    # Works for any domain (frontend, api subdomain, admin subdomain) without hardcoded names.
-    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/index.php -f
-    RewriteRule ^v2/(.+)$ ../admin/api/v2/index.php?route=$1 [END,QSA]
-    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/index.php -f
-    RewriteRule ^v2/?$ ../admin/api/v2/index.php [END,QSA]
-
-    # Standalone deployment fallback: no admin panel → use local api/v2/index.php
-    RewriteRule ^v2/?$ v2/index.php [L,QSA]
-    RewriteRule ^v2/(.+)$ v2/index.php?route=$1 [L,QSA]
+    RewriteRule ^v2/(.+)$ v2/index.php?route=$1 [END,QSA]
+    RewriteRule ^v2/?$ v2/index.php [END,QSA]
 </IfModule>

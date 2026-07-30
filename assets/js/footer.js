@@ -304,7 +304,7 @@
                 .then(function (response) { return response.json(); })
                 .then(function (data) {
                     var msg = data.mesaj || data.message || "İşlem tamamlanamadı.";
-                    if (data.status === "success") {
+                    if (data.status === "success" || data.success === true) {
                         window.MaltabetToast ? MaltabetToast.success(msg, "Başarılı") : alert(msg);
                     } else {
                         window.MaltabetToast ? MaltabetToast.error(msg, "Hata") : alert(msg);
