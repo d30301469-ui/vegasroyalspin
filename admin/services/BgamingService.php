@@ -3411,7 +3411,7 @@ final class BgamingService
             return rtrim((string) BACKEND_URL, '/');
         }
 
-        return rtrim((string) (getenv('BACKEND_URL') ?: getenv('BACKEND_FALLBACK_URL') ?: 'https://bo-backoffice.site'), '/');
+        return rtrim((string) (getenv('BACKEND_URL') ?: getenv('BACKEND_FALLBACK_URL') ?: (function_exists('deploy_domain') ? deploy_domain('backend_url') : 'https://admin.vegasroyalspin.com')), '/');
     }
 
     private static function logWallet(PDO $pdo, string $endpoint, array $payload, array $response, int $status, int $durationMs): void

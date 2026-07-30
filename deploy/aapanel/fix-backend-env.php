@@ -103,8 +103,8 @@ foreach ($patchKeys as $key) {
 
 $apiPublic = InstallEnvBuilder::resolveApiPublicBaseUrl($backendUrl);
 foreach (['API_PUBLIC_BASE_URL', 'API_BACKEND_MAIN_BASE_URL', 'BACKEND_API_BASE_URL'] as $apiKey) {
-    $host = strtolower((string) (parse_url($values[$apiKey] ?? '', PHP_URL_HOST) ?: ''));
-    if (($values[$apiKey] ?? '') === '' || !str_starts_with($host, 'api.')) {
+    $current = rtrim((string) ($values[$apiKey] ?? ''), '/');
+    if ($current === '' || strcasecmp($current, $apiPublic) !== 0) {
         $updates[$apiKey] = $apiPublic;
     }
 }

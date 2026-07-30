@@ -18,9 +18,6 @@ final class InstallEnvBuilder
     public static function resolveApiHost(string $backendHost): string
     {
         $backendHost = strtolower(preg_replace('/:\d+$/', '', trim($backendHost)) ?? '');
-        if ($backendHost === '') {
-            return 'api.bo-nexthub.site';
-        }
 
         if (function_exists('deploy_domain')) {
             $configured = strtolower((string) (parse_url(deploy_domain('api_public_base_url'), PHP_URL_HOST) ?: deploy_domain('api_subdomain_host')));
@@ -29,9 +26,12 @@ final class InstallEnvBuilder
             }
         }
 
-        $base = preg_replace('/^api\./', '', $backendHost);
+        // Canonical: member API lives on the backend/admin host (no separate api.* subdomain).
+        if ($backendHost !== '') {
+            return (string) (preg_replace('/^api\./', '', $backendHost) ?: $backendHost);
+        }
 
-        return 'api.' . $base;
+        return 'admin.vegasroyalspin.com';
     }
 
     public static function resolveApiPublicBaseUrl(string $backendUrl): string
@@ -45,9 +45,34 @@ final class InstallEnvBuilder
 
         $backendUrl = rtrim(trim($backendUrl), '/');
         $scheme = (string) (parse_url($backendUrl, PHP_URL_SCHEME) ?: 'https');
-        $apiHost = self::resolveApiHost((string) (parse_url($backendUrl, PHP_URL_HOST) ?: 'bo-nexthub.site'));
+        $apiHost = self::resolveApiHost((string) (parse_url($backendUrl, PHP_URL_HOST) ?: 'admin.vegasroyalspin.com'));
 
         return rtrim($scheme . '://' . $apiHost . '/api/v2', '/');
+    }
+
+    /**
+     * Accept canonical admin-host /api/v2 and legacy local api.* aliases.
+     */
+    public static function isValidMemberApiHost(string $apiHost): bool
+    {
+        $apiHost = strtolower(preg_replace('/:\d+$/', '', trim($apiHost)) ?? '');
+        if ($apiHost === '') {
+            return false;
+        }
+
+        if (function_exists('deploy_domain')) {
+            $allowed = array_values(array_filter(array_unique([
+                strtolower((string) (parse_url(deploy_domain('api_public_base_url'), PHP_URL_HOST) ?: '')),
+                strtolower((string) (parse_url(deploy_domain('backend_url'), PHP_URL_HOST) ?: '')),
+                strtolower(deploy_domain('api_subdomain_host')),
+            ])));
+            if (in_array($apiHost, $allowed, true)) {
+                return true;
+            }
+        }
+
+        // Laragon / legacy local alias still allowed.
+        return str_starts_with($apiHost, 'api.');
     }
 
     public static function resolveApiFallbackBaseUrl(string $backendUrl): string
@@ -229,7 +254,7 @@ final class InstallEnvBuilder
     }
 
     /**
-     * Split-deploy frontend: üye API her zaman public api.* subdomain — loopback yasak.
+     * Split-deploy frontend: üye API her zaman public admin-host /api/v2 — loopback yasak.
      *
      * @param array<string, string> $env
      * @return array<string, string>
@@ -317,8 +342,8 @@ final class InstallEnvBuilder
         }
 
         $apiHost = strtolower((string) (parse_url((string) ($env['API_BACKEND_MAIN_BASE_URL'] ?? ''), PHP_URL_HOST) ?: ''));
-        if ($apiHost !== '' && !str_starts_with($apiHost, 'api.')) {
-            $errors[] = 'API_BACKEND_MAIN_BASE_URL api.* subdomain olmalı (örn. api.bo-nexthub.site)';
+        if ($apiHost !== '' && !self::isValidMemberApiHost($apiHost)) {
+            $errors[] = 'API_BACKEND_MAIN_BASE_URL admin host /api/v2 olmalı (örn. admin.vegasroyalspin.com)';
         }
 
         if (trim((string) ($env['API_BACKEND_INTERNAL_BASE_URL'] ?? '')) !== '') {
@@ -358,8 +383,8 @@ final class InstallEnvBuilder
         }
 
         $apiHost = strtolower((string) (parse_url((string) ($env['API_BACKEND_MAIN_BASE_URL'] ?? ''), PHP_URL_HOST) ?: ''));
-        if ($apiHost !== '' && !str_starts_with($apiHost, 'api.')) {
-            $errors[] = 'API_BACKEND_MAIN_BASE_URL api.* subdomain olmalı';
+        if ($apiHost !== '' && !self::isValidMemberApiHost($apiHost)) {
+            $errors[] = 'API_BACKEND_MAIN_BASE_URL admin host /api/v2 olmalı (örn. admin.vegasroyalspin.com)';
         }
 
         return $errors;

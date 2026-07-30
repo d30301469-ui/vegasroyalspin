@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 /**
- * Public member API base URL (api.bo-backoffice.site) — browser + server-side CMS.
+ * Public member API base URL (admin host /api/v2) — browser + server-side CMS.
  */
 if (!function_exists('metropol_normalize_member_api_public_url')) {
     /**
-     * Tarayıcı üye API'si her zaman api.* subdomain üzerinden (bo-backoffice.site değil).
+     * Normalize member API URLs onto the canonical public API host from deploy_domains.
+     * Rewrites legacy api.* / white-label hosts; leaves the canonical admin host intact.
      */
     function metropol_normalize_member_api_public_url(string $url): string
     {
@@ -17,35 +18,25 @@ if (!function_exists('metropol_normalize_member_api_public_url')) {
         }
 
         $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
-        if ($host === '' || str_starts_with($host, 'api.')) {
+        if ($host === '') {
             return $url;
         }
 
         $apiHost = '';
-        $backendHost = '';
         if (function_exists('deploy_domain')) {
             $apiHost = strtolower((string) (parse_url(deploy_domain('api_public_base_url'), PHP_URL_HOST) ?: deploy_domain('api_subdomain_host')));
-            $backendHost = strtolower((string) (parse_url(deploy_domain('backend_url'), PHP_URL_HOST) ?: ''));
+        }
+        if ($apiHost === '') {
+            return $url;
         }
 
-        $rewrite = false;
-        if ($backendHost !== '' && $host === $backendHost && $apiHost !== '' && $host !== $apiHost) {
-            $rewrite = true;
-        } elseif ($apiHost !== '' && $host !== $apiHost) {
-            $builderPath = dirname(__DIR__) . '/app/Services/InstallEnvBuilder.php';
-            if (is_readable($builderPath)) {
-                require_once $builderPath;
-                if (class_exists('InstallEnvBuilder', false)) {
-                    $expected = strtolower(InstallEnvBuilder::resolveApiHost($host));
-                    if ($expected !== '' && $expected !== $host && str_starts_with($expected, 'api.')) {
-                        $apiHost = $expected;
-                        $rewrite = true;
-                    }
-                }
-            }
-        }
+        $staleHosts = function_exists('deploy_stale_url_hosts') ? deploy_stale_url_hosts() : [];
+        $needsRewrite = $host !== $apiHost && (
+            str_starts_with($host, 'api.')
+            || in_array($host, $staleHosts, true)
+        );
 
-        if (!$rewrite || $apiHost === '') {
+        if (!$needsRewrite) {
             return $url;
         }
 
@@ -176,7 +167,7 @@ if (!function_exists('metropol_frontend_direct_member_api')) {
             return false;
         }
 
-        $flag = frontend_env_string('FRONTEND_DIRECT_MEMBER_API', '1');
+        $flag = frontend_env_string('FRONTEND_DIRECT_MEMBER_API', '0');
 
         return !in_array(strtolower($flag), ['0', 'false', 'off', 'no'], true);
     }

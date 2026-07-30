@@ -86,7 +86,10 @@ if (!defined('API_BACKEND_INTERNAL_BASE_URL')) {
     define('API_BACKEND_INTERNAL_BASE_URL', '');
 }
 if (!defined('API_BACKEND_INTERNAL_HOST')) {
-    define('API_BACKEND_INTERNAL_HOST', 'bo-nexthub.site');
+    define(
+        'API_BACKEND_INTERNAL_HOST',
+        strtolower((string) (parse_url(deploy_domain('backend_url'), PHP_URL_HOST) ?: 'admin.vegasroyalspin.com'))
+    );
 }
 
 if (is_readable(__DIR__ . '/member_api_public.php')) {

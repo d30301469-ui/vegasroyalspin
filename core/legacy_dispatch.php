@@ -30,16 +30,18 @@ if (function_exists('frontend_database_allowed') && !frontend_database_allowed()
 }
 
 $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
+$legacyBackendHosts = function_exists('deploy_backend_hosts')
+    ? deploy_backend_hosts()
+    : ['admin.vegasroyalspin.com'];
 $isAdminHost = function_exists('metropol_is_backend_host')
     ? metropol_is_backend_host($host)
-    : in_array($host, array_filter(array_map('trim', [
+    : in_array($host, array_filter(array_map('trim', array_merge([
         defined('BACKEND_HOST') ? (string) BACKEND_HOST : '',
         getenv('ADMIN_URL_HOST') ?: '',
         getenv('BACKEND_HOST') ?: '',
         parse_url((string) (getenv('BACKEND_URL') ?: ''), PHP_URL_HOST) ?: '',
         parse_url((string) (getenv('BACKEND_FALLBACK_URL') ?: ''), PHP_URL_HOST) ?: '',
-        'bo-nexthub.site', 'api.bo-nexthub.site',
-    ])), true);
+    ], $legacyBackendHosts))), true);
 if (!$isAdminHost && (
     strpos($uri, '/callbacks/') === 0
     || $uri === '/callbacks'

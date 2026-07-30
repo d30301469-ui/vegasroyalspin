@@ -175,6 +175,12 @@ if (!function_exists('deploy_domain_config')) {
             'www.casinomilyon607.com',
             'icons.casinomilyonlisans.com',
             'casinomilyonlisans.com',
+            // Legacy white-label / wrong prod API hosts
+            'bo-nexthub.site',
+            'api.bo-nexthub.site',
+            'bo-backoffice.site',
+            'api.bo-backoffice.site',
+            'api.vegasroyalspin.com',
         ];
     }
 }

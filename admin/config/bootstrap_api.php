@@ -76,7 +76,10 @@ try {
         define('API_BACKEND_INTERNAL_BASE_URL', '');
     }
     if (!defined('API_BACKEND_INTERNAL_HOST')) {
-        define('API_BACKEND_INTERNAL_HOST', 'bo-backoffice.site');
+        define(
+            'API_BACKEND_INTERNAL_HOST',
+            strtolower((string) (parse_url(deploy_domain('backend_url'), PHP_URL_HOST) ?: 'admin.vegasroyalspin.com'))
+        );
     }
 }
 
