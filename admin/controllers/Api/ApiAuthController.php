@@ -10,6 +10,158 @@ require_once SERVICE_PATH . '/MemberRegisterPayload.php';
  */
 class ApiAuthController
 {
+    private static function turnstileSettings(): array
+    {
+        $defaults = [
+            'enabled' => false,
+            'site_key' => '',
+            'secret_key' => '',
+        ];
+
+        try {
+            $pdo = self::localDbPdo();
+            if (!($pdo instanceof PDO)) {
+                return $defaults;
+            }
+
+            $stmt = $pdo->query('SELECT turnstile_enabled, turnstile_site_key, turnstile_secret_key FROM site_ayarlar ORDER BY id ASC LIMIT 1');
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+            if (!is_array($row)) {
+                return $defaults;
+            }
+
+            return [
+                'enabled' => !in_array(strtolower(trim((string) ($row['turnstile_enabled'] ?? '0'))), ['0', '', 'false', 'off', 'no'], true),
+                'site_key' => trim((string) ($row['turnstile_site_key'] ?? '')),
+                'secret_key' => trim((string) ($row['turnstile_secret_key'] ?? '')),
+            ];
+        } catch (Throwable) {
+            return $defaults;
+        }
+    }
+
+    private static function turnstileTokenFromRequest(): string
+    {
+        $keys = ['turnstile_response', 'cf-turnstile-response', 'turnstile_token'];
+        foreach ($keys as $key) {
+            $value = trim((string) ($_POST[$key] ?? $_GET[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        $raw = file_get_contents('php://input');
+        if (is_string($raw) && trim($raw) !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                foreach ($keys as $key) {
+                    $value = trim((string) ($decoded[$key] ?? ''));
+                    if ($value !== '') {
+                        return $value;
+                    }
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private static function verifyTurnstileOrRespond(): bool
+    {
+        $settings = self::turnstileSettings();
+        if (empty($settings['enabled']) || trim((string) $settings['site_key']) === '' || trim((string) $settings['secret_key']) === '') {
+            return true;
+        }
+
+        $token = self::turnstileTokenFromRequest();
+        if ($token === '') {
+            self::respondJson(400, [
+                'success' => false,
+                'code' => 400,
+                'message' => 'Cloudflare doğrulaması gerekli.',
+            ]);
+
+            return false;
+        }
+
+        $ip = function_exists('metropol_cloudflare_client_ip')
+            ? metropol_cloudflare_client_ip()
+            : (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+
+        $response = self::postTurnstileVerify($settings['secret_key'], $token, $ip);
+        if ($response === null || empty($response['success'])) {
+            self::respondJson(403, [
+                'success' => false,
+                'code' => 403,
+                'error' => 'TURNSTILE_FAILED',
+                'message' => 'Cloudflare doğrulaması başarısız.',
+            ]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private static function postTurnstileVerify(string $secret, string $token, string $remoteIp = ''): ?array
+    {
+        $secret = trim($secret);
+        $token = trim($token);
+        if ($secret === '' || $token === '') {
+            return null;
+        }
+
+        $url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        $payload = http_build_query([
+            'secret' => $secret,
+            'response' => $token,
+            'remoteip' => $remoteIp,
+        ], '', '&');
+
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            if ($ch === false) {
+                return null;
+            }
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CONNECTTIMEOUT => 4,
+                CURLOPT_TIMEOUT => 8,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded', 'Accept: application/json'],
+            ]);
+            $raw = curl_exec($ch);
+            curl_close($ch);
+            if (!is_string($raw) || trim($raw) === '') {
+                return null;
+            }
+            $decoded = json_decode($raw, true);
+
+            return is_array($decoded) ? $decoded : null;
+        }
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/x-www-form-urlencoded\r\nAccept: application/json\r\n",
+                'content' => $payload,
+                'timeout' => 8,
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+        $raw = @file_get_contents($url, false, $context);
+        if (!is_string($raw) || trim($raw) === '') {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
     private static function allowLocalAuthFallback(): bool
     {
         if (function_exists('frontend_is_api_only') && frontend_is_api_only()) {
@@ -255,6 +407,10 @@ class ApiAuthController
     public function register(): void
     {
         self::jsonHeaders();
+
+        if (!self::verifyTurnstileOrRespond()) {
+            return;
+        }
 
         $path = self::requestPath();
         $ct = (string) ($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '');
@@ -862,6 +1018,10 @@ class ApiAuthController
     {
         self::jsonHeaders();
 
+        if (!self::verifyTurnstileOrRespond()) {
+            return;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['success' => false, 'message' => 'Geçersiz istek.']);
@@ -947,7 +1107,32 @@ class ApiAuthController
             return;
         }
 
-        if (empty($_SESSION['loggedin']) || empty($_SESSION['member_jwt'])) {
+        // 1. PHP session (tarayıcı istemcileri)
+        $jwt = !empty($_SESSION['member_jwt']) ? (string) $_SESSION['member_jwt'] : '';
+
+        // 2. JWT Bearer token fallback (mobil / API istemcileri)
+        if ($jwt === '') {
+            $authHeader = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
+            if ($authHeader === '' && function_exists('getallheaders')) {
+                $hdrs = getallheaders();
+                if (is_array($hdrs)) {
+                    $authHeader = (string) ($hdrs['Authorization'] ?? $hdrs['authorization'] ?? '');
+                }
+            }
+            if (preg_match('/^\s*Bearer\s+(.+)\s*$/i', $authHeader, $m) === 1) {
+                $candidate = trim((string) ($m[1] ?? ''));
+                if ($candidate !== '') {
+                    if (is_file(SERVICE_PATH . '/MemberJwtVerify.php')) {
+                        require_once SERVICE_PATH . '/MemberJwtVerify.php';
+                    }
+                    if (class_exists('MemberJwtVerify', false) && MemberJwtVerify::signatureValid($candidate)) {
+                        $jwt = $candidate;
+                    }
+                }
+            }
+        }
+
+        if ($jwt === '') {
             self::respondJson(401, [
                 'success' => false,
                 'code'    => 401,
@@ -957,8 +1142,6 @@ class ApiAuthController
 
             return;
         }
-
-        $jwt = (string) $_SESSION['member_jwt'];
         $res = MemberLoginService::backendSession($jwt);
 
         if ($res === null) {
@@ -1012,6 +1195,13 @@ class ApiAuthController
 
         if (!empty($_SESSION['member_jwt'])) {
             MemberLoginService::backendLogout((string) $_SESSION['member_jwt']);
+        }
+
+        if (is_readable(CONFIG_PATH . '/member_api_public.php')) {
+            require_once CONFIG_PATH . '/member_api_public.php';
+        }
+        if (function_exists('metropol_frontend_clear_member_session')) {
+            metropol_frontend_clear_member_session();
         }
 
         $_SESSION = [];
@@ -1081,12 +1271,14 @@ class ApiAuthController
             $genderApi = trim((string) ($prepared['gender_api'] ?? ''));
             $gender = self::genderLabelFromApiValue($genderApi);
 
-            $check = $pdo->prepare('SELECT username, email, identity_number FROM users WHERE username = :username OR email = :email OR (:identity_number_check <> "" AND identity_number = :identity_number) LIMIT 1');
+            $check = $pdo->prepare('SELECT username, email, identity_number, phone FROM users WHERE username = :username OR email = :email OR (:identity_number_check <> "" AND identity_number = :identity_number) OR (:phone_check <> "" AND phone = :phone) LIMIT 1');
             $check->execute([
                 'username' => $username,
                 'email' => $email,
                 'identity_number_check' => $identityNumber,
                 'identity_number' => $identityNumber,
+                'phone_check' => $phone,
+                'phone' => $phone,
             ]);
             $exists = $check->fetch(\PDO::FETCH_ASSOC);
             if (is_array($exists)) {
@@ -1100,12 +1292,15 @@ class ApiAuthController
                 if ($identityNumber !== '' && (string) ($exists['identity_number'] ?? '') === $identityNumber) {
                     $errors['tc'] = 'Bu kimlik numarası zaten kayıtlı.';
                 }
+                if ($phone !== '' && (string) ($exists['phone'] ?? '') === $phone) {
+                    $errors['phone'] = 'Bu telefon numarası zaten kayıtlı.';
+                }
 
                 return [
                     'success' => false,
                     'code' => 409,
                     'error' => 'DUPLICATE_USER',
-                    'message' => 'Kullanıcı adı, e-posta veya kimlik numarası zaten kayıtlı.',
+                    'message' => 'Kullanıcı adı, e-posta, telefon veya kimlik numarası zaten kayıtlı.',
                     'errors' => $errors,
                 ];
             }
@@ -1303,6 +1498,35 @@ class ApiAuthController
             return null;
         }
 
-        return AdminDatabase::connectWithParams($config['db']);
+        $db = $config['db'];
+        if (!class_exists('AdminDatabase', false)) {
+            $adminDbFile = defined('BASE_PATH') ? BASE_PATH . '/admin/app/Core/AdminDatabase.php' : null;
+            if ($adminDbFile !== null && is_file($adminDbFile)) {
+                require_once $adminDbFile;
+            }
+        }
+        if (method_exists('AdminDatabase', 'connectWithParams')) {
+            return AdminDatabase::connectWithParams($db);
+        }
+        $database = trim((string) ($db['database'] ?? ''));
+        if ($database === '') {
+            return null;
+        }
+        return new \PDO(
+            sprintf(
+                'mysql:host=%s;port=%d;dbname=%s;charset=%s',
+                (string) ($db['host'] ?? '127.0.0.1'),
+                (int) ($db['port'] ?? 3306),
+                $database,
+                (string) ($db['charset'] ?? 'utf8mb4')
+            ),
+            (string) ($db['username'] ?? 'root'),
+            (string) ($db['password'] ?? ''),
+            function_exists('metropol_pdo_options') ? metropol_pdo_options() : [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                \PDO::ATTR_EMULATE_PREPARES => false,
+            ]
+        );
     }
 }

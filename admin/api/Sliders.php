@@ -245,6 +245,7 @@ final class ApiSliders
                 'today_end' => $today,
             ];
 
+            // Tarih aralığı: gün bazında (admin’de saat seçilse bile o gün boyunca yayında)
             if (isset($columns['start_date']) && isset($columns['starts_at'])) {
                 $where[] = "(NULLIF(DATE(COALESCE(start_date, starts_at)), '0000-00-00') IS NULL OR DATE(COALESCE(start_date, starts_at)) <= :today_start)";
             } elseif (isset($columns['start_date'])) {
@@ -323,7 +324,7 @@ final class ApiSliders
                 return $filtered;
             }
 
-            // Kategoriye ait kayitlar strict status/tarih filtresine takildiginda,
+            // Kategoriye ait kayıtlar strict status/tarih filtresine takildiginda,
             // en guncel satiri (kategori bazli) yine de dondur.
             $relaxedParams = [];
             $relaxedWhere = [];
@@ -476,7 +477,11 @@ final class ApiSliders
             : (function_exists('frontend_remote_http_timeout') ? frontend_remote_http_timeout() : 12);
 
         if ($apiOnly) {
-            $cached = ApiCmsRemote::readPayloadCache($cacheKey, ApiCmsRemote::cacheFreshTtl(), false);
+            // Slider guncellemeleri admin kaydinda purge ile aninda dusurulur;
+            // purge sinyali frontend'e ulasamazsa bile taze pencere en fazla
+            // 30 sn olsun (global CMS TTL api-only hostta 600 sn'e cikabiliyor).
+            $freshTtl = min(ApiCmsRemote::cacheFreshTtl(), 30);
+            $cached = ApiCmsRemote::readPayloadCache($cacheKey, $freshTtl, false);
             if (is_array($cached['sliders'] ?? null)) {
                 ApiCmsRemote::recordFetch($cacheKey, 'cache');
 

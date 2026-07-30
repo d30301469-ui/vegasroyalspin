@@ -26,6 +26,21 @@ final class ProfileApiHelper
             }
         }
 
+        // Oturum açık olduğu halde member_jwt hiç üretilmemiş/kaybolmuş olabilir (eski login akışı,
+        // süresi dolmuş token vb.) — bu durumda profil verisi backend'den hiç gelmez (first_name/surname
+        // boş kalır). Internal-trust ile taze bir token alıp oturuma yazarak kendiliğinden onar.
+        if (!empty($_SESSION['loggedin']) && (int) ($_SESSION['user_id'] ?? 0) > 0) {
+            if (is_file(__DIR__ . '/BackendMemberApiProxy.php')) {
+                require_once __DIR__ . '/BackendMemberApiProxy.php';
+                if (class_exists('BackendMemberApiProxy', false)) {
+                    $fresh = BackendMemberApiProxy::ensureFreshMemberJwt();
+                    if ($fresh !== '') {
+                        return $fresh;
+                    }
+                }
+            }
+        }
+
         return '';
     }
 
@@ -56,9 +71,17 @@ final class ProfileApiHelper
         return BackendApiClient::unwrap($response);
     }
 
-    public static function profileByUsername(string $username): array
+    public static function profileByUsername(string $username, bool $includeBalance = true): array
     {
         unset($username);
+
+        // DB'ye doğrudan erişim izinliyse (split-deploy olmayan/backend host) önce onu dene:
+        // dış (outbound) HTTP + JWT round trip'ine göre çok daha güvenilir — details.php'nin
+        // MemberViewDataService::profileForSession() ile aynı isim/soyisim verisini garanti eder.
+        $direct = self::profileViaDatabase($includeBalance);
+        if ($direct !== []) {
+            return $direct;
+        }
 
         foreach (['/profile/detail', '/profile_detail.php', '/account/profile', '/user/profile'] as $path) {
             $data = self::requestMember('GET', $path);
@@ -71,10 +94,101 @@ final class ProfileApiHelper
                 continue;
             }
 
-            return self::normalizeUserRow($user, $data);
+            return self::normalizeUserRow($user, $data, $includeBalance);
         }
 
         return [];
+    }
+
+    /**
+     * Oturumdaki kullanıcıyı, izin verilen ortamlarda (split-deploy olmayan/local backend host)
+     * doğrudan veritabanından okur — MemberViewDataService::profileForSession() ile aynı yaklaşım.
+     * Böylece first_name/surname gösterimi, dış HTTP+JWT çağrısının başarısız olduğu durumlarda
+     * (ör. backend servisine loopback erişimi olmayan ortamlar) bile doğru kalır.
+     *
+     * @return array<string, mixed>
+     */
+    private static function profileViaDatabase(bool $includeBalance): array
+    {
+        if (!function_exists('frontend_database_allowed') || !frontend_database_allowed()) {
+            return [];
+        }
+
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0 || empty($_SESSION['loggedin'])) {
+            return [];
+        }
+
+        try {
+            if (!defined('ADMIN_APP_PATH')) {
+                define('ADMIN_APP_PATH', (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__)) . '/admin/app');
+            }
+            if (!class_exists('AdminDatabase', false)) {
+                require_once ADMIN_APP_PATH . '/Core/AdminDatabase.php';
+            }
+            $stmt = AdminDatabase::pdo()->prepare('SELECT * FROM users WHERE id = :id LIMIT 1');
+            $stmt->execute(['id' => $userId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Throwable) {
+            return [];
+        }
+
+        if (!is_array($row) || ($row['id'] ?? null) === null) {
+            return [];
+        }
+
+        // Hassas/iç alanları çıktıdan ayıkla (member_api_kernel.php::$memberUserById ile aynı liste) —
+        // bu satır, oturumda önbelleklenip görünüm katmanına aktarıldığı için parola/gizli alan sızıntısını önler.
+        foreach ([
+            'password', 'password_hash', 'pass', 'remember_token', 'verify_token',
+            'reset_token', 'reset_password_token', 'email_verify_token',
+            'two_factor_secret', '2fa_secret', 'totp_secret', 'api_token', 'api_key',
+            'security_pin', 'pin_code',
+        ] as $sensitive) {
+            unset($row[$sensitive]);
+        }
+
+        return self::normalizeUserRow($row, [], $includeBalance);
+    }
+
+    /**
+     * profileByUsername() sonucunu kısa süreliğine (varsayılan 45sn) oturumda önbelleğe alır.
+     * Profil modal sekmeleri arasında (bonus, kyc, mesajlar, işlem geçmişi vb.) hızlı geçiş
+     * yapılırken sadece sidebar'da isim/soyisim göstermek için her sayfa yüklemesinde tekrar
+     * backend'e istek atılmasını önler. Sayfa sadece kimlik doğrulaması (id) gerektiriyorsa
+     * ve güncel veri şart değilse bu metodu tercih edin.
+     *
+     * @return array<string, mixed>
+     */
+    public static function profileByUsernameCached(string $username, int $ttlSeconds = 45): array
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            require_once __DIR__ . '/../config/frontend_session.php';
+            metropol_frontend_session_start();
+        }
+
+        $cache = $_SESSION['__profile_summary_cache'] ?? null;
+        if (
+            is_array($cache)
+            && ($cache['username'] ?? null) === $username
+            && (int) ($cache['expires'] ?? 0) > time()
+            && is_array($cache['data'] ?? null)
+        ) {
+            return $cache['data'];
+        }
+
+        // Sidebar sadece id/first_name/surname gösterir; bakiye JS tarafında ayrı ve
+        // önbellekli fetchBalanceData() ile geldiği için burada balance round-trip'ine gerek yok.
+        $data = self::profileByUsername($username, false);
+        if ($data !== []) {
+            $_SESSION['__profile_summary_cache'] = [
+                'username' => $username,
+                'expires' => time() + max(1, $ttlSeconds),
+                'data' => $data,
+            ];
+        }
+
+        return $data;
     }
 
     /**
@@ -117,6 +231,43 @@ final class ProfileApiHelper
         }
 
         $mapped = self::mapLegacyPath($path);
+
+        if (preg_match('#^/support/tickets(?:/|$)#', $mapped) === 1) {
+            $candidateBases = [];
+            $appendCandidate = static function (string $base) use (&$candidateBases): void {
+                $base = rtrim(trim($base), '/');
+                if ($base === '' || in_array($base, $candidateBases, true)) {
+                    return;
+                }
+                $candidateBases[] = $base;
+            };
+
+            if (function_exists('deploy_domain')) {
+                $backendUrl = rtrim(trim((string) deploy_domain('backend_url')), '/');
+                if ($backendUrl !== '') {
+                    $appendCandidate($backendUrl . '/api/v2');
+                }
+            }
+
+            foreach (BackendApiClient::memberApiOutboundBaseCandidates() as $base) {
+                $appendCandidate((string) $base);
+            }
+            $appendCandidate(BackendApiClient::effectiveMemberApiOutboundBaseUrl());
+
+            foreach ($candidateBases as $base) {
+                $response = BackendApiClient::requestWithBaseAndMemberBearer(
+                    'POST',
+                    $base,
+                    $mapped,
+                    $jwt,
+                    [],
+                    $body
+                );
+                if (is_array($response) && !empty($response['success'])) {
+                    return $response;
+                }
+            }
+        }
 
         return BackendApiClient::requestWithMemberBearer(
             'POST',
@@ -164,9 +315,54 @@ final class ProfileApiHelper
             $casinoTransactions = $casino['items'];
         }
 
+        $sportsLimit = max(50, min(500, (int) ($query['limit'] ?? 200)));
+        $sportsQuery = [
+            'limit' => $sportsLimit,
+            'offset' => max(0, (int) ($query['offset'] ?? 0)),
+        ];
+        $sportsRaw = self::requestMember('GET', '/sportsbook/history', $sportsQuery);
+        $sportsItems = [];
+        if (is_array($sportsRaw['items'] ?? null)) {
+            $sportsItems = $sportsRaw['items'];
+        } elseif (is_array($sportsRaw['data']['items'] ?? null)) {
+            $sportsItems = $sportsRaw['data']['items'];
+        }
+
+        $sportsTransactions = [];
+        foreach ($sportsItems as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $txnType = strtolower(trim((string) ($row['txn_type'] ?? 'bet')));
+            $amount  = abs((float) ($row['amount'] ?? 0));
+            // status: 3 = İptal Edildi/İade (cancel/void txn), 2 = Tamamlandı (finished bet/win),
+            // 1 = Aktif (still open). Cancel must win over is_finished so İADE filters (which key
+            // off status===3) actually match refunded/voided sportsbook coupons.
+            if ($txnType === 'cancel') {
+                $status = 3;
+            } elseif (!empty($row['is_finished'])) {
+                $status = 2;
+            } else {
+                $status = 1;
+            }
+            $sportsTransactions[] = [
+                'id'             => (string) ($row['id'] ?? ''),
+                'transaction_id' => (string) ($row['txn_code'] ?? ''),
+                'wager_id'       => (string) ($row['wager_id'] ?? ''),
+                'game_provider'  => (string) ($row['vendor_code'] ?? 'sports-betby'),
+                'game_code'      => (string) ($row['game_code'] ?? 'sports'),
+                'txn_type'       => $txnType,
+                'status'         => $status,
+                'bet_amount'     => $txnType === 'bet' ? $amount : 0,
+                'get_amount'     => in_array($txnType, ['win', 'cancel'], true) ? $amount : 0,
+                'amount'         => $amount,
+                'created_at'     => (string) ($row['created_at'] ?? ''),
+            ];
+        }
+
         return [
             'casino_transactions' => is_array($casinoTransactions) ? $casinoTransactions : [],
-            'spor_transactions' => [],
+            'spor_transactions' => $sportsTransactions,
         ];
     }
 
@@ -175,7 +371,7 @@ final class ProfileApiHelper
      * @param array<string, mixed> $envelope
      * @return array<string, mixed>
      */
-    private static function normalizeUserRow(array $user, array $envelope = []): array
+    private static function normalizeUserRow(array $user, array $envelope = [], bool $includeBalance = true): array
     {
         if (!isset($user['ana_bakiye'])) {
             if (isset($envelope['balance']['ana_bakiye'])) {
@@ -187,7 +383,7 @@ final class ProfileApiHelper
             }
         }
 
-        if (!isset($user['ana_bakiye']) || (float) $user['ana_bakiye'] <= 0) {
+        if ($includeBalance && (!isset($user['ana_bakiye']) || (float) $user['ana_bakiye'] <= 0)) {
             $balance = self::requestMember('GET', '/account/balance');
             if (isset($balance['ana_bakiye'])) {
                 $user['ana_bakiye'] = $balance['ana_bakiye'];

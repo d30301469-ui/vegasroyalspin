@@ -13,7 +13,7 @@
  *   POST /forgot_password.php JSON { email } — şifre sıfırlama isteği (public envelope)
  *   POST /reset_password.php   JSON { token, password, password_confirmation } — şifre sıfırlama onayı (public envelope)
  *   POST /password_reset.php   JSON { action: request|forgot|confirm|reset, … } — forgot + reset tek uç (public envelope)
- *   POST /password_update.php  Bearer üye JWT; JSON { current_password, password, password_confirmation } — yeni token (envelope)
+ *   POST /password_update.php  Bearer üye JWT; JSON { current_password, password, password_confirmation } — {updated:true} (envelope)
  *   GET/POST /email_verification.php — action request|resend|confirm|verify; GET’te yalnızca token ise confirm (public envelope)
  *   POST /register.php        JSON üye kayıt — envelope (201, data.token; api.md üye API)
  *   POST /auth/register       (legacy; tercihen /register.php)

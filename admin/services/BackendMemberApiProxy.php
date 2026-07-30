@@ -18,6 +18,37 @@ final class BackendMemberApiProxy
         }
     }
 
+    /**
+     * Oturumdaki üye JWT'sini garanti eder: mevcut token geçerliyse onu döner; yoksa (veya
+     * imzası geçersizse) internal-trust ile taze bir token alıp $_SESSION['member_jwt'] içine
+     * yazar. Kullanıcı oturum açmamışsa boş döner. PHP-tarafı servisler (ör. ProfileApiHelper)
+     * backend'e Bearer JWT ile istek atmadan önce bunu çağırarak "token hiç yok" durumunu
+     * (örn. eski/legacy login akışları) kendiliğinden onarır.
+     */
+    public static function ensureFreshMemberJwt(): string
+    {
+        self::ensureFrontendSession();
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        $loggedIn = !empty($_SESSION['loggedin']) && $userId > 0;
+        if (!$loggedIn) {
+            return '';
+        }
+
+        $jwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
+        if ($jwt !== '' && self::memberJwtSignatureValid($jwt)) {
+            return $jwt;
+        }
+
+        $fresh = self::issueMemberJwtViaInternalTrust($userId);
+        if ($fresh !== '') {
+            $_SESSION['member_jwt'] = $fresh;
+
+            return $fresh;
+        }
+
+        return '';
+    }
+
     public static function forward(string $route): void
     {
         self::ensureFrontendSession();
@@ -55,14 +86,14 @@ final class BackendMemberApiProxy
                 'retry_after_seconds' => function_exists('metropol_member_api_circuit_seconds')
                     ? metropol_member_api_circuit_seconds()
                     : 5,
-                'hint' => 'Frontend .env: API_BACKEND_INTERNAL_BASE_URL=http://127.0.0.1/api/v2 ve API_BACKEND_INTERNAL_HOST=bo-backoffice.site',
+                'hint' => 'Frontend .env: API_BACKEND_INTERNAL_BASE_URL=http://127.0.0.1/api/v2 ve API_BACKEND_INTERNAL_HOST=bo-nexthub.site',
             ]);
         }
 
         $base = BackendApiClient::effectiveMemberApiOutboundBaseUrl();
         if ($base === '') {
             self::jsonError(503, 'Backend API base URL is not configured.', [
-                'hint' => 'Frontend .env: API_BACKEND_MAIN_BASE_URL=https://api.bo-backoffice.site/api/v2',
+                'hint' => 'Frontend .env: API_BACKEND_MAIN_BASE_URL=https://api.bo-nexthub.site/api/v2',
                 'check' => '/health.php',
             ]);
         }
@@ -171,6 +202,7 @@ final class BackendMemberApiProxy
 
                 try {
                     self::maybeApplyAuthSession($route, $method, $result);
+                    self::maybeSyncSessionFromAuthCheck($route, $method, $result);
                     self::maybeClearAuthSession($route, $method, $result);
                 } catch (Throwable $sessionError) {
                     error_log('[BackendMemberApiProxy] session sync: ' . $sessionError->getMessage());
@@ -235,7 +267,7 @@ final class BackendMemberApiProxy
         self::jsonError(502, $lastError, [
             'backend' => $lastBackend,
             'backends_tried' => $baseCandidates,
-            'hint' => '502: backend erişilemiyor — .env: API_BACKEND_MAIN_BASE_URL=https://api.bo-backoffice.site/api/v2',
+            'hint' => '502: backend erişilemiyor — .env: API_BACKEND_MAIN_BASE_URL=https://api.bo-nexthub.site/api/v2',
         ]);
     }
 
@@ -501,6 +533,8 @@ final class BackendMemberApiProxy
             $headers[] = 'X-Metropol-Member-Jwt: ' . $browserJwt;
         }
 
+        // Forward visitor IP so providers that bind sessions to launch-game IP
+        // do not see the frontend/proxy address (often 127.0.0.1).
         foreach (self::clientIpForwardHeaders() as $ipHeader) {
             $headers[] = $ipHeader;
         }
@@ -649,6 +683,9 @@ final class BackendMemberApiProxy
         }
         if (!empty($_SESSION['member_jwt'])) {
             $_SESSION['__member_jwt_proxy_synced'] = true;
+            if (function_exists('metropol_frontend_set_member_restore_cookie')) {
+                metropol_frontend_set_member_restore_cookie((string) $_SESSION['member_jwt']);
+            }
             try {
                 session_regenerate_id(true);
             } catch (Throwable) {
@@ -658,6 +695,77 @@ final class BackendMemberApiProxy
         if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
+        metropol_frontend_session_write_close();
+    }
+
+    /**
+     * `auth/session` (heartbeat/hydrate) ve `auth/refresh` yanıtları backend'de JWT'nin
+     * hâlâ geçerli olduğunu doğrular, ancak bu route'lar `maybeApplyAuthSession()`
+     * kapsamına (yalnızca login/register) girmediği için frontend'in kendi
+     * $_SESSION['loggedin']/user_id'si asla geri yüklenmiyordu. Sonuç: JS tarafı
+     * (localStorage JWT) kullanıcıyı giriş yapılmış sanırken, $_SESSION['loggedin']'e
+     * bakan sayfalar (profil vb.) oturumu düşmüş görüp '/' adresine yönlendiriyor —
+     * "oturum yenileme döngüsü durduruldu" uyarılarının kök nedeni buydu. Bu metod
+     * backend'in doğruladığı üyeliği frontend PHP session'ına senkronlar.
+     *
+     * @param array{status: int, body: string, content_type: string|null, transport_error?: bool} $result
+     */
+    private static function maybeSyncSessionFromAuthCheck(string $route, string $method, array $result): void
+    {
+        if (!empty($result['transport_error'])) {
+            return;
+        }
+
+        $normalized = strtolower(trim($route, '/'));
+        $isSessionCheck = $method === 'GET' && in_array($normalized, ['auth/session', 'session.php'], true);
+        $isRefresh = $method === 'POST' && in_array($normalized, ['auth/refresh', 'refresh.php'], true);
+        if (!$isSessionCheck && !$isRefresh) {
+            return;
+        }
+
+        $status = (int) ($result['status'] ?? 0);
+        if ($status < 200 || $status >= 300) {
+            return;
+        }
+
+        $decoded = json_decode((string) ($result['body'] ?? ''), true);
+        if (!is_array($decoded) || empty($decoded['success'])) {
+            return;
+        }
+
+        $data = is_array($decoded['data'] ?? null) ? $decoded['data'] : [];
+        $userId = (int) ($data['user_id'] ?? 0);
+        if ($userId <= 0) {
+            return;
+        }
+
+        self::ensureFrontendSession();
+        metropol_frontend_session_start();
+
+        $_SESSION['loggedin'] = true;
+        $_SESSION['user_id'] = $userId;
+
+        $user = is_array($data['user'] ?? null) ? $data['user'] : [];
+        if (isset($user['username'])) {
+            $_SESSION['username'] = (string) $user['username'];
+        }
+        if (isset($user['email'])) {
+            $_SESSION['email'] = (string) $user['email'];
+        }
+
+        $token = trim((string) ($data['token'] ?? ''));
+        if ($token !== '') {
+            $_SESSION['member_jwt'] = $token;
+            if (function_exists('metropol_frontend_set_member_restore_cookie')) {
+                metropol_frontend_set_member_restore_cookie($token);
+            }
+        }
+
+        if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $_SESSION['__member_jwt_proxy_synced'] = true;
+
         metropol_frontend_session_write_close();
     }
 

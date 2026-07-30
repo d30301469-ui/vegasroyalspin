@@ -47,6 +47,12 @@ final class ApiMediaUrl
 
         $normalized = self::normalizeLegacyMediaPath($normalized);
 
+        // Legacy links may contain a stale /public prefix.
+        if (preg_match('#^/public(?:/|$)#i', $normalized) === 1) {
+            $normalized = substr($normalized, 7);
+            $normalized = $normalized === '' ? '/' : $normalized;
+        }
+
         if (self::isBackendHostedPath($normalized)) {
             $backend = self::backendOrigin();
             if ($backend !== '') {
@@ -57,6 +63,7 @@ final class ApiMediaUrl
         $sitePath = '';
         if (defined('SITE_URL')) {
             $sitePath = (string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?: '');
+            $sitePath = self::normalizePublicPrefix($sitePath);
             $sitePath = $sitePath === '/' ? '' : rtrim($sitePath, '/');
         }
 
@@ -484,6 +491,72 @@ final class ApiMediaUrl
         return preg_match('/^(?:icons|cms)\.casinomilyon\d+\.com$/i', $host) === 1;
     }
 
+    private static function normalizePublicPrefix(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '' || $path === '/') {
+            return '';
+        }
+
+        $normalized = '/' . trim($path, '/');
+        $lower = strtolower($normalized);
+        if ($lower === '/public') {
+            return '';
+        }
+
+        if (str_ends_with($lower, '/public')) {
+            $normalized = substr($normalized, 0, -7) ?: '/';
+        }
+
+        return $normalized === '/' ? '' : rtrim($normalized, '/');
+    }
+
+    private static function normalizeLegacyMediaPath(string $path): string
+    {
+        $normalized = '/' . ltrim(str_replace('\\', '/', $path), '/');
+        $lower = strtolower($normalized);
+
+        if (str_starts_with($lower, '/storage/uploads/')) {
+            return '/uploads/' . ltrim(substr($normalized, strlen('/storage/uploads/')), '/');
+        }
+        if (str_starts_with($lower, '/admin/uploads/')) {
+            return '/uploads/' . ltrim(substr($normalized, strlen('/admin/uploads/')), '/');
+        }
+        if (str_starts_with($lower, '/admin/assets/')) {
+            return '/assets/' . ltrim(substr($normalized, strlen('/admin/assets/')), '/');
+        }
+        if (str_starts_with($lower, '/admin/legacy_provider/')) {
+            return $normalized;
+        }
+
+        if (str_starts_with($lower, '/storage/medias/')) {
+            return '/uploads/medias/' . ltrim(substr($normalized, strlen('/storage/medias/')), '/');
+        }
+        if (str_starts_with($lower, '/storage/media/')) {
+            return '/uploads/media/' . ltrim(substr($normalized, strlen('/storage/media/')), '/');
+        }
+
+        return $normalized;
+    }
+
+    private static function frontendMediaPath(string $path): string
+    {
+        // Promotion and backend-uploaded media paths are served by backend host in split deploy.
+        $backend = self::backendOrigin();
+        if ($backend !== '') {
+            return $backend . $path;
+        }
+
+        $sitePath = '';
+        if (defined('SITE_URL')) {
+            $sitePath = (string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?: '');
+            $sitePath = self::normalizePublicPrefix($sitePath);
+            $sitePath = $sitePath === '/' ? '' : rtrim($sitePath, '/');
+        }
+
+        return $sitePath . $path;
+    }
+
     private static function frontendOrigin(): string
     {
         $candidates = [
@@ -521,44 +594,5 @@ final class ApiMediaUrl
         }
 
         return '';
-    }
-
-    private static function normalizeLegacyMediaPath(string $path): string
-    {
-        $normalized = '/' . ltrim(str_replace('\\', '/', $path), '/');
-        $lower = strtolower($normalized);
-
-        if (str_starts_with($lower, '/storage/uploads/')) {
-            return '/uploads/' . ltrim(substr($normalized, strlen('/storage/uploads/')), '/');
-        }
-        if (str_starts_with($lower, '/admin/uploads/')) {
-            return '/uploads/' . ltrim(substr($normalized, strlen('/admin/uploads/')), '/');
-        }
-        if (str_starts_with($lower, '/admin/assets/')) {
-            return '/assets/' . ltrim(substr($normalized, strlen('/admin/assets/')), '/');
-        }
-        if (str_starts_with($lower, '/admin/legacy_provider/')) {
-            return $normalized;
-        }
-
-        if (str_starts_with($lower, '/storage/medias/')) {
-            return '/uploads/medias/' . ltrim(substr($normalized, strlen('/storage/medias/')), '/');
-        }
-        if (str_starts_with($lower, '/storage/media/')) {
-            return '/uploads/media/' . ltrim(substr($normalized, strlen('/storage/media/')), '/');
-        }
-
-        return $normalized;
-    }
-
-    private static function frontendMediaPath(string $path): string
-    {
-        $sitePath = '';
-        if (defined('SITE_URL')) {
-            $sitePath = (string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?: '');
-            $sitePath = $sitePath === '/' ? '' : rtrim($sitePath, '/');
-        }
-
-        return $sitePath . $path;
     }
 }

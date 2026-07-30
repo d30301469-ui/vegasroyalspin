@@ -4,7 +4,7 @@
  * Include once before rendering views/partials/jackpot.php
  */
 if (!isset($jackpotEpoch)) {
-    $jackpotEpoch = '2026-03-14 00:00:00';
+    $jackpotEpoch = date('Y-m-d H:i:s'); // her sayfa yüklemesinde güncel epoch
 }
 if (!isset($providers)) {
     $providers = [

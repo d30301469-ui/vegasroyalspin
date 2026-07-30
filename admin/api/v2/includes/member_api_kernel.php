@@ -706,17 +706,13 @@ $memberStateChangingRoutes = [
     'bonus_use_code.php' => true,
     'bonuses/active' => true,
     'promocode_request.php' => true,
-    'deposits' => true,
     'deposit_payment.php' => true,
-    'withdrawals' => true,
     'withdraw_payment.php' => true,
-    'wallet/transfer' => true,
     'payment.php' => true,
     'account_freeze.php' => true,
     'account_unfreeze.php' => true,
     'favorite_slots.php' => true,
     'favorite_live_casino.php' => true,
-    'casino/favorite-games' => true,
     'game_launch.php' => true,
     'game-launch' => true,
     'sportsbook/launch' => true,
@@ -725,7 +721,6 @@ $memberStateChangingRoutes = [
     'kyc/address-verification' => true,
     'kyc/source-of-funds' => true,
     'notifications/read-all' => true,
-    'notifications/settings' => true,
     'loyalty/redeem' => true,
     'responsible-gaming/limits' => true,
     'responsible-gaming/cool-off' => true,
@@ -733,15 +728,10 @@ $memberStateChangingRoutes = [
     'support/tickets' => true,
 ];
 $memberStateChangingPatterns = [
-    '~^bets/[^/]+/(cashout|cancel)$~',
     '~^bonuses/[^/]+/(claim|cancel)$~',
-    '~^casino/favorite-games/[^/]+$~',
-    '~^casino/games/[^/]+/launch$~',
-    '~^live-casino/tables/[^/]+/launch$~',
     '~^me/security-sessions/[^/]+$~',
     '~^notifications/[^/]+/read$~',
     '~^support/tickets/[^/]+/messages$~',
-    '~^withdrawals/[^/]+/cancel$~',
 ];
 $memberRouteRequiresCsrf = static function (string $route) use ($memberStateChangingRoutes, $memberStateChangingPatterns): bool {
     if (isset($memberStateChangingRoutes[$route])) {

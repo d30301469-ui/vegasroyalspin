@@ -20,12 +20,13 @@ $isApiRequest = str_starts_with($requestPath, '/api/')
 if (!$isApiRequest) {
     require_once __DIR__ . '/../config/frontend_session.php';
     metropol_frontend_session_start();
+    if (is_readable(CONFIG_PATH . '/member_api_public.php')) {
+        require_once CONFIG_PATH . '/member_api_public.php';
+    }
     if (
         isset($_GET['logout'])
         && (string) $_GET['logout'] === '1'
-        && is_readable(CONFIG_PATH . '/member_api_public.php')
     ) {
-        require_once CONFIG_PATH . '/member_api_public.php';
         if (function_exists('metropol_frontend_clear_member_session')) {
             metropol_frontend_clear_member_session();
         }
@@ -66,6 +67,7 @@ try {
 
 require_once CONFIG_PATH . '/db.php';
 require_once SERVICE_PATH . '/BackendApiClient.php';
+require_once SERVICE_PATH . '/MemberLoginService.php';
 require_once API_PATH . '/bootstrap.php';
 require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/helpers.php';
@@ -85,13 +87,17 @@ if (!defined('MOBILE_PATH')) {
 }
 
 if (!$isApiRequest) {
-    $csrfKey = 'vegasroyalspin_csrf_token';
+    $csrfKey = (string) (getenv('CSRF_TOKEN_KEY') ?: (defined('SITE_CSRF_KEY') ? SITE_CSRF_KEY : 'site_csrf_token'));
     if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
         $_SESSION[$csrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
             ? $_SESSION['csrf_token']
             : bin2hex(random_bytes(32));
     }
     $_SESSION['csrf_token'] = $_SESSION[$csrfKey];
+
+    if (function_exists('metropol_frontend_restore_member_session_from_request')) {
+        metropol_frontend_restore_member_session_from_request();
+    }
 }
 
 // Bu değişkenler view katmanında global olarak okunuyor (ör. core/Controller::view()

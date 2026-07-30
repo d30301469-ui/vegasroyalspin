@@ -1200,9 +1200,8 @@ final class MegaPayzService
         try {
             if (!class_exists('MemberTransactionalMail', false)) {
                 foreach ([
+                    dirname(__DIR__) . '/admin/app/Services/MemberTransactionalMail.php',
                     dirname(__DIR__) . '/app/Services/MemberTransactionalMail.php',
-                    dirname(__DIR__, 2) . '/admin/app/Services/MemberTransactionalMail.php',
-                    __DIR__ . '/../app/Services/MemberTransactionalMail.php',
                 ] as $file) {
                     if (is_readable($file)) {
                         require_once $file;

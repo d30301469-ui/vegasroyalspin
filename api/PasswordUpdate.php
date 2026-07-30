@@ -1,7 +1,7 @@
 <?php
 
 /**
- * POST /api/v2/password_update.php — oturumlu üye, Bearer JWT (zarf; başarıda yeni token).
+ * POST /api/v2/password_update.php — oturumlu üye, Bearer JWT (zarf; {updated:true, redirect:null}).
  */
 final class ApiPasswordUpdate
 {
