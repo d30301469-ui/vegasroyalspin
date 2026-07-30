@@ -94,16 +94,18 @@ $customTemplates = is_array($customTemplates ?? null) ? $customTemplates : [];
                 <select id="custom_template_id" class="input" name="custom_template_id">
                     <option value="0">Şablon kullanma</option>
                     <?php foreach ($customTemplates as $template): ?>
+                        <?php $hasHtml = trim((string) ($template['template_html'] ?? '')) !== ''; ?>
                         <option
                             value="<?= (int) ($template['id'] ?? 0) ?>"
                             data-template-subject="<?= htmlspecialchars((string) ($template['subject'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                            data-template-has-html="<?= $hasHtml ? '1' : '0' ?>"
                         >
-                            <?= htmlspecialchars((string) ($template['name'] ?? 'Özel şablon'), ENT_QUOTES, 'UTF-8') ?>
+                            <?= htmlspecialchars((string) ($template['name'] ?? 'Özel şablon'), ENT_QUOTES, 'UTF-8') ?><?= $hasHtml ? '' : ' (HTML içeriği boş — mesaj yazmalısınız)' ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
                 <p class="field-help">
-                    Seçilen özel şablon hem tek mailde hem toplu mailde kullanılır, kayıtlı konusu otomatik uygulanır ve mesaj alanı zorunlu olmaz.
+                    Seçilen özel şablon hem tek mailde hem toplu mailde kullanılır ve kayıtlı konusu otomatik uygulanır. Şablonun HTML içeriği doluysa mesaj alanı zorunlu olmaz; boşsa mesaj metnini yazmanız gerekir.
                 </p>
             </div>
 
@@ -168,7 +170,9 @@ $customTemplates = is_array($customTemplates ?? null) ? $customTemplates : [];
     }
 
     function syncTemplate() {
-        var usesTemplate = !!templateSelect && parseInt(templateSelect.value, 10) > 0;
+        var option = templateSelect ? templateSelect.options[templateSelect.selectedIndex] : null;
+        var hasTemplateHtml = !!option && String(option.getAttribute('data-template-has-html') || '') === '1';
+        var usesTemplate = !!templateSelect && parseInt(templateSelect.value, 10) > 0 && hasTemplateHtml;
         if (bodyInput) {
             if (usesTemplate) {
                 bodyInput.removeAttribute('required');

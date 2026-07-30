@@ -614,13 +614,18 @@ final class AdminCommunicationController extends AdminController
             $mode = 'single';
         }
 
-        $usesCustomTemplate = is_array($customTemplate);
+        $customTemplateHtml = is_array($customTemplate)
+            ? trim((string) ($customTemplate['template_html'] ?? ''))
+            : '';
         if ($subject === '') {
             $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: konu zorunludur.';
             $this->redirect(AdminAuth::url('/email/send'));
         }
-        if ($body === '' && !$usesCustomTemplate) {
-            $_SESSION['admin_flash'] = 'Mesaj gönderilemedi: mesaj alanı zorunludur (hazır şablon seçilmediğinde).';
+        // Mesaj alanı yalnızca kendi içeriğini taşıyan bir şablon seçildiğinde boş bırakılabilir.
+        if ($body === '' && $customTemplateHtml === '') {
+            $_SESSION['admin_flash'] = is_array($customTemplate)
+                ? 'Mesaj gönderilemedi: seçilen şablonun HTML içeriği boş, bu yüzden mesaj alanını doldurmanız gerekiyor.'
+                : 'Mesaj gönderilemedi: mesaj alanı zorunludur (hazır şablon seçilmediğinde).';
             $this->redirect(AdminAuth::url('/email/send'));
         }
 
@@ -657,8 +662,9 @@ final class AdminCommunicationController extends AdminController
 
         $siteUrl = $this->frontendSiteUrl();
         $templateOptionsBase = $this->mailTemplateOptions($settings);
-        if (is_array($customTemplate)) {
-            $templateOptionsBase['template_html'] = trim((string) ($customTemplate['template_html'] ?? ''));
+        // Boş şablon HTML'i ayarlardaki tasarımı ezmesin; aksi halde mail içeriksiz gider.
+        if ($customTemplateHtml !== '') {
+            $templateOptionsBase['template_html'] = $customTemplateHtml;
         }
         $adminUser = AdminAuth::user();
         $adminId = (int) ($adminUser['id'] ?? 0);
@@ -691,15 +697,33 @@ final class AdminCommunicationController extends AdminController
                 $bodyHtmlBlock = $personalizedBody !== ''
                     ? '<p style="margin:0;">' . nl2br(htmlspecialchars($personalizedBody, ENT_QUOTES, 'UTF-8')) . '</p>'
                     : '';
+                $ctaUrl = $siteUrl !== '' ? $siteUrl : 'https://vegasroyalspin.com';
                 $htmlBody = metropol_mail_render_template(
                     $siteUrl,
                     $subject,
                     $subject,
                     $bodyHtmlBlock,
                     'Mesaji Gor',
-                    $siteUrl !== '' ? $siteUrl : 'https://vegasroyalspin.com',
+                    $ctaUrl,
                     $templateOptions
                 );
+
+                // Şablon görünür içerik üretmediyse markalı varsayılan tasarıma dön.
+                if (!$this->htmlHasVisibleContent($htmlBody)) {
+                    $fallbackOptions = $templateOptions;
+                    unset($fallbackOptions['template_html']);
+                    $htmlBody = metropol_mail_render_template(
+                        $siteUrl,
+                        $subject,
+                        $subject,
+                        $bodyHtmlBlock !== ''
+                            ? $bodyHtmlBlock
+                            : '<p style="margin:0;">' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</p>',
+                        'Mesaji Gor',
+                        $ctaUrl,
+                        $fallbackOptions
+                    );
+                }
             }
 
             // Şablon kullanıldığında mesaj alanı boş bırakılabilir; düz metin karşılığı şablondan üretilir.
@@ -901,6 +925,18 @@ final class AdminCommunicationController extends AdminController
         }
 
         return 'Merhaba ' . $fullName . ",\n\n" . $replaced;
+    }
+
+    private function htmlHasVisibleContent(string $html): bool
+    {
+        if (trim($html) === '') {
+            return false;
+        }
+        if (preg_match('/<img\b/i', $html) === 1) {
+            return true;
+        }
+
+        return $this->plainTextFromHtml($html) !== '';
     }
 
     private function plainTextFromHtml(string $html): string

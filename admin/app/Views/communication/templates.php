@@ -219,6 +219,7 @@ body.has-tpl-modal{overflow:hidden}
                         $customName = trim((string) ($custom['name'] ?? 'Özel şablon'));
                         $customSubject = trim((string) ($custom['subject'] ?? ''));
                         $customActive = (int) ($custom['is_active'] ?? 0) === 1;
+                        $customHasHtml = trim((string) ($custom['template_html'] ?? '')) !== '';
                         ?>
                         <tr data-custom-template-id="<?= $customId ?>">
                             <td>
@@ -229,6 +230,9 @@ body.has-tpl-modal{overflow:hidden}
                                 <span class="badge <?= $customActive ? 'dot success' : 'dot danger' ?>">
                                     <?= $customActive ? 'Aktif · Özel' : 'Pasif · Özel' ?>
                                 </span>
+                                <?php if (!$customHasHtml): ?>
+                                    <span class="badge dot warning" style="margin-left:6px;">HTML boş</span>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <div class="tpl-list-actions">
