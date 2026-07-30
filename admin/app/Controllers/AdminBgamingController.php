@@ -50,35 +50,33 @@ final class AdminBgamingController extends AdminController
         BgamingService::bootstrap($pdo);
 
         $editId = max(0, (int) ($_GET['id'] ?? 0));
+        $editCampaign = $editId > 0 ? BgamingService::campaignById($pdo, $editId) : null;
+        $formState = $this->pullFormState();
+
         $this->view('bgaming/campaigns', [
-            'title' => 'BGaming Kampanyaları',
+            'title' => 'BGaming Freespin Kampanyaları',
             'active' => 'datatable',
             'moduleKey' => 'bgaming-settings',
-            'crumbs' => 'Games | BGaming Campaign Create',
+            'crumbs' => 'Games | BGaming Freespin Campaigns',
             'configRow' => BgamingService::config($pdo),
             'campaigns' => BgamingService::campaigns($pdo),
             'freespinGames' => BgamingService::freespinCapableGames($pdo),
-            'editCampaign' => $editId > 0 ? BgamingService::campaignById($pdo, $editId) : null,
+            'assignments' => BgamingService::campaignAssignments($pdo, 120),
+            'users' => $this->assignableUsers($pdo),
+            'editCampaign' => $editCampaign,
+            'oldInput' => is_array($formState['input'] ?? null) ? $formState['input'] : [],
+            'errors' => is_array($formState['errors'] ?? null) ? $formState['errors'] : [],
             'flash' => $this->pullFlash(),
         ]);
     }
 
+    /**
+     * Eski "Kampanya Ekle" adresi artık tek birleşik ekrana yönlenir.
+     */
     public function campaignAssignments(): void
     {
         $this->requirePermission('bgaming-settings');
-        $pdo = AdminDatabase::pdo();
-        BgamingService::bootstrap($pdo);
-
-        $this->view('bgaming/campaigns_assign', [
-            'title' => 'BGaming Kampanya Atamaları',
-            'active' => 'datatable',
-            'moduleKey' => 'bgaming-settings',
-            'crumbs' => 'Games | BGaming Campaign Assign',
-            'campaigns' => BgamingService::campaigns($pdo),
-            'assignments' => BgamingService::campaignAssignments($pdo, 120),
-            'users' => $this->assignableUsers($pdo),
-            'flash' => $this->pullFlash(),
-        ]);
+        $this->redirect(AdminAuth::url('/bgaming/campaigns'));
     }
 
     public function freespins(): void
@@ -111,10 +109,7 @@ final class AdminBgamingController extends AdminController
             'configRow' => BgamingService::config($pdo),
             'users' => $this->assignableUsers($pdo),
             'freespinGames' => BgamingService::freespinCapableGames($pdo),
-            'localCampaigns' => array_values(array_filter(
-                BgamingService::campaigns($pdo),
-                static fn (array $row): bool => (string) ($row['campaign_type'] ?? '') === 'freespin'
-            )),
+            'assignments' => BgamingService::campaignAssignments($pdo, 120, 'freespin'),
             'remoteData' => $remoteData,
             'remoteError' => $remoteError,
             'remoteFilter' => [
@@ -126,30 +121,126 @@ final class AdminBgamingController extends AdminController
         ]);
     }
 
+    /**
+     * Tek akış: kampanyayı kaydet ve aynı istekte seçilen kullanıcılara ekle.
+     */
     public function storeCampaign(): void
     {
         $this->requirePermission('bgaming-settings');
         $this->ensurePost();
+
+        $campaignId = max(0, (int) ($_POST['id'] ?? 0));
+        $redirectPath = '/bgaming/campaigns';
         try {
-            $result = BgamingService::saveCampaign(AdminDatabase::pdo(), $_POST);
-            $this->flash('BGaming kampanyası kaydedildi: ' . (string) ($result['campaign_code'] ?? ''));
+            $result = BgamingService::saveCampaignWithAssignments(AdminDatabase::pdo(), $_POST);
+            $this->flash($this->campaignSavedMessage($result, $campaignId > 0));
+        } catch (BgamingCampaignException $exception) {
+            $this->flashWithInput('Kampanya kaydedilemedi: ' . $exception->getMessage(), $exception->errors());
+            $redirectPath .= $campaignId > 0 ? '?id=' . $campaignId : '';
         } catch (Throwable $exception) {
-            $this->flash('BGaming kampanyası kaydedilemedi: ' . $exception->getMessage());
+            $this->flashWithInput('Kampanya kaydedilemedi: ' . $exception->getMessage(), []);
+            $redirectPath .= $campaignId > 0 ? '?id=' . $campaignId : '';
         }
-        $this->redirect(AdminAuth::url('/bgaming/campaigns'));
+
+        $this->redirect(AdminAuth::url($redirectPath));
     }
 
+    /**
+     * Mevcut kampanyaya yeni kullanıcı ekleme.
+     */
     public function assignCampaign(): void
     {
         $this->requirePermission('bgaming-settings');
         $this->ensurePost();
         try {
             $result = BgamingService::assignCampaign(AdminDatabase::pdo(), $_POST);
-            $this->flash('Kampanya kullanıcıya atandı: ' . (string) ($result['campaign_code'] ?? ''));
+            $this->flash($this->assignmentsMessage(
+                'Kampanya ' . (string) ($result['campaign_code'] ?? ''),
+                is_array($result['assignments'] ?? null) ? $result['assignments'] : []
+            ));
         } catch (Throwable $exception) {
-            $this->flash('Kampanya ataması başarısız: ' . $exception->getMessage());
+            $this->flash('Kullanıcı eklenemedi: ' . $exception->getMessage());
         }
-        $this->redirect(AdminAuth::url('/bgaming/campaigns/assignments'));
+        $this->redirect(AdminAuth::url('/bgaming/campaigns'));
+    }
+
+    public function retryAssignment(): void
+    {
+        $this->requirePermission('bgaming-settings');
+        $this->ensurePost();
+        $assignmentId = max(0, (int) ($_POST['assignment_id'] ?? 0));
+        try {
+            $result = BgamingService::retryFreespinAssignment(AdminDatabase::pdo(), $assignmentId);
+            $this->flash($this->assignmentsMessage('Tekrar deneme', [$result]));
+        } catch (Throwable $exception) {
+            $this->flash('Tekrar deneme başarısız: ' . $exception->getMessage());
+        }
+        $this->redirect(AdminAuth::url($this->assignmentReturnPath()));
+    }
+
+    public function cancelAssignment(): void
+    {
+        $this->requirePermission('bgaming-settings');
+        $this->ensurePost();
+        $assignmentId = max(0, (int) ($_POST['assignment_id'] ?? 0));
+        try {
+            $result = BgamingService::cancelFreespinAssignment(AdminDatabase::pdo(), $assignmentId);
+            $this->flash('Freespin iptal edildi: ' . (string) ($result['issue_id'] ?? ''));
+        } catch (Throwable $exception) {
+            $this->flash('Freespin iptali başarısız: ' . $exception->getMessage());
+        }
+        $this->redirect(AdminAuth::url($this->assignmentReturnPath()));
+    }
+
+    private function assignmentReturnPath(): string
+    {
+        return trim((string) ($_POST['return'] ?? '')) === 'freespins'
+            ? '/bgaming/freespins'
+            : '/bgaming/campaigns';
+    }
+
+    /**
+     * @param array{campaign: array<string, mixed>, assignments: list<array<string, mixed>>} $result
+     */
+    private function campaignSavedMessage(array $result, bool $isUpdate): string
+    {
+        $campaign = is_array($result['campaign'] ?? null) ? $result['campaign'] : [];
+        $prefix = ($isUpdate ? 'Kampanya güncellendi' : 'Kampanya oluşturuldu')
+            . ': ' . (string) ($campaign['title'] ?? '')
+            . ' [' . (string) ($campaign['campaign_code'] ?? '') . ']';
+
+        return $this->assignmentsMessage($prefix, is_array($result['assignments'] ?? null) ? $result['assignments'] : []);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $assignments
+     */
+    private function assignmentsMessage(string $prefix, array $assignments): string
+    {
+        if ($assignments === []) {
+            return $prefix . '. Kullanıcı seçilmedi, kampanya şablon olarak kaydedildi.';
+        }
+
+        $ok = [];
+        $failed = [];
+        foreach ($assignments as $assignment) {
+            $label = (string) ($assignment['username'] ?? ('#' . (int) ($assignment['user_id'] ?? 0)));
+            if (!empty($assignment['ok'])) {
+                $ok[] = $label;
+                continue;
+            }
+            $failed[] = $label . ' (' . (string) ($assignment['error'] ?? 'bilinmeyen hata') . ')';
+        }
+
+        $parts = [$prefix . '.'];
+        if ($ok !== []) {
+            $parts[] = count($ok) . ' kullanıcıya eklendi: ' . implode(', ', $ok) . '.';
+        }
+        if ($failed !== []) {
+            $parts[] = 'Başarısız: ' . implode(' | ', $failed) . '. Atamalar tablosundan tekrar deneyebilirsiniz.';
+        }
+
+        return implode(' ', $parts);
     }
 
     public function issueFreespins(): void
@@ -212,6 +303,33 @@ final class AdminBgamingController extends AdminController
         $message = (string) ($_SESSION['admin_flash'] ?? '');
         unset($_SESSION['admin_flash']);
         return $message;
+    }
+
+    /**
+     * Hatalı gönderimde form verisini ve alan hatalarını koruyarak forma geri döner.
+     *
+     * @param array<string, string> $errors
+     */
+    private function flashWithInput(string $message, array $errors): void
+    {
+        $this->flash($message);
+        $input = $_POST;
+        unset($input['_token']);
+        $_SESSION['admin_bgaming_form'] = ['input' => $input, 'errors' => $errors];
+    }
+
+    /**
+     * @return array{input: array<string, mixed>, errors: array<string, string>}
+     */
+    private function pullFormState(): array
+    {
+        $state = is_array($_SESSION['admin_bgaming_form'] ?? null) ? $_SESSION['admin_bgaming_form'] : [];
+        unset($_SESSION['admin_bgaming_form']);
+
+        return [
+            'input' => is_array($state['input'] ?? null) ? $state['input'] : [],
+            'errors' => is_array($state['errors'] ?? null) ? $state['errors'] : [],
+        ];
     }
 
     private function assignableUsers(PDO $pdo): array

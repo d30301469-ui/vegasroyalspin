@@ -203,6 +203,8 @@ $router->get('/bgaming/campaigns', [AdminBgamingController::class, 'campaigns'])
 $router->get('/bgaming/campaigns/assignments', [AdminBgamingController::class, 'campaignAssignments']);
 $router->post('/bgaming/campaigns/store', [AdminBgamingController::class, 'storeCampaign']);
 $router->post('/bgaming/campaigns/assign', [AdminBgamingController::class, 'assignCampaign']);
+$router->post('/bgaming/campaigns/assignments/retry', [AdminBgamingController::class, 'retryAssignment']);
+$router->post('/bgaming/campaigns/assignments/cancel', [AdminBgamingController::class, 'cancelAssignment']);
 $router->get('/bgaming/freespins', [AdminBgamingController::class, 'freespins']);
 $router->post('/bgaming/freespins/issue', [AdminBgamingController::class, 'issueFreespins']);
 $router->post('/bgaming/freespins/sync', [AdminBgamingController::class, 'syncFreespinStatus']);

@@ -194,9 +194,8 @@ $bgamingCallbackUrl = $backendBase . '/api/v2/bgaming-wallet';
                 <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
                 <button class="btn btn--primary admin-full-action" type="submit">Oyun Sync</button>
             </form>
-            <a class="btn btn--secondary admin-full-action" href="<?= $text(AdminAuth::url('/bgaming/campaigns')) ?>">Kampanyaları Yönet</a>
-            <a class="btn btn--secondary admin-full-action" href="<?= $text(AdminAuth::url('/bgaming/campaigns/assignments')) ?>">Kampanya Ata</a>
-            <a class="btn btn--secondary admin-full-action" href="<?= $text(AdminAuth::url('/bgaming/freespins')) ?>">Freespin Yönetimi</a>
+            <a class="btn btn--secondary admin-full-action" href="<?= $text(AdminAuth::url('/bgaming/campaigns')) ?>">Freespin Kampanyaları</a>
+            <a class="btn btn--secondary admin-full-action" href="<?= $text(AdminAuth::url('/bgaming/freespins')) ?>">Freespin Takibi</a>
             <a class="btn btn--secondary admin-full-action" href="<?= $text(AdminAuth::url('/module?key=bgaming-games')) ?>">Oyunları Aç</a>
             <a class="btn btn--secondary admin-full-action" href="<?= $text(AdminAuth::url('/module?key=bgaming-transactions')) ?>">İşlemleri Aç</a>
         </div>

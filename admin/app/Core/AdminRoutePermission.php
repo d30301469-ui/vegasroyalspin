@@ -20,6 +20,8 @@ final class AdminRoutePermission
         '/bgaming/campaigns/assignments' => 'bgaming-settings',
         '/bgaming/campaigns/store' => 'bgaming-settings',
         '/bgaming/campaigns/assign' => 'bgaming-settings',
+        '/bgaming/campaigns/assignments/retry' => 'bgaming-settings',
+        '/bgaming/campaigns/assignments/cancel' => 'bgaming-settings',
         '/bgaming/freespins' => 'bgaming-settings',
         '/bgaming/freespins/issue' => 'bgaming-settings',
         '/bgaming/freespins/sync' => 'bgaming-settings',
