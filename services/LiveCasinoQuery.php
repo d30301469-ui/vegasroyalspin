@@ -15,11 +15,8 @@ final class LiveCasinoQuery
     /** @return list<string> */
     public static function liveGameTypeSqlValues(): array
     {
-        if (class_exists('GscPlusService', false) && method_exists('GscPlusService', 'stagingLobbyGameTypes')) {
-            return GscPlusService::stagingLobbyGameTypes();
-        }
-
-        return ['LIVE_CASINO', 'LIVE_CASINO_PREMIUM', 'SLOT'];
+        // Live casino lobby is GSC+ live tables only. Slot titles stay on /slot (aggregator).
+        return ['LIVE_CASINO', 'LIVE_CASINO_PREMIUM'];
     }
 
     /**
@@ -245,31 +242,67 @@ final class LiveCasinoQuery
                 : [];
 
             $hasGscGameType = self::columnExists($pdo, 'gsc_games', 'game_type');
-            $gscWhere = [
-                'g.is_active = 1',
-                "(CASE WHEN COALESCE(g.entry_type, 1) = 2 THEN g.game_code = '_lobby' ELSE g.game_code <> '_lobby' END)",
-                "UPPER(TRIM(COALESCE(NULLIF(g.status, ''), 'ACTIVATED'))) IN ('ACTIVATED','ACTIVAT')",
-            ];
-            if ($hasGscGameType) {
-                $gscWhere[] = 'UPPER(g.game_type) IN (' . self::lobbyGameTypeSqlIn() . ')';
-            }
-            if ($liveProductCodes !== []) {
-                $codePlaceholders = [];
-                foreach ($liveProductCodes as $idx => $code) {
-                    $ck = ':gsc_live_pc_' . $idx;
-                    $codePlaceholders[] = $ck;
-                    $params[$ck] = (int) $code;
+            $hasProductCurrency = self::columnExists($pdo, 'gsc_games', 'product_currency');
+            $gameTypeInSql = self::lobbyGameTypeSqlIn();
+            $buildGscWhere = static function (
+                bool $restrictProducts,
+                bool $restrictCurrency
+            ) use (
+                $hasGscGameType,
+                $hasProductCurrency,
+                $gameTypeInSql,
+                $liveProductCodes,
+                $lobbyCurrencies,
+                &$params
+            ): array {
+                $gscWhere = [
+                    'g.is_active = 1',
+                    "(CASE WHEN COALESCE(g.entry_type, 1) = 2 THEN g.game_code = '_lobby' ELSE g.game_code <> '_lobby' END)",
+                ];
+                if ($hasGscGameType) {
+                    $gscWhere[] = 'UPPER(g.game_type) IN (' . $gameTypeInSql . ')';
                 }
-                $gscWhere[] = 'g.product_code IN (' . implode(',', $codePlaceholders) . ')';
-            }
-            if (self::columnExists($pdo, 'gsc_games', 'product_currency') && $lobbyCurrencies !== []) {
-                $curPlaceholders = [];
-                foreach ($lobbyCurrencies as $idx => $cur) {
-                    $ck = ':gsc_live_cur_' . $idx;
-                    $curPlaceholders[] = $ck;
-                    $params[$ck] = $cur;
+                if ($restrictProducts && $liveProductCodes !== []) {
+                    $codePlaceholders = [];
+                    foreach ($liveProductCodes as $idx => $code) {
+                        $ck = ':gsc_live_pc_' . $idx;
+                        $codePlaceholders[] = $ck;
+                        $params[$ck] = (int) $code;
+                    }
+                    $gscWhere[] = 'g.product_code IN (' . implode(',', $codePlaceholders) . ')';
                 }
-                $gscWhere[] = 'UPPER(TRIM(g.product_currency)) IN (' . implode(',', $curPlaceholders) . ')';
+                if ($restrictCurrency && $hasProductCurrency && $lobbyCurrencies !== []) {
+                    $curPlaceholders = [];
+                    foreach ($lobbyCurrencies as $idx => $cur) {
+                        $ck = ':gsc_live_cur_' . $idx;
+                        $curPlaceholders[] = $ck;
+                        $params[$ck] = $cur;
+                    }
+                    $gscWhere[] = 'UPPER(TRIM(g.product_currency)) IN (' . implode(',', $curPlaceholders) . ')';
+                }
+
+                return $gscWhere;
+            };
+
+            // Prefer staging IDR contract filters; fall back to all active GSC live rows
+            // when the filtered catalogue is empty (common before a full sync).
+            $gscWhere = $buildGscWhere(true, true);
+            $probeSql = 'SELECT COUNT(*) FROM gsc_games g WHERE ' . implode(' AND ', $gscWhere);
+            try {
+                $probe = $pdo->prepare($probeSql);
+                foreach ($params as $k => $v) {
+                    if (self::sqlUsesParam($probeSql, $k)) {
+                        $probe->bindValue($k, $v);
+                    }
+                }
+                $probe->execute();
+                if ((int) $probe->fetchColumn() === 0) {
+                    $params = [];
+                    $gscWhere = $buildGscWhere(false, false);
+                }
+            } catch (Throwable) {
+                $params = [];
+                $gscWhere = $buildGscWhere(false, false);
             }
             if ($searchTerm !== '') {
                 $gscWhere[] = '(g.game_name LIKE :gsc_search OR g.provider LIKE :gsc_search2 OR g.game_code LIKE :gsc_search3)';
