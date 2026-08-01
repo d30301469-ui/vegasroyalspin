@@ -30,8 +30,15 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
     $pdo = AdminDatabase::pdo();
     admin_require_project_file('services/CasinoAggregatorService.php');
     // 0 = slot lobby (Casino Aggregator), 1 = live casino (GSC+).
+    // Note: kernel aliases live-casino/providers → games_provider.php, so also
+    // detect the original path from REQUEST_URI.
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
-    if ($route === 'live-casino/providers') {
+    $requestUri = strtolower((string) ($_SERVER['REQUEST_URI'] ?? ''));
+    if (
+        $route === 'live-casino/providers'
+        || str_contains($requestUri, 'live-casino/providers')
+        || str_contains($requestUri, 'live_casino/providers')
+    ) {
         $gameType = 1;
     }
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));
