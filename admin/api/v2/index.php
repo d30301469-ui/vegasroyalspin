@@ -246,19 +246,28 @@ if ($method === 'POST' && in_array($route, ['casino-aggregator-wallet', 'casino_
     exit;
 }
 
-// Drakon appends "/drakon_api" to the agent endpoint configured in its panel, so
-// the callback can arrive as "drakon_callback/drakon_api" as well. Match on the
-// first segment and let any suffix through.
-$drakonRoute = strtolower(trim((string) $route, '/'));
-$drakonSegments = array_values(array_filter(explode('/', $drakonRoute), static fn (string $s): bool => $s !== ''));
-$drakonFirst = preg_replace('/\.php$/', '', (string) ($drakonSegments[0] ?? '')) ?? '';
-if ($method === 'POST' && in_array($drakonFirst, [
-    'drakon_callback',
-    'drakon-callback',
-    'drakon_api',
-    'drakon-api',
-], true)) {
-    require __DIR__ . '/drakon_callback.php';
+// GSC+ seamless wallet — /api/v2/gsc-plus-wallet
+// Tolerate trailing spaces in the first path segment (GSC panel misconfig).
+$gscWalletRoute = strtolower(trim((string) $route, '/'));
+$gscWalletRoute = preg_replace('#\s+/#', '/', $gscWalletRoute) ?? $gscWalletRoute;
+$gscWalletRoute = preg_replace('#/\s+#', '/', $gscWalletRoute) ?? $gscWalletRoute;
+$gscWalletRoute = trim($gscWalletRoute, "/ \t");
+$gscWalletMatched = (bool) preg_match(
+    '#^(?:gsc-plus-wallet|gsc_plus_wallet)(?:\.php)?(?:/(.*))?$#i',
+    $gscWalletRoute,
+    $gsRouteMatch
+);
+if (
+    in_array($method, ['GET', 'POST', 'OPTIONS'], true)
+    && $gscWalletMatched
+) {
+    if (!defined('METROPOL_API_NO_SESSION')) {
+        define('METROPOL_API_NO_SESSION', true);
+    }
+    $_GET['endpoint'] = trim((string) ($gsRouteMatch[1] ?? ''), '/');
+    $GLOBALS['GSC_PLUS_WALLET_PAYLOAD'] = is_array($payload['body'] ?? null) ? $payload['body'] : [];
+    $GLOBALS['GSC_PLUS_WALLET_RAW'] = is_string($bodyRaw ?? null) ? $bodyRaw : '';
+    require __DIR__ . '/gsc_plus_callback.php';
     exit;
 }
 

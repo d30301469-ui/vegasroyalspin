@@ -399,8 +399,6 @@ if (!function_exists('frontend_uri_is_backend_only')) {
             '/casino-callback',
             '/api/v2/sportsbook-wallet',
             '/api/v2/casino-aggregator-wallet',
-            '/drakon_api',
-            '/api/v2/drakon_callback',
         ];
 
         foreach ($prefixes as $prefix) {

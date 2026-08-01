@@ -37,10 +37,10 @@ $isLightweightRoute = preg_match('#^/api/v2/(?:bgaming-wallet|bgaming)(?:/.*)?$#
     || str_starts_with($backendPath, '/api/v2/sportsbook-wallet/')
     || $backendPath === '/api/v2/casino-aggregator-wallet'
     || str_starts_with($backendPath, '/api/v2/casino-aggregator-wallet/')
-    || $backendPath === '/api/v2/drakon_callback'
-    || str_starts_with($backendPath, '/api/v2/drakon_callback/')
-    || $backendPath === '/drakon_api'
-    || str_starts_with($backendPath, '/drakon_api/')
+    || $backendPath === '/api/v2/gsc-plus-wallet'
+    || str_starts_with($backendPath, '/api/v2/gsc-plus-wallet/')
+    || $backendPath === '/api/v2/gsc_plus_wallet'
+    || str_starts_with($backendPath, '/api/v2/gsc_plus_wallet/')
     || $backendPath === '/sportsbook_api'
     || str_starts_with($backendPath, '/sportsbook_api/')
     || $backendPath === '/api/v2/internal'
@@ -113,15 +113,21 @@ if ($isLightweightRoute) {
         require __DIR__ . '/api/v2/casino_aggregator_callback.php';
         exit;
     }
-    if ($backendPath === '/api/v2/drakon_callback'
-        || str_starts_with($backendPath, '/api/v2/drakon_callback/')
-        || $backendPath === '/drakon_api'
-        || str_starts_with($backendPath, '/drakon_api/')
+    if ($backendPath === '/api/v2/gsc-plus-wallet'
+        || str_starts_with($backendPath, '/api/v2/gsc-plus-wallet/')
+        || $backendPath === '/api/v2/gsc_plus_wallet'
+        || str_starts_with($backendPath, '/api/v2/gsc_plus_wallet/')
     ) {
+        if (!defined('METROPOL_API_NO_SESSION')) {
+            define('METROPOL_API_NO_SESSION', true);
+        }
         require_once __DIR__ . '/app/Core/AdminPaths.php';
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
-        require __DIR__ . '/api/v2/drakon_callback.php';
+        if (preg_match('#^/api/v2/(?:gsc-plus-wallet|gsc_plus_wallet)(?:/(.*))?$#', $backendPath, $gsMatch)) {
+            $_GET['endpoint'] = trim((string) ($gsMatch[1] ?? ''), '/');
+        }
+        require __DIR__ . '/api/v2/gsc_plus_callback.php';
         exit;
     }
     if ($backendPath === '/api/v2/casino-callback') {
@@ -225,15 +231,11 @@ $router->get('/casino-aggregator/game-control', [AdminCasinoAggregatorController
 $router->post('/casino-aggregator/call-apply', [AdminCasinoAggregatorController::class, 'callApply']);
 $router->post('/casino-aggregator/call-cancel', [AdminCasinoAggregatorController::class, 'callCancel']);
 $router->post('/casino-aggregator/call-list', [AdminCasinoAggregatorController::class, 'callList']);
-$router->get('/drakon/settings', [AdminDrakonController::class, 'settings']);
-$router->post('/drakon/settings', [AdminDrakonController::class, 'updateSettings']);
-$router->post('/drakon/sync-providers', [AdminDrakonController::class, 'syncProviders']);
-$router->post('/drakon/sync-games', [AdminDrakonController::class, 'syncGames']);
-$router->get('/drakon/campaigns', [AdminDrakonController::class, 'campaigns']);
-$router->post('/drakon/campaigns/create', [AdminDrakonController::class, 'createCampaign']);
-$router->post('/drakon/campaigns/cancel', [AdminDrakonController::class, 'cancelCampaign']);
-$router->post('/drakon/campaigns/players/add', [AdminDrakonController::class, 'addPlayers']);
-$router->post('/drakon/campaigns/players/remove', [AdminDrakonController::class, 'removePlayers']);
+$router->get('/gsc-plus/settings', [AdminGscPlusController::class, 'settings']);
+$router->post('/gsc-plus/settings', [AdminGscPlusController::class, 'updateSettings']);
+$router->post('/gsc-plus/sync-products', [AdminGscPlusController::class, 'syncProducts']);
+$router->post('/gsc-plus/sync-games', [AdminGscPlusController::class, 'syncGames']);
+$router->post('/gsc-plus/auto-deposit', [AdminGscPlusController::class, 'autoDeposit']);
 $router->get('/megapayz/settings', [AdminMegaPayzController::class, 'settings']);
 $router->post('/megapayz/settings', [AdminMegaPayzController::class, 'updateSettings']);
 $router->get('/megapayz/methods', [AdminMegaPayzController::class, 'methods']);
@@ -321,6 +323,7 @@ $router->post('/affiliate/plan-update', [AdminAffiliateController::class, 'updat
 $router->post('/affiliate/plan-delete', [AdminAffiliateController::class, 'deletePlan']);
 $router->get('/affiliate/payouts', [AdminAffiliateController::class, 'payouts']);
 $router->post('/affiliate/payout-update', [AdminAffiliateController::class, 'updatePayout']);
+$router->post('/affiliate/payout-megapayz', [AdminAffiliateController::class, 'approvePayoutMegaPayz']);
 $router->get('/affiliate/reports', [AdminAffiliateController::class, 'reports']);
 $router->get('/affiliate/materials', [AdminAffiliateController::class, 'materials']);
 $router->post('/affiliate/material-store', [AdminAffiliateController::class, 'storeMaterial']);

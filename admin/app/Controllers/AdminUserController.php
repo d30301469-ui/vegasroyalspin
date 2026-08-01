@@ -415,33 +415,6 @@ final class AdminUserController extends AdminController
             error_log('[AdminUserController] BGaming freespins could not be loaded: ' . $exception->getMessage());
         }
 
-        try {
-            DrakonService::bootstrap($pdo);
-            $stmt = $pdo->prepare(
-                "SELECT
-                    CONCAT('Drakon / ', COALESCE(c.vendor, '-')) AS provider,
-                    cp.campaign_code AS campaign,
-                    COALESCE(c.game_ids, '-') AS game,
-                    c.freespins_per_player AS freespins_total,
-                    '-' AS freespins_done,
-                    0 AS win_amount,
-                    cp.status,
-                    c.expires_at AS valid_until,
-                    cp.created_at
-                 FROM drakon_campaign_players cp
-                 INNER JOIN drakon_campaigns c ON c.campaign_code = cp.campaign_code
-                 WHERE cp.user_id = :user_id
-                 ORDER BY cp.created_at DESC
-                 LIMIT 100"
-            );
-            $stmt->execute(['user_id' => $userId]);
-            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                $rows[] = $row;
-            }
-        } catch (Throwable $exception) {
-            error_log('[AdminUserController] Drakon freespins could not be loaded: ' . $exception->getMessage());
-        }
-
         foreach ($rows as $index => $row) {
             $expiresAt = (int) ($row['valid_until'] ?? 0);
             $rows[$index]['valid_until'] = $expiresAt > 0 ? date('d.m.Y H:i', $expiresAt) : '-';
@@ -532,11 +505,86 @@ final class AdminUserController extends AdminController
         } catch (Throwable) {
         }
 
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT
+                    CONCAT('gsc:', t.id) AS id,
+                    COALESCE(NULLIF(g.game_name, ''), NULLIF(t.game_code, ''), CONCAT('GSC ', t.product_code), '-') AS game_name,
+                    COALESCE(
+                        NULLIF(g.provider, ''),
+                        NULLIF(g.product_name, ''),
+                        CASE t.product_code
+                            WHEN 1006 THEN 'Pragmatic Play'
+                            WHEN 1185 THEN 'SA Gaming'
+                            WHEN 1220 THEN 'Astar'
+                            ELSE CONCAT('GSC+', t.product_code)
+                        END
+                    ) AS provider_name,
+                    COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                    COALESCE(NULLIF(t.transaction_id, ''), NULLIF(t.wager_code, ''), '-') AS transaction_id,
+                    COALESCE(NULLIF(t.round_id, ''), NULLIF(t.wager_code, ''), '-') AS round_id,
+                    UPPER(COALESCE(NULLIF(t.action, ''), NULLIF(t.wager_status, ''), 'BET')) AS raw_action,
+                    COALESCE(t.amount, 0) AS raw_amount,
+                    COALESCE(t.bet_amount, 0) AS raw_bet_amount,
+                    COALESCE(t.prize_amount, 0) AS raw_prize_amount,
+                    COALESCE(t.after_balance, 0) AS balance_after,
+                    t.created_at
+                 FROM gsc_transactions t
+                 LEFT JOIN gsc_games g
+                    ON g.product_code = t.product_code
+                   AND g.game_code = t.game_code
+                   AND (
+                        UPPER(TRIM(COALESCE(g.product_currency, ''))) = UPPER(TRIM(COALESCE(t.currency, '')))
+                     OR g.product_currency IS NULL
+                     OR TRIM(COALESCE(g.product_currency, '')) = ''
+                   )
+                 WHERE t.user_id = :user_id
+                 ORDER BY t.id DESC
+                 LIMIT 150"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            $seen = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $id = (string) ($row['id'] ?? '');
+                if ($id === '' || isset($seen[$id])) {
+                    continue;
+                }
+                $seen[$id] = true;
+                $action = strtoupper(trim((string) ($row['raw_action'] ?? 'BET')));
+                $amount = (float) ($row['raw_amount'] ?? 0);
+                $betAmount = (float) ($row['raw_bet_amount'] ?? 0);
+                $prizeAmount = (float) ($row['raw_prize_amount'] ?? 0);
+                $normalizedTxnType = match (true) {
+                    in_array($action, ['BET', 'BET_PRESERVE', 'TIP'], true) => 'bet',
+                    in_array($action, ['CANCEL', 'ROLLBACK', 'VOID', 'PRESERVE_REFUND'], true) => 'refund',
+                    in_array($action, ['SETTLED', 'BONUS', 'JACKPOT', 'FREEBET', 'PROMO', 'LEADERBOARD'], true) => 'win',
+                    in_array($action, ['ADJUSTMENT', 'RESETTLED'], true) => ($amount < 0 ? 'bet' : 'win'),
+                    default => ($amount < 0 ? 'bet' : 'win'),
+                };
+                if ($normalizedTxnType === 'bet') {
+                    $row['bet_amount'] = $betAmount > 0 ? $betAmount : abs($amount);
+                    $row['win_amount'] = 0.0;
+                } elseif ($normalizedTxnType === 'refund') {
+                    $row['bet_amount'] = 0.0;
+                    $row['win_amount'] = abs($amount);
+                } else {
+                    // Keep settle stake when GSC includes bet_amount on SETTLED.
+                    $row['bet_amount'] = $betAmount > 0 ? $betAmount : 0.0;
+                    $row['win_amount'] = $prizeAmount > 0 ? $prizeAmount : max(0.0, $amount);
+                }
+                $row['txn_type'] = $normalizedTxnType;
+                unset($row['raw_action'], $row['raw_amount'], $row['raw_bet_amount'], $row['raw_prize_amount']);
+                $rows[] = $row;
+            }
+        } catch (Throwable $exception) {
+            error_log('[AdminUserController] GSC game history could not be loaded: ' . $exception->getMessage());
+        }
+
         usort($rows, static function (array $left, array $right): int {
             return strtotime((string) ($right['created_at'] ?? '')) <=> strtotime((string) ($left['created_at'] ?? ''));
         });
 
-        return array_slice($rows, 0, 100);
+        return array_slice($rows, 0, 150);
     }
 
     private function validateUserData(int $userId, array $data): string

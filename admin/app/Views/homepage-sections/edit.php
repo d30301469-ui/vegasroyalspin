@@ -90,7 +90,7 @@ $renderGameRow = static function (string $sectionKey, array $card = []) use ($h,
                 </label>
                 <label class="homepage-field">
                     <span>Oyun ID / game code</span>
-                    <input class="input" type="text" name="cards[<?= $h($sectionKey) ?>][game_id][]" value="<?= $h((string) ($card['game_id'] ?? '')) ?>" placeholder="<?= $sectionKey === 'live-casino' ? 'drakon:51096 veya boş (başlığa göre eşlenir)' : 'vs20fruitswx veya aggregator:slot-pragmatic:vs20fruitswx' ?>" autocomplete="off" spellcheck="false">
+                    <input class="input" type="text" name="cards[<?= $h($sectionKey) ?>][game_id][]" value="<?= $h((string) ($card['game_id'] ?? '')) ?>" placeholder="<?= $sectionKey === 'live-casino' ? 'gsc:product:game veya boş (başlığa göre eşlenir)' : 'vs20fruitswx veya aggregator:slot-pragmatic:vs20fruitswx' ?>" autocomplete="off" spellcheck="false">
                 </label>
             </div>
         </div>
@@ -357,7 +357,7 @@ $renderGameRow = static function (string $sectionKey, array $card = []) use ($h,
                         <h2 class="card-title"><?= $h($label) ?></h2>
                         <p class="muted" style="margin:6px 0 0;font-size:12px;line-height:1.45">
                             <?php if ($sectionKey === 'live-casino'): ?>
-                                Oyun ID: <code>drakon:12345</code> (Drakon canlı casino). Boş bırakılırsa başlığa göre Drakon katalogundan eşlenir.
+                                Oyun ID: <code>gsc:product:game</code> (GSC+ canlı casino). Boş bırakılırsa başlığa göre GSC+ katalogundan eşlenir.
                             <?php else: ?>
                                 Oyun ID: <code>aggregator:vendor:code</code> (Casino Aggregator). Boş bırakılırsa başlığa göre katalogdan eşlenir.
                             <?php endif; ?>

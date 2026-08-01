@@ -11,6 +11,7 @@ error_reporting(0);
 
 require_once __DIR__ . '/../../core/bootstrap.php';
 require_once __DIR__ . '/../../services/SlotGamesQuery.php';
+require_once __DIR__ . '/../../services/CasinoAggregatorService.php';
 
 function getGames($searchTerm = '', $providers = [], $limit = 18, $offset = 0, $sort = '')
 {
@@ -30,7 +31,7 @@ function getTotalSlotsCount($searchTerm = '', $providers = [])
 
 // Form verilerini al
 $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
-$selectedProviders = isset($_GET['providers']) ? (array)$_GET['providers'] : [];
+$selectedProviders = CasinoAggregatorService::providersFromQuery();
 $currentSort = isset($_GET['sort']) ? trim($_GET['sort']) : '';
 $limit = 30;
 $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
@@ -49,7 +50,9 @@ $allUniqueProviders = array_values(array_filter(getAllUniqueProviders(), static 
 $slotDemoHref = static function (array $game): string {
     $gid = (string) ($game['game_id'] ?? '');
 
-    return '/play?game_id=' . rawurlencode($gid) . '&mode=fun';
+    return function_exists('metropol_play_url')
+        ? metropol_play_url($gid, ['mode' => 'fun'])
+        : '/play?game_id=' . str_ireplace('%3A', ':', rawurlencode($gid)) . '&mode=fun';
 };
 
 // Toplam slot oyun sayısını al

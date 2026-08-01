@@ -31,20 +31,20 @@ final class LiveCasinoLobbyTest extends TestCase
             'INSERT INTO live_games (game_id, name, is_featured) VALUES (:id, :name, :featured)'
         );
         foreach ([
-            ['drakon:1', 'Lightning Roulette', 0],
-            ['drakon:2', 'Auto Roulette VIP', 0],
-            ['drakon:3', 'Türkçe Rulet', 0],
-            ['drakon:4', 'Blackjack Silver A', 0],
-            ['drakon:5', 'Black Jack Classic', 0],
-            ['drakon:6', 'Speed Baccarat B', 0],
-            ['drakon:7', 'Dragon Tiger', 0],
-            ['drakon:8', 'Crazy Time', 1],
-            ['drakon:9', 'Monopoly Big Baller', 0],
-            ['drakon:10', 'Sweet Bonanza CandyLand', 0],
-            ['drakon:11', 'Acceptance Test Table', 0],
+            ['gsc:1', 'Lightning Roulette', 0],
+            ['gsc:2', 'Auto Roulette VIP', 0],
+            ['gsc:3', 'Türkçe Rulet', 0],
+            ['gsc:4', 'Blackjack Silver A', 0],
+            ['gsc:5', 'Black Jack Classic', 0],
+            ['gsc:6', 'Speed Baccarat B', 0],
+            ['gsc:7', 'Dragon Tiger', 0],
+            ['gsc:8', 'Crazy Time', 1],
+            ['gsc:9', 'Monopoly Big Baller', 0],
+            ['gsc:10', 'Sweet Bonanza CandyLand', 0],
+            ['gsc:11', 'Acceptance Test Table', 0],
             ['aggregator:x:acceptance-test', 'Studio Table', 0],
-            ['drakon:12', 'Live - Lobby', 0],
-            ['drakon:13', 'Live - Lobby Gameshows', 0],
+            ['gsc:12', 'Live - Lobby', 0],
+            ['gsc:13', 'Live - Lobby Gameshows', 0],
         ] as [$id, $name, $featured]) {
             $insert->execute([':id' => $id, ':name' => $name, ':featured' => $featured]);
         }
@@ -130,9 +130,8 @@ final class LiveCasinoLobbyTest extends TestCase
     }
 
     /**
-     * Drakon lists the studio's own lobby entries next to real tables. Drakon
-     * reports them as game_type "lobby" and answers every launch with its
-     * /game-error page, so a tile for one can only ever fail to open.
+     * Some providers list studio lobby entries next to real tables. Those
+     * tiles fail to open, so the lobby exclusion must drop them by name.
      */
     public function testStudioLobbyEntriesAreExcluded(): void
     {

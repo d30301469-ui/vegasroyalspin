@@ -274,8 +274,8 @@ final class ApiHomepageSections
                 'payload' => [
                     'href' => '/livecasino',
                     'items' => [
-                        // Live-casino tiles must launch via Drakon (`drakon:`). Empty game_id
-                        // is resolved from the Drakon live catalogue by title at hydrate time.
+                        // Live-casino tiles must launch via GSC+ (`gsc:`). Empty game_id
+                        // is resolved from the GSC+ live catalogue by title at hydrate time.
                         ['game_id' => '', 'title' => 'Treasure Island', 'image_url' => 'assets/games-img/30cdd01c09eb84e33c798041023d2856_casinoGameIcon3.svg', 'alt' => 'Treasure Island', 'size' => 'featured', 'link' => '', 'sort_order' => 10, 'is_active' => true],
                         ['game_id' => '', 'title' => 'Dream Catcher', 'image_url' => 'assets/games-img/game-img4.svg', 'alt' => 'Dream Catcher', 'size' => 'normal', 'link' => '', 'sort_order' => 20, 'is_active' => true],
                         ['game_id' => '', 'title' => 'Lightning Roulette', 'image_url' => 'assets/games-img/game-img5.svg', 'alt' => 'Lightning Roulette', 'size' => 'normal', 'link' => '', 'sort_order' => 30, 'is_active' => true],
@@ -409,8 +409,8 @@ final class ApiHomepageSections
     }
 
     /**
-     * Homepage casino tiles must launch via aggregator/bgaming/drakon string IDs
-     * (e.g. aggregator:slot-pragmatic:vs20olympx or drakon:51096), not SoftSwiss integers.
+     * Homepage casino tiles must launch via aggregator/bgaming/gsc string IDs
+     * (e.g. aggregator:slot-pragmatic:vs20olympx or gsc:1006:vs20olympx), not SoftSwiss integers.
      *
      * IMPORTANT: never cast to int — (int)"vs20fruitswx" === 0 in PHP.
      */
@@ -434,7 +434,7 @@ final class ApiHomepageSections
 
     /**
      * Resolve curated CMS cards to playable catalog IDs.
-     * Live-casino section → Drakon only. Casino (slots) section → aggregator/bgaming.
+     * Live-casino section → GSC+ live only. Casino (slots) section → aggregator/bgaming slots.
      *
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
@@ -452,7 +452,7 @@ final class ApiHomepageSections
             return $payload;
         }
 
-        $useDrakon = self::isLiveCasinoSectionKey($sectionKey);
+        $useGscLive = self::isLiveCasinoSectionKey($sectionKey);
 
         foreach ($items as $index => $item) {
             if (!is_array($item)) {
@@ -460,8 +460,8 @@ final class ApiHomepageSections
             }
             $gameId = self::normalizeGameIdValue($item['game_id'] ?? '');
             $title = trim((string) ($item['title'] ?? ''));
-            $resolved = $useDrakon
-                ? self::resolveDrakonLiveGameId($pdo, $gameId, $title)
+            $resolved = $useGscLive
+                ? self::resolveGscLiveGameId($pdo, $gameId, $title)
                 : self::resolveCatalogGameId($pdo, $gameId, $title);
             if ($resolved !== '') {
                 $items[$index]['game_id'] = $resolved;
@@ -480,16 +480,15 @@ final class ApiHomepageSections
         return in_array($key, ['live-casino', 'live_casino', 'livecasino', 'live'], true);
     }
 
-    private static function ensureDrakonServiceLoaded(): void
+    private static function ensureGscPlusServiceLoaded(): void
     {
-        if (class_exists('DrakonService', false)) {
+        if (class_exists('GscPlusService', false)) {
             return;
         }
-        $candidates = [
-            dirname(__DIR__) . '/services/DrakonService.php',
-            dirname(__DIR__) . '/admin/services/DrakonService.php',
-        ];
-        foreach ($candidates as $path) {
+        foreach ([
+            dirname(__DIR__) . '/services/GscPlusService.php',
+            dirname(__DIR__) . '/admin/services/GscPlusService.php',
+        ] as $path) {
             if (is_file($path)) {
                 require_once $path;
                 return;
@@ -497,136 +496,99 @@ final class ApiHomepageSections
         }
     }
 
-    private static function drakonLiveSqlPredicate(string $tableAlias = ''): string
-    {
-        self::ensureDrakonServiceLoaded();
-        if (class_exists('DrakonService', false)) {
-            return DrakonService::liveGameSqlMatch($tableAlias);
-        }
-        $p = $tableAlias !== '' ? rtrim($tableAlias, '.') . '.' : '';
-
-        return "(LOWER(COALESCE({$p}provider_name, '')) LIKE '%live%'"
-            . " OR LOWER(COALESCE({$p}provider_code, '')) LIKE '%live%')";
-    }
-
     /**
-     * Resolve a live-casino homepage tile to a Drakon launch ID (`drakon:{id}`).
-     * Aggregator/bgaming IDs are ignored — live tables must open via Drakon.
+     * Resolve a live-casino homepage tile to a GSC+ launch ID (`gsc:{product}:{code}`).
+     * Non-GSC IDs are remapped by title when possible.
      */
-    private static function resolveDrakonLiveGameId(PDO $pdo, string $gameId, string $title): string
+    private static function resolveGscLiveGameId(PDO $pdo, string $gameId, string $title): string
     {
-        $liveSql = self::drakonLiveSqlPredicate();
-        $notLobby = " AND LOWER(COALESCE(game_name, '')) NOT LIKE '%lobby%'"
-            . " AND LOWER(COALESCE(game_name, '')) NOT LIKE '%acceptance%test%'";
-
-        if ($gameId !== '') {
-            if (str_starts_with($gameId, 'drakon:')) {
-                $raw = substr($gameId, strlen('drakon:'));
-                if ($raw !== '') {
-                    try {
-                        $stmt = $pdo->prepare(
-                            "SELECT game_id FROM drakon_games
-                             WHERE is_active = 1 AND game_id = :id AND {$liveSql}{$notLobby}
-                             LIMIT 1"
-                        );
-                        $stmt->execute([':id' => $raw]);
-                        $found = trim((string) $stmt->fetchColumn());
-                        if ($found !== '') {
-                            return 'drakon:' . $found;
-                        }
-                    } catch (Throwable) {
-                    }
+        self::ensureGscPlusServiceLoaded();
+        $liveTypes = "UPPER(COALESCE(game_type,'')) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')";
+        $active = "is_active = 1 AND UPPER(COALESCE(status,'ACTIVATED')) IN ('ACTIVATED','ACTIVAT')"
+            . " AND (game_code <> '_lobby' OR entry_type = 2)"
+            . " AND LOWER(COALESCE(game_name,'')) NOT LIKE '%lobby%'"
+            . " AND LOWER(COALESCE(game_name,'')) NOT LIKE '%acceptance%test%'";
+        $productFilter = '';
+        $productParams = [];
+        if (class_exists('GscPlusService', false)) {
+            $codes = GscPlusService::stagingLiveProductCodes();
+            if ($codes !== []) {
+                $ph = [];
+                foreach ($codes as $i => $code) {
+                    $k = ':pc' . $i;
+                    $ph[] = $k;
+                    $productParams[$k] = (int) $code;
                 }
-                // Keep the curated Drakon ID even if the local catalogue is empty/out of sync.
-                return $gameId;
+                $productFilter = ' AND product_code IN (' . implode(',', $ph) . ')';
             }
+        }
 
-            // Bare numeric / game_code / game_id from Drakon catalogue (not aggregator:/bgaming:).
-            if (
-                !str_starts_with($gameId, 'aggregator:')
-                && !str_starts_with($gameId, 'bgaming:')
-            ) {
-                $raw = $gameId;
-                if (str_starts_with(strtolower($raw), 'drakon:')) {
-                    $raw = substr($raw, strlen('drakon:'));
-                }
+        $buildId = static function (int $productCode, string $gameCode): string {
+            return 'gsc:' . $productCode . ':' . $gameCode;
+        };
+
+        if ($gameId !== '' && str_starts_with(strtolower($gameId), 'gsc:')) {
+            $rest = substr($gameId, 4);
+            $parts = explode(':', $rest, 2);
+            if (count($parts) === 2 && ctype_digit($parts[0]) && $parts[1] !== '') {
                 try {
                     $stmt = $pdo->prepare(
-                        "SELECT game_id FROM drakon_games
-                         WHERE is_active = 1 AND {$liveSql}{$notLobby}
-                           AND (game_id = :id OR game_code = :code)
-                         ORDER BY id ASC
-                         LIMIT 1"
+                        "SELECT product_code, game_code FROM gsc_games
+                         WHERE {$active} AND {$liveTypes}{$productFilter}
+                           AND product_code = :p AND game_code = :g
+                         ORDER BY id ASC LIMIT 1"
                     );
-                    $stmt->execute([':id' => $raw, ':code' => $raw]);
-                    $found = trim((string) $stmt->fetchColumn());
-                    if ($found !== '') {
-                        return 'drakon:' . $found;
+                    $stmt->execute(array_merge($productParams, [
+                        ':p' => (int) $parts[0],
+                        ':g' => $parts[1],
+                    ]));
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if (is_array($row)) {
+                        return $buildId((int) $row['product_code'], (string) $row['game_code']);
                     }
                 } catch (Throwable) {
                 }
+                return $gameId;
             }
-        }
-
-        if ($title === '') {
-            return str_starts_with($gameId, 'drakon:') ? $gameId : '';
         }
 
         $titleNorm = preg_replace('/[™®©]+/u', '', $title) ?? $title;
         $titleNorm = trim(preg_replace('/\s+/u', ' ', $titleNorm) ?? $titleNorm);
         if ($titleNorm === '') {
-            return str_starts_with($gameId, 'drakon:') ? $gameId : '';
+            return str_starts_with(strtolower($gameId), 'gsc:') ? $gameId : '';
         }
 
         try {
             $stmt = $pdo->prepare(
-                "SELECT game_id, game_name FROM drakon_games
-                 WHERE is_active = 1 AND {$liveSql}{$notLobby}
+                "SELECT product_code, game_code FROM gsc_games
+                 WHERE {$active} AND {$liveTypes}{$productFilter}
                    AND LOWER(game_name) = LOWER(:title)
-                 ORDER BY id ASC
-                 LIMIT 1"
+                 ORDER BY id ASC LIMIT 1"
             );
-            $stmt->execute([':title' => $titleNorm]);
+            $stmt->execute(array_merge($productParams, [':title' => $titleNorm]));
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!is_array($row)) {
                 $stmt = $pdo->prepare(
-                    "SELECT game_id, game_name FROM drakon_games
-                     WHERE is_active = 1 AND {$liveSql}{$notLobby}
+                    "SELECT product_code, game_code FROM gsc_games
+                     WHERE {$active} AND {$liveTypes}{$productFilter}
                        AND LOWER(game_name) LIKE LOWER(:title)
-                     ORDER BY CHAR_LENGTH(game_name) ASC, id ASC
-                     LIMIT 1"
+                     ORDER BY CHAR_LENGTH(game_name) ASC, id ASC LIMIT 1"
                 );
-                $stmt->execute([':title' => $titleNorm . '%']);
+                $stmt->execute(array_merge($productParams, [':title' => '%' . $titleNorm . '%']));
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
             }
-            if (!is_array($row)) {
-                $stmt = $pdo->prepare(
-                    "SELECT game_id, game_name FROM drakon_games
-                     WHERE is_active = 1 AND {$liveSql}{$notLobby}
-                       AND LOWER(game_name) LIKE LOWER(:title)
-                     ORDER BY CHAR_LENGTH(game_name) ASC, id ASC
-                     LIMIT 1"
-                );
-                $stmt->execute([':title' => '%' . $titleNorm . '%']);
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            }
-            $found = is_array($row) ? trim((string) ($row['game_id'] ?? '')) : '';
-            if ($found !== '') {
-                return 'drakon:' . $found;
+            if (is_array($row)) {
+                return $buildId((int) $row['product_code'], (string) $row['game_code']);
             }
         } catch (Throwable) {
         }
 
-        return str_starts_with($gameId, 'drakon:') ? $gameId : '';
+        return str_starts_with(strtolower($gameId), 'gsc:') ? $gameId : '';
     }
 
     private static function resolveCatalogGameId(PDO $pdo, string $gameId, string $title): string
     {
         if ($gameId !== '') {
-            if (str_starts_with($gameId, 'drakon:')) {
-                // Slot section should not launch Drakon live IDs via this path.
-                return $gameId;
-            }
             if (str_starts_with($gameId, 'aggregator:') || str_starts_with($gameId, 'bgaming:')) {
                 return $gameId;
             }
