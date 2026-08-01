@@ -2,6 +2,7 @@
 
 require_once SERVICE_PATH . '/SlotGamesQuery.php';
 require_once SERVICE_PATH . '/ProviderDisplayBadgeMap.php';
+require_once SERVICE_PATH . '/ProviderLogoSvgMap.php';
 require_once SERVICE_PATH . '/CasinoAggregatorService.php';
 
 class SlotController extends Controller
@@ -9,13 +10,25 @@ class SlotController extends Controller
     public function index(): void
     {
         $searchTerm        = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
-        $selectedProviders = array_values(array_filter(array_map(
-            static fn ($provider): string => CasinoAggregatorService::resolveLocalizedLabel(trim((string) $provider)),
-            isset($_GET['providers']) ? (array) $_GET['providers'] : []
-        ), static fn (string $provider): bool => $provider !== ''));
         $currentSort       = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
         $limit             = 30;
         $page              = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+
+        $allUniqueProviders = array_values(array_filter(
+            SlotGamesQuery::allProviders(),
+            static function (string $provider): bool {
+                return stripos($provider, 'bgaming') === false && stripos($provider, 'b gaming') === false;
+            }
+        ));
+        sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
+
+        $selectedProviders = array_values(array_filter(array_map(
+            static fn ($provider): string => CasinoAggregatorService::resolveLocalizedLabel(trim((string) $provider)),
+            CasinoAggregatorService::canonicalizeProviders(
+                CasinoAggregatorService::providersFromQuery(),
+                $allUniqueProviders
+            )
+        ), static fn (string $provider): bool => $provider !== ''));
 
         $result = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $currentSort);
         $games = array_values(array_filter(
@@ -27,14 +40,6 @@ class SlotController extends Controller
                 return $provider !== 'bgaming' && $source !== 'bgaming';
             }
         ));
-
-        $allUniqueProviders = array_values(array_filter(
-            SlotGamesQuery::allProviders(),
-            static function (string $provider): bool {
-                return stripos($provider, 'bgaming') === false && stripos($provider, 'b gaming') === false;
-            }
-        ));
-        sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
 
         $totalSlots     = (int) ($result['total'] ?? count($games));
         $perPage        = (int) ($result['perPage'] ?? $limit);

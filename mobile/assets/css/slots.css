@@ -511,11 +511,102 @@ body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__section
   background: transparent !important;
 }
 
-/* ── Arama alanı ── */
+/* ── Arama alanı (ds-textfield, CasinoMilyon) ── */
 body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__search {
   padding: 0 0 12px;
 }
 
+body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search {
+  width: 100%;
+  margin: 0;
+}
+
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search .ds-textfield__field {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  min-height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: rgb(50, 50, 52) !important;
+  padding: 0 14px;
+  box-sizing: border-box;
+}
+
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search .ds-textfield__text {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search .ds-textfield__label {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  pointer-events: none;
+  transition: top 0.15s, font-size 0.15s, color 0.15s, transform 0.15s;
+}
+
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search:focus-within .ds-textfield__label,
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search:has(.ds-textfield__input:not(:placeholder-shown)) .ds-textfield__label,
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search.is-filled .ds-textfield__label {
+  top: 6px;
+  transform: none;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search .provider-search-input,
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search .ds-textfield__input {
+  flex: 1;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 0;
+  height: 40px;
+  padding: 14px 0 4px;
+  box-sizing: border-box;
+}
+
+body.mobile-site .providers-drawer-wrapper .ds-textfield.provider-sheet-search .ds-textfield__right {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 8px;
+}
+
+body.mobile-site .providers-drawer-wrapper .provider-search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  min-width: 20px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 14px;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+/* Eski sidebar-search (desktop / fallback) */
 body.mobile-site .providers-drawer-wrapper .sidebar-search {
   display: flex;
   align-items: center;
@@ -533,35 +624,6 @@ body.mobile-site .providers-drawer-wrapper .searchInputWrp {
   align-items: center;
   width: 100%;
   gap: 8px;
-}
-
-body.mobile-site .providers-drawer-wrapper .provider-search-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 14px;
-  font-weight: 500;
-  min-width: 0;
-  height: 40px;
-}
-
-body.mobile-site .providers-drawer-wrapper .provider-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-body.mobile-site .providers-drawer-wrapper .provider-search-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  min-width: 20px;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 16px;
-  cursor: pointer;
-  margin: 0;
-  padding: 0;
 }
 
 /* ── Bölüm başlığı: "Tüm Sağlayıcılar" + liste ikonu ── */
@@ -825,38 +887,7 @@ body.mobile-site .providers-drawer-wrapper .casinoProvidersPopupContent__footer 
   flex-shrink: 0;
 }
 
-body.mobile-site .providers-drawer-wrapper .provider-sheet-reset {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 9999px;
-  background: rgb(50, 50, 52) !important;
-  color: rgba(255, 255, 255, 0.24);
-  font-size: 12px;
-  font-weight: 400;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  appearance: none;
-  transition: background 0.15s, color 0.15s;
-}
-
-body.mobile-site .providers-drawer-wrapper .provider-sheet-reset.active-reset {
-  background: rgb(63, 63, 65) !important;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-body.mobile-site .providers-drawer-wrapper .provider-sheet-reset .btn__label {
-  color: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-}
-
+body.mobile-site .providers-drawer-wrapper .provider-sheet-reset,
 body.mobile-site .providers-drawer-wrapper .provider-sheet-apply {
   flex: 1;
   display: flex;
@@ -878,13 +909,30 @@ body.mobile-site .providers-drawer-wrapper .provider-sheet-apply {
   transition: background 0.15s, color 0.15s;
 }
 
+body.mobile-site .providers-drawer-wrapper .provider-sheet-reset.ds-btn--disabled,
+body.mobile-site .providers-drawer-wrapper .provider-sheet-apply.ds-btn--disabled,
+body.mobile-site .providers-drawer-wrapper .provider-sheet-reset:disabled,
+body.mobile-site .providers-drawer-wrapper .provider-sheet-apply:disabled {
+  opacity: 1;
+  cursor: default;
+  pointer-events: none;
+}
+
+body.mobile-site .providers-drawer-wrapper .provider-sheet-reset.active-reset {
+  background: rgb(63, 63, 65) !important;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 body.mobile-site .providers-drawer-wrapper .provider-sheet-apply.active-apply {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.9) !important;
   color: #202022;
   font-weight: 700;
 }
 
-body.mobile-site .providers-drawer-wrapper .provider-sheet-apply .btn__label {
+body.mobile-site .providers-drawer-wrapper .provider-sheet-reset .btn__label,
+body.mobile-site .providers-drawer-wrapper .provider-sheet-apply .btn__label,
+body.mobile-site .providers-drawer-wrapper .provider-sheet-reset .ds-label,
+body.mobile-site .providers-drawer-wrapper .provider-sheet-apply .ds-label {
   color: inherit;
   font-size: inherit;
   font-weight: inherit;

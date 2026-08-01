@@ -333,10 +333,26 @@
         return unique;
     }
 
+    function expandCoverFormatFallbacks(fallbacks) {
+        var base = dedupeCoverFallbacks(fallbacks);
+        if (!base.length) return [];
+        var out = base.slice();
+        var exts = ['png', 'avif', 'webp', 'jpg'];
+        base.forEach(function(url) {
+            var match = String(url).match(/^(.*)\.(avif|webp|jpe?g|gif|png)(\?.*)?$/i);
+            if (!match) return;
+            exts.forEach(function(ext) {
+                var alt = match[1] + '.' + ext + (match[3] || '');
+                if (out.indexOf(alt) === -1) out.push(alt);
+            });
+        });
+        return out;
+    }
+
     function pickBestCoverSource(game) {
         if (!game || typeof game !== 'object') return '';
         var primary = String(game.image_url || game.cover || game.thumbnail_url || game.banner || '').trim();
-        var fallbacks = dedupeCoverFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks
+        var fallbacks = expandCoverFormatFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks
             : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []));
         if (primary) return primary;
         return fallbacks.length ? fallbacks[0] : '';
@@ -383,18 +399,42 @@
         params.set('page', String(append ? state.nextPage : 1));
         if (API_ADAPTER === 'member_api_games') {
             if (API_GAME_TYPE !== '') params.set('game_type', API_GAME_TYPE);
-            state.providers.forEach(p => params.append('providers[]', p));
-            if (state.sort) params.set('sort', state.sort);
-        } else {
-            state.providers.forEach(p => params.append('providers[]', p));
-            if (state.sort) params.set('sort', state.sort);
         }
+        writeProvidersParam(params, state.providers);
+        if (state.sort) params.set('sort', state.sort);
         return API_ENDPOINT + '?' + params.toString();
     }
 
+    /** Clean query: providers=PragmaticPlay,SA-Gaming (no [] / %5B%5D / +). */
+    function providerUrlToken(name) {
+        return String(name || '').trim().replace(/\s+/g, '-');
+    }
+
+    function writeProvidersParam(params, providers) {
+        params.delete('providers');
+        params.delete('providers[]');
+        var list = Array.isArray(providers)
+            ? providers.map(providerUrlToken).filter(Boolean)
+            : [];
+        if (list.length > 0) {
+            params.set('providers', list.join(','));
+        }
+    }
+
+    function buildProvidersQueryValue(providers) {
+        return (Array.isArray(providers) ? providers : [])
+            .map(providerUrlToken)
+            .filter(Boolean)
+            .map(function (token) { return encodeURIComponent(token); })
+            .join(',');
+    }
+
     function playUrlReal(gameId, gameType) {
+        if (window.MetropolPlayUrl && typeof window.MetropolPlayUrl.real === 'function') {
+            return window.MetropolPlayUrl.real(gameId, 'main');
+        }
         var id = String(gameId || '');
-        return '/play?game_id=' + encodeURIComponent(id) + '&mode=real&wallet=main';
+        return '/play?game_id=' + encodeURIComponent(id).replace(/%3A/gi, ':') + '&mode=real&wallet=main';
     }
 
     function resolveLaunchGameId(game) {
@@ -425,8 +465,11 @@
     }
 
     function playUrlFun(gameId) {
+        if (window.MetropolPlayUrl && typeof window.MetropolPlayUrl.fun === 'function') {
+            return window.MetropolPlayUrl.fun(gameId);
+        }
         var id = String(gameId || '');
-        return '/play?game_id=' + encodeURIComponent(id) + '&mode=fun';
+        return '/play?game_id=' + encodeURIComponent(id).replace(/%3A/gi, ':') + '&mode=fun';
     }
 
     function playTargetUrl(game) {
@@ -456,6 +499,17 @@
             } catch (e) {
                 targetUrl += (targetUrl.indexOf('?') === -1 ? '?' : '&') + 'open_mode=redirect';
             }
+        }
+        if (window.MetropolPlayUrl && typeof window.MetropolPlayUrl.canonicalize === 'function') {
+            targetUrl = window.MetropolPlayUrl.canonicalize(targetUrl);
+        } else {
+            targetUrl = targetUrl.replace(/(game_id=)([^&]*)/i, function (_, p, raw) {
+                try {
+                    return p + encodeURIComponent(decodeURIComponent(String(raw).replace(/\+/g, ' '))).replace(/%3A/gi, ':');
+                } catch (err) {
+                    return p + String(raw).replace(/%3A/gi, ':');
+                }
+            });
         }
         window.location.href = targetUrl;
     }
@@ -528,7 +582,7 @@
 
     function renderGameItem(game) {
         const name = escapeHtml(game.game_name || '');
-        const fallbacks = dedupeCoverFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []));
+        const fallbacks = expandCoverFormatFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []));
         const coverSource = pickBestCoverSource(Object.assign({}, game, {
             cover_fallbacks: fallbacks,
             image_fallbacks: fallbacks
@@ -602,7 +656,7 @@
         var pagination = inner.pagination || {};
         var rawGames = Array.isArray(inner.games) ? inner.games : [];
         var games = rawGames.map(function(game) {
-            var fallbacks = dedupeCoverFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks
+            var fallbacks = expandCoverFormatFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks
                 : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []));
             var cover = preferCompatibleCover(pickBestCoverSource({
                 cover: game.cover,
@@ -713,11 +767,13 @@
     }
 
     function updateSidebarActive() {
-        document.querySelectorAll('.sidebar-provider-item').forEach(function(item) {
-            const provider = item.getAttribute('data-provider');
-            if (provider === null) {
+        document.querySelectorAll('.sidebar-provider-item, .provider-chip').forEach(function(item) {
+            if (item.getAttribute('data-provider-all') === '1') {
                 item.classList.toggle('active', state.providers.length === 0 && !state.search);
-            } else {
+                return;
+            }
+            const provider = item.getAttribute('data-provider');
+            if (provider !== null) {
                 item.classList.toggle('active', state.providers.indexOf(provider) !== -1);
             }
         });
@@ -788,15 +844,26 @@
     }
 
     function updateUrl() {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('search');
-        url.searchParams.delete('providers[]');
-        url.searchParams.delete('offset');
-        url.searchParams.delete('sort');
-        if (state.search) url.searchParams.set('search', state.search);
-        state.providers.forEach(function(p) { url.searchParams.append('providers[]', p); });
-        if (state.sort) url.searchParams.set('sort', state.sort);
-        window.history.replaceState({}, '', url.toString());
+        var url = new URL(window.location.href);
+        var kept = [];
+        url.searchParams.forEach(function (value, key) {
+            if (key === 'search' || key === 'providers' || key === 'providers[]' || key === 'offset' || key === 'sort') {
+                return;
+            }
+            kept.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
+        });
+        if (state.search) {
+            kept.push('search=' + encodeURIComponent(state.search));
+        }
+        if (state.providers.length > 0) {
+            // Join after encode so commas stay literal (not %2C); spaces become '-'.
+            kept.push('providers=' + buildProvidersQueryValue(state.providers));
+        }
+        if (state.sort) {
+            kept.push('sort=' + encodeURIComponent(state.sort));
+        }
+        var qs = kept.join('&');
+        window.history.replaceState({}, '', url.pathname + (qs ? ('?' + qs) : '') + url.hash);
     }
 
     function setSearch(val) {
@@ -1053,9 +1120,16 @@
         providerSearchClearBtn.title = hasText ? 'Aramayı temizle' : 'Sağlayıcı ara';
         providerSearchClearBtn.setAttribute('aria-label', hasText ? 'Aramayı temizle' : 'Sağlayıcı ara');
     }
+    function syncProviderSearchFieldState() {
+        if (!providerSearchInput) return;
+        var field = providerSearchInput.closest('.ds-textfield');
+        if (!field) return;
+        field.classList.toggle('is-filled', providerSearchInput.value.trim().length > 0);
+    }
     if (providerSearchInput) {
         providerSearchInput.addEventListener('input', function() {
             updateProviderSearchBtnIcon();
+            syncProviderSearchFieldState();
             var q = providerSearchInput.value.toLowerCase().trim();
             var providerItems = sidebarProvidersList ? sidebarProvidersList.querySelectorAll('.sidebar-provider-item[data-provider]') : document.querySelectorAll('.sidebar-provider-item[data-provider]');
             providerItems.forEach(function(item) {
@@ -1063,6 +1137,7 @@
                 item.style.display = name.indexOf(q) !== -1 ? '' : 'none';
             });
         });
+        syncProviderSearchFieldState();
     }
     if (providerSearchClearBtn) {
         providerSearchClearBtn.addEventListener('click', function() {
@@ -1070,6 +1145,7 @@
                 providerSearchInput.value = '';
                 providerSearchInput.focus();
                 updateProviderSearchBtnIcon();
+                syncProviderSearchFieldState();
                 var providerItems = sidebarProvidersList ? sidebarProvidersList.querySelectorAll('.sidebar-provider-item[data-provider]') : document.querySelectorAll('.sidebar-provider-item[data-provider]');
                 providerItems.forEach(function(item) {
                     item.style.display = '';
@@ -1130,9 +1206,15 @@
         var applyLabel = applyBtn ? applyBtn.querySelector('.btn__label') : null;
         if (resetBtn) {
             resetBtn.classList.toggle('active-reset', hasSelection);
+            resetBtn.classList.toggle('ds-btn--disabled', !hasSelection);
+            resetBtn.disabled = !hasSelection;
+            resetBtn.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
         }
         if (applyBtn) {
             applyBtn.classList.toggle('active-apply', hasSelection);
+            applyBtn.classList.toggle('ds-btn--disabled', !hasSelection);
+            applyBtn.disabled = !hasSelection;
+            applyBtn.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
         }
         if (applyLabel) {
             applyLabel.textContent = hasSelection ? ('FİLTRE +' + state.providers.length) : 'FİLTRE';
@@ -1395,6 +1477,16 @@
         });
     }
 
+    var providerChipRail = document.getElementById('providerChipRail');
+    if (providerChipRail) {
+        providerChipRail.addEventListener('click', function(e) {
+            var chip = e.target.closest('.provider-chip');
+            if (!chip || !providerChipRail.contains(chip)) return;
+            e.preventDefault();
+            activateProviderItem(chip);
+        });
+    }
+
     function removeSearch() {
         setSearch('');
         loadSlots(false);
@@ -1608,6 +1700,10 @@
             setActiveCategoryTab();
             scrollActiveCategoryIntoView();
             syncMobileFilterControls();
+            // Canonicalize legacy providers[]=%5B%5D URLs to providers=Name.
+            if (state.providers.length > 0 || /providers(%5B%5D|\[\]|=)/i.test(window.location.search)) {
+                updateUrl();
+            }
             if (API_ADAPTER === 'member_api_games' && gameGrid) {
                 loadSlots(false);
             }
@@ -1616,6 +1712,9 @@
         setActiveCategoryTab();
         scrollActiveCategoryIntoView();
         syncMobileFilterControls();
+        if (state.providers.length > 0 || /providers(%5B%5D|\[\]|=)/i.test(window.location.search)) {
+            updateUrl();
+        }
         if (API_ADAPTER === 'member_api_games' && gameGrid) {
             loadSlots(false);
         }

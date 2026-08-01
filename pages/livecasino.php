@@ -6,29 +6,49 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../core/bootstrap.php';
 require_once SERVICE_PATH . '/LiveCasinoQuery.php';
 require_once SERVICE_PATH . '/ProviderDisplayBadgeMap.php';
+require_once SERVICE_PATH . '/ProviderLogoSvgMap.php';
 require_once SERVICE_PATH . '/CasinoAggregatorService.php';
 
 $searchTerm = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
-$selectedProviders = array_values(array_filter(array_map(
-    static fn ($provider): string => CasinoAggregatorService::resolveLocalizedLabel(trim((string) $provider)),
-    isset($_GET['providers']) ? (array) $_GET['providers'] : []
-), static fn (string $provider): bool => $provider !== ''));
 $currentSort = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
-$liveLobbyExtra = [];
+$liveLobbyExtra = ['gsc_only' => true];
 $currencyOverride = strtoupper(trim((string) ($_GET['currency'] ?? '')));
 if ($currencyOverride !== '' && $currencyOverride !== 'ALL' && $currencyOverride !== '*') {
     $liveLobbyExtra['currency'] = $currencyOverride;
 }
 
-$result = LiveCasinoQuery::page($searchTerm, $selectedProviders, $limit, $page, $currentSort, $liveLobbyExtra);
-$games = is_array($result['games'] ?? null) ? $result['games'] : [];
-$loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
-
 $allUniqueProviders = LiveCasinoQuery::providers($liveLobbyExtra);
 sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
+
+$selectedProviders = array_values(array_filter(array_map(
+    static fn ($provider): string => CasinoAggregatorService::resolveLocalizedLabel(trim((string) $provider)),
+    CasinoAggregatorService::canonicalizeProviders(
+        CasinoAggregatorService::providersFromQuery(),
+        $allUniqueProviders
+    )
+), static fn (string $provider): bool => $provider !== ''));
+
+$result = LiveCasinoQuery::page($searchTerm, $selectedProviders, $limit, $page, $currentSort, $liveLobbyExtra);
+// Provider endpoint empty but games OK → rebuild sidebar labels from this page.
+if ($allUniqueProviders === []) {
+    $seenProviders = [];
+    foreach (is_array($result['games'] ?? null) ? $result['games'] : [] as $gameRow) {
+        if (!is_array($gameRow)) {
+            continue;
+        }
+        $pname = trim((string) ($gameRow['provider'] ?? ''));
+        if ($pname !== '') {
+            $seenProviders[$pname] = true;
+        }
+    }
+    $allUniqueProviders = array_keys($seenProviders);
+    sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
+}
+$games = is_array($result['games'] ?? null) ? $result['games'] : [];
+$loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 
 $totalSlots = (int) ($result['total'] ?? count($games));
 $perPage = (int) ($result['perPage'] ?? $limit);
@@ -43,34 +63,40 @@ $apiError = !empty($result['apiError']);
 $providerBadges = [
     'pragmatic' => ['EN IYI', 'SICAK'],
     'pragmaticplay' => ['EN IYI', 'SICAK'],
-    'evolution' => ['EN IYI'],
-    'evo' => ['EN IYI'],
-    'ezugi' => ['OZEL'],
-    'creedroomz' => ['OZEL'],
-    'vivo' => ['SICAK'],
     'sagaming' => ['SICAK'],
     'sa gaming' => ['SICAK'],
-    'playtech' => ['EN IYI'],
-    'netent' => ['SICAK'],
+    'astar' => ['SICAK'],
     'dreamgaming' => ['SICAK'],
     'dream gaming' => ['SICAK'],
-    'allbet' => ['OZEL'],
-    'wm casino' => ['SICAK'],
-    'wm' => ['SICAK'],
-    'big gaming' => ['SICAK'],
-    'biggaming' => ['SICAK'],
-    'vimplay' => ['OZEL'],
-    'astar' => ['SICAK'],
+    'hacksaw' => ['SICAK'],
+    'habanero' => ['SICAK'],
+    'cq9' => ['EN IYI'],
+    'boominggames' => ['SICAK'],
+    'booming games' => ['SICAK'],
+    'advantplay' => ['OZEL'],
+    'advant play' => ['OZEL'],
+    'uuslots' => ['SICAK'],
+    'epicwin' => ['SICAK'],
+    'fachai' => ['SICAK'],
+    'fa chai' => ['SICAK'],
+    'gaming panda' => ['OZEL'],
+    'wow gaming' => ['SICAK'],
+    'live22' => ['SICAK'],
+    'live 22' => ['SICAK'],
+    'yfg' => ['SICAK'],
+    'evoplay' => ['SICAK'],
+    'bigpot' => ['SICAK'],
 ];
 
 $slotPageBaseUrl = '/livecasino';
 $slotPageTitle = 'CANLI CASINO';
 $slotGameType = 1;
-$slotEmptyTitle = 'Canlı casino oyunu bulunamadı';
+$slotEmptyTitle = 'Oyun bulunamadı';
 $slotEmptyText = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin.';
-// Load-more / filters go through LiveCasinoQuery — Drakon live games only
+// Load-more / filters: GSC+ IDR staging (live + slots)
 $slotApiParams = [
-    'source' => 'drakon',
+    'source' => 'gsc',
+    'gsc_only' => 1,
 ];
 if (!empty($liveLobbyExtra['currency'])) {
     $slotApiParams['currency'] = $liveLobbyExtra['currency'];
