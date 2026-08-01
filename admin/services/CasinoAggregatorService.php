@@ -874,32 +874,74 @@ final class CasinoAggregatorService
      */
     public static function forceGameMediaToPng(array $media): array
     {
-        $cover = self::rewriteMediaUrlToPng(trim((string) ($media['cover'] ?? '')));
-        $fallbacks = [];
         $sourceFallbacks = [];
         if (is_array($media['cover_fallbacks'] ?? null)) {
             $sourceFallbacks = $media['cover_fallbacks'];
         } elseif (is_array($media['image_fallbacks'] ?? null)) {
             $sourceFallbacks = $media['image_fallbacks'];
         }
+        $originalCover = self::normalizeMediaUrl(trim((string) ($media['cover'] ?? '')));
+        if ($originalCover !== '' && !in_array($originalCover, $sourceFallbacks, true)) {
+            array_unshift($sourceFallbacks, $originalCover);
+        }
+
+        // Prefer PNG for VIP tiles, but keep original AVIF/WebP as secondary
+        // fallbacks — some CDN hosts only serve one of the two.
+        $fallbacks = [];
         foreach ($sourceFallbacks as $url) {
-            $png = self::rewriteMediaUrlToPng(trim((string) $url));
+            $url = self::normalizeMediaUrl(trim((string) $url));
+            if ($url === '') {
+                continue;
+            }
+            $png = self::rewriteMediaUrlToPng($url);
             if ($png !== '' && !in_array($png, $fallbacks, true)) {
                 $fallbacks[] = $png;
             }
+            if (!in_array($url, $fallbacks, true)) {
+                $fallbacks[] = $url;
+            }
         }
-        if ($cover !== '' && !in_array($cover, $fallbacks, true)) {
-            array_unshift($fallbacks, $cover);
-        }
-        if ($cover === '' && $fallbacks !== []) {
-            $cover = (string) $fallbacks[0];
-        }
+        $fallbacks = self::expandFormatFallbacks($fallbacks);
+        $cover = $fallbacks[0] ?? '';
 
         return [
             'cover' => $cover,
             'cover_fallbacks' => $fallbacks,
             'image_fallbacks' => $fallbacks,
         ];
+    }
+
+    /**
+     * Append sibling format URLs (.avif / .png / .webp / .jpg) so the frontend
+     * can recover when a CDN only publishes one extension.
+     *
+     * @param list<string> $urls
+     * @return list<string>
+     */
+    public static function expandFormatFallbacks(array $urls): array
+    {
+        $out = [];
+        foreach ($urls as $url) {
+            $url = self::normalizeMediaUrl(trim((string) $url));
+            if ($url === '' || !self::isUsableMediaUrl($url) || self::looksLikeLocalizedJson($url)) {
+                continue;
+            }
+            if (!in_array($url, $out, true)) {
+                $out[] = $url;
+            }
+            if (preg_match('#\.(avif|webp|jpe?g|gif|png)(\?|$)#i', $url) !== 1) {
+                continue;
+            }
+            foreach (['png', 'avif', 'webp', 'jpg'] as $ext) {
+                $alt = preg_replace('#\.(avif|webp|jpe?g|gif|png)(\?|$)#i', '.' . $ext . '$2', $url, 1);
+                if (!is_string($alt) || $alt === '' || in_array($alt, $out, true)) {
+                    continue;
+                }
+                $out[] = $alt;
+            }
+        }
+
+        return $out;
     }
 
     public static function rewriteMediaUrlToPng(string $url): string
@@ -1765,8 +1807,9 @@ final class CasinoAggregatorService
                 array_unshift($fallbacks, $storedCover);
             }
 
+            $fallbacks = self::expandFormatFallbacks($fallbacks);
             $media = [
-                'cover'           => $storedCover,
+                'cover'           => $fallbacks[0] ?? $storedCover,
                 'cover_fallbacks' => $fallbacks,
                 'image_fallbacks' => $fallbacks,
             ];
@@ -1778,6 +1821,13 @@ final class CasinoAggregatorService
         }
 
         $media = self::resolveApiGameMedia($row, $lang);
+        $media['cover_fallbacks'] = self::expandFormatFallbacks(
+            is_array($media['cover_fallbacks'] ?? null) ? $media['cover_fallbacks'] : []
+        );
+        $media['image_fallbacks'] = $media['cover_fallbacks'];
+        if (($media['cover'] ?? '') === '' && $media['cover_fallbacks'] !== []) {
+            $media['cover'] = (string) $media['cover_fallbacks'][0];
+        }
         if (self::isEgtVipVendor(self::rowVendorCode($row))) {
             return self::forceGameMediaToPng($media);
         }
@@ -1850,9 +1900,18 @@ final class CasinoAggregatorService
                 $rawName = trim((string) ($row['vendor_name'] ?? ''));
                 $resolvedName = self::resolveLocalizedLabel($rawName, $lang) ?: $code;
                 foreach (array_keys($names) as $filterName) {
+                    $filterKey = self::providerMatchKey((string) $filterName);
+                    $resolvedKey = self::providerMatchKey($resolvedName);
+                    $rawKey = self::providerMatchKey($rawName);
+                    $codeKey = self::providerMatchKey($code);
                     if (strcasecmp($resolvedName, $filterName) === 0
                         || strcasecmp($rawName, $filterName) === 0
-                        || strcasecmp($code, $filterName) === 0) {
+                        || strcasecmp($code, $filterName) === 0
+                        || ($filterKey !== '' && (
+                            $filterKey === $resolvedKey
+                            || $filterKey === $rawKey
+                            || $filterKey === $codeKey
+                        ))) {
                         $names[$resolvedName] = true;
                         if ($rawName !== '') {
                             $names[$rawName] = true;
@@ -1949,6 +2008,101 @@ final class CasinoAggregatorService
         $row['cover_fallbacks'] = $media['cover_fallbacks'] ?? [];
         unset($row['raw_payload']);
         return $row;
+    }
+
+    /**
+     * Lobby provider filters from the query string.
+     * Preferred: ?providers=PragmaticPlay or ?providers=PragmaticPlay,SA-Gaming
+     * Legacy: ?providers[]=A&providers[]=B (PHP parses as array)
+     *
+     * @param array<string, mixed>|null $source
+     * @return list<string>
+     */
+    public static function providersFromQuery(?array $source = null): array
+    {
+        $source = $source ?? $_GET;
+        $raw = $source['providers'] ?? null;
+        if ($raw === null || $raw === '') {
+            $single = trim((string) ($source['provider'] ?? $source['provider_code'] ?? ''));
+            $raw = $single !== '' ? $single : null;
+        }
+        if ($raw === null || $raw === '') {
+            return [];
+        }
+
+        $parts = is_array($raw)
+            ? $raw
+            : (preg_split('/\s*[,|]\s*/', (string) $raw) ?: []);
+
+        $out = [];
+        foreach ($parts as $part) {
+            // URLSearchParams encodes spaces as '+'; keep hyphenated slugs as-is
+            // so canonicalizeProviders can map SA-Gaming → "SA Gaming".
+            $name = trim(str_replace('+', ' ', (string) $part));
+            if ($name === '') {
+                continue;
+            }
+            $lower = strtolower($name);
+            if (in_array($lower, ['hepsi', 'all', 'tumu', 'tümü'], true)) {
+                continue;
+            }
+            $out[] = $name;
+        }
+
+        return array_values(array_unique($out));
+    }
+
+    /** Compare key: "SA Gaming" / "SA-Gaming" / "SAGaming" → "sagaming". */
+    public static function providerMatchKey(string $name): string
+    {
+        $name = strtolower(trim(str_replace('+', ' ', $name)));
+        if ($name === '') {
+            return '';
+        }
+
+        return (string) (preg_replace('/[\s\-_]+/', '', $name) ?? '');
+    }
+
+    /**
+     * Map URL tokens onto canonical catalog labels (spaces, casing).
+     *
+     * @param list<string> $requested
+     * @param list<string> $catalog
+     * @return list<string>
+     */
+    public static function canonicalizeProviders(array $requested, array $catalog = []): array
+    {
+        $catalogMap = [];
+        foreach ($catalog as $name) {
+            $name = trim((string) $name);
+            if ($name === '') {
+                continue;
+            }
+            $key = self::providerMatchKey($name);
+            if ($key !== '' && !isset($catalogMap[$key])) {
+                $catalogMap[$key] = $name;
+            }
+        }
+
+        $out = [];
+        foreach ($requested as $req) {
+            $req = trim(str_replace('+', ' ', (string) $req));
+            if ($req === '') {
+                continue;
+            }
+            $key = self::providerMatchKey($req);
+            if ($key === '') {
+                continue;
+            }
+            if (isset($catalogMap[$key])) {
+                $out[] = $catalogMap[$key];
+                continue;
+            }
+            // Hyphenated slug without catalog hit → spaced label for SQL exact match.
+            $out[] = str_contains($req, '-') ? str_replace('-', ' ', $req) : $req;
+        }
+
+        return array_values(array_unique($out));
     }
 
     public static function resolveLocalizedLabel(mixed $value, ?string $lang = null): string

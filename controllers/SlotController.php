@@ -10,10 +10,10 @@ class SlotController extends Controller
     public function index(): void
     {
         $searchTerm        = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
-        $selectedProviders = array_values(array_filter(array_map(
-            static fn ($provider): string => CasinoAggregatorService::resolveLocalizedLabel(trim((string) $provider)),
-            isset($_GET['providers']) ? (array) $_GET['providers'] : []
-        ), static fn (string $provider): bool => $provider !== ''));
+        $selectedProviders = CasinoAggregatorService::canonicalizeProviders(
+            CasinoAggregatorService::providersFromQuery(),
+            SlotGamesQuery::allProviders()
+        );
         $currentSort       = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
         $limit             = 30;
         $page              = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;

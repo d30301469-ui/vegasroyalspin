@@ -151,13 +151,8 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $limit    = min(200, max(1, (int) ($_GET['limit'] ?? $_GET['per_page'] ?? 30)));
     $offset   = ($page - 1) * $limit;
     $search   = trim((string) ($_GET['search'] ?? $_GET['q'] ?? ''));
-    $provider = trim((string) ($_GET['provider'] ?? $_GET['provider_code'] ?? ''));
-    $providerList = [];
-    if (isset($_GET['providers']) && is_array($_GET['providers'])) {
-        $providerList = array_values(array_filter(array_map(static fn ($x): string => trim((string) $x), $_GET['providers']), static fn (string $x): bool => $x !== '' && strtolower($x) !== 'hepsi'));
-    } elseif ($provider !== '' && strtolower($provider) !== 'hepsi') {
-        $providerList = [$provider];
-    }
+    // Accept providers=Name, providers=A,B, and legacy providers[]=A&providers[]=B.
+    $providerList = CasinoAggregatorService::providersFromQuery();
     $onlyFeatured = (string) ($_GET['is_featured'] ?? '') === '1'
         || in_array(strtolower((string) ($_GET['sort'] ?? '')), ['popular', 'liked'], true);
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));

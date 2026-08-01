@@ -1,6 +1,7 @@
 <?php
 
 require_once SERVICE_PATH . '/SlotGamesQuery.php';
+require_once SERVICE_PATH . '/CasinoAggregatorService.php';
 
 class ApiSlotController extends Controller
 {
@@ -14,7 +15,10 @@ class ApiSlotController extends Controller
         header('Content-Type: application/json; charset=utf-8');
 
         $searchTerm        = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
-        $selectedProviders = isset($_GET['providers']) ? (array) $_GET['providers'] : [];
+        $selectedProviders = CasinoAggregatorService::canonicalizeProviders(
+            CasinoAggregatorService::providersFromQuery(),
+            SlotGamesQuery::allProviders()
+        );
         $limit             = isset($_GET['limit']) ? min(100, max(1, (int) $_GET['limit'])) : 30;
         $sort              = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 

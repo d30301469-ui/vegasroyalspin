@@ -10,10 +10,6 @@ require_once SERVICE_PATH . '/ProviderLogoSvgMap.php';
 require_once SERVICE_PATH . '/CasinoAggregatorService.php';
 
 $searchTerm = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
-$selectedProviders = array_values(array_filter(array_map(
-    static fn ($provider): string => CasinoAggregatorService::resolveLocalizedLabel(trim((string) $provider)),
-    isset($_GET['providers']) ? (array) $_GET['providers'] : []
-), static fn (string $provider): bool => $provider !== ''));
 $currentSort = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
@@ -24,11 +20,15 @@ if ($currencyOverride !== '' && $currencyOverride !== 'ALL' && $currencyOverride
     $liveLobbyExtra['currency'] = $currencyOverride;
 }
 
+$allUniqueProviders = LiveCasinoQuery::providers($liveLobbyExtra);
+$selectedProviders = CasinoAggregatorService::canonicalizeProviders(
+    CasinoAggregatorService::providersFromQuery(),
+    $allUniqueProviders
+);
+
 $result = LiveCasinoQuery::page($searchTerm, $selectedProviders, $limit, $page, $currentSort, $liveLobbyExtra);
 $games = is_array($result['games'] ?? null) ? $result['games'] : [];
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
-
-$allUniqueProviders = LiveCasinoQuery::providers($liveLobbyExtra);
 sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
 
 $totalSlots = (int) ($result['total'] ?? count($games));
