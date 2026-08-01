@@ -18,16 +18,16 @@ class SlotController extends Controller
         $limit             = 30;
         $page              = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
-        $result = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $currentSort);
-        $games = array_values(array_filter(
-            is_array($result['games'] ?? null) ? $result['games'] : [],
-            static function (array $game): bool {
-                $provider = strtolower(trim((string) ($game['provider'] ?? $game['provider_code'] ?? '')));
-                $source = strtolower(trim((string) ($game['source'] ?? '')));
-
-                return $provider !== 'bgaming' && $source !== 'bgaming';
-            }
-        ));
+        $slotSourceExtra = ['source' => 'aggregator'];
+        $result = SlotGamesQuery::slotsPage(
+            $searchTerm,
+            $selectedProviders,
+            $limit,
+            $page,
+            $currentSort,
+            $slotSourceExtra
+        );
+        $games = is_array($result['games'] ?? null) ? array_values($result['games']) : [];
 
         $allUniqueProviders = array_values(array_filter(
             SlotGamesQuery::allProviders(),
@@ -48,7 +48,7 @@ class SlotController extends Controller
         $apiError       = !empty($result['apiError']);
 
         $providerBadges = $this->getProviderBadges();
-        $slotApiParams  = [];
+        $slotApiParams  = ['source' => 'aggregator'];
         $slotGameType   = 0;
         $slotShowActionButtons = true;
         $slotEmptyTitle = 'Slot oyunu bulunamadı';

@@ -14,7 +14,10 @@ $currentSort = isset($_GET['sort']) ? trim((string) $_GET['sort']) : '';
 $limit = 30;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
-$liveLobbyExtra = [];
+$liveLobbyExtra = [
+    'source' => 'gsc',
+    'gsc_only' => 1,
+];
 $currencyOverride = strtoupper(trim((string) ($_GET['currency'] ?? '')));
 if ($currencyOverride !== '' && $currencyOverride !== 'ALL' && $currencyOverride !== '*') {
     $liveLobbyExtra['currency'] = $currencyOverride;

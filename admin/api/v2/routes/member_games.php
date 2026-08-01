@@ -29,18 +29,20 @@ $memberUserById ??= static fn (\PDO $p, int $id): ?array => null;
 if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/providers', 'live-casino/providers', 'games-provider', 'games_provider.php'], true)) {
     $pdo = AdminDatabase::pdo();
     admin_require_project_file('services/CasinoAggregatorService.php');
-    admin_require_project_file('services/DrakonService.php');
-    // 0 = slot lobby, 1 = live casino.
+    // 0 = slot lobby (Casino Aggregator), 1 = live casino (GSC+).
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
     if ($route === 'live-casino/providers') {
         $gameType = 1;
     }
+    $source = strtolower(trim((string) ($_GET['source'] ?? '')));
     $providers = [];
     try {
-        if ($gameType === 1) {
+        if ($gameType === 1 || in_array($source, ['gsc', 'livecasino', 'live', 'live_casino'], true)) {
             admin_require_project_file('services/LiveCasinoQuery.php');
             $providerExtra = [
                 'force_local' => true,
+                'source' => 'gsc',
+                'gsc_only' => 1,
                 'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
             ];
             foreach (LiveCasinoQuery::providers($providerExtra) as $name) {
@@ -53,57 +55,31 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
                     'provider_name' => $name,
                 ];
             }
-        } elseif ($gameType === 0) {
-            // BGaming catalogue is slot-only.
+        } elseif ($source === 'bgaming') {
             $sql = "SELECT DISTINCT provider AS provider_code, provider AS provider_name
                 FROM bgaming_games
                 WHERE is_active = 1 AND provider <> ''
                 ORDER BY provider_name ASC";
             $pStmt = $pdo->query($sql);
             $providers = $pStmt ? $pStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } else {
+            // Slot lobby default: Casino Aggregator vendors only.
             $aggStmt = $pdo->prepare(
                 "SELECT DISTINCT v.vendor_code AS provider_code, v.vendor_name AS provider_name
                  FROM casino_aggregator_vendors v
                  INNER JOIN casino_aggregator_games g ON g.vendor_code = v.vendor_code
-                 WHERE v.is_active = 1 AND g.is_active = 1 AND g.game_type = 1
+                 WHERE v.is_active = 1 AND g.is_active = 1 AND g.game_type IN (0, 1)
                    AND NOT (" . CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code') . ")
                  ORDER BY v.vendor_name ASC"
             );
             $aggStmt->execute();
-            $seen = [];
-            foreach ($providers as $row) {
-                $seen[(string) ($row['provider_code'] ?? '')] = true;
-            }
             foreach ($aggStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
                 $code = (string) ($row['provider_code'] ?? '');
-                if ($code === '' || isset($seen[$code])) {
+                if ($code === '') {
                     continue;
                 }
-                $seen[$code] = true;
                 $row['provider_name'] = CasinoAggregatorService::resolveLocalizedLabel($row['provider_name'] ?? '') ?: $code;
                 $providers[] = $row;
-            }
-            try {
-                $drakonStmt = $pdo->query(
-                    "SELECT DISTINCT COALESCE(NULLIF(provider_code, ''), provider_name) AS provider_code,
-                            provider_name
-                     FROM drakon_games
-                     WHERE is_active = 1 AND provider_name <> ''
-                       AND " . DrakonService::slotGameSqlMatch() . "
-                     ORDER BY provider_name ASC"
-                );
-                foreach ($drakonStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
-                    $code = trim((string) ($row['provider_code'] ?? ''));
-                    if ($code === '' || isset($seen[$code])) {
-                        continue;
-                    }
-                    $seen[$code] = true;
-                    $providers[] = [
-                        'provider_code' => $code,
-                        'provider_name' => (string) ($row['provider_name'] ?? $code),
-                    ];
-                }
-            } catch (Throwable) {
             }
         }
     } catch (Throwable) {}
@@ -144,8 +120,7 @@ if ($method === 'GET' && $route === 'casino/categories') {
 if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $pdo      = AdminDatabase::pdo();
     admin_require_project_file('services/CasinoAggregatorService.php');
-    admin_require_project_file('services/DrakonService.php');
-    // 0 = slot lobby (BGaming), 1 = live casino.
+    // 0 = slot lobby (Casino Aggregator), 1 = live casino (GSC+).
     $gameType = (int) ($_GET['game_type'] ?? $_GET['filter_game_type'] ?? 0) === 1 ? 1 : 0;
     $page     = max(1, (int) ($_GET['page'] ?? 1));
     $limit    = min(200, max(1, (int) ($_GET['limit'] ?? $_GET['per_page'] ?? 30)));
@@ -158,15 +133,22 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));
     $sort = strtolower(trim((string) ($_GET['sort'] ?? '')));
 
-    // Live casino catalogue is Drakon live games only (LiveCasinoQuery).
-    if ($gameType === 1 || in_array($source, ['livecasino', 'live', 'live_casino'], true)) {
+    // Live casino catalogue is GSC+ only (LiveCasinoQuery).
+    if ($gameType === 1 || in_array($source, ['gsc', 'livecasino', 'live', 'live_casino'], true)) {
         admin_require_project_file('services/LiveCasinoQuery.php');
         $liveExtra = [
             // Always hit local DB on the admin API host — never recurse via BackendApiClient.
             'force_local' => true,
-            'source' => 'drakon',
+            'source' => 'gsc',
+            'gsc_only' => true,
             'currency' => strtoupper(trim((string) ($_GET['currency'] ?? ''))),
         ];
+        if ($providerList !== []) {
+            $providerList = CasinoAggregatorService::canonicalizeProviders(
+                $providerList,
+                LiveCasinoQuery::providers($liveExtra)
+            );
+        }
         $liveResult = LiveCasinoQuery::page(
             $search,
             $providerList,
@@ -237,7 +219,8 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     };
 
     $branches = [];
-    if ($gameType === 0 && ($source === '' || $source === 'bgaming')) {
+    // Dedicated /bgaming page only.
+    if ($gameType === 0 && $source === 'bgaming') {
         $titleCol = $tableHasColumn($pdo, 'bgaming_games', 'title')
             ? 'title'
             : ($tableHasColumn($pdo, 'bgaming_games', 'name') ? 'name' : '');
@@ -268,43 +251,10 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
             WHERE g.is_active = 1";
     }
 
-    if ($source === '' || $source === 'drakon') {
-        $drakonTypeClause = $gameType === 1
-            ? DrakonService::liveGameSqlMatch('g')
-            : DrakonService::slotGameSqlMatch('g');
-        $branches[] = "SELECT
-                CONCAT('drakon:', g.game_id) AS game_id,
-                g.game_name AS name,
-                COALESCE(NULLIF(g.provider_name, ''), g.provider_code, 'Drakon') AS provider,
-                COALESCE(NULLIF(g.provider_code, ''), g.provider_name, 'drakon') AS provider_code,
-                COALESCE(NULLIF(g.image_url, ''), NULLIF(g.banner, ''), '') AS image_url,
-                CAST('' AS CHAR) AS image_fallbacks,
-                g.is_featured AS is_featured,
-                'drakon' AS source,
-                CAST(g.id AS CHAR) AS row_id,
-                CAST('' AS CHAR) AS raw_payload
-            FROM drakon_games g
-            WHERE g.is_active = 1 AND {$drakonTypeClause}";
-    }
-
-    // Frontend slot lobby keeps serving aggregator games, while dedicated BGaming
-    // pages use `source=bgaming` to fetch only BGaming rows.
-    $aggGameType = $gameType === 1 ? 2 : 1;
-    if ($source === '' || $source === 'aggregator') {
-        if ($gameType === 1) {
-            try {
-                CasinoAggregatorService::repairGameTypesFromPayload($pdo);
-            } catch (Throwable) {
-            }
-        }
-        // Historical aggregator slot rows can be stored as game_type=0.
-        $typeClause = $gameType === 1 ? "g.game_type = {$aggGameType}" : "(g.game_type IN (0, {$aggGameType}))";
+    // Slot lobby default = Casino Aggregator (source empty or aggregator).
+    if ($gameType === 0 && ($source === '' || $source === 'aggregator')) {
         $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
-        if ($gameType === 1) {
-            $typeClause = "(g.game_type = {$aggGameType} OR {$liveMatch})";
-        } else {
-            $typeClause = "((g.game_type IN (0, {$aggGameType})) AND NOT {$liveMatch})";
-        }
+        $typeClause = "((g.game_type IN (0, 1)) AND NOT {$liveMatch})";
         $branches[] = "SELECT
                 CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
                 g.game_name AS name,
@@ -471,9 +421,7 @@ if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_ga
     BgamingService::bootstrap($pdo);
     admin_require_project_file('services/CasinoAggregatorService.php');
     CasinoAggregatorService::bootstrap($pdo);
-    admin_require_project_file('services/DrakonService.php');
-    DrakonService::bootstrap($pdo);
-    admin_require_project_file('services/DrakonService.php');
+    admin_require_project_file('services/GscPlusService.php');
 
     $source = strtolower(trim((string) ($_GET['source'] ?? $_GET['category'] ?? $_GET['game_type'] ?? 'all')));
     if (in_array($source, ['live', 'livecasino'], true)) {
@@ -564,121 +512,63 @@ if ($method === 'GET' && ($route === 'game_history.php' || $route === 'casino_ga
                 ];
             }
         } catch (Throwable) {}
-
-        try {
-            $drakonHistoryTypeSql = $source === 'slot'
-                ? ' AND ' . DrakonService::slotGameSqlMatch('g')
-                : '';
-            $drakonStmt = $pdo->prepare(
-                "SELECT t.id, t.transaction_id, t.round_id, t.session_id, t.game_id,
-                        COALESCE(g.game_name, t.game_name, t.game_id) AS game_name,
-                        COALESCE(NULLIF(g.provider_name, ''), NULLIF(t.provider_name, ''), 'Drakon') AS provider_name,
-                        COALESCE(NULLIF(g.provider_code, ''), NULLIF(t.provider_name, ''), 'drakon') AS provider_code,
-                        CASE WHEN " . DrakonService::liveGameSqlMatch('g') . " THEN 1 ELSE 0 END AS game_type,
-                        t.txn_type, t.amount,
-                        t.bet_amount, t.win_amount, t.after_balance, t.created_at
-                 FROM drakon_transactions t
-                 LEFT JOIN drakon_games g ON g.game_id = t.game_id
-                 WHERE t.user_id = :uid{$drakonHistoryTypeSql}
-                 ORDER BY t.id DESC
-                 LIMIT {$fetchLimit}"
-            );
-            $drakonStmt->execute([':uid' => $userId]);
-            foreach ($drakonStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                $txnType = strtolower((string) ($row['txn_type'] ?? 'bet'));
-                $normalizedTxnType = in_array($txnType, ['win'], true)
-                    ? 'win'
-                    : ($txnType === 'refund' ? 'refund' : 'bet');
-                $amount = (float) ($row['amount'] ?? 0);
-                $rows[] = [
-                    'id' => 'drakon:' . (string) ($row['id'] ?? ''),
-                    'history_id' => 'drakon:' . (string) ($row['id'] ?? ''),
-                    'transactionId' => (string) ($row['transaction_id'] ?? ''),
-                    'transaction_id' => (string) ($row['transaction_id'] ?? ''),
-                    'providerTxnId' => (string) ($row['transaction_id'] ?? ''),
-                    'provider_txn_id' => (string) ($row['transaction_id'] ?? ''),
-                    'relatedTransactionId' => '',
-                    'related_transaction_id' => '',
-                    'sessionToken' => (string) ($row['session_id'] ?? ''),
-                    'session_id' => (string) ($row['session_id'] ?? ''),
-                    'roundId' => (string) ($row['round_id'] ?? ''),
-                    'round_id' => (string) ($row['round_id'] ?? ''),
-                    'gameId' => 'drakon:' . (string) ($row['game_id'] ?? ''),
-                    'game_id' => 'drakon:' . (string) ($row['game_id'] ?? ''),
-                    'gameName' => (string) ($row['game_name'] ?? ''),
-                    'game_name' => (string) ($row['game_name'] ?? ''),
-                    'providerCode' => (string) ($row['provider_code'] ?? 'drakon'),
-                    'provider_code' => (string) ($row['provider_code'] ?? 'drakon'),
-                    'providerName' => (string) ($row['provider_name'] ?? 'Drakon'),
-                    'provider_name' => (string) ($row['provider_name'] ?? 'Drakon'),
-                    'category' => (int) ($row['game_type'] ?? 0) === 1 ? 'live_casino' : 'slot',
-                    'source' => (int) ($row['game_type'] ?? 0) === 1 ? 'live_casino' : 'slot',
-                    'txnType' => $normalizedTxnType,
-                    'txn_type' => $normalizedTxnType,
-                    'status' => (string) ($row['status'] ?? 'completed'),
-                    'betAmount' => $normalizedTxnType === 'bet' ? (float) ($row['bet_amount'] ?? $amount) : 0.0,
-                    'bet_amount' => $normalizedTxnType === 'bet' ? (float) ($row['bet_amount'] ?? $amount) : 0.0,
-                    'winAmount' => $normalizedTxnType !== 'bet' ? (float) ($row['win_amount'] ?? $amount) : 0.0,
-                    'win_amount' => $normalizedTxnType !== 'bet' ? (float) ($row['win_amount'] ?? $amount) : 0.0,
-                    'balanceAfter' => (float) ($row['after_balance'] ?? 0),
-                    'balance_after' => (float) ($row['after_balance'] ?? 0),
-                    'createdAt' => (string) ($row['created_at'] ?? ''),
-                    'created_at' => (string) ($row['created_at'] ?? ''),
-                    'wallet' => 'casino',
-                ];
-            }
-        } catch (Throwable) {}
     }
 
-    if ($source === 'live_casino') {
+    if ($source === 'all' || $source === 'live_casino') {
         try {
-            $drakonLiveStmt = $pdo->prepare(
-                "SELECT t.id, t.transaction_id, t.round_id, t.session_id, t.game_id,
-                        COALESCE(g.game_name, t.game_name, t.game_id) AS game_name,
-                        COALESCE(NULLIF(g.provider_name, ''), NULLIF(t.provider_name, ''), 'Drakon') AS provider_name,
-                        COALESCE(NULLIF(g.provider_code, ''), NULLIF(t.provider_name, ''), 'drakon') AS provider_code,
-                        t.txn_type, t.amount, t.bet_amount, t.win_amount, t.after_balance, t.created_at
-                 FROM drakon_transactions t
-                 LEFT JOIN drakon_games g ON g.game_id = t.game_id
+            $gscStmt = $pdo->prepare(
+                "SELECT t.id, t.transaction_id, t.round_id, t.product_code, t.game_code, t.action,
+                        COALESCE(g.game_name, t.game_code, CAST(t.product_code AS CHAR)) AS game_name,
+                        COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(t.product_code AS CHAR)) AS provider_name,
+                        CAST(t.product_code AS CHAR) AS provider_code,
+                        t.amount, t.bet_amount, t.prize_amount, t.after_balance, t.created_at
+                 FROM gsc_transactions t
+                 LEFT JOIN gsc_games g
+                    ON g.product_code = t.product_code AND g.game_code = t.game_code
                  WHERE t.user_id = :uid
-                   AND " . DrakonService::liveGameSqlMatch('g') . "
                  ORDER BY t.id DESC
                  LIMIT {$fetchLimit}"
             );
-            $drakonLiveStmt->execute([':uid' => $userId]);
-            foreach ($drakonLiveStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
-                $txnType = strtolower((string) ($row['txn_type'] ?? 'bet'));
-                $normalizedTxnType = $txnType === 'win' ? 'win' : ($txnType === 'refund' ? 'refund' : 'bet');
-                $amount = (float) ($row['amount'] ?? 0);
-                $gameId = 'drakon:' . (string) ($row['game_id'] ?? '');
+            $gscStmt->execute([':uid' => $userId]);
+            foreach ($gscStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $action = strtoupper(trim((string) ($row['action'] ?? '')));
+                $normalizedTxnType = in_array($action, ['SETTLED', 'WIN', 'BONUS', 'PRIZE'], true)
+                    ? 'win'
+                    : (in_array($action, ['CANCEL', 'ROLLBACK', 'REFUND', 'PRESERVE_REFUND'], true) ? 'refund' : 'bet');
+                $amount = abs((float) ($row['amount'] ?? 0));
+                $betAmount = abs((float) ($row['bet_amount'] ?? 0));
+                $winAmount = abs((float) ($row['prize_amount'] ?? 0));
+                $productCode = (int) ($row['product_code'] ?? 0);
+                $gameCode = trim((string) ($row['game_code'] ?? ''));
+                $gameId = $productCode > 0 && $gameCode !== ''
+                    ? GscPlusService::buildGameId($productCode, $gameCode)
+                    : ('gsc:' . $productCode);
                 $rows[] = [
-                    'id' => 'drakon:' . (string) ($row['id'] ?? ''),
-                    'history_id' => 'drakon:' . (string) ($row['id'] ?? ''),
+                    'id' => 'gsc:' . (string) ($row['id'] ?? ''),
+                    'history_id' => 'gsc:' . (string) ($row['id'] ?? ''),
                     'transactionId' => (string) ($row['transaction_id'] ?? ''),
                     'transaction_id' => (string) ($row['transaction_id'] ?? ''),
                     'providerTxnId' => (string) ($row['transaction_id'] ?? ''),
                     'provider_txn_id' => (string) ($row['transaction_id'] ?? ''),
                     'roundId' => (string) ($row['round_id'] ?? ''),
                     'round_id' => (string) ($row['round_id'] ?? ''),
-                    'session_id' => (string) ($row['session_id'] ?? ''),
-                    'sessionToken' => (string) ($row['session_id'] ?? ''),
                     'gameId' => $gameId,
                     'game_id' => $gameId,
                     'gameName' => (string) ($row['game_name'] ?? ''),
                     'game_name' => (string) ($row['game_name'] ?? ''),
-                    'providerCode' => (string) ($row['provider_code'] ?? 'drakon'),
-                    'provider_code' => (string) ($row['provider_code'] ?? 'drakon'),
-                    'providerName' => (string) ($row['provider_name'] ?? 'Drakon'),
-                    'provider_name' => (string) ($row['provider_name'] ?? 'Drakon'),
+                    'providerCode' => (string) ($row['provider_code'] ?? ''),
+                    'provider_code' => (string) ($row['provider_code'] ?? ''),
+                    'providerName' => (string) ($row['provider_name'] ?? 'GSC+'),
+                    'provider_name' => (string) ($row['provider_name'] ?? 'GSC+'),
                     'category' => 'live_casino',
                     'source' => 'live_casino',
                     'txnType' => $normalizedTxnType,
                     'txn_type' => $normalizedTxnType,
                     'status' => 'completed',
-                    'betAmount' => $normalizedTxnType === 'bet' ? (float) ($row['bet_amount'] ?? $amount) : 0.0,
-                    'bet_amount' => $normalizedTxnType === 'bet' ? (float) ($row['bet_amount'] ?? $amount) : 0.0,
-                    'winAmount' => $normalizedTxnType !== 'bet' ? (float) ($row['win_amount'] ?? $amount) : 0.0,
-                    'win_amount' => $normalizedTxnType !== 'bet' ? (float) ($row['win_amount'] ?? $amount) : 0.0,
+                    'betAmount' => $normalizedTxnType === 'bet' ? ($betAmount > 0 ? $betAmount : $amount) : 0.0,
+                    'bet_amount' => $normalizedTxnType === 'bet' ? ($betAmount > 0 ? $betAmount : $amount) : 0.0,
+                    'winAmount' => $normalizedTxnType !== 'bet' ? ($winAmount > 0 ? $winAmount : $amount) : 0.0,
+                    'win_amount' => $normalizedTxnType !== 'bet' ? ($winAmount > 0 ? $winAmount : $amount) : 0.0,
                     'balanceAfter' => (float) ($row['after_balance'] ?? 0),
                     'balance_after' => (float) ($row['after_balance'] ?? 0),
                     'createdAt' => (string) ($row['created_at'] ?? ''),
@@ -766,7 +656,7 @@ if ($method === 'GET' && ($route === 'games/recently-played' || $route === 'game
 
 if ($method === 'GET' && ($route === 'games/search' || $route === 'games/search.php')) {
     $pdo    = AdminDatabase::pdo();
-    admin_require_project_file('services/DrakonService.php');
+    admin_require_project_file('services/CasinoAggregatorService.php');
     $q      = trim((string) ($_GET['q'] ?? $_GET['search'] ?? ''));
     $limit  = min(100, max(1, (int) ($_GET['limit'] ?? 30)));
     $page   = max(1, (int) ($_GET['page'] ?? 1));
@@ -775,22 +665,32 @@ if ($method === 'GET' && ($route === 'games/search' || $route === 'games/search.
         $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Arama terimi gereklidir']);
     }
     $like = '%' . $q . '%';
+    $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
     $stmtB = $pdo->prepare("
-        SELECT CONCAT('bgaming:', identifier) AS game_id, name AS game_name, producer AS provider_code,
-               producer AS provider_name, '' AS game_category,
-               COALESCE(thumbnail_url, '') AS image_url, 'bgaming' AS source
-        FROM bgaming_games
-        WHERE name LIKE :q OR producer LIKE :q2
+        SELECT CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
+               g.game_name,
+               g.vendor_code AS provider_code,
+               COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider_name,
+               'slot' AS game_category,
+               COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+               'aggregator' AS source
+        FROM casino_aggregator_games g
+        INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
+        WHERE g.is_active = 1 AND v.is_active = 1
+          AND g.game_type IN (0, 1) AND NOT ({$liveMatch})
+          AND (g.game_name LIKE :q OR v.vendor_name LIKE :q2 OR g.vendor_code LIKE :q3)
         UNION ALL
-        SELECT CONCAT('drakon:', game_id) AS game_id, game_name,
-               COALESCE(NULLIF(provider_code, ''), provider_name, 'drakon') AS provider_code,
-               COALESCE(NULLIF(provider_name, ''), provider_code, 'Drakon') AS provider_name,
-               CASE WHEN " . DrakonService::liveGameSqlMatch() . "
-                    THEN 'live_casino' ELSE 'slot' END AS game_category,
-               COALESCE(NULLIF(image_url, ''), NULLIF(banner, ''), '') AS image_url,
-               'drakon' AS source
-        FROM drakon_games
-        WHERE is_active = 1 AND (game_name LIKE :q3 OR provider_name LIKE :q4)
+        SELECT CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
+               g.game_name,
+               CAST(g.product_code AS CHAR) AS provider_code,
+               COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name,
+               'live_casino' AS game_category,
+               COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+               'gsc' AS source
+        FROM gsc_games g
+        WHERE g.is_active = 1
+          AND UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
+          AND (g.game_name LIKE :q4 OR g.provider LIKE :q5 OR g.game_code LIKE :q6)
         ORDER BY game_name ASC
         LIMIT :lim OFFSET :off
     ");
@@ -798,6 +698,8 @@ if ($method === 'GET' && ($route === 'games/search' || $route === 'games/search.
     $stmtB->bindValue(':q2', $like);
     $stmtB->bindValue(':q3', $like);
     $stmtB->bindValue(':q4', $like);
+    $stmtB->bindValue(':q5', $like);
+    $stmtB->bindValue(':q6', $like);
     $stmtB->bindValue(':lim', $limit, PDO::PARAM_INT);
     $stmtB->bindValue(':off', $offset, PDO::PARAM_INT);
     $stmtB->execute();
@@ -851,7 +753,7 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
     if ($tab === 'recent') {
         $bgamingPeriodSql = '';
         $aggregatorPeriodSql = '';
-    $drakonPeriodSql = '';
+        $gscPeriodSql = '';
     } else {
         $bgamingPeriodSql = match ($period) {
             'week' => ' AND t.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)',
@@ -860,7 +762,7 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
             default => ' AND t.created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)',
         };
         $aggregatorPeriodSql = $bgamingPeriodSql;
-        $drakonPeriodSql = $bgamingPeriodSql;
+        $gscPeriodSql = $bgamingPeriodSql;
     }
 
     $winnerSql = "SELECT *
@@ -906,23 +808,23 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
                       SELECT
                           u.username,
                           t.user_id,
-                          CONCAT('drakon:', t.game_id) AS game_id,
-                          COALESCE(g.game_name, t.game_name, t.game_id) AS game_name,
-                          COALESCE(NULLIF(g.provider_name, ''), NULLIF(t.provider_name, ''), 'Drakon') AS provider_name,
-                          COALESCE(NULLIF(g.image_url, ''), NULLIF(g.banner, ''), NULLIF(t.image_url, ''), '') AS image_url,
-                          COALESCE(NULLIF(g.image_url, ''), NULLIF(g.banner, ''), NULLIF(t.image_url, ''), '') AS banner,
-                          ABS(COALESCE(NULLIF(t.win_amount, 0), t.amount)) AS win_amount,
+                          CONCAT('gsc:', t.product_code, ':', COALESCE(t.game_code, '')) AS game_id,
+                          COALESCE(g.game_name, t.game_code, CAST(t.product_code AS CHAR)) AS game_name,
+                          COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(t.product_code AS CHAR)) AS provider_name,
+                          COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
+                          COALESCE(NULLIF(g.image_url, ''), '') AS banner,
+                          ABS(COALESCE(NULLIF(t.prize_amount, 0), t.amount)) AS win_amount,
                           t.created_at AS created_at,
                           t.id AS sort_id,
-                          'drakon' AS source,
+                          'gsc' AS source,
                           g.raw_payload AS raw_payload
-                      FROM drakon_transactions t
+                      FROM gsc_transactions t
                       LEFT JOIN users u ON u.id = t.user_id
-                      LEFT JOIN drakon_games g ON g.game_id = t.game_id
-                      WHERE t.txn_type = 'win'
-                        AND t.status = 'ok'
-                        AND (COALESCE(t.win_amount, 0) > 0 OR COALESCE(t.amount, 0) > 0)
-                        {$drakonPeriodSql}
+                      LEFT JOIN gsc_games g
+                          ON g.product_code = t.product_code AND g.game_code = t.game_code
+                      WHERE UPPER(t.action) IN ('SETTLED', 'WIN', 'BONUS', 'PRIZE')
+                        AND (COALESCE(t.prize_amount, 0) > 0 OR COALESCE(t.amount, 0) > 0)
+                        {$gscPeriodSql}
                   ) winners_union";
 
     $maskUsername = static function (mixed $value): string {
@@ -1241,17 +1143,30 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         $gameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
 
         // Some catalogue links pass the bare provider game id without a
-        // "bgaming:" / "aggregator:" prefix. Resolve the owning provider from the
-        // database so the launch still routes correctly.
+        // "gsc:" / "bgaming:" / "aggregator:" prefix. Resolve the owning provider
+        // from the database so the launch still routes correctly.
         admin_require_project_file('services/CasinoAggregatorService.php');
-        admin_require_project_file('services/DrakonService.php');
+        admin_require_project_file('services/GscPlusService.php');
         if (
             $gameId !== ''
+            && !GscPlusService::ownsGameId($gameId)
             && !BgamingService::ownsGameId($gameId)
             && !CasinoAggregatorService::ownsGameId($gameId)
-            && !DrakonService::ownsGameId($gameId)
         ) {
             $resolvePdo = AdminDatabase::pdo();
+            try {
+                $parts = explode(':', $gameId, 2);
+                if (count($parts) === 2 && ctype_digit($parts[0])) {
+                    $gscStmt = $resolvePdo->prepare(
+                        'SELECT 1 FROM gsc_games WHERE product_code = :p AND game_code = :g LIMIT 1'
+                    );
+                    $gscStmt->execute([':p' => (int) $parts[0], ':g' => $parts[1]]);
+                    if ($gscStmt->fetchColumn()) {
+                        $gameId = GscPlusService::buildGameId((int) $parts[0], $parts[1]);
+                    }
+                }
+            } catch (Throwable) {
+            }
             try {
                 $bStmt = $resolvePdo->prepare('SELECT 1 FROM bgaming_games WHERE identifier = :g LIMIT 1');
                 $bStmt->execute([':g' => $gameId]);
@@ -1259,21 +1174,6 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                     $gameId = 'bgaming:' . $gameId;
                 }
             } catch (Throwable) {
-            }
-            if (!BgamingService::ownsGameId($gameId) && !CasinoAggregatorService::ownsGameId($gameId)) {
-                try {
-                    $drakonStmt = $resolvePdo->prepare(
-                        'SELECT game_id FROM drakon_games
-                         WHERE game_id = :game OR game_code = :game
-                         ORDER BY is_active DESC, id DESC LIMIT 1'
-                    );
-                    $drakonStmt->execute([':game' => trim($gameId)]);
-                    $drakonGameId = trim((string) ($drakonStmt->fetchColumn() ?: ''));
-                    if ($drakonGameId !== '') {
-                        $gameId = DrakonService::GAME_ID_PREFIX . $drakonGameId;
-                    }
-                } catch (Throwable) {
-                }
             }
             if (!CasinoAggregatorService::ownsGameId($gameId)) {
                 try {
@@ -1288,10 +1188,7 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                         }
                     }
 
-                    // Bazı akışlar (özellikle favoriler/eski linkler) game_id'yi
-                    // "aggregator:vendor:game" yerine sadece çıplak game_code
-                    // olarak gönderebiliyor. Prefix yoksa doğrudan katalogdan
-                    // vendor+game eşleşmesini bulup normalize et.
+                    // Favorites/legacy links may send bare game_code without prefix.
                     if (!CasinoAggregatorService::ownsGameId($gameId)) {
                         $bareCode = trim((string) $gameId);
                         if ($bareCode !== '' && strpos($bareCode, ':') === false) {
@@ -1319,9 +1216,9 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
             $input['game_id'] = $gameId;
         }
 
-        if (DrakonService::ownsGameId($gameId)) {
-            $result = DrakonService::launch(AdminDatabase::pdo(), $user, $input);
-            $result = $normalizeLaunchResult($result, $requestedOpenMode);
+        if (GscPlusService::ownsGameId($gameId)) {
+            $result = GscPlusService::launch(AdminDatabase::pdo(), $user, $input);
+            $result = $normalizeLaunchResult($result, $requestedOpenMode !== '' ? $requestedOpenMode : 'redirect');
             $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
             if ($httpCode >= 500 && $httpCode !== 503) {
                 $httpCode = 422;
@@ -1358,10 +1255,10 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
         $providerLabel = 'Oyun';
         $launchGameId = trim((string) ($input['game_id'] ?? $input['gameId'] ?? $input['gameid'] ?? ''));
         if ($launchGameId !== '') {
-            if (CasinoAggregatorService::ownsGameId($launchGameId)) {
+            if (class_exists('GscPlusService', false) && GscPlusService::ownsGameId($launchGameId)) {
+                $providerLabel = 'GSC+';
+            } elseif (CasinoAggregatorService::ownsGameId($launchGameId)) {
                 $providerLabel = 'Casino Aggregator';
-            } elseif (DrakonService::ownsGameId($launchGameId)) {
-                $providerLabel = 'Drakon';
             } elseif (BgamingService::ownsGameId($launchGameId)) {
                 $providerLabel = 'BGaming';
             }
