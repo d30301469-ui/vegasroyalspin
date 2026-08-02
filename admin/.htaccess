@@ -45,13 +45,17 @@
     RewriteRule ^api/v2/bgaming/?(.*)$ api/v2/bgaming_callback.php?endpoint=$1 [L,QSA]
     RewriteRule ^api/v2/sportsbook_callback\.php$ - [L]
     RewriteRule ^api/v2/sportsbook-wallet/?$ api/v2/sportsbook_callback.php [L,QSA]
+    # Spaced wallet base (…/gsc-plus-wallet%20%20%20/…) → otherwise Apache 403.
+    RewriteCond %{THE_REQUEST} (?i)^[A-Z]+\s/+api/v2/(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)(?:\%20)+/([^\s\?]+)
+    RewriteRule ^ api/v2/gsc_plus_callback.php?endpoint=%1 [L,QSA,NE]
+    RewriteCond %{THE_REQUEST} (?i)^[A-Z]+\s/+api/v2/(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)(?:\%20)+(?:\s|\?)
+    RewriteRule ^ api/v2/gsc_plus_callback.php [L,QSA]
+    RewriteRule ^api/v2/gsc_plus_callback\.php$ - [L]
+    RewriteRule ^api/v2/(?:gsc[-_]plus[-_]wallet|gsc_plus_wallet)\s+/(.*)$ api/v2/gsc_plus_callback.php?endpoint=$1 [L,QSA,NC]
+    RewriteRule ^api/v2/(?:gsc-plus-wallet|gsc_plus_wallet)/?(.*)$ api/v2/gsc_plus_callback.php?endpoint=$1 [L,QSA]
+    RewriteRule ^api/v2/(?:gamingsoft-wallet|gamingsoft_wallet)/?(.*)$ api/v2/gsc_plus_callback.php?endpoint=$1 [L,QSA]
     RewriteRule ^api/v2/megapayz-callback/?$ index.php [L,QSA]
     RewriteRule ^[Mm]ega[Pp]ayz/deposit/?$ index.php [L,QSA]
-    RewriteRule ^api/v2/drakon_callback\.php$ - [L]
-    # Drakon appends "/drakon_api" to the configured agent endpoint, so trailing
-    # segments must resolve to the same callback.
-    RewriteRule ^api/v2/drakon_callback(?:/.*)?$ api/v2/drakon_callback.php [L,QSA]
-    RewriteRule ^drakon_api(?:/.*)?$ api/v2/drakon_callback.php [L,QSA]
 
     # ─── API v2 front controller ──────────────────────────────────────
     RewriteRule ^api/v2/index\.php$ - [L]
