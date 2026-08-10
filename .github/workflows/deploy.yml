@@ -60,8 +60,6 @@ jobs:
 
             php tools/update_menu_bgaming_v2.php || true
             php tools/update_tabbar_v1.php || true
-            php deploy/aapanel/remove-legacy-provider-integration.php || true
-            php deploy/aapanel/remove-gamingsoft-integration.php
             php -r "if(function_exists('opcache_reset')) opcache_reset(); echo 'opcache cleared\n';"
 
       # Cloudflare caches HTML and query-versioned assets as separate variants.
