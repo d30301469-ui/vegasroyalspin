@@ -470,11 +470,168 @@ final class ApiHomepageSections
                 // Drop stale GSC+/numeric IDs so tiles never launch outside aggregator.
                 $items[$index]['game_id'] = '';
             }
+
+            $image = trim((string) ($item['image_url'] ?? ''));
+            $playId = self::normalizeGameIdValue($items[$index]['game_id'] ?? '');
+            if ($image === '' || self::isFragileHomepageImageUrl($image)) {
+                $catalogImage = $playId !== '' ? self::lookupCatalogImageUrl($pdo, $playId) : '';
+                if ($catalogImage === '' && $title !== '') {
+                    $catalogImage = self::lookupCatalogImageUrlByTitle($pdo, $title, $useAggregatorLive);
+                }
+                if ($catalogImage !== '') {
+                    $items[$index]['image_url'] = $catalogImage;
+                } elseif (self::isFragileHomepageImageUrl($image)) {
+                    $local = self::localGamesImgFallbackFromFragileUrl($image);
+                    if ($local !== '') {
+                        $items[$index]['image_url'] = $local;
+                    }
+                }
+            }
         }
 
         $payload['items'] = $items;
 
         return $payload;
+    }
+
+    /**
+     * CMS sometimes stores ImageKit / third-party thumbs that were never uploaded (404).
+     */
+    private static function isFragileHomepageImageUrl(string $url): bool
+    {
+        $lower = strtolower($url);
+        if ($lower === '') {
+            return false;
+        }
+        if (str_contains($lower, 'home-sections/games-img')) {
+            return true;
+        }
+        if (str_contains($lower, 'gator.drakon.casino')) {
+            return true;
+        }
+        if (str_contains($lower, 'drakon.casino/storage/')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static function localGamesImgFallbackFromFragileUrl(string $url): string
+    {
+        $path = (string) (parse_url($url, PHP_URL_PATH) ?: $url);
+        $base = strtolower(pathinfo($path, PATHINFO_FILENAME));
+        if ($base === '') {
+            return '';
+        }
+
+        $map = [
+            'gonzos-quest-megaways' => 'assets/games-img/game-img5.svg',
+            'gonzos-quest' => 'assets/games-img/game-img5.svg',
+            'wolf-gold' => 'assets/games-img/game-img6.jpeg',
+            'gates-of-olympus-1000' => 'assets/games-img/sweet-bonanza-1000.svg',
+            'sweet-bonanza-1000' => 'assets/games-img/sweet-bonanza-1000.svg',
+            '40-super-hot' => 'assets/games-img/40-super-hot.gif',
+        ];
+        if (isset($map[$base])) {
+            return $map[$base];
+        }
+
+        return '';
+    }
+
+    private static function lookupCatalogImageUrl(PDO $pdo, string $gameId): string
+    {
+        $idLower = strtolower($gameId);
+
+        if (str_starts_with($idLower, 'aggregator:')) {
+            $rest = substr($gameId, strlen('aggregator:'));
+            $parts = explode(':', $rest, 2);
+            if (count($parts) === 2) {
+                try {
+                    $stmt = $pdo->prepare(
+                        'SELECT image_url FROM casino_aggregator_games
+                         WHERE vendor_code = :v AND game_code = :g AND is_active = 1
+                         LIMIT 1'
+                    );
+                    $stmt->execute([':v' => $parts[0], ':g' => $parts[1]]);
+                    $url = trim((string) $stmt->fetchColumn());
+                    if ($url !== '' && !self::isFragileHomepageImageUrl($url)) {
+                        return $url;
+                    }
+                } catch (Throwable) {
+                }
+            }
+        }
+
+        if (str_starts_with($idLower, 'bgaming:')) {
+            $ident = substr($gameId, strlen('bgaming:'));
+            try {
+                $stmt = $pdo->prepare(
+                    'SELECT thumbnail_url FROM bgaming_games WHERE identifier = :id LIMIT 1'
+                );
+                $stmt->execute([':id' => $ident]);
+                $url = trim((string) $stmt->fetchColumn());
+                if ($url !== '' && !self::isFragileHomepageImageUrl($url)) {
+                    return $url;
+                }
+            } catch (Throwable) {
+            }
+        }
+
+        if (str_starts_with($idLower, 'gsc:')) {
+            $rest = substr($gameId, strlen('gsc:'));
+            $parts = explode(':', $rest, 2);
+            if (count($parts) === 2) {
+                try {
+                    $stmt = $pdo->prepare(
+                        'SELECT image_url FROM gsc_games
+                         WHERE product_code = :p AND game_code = :g AND is_active = 1
+                         LIMIT 1'
+                    );
+                    $stmt->execute([':p' => $parts[0], ':g' => $parts[1]]);
+                    $url = trim((string) $stmt->fetchColumn());
+                    if ($url !== '' && !self::isFragileHomepageImageUrl($url)) {
+                        return $url;
+                    }
+                } catch (Throwable) {
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private static function lookupCatalogImageUrlByTitle(PDO $pdo, string $title, bool $liveOnly): string
+    {
+        $title = trim($title);
+        if ($title === '') {
+            return '';
+        }
+        try {
+            if ($liveOnly) {
+                $liveFilter = self::aggregatorLiveSqlFilter('vendor_code', 'game_type');
+                $stmt = $pdo->prepare(
+                    "SELECT image_url FROM casino_aggregator_games
+                     WHERE is_active = 1 AND {$liveFilter}
+                       AND LOWER(game_name) LIKE LOWER(:title)
+                     ORDER BY CHAR_LENGTH(game_name) ASC, id ASC LIMIT 1"
+                );
+            } else {
+                $stmt = $pdo->prepare(
+                    'SELECT image_url FROM casino_aggregator_games
+                     WHERE is_active = 1 AND LOWER(game_name) LIKE LOWER(:title)
+                     ORDER BY CHAR_LENGTH(game_name) ASC, id ASC LIMIT 1'
+                );
+            }
+            $stmt->execute([':title' => $title . '%']);
+            $url = trim((string) $stmt->fetchColumn());
+            if ($url !== '' && !self::isFragileHomepageImageUrl($url)) {
+                return $url;
+            }
+        } catch (Throwable) {
+        }
+
+        return '';
     }
 
     public static function isLiveCasinoSectionKey(string $sectionKey): bool

@@ -44,7 +44,7 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));
     $providers = [];
     try {
-        if ($gameType === 1 || in_array($source, ['gsc', 'livecasino', 'live', 'live_casino'], true)) {
+        if ($gameType === 1 && $source === 'gsc') {
             admin_require_project_file('services/LiveCasinoQuery.php');
             $providerExtra = [
                 'force_local' => true,
@@ -62,13 +62,22 @@ if ($method === 'GET' && in_array($route, ['games_provider.php', 'casino/provide
                     'provider_name' => $name,
                 ];
             }
+        } elseif ($gameType === 1 || in_array($source, ['livecasino', 'live', 'live_casino'], true)) {
+            // CANLI CASINO: all Casino Aggregator live vendors.
+            admin_require_project_file('services/SlotGamesQuery.php');
+            foreach (SlotGamesQuery::providersForGameType(1) as $name) {
+                $name = trim((string) $name);
+                if ($name === '') {
+                    continue;
+                }
+                $providers[] = [
+                    'provider_code' => $name,
+                    'provider_name' => $name,
+                ];
+            }
         } elseif ($source === 'bgaming') {
-            $sql = "SELECT DISTINCT provider AS provider_code, provider AS provider_name
-                FROM bgaming_games
-                WHERE is_active = 1 AND provider <> ''
-                ORDER BY provider_name ASC";
-            $pStmt = $pdo->query($sql);
-            $providers = $pStmt ? $pStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            admin_require_project_file('services/BgamingGamesQuery.php');
+            $providers = BgamingGamesQuery::providers();
         } else {
             // Slot lobby default: Casino Aggregator vendors only.
             $aggStmt = $pdo->prepare(
@@ -140,11 +149,10 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $source = strtolower(trim((string) ($_GET['source'] ?? '')));
     $sort = strtolower(trim((string) ($_GET['sort'] ?? '')));
 
-    // Live casino catalogue is GSC+ only (LiveCasinoQuery).
-    if ($gameType === 1 || in_array($source, ['gsc', 'livecasino', 'live', 'live_casino'], true)) {
+    // Explicit GSC+ live catalog (legacy override via source=gsc).
+    if ($gameType === 1 && $source === 'gsc') {
         admin_require_project_file('services/LiveCasinoQuery.php');
         $liveExtra = [
-            // Always hit local DB on the admin API host — never recurse via BackendApiClient.
             'force_local' => true,
             'source' => 'gsc',
             'gsc_only' => true,
@@ -193,6 +201,94 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
         ]);
     }
 
+    // CANLI CASINO default: all Casino Aggregator live games → aggregator:{vendor}:{game}.
+    if ($gameType === 1 || in_array($source, ['livecasino', 'live', 'live_casino'], true)) {
+        admin_require_project_file('services/SlotGamesQuery.php');
+        $liveAggExtra = ['source' => 'aggregator'];
+        if ($providerList !== []) {
+            $providerList = CasinoAggregatorService::canonicalizeProviders(
+                $providerList,
+                SlotGamesQuery::providersForGameType(1)
+            );
+        }
+        $liveResult = SlotGamesQuery::gamesPage(
+            1,
+            $search,
+            $providerList,
+            $limit,
+            $page,
+            $onlyFeatured ? 'popular' : $sort,
+            $liveAggExtra
+        );
+        $games = is_array($liveResult['games'] ?? null) ? $liveResult['games'] : [];
+        $pagination = is_array($liveResult['pagination'] ?? null) ? $liveResult['pagination'] : [];
+        $total = (int) ($liveResult['total'] ?? ($pagination['total'] ?? count($games)));
+        $totalPages = (int) ($pagination['totalPages'] ?? ($total > 0 ? (int) ceil($total / $limit) : 0));
+        $memberEnvelope(200, [
+            'success' => true,
+            'code'    => 200,
+            'message' => 'Oyun listesi',
+            'data'    => [
+                'games'       => $games,
+                'items'       => $games,
+                'total'       => $total,
+                'page'        => $page,
+                'limit'       => $limit,
+                'perPage'     => $limit,
+                'total_pages' => $totalPages,
+                'pagination'  => [
+                    'page'       => $page,
+                    'perPage'    => $limit,
+                    'limit'      => $limit,
+                    'offset'     => $offset,
+                    'total'      => $total,
+                    'totalPages' => $totalPages,
+                    'hasNext'    => !empty($liveResult['hasNext']) || !empty($pagination['hasNext']),
+                    'hasPrev'    => $page > 1,
+                ],
+            ],
+        ]);
+    }
+
+    // Dedicated /bgaming page — direct SoftSwiss catalogue (BgamingGamesQuery).
+    if ($gameType === 0 && $source === 'bgaming') {
+        admin_require_project_file('services/BgamingGamesQuery.php');
+        $catalog = BgamingGamesQuery::apiCatalog(
+            $search,
+            $limit,
+            $page,
+            $sort === 'all' ? '' : $sort
+        );
+        $games = is_array($catalog['games'] ?? null) ? $catalog['games'] : [];
+        $pagination = is_array($catalog['pagination'] ?? null) ? $catalog['pagination'] : [];
+        $total = (int) ($pagination['total'] ?? count($games));
+        $totalPages = (int) ($pagination['totalPages'] ?? ($total > 0 ? (int) ceil($total / $limit) : 0));
+        $memberEnvelope(200, [
+            'success' => true,
+            'code'    => 200,
+            'message' => 'Oyun listesi',
+            'data'    => [
+                'games'       => $games,
+                'items'       => $games,
+                'total'       => $total,
+                'page'        => $page,
+                'limit'       => $limit,
+                'perPage'     => $limit,
+                'total_pages' => $totalPages,
+                'pagination'  => [
+                    'page'       => $page,
+                    'perPage'    => $limit,
+                    'limit'      => $limit,
+                    'offset'     => $offset,
+                    'total'      => $total,
+                    'totalPages' => $totalPages,
+                    'hasNext'    => !empty($pagination['hasNext']),
+                    'hasPrev'    => $page > 1,
+                ],
+            ],
+        ]);
+    }
+
     // IMPORTANT: Serve from local DB only. Never call SlotGamesQuery here —
     // that class HTTP-calls this same games.php endpoint and recurses until 503.
     //
@@ -226,39 +322,8 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     };
 
     $branches = [];
-    // Dedicated /bgaming page only.
-    if ($gameType === 0 && $source === 'bgaming') {
-        $titleCol = $tableHasColumn($pdo, 'bgaming_games', 'title')
-            ? 'title'
-            : ($tableHasColumn($pdo, 'bgaming_games', 'name') ? 'name' : '');
-        $providerCol = $tableHasColumn($pdo, 'bgaming_games', 'provider')
-            ? 'provider'
-            : ($tableHasColumn($pdo, 'bgaming_games', 'producer') ? 'producer' : '');
-        $imageCol = $tableHasColumn($pdo, 'bgaming_games', 'thumbnail_url')
-            ? 'thumbnail_url'
-            : ($tableHasColumn($pdo, 'bgaming_games', 'image_url') ? 'image_url' : '');
-        $featuredExpr = $tableHasColumn($pdo, 'bgaming_games', 'is_featured') ? 'g.is_featured' : '0';
-        $nameExpr = $titleCol !== '' ? "COALESCE(NULLIF(g.{$titleCol}, ''), g.identifier)" : 'g.identifier';
-        $providerExpr = $providerCol !== '' ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'BGaming')" : "'BGaming'";
-        $providerCodeExpr = $providerCol !== '' ? "COALESCE(NULLIF(g.{$providerCol}, ''), 'bgaming')" : "'bgaming'";
-        $imageExpr = $imageCol !== '' ? "COALESCE(NULLIF(g.{$imageCol}, ''), '')" : "CAST('' AS CHAR)";
-
-        $branches[] = "SELECT
-                CONCAT('bgaming:', g.identifier) AS game_id,
-                {$nameExpr} AS name,
-                {$providerExpr} AS provider,
-                {$providerCodeExpr} AS provider_code,
-                {$imageExpr} AS image_url,
-                CAST('' AS CHAR) AS image_fallbacks,
-                {$featuredExpr} AS is_featured,
-                'bgaming' AS source,
-                CAST(g.id AS CHAR) AS row_id,
-                CAST('' AS CHAR) AS raw_payload
-            FROM bgaming_games g
-            WHERE g.is_active = 1";
-    }
-
     // Slot lobby default = Casino Aggregator (source empty or aggregator).
+    // BGaming is served above via BgamingGamesQuery.
     if ($gameType === 0 && ($source === '' || $source === 'aggregator')) {
         $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
         $typeClause = "((g.game_type IN (0, 1)) AND NOT {$liveMatch})";
@@ -673,27 +738,28 @@ if ($method === 'GET' && ($route === 'games/search' || $route === 'games/search.
     }
     $like = '%' . $q . '%';
     $liveMatch = CasinoAggregatorService::liveVendorSqlMatch('g.vendor_code');
+    // CONVERT+COLLATE on every string branch — utf8mb4_bin vs unicode_ci mixes break UNION.
     $stmtB = $pdo->prepare("
-        SELECT CONCAT('aggregator:', g.vendor_code, ':', g.game_code) AS game_id,
-               g.game_name,
-               g.vendor_code AS provider_code,
-               COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) AS provider_name,
-               'slot' AS game_category,
-               COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-               'aggregator' AS source
+        SELECT CONVERT(CONCAT('aggregator:', g.vendor_code, ':', g.game_code) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_id,
+               CONVERT(g.game_name USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_name,
+               CONVERT(g.vendor_code USING utf8mb4) COLLATE utf8mb4_unicode_ci AS provider_code,
+               CONVERT(COALESCE(NULLIF(v.vendor_name, ''), g.vendor_code) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS provider_name,
+               CONVERT('slot' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_category,
+               CONVERT(COALESCE(NULLIF(g.image_url, ''), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS image_url,
+               CONVERT('aggregator' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source
         FROM casino_aggregator_games g
         INNER JOIN casino_aggregator_vendors v ON v.vendor_code = g.vendor_code
         WHERE g.is_active = 1 AND v.is_active = 1
           AND g.game_type IN (0, 1) AND NOT ({$liveMatch})
           AND (g.game_name LIKE :q OR v.vendor_name LIKE :q2 OR g.vendor_code LIKE :q3)
         UNION ALL
-        SELECT CONCAT('gsc:', g.product_code, ':', g.game_code) AS game_id,
-               g.game_name,
-               CAST(g.product_code AS CHAR) AS provider_code,
-               COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) AS provider_name,
-               'live_casino' AS game_category,
-               COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-               'gsc' AS source
+        SELECT CONVERT(CONCAT('gsc:', g.product_code, ':', g.game_code) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_id,
+               CONVERT(g.game_name USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_name,
+               CONVERT(CAST(g.product_code AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS provider_code,
+               CONVERT(COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(g.product_code AS CHAR)) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS provider_name,
+               CONVERT('live_casino' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_category,
+               CONVERT(COALESCE(NULLIF(g.image_url, ''), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS image_url,
+               CONVERT('gsc' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source
         FROM gsc_games g
         WHERE g.is_active = 1
           AND UPPER(g.game_type) IN ('LIVE_CASINO','LIVE_CASINO_PREMIUM')
@@ -775,36 +841,36 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
     $winnerSql = "SELECT *
                   FROM (
                       SELECT
-                          u.username,
+                          CONVERT(COALESCE(u.username, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS username,
                           t.user_id,
-                          t.game_identifier AS game_id,
-                          COALESCE(g.title, t.game_identifier) AS game_name,
-                          COALESCE(NULLIF(g.provider, ''), 'BGaming') AS provider_name,
-                          COALESCE(g.thumbnail_url, '') AS image_url,
-                          COALESCE(g.thumbnail_url, '') AS banner,
+                          CONVERT(CONCAT('bgaming:', COALESCE(t.game_identifier, '')) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_id,
+                          CONVERT(COALESCE(g.title, t.game_identifier, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_name,
+                          CONVERT(COALESCE(NULLIF(g.provider, ''), 'BGaming') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS provider_name,
+                          CONVERT(COALESCE(g.thumbnail_url, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS image_url,
+                          CONVERT(COALESCE(g.thumbnail_url, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS banner,
                           t.amount AS win_amount,
                           t.created_at AS created_at,
                           t.id AS sort_id,
-                          'bgaming' AS source,
-                          NULL AS raw_payload
+                          CONVERT('bgaming' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source,
+                          CONVERT('' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS raw_payload
                       FROM bgaming_transactions t
                       LEFT JOIN users u ON u.id = t.user_id
                       LEFT JOIN bgaming_games g ON g.identifier = t.game_identifier
                       WHERE t.txn_type IN ('win', 'promo_win', 'freespins_win') AND t.amount > 0{$bgamingPeriodSql}
                       UNION ALL
                       SELECT
-                          u.username,
+                          CONVERT(COALESCE(u.username, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS username,
                           t.user_id,
-                          CONCAT('aggregator:', t.vendor_code, ':', t.game_code) AS game_id,
-                          COALESCE(g.game_name, t.game_code) AS game_name,
-                          COALESCE(NULLIF(v.vendor_name, ''), t.vendor_code) AS provider_name,
-                          COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                          COALESCE(NULLIF(g.image_url, ''), '') AS banner,
+                          CONVERT(CONCAT('aggregator:', t.vendor_code, ':', t.game_code) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_id,
+                          CONVERT(COALESCE(g.game_name, t.game_code, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_name,
+                          CONVERT(COALESCE(NULLIF(v.vendor_name, ''), t.vendor_code, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS provider_name,
+                          CONVERT(COALESCE(NULLIF(g.image_url, ''), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS image_url,
+                          CONVERT(COALESCE(NULLIF(g.image_url, ''), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS banner,
                           ABS(t.amount) AS win_amount,
                           t.created_at AS created_at,
                           t.id AS sort_id,
-                          'aggregator' AS source,
-                          g.raw_payload AS raw_payload
+                          CONVERT('aggregator' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source,
+                          CONVERT(COALESCE(CAST(g.raw_payload AS CHAR), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS raw_payload
                       FROM casino_aggregator_transactions t
                       LEFT JOIN users u ON u.id = t.user_id
                       LEFT JOIN casino_aggregator_games g
@@ -813,18 +879,18 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
                       WHERE t.txn_type = 'win' AND t.amount > 0{$aggregatorPeriodSql}
                       UNION ALL
                       SELECT
-                          u.username,
+                          CONVERT(COALESCE(u.username, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS username,
                           t.user_id,
-                          CONCAT('gsc:', t.product_code, ':', COALESCE(t.game_code, '')) AS game_id,
-                          COALESCE(g.game_name, t.game_code, CAST(t.product_code AS CHAR)) AS game_name,
-                          COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(t.product_code AS CHAR)) AS provider_name,
-                          COALESCE(NULLIF(g.image_url, ''), '') AS image_url,
-                          COALESCE(NULLIF(g.image_url, ''), '') AS banner,
+                          CONVERT(CONCAT('gsc:', t.product_code, ':', COALESCE(t.game_code, '')) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_id,
+                          CONVERT(COALESCE(g.game_name, t.game_code, CAST(t.product_code AS CHAR), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS game_name,
+                          CONVERT(COALESCE(NULLIF(g.provider, ''), NULLIF(g.product_name, ''), CAST(t.product_code AS CHAR), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS provider_name,
+                          CONVERT(COALESCE(NULLIF(g.image_url, ''), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS image_url,
+                          CONVERT(COALESCE(NULLIF(g.image_url, ''), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS banner,
                           ABS(COALESCE(NULLIF(t.prize_amount, 0), t.amount)) AS win_amount,
                           t.created_at AS created_at,
                           t.id AS sort_id,
-                          'gsc' AS source,
-                          g.raw_payload AS raw_payload
+                          CONVERT('gsc' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source,
+                          CONVERT(COALESCE(CAST(g.raw_payload AS CHAR), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS raw_payload
                       FROM gsc_transactions t
                       LEFT JOIN users u ON u.id = t.user_id
                       LEFT JOIN gsc_games g
@@ -841,6 +907,129 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
             : 'Uye***';
     };
 
+    $normalizeWinnerRowSafe = static function (array $row): array {
+        try {
+            $row = CasinoAggregatorService::normalizeWinnerDisplayRow($row);
+        } catch (Throwable) {
+            // Keep SQL row usable even if media hydration fails.
+        }
+        $source = strtolower(trim((string) ($row['source'] ?? '')));
+        $gameId = trim((string) ($row['game_id'] ?? ''));
+        if ($source === 'bgaming' && $gameId !== '' && !str_starts_with(strtolower($gameId), 'bgaming:')) {
+            $gameId = 'bgaming:' . $gameId;
+            $row['game_id'] = $gameId;
+        }
+        $cover = trim((string) ($row['image_url'] ?? $row['cover'] ?? ''));
+        $fallbacks = [];
+        if (is_array($row['cover_fallbacks'] ?? null)) {
+            $fallbacks = array_values(array_filter(array_map('strval', $row['cover_fallbacks'])));
+        } elseif (is_array($row['image_fallbacks'] ?? null)) {
+            $fallbacks = array_values(array_filter(array_map('strval', $row['image_fallbacks'])));
+        }
+        if ($cover !== '' && class_exists('CasinoAggregatorService', false)) {
+            $png = CasinoAggregatorService::rewriteMediaUrlToPng($cover);
+            if ($png !== '' && $png !== $cover) {
+                array_unshift($fallbacks, $png);
+                $cover = $png;
+            }
+            if ($fallbacks === []) {
+                $fallbacks = CasinoAggregatorService::expandFormatFallbacks([$cover]);
+            } else {
+                $fallbacks = CasinoAggregatorService::expandFormatFallbacks(array_merge([$cover], $fallbacks));
+            }
+        }
+        if ($cover === '' && $fallbacks !== []) {
+            $cover = (string) $fallbacks[0];
+        }
+        $row['image_url'] = $cover;
+        $row['banner'] = $cover;
+        $row['cover'] = $cover;
+        $row['cover_fallbacks'] = $fallbacks;
+        $row['image_fallbacks'] = $fallbacks;
+        return $row;
+    };
+
+    $mapWinnerRecent = static function (array $row) use ($maskUsername, $normalizeWinnerRowSafe): array {
+        $row = $normalizeWinnerRowSafe($row);
+        $username = (string) ($row['username'] ?? 'Uye');
+        $masked = $maskUsername($username);
+        $cover = (string) ($row['cover'] ?? $row['image_url'] ?? '');
+        $fallbacks = is_array($row['cover_fallbacks'] ?? null) ? array_values($row['cover_fallbacks']) : [];
+        return [
+            'player' => $masked,
+            'user_mask' => $masked,
+            'gameName' => (string) ($row['game_name'] ?? ''),
+            'game_name' => (string) ($row['game_name'] ?? ''),
+            'providerName' => (string) ($row['provider_name'] ?? ''),
+            'provider_name' => (string) ($row['provider_name'] ?? ''),
+            'gameId' => (string) ($row['game_id'] ?? ''),
+            'game_id' => (string) ($row['game_id'] ?? ''),
+            'gameImageUrl' => $cover,
+            'game_image_url' => $cover,
+            'game_image' => $cover,
+            'image_url' => $cover,
+            'thumbnail_url' => $cover,
+            'banner' => $cover,
+            'cover' => $cover,
+            'cover_fallbacks' => $fallbacks,
+            'image_fallbacks' => $fallbacks,
+            'winAmount' => (float) ($row['win_amount'] ?? 0),
+            'win_amount' => (float) ($row['win_amount'] ?? 0),
+            'amount' => (float) ($row['win_amount'] ?? 0),
+            'createdAt' => (string) ($row['created_at'] ?? ''),
+            'created_at' => (string) ($row['created_at'] ?? ''),
+            'source' => (string) ($row['source'] ?? ''),
+        ];
+    };
+
+    $interleaveWinnerSources = static function (array $rows, int $limit): array {
+        if ($rows === [] || $limit <= 0) {
+            return [];
+        }
+        $buckets = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $source = strtolower(trim((string) ($row['source'] ?? 'other')));
+            if ($source === '') {
+                $source = 'other';
+            }
+            $buckets[$source][] = $row;
+        }
+        $order = ['aggregator', 'bgaming', 'gsc'];
+        foreach (array_keys($buckets) as $source) {
+            if (!in_array($source, $order, true)) {
+                $order[] = $source;
+            }
+        }
+        $out = [];
+        $cursor = [];
+        foreach ($order as $source) {
+            $cursor[$source] = 0;
+        }
+        while (count($out) < $limit) {
+            $added = false;
+            foreach ($order as $source) {
+                $i = $cursor[$source] ?? 0;
+                if (!isset($buckets[$source][$i])) {
+                    continue;
+                }
+                $out[] = $buckets[$source][$i];
+                $cursor[$source] = $i + 1;
+                $added = true;
+                if (count($out) >= $limit) {
+                    break;
+                }
+            }
+            if (!$added) {
+                break;
+            }
+        }
+
+        return $out;
+    };
+
     if ($tab === 'top') {
         $stmt = $pdo->prepare($winnerSql . ' ORDER BY created_at DESC, sort_id DESC LIMIT 2000');
         $stmt->execute();
@@ -849,7 +1038,7 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
             if (!is_array($row)) {
                 continue;
             }
-            $row = CasinoAggregatorService::normalizeWinnerDisplayRow($row);
+            $row = $normalizeWinnerRowSafe($row);
             $key = (string) ((int) ($row['user_id'] ?? 0) > 0 ? $row['user_id'] : ($row['username'] ?? 'guest'));
             if (!isset($grouped[$key])) {
                 $grouped[$key] = $row;
@@ -867,6 +1056,8 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
         $rows = array_map(static function (array $row) use ($maskUsername): array {
             $username = (string) ($row['username'] ?? 'Uye');
             $masked = $maskUsername($username);
+            $cover = (string) ($row['cover'] ?? $row['image_url'] ?? '');
+            $fallbacks = is_array($row['cover_fallbacks'] ?? null) ? array_values($row['cover_fallbacks']) : [];
             return [
                 'player' => $masked,
                 'user_mask' => $masked,
@@ -878,13 +1069,15 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
                 'game_name' => (string) ($row['last_game_name'] ?? $row['game_name'] ?? ''),
                 'providerName' => (string) ($row['last_provider_name'] ?? $row['provider_name'] ?? ''),
                 'provider_name' => (string) ($row['last_provider_name'] ?? $row['provider_name'] ?? ''),
-                'gameImageUrl' => (string) ($row['image_url'] ?? ''),
-                'game_image_url' => (string) ($row['image_url'] ?? ''),
-                'game_image' => (string) ($row['image_url'] ?? ''),
-                'image_url' => (string) ($row['image_url'] ?? ''),
-                'thumbnail_url' => (string) ($row['image_url'] ?? ''),
-                'banner' => (string) ($row['image_url'] ?? ''),
-                'cover' => (string) ($row['image_url'] ?? ''),
+                'gameImageUrl' => $cover,
+                'game_image_url' => $cover,
+                'game_image' => $cover,
+                'image_url' => $cover,
+                'thumbnail_url' => $cover,
+                'banner' => $cover,
+                'cover' => $cover,
+                'cover_fallbacks' => $fallbacks,
+                'image_fallbacks' => $fallbacks,
                 'source' => (string) ($row['source'] ?? ''),
             ];
         }, $groupedRows);
@@ -903,37 +1096,23 @@ if ($method === 'GET' && in_array($route, ['winners.php', 'winners'], true)) {
             ],
         ]);
     }
+    $poolLimit = max($limit * 8, 80);
+    $poolLimit = min(500, $poolLimit);
     $stmt = $pdo->prepare($winnerSql . ' ORDER BY created_at DESC, sort_id DESC LIMIT :limit');
-    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $poolLimit, PDO::PARAM_INT);
     $stmt->execute();
-    $rows = array_map(static function (array $row) use ($maskUsername): array {
-        $row = CasinoAggregatorService::normalizeWinnerDisplayRow($row);
-        $username = (string) ($row['username'] ?? 'Uye');
-        $masked = $maskUsername($username);
-        return [
-            'player' => $masked,
-            'user_mask' => $masked,
-            'gameName' => (string) ($row['game_name'] ?? ''),
-            'game_name' => (string) ($row['game_name'] ?? ''),
-            'providerName' => (string) ($row['provider_name'] ?? ''),
-            'provider_name' => (string) ($row['provider_name'] ?? ''),
-            'gameId' => (string) ($row['game_id'] ?? ''),
-            'game_id' => (string) ($row['game_id'] ?? ''),
-            'gameImageUrl' => (string) ($row['image_url'] ?? ''),
-            'game_image_url' => (string) ($row['image_url'] ?? ''),
-            'game_image' => (string) ($row['image_url'] ?? ''),
-            'image_url' => (string) ($row['image_url'] ?? ''),
-            'thumbnail_url' => (string) ($row['image_url'] ?? ''),
-            'banner' => (string) ($row['banner'] ?? ''),
-            'cover' => (string) ($row['image_url'] ?? ''),
-            'winAmount' => (float) ($row['win_amount'] ?? 0),
-            'win_amount' => (float) ($row['win_amount'] ?? 0),
-            'amount' => (float) ($row['win_amount'] ?? 0),
-            'createdAt' => (string) ($row['created_at'] ?? ''),
-            'created_at' => (string) ($row['created_at'] ?? ''),
-            'source' => (string) ($row['source'] ?? ''),
-        ];
-    }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+    $poolRows = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (is_array($row)) {
+            $poolRows[] = $row;
+        }
+    }
+    $selected = $interleaveWinnerSources($poolRows, $limit);
+    // Fallback: if interleave somehow empty, keep chronological slice.
+    if ($selected === [] && $poolRows !== []) {
+        $selected = array_slice($poolRows, 0, $limit);
+    }
+    $rows = array_map($mapWinnerRecent, $selected);
     $memberEnvelope(200, [
         'success' => true,
         'code' => 200,
@@ -1235,7 +1414,10 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
 
         if (CasinoAggregatorService::ownsGameId($gameId)) {
             $result = CasinoAggregatorService::launch(AdminDatabase::pdo(), $user, $input);
-            $result = $normalizeLaunchResult($result, $requestedOpenMode);
+            $result = $normalizeLaunchResult(
+                $result,
+                $requestedOpenMode !== '' ? $requestedOpenMode : 'iframe'
+            );
             $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
             if ($httpCode >= 500 && $httpCode !== 503) {
                 $httpCode = 422;
@@ -1252,7 +1434,11 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
             ]);
         }
         $result = BgamingService::launch(AdminDatabase::pdo(), $user, $input);
-        $result = $normalizeLaunchResult($result, $requestedOpenMode);
+        // Desktop play shell expects iframe; callers may still override via open_mode.
+        $result = $normalizeLaunchResult(
+            $result,
+            $requestedOpenMode !== '' ? $requestedOpenMode : 'iframe'
+        );
         $httpCode = !empty($result['success']) ? 200 : (int) ($result['code'] ?? 422);
         if ($httpCode >= 500 && $httpCode !== 503) {
             $httpCode = 422;
@@ -1286,9 +1472,9 @@ if ($method === 'GET' && in_array($route, ['profile/spor_bet_detail.php', 'profi
 
     if ($route === 'profile/spor_bet_detail.php') {
         $betId = (int) ($_GET['bet_id'] ?? 0);
-        member_profile_render_spor_bet_detail($pdo, $userId, $betId);
+        admin_member_profile_render_spor_bet_detail($pdo, $userId, $betId);
     }
 
     $historyId = trim((string) ($_GET['history_id'] ?? ''));
-    member_profile_render_game_history_detail($pdo, $userId, $historyId);
+    admin_member_profile_render_game_history_detail($pdo, $userId, $historyId);
 }
