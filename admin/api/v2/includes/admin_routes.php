@@ -59,17 +59,40 @@ $routes = [
     ['GET', 'dashboard/active-users', static function () use ($requirePermission, $success): void {
         $requirePermission('dashboard');
         $pdo = AdminDatabase::pdo();
-        $active = 0;
+        $onlineNow = 0;
+        $active24h = 0;
         try {
-            $active = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE COALESCE(last_login_at, updated_at, created_at) >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")->fetchColumn();
+            $onlineNow = (int) $pdo->query(
+                "SELECT COUNT(DISTINCT t.user_id)
+                 FROM member_jwt_tokens t
+                 INNER JOIN users u ON u.id = t.user_id
+                 WHERE t.revoked_at IS NULL
+                   AND t.expires_at >= NOW()
+                   AND COALESCE(t.last_seen_at, t.issued_at) >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+                   AND COALESCE(u.banned, 0) = 0"
+            )->fetchColumn();
+        } catch (Throwable) {
+            $onlineNow = 0;
+        }
+        try {
+            $active24h = (int) $pdo->query(
+                "SELECT COUNT(*) FROM users
+                 WHERE COALESCE(banned, 0) = 0
+                   AND COALESCE(last_login_at, updated_at, created_at) >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"
+            )->fetchColumn();
         } catch (Throwable) {
             try {
-                $active = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+                $active24h = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
             } catch (Throwable) {
-                $active = 0;
+                $active24h = 0;
             }
         }
-        $success(['active_users' => $active], ['resource' => 'dashboard/active-users']);
+        $success([
+            'online_users' => $onlineNow,
+            'active_users' => $onlineNow,
+            'active_users_24h' => $active24h,
+            'window_minutes' => 10,
+        ], ['resource' => 'dashboard/active-users']);
     }],
     ['GET', 'dashboard/risk-alerts', static function (array $params, array $payload) use ($requirePermission, $success, $getInput): void {
         $requirePermission('dashboard');

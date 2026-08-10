@@ -13,6 +13,8 @@ $casinoStats   = isset($casinoStats) && is_array($casinoStats) ? $casinoStats : 
 $bonusStats    = isset($bonusStats) && is_array($bonusStats) ? $bonusStats : [];
 $depositRows   = isset($depositRows) && is_array($depositRows) ? $depositRows : [];
 $withdrawRows  = isset($withdrawRows) && is_array($withdrawRows) ? $withdrawRows : [];
+$onlineUserRows = isset($onlineUserRows) && is_array($onlineUserRows) ? $onlineUserRows : [];
+$onlineUsers   = (int) ($onlineUsers ?? count($onlineUserRows));
 $opQueue       = isset($operationQueue) && is_array($operationQueue) ? $operationQueue : [];
 $contentSystem = isset($contentSystem) && is_array($contentSystem) ? $contentSystem : [];
 $recentLogs    = isset($recentLogs) && is_array($recentLogs) ? $recentLogs : [];
@@ -431,14 +433,15 @@ foreach ($topCountries as $cRow) {
             $key = (string) ($card['key'] ?? '');
             $icon = (string) ($card['icon'] ?? 'players');
             $count = (float) ($card['count'] ?? 0);
+            $countLabel = (string) ($card['count_label'] ?? 'Oyuncu');
         ?>
-        <div class="db-kpi" data-kpi-key="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>" data-kpi-type="<?= htmlspecialchars((string) ($card['type'] ?? 'number'), ENT_QUOTES, 'UTF-8') ?>" style="--kpi-accent:<?= htmlspecialchars($c['accent'], ENT_QUOTES, 'UTF-8') ?>">
+        <div class="db-kpi" data-kpi-key="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>" data-kpi-type="<?= htmlspecialchars((string) ($card['type'] ?? 'number'), ENT_QUOTES, 'UTF-8') ?>" data-kpi-count-label="<?= htmlspecialchars($countLabel, ENT_QUOTES, 'UTF-8') ?>" style="--kpi-accent:<?= htmlspecialchars($c['accent'], ENT_QUOTES, 'UTF-8') ?>">
             <div class="db-kpi-top">
                 <span class="db-kpi-icon"><?= $kpiIconSvg($icon) ?></span>
             </div>
             <span class="db-kpi-label"><?= htmlspecialchars((string) ($card['label'] ?? '')) ?></span>
             <div class="db-kpi-val <?= $isMoney && in_array($st, ['success', 'danger'], true) ? 'tone' : '' ?>" data-kpi-value><?= htmlspecialchars($formatKpi($card)) ?></div>
-            <div class="db-kpi-sub" data-kpi-count><?= htmlspecialchars($number($count), ENT_QUOTES, 'UTF-8') ?> Oyuncu</div>
+            <div class="db-kpi-sub" data-kpi-count><?= htmlspecialchars($number($count), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($countLabel, ENT_QUOTES, 'UTF-8') ?></div>
         </div>
         <?php endforeach; ?>
     </div>
@@ -618,6 +621,37 @@ foreach ($topCountries as $cRow) {
             </div>
         </div>
         <?php endforeach; ?>
+
+        <div class="db-panel" style="grid-column:1 / -1">
+            <div class="db-panel-head">
+                <h2 class="db-panel-title">Çevrimiçi Kullanıcılar <span class="db-badge ok" id="db-online-count"><?= htmlspecialchars($number($onlineUsers), ENT_QUOTES, 'UTF-8') ?></span></h2>
+                <span class="db-link" style="cursor:default;opacity:.75">Son 10 dk · canlı</span>
+            </div>
+            <div style="overflow-x:auto">
+            <table class="db-table" data-online-table="1">
+                <thead><tr><th>Oyuncu</th><th>Son görülme</th><th>Bakiye</th><th>Bonus</th></tr></thead>
+                <tbody>
+                <?php foreach ($onlineUserRows as $ou): ?>
+                <tr>
+                    <td>
+                        <?php if (!empty($ou['url'])): ?>
+                        <a class="db-link" href="<?= htmlspecialchars((string) $ou['url'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string) ($ou['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></a>
+                        <?php else: ?>
+                        <?= htmlspecialchars((string) ($ou['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= htmlspecialchars((string) ($ou['last_seen_at'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($shortMoney($ou['balance'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($shortMoney($ou['bonus_balance'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
+                </tr>
+                <?php endforeach; ?>
+                <?php if ($onlineUserRows === []): ?>
+                <tr><td colspan="4"><div class="db-empty" style="margin:0">Şu an çevrimiçi üye yok.</div></td></tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -907,6 +941,42 @@ foreach ($topCountries as $cRow) {
         }).join('');
     };
 
+    var escHtml = function(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
+
+    var applyOnlineUsers = function(rows, total) {
+        var countEl = document.getElementById('db-online-count');
+        if (countEl) {
+            countEl.textContent = numberFmt(total != null ? total : (Array.isArray(rows) ? rows.length : 0));
+        }
+        var table = document.querySelector('[data-online-table="1"] tbody');
+        if (!table) return;
+        var list = Array.isArray(rows) ? rows : [];
+        if (!list.length) {
+            table.innerHTML = '<tr><td colspan="4"><div class="db-empty" style="margin:0">Şu an çevrimiçi üye yok.</div></td></tr>';
+            return;
+        }
+        table.innerHTML = list.map(function(r) {
+            var name = escHtml(r.username || '-');
+            var url = String(r.url || '').trim();
+            var playerCell = url
+                ? '<a class="db-link" href="' + escHtml(url) + '">' + name + '</a>'
+                : name;
+            return '<tr>'
+                + '<td>' + playerCell + '</td>'
+                + '<td>' + escHtml(r.last_seen_at || '-') + '</td>'
+                + '<td>' + moneyFmt(r.balance || 0) + '</td>'
+                + '<td>' + moneyFmt(r.bonus_balance || 0) + '</td>'
+                + '</tr>';
+        }).join('');
+    };
+
     var applyChartsFromPayload = function(payload) {
         var packed = packChartData(payload);
         data.sport.donut = packed.sport.donut;
@@ -932,6 +1002,7 @@ foreach ($topCountries as $cRow) {
         applyQuick(payload.quickActions || []);
         applyTxTable('deposit', payload.depositRows || []);
         applyTxTable('withdraw', payload.withdrawRows || []);
+        applyOnlineUsers(payload.onlineUserRows || [], payload.onlineUsers);
         applyChartsFromPayload(payload);
         lastFetchAt = Date.now();
         setLiveStatus(true, 'şimdi');

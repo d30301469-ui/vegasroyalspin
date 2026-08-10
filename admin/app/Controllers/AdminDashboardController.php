@@ -80,7 +80,14 @@ final class AdminDashboardController extends AdminController
         $totalPlayerBalance = $this->scalar('SELECT COALESCE(SUM(balance), 0) FROM users');
         $totalBonusBalance = $this->scalar('SELECT COALESCE(SUM(bonus_balance), 0) FROM users');
         $loginUsers = $this->scalar("SELECT COUNT(*) FROM users WHERE {$loginWhere}");
-        $activeUsers = $this->scalar('SELECT COUNT(*) FROM users WHERE COALESCE(banned, 0) = 0');
+        $nonBannedUsers = $this->scalar('SELECT COUNT(*) FROM users WHERE COALESCE(banned, 0) = 0');
+        $onlineUsers = $this->onlineUsersCount();
+        $onlineUserRows = $this->onlineUserRows();
+        $activeUsers24h = $this->scalar(
+            "SELECT COUNT(*) FROM users
+             WHERE COALESCE(banned, 0) = 0
+               AND COALESCE(last_login_at, updated_at, created_at) >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"
+        );
 
         $depositPlayers = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM megapayz_transactions WHERE type = 'deposit' AND {$paidStatusSql} AND {$txWhere}");
         $withdrawPlayers = $this->scalar("SELECT COUNT(DISTINCT user_id) FROM megapayz_transactions WHERE type = 'withdraw' AND {$paidStatusSql} AND {$txWhere}");
@@ -96,7 +103,7 @@ final class AdminDashboardController extends AdminController
             ['key' => 'players', 'label' => 'Toplam Oyuncu', 'value' => $userCount, 'type' => 'number', 'count' => $userCount, 'status' => 'purple', 'icon' => 'players'],
             ['key' => 'new_players', 'label' => 'Yeni Kayıt Oyuncular', 'value' => $newUsersInRange, 'type' => 'number', 'count' => $newUsersInRange, 'status' => 'info', 'icon' => 'new-players'],
             ['key' => 'login_users', 'label' => 'Giriş Yapan Kullanıcı', 'value' => $loginUsers, 'type' => 'number', 'count' => $loginUsers, 'status' => 'purple', 'icon' => 'login-users'],
-            ['key' => 'active_players', 'label' => 'Toplam Aktif Oyuncu', 'value' => $activeUsers, 'type' => 'number', 'count' => $activeUsers, 'status' => 'success', 'icon' => 'active-players'],
+            ['key' => 'active_players', 'label' => 'Çevrimiçi Kullanıcı', 'value' => $onlineUsers, 'type' => 'number', 'count' => $onlineUsers, 'count_label' => 'Son 10 dk', 'status' => 'success', 'icon' => 'active-players'],
             ['key' => 'wallet', 'label' => 'Toplam Oyuncu Bakiyesi', 'value' => $totalPlayerBalance, 'type' => 'money', 'count' => $userCount, 'status' => 'info', 'icon' => 'wallet'],
             ['key' => 'bonus', 'label' => 'Bonus Miktarı', 'value' => $totalBonusBalance, 'type' => 'money', 'count' => $activeBonuses, 'status' => 'danger', 'icon' => 'bonus'],
         ];
@@ -172,6 +179,9 @@ final class AdminDashboardController extends AdminController
 
         $memberSummary = [
             ['label' => 'Toplam üye', 'value' => $userCount],
+            ['label' => 'Çevrimiçi', 'value' => $onlineUsers],
+            ['label' => 'Aktif (24s)', 'value' => $activeUsers24h],
+            ['label' => 'Banlı olmayan', 'value' => $nonBannedUsers],
             ['label' => 'Bugün kayıt', 'value' => $todayUsers],
             ['label' => 'Doğrulanmış', 'value' => $verifiedUsers],
             ['label' => 'Banlı', 'value' => $bannedUsers],
@@ -223,6 +233,9 @@ final class AdminDashboardController extends AdminController
             'bonusStats' => $this->bonusStats($dateRange),
             'depositRows' => $this->transactionRows('deposit', $dateRange),
             'withdrawRows' => $this->transactionRows('withdraw', $dateRange),
+            'onlineUsers' => $onlineUsers,
+            'onlineUserRows' => $onlineUserRows,
+            'activeUsers24h' => $activeUsers24h,
             'quickActions' => $quickActions,
             'healthItems' => $this->healthItems($activeGames, $activePromotions, $activeSliders, $authSliders, $homepageSections, $tableCount),
             'tasks' => [
@@ -461,6 +474,66 @@ final class AdminDashboardController extends AdminController
             $stmt->execute(['type' => $type]);
 
             return $stmt->fetchAll();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * Site-wide online members: valid JWT with recent heartbeat (session-heartbeat.js ~3 dk).
+     */
+    private function onlineUsersCount(): float
+    {
+        return $this->scalar(
+            "SELECT COUNT(DISTINCT t.user_id)
+             FROM member_jwt_tokens t
+             INNER JOIN users u ON u.id = t.user_id
+             WHERE t.revoked_at IS NULL
+               AND t.expires_at >= NOW()
+               AND COALESCE(t.last_seen_at, t.issued_at) >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+               AND COALESCE(u.banned, 0) = 0"
+        );
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function onlineUserRows(): array
+    {
+        try {
+            $stmt = AdminDatabase::pdo()->query(
+                "SELECT u.id AS user_id,
+                        u.username,
+                        COALESCE(u.balance, 0) AS balance,
+                        COALESCE(u.bonus_balance, 0) AS bonus_balance,
+                        MAX(COALESCE(t.last_seen_at, t.issued_at)) AS last_seen_at
+                 FROM member_jwt_tokens t
+                 INNER JOIN users u ON u.id = t.user_id
+                 WHERE t.revoked_at IS NULL
+                   AND t.expires_at >= NOW()
+                   AND COALESCE(t.last_seen_at, t.issued_at) >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+                   AND COALESCE(u.banned, 0) = 0
+                 GROUP BY u.id, u.username, u.balance, u.bonus_balance
+                 ORDER BY last_seen_at DESC
+                 LIMIT 40"
+            );
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            if (!is_array($rows)) {
+                return [];
+            }
+
+            return array_map(static function (array $row): array {
+                $userId = (int) ($row['user_id'] ?? 0);
+
+                return [
+                    'user_id' => $userId,
+                    'username' => (string) ($row['username'] ?? ''),
+                    'balance' => (float) ($row['balance'] ?? 0),
+                    'bonus_balance' => (float) ($row['bonus_balance'] ?? 0),
+                    'last_seen_at' => (string) ($row['last_seen_at'] ?? ''),
+                    'url' => $userId > 0 ? AdminAuth::url('/user?id=' . $userId) : '',
+                ];
+            }, $rows);
         } catch (Throwable) {
             return [];
         }
