@@ -1,3 +1,6 @@
+/**
+ * @dynamic-file
+ */
 // Tüm header JavaScript fonksiyonları
 (function () {
     'use strict';
@@ -14,7 +17,7 @@
     }
     function readStoredMemberJwt() {
         try {
-            return String(window.localStorage.getItem('metropol_member_jwt') || '').trim();
+            return String(window.localStorage.getItem('app_member_jwt') || '').trim();
         } catch (eJwt) {
             return '';
         }
@@ -90,6 +93,7 @@
             }
         }
     }
+    window.__closeAllHeaderFlyouts = closeAllHeaderFlyouts;
 
     function ready(fn) {
         if (document.readyState === 'loading') {
@@ -139,7 +143,7 @@
     }
 
     function redirectToDeposit() {
-        var target = '/profile/deposit-withdraw?openDepositPanel=1';
+        var target = '/profile/deposit?openDepositPanel=1';
         if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(target)) {
             return;
         }
@@ -344,13 +348,13 @@
     function bonusKoduKullan() {
         if (typeof Swal === 'undefined') return;
         Swal.fire({
-            title: 'Bonus Kodunuzu Girin',
+            title: (window.__ ? window.__('promo.enter_bonus_title', 'Bonus Kodunuzu Girin') : 'Bonus Kodunuzu Girin'),
             input: 'text',
-            inputLabel: 'Bonus Kodu',
-            inputPlaceholder: 'Kodu buraya girin',
+            inputLabel: (window.__ ? window.__('promo.bonus_code', 'Bonus Kodu') : 'Bonus Kodu'),
+            inputPlaceholder: (window.__ ? window.__('promo.enter_code', 'Kodu buraya girin') : 'Kodu buraya girin'),
             showCancelButton: true,
-            confirmButtonText: 'Kullan',
-            cancelButtonText: 'İptal'
+            confirmButtonText: (window.__ ? window.__('profile.promo_apply', 'Kullan') : 'Kullan'),
+            cancelButtonText: (window.__ ? window.__('promo.cancel', 'İptal') : 'İptal')
         }).then(function (result) {
             if (!result.isConfirmed) return;
             var kod = result.value;
@@ -364,15 +368,15 @@
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    var msg = data.mesaj || data.message || 'İşlem tamamlanamadı.';
+                    var msg = data.mesaj || data.message || (window.__ ? window.__('promo.failed', 'İşlem tamamlanamadı.') : 'İşlem tamamlanamadı.');
                     if (data.status === 'success' || data.success === true) {
-                        window.MaltabetToast ? MaltabetToast.success(msg, 'Başarılı') : alert(msg);
+                        window.MaltabetToast ? MaltabetToast.success(msg, (window.__ ? window.__('common.success', 'Başarılı') : 'Başarılı')) : alert(msg);
                     } else {
-                        window.MaltabetToast ? MaltabetToast.error(msg, 'Hata') : alert(msg);
+                        window.MaltabetToast ? MaltabetToast.error(msg, (window.__ ? window.__('common.error', 'Hata') : 'Hata')) : alert(msg);
                     }
                 })
                 .catch(function (err) {
-                    if (window.MaltabetToast) MaltabetToast.error('Hata oluştu, lütfen tekrar deneyin.', 'Hata');
+                    if (window.MaltabetToast) MaltabetToast.error((window.__ ? window.__('common.try_again', 'Hata oluştu, lütfen tekrar deneyin.') : 'Hata oluştu, lütfen tekrar deneyin.'), (window.__ ? window.__('common.error', 'Hata') : 'Hata'));
                     else alert('Hata oluştu, lütfen tekrar deneyin.');
                     safeLog('Bonus API:', err);
                 });
@@ -400,7 +404,7 @@
         window.location.href = url;
     }
     function openGame(gameId) {
-        var url = '/play?game_id=' + encodeURIComponent(gameId) + '&mode=real&wallet=main';
+        var url = '/play?game_id=' + encodeURIComponent(gameId).replace(/%3A/gi, ':') + '&mode=real&wallet=main';
         if (window.MaltabetWalletPicker && typeof window.MaltabetWalletPicker.launch === 'function') {
             window.MaltabetWalletPicker.launch(url, launchGameUrl);
             return;
@@ -410,6 +414,28 @@
     window.openGame = openGame;
 
     var LANG_CODES = { en: 'ENG', de: 'DEU', ru: 'RUS', ar: 'ARB', tr: 'TUR' };
+    var LANG_FLAGS = { en: 'flag-icon-us', de: 'flag-icon-de', ru: 'flag-icon-ru', ar: 'flag-icon-sa', tr: 'flag-icon-tr' };
+
+    function readCookie(name) {
+        var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function resolveSiteLocale() {
+        var allowed = /^(tr|en|de|ru)$/i;
+        if (window.__LOCALE__ && allowed.test(String(window.__LOCALE__))) {
+            return String(window.__LOCALE__).toLowerCase();
+        }
+        var fromQuery = (new URLSearchParams(window.location.search)).get('lang');
+        if (fromQuery && allowed.test(fromQuery)) {
+            return String(fromQuery).toLowerCase();
+        }
+        var fromCookie = readCookie('site_lang');
+        if (fromCookie && allowed.test(fromCookie)) {
+            return String(fromCookie).toLowerCase();
+        }
+        return 'tr';
+    }
 
     function initLangDropdown() {
         var wrap = document.getElementById('langDropdown');
@@ -437,10 +463,22 @@
     }
 
     function initLangCodeDisplay() {
-        var codeSpan = document.querySelector('.langSelect .lang-code');
-        if (!codeSpan) return;
-        var lang = (new URLSearchParams(window.location.search)).get('lang') || 'tr';
-        codeSpan.textContent = LANG_CODES[lang] || 'TUR';
+        var lang = resolveSiteLocale();
+        var codeSpan = document.querySelector('.langSelect .lang-code, .langSelect [data-lang-code]');
+        if (codeSpan) {
+            codeSpan.textContent = LANG_CODES[lang] || 'TUR';
+        }
+        var flagSpan = document.querySelector('.langSelect .dropdown-toggle .flag-icon, .langSelect [data-lang-flag]');
+        if (flagSpan) {
+            flagSpan.className = 'flag-icon ' + (LANG_FLAGS[lang] || 'flag-icon-tr');
+            if (flagSpan.hasAttribute('data-lang-flag')) {
+                flagSpan.setAttribute('data-lang-flag', lang);
+            }
+        }
+        var wrap = document.getElementById('langDropdown');
+        if (wrap) {
+            wrap.setAttribute('data-locale', lang);
+        }
     }
 
     function runtimeLoggedIn() {
@@ -450,31 +488,74 @@
         return window.__USER_LOGGED_IN__ === true;
     }
 
+    function desktopLoyaltyBadgeMarkup() {
+        return ''
+            + '<a class="loyaltyBonusHeader hasLoyaltyLevel"'
+            + ' href="/profile/sadakat-puanlari"'
+            + ' data-profile-modal-href="/profile/sadakat-puanlari"'
+            + ' data-nav-mode="modal"'
+            + ' title="Bronze"'
+            + ' data-loyalty-badge'
+            + ' data-loyalty-code="bronze"'
+            + ' aria-label="Sadakat / Royalty">'
+            + '  <p class="loyaltyBonusHeaderShadow" aria-hidden="true"></p>'
+            + '  <p class="loyaltyBonusHeaderBackground" aria-hidden="true"></p>'
+            + '  <span class="loyaltyBonusHeaderText ellipsis" data-loyalty-level-name>BRONZE</span>'
+            + '  <img class="loyaltyBonusImg" src="/assets/images/loyalty/badges/bronze.svg" alt="" width="20" height="20" loading="lazy" data-loyalty-level-icon onerror="this.style.display=\'none\'">'
+            + '</a>';
+    }
+
+    function ensureDesktopLoyaltyBadge() {
+        if (document.body.classList.contains('mobile-site')) {
+            return;
+        }
+        if (!runtimeLoggedIn()) {
+            return;
+        }
+        var loginCol = document.querySelector('.headBar .loginCol.hdr-user-bc, .header-bc .loginCol.hdr-user-bc');
+        if (!loginCol) {
+            return;
+        }
+        if (loginCol.querySelector('.loyaltyBonusHeader, [data-loyalty-badge]')) {
+            return;
+        }
+        var wrap = document.createElement('div');
+        wrap.innerHTML = desktopLoyaltyBadgeMarkup();
+        var badge = wrap.firstElementChild;
+        if (!badge) {
+            return;
+        }
+        loginCol.insertBefore(badge, loginCol.firstChild);
+        if (typeof window.__refreshHeaderBalance === 'function') {
+            try { window.__refreshHeaderBalance(); } catch (eRefresh) { /* ignore */ }
+        }
+    }
+
     function desktopUserNavMarkup() {
         return ''
             + '<div class="nav-menu-container header-user-nav">'
             + '  <ul class="nav-menu-other hdr-balance-nav">'
             + '    <li id="depositBalanceWrap">'
-            + '      <a href="/profile/deposit-withdraw?openDepositPanel=1" class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" role="button" aria-expanded="false" aria-haspopup="true">'
+            + '      <a href="/profile/deposit?openDepositPanel=1" class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" role="button" aria-expanded="false" aria-haspopup="true">'
             + '        <div class="hdr-user-info-content-bc"><span class="hdr-user-info-texts-bc ext-1 ellipsis"><span class="balanceAmount"><span id="headerBalanceMain" data-balance-target="headerBalanceMain">0</span><span class="currencySymbol">&#8239;₺</span></span></span></div>'
             + '      </a>'
             + '    </li>'
             + '  </ul>'
             + '  <ul class="nav-menu-other profileDetails">'
             + '    <li><div class="user-nav-icon playerCol" id="playerCol">'
-            + '      <button class="userBtn nav-menu-item" id="toggleButton" type="button" aria-expanded="false" aria-label="Profil menüsü">'
+            + '      <button class="userBtn nav-menu-item" id="toggleButton" type="button" aria-expanded="false" aria-label="' + (window.__ ? window.__('nav.profile_menu', 'Profil menüsü') : 'Profil menüsü') + '">'
             + '        <span class="avatarHolderImg"><i class="bc-i-user hdr-user-avatar-icon-bc" aria-hidden="true"></i></span>'
             + '      </button>'
             + '      <div class="playerNav hidesection" id="playerNav" role="menu">'
             + '        <div class="playerNav-body">'
-            + '          <a class="pl-link" href="#" id="profileLinkModal" role="menuitem"><i class="pl-link-icon bc-i-user" aria-hidden="true"></i> PROFİLİM</a>'
-            + '          <a class="pl-link" href="/profile/deposit-withdraw" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-deposit" aria-hidden="true"></i> BAKİYE YÖNETİMİ</a>'
-            + '          <a class="pl-link" href="/profile/bet-history" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-bet-history" aria-hidden="true"></i> BAHİS GEÇMİŞİ</a>'
-            + '          <a class="pl-link" href="/profile/bonus-spor" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-promotions-3" aria-hidden="true"></i> BONUSLAR</a>'
-            + '          <a class="pl-link" href="/profile/messages" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-message" aria-hidden="true"></i> MESAJLAR</a>'
+            + '          <a class="pl-link" href="#" id="profileLinkModal" role="menuitem"><i class="pl-link-icon bc-i-user" aria-hidden="true"></i> ' + (window.__ ? window.__('nav.my_profile', 'PROFİLİM') : 'PROFİLİM') + '</a>'
+            + '          <a class="pl-link" href="/profile/deposit" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-deposit" aria-hidden="true"></i> ' + (window.__ ? window.__('nav.balance_management', 'BAKİYE YÖNETİMİ') : 'BAKİYE YÖNETİMİ') + '</a>'
+            + '          <a class="pl-link" href="/profile/bet-history" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-bet-history" aria-hidden="true"></i> ' + (window.__ ? window.__('nav.bet_history', 'BAHİS GEÇMİŞİ') : 'BAHİS GEÇMİŞİ') + '</a>'
+            + '          <a class="pl-link" href="/profile/bonus-spor" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-promotions-3" aria-hidden="true"></i> ' + (window.__ ? window.__('nav.bonuses', 'BONUSLAR') : 'BONUSLAR') + '</a>'
+            + '          <a class="pl-link" href="/profile/messages" data-nav-mode="modal" role="menuitem"><i class="pl-link-icon bc-i-message" aria-hidden="true"></i> ' + (window.__ ? window.__('nav.messages', 'MESAJLAR') : 'MESAJLAR') + '</a>'
             + '        </div>'
             + '        <div class="playerNav-footer">'
-            + '          <a class="pl-link pl-link-logout" href="/logout" data-nav-mode="page" role="menuitem"><i class="pl-link-icon bc-i-logout" aria-hidden="true"></i> ÇIKIŞ YAP</a>'
+            + '          <a class="pl-link pl-link-logout" href="/logout" data-nav-mode="page" role="menuitem"><i class="pl-link-icon bc-i-logout" aria-hidden="true"></i> ' + (window.__ ? window.__('nav.logout', 'ÇIKIŞ YAP') : 'ÇIKIŞ YAP') + '</a>'
             + '        </div>'
             + '      </div>'
             + '    </div></li>'
@@ -490,6 +571,7 @@
         var guestLoginBtn = document.getElementById('Giris');
         var guestRegisterBtn = document.getElementById('openRegister');
         if (!guestLoginBtn && !guestRegisterBtn) {
+            ensureDesktopLoyaltyBadge();
             return false;
         }
 
@@ -517,6 +599,16 @@
             if (guestRegisterBtn && guestRegisterBtn.parentNode) {
                 guestRegisterBtn.parentNode.removeChild(guestRegisterBtn);
             }
+            var guestDeposit = document.getElementById('openRegister2');
+            if (guestDeposit) {
+                guestDeposit.removeAttribute('id');
+                guestDeposit.classList.add('hdr-deposit-btn');
+                guestDeposit.setAttribute('href', '/profile/deposit?openDepositPanel=1');
+                guestDeposit.setAttribute('data-profile-modal-href', '/profile/deposit?openDepositPanel=1');
+                guestDeposit.setAttribute('data-nav-mode', 'modal');
+                guestDeposit.setAttribute('onclick', 'event.preventDefault(); redirectToDeposit();');
+                guestDeposit.setAttribute('title', 'Para Yatır');
+            }
             if (!document.querySelector('.header-user-nav')) {
                 var loginCol = document.querySelector('.loginCol.hdr-user-bc, .hdr-user-bc');
                 var langSelect = document.getElementById('langDropdown');
@@ -526,6 +618,7 @@
                     loginCol.insertBefore(navWrap.firstChild, langSelect || null);
                 }
             }
+            ensureDesktopLoyaltyBadge();
         }
 
         initDepositMenu();
@@ -631,6 +724,8 @@
             if (panel)  { panel.classList.add('is-open');  panel.setAttribute('aria-hidden', 'false'); }
             toggle.classList.add('is-open');
             toggle.setAttribute('aria-expanded', 'true');
+            toggle.setAttribute('title', 'Kapat');
+            toggle.setAttribute('aria-label', 'Kapat');
             lockBodyForSmartPanel();
         }
 
@@ -638,6 +733,8 @@
             if (panel)  { panel.classList.remove('is-open'); panel.setAttribute('aria-hidden', 'true'); }
             toggle.classList.remove('is-open');
             toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('title', 'Akıllı Menü');
+            toggle.setAttribute('aria-label', 'Akıllı Menü');
             unlockBodyForSmartPanel();
         }
 
@@ -679,6 +776,32 @@
         var filterBtns = document.querySelectorAll('.search-panel__filter');
         var activeFilter = 'sport';
 
+        if (!window.__searchThumbError) {
+            window.__searchThumbError = function (img) {
+                if (!img) return;
+                var raw = img.getAttribute('data-fallbacks') || '[]';
+                var list = [];
+                try {
+                    list = JSON.parse(raw);
+                } catch (e) {
+                    list = [];
+                }
+                if (!Array.isArray(list)) list = [];
+                while (list.length) {
+                    var next = String(list.shift() || '').trim();
+                    if (!next || next === img.getAttribute('src')) continue;
+                    img.setAttribute('data-fallbacks', JSON.stringify(list));
+                    img.src = next;
+                    return;
+                }
+                img.style.display = 'none';
+                var fallback = img.nextElementSibling;
+                if (fallback && fallback.classList.contains('search-panel__game-thumb-fallback')) {
+                    fallback.hidden = false;
+                }
+            };
+        }
+
         function escapeHtml(value) {
             return String(value || '')
                 .replace(/&/g, '&amp;')
@@ -689,9 +812,9 @@
         }
 
         function inputPlaceholderFor(filter) {
-            if (filter === 'casino') return 'Casino\'da ara';
-            if (filter === 'livecasino') return 'Canlı Casino\'da ara';
-            return 'Spor\'da ara';
+            if (filter === 'casino') return (window.__ ? window.__('panel.search_casino', "Casino'da ara") : "Casino'da ara");
+            if (filter === 'livecasino') return (window.__ ? window.__('panel.search_live', "Canlı Casino'da ara") : "Canlı Casino'da ara");
+            return (window.__ ? window.__('panel.search_sport', "Spor'da ara") : "Spor'da ara");
         }
 
         function gameTypeFor(filter) {
@@ -707,7 +830,7 @@
 
         function setLoading() {
             if (!searchBody) return;
-            searchBody.innerHTML = '<p class="search-panel__empty">Yükleniyor...</p>';
+            searchBody.innerHTML = '<p class="search-panel__empty">' + escapeHtml(window.__ ? window.__('panel.loading_dots', 'Yükleniyor...') : 'Yükleniyor...') + '</p>';
         }
 
         function normalizeGameId(game) {
@@ -728,7 +851,49 @@
 
         function normalizeGameImage(game) {
             if (!game || typeof game !== 'object') return '';
-            return String(game.image_url || game.thumbnail_url || game.banner || '').trim();
+            var primary = String(
+                game.cover
+                || game.image_url
+                || game.thumbnail_url
+                || game.banner
+                || game.game_image_url
+                || game.game_image
+                || ''
+            ).trim();
+            if (primary !== '') return primary;
+            var fallbacks = game.cover_fallbacks || game.image_fallbacks;
+            if (Array.isArray(fallbacks)) {
+                for (var i = 0; i < fallbacks.length; i++) {
+                    var next = String(fallbacks[i] || '').trim();
+                    if (next !== '') return next;
+                }
+            }
+            return '';
+        }
+
+        function normalizeGameImageFallbacks(game) {
+            if (!game || typeof game !== 'object') return [];
+            var out = [];
+            var seen = {};
+            var push = function (url) {
+                var value = String(url || '').trim();
+                if (value === '' || seen[value]) return;
+                seen[value] = true;
+                out.push(value);
+            };
+            push(game.cover);
+            push(game.image_url);
+            push(game.thumbnail_url);
+            push(game.banner);
+            push(game.game_image_url);
+            push(game.game_image);
+            var lists = [game.cover_fallbacks, game.image_fallbacks];
+            for (var i = 0; i < lists.length; i++) {
+                var list = lists[i];
+                if (!Array.isArray(list)) continue;
+                for (var j = 0; j < list.length; j++) push(list[j]);
+            }
+            return out;
         }
 
         function normalizeText(value) {
@@ -797,7 +962,7 @@
         function renderGames(items) {
             if (!searchBody) return;
             if (!items || !items.length) {
-                setEmpty('Bu filtrede oyun bulunamadı.');
+                setEmpty(window.__ ? window.__('panel.search_empty', 'Bu filtrede oyun bulunamadı.') : 'Bu filtrede oyun bulunamadı.');
                 return;
             }
 
@@ -811,13 +976,19 @@
                 var name = normalizeGameName(game);
                 var provider = normalizeGameProvider(game);
                 var image = normalizeGameImage(game);
+                var imageFallbacks = normalizeGameImageFallbacks(game);
                 var safeImage = image !== '' ? escapeHtml(image) : '';
                 var initials = escapeHtml((name || 'O').charAt(0).toUpperCase());
+                var fallbackAttr = '';
+                if (imageFallbacks.length > 1) {
+                    fallbackAttr = ' data-fallbacks="' + escapeHtml(JSON.stringify(imageFallbacks.slice(1))) + '"';
+                }
 
                 html += '<button type="button" class="search-panel__game" data-game-id="' + escapeHtml(gameId) + '">';
                 html += '<span class="search-panel__game-thumb">';
                 if (safeImage !== '') {
-                    html += '<img src="' + safeImage + '" alt="' + escapeHtml(name) + '" loading="lazy">';
+                    html += '<img src="' + safeImage + '" alt="' + escapeHtml(name) + '" loading="lazy" referrerpolicy="no-referrer"' + fallbackAttr + ' onerror="window.__searchThumbError&&window.__searchThumbError(this)">';
+                    html += '<span class="search-panel__game-thumb-fallback" hidden>' + initials + '</span>';
                 } else {
                     html += '<span class="search-panel__game-thumb-fallback">' + initials + '</span>';
                 }
@@ -915,6 +1086,10 @@
             if (searchBtn) searchBtn.setAttribute('aria-expanded', 'false');
             document.body.style.overflow = '';
         }
+        window.__closeSearchPanel = closeSearchPanel;
+
+        /* Sayfa yükünde hayalet Close sekmesi kalmasın */
+        closeSearchPanel();
 
         if (searchBtn) {
             searchBtn.addEventListener('click', function (e) {
@@ -1024,11 +1199,15 @@
 
     ready(function () {
         upgradeGuestHeaderIfNeeded();
+        ensureDesktopLoyaltyBadge();
         // In some templates auth-shared may initialize after header.js.
         // Retry a few times to avoid stale guest header after successful login.
         window.setTimeout(upgradeGuestHeaderIfNeeded, 180);
+        window.setTimeout(ensureDesktopLoyaltyBadge, 200);
         window.setTimeout(upgradeGuestHeaderIfNeeded, 750);
+        window.setTimeout(ensureDesktopLoyaltyBadge, 800);
         window.setTimeout(upgradeGuestHeaderIfNeeded, 1500);
+        window.setTimeout(ensureDesktopLoyaltyBadge, 1600);
         initToastr();
         initDepositMenu();
         initPlayerMenu();
@@ -1040,11 +1219,13 @@
         initMainMenuActive();
         initSearchPanel();
 
-        window.addEventListener('metropol:member-jwt-ready', function () {
+        window.addEventListener('app:member-jwt-ready', function () {
             upgradeGuestHeaderIfNeeded();
+            ensureDesktopLoyaltyBadge();
         });
         window.addEventListener('load', function () {
             upgradeGuestHeaderIfNeeded();
+            ensureDesktopLoyaltyBadge();
         });
     });
 })();

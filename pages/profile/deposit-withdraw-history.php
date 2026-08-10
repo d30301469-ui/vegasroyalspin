@@ -55,29 +55,53 @@ window.__WITHDRAW_HISTORY_ENDPOINT__ = '/api/v2/withdraw-history';
         ?>
 
             <div class="tx-history-filters" role="search" aria-label="İşlem geçmişi filtreleri">
-                <div class="tx-filter-toolbar">
-                    <div class="tx-filter-field">
-                        <label class="tx-filter-label" for="depositHistoryTypeFilter">İşlem Türü</label>
-                        <select class="tx-filter-select" id="depositHistoryTypeFilter">
-                            <option value="deposit" selected>Yatırım</option>
-                            <option value="withdraw">Çekim</option>
-                        </select>
-                    </div>
-                    <div class="tx-filter-field">
-                        <label class="tx-filter-label" for="depositHistoryStatusFilter">Durum</label>
-                        <select class="tx-filter-select" id="depositHistoryStatusFilter">
-                            <option value="">Tümü</option>
-                            <option value="pending">Beklemede</option>
-                            <option value="processing">İşleniyor</option>
-                            <option value="approved">Onaylandı</option>
-                            <option value="confirmed">Onaylandı</option>
-                            <option value="completed">Tamamlandı</option>
-                            <option value="rejected">Reddedildi</option>
-                            <option value="failed">Başarısız</option>
-                        </select>
-                    </div>
-                    <button type="button" class="tx-filter-btn-show" id="depositHistoryApplyBtn" title="Listeyi yenile">Göster</button>
+                <?php
+                $cm622_filter_form_id = 'depositHistoryFilterForm';
+                $cm622_filter_no_form = true;
+                $cm622_filter_title = 'FİLTRE';
+                include __DIR__ . '/../../views/partials/cm622-filter-shell-open.php';
+                ?>
+                <div class="u-i-p-control-item-holder-bc">
+                    <?php
+                    $ms_id = 'depositHistoryTypeMs';
+                    $ms_input_id = 'depositHistoryTypeFilter';
+                    $ms_name = '';
+                    $ms_title = 'İşlem Türü';
+                    $ms_selected = 'deposit';
+                    $ms_options = [
+                        'deposit' => 'Yatırım',
+                        'withdraw' => 'Çekim',
+                    ];
+                    include __DIR__ . '/../../views/partials/cm622-multi-select.php';
+                    ?>
                 </div>
+                <div class="u-i-p-control-item-holder-bc">
+                    <?php
+                    $ms_id = 'depositHistoryStatusMs';
+                    $ms_input_id = 'depositHistoryStatusFilter';
+                    $ms_name = '';
+                    $ms_title = 'Durum';
+                    $ms_selected = '';
+                    $ms_options = [
+                        '' => 'Tümü',
+                        'pending' => 'Beklemede',
+                        'processing' => 'İşleniyor',
+                        'approved' => 'Onaylandı',
+                        'confirmed' => 'Onaylandı',
+                        'completed' => 'Tamamlandı',
+                        'rejected' => 'Reddedildi',
+                        'failed' => 'Başarısız',
+                    ];
+                    include __DIR__ . '/../../views/partials/cm622-multi-select.php';
+                    ?>
+                </div>
+                <?php
+                $cm622_filter_submit_label = 'Göster';
+                $cm622_filter_submit_id = 'depositHistoryApplyBtn';
+                $cm622_filter_submit_type = 'button';
+                $cm622_filter_no_form = true;
+                include __DIR__ . '/../../views/partials/cm622-filter-shell-close.php';
+                ?>
             </div>
 
             <div class="tx-history-content">

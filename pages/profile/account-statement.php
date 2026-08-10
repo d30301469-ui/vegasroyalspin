@@ -1,14 +1,14 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
 require_once (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/services/ProfileApiHelper.php';
 
-$isLoggedIn = function_exists('metropol_frontend_member_logged_in')
-    ? metropol_frontend_member_logged_in()
+$isLoggedIn = function_exists('frontend_member_logged_in')
+    ? frontend_member_logged_in()
     : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true);
 $username   = $isLoggedIn ? $_SESSION['username'] : '';
 

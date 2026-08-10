@@ -5294,6 +5294,17 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     .personal-details-page.is-bilgi-active .vega-app {
         display: none !important;
     }
+    /* Desktop profile shell only — do not affect mobile #mprofilePanel */
+    html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active #depositSection,
+    html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active #withdrawSection,
+    html.is-web:not(.is-mobile) body:not(.mobile-site) .centerWrap.porfileWrap #profilePlayerMain.is-bilgi-active #depositSection,
+    html.is-web:not(.is-mobile) body:not(.mobile-site) .centerWrap.porfileWrap #profilePlayerMain.is-bilgi-active #withdrawSection {
+        display: none !important;
+    }
+    html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active #bilgiModal.is-bilgi-shown,
+    html.is-web:not(.is-mobile) body:not(.mobile-site) .centerWrap.porfileWrap #profilePlayerMain.is-bilgi-active #bilgiModal.is-bilgi-shown {
+        display: flex !important;
+    }
     .personal-details-page.is-bilgi-active .personal-details-card {
         display: flex;
         flex-direction: column;
@@ -5373,7 +5384,7 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     }
     .bilgi-row {
         display: grid;
-        grid-template-columns: 108px minmax(120px, 1.6fr) 76px 100px 80px 92px;
+        grid-template-columns: 120px minmax(120px, 1.6fr) 76px 100px 80px 92px;
         gap: 0.5rem 0.65rem;
         align-items: center;
         padding: 0.65rem 0.65rem;
@@ -5414,32 +5425,64 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
     .bilgi-tile {
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 0.35rem;
-        min-height: 56px;
-        padding: 0.4rem 0.35rem;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 0;
+        width: 100%;
+        min-height: 88px;
+        padding: 0;
+        overflow: hidden;
         background: rgba(0, 0, 0, 0.28);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 8px;
         text-align: center;
+        box-sizing: border-box;
     }
-    .bilgi-tile img {
-        width: 30px;
-        height: 30px;
+    html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bilgi-tile img,
+    html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bilgi-tile .bilgi-tile-logo,
+    html.is-web:not(.is-mobile) body:not(.mobile-site) .centerWrap.porfileWrap .bilgi-tile img,
+    html.is-web:not(.is-mobile) body:not(.mobile-site) .centerWrap.porfileWrap .bilgi-tile .bilgi-tile-logo,
+    .bilgi-tile img,
+    .bilgi-tile .bilgi-tile-logo {
+        display: block;
+        width: 100%;
+        height: 64px;
+        margin: 0;
+        padding: 8px;
+        box-sizing: border-box;
         object-fit: contain;
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.06);
+        object-position: center;
+        border-radius: 0;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
     }
     .bilgi-tile-label {
-        font-size: 0.5rem;
+        display: block;
+        width: 100%;
+        margin: 0;
+        padding: 5px 4px 7px;
+        font-size: 0.58rem;
         font-weight: 800;
         letter-spacing: 0.04em;
         line-height: 1.15;
-        color: rgba(255, 255, 255, 0.88);
+        color: rgba(255, 255, 255, 0.92);
         text-transform: uppercase;
-        max-width: 100%;
         word-break: break-word;
+        background: rgba(0, 0, 0, 0.18);
+        box-sizing: border-box;
+    }
+
+    /* Mobile panel must ignore desktop bilgi tile sizing */
+    body.mobile-site #mprofilePanel .bilgi-tile,
+    html.is-mobile #mprofilePanel .bilgi-tile,
+    body.mobile-site #mprofilePanel .bilgi-tile img,
+    html.is-mobile #mprofilePanel .bilgi-tile img {
+        width: auto;
+        height: auto;
+        min-height: 0;
+        padding: initial;
+        background: initial;
     }
     .bilgi-cell-val {
         font-size: 0.78rem;
@@ -5971,6 +6014,9 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
         align-items: center;
         justify-content: center;
     }
+    .popup-container.is-open {
+        display: flex !important;
+    }
     .popup-content {
         background-color: #fefefe;
         margin: auto;
@@ -6074,15 +6120,19 @@ body.profile-modal-body .personal-details-page.is-modal .personal-details-header
             font-size: 0.55rem;
         }
         .bilgi-tile {
-            min-height: 52px;
-            padding: 0.35rem 0.25rem;
+            min-height: 80px;
+            padding: 0;
         }
-        .bilgi-tile img {
-            width: 26px;
-            height: 26px;
+        .bilgi-tile img,
+        .bilgi-tile .bilgi-tile-logo {
+            width: 100%;
+            height: 56px;
+            padding: 6px;
+            background: transparent !important;
         }
         .bilgi-tile-label {
-            font-size: 0.48rem;
+            font-size: 0.52rem;
+            padding: 4px 3px 6px;
         }
         .bilgi-cell-val {
             font-size: 0.72rem;

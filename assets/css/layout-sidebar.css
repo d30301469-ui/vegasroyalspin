@@ -1,0 +1,302 @@
+/* Sidebar ve sol menü stilleri */
+
+.sidebarMain {
+    width: 250px;
+    transition: width .3s;
+    -webkit-box-orient: vertical;
+    border-right: 1px solid rgba(218,209,177,0.1);
+    height: calc(100dvh - 92px);
+    background: var(--body-bg);
+    flex-shrink: 0;
+    overflow-x: auto;
+    flex-direction: column;
+    padding: 25px 10px 70px;
+    position: fixed;
+    left: 0;
+    top: 92px;
+    z-index: 7;
+}
+.sidebarMain .sideScroll {
+    height: 100%;
+    padding: 0 24px;
+    width: 240px;
+}
+.sidebarMain .titleBar {
+    color: var(--white-color);
+    margin-top: 10px;
+}
+.sideSports li {
+    position: relative;
+    margin: 0 0 6px;
+}
+.sideSports li a {
+    color: var(--white-color)!important;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+    background: var(--menuBG);
+    align-items: center;
+    text-decoration: none;
+    padding: 11px 15px;
+    font-size: 12px;
+    font-weight: 400;
+}
+.sideSports li a .mobileHeaderIcon {
+    height: 20px;
+    filter: invert(1);
+    min-width: 24px;
+}
+.sideSports li a:hover {
+    background: #000;
+    border-left: 3px solid var(--primary);
+}
+.sideSports li .active {
+    background: var(--primary);
+}
+.sideSports .spCol {
+    display: flex;
+    align-items: center;
+}
+.sideSports .spCol i {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+}
+.sideSports .sportN {
+    margin: 0 0 0 10px;
+}
+.sideSports .totalMch {
+    font-size: 12px;
+}
+.sideSports sup {
+    position: absolute;
+    right: 12px;
+    top: 13px;
+    font-size: 9px;
+    padding: 0 5px;
+}
+.sideSports .subSport:hover {
+    background: none;
+}
+.sideSports .open-subSport {
+    background: var(--hover-color)!important;
+    border-radius: 5px;
+    padding: 0 0 1px;
+    margin: 0 0 2px;
+}
+.sideSports .subSport .spCol {
+    flex: auto;
+}
+.sideSports .subSport .totalMch {
+    margin-right: 5px;
+}
+.sideSports .subData {
+    background: var(--secondary);
+    border-radius: 5px;
+    margin: 3px;
+    padding: 5px;
+}
+.sideSports .subData a {
+    font-size: 12px;
+    font-weight: 300;
+    padding: 6px;
+    border-radius: 5px;
+    background: var(--hover-color);
+}
+.sideSports .subData .ic-Col {
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+}
+.sideSports .subData .ic-Col .sb-totalMch {
+    margin-right: 8px;
+}
+.sideSports .subData .market-game {
+    background: var(--hover-color);
+    border-left: 2px solid transparent;
+    margin: 5px 5px 0;
+    padding: 5px 8px;
+    border-radius: 5px;
+}
+.sideSports .subData .active {
+    border-left: 2px solid #ffc107;
+    background: var(--primary);
+}
+.sideSports .subData .market-game .gameTeam {
+    font-size: 11px;
+    line-height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 300;
+    margin: 0;
+    color: var(--white-color);
+}
+.sideSports .subData .market-game .gmOdd {
+    color: #ffc107;
+    font-weight: 700;
+}
+.sideSports .subData .market-game .gamepart {
+    display: flex;
+    align-items: center;
+    margin: 5px 0 0;
+    justify-content: space-between;
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.6);
+}
+.sideSports .subData .market-game .gamepart .gmText {
+    flex: auto;
+}
+.sideSports .subData .market-game .gamepart .gmNumb {
+    background: var(--secondary);
+    border-radius: 3px;
+    padding: 2px 5px;
+    margin-right: 5px;
+}
+.sideSports .subData .market-game .marketHolder {
+    display: flex;
+    justify-content: space-between;
+    border-radius: 5px;
+    margin: 8px 0 0;
+    overflow: hidden;
+}
+.sideSports .subData .market-game .marketHolder .mkt-Item {
+    width: 49.7%;
+    padding: 5px 8px;
+    font-size: 12px;
+    color: var(--white-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--secondary);
+    cursor: pointer;
+}
+.sideSports .subData .market-game .marketHolder .mkt-Item:hover {
+    background: #ffc107;
+    color: var(--black-color);
+}
+
+.sidebarMain.sideFilter {
+    width: 100%;
+    left: -120%;
+    top: 0 !important;
+    transition: 0.5s;
+    overflow: hidden;
+}
+.sidebarMain.sideFilter::after {
+    position: absolute;
+    width: 25%;
+    height: 100%;
+    right: -25%;
+    top: 0;
+    content: '';
+}
+.sidebarMain.sideFilter .close {
+    top: 30px;
+    font-size: 20px;
+    opacity: inherit;
+    right: 36px;
+}
+.sidebarMain.sideFilter .sideSports {
+    height: calc(100dvh - 115px);
+    overflow-x: auto;
+}
+.sidebarMain.sideFilter .dropdown-list {
+    background: none;
+    position: inherit;
+    border: none;
+    box-shadow: none;
+    padding-top: 0;
+    margin: 0;
+    display: block!important;
+}
+.sidebarMain.sideFilter .multiselect-dropdown .dropdown-btn .dropdown-multiselect__caret {
+    display: none!important;
+}
+.sidebarMain.sideFilter .dropdown-list ul {
+    overflow-x: inherit!important;
+    max-height: 100%!important;
+}
+.sidebarMain.sideFilter .dropdown-list li {
+    padding: 3px 10px!important;
+}
+.sidebarMain.sideFilter .dropdown-list li.multiselect-item-checkbox:hover {
+    background: none;
+}
+.sidebarMain.sideFilter .dropdown-list li.multiselect-item-checkbox input[type=checkbox] + div {
+    color: var(--white-color);
+    text-transform: capitalize;
+    font-size: 12px;
+}
+.sidebarMain.sideFilter .dropdown-list li.multiselect-item-checkbox input[type=checkbox] + div:before {
+    border: 1px solid var(--hover-color);
+    border-radius: 2px;
+}
+.sidebarMain.sideFilter .dropdown-list li.multiselect-item-checkbox input[type=checkbox]:checked + div:before {
+    background: none;
+}
+.sidebarMain.sideFilter .dropdown-list li.multiselect-item-checkbox input[type=checkbox][disabled] + div {
+    opacity: 0.4;
+}
+
+/* Hide Sidebar */
+.hide-SideBar .sideSports {
+    padding: 20px 0 0;
+}
+.hide-SideBar .sideSports li a {
+    justify-content: center;
+}
+.hide-SideBar .sideSports .subData {
+    display: none;
+}
+.hide-SideBar .sideSports .subSport:hover .subData {
+    position: fixed;
+    z-index: 99;
+    left: 60px;
+    top: 60px;
+    display: block;
+    height: 93vh;
+}
+.hide-SideBar .sideSports .open-subSport {
+    background: none!important;
+}
+.hide-SideBar .sideSports .sportN,
+.hide-SideBar .sideSports .totalMch {
+    display: none;
+}
+.hide-SideBar .sideSports .subSport .spCol {
+    flex: inherit;
+}
+.hide-SideBar .sideSports .subSport .fa-chevron-down {
+    display: none;
+}
+
+/* Provider filter stilleri */
+.filter-rowreverse-style-col .sidebarMain.sideFilter .sideSports ul li {
+    display: flex;
+    padding: 10px 16px;
+    height: 40px;
+    color: rgba(var(--textwhite), .8);
+    background: rgba(var(--textwhite), .1);
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+.filter-rowreverse-style-col .sidebarMain.sideFilter .sideSports ul li.active {
+    background: rgba(var(--textwhite), .8);
+    color: rgba(var(--black-color),.8);
+}
+.filter-rowreverse-style-col .sidebarMain.sideFilter .titleBar.providerText {
+    color: rgba(var(--textwhite), .8);
+    padding: 10px 0 11px;
+}
+
+.sidebarMain .headerSocialIcon .socialIconText:last-child {
+    margin-right: 0;
+}

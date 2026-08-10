@@ -1,0 +1,111 @@
+/**
+ * Mobil right sheet — bildirimler, favoriler, ayarlar için styling
+ * Bu dosya assets/css/mobile-right-sheet-extra.css'i tamamlayıcı mobil-specific kurallar içerir
+ */
+
+/* Ensure sheet header elements are visible */
+body.mobile-site .mobile-right-sheet__header {
+  display: flex !important;
+  align-items: center !important;
+  visibility: visible !important;
+  height: auto !important;
+  min-height: 44px;
+}
+
+body.mobile-site .mobile-right-sheet__title {
+  display: block !important;
+  visibility: visible !important;
+  color: #fff !important;
+  flex: 1;
+}
+
+body.mobile-site .mobile-right-sheet__back,
+body.mobile-site .mobile-right-sheet__close {
+  display: inline-flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure subbar displays properly */
+body.mobile-site .mobile-right-sheet__subbar {
+  display: flex !important;
+  visibility: visible !important;
+  height: auto !important;
+  min-height: 36px;
+}
+
+body.mobile-site .mobile-right-sheet__subbar[hidden] {
+  display: none !important;
+}
+
+body.mobile-site .mobile-right-sheet__subbar button,
+body.mobile-site .notification-drawer__date,
+body.mobile-site .notification-drawer__clear {
+  visibility: visible !important;
+  display: inline-block !important;
+}
+/* Orjinal: tarih beyaz (sol), Temizle acik mor/pembe (sag) */
+body.mobile-site .notification-drawer__date {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+body.mobile-site .notification-drawer__clear {
+  color: #c9a0d8 !important;
+}
+/* Toolbar alt seridi tam genislik: tarih sol, Temizle en saga yaslanir */
+body.mobile-site .mobile-right-sheet__subbar .notification-drawer__toolbar {
+  width: 100% !important;
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+/* Ensure body content displays */
+body.mobile-site .mobile-right-sheet__body {
+  display: flex !important;
+  visibility: visible !important;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Notification items in mobile context — orjinal mor gradient arka plan */
+body.mobile-site .notification-drawer__item {
+  display: flex !important;
+  visibility: visible !important;
+  padding: 11px 14px !important;
+  background: linear-gradient(90deg, rgba(133, 15, 131, 0.32) 0%, rgba(74, 49, 135, 0.38) 55%, rgba(36, 20, 80, 0.40) 100%) !important;
+  border: 1px solid rgba(170, 110, 200, 0.30) !important;
+  border-radius: 8px !important;
+}
+
+/* Ayarlar sheet: orjinal ile birebir — mor gradient kartlar + chevron + bayrak */
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__select {
+  background: linear-gradient(90deg, rgba(133, 15, 131, 0.32) 0%, rgba(74, 49, 135, 0.38) 55%, rgba(36, 20, 80, 0.40) 100%) !important;
+  border: 1px solid rgba(170, 110, 200, 0.30) !important;
+}
+/* Font Awesome mobilde yuklenmiyor: chevron'u saf CSS ucgeni ile ciz */
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__chevron {
+  width: 0 !important;
+  height: 0 !important;
+  border-left: 5px solid transparent !important;
+  border-right: 5px solid transparent !important;
+  border-top: 6px solid rgba(255, 255, 255, 0.7) !important;
+  margin-left: 8px !important;
+  flex-shrink: 0 !important;
+  transition: transform 0.2s ease !important;
+}
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__field.is-open .settings-sidebar__chevron,
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__select[aria-expanded="true"] .settings-sidebar__chevron {
+  transform: rotate(180deg) !important;
+}
+/* Dil bayragi: settings sheet icinde boyut yoktu (sadece .langSelect'te tanimli) */
+body.mobile-site .mobile-right-sheet__body .settings-sidebar__value--with-icon .flag-icon {
+  width: 22px !important;
+  height: 16px !important;
+  border-radius: 3px !important;
+  background-size: cover !important;
+  background-position: center !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+}

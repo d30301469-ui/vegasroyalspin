@@ -1,3 +1,6 @@
+/**
+ * @dynamic-file
+ */
 (function() {
     'use strict';
 
@@ -47,7 +50,11 @@
 
     function getCasinoCategoryGames(root) {
         var gamesContainer = getCasinoGamesContainer(root);
-        return (gamesContainer && gamesContainer.querySelector(':scope > .casinoCategoryGames')) ||
+        return (gamesContainer && (
+                gamesContainer.querySelector(':scope > .casinoGamesList') ||
+                gamesContainer.querySelector(':scope > .casinoCategoryGames')
+            )) ||
+            (root || document).querySelector('#casino_games_container > .casinoGamesList') ||
             (root || document).querySelector('#casino_games_container > .casinoCategoryGames') ||
             document.getElementById('game-grid');
     }
@@ -100,6 +107,16 @@
     /* ── Slot sayfası: Panel header altında sabitken sayfada herhangi bir yerde scroll = oyun listesini kaydır ── */
     function initSlotScrollLock() {
         var slotRoot = document.querySelector('.slot-page-root');
+        // CM622 desktop lobby / filtered grid uses normal document scroll.
+        // Locking page scroll here clips the list after search/provider filters
+        // ("sayfa yarım kalıyor") because #casino_games_container is not a scrollport.
+        if (slotRoot && (
+            slotRoot.classList.contains('slot-page-root--cm622')
+            || slotRoot.querySelector('.casinoGamesList')
+            || document.getElementById('casinoLobbySections')
+        )) {
+            return;
+        }
         var stickyBar = document.querySelector('.slots-sticky-bar') || document.querySelector('.slots-filter-and-games');
         var gamesScrollEl = getCasinoGamesContainer(slotRoot);
         var headerEl = document.querySelector('header.headBar');
@@ -256,6 +273,8 @@
         return 'slot';
     })();
     const ACTION_BUTTONS = config.actionButtons === true;
+    const DESKTOP_LOBBY = config.desktopLobby === true;
+    const LOBBY_MODE = config.lobbyMode === true;
     const EMPTY_TITLE = config.emptyTitle || 'Slot oyunu bulunamadı';
     const EMPTY_TEXT = config.emptyText || 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin';
     const FETCH_TIMEOUT_MS = 15000;
@@ -307,9 +326,22 @@
     const providerSheetGridBtn = document.getElementById('providerSheetGridBtn');
     const providerSheetBackBtn = document.getElementById('providerSheetBackBtn');
     const providerSheetApplyBtn = document.getElementById('providerSheetApplyBtn');
-    const catArrowLeft       = document.getElementById('catArrowLeft');
-    const catArrowRight      = document.getElementById('catArrowRight');
-    const catScroll          = document.getElementById('categoryTabsScroll') || document.querySelector('.casinoNavigationAndFilters .casinoCategories .horizontal-scroll__inner');
+    const catArrowLeft       = document.getElementById('slotCatArrowLeft')
+        || document.getElementById('catArrowLeft');
+    const catArrowRight      = document.getElementById('slotCatArrowRight')
+        || document.getElementById('catArrowRight');
+    const catArrowShadowLeft = document.getElementById('slotCatArrowShadowLeft');
+    const catArrowShadowRight = document.getElementById('slotCatArrowShadowRight');
+    // CM622 HorizontalScroll: overflow:hidden viewport + translateX on inner track.
+    const catScrollInner     = document.getElementById('slotCategoryRailInner')
+        || document.querySelector('.casinoNavigationAndFilters .casinoCategories .horizontal-scroll__inner');
+    const catScrollViewport  = document.getElementById('slotCategoryRail')
+        || document.querySelector('.casinoNavigationAndFilters .casinoCategories.horizontal-scroll')
+        || document.querySelector('.casinoNavigationAndFilters .casinoCategories');
+    const catScroll          = document.getElementById('categoryTabsScroll')
+        || catScrollViewport
+        || catScrollInner;
+    const categoryRailOffset = { value: 0, max: 0 };
     const gameGrid           = getCasinoCategoryGames(slotPageRoot);
     const activeFiltersRow   = document.querySelector('.active-filters-row');
     const activeFiltersBox   = document.getElementById('active-filters-box');
@@ -556,7 +588,7 @@
 
     function applyMobileActionButtonSizing() {
         if (!document.body.classList.contains('mobile-site')) return;
-        var buttons = document.querySelectorAll('.slot-page-root .play-btn, .slot-page-root .demo-btn, .slots-games-container .play-btn, .slots-games-container .demo-btn, .casinoCategoryGames .play-btn, .casinoCategoryGames .demo-btn');
+        var buttons = document.querySelectorAll('.slot-page-root .play-btn, .slot-page-root .demo-btn, .slots-games-container .play-btn, .slots-games-container .demo-btn, .casinoGamesList .play-btn, .casinoGamesList .demo-btn, .casinoCategoryGames .play-btn, .casinoCategoryGames .demo-btn');
         buttons.forEach(function (btn) {
             btn.style.width = 'calc(50% - 4px)';
             btn.style.minWidth = '0';
@@ -683,7 +715,10 @@
             };
             return mapped;
         }).filter(function(game) {
-            // Softswiss/slot entegrasyonu yok; BGaming yalnızca /bgaming.
+            // BGaming stays off /slot; keep it on the dedicated /bgaming page.
+            if (API_EXTRA_PARAMS.source === 'bgaming') {
+                return true;
+            }
             return !isBgamingGame(game);
         });
         var page = Number(pagination.page || 1);
@@ -843,11 +878,11 @@
         mobileSidebarToggle.setAttribute('aria-label', providerCount > 0 ? ('Sağlayıcılar +' + providerCount) : 'Sağlayıcılar');
     }
 
-    function updateUrl() {
+    function buildFilterPageUrl() {
         var url = new URL(window.location.href);
         var kept = [];
         url.searchParams.forEach(function (value, key) {
-            if (key === 'search' || key === 'providers' || key === 'providers[]' || key === 'offset' || key === 'sort') {
+            if (key === 'search' || key === 'providers' || key === 'providers[]' || key === 'offset' || key === 'sort' || key === 'view' || key === 'page') {
                 return;
             }
             kept.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
@@ -861,9 +896,22 @@
         }
         if (state.sort) {
             kept.push('sort=' + encodeURIComponent(state.sort));
+        } else if (!LOBBY_MODE && DESKTOP_LOBBY && !state.search && state.providers.length === 0) {
+            kept.push('view=all');
         }
         var qs = kept.join('&');
-        window.history.replaceState({}, '', url.pathname + (qs ? ('?' + qs) : '') + url.hash);
+        return url.pathname + (qs ? ('?' + qs) : '') + url.hash;
+    }
+
+    function updateUrl() {
+        window.history.replaceState({}, '', buildFilterPageUrl());
+    }
+
+    /** Lobby has no infinite grid — hard-navigate when filters change. */
+    function navigateFromLobbyIfNeeded() {
+        if (!LOBBY_MODE) return false;
+        window.location.href = buildFilterPageUrl();
+        return true;
     }
 
     function setSearch(val) {
@@ -1011,6 +1059,7 @@
     function applySearch(value) {
         if (!searchInput && value === undefined) return;
         setSearch(value !== undefined ? value : searchInput.value);
+        if (navigateFromLobbyIfNeeded()) return;
         loadSlots(false);
     }
 
@@ -1018,6 +1067,7 @@
         setSearch('');
         if (searchInput) searchInput.value = '';
         updateSearchBtnIcon();
+        if (navigateFromLobbyIfNeeded()) return;
         loadSlots(false);
     }
 
@@ -1114,9 +1164,13 @@
     var providerSearchClearBtn = document.getElementById('providerSearchClearBtn');
     var providerSearchClearBtnIcon = document.getElementById('providerSearchClearBtnIcon');
     function updateProviderSearchBtnIcon() {
-        if (!providerSearchClearBtnIcon || !providerSearchClearBtn || !providerSearchInput) return;
+        if (!providerSearchClearBtn || !providerSearchInput) return;
         var hasText = providerSearchInput.value.trim().length > 0;
-        providerSearchClearBtnIcon.className = hasText ? 'fas fa-times' : 'fas fa-search';
+        // Keep CM622 SVG icon; only swap FA class when legacy <i> is present.
+        if (providerSearchClearBtnIcon && providerSearchClearBtnIcon.tagName === 'I') {
+            providerSearchClearBtnIcon.className = hasText ? 'fas fa-times' : 'fas fa-search';
+        }
+        providerSearchClearBtn.classList.toggle('is-clear', hasText);
         providerSearchClearBtn.title = hasText ? 'Aramayı temizle' : 'Sağlayıcı ara';
         providerSearchClearBtn.setAttribute('aria-label', hasText ? 'Aramayı temizle' : 'Sağlayıcı ara');
     }
@@ -1131,9 +1185,11 @@
             updateProviderSearchBtnIcon();
             syncProviderSearchFieldState();
             var q = providerSearchInput.value.toLowerCase().trim();
-            var providerItems = sidebarProvidersList ? sidebarProvidersList.querySelectorAll('.sidebar-provider-item[data-provider]') : document.querySelectorAll('.sidebar-provider-item[data-provider]');
+            var providerItems = sidebarProvidersList
+                ? sidebarProvidersList.querySelectorAll('.sidebar-provider-item[data-provider], .providerItemsInner[data-provider]')
+                : document.querySelectorAll('.sidebar-provider-item[data-provider], .providerItemsInner[data-provider]');
             providerItems.forEach(function(item) {
-                var name = (item.dataset.provider || item.textContent).toLowerCase();
+                var name = (item.getAttribute('data-provider') || item.dataset.provider || item.textContent || '').toLowerCase();
                 item.style.display = name.indexOf(q) !== -1 ? '' : 'none';
             });
         });
@@ -1146,7 +1202,9 @@
                 providerSearchInput.focus();
                 updateProviderSearchBtnIcon();
                 syncProviderSearchFieldState();
-                var providerItems = sidebarProvidersList ? sidebarProvidersList.querySelectorAll('.sidebar-provider-item[data-provider]') : document.querySelectorAll('.sidebar-provider-item[data-provider]');
+                var providerItems = sidebarProvidersList
+                    ? sidebarProvidersList.querySelectorAll('.sidebar-provider-item[data-provider], .providerItemsInner[data-provider]')
+                    : document.querySelectorAll('.sidebar-provider-item[data-provider], .providerItemsInner[data-provider]');
                 providerItems.forEach(function(item) {
                     item.style.display = '';
                 });
@@ -1180,13 +1238,52 @@
         return overlay;
     }
 
+    var providerDrawerHomeParent = null;
+    var providerDrawerHomeNext = null;
+
+    function isProvidersDrawerModal() {
+        return !!(providersSidebar && providersSidebar.classList.contains('providers-drawer-wrapper'));
+    }
+
+    function mountProviderDrawerToBody() {
+        if (!providersSidebar || !isProvidersDrawerModal()) return;
+        // Keep CM622 token/FDS scope after portal (selectors are .slot-page-root--cm622 …).
+        if (DESKTOP_LOBBY) {
+            providersSidebar.classList.add('slot-page-root--cm622');
+        }
+        if (providersSidebar.parentElement === document.body) return;
+        providerDrawerHomeParent = providersSidebar.parentElement;
+        providerDrawerHomeNext = providersSidebar.nextSibling;
+        document.body.appendChild(providersSidebar);
+    }
+
+    function restoreProviderDrawerHome() {
+        if (!providersSidebar || !providerDrawerHomeParent) return;
+        if (providerDrawerHomeNext && providerDrawerHomeNext.parentNode === providerDrawerHomeParent) {
+            providerDrawerHomeParent.insertBefore(providersSidebar, providerDrawerHomeNext);
+        } else {
+            providerDrawerHomeParent.appendChild(providersSidebar);
+        }
+        providerDrawerHomeParent = null;
+        providerDrawerHomeNext = null;
+    }
+
     function openProviderSheet() {
         if (!providersSidebar) return;
+        // Desktop CM622 drawer already paints its own backdrop. A separate
+        // .sidebar-overlay on <body> sits above in-page fixed layers and steals clicks.
+        if (isProvidersDrawerModal()) {
+            mountProviderDrawerToBody();
+            var overlay = document.querySelector('.sidebar-overlay');
+            if (overlay) overlay.classList.remove('active');
+        } else {
+            ensureSidebarOverlay().classList.add('active');
+        }
         providersSidebar.classList.add('mobile-open');
-        ensureSidebarOverlay().classList.add('active');
         document.body.classList.add('provider-sheet-open');
         syncProviderSidebarAria();
         updateDrawerButtonStates();
+        syncProviderItemActiveStates();
     }
 
     function closeProviderSheet() {
@@ -1195,6 +1292,7 @@
         var overlay = document.querySelector('.sidebar-overlay');
         if (overlay) overlay.classList.remove('active');
         document.body.classList.remove('provider-sheet-open');
+        restoreProviderDrawerHome();
         syncProviderSidebarAria();
     }
 
@@ -1259,8 +1357,18 @@
 
     const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
     if (mobileSidebarToggle && providersSidebar) {
-        mobileSidebarToggle.addEventListener('click', function() {
+        var openProvidersUi = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             openProviderSheet();
+        };
+        mobileSidebarToggle.addEventListener('click', openProvidersUi);
+        mobileSidebarToggle.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                openProvidersUi(e);
+            }
         });
     }
 
@@ -1275,14 +1383,33 @@
     if (providerSheetBackBtn) {
         providerSheetBackBtn.addEventListener('click', closeProviderSheet);
     }
+    var providerSheetCloseBtn = document.getElementById('providerSheetCloseBtn');
+    if (providerSheetCloseBtn) {
+        providerSheetCloseBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeProviderSheet();
+        });
+    }
     if (providerSheetApplyBtn) {
-        providerSheetApplyBtn.addEventListener('click', closeProviderSheet);
+        providerSheetApplyBtn.addEventListener('click', function() {
+            if (providerSheetApplyBtn.disabled) return;
+            closeProviderSheet();
+            if (navigateFromLobbyIfNeeded()) return;
+            updateUrl();
+            if (gameGrid) {
+                loadSlots(false);
+            } else {
+                window.location.href = buildFilterPageUrl();
+            }
+        });
     }
 
     /* ── Provider sheet reset button ── */
     var providerSheetResetBtn = document.getElementById('providerSheetResetBtn');
     if (providerSheetResetBtn) {
         providerSheetResetBtn.addEventListener('click', function() {
+            if (providerSheetResetBtn.disabled) return;
             /* Clear all selected providers and reload */
             state.providers = [];
             state.nextPage = 2;
@@ -1296,7 +1423,13 @@
             syncMobileFilterControls();
             updateDrawerButtonStates();
             closeProviderSheet();
-            loadSlots(false);
+            if (navigateFromLobbyIfNeeded()) return;
+            updateUrl();
+            if (gameGrid) {
+                loadSlots(false);
+            } else {
+                window.location.href = buildFilterPageUrl();
+            }
         });
     }
 
@@ -1320,7 +1453,9 @@
     }
 
     window.addEventListener('resize', function() {
-        if (window.innerWidth > 992) {
+        // Desktop CM622 uses the same drawer modal — do not auto-close on width > 992
+        // (scrollbar hide on open also fires resize and was instantly closing the modal).
+        if (!isProvidersDrawerModal() && !isMobileProviderSidebar() && window.innerWidth > 992) {
             closeProviderSheet();
         }
         syncProviderSidebarAria();
@@ -1328,98 +1463,223 @@
     });
     syncProviderSidebarAria();
 
-    /* ── Category tab arrows ── */
-    function scrollCategoryTabs(direction) {
-        if (!catScroll) return;
-        var amount = Math.max(220, Math.floor(catScroll.clientWidth * 0.65));
-        catScroll.scrollBy({ left: direction * amount, behavior: 'smooth' });
-    }
-    if (catArrowLeft && catScroll) catArrowLeft.addEventListener('click', function() { scrollCategoryTabs(-1); });
-    if (catArrowRight && catScroll) catArrowRight.addEventListener('click', function() { scrollCategoryTabs(1); });
+    /* ── Category rail: desktop = CM622 translateX+arrows; mobile = native swipe, no arrow icons ── */
+    var categoryRailUsesArrows = !!(catArrowLeft || catArrowRight);
+    var isMobileCategoryRail = !categoryRailUsesArrows
+        || !!(document.body && document.body.classList.contains('mobile-site'))
+        || (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 992px)').matches);
 
-    /* Orijinal slider hissi: kategori satırını sürükleyerek yatay kaydır. */
-    if (catScroll) {
-        catScroll.querySelectorAll('.ds-chip, .cat-tab').forEach(function(tab) {
+    var categoryDrag = {
+        active: false,
+        moved: false,
+        pointerId: null,
+        startX: 0,
+        startOffset: 0
+    };
+
+    function measureCategoryRailMax() {
+        if (!catScrollViewport || !catScrollInner) {
+            categoryRailOffset.max = 0;
+            return 0;
+        }
+        var max = Math.max(0, catScrollInner.scrollWidth - catScrollViewport.clientWidth);
+        categoryRailOffset.max = max;
+        if (categoryRailOffset.value > max) categoryRailOffset.value = max;
+        return max;
+    }
+
+    function applyCategoryRailOffset(next, opts) {
+        opts = opts || {};
+        if (!catScrollInner || !catScrollViewport) return;
+        measureCategoryRailMax();
+        var value = Math.max(0, Math.min(categoryRailOffset.max, next));
+        categoryRailOffset.value = value;
+        if (isMobileCategoryRail || !categoryRailUsesArrows) {
+            catScrollInner.style.transform = 'none';
+            catScrollViewport.scrollLeft = value;
+            return;
+        }
+        if (opts.instant && catScrollInner) {
+            catScrollInner.classList.add('is-dragging');
+        }
+        catScrollInner.style.transform = 'translateX(' + (-value) + 'px)';
+        if (!opts.instant && catScrollInner.classList.contains('is-dragging') && !opts.keepDragging) {
+            catScrollInner.classList.remove('is-dragging');
+        }
+        updateCategoryArrowState();
+    }
+
+    function updateCategoryArrowState() {
+        if (!catScrollViewport) return;
+        // Mobile: never show arrow / fade chrome.
+        if (isMobileCategoryRail || !categoryRailUsesArrows) {
+            if (catArrowLeft) catArrowLeft.hidden = true;
+            if (catArrowRight) catArrowRight.hidden = true;
+            if (catArrowShadowLeft) catArrowShadowLeft.hidden = true;
+            if (catArrowShadowRight) catArrowShadowRight.hidden = true;
+            catScrollViewport.classList.remove('horizontal-scroll--fade-start', 'horizontal-scroll--fade-end', 'horizontal-scroll--has-arrows');
+            return;
+        }
+        measureCategoryRailMax();
+        var max = categoryRailOffset.max;
+        var left = categoryRailOffset.value;
+        var showLeft = max > 2 && left > 2;
+        var showRight = max > 2 && left < max - 2;
+
+        catScrollViewport.classList.toggle('horizontal-scroll--fade-start', showLeft);
+        catScrollViewport.classList.toggle('horizontal-scroll--fade-end', showRight || (!showLeft && max > 2));
+        catScrollViewport.classList.toggle('horizontal-scroll--has-arrows', max > 2);
+        catScrollViewport.classList.toggle('horizontal-scroll--no-scroll', max <= 2);
+        if (catArrowLeft) catArrowLeft.hidden = !showLeft;
+        if (catArrowShadowLeft) catArrowShadowLeft.hidden = !showLeft;
+        if (catArrowRight) catArrowRight.hidden = !showRight;
+        if (catArrowShadowRight) catArrowShadowRight.hidden = !showRight;
+    }
+
+    function scrollCategoryTabs(direction) {
+        if (!catScrollViewport) return;
+        var amount = catScrollViewport.clientWidth * 0.5;
+        applyCategoryRailOffset(categoryRailOffset.value + direction * amount);
+    }
+    if (catArrowLeft && catScrollViewport && categoryRailUsesArrows) {
+        catArrowLeft.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            scrollCategoryTabs(-1);
+        });
+    }
+    if (catArrowRight && catScrollViewport && categoryRailUsesArrows) {
+        catArrowRight.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            scrollCategoryTabs(1);
+        });
+    }
+
+    if (catScrollViewport && catScrollInner) {
+        catScrollViewport.querySelectorAll('.ds-chip, .cat-tab, a').forEach(function(tab) {
             tab.setAttribute('draggable', 'false');
             tab.addEventListener('dragstart', function(e) {
                 e.preventDefault();
             });
         });
 
-        var categoryDrag = {
-            active: false,
-            moved: false,
-            startX: 0,
-            startScrollLeft: 0
-        };
+        // Desktop only: pointer drag → translateX. Mobile uses native overflow swipe.
+        if (categoryRailUsesArrows && !isMobileCategoryRail) {
+            var DRAG_THRESHOLD = 10;
 
-        catScroll.addEventListener('pointerdown', function(e) {
-            if (e.button !== undefined && e.button !== 0) return;
-            categoryDrag.active = true;
-            categoryDrag.moved = false;
-            categoryDrag.startX = e.clientX;
-            categoryDrag.startScrollLeft = catScroll.scrollLeft;
-            catScroll.classList.add('is-dragging');
-            try {
-                catScroll.setPointerCapture(e.pointerId);
-            } catch (err) {}
-        });
+            catScrollViewport.addEventListener('pointerdown', function(e) {
+                if (e.button !== undefined && e.button !== 0) return;
+                if (e.target && e.target.closest && e.target.closest('.horizontal-scroll__arrow')) return;
+                categoryDrag.active = true;
+                categoryDrag.moved = false;
+                categoryDrag.pointerId = e.pointerId;
+                categoryDrag.startX = e.clientX;
+                categoryDrag.startOffset = categoryRailOffset.value;
+            });
 
-        catScroll.addEventListener('pointermove', function(e) {
-            if (!categoryDrag.active) return;
-            var dx = e.clientX - categoryDrag.startX;
-            if (Math.abs(dx) > 4) {
-                categoryDrag.moved = true;
+            catScrollViewport.addEventListener('pointermove', function(e) {
+                if (!categoryDrag.active) return;
+                var dx = e.clientX - categoryDrag.startX;
+                if (!categoryDrag.moved && Math.abs(dx) < DRAG_THRESHOLD) return;
+                if (!categoryDrag.moved) {
+                    categoryDrag.moved = true;
+                    catScrollInner.classList.add('is-dragging');
+                    try {
+                        catScrollViewport.setPointerCapture(e.pointerId);
+                    } catch (err) {}
+                }
                 e.preventDefault();
+                applyCategoryRailOffset(categoryDrag.startOffset - dx, { instant: true, keepDragging: true });
+            });
+
+            function endCategoryDrag(e) {
+                if (!categoryDrag.active) return;
+                var wasMoved = categoryDrag.moved;
+                categoryDrag.active = false;
+                categoryDrag.pointerId = null;
+                catScrollInner.classList.remove('is-dragging');
+                try {
+                    if (e && e.pointerId !== undefined) {
+                        catScrollViewport.releasePointerCapture(e.pointerId);
+                    }
+                } catch (err) {}
+                if (wasMoved) {
+                    window.setTimeout(function() {
+                        categoryDrag.moved = false;
+                    }, 0);
+                }
+                updateCategoryArrowState();
             }
-            catScroll.scrollLeft = categoryDrag.startScrollLeft - dx;
-        });
 
-        function endCategoryDrag(e) {
-            if (!categoryDrag.active) return;
-            categoryDrag.active = false;
-            catScroll.classList.remove('is-dragging');
-            try {
-                catScroll.releasePointerCapture(e.pointerId);
-            } catch (err) {}
+            catScrollViewport.addEventListener('pointerup', endCategoryDrag);
+            catScrollViewport.addEventListener('pointercancel', endCategoryDrag);
+            catScrollViewport.addEventListener('lostpointercapture', function() {
+                categoryDrag.active = false;
+                catScrollInner.classList.remove('is-dragging');
+            });
+            catScrollViewport.addEventListener('click', function(e) {
+                if (!categoryDrag.moved) return;
+                e.preventDefault();
+                e.stopPropagation();
+                categoryDrag.moved = false;
+            }, true);
+
+            if (typeof ResizeObserver !== 'undefined') {
+                var railRo = new ResizeObserver(function() {
+                    applyCategoryRailOffset(categoryRailOffset.value);
+                });
+                railRo.observe(catScrollViewport);
+                railRo.observe(catScrollInner);
+            }
+            window.addEventListener('resize', function() {
+                applyCategoryRailOffset(categoryRailOffset.value);
+            });
+            applyCategoryRailOffset(0, { instant: true });
+            catScrollInner.classList.remove('is-dragging');
+        } else {
+            catScrollInner.style.transform = 'none';
+            updateCategoryArrowState();
         }
-
-        catScroll.addEventListener('pointerup', endCategoryDrag);
-        catScroll.addEventListener('pointercancel', endCategoryDrag);
-        catScroll.addEventListener('click', function(e) {
-            if (!categoryDrag.moved) return;
-            e.preventDefault();
-            e.stopPropagation();
-            categoryDrag.moved = false;
-        }, true);
     }
 
     /* Aktif kategori sekmesini görünür yap (scroll alanında ortalanmış) */
     function scrollActiveCategoryIntoView() {
-        if (!catScroll) return;
-        var activeTab = catScroll.querySelector('.cat-tab.active, .ds-chip--selected');
+        if (!catScrollViewport || !catScrollInner) return;
+        var activeTab = catScrollViewport.querySelector('.cat-tab.active, .ds-chip--selected');
         if (!activeTab) return;
         requestAnimationFrame(function() {
-            var tabLeft = activeTab.offsetLeft;
-            var tabWidth = activeTab.offsetWidth;
-            var containerWidth = catScroll.clientWidth;
-            var maxScroll = catScroll.scrollWidth - containerWidth;
-            if (maxScroll <= 0) return;
-            var scrollLeft = tabLeft - (containerWidth / 2) + (tabWidth / 2);
-            scrollLeft = Math.max(0, Math.min(scrollLeft, maxScroll));
-            catScroll.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+            if (isMobileCategoryRail || !categoryRailUsesArrows) {
+                try {
+                    activeTab.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+                } catch (err) {
+                    activeTab.scrollIntoView(false);
+                }
+                return;
+            }
+            measureCategoryRailMax();
+            if (categoryRailOffset.max <= 0) return;
+            var railRect = catScrollViewport.getBoundingClientRect();
+            var tabRect = activeTab.getBoundingClientRect();
+            var tabCenterInContent = (tabRect.left - railRect.left) + categoryRailOffset.value + (tabRect.width / 2);
+            var next = tabCenterInContent - (catScrollViewport.clientWidth / 2);
+            applyCategoryRailOffset(next);
         });
     }
 
-    /* Kategori çubuğunda fare tekerleği ile yatay kaydırma */
-    if (catScroll) {
-        catScroll.addEventListener('wheel', function(e) {
-            var delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    /* Desktop CM622: wheel → translateX */
+    if (catScrollViewport && categoryRailUsesArrows && !isMobileCategoryRail) {
+        catScrollViewport.addEventListener('wheel', function(e) {
+            measureCategoryRailMax();
+            if (categoryRailOffset.max <= 0) return;
+            var delta = e.deltaY + e.deltaX;
             if (delta === 0) return;
-            var maxScroll = catScroll.scrollWidth - catScroll.clientWidth;
-            if (maxScroll <= 0) return;
+            var atStart = categoryRailOffset.value <= 0 && delta < 0;
+            var atEnd = categoryRailOffset.value >= categoryRailOffset.max - 1 && delta > 0;
+            if (atStart || atEnd) return;
             e.preventDefault();
-            catScroll.scrollLeft += delta;
+            applyCategoryRailOffset(categoryRailOffset.value + delta, { instant: true, keepDragging: true });
+            catScrollInner && catScrollInner.classList.remove('is-dragging');
         }, { passive: false });
     }
 
@@ -1432,7 +1692,25 @@
     });
 
     /* ── Sidebar provider chip ── */
-    function toggleProvider(provider) {
+    function isProviderDrawerOpen() {
+        return !!(providersSidebar && providersSidebar.classList.contains('mobile-open'));
+    }
+
+    function syncProviderItemActiveStates() {
+        if (!sidebarProvidersList) return;
+        var items = sidebarProvidersList.querySelectorAll('.sidebar-provider-item, .providerItemsInner');
+        items.forEach(function(item) {
+            if (item.getAttribute('data-provider-all') === '1') {
+                item.classList.toggle('active', state.providers.length === 0);
+                return;
+            }
+            var p = item.getAttribute('data-provider');
+            item.classList.toggle('active', !!(p && state.providers.indexOf(p) !== -1));
+        });
+    }
+
+    function toggleProvider(provider, opts) {
+        opts = opts || {};
         const idx = state.providers.indexOf(provider);
         if (idx !== -1) {
             state.providers.splice(idx, 1);
@@ -1442,38 +1720,54 @@
         state.nextPage = 2;
         syncMobileFilterControls();
         updateDrawerButtonStates();
+        syncProviderItemActiveStates();
+        // In drawer: wait for Apply. Carousel/direct click navigates immediately.
+        if (opts.deferNavigate || (DESKTOP_LOBBY && isProviderDrawerOpen())) {
+            return;
+        }
+        if (navigateFromLobbyIfNeeded()) return;
         loadSlots(false);
     }
 
-    function selectAllProviders() {
-        clearFilters();
+    function selectAllProviders(opts) {
+        opts = opts || {};
+        state.providers = [];
+        state.search = '';
+        state.nextPage = 2;
+        syncMobileFilterControls();
+        updateDrawerButtonStates();
+        syncProviderItemActiveStates();
+        if (opts.deferNavigate || (DESKTOP_LOBBY && isProviderDrawerOpen())) {
+            return;
+        }
+        if (navigateFromLobbyIfNeeded()) return;
         loadSlots(false);
     }
 
-    function activateProviderItem(item) {
+    function activateProviderItem(item, opts) {
         if (!item) return;
         var provider = item.getAttribute('data-provider');
         if (provider) {
-            toggleProvider(provider);
+            toggleProvider(provider, opts);
         } else if (item.getAttribute('data-provider-all') === '1') {
-            selectAllProviders();
+            selectAllProviders(opts);
         }
     }
 
     if (sidebarProvidersList) {
         sidebarProvidersList.addEventListener('click', function(e) {
-            var item = e.target.closest('.sidebar-provider-item');
+            var item = e.target.closest('.sidebar-provider-item, .providerItemsInner[data-provider], .providerItemsInner[data-provider-all]');
             if (!item || !sidebarProvidersList.contains(item)) return;
             e.preventDefault();
-            activateProviderItem(item);
+            activateProviderItem(item, { deferNavigate: DESKTOP_LOBBY && isProviderDrawerOpen() });
         });
 
         sidebarProvidersList.addEventListener('keydown', function(e) {
             if (e.key !== 'Enter' && e.key !== ' ') return;
-            var item = e.target.closest('.sidebar-provider-item');
+            var item = e.target.closest('.sidebar-provider-item, .providerItemsInner[data-provider], .providerItemsInner[data-provider-all]');
             if (!item || !sidebarProvidersList.contains(item)) return;
             e.preventDefault();
-            activateProviderItem(item);
+            activateProviderItem(item, { deferNavigate: DESKTOP_LOBBY && isProviderDrawerOpen() });
         });
     }
 
@@ -1612,11 +1906,27 @@
         BuyFeature: 'freespin',
         InstantWin: 'instant',
         TableGames: 'table',
-        Slots: 'slots'
+        Slots: 'slots',
+        // CM622 live-casino/home chips
+        gameShows: 'game-show',
+        poker: 'poker',
+        blackjack: 'blackjack',
+        roulette: 'roulette',
+        asianGames: 'asian',
+        turkishTables: 'turkish',
+        baccarat: 'baccarat',
+        farsiTables: 'farsi',
+        indianTables: 'indian',
+        brazilianTables: 'brazilian',
+        dutchTables: 'dutch',
+        arabicTables: 'arabic'
     };
 
     function getMobileOriginalCategorySort(tab) {
         if (!tab) return null;
+        if (tab.hasAttribute('data-sort')) {
+            return tab.getAttribute('data-sort') || '';
+        }
         var wrapper = tab.parentElement;
         var className = wrapper && typeof wrapper.className === 'string' ? wrapper.className : '';
         var matched = className.match(/category-([A-Za-z0-9]+)/);
@@ -1638,12 +1948,27 @@
     }
 
     if (catScroll) {
+        // Prefer native <a href> navigation; only patch chips that lack a real href.
         catScroll.addEventListener('click', function(e) {
             var chip = e.target.closest('.casinoNavigationAndFilters .casinoCategories .ds-chip');
             if (!chip || !catScroll.contains(chip)) return;
+            if (categoryDrag && categoryDrag.moved) return;
+            var dataHref = chip.getAttribute('href') || chip.getAttribute('data-href') || '';
+            if (chip.tagName === 'A' && dataHref && dataHref !== '#') {
+                // Let the browser follow the link (works with Ctrl/Cmd+click too).
+                return;
+            }
+            e.preventDefault();
+            if (dataHref) {
+                window.location.href = dataHref;
+                return;
+            }
+            if (chip.getAttribute('data-lobby-chip') === '1') {
+                window.location.href = buildCategoryHref('');
+                return;
+            }
             var sort = getMobileOriginalCategorySort(chip);
             if (sort === null) return;
-            e.preventDefault();
             window.location.href = buildCategoryHref(sort);
         });
 
@@ -1658,10 +1983,11 @@
 
         catScroll.addEventListener('keydown', function(e) {
             if (e.key !== 'Enter' && e.key !== ' ') return;
-            var tab = e.target.closest('.cat-tab[data-href]');
-            if (!tab || !catScroll.contains(tab) || tab.tagName === 'A') return;
+            var tab = e.target.closest('.cat-tab[data-href], .ds-chip[href], .ds-chip[data-href]');
+            if (!tab || !catScroll.contains(tab)) return;
+            if (tab.tagName === 'A' && tab.getAttribute('href')) return;
             e.preventDefault();
-            var href = tab.getAttribute('data-href');
+            var href = tab.getAttribute('data-href') || tab.getAttribute('href');
             if (href) window.location.href = href;
         });
     }
@@ -1679,14 +2005,44 @@
         }
 
         catScroll.querySelectorAll('.ds-chip').forEach(function(chip) {
-            var label = chip.querySelector('.chip__label');
-            var text = label ? (label.textContent || '').trim().toLowerCase() : '';
-            if (text === 'lobby') {
-                chip.classList.toggle('ds-chip--selected', state.sort === '');
+            if (chip.getAttribute('data-lobby-chip') === '1') {
+                chip.classList.toggle('ds-chip--selected', LOBBY_MODE || (!DESKTOP_LOBBY && state.sort === '' && !state.search && state.providers.length === 0));
                 return;
             }
+            if (chip.hasAttribute('data-sort')) {
+                var chipSort = chip.getAttribute('data-sort') || '';
+                var allSelected = state.sort === ''
+                    && !state.search
+                    && state.providers.length === 0
+                    && (
+                        !DESKTOP_LOBBY
+                        || String(config.view || '') === 'all'
+                    )
+                    && !LOBBY_MODE;
+                if (!DESKTOP_LOBBY && chipSort === '') {
+                    // Mobile original nav: Lobby chip owns the empty-sort state.
+                    chip.classList.remove('ds-chip--selected');
+                    return;
+                }
+                chip.classList.toggle(
+                    'ds-chip--selected',
+                    chipSort === '' ? allSelected : (chipSort === state.sort)
+                );
+                return;
+            }
+            var label = chip.querySelector('.chip__label');
+            var text = label ? (label.textContent || '').trim().toLowerCase() : '';
             if (text === 'tüm oyunlar') {
-                chip.classList.remove('ds-chip--selected');
+                if (!DESKTOP_LOBBY) {
+                    chip.classList.remove('ds-chip--selected');
+                    return;
+                }
+                chip.classList.toggle(
+                    'ds-chip--selected',
+                    !LOBBY_MODE
+                    && state.sort === ''
+                    && String(config.view || '') === 'all'
+                );
                 return;
             }
             var sort = getMobileOriginalCategorySort(chip);
@@ -1695,16 +2051,85 @@
         });
     }
 
+    function syncLobbyCarouselNav(swiper, prevBtn, nextBtn) {
+        if (!swiper) return;
+        var atStart = swiper.isBeginning;
+        var atEnd = swiper.isEnd;
+        if (prevBtn) {
+            prevBtn.disabled = atStart;
+            prevBtn.setAttribute('aria-disabled', atStart ? 'true' : 'false');
+            prevBtn.classList.toggle('ds-btn--disabled', atStart);
+        }
+        if (nextBtn) {
+            nextBtn.disabled = atEnd;
+            nextBtn.setAttribute('aria-disabled', atEnd ? 'true' : 'false');
+            nextBtn.classList.toggle('ds-btn--disabled', atEnd);
+        }
+    }
+
+    function initLobbyCarousels() {
+        if (!LOBBY_MODE || typeof Swiper === 'undefined') return;
+        var roots = document.querySelectorAll('[data-lobby-carousel-el]');
+        roots.forEach(function(wrapper) {
+            var id = wrapper.getAttribute('data-lobby-carousel-el') || '';
+            var swiperEl = wrapper.querySelector('.swiper');
+            if (!swiperEl || swiperEl.swiper) return;
+            var nav = document.querySelector('.sectionTitleBtnWrapper[data-lobby-carousel="' + id + '"]');
+            var prevBtn = nav ? nav.querySelector('.lobby-carousel-prev') : null;
+            var nextBtn = nav ? nav.querySelector('.lobby-carousel-next') : null;
+            var swiper = new Swiper(swiperEl, {
+                slidesPerView: 'auto',
+                spaceBetween: 16,
+                watchOverflow: true,
+                resistanceRatio: 0.65,
+                on: {
+                    init: function() { syncLobbyCarouselNav(this, prevBtn, nextBtn); },
+                    slideChange: function() { syncLobbyCarouselNav(this, prevBtn, nextBtn); },
+                    resize: function() { syncLobbyCarouselNav(this, prevBtn, nextBtn); }
+                }
+            });
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function() { swiper.slidePrev(); });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function() { swiper.slideNext(); });
+            }
+        });
+
+        var lobbySections = document.getElementById('casinoLobbySections');
+        if (lobbySections) {
+            lobbySections.addEventListener('click', function(e) {
+                var openProvidersLink = e.target.closest('[data-lobby-section="providers"] .ds-link[data-href], .casinoProvidersWidget .ds-link[data-href]');
+                if (openProvidersLink && lobbySections.contains(openProvidersLink)) {
+                    e.preventDefault();
+                    openProviderSheet();
+                    return;
+                }
+                var item = e.target.closest('.lobby-providers-swiper .providerItemsInner, .lobby-providers-swiper .sidebar-provider-item');
+                if (!item || !lobbySections.contains(item)) return;
+                e.preventDefault();
+                var provider = item.getAttribute('data-provider');
+                if (!provider) return;
+                state.providers = [provider];
+                state.search = '';
+                state.sort = '';
+                state.nextPage = 2;
+                window.location.href = buildFilterPageUrl();
+            });
+        }
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
             setActiveCategoryTab();
             scrollActiveCategoryIntoView();
             syncMobileFilterControls();
+            initLobbyCarousels();
             // Canonicalize legacy providers[]=%5B%5D URLs to providers=Name.
             if (state.providers.length > 0 || /providers(%5B%5D|\[\]|=)/i.test(window.location.search)) {
                 updateUrl();
             }
-            if (API_ADAPTER === 'member_api_games' && gameGrid) {
+            if (API_ADAPTER === 'member_api_games' && gameGrid && !LOBBY_MODE) {
                 loadSlots(false);
             }
         });
@@ -1712,10 +2137,11 @@
         setActiveCategoryTab();
         scrollActiveCategoryIntoView();
         syncMobileFilterControls();
+        initLobbyCarousels();
         if (state.providers.length > 0 || /providers(%5B%5D|\[\]|=)/i.test(window.location.search)) {
             updateUrl();
         }
-        if (API_ADAPTER === 'member_api_games' && gameGrid) {
+        if (API_ADAPTER === 'member_api_games' && gameGrid && !LOBBY_MODE) {
             loadSlots(false);
         }
     }

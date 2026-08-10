@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
@@ -87,7 +87,7 @@ $lifetimePoints = (int) ($account['lifetime_points'] ?? $points);
 $canRedeem = $redeemablePoints >= 100;
 $progressPercent = max(0, min(100, (int) ($progress['percent'] ?? 0)));
 $nextLevelName = $nextLevel['name'] ?? null;
-$pointsToNext = max(0, (int) ($progress['points_to_next'] ?? 0));
+$pointsToNext = max(0, (int) ($progress['points_to_next'] ?? $progress['points_to_next_level'] ?? 0));
 
 $profile_content_title = 'SADAKAT PUANLARI';
 $profile_content_page_class = 'personal-details-page--loyalty-points';
@@ -147,6 +147,9 @@ $formatDate = static function (string $value): string {
                     <small class="lp-stat-sub">100 puan = 1 TRY bonus</small>
                 </article>
             </div>
+
+            <p class="lp-stat-sub" style="margin:0 0 8px;">Puan kazanımı: gerçek bakiyeden yapılan her 1 TRY bahis = 1 sadakat puanı (bonus cüzdan bahisleri puan üretmez).</p>
+            <p class="lp-stat-sub" style="margin:0 0 16px;">Haftalık cashback: seviye oranınız × haftalık net kayıp (bahis − kazanç) otomatik bonus bakiyeye yatırılır. Seviye haftalık sabiti de aktivite varsa ödenir.</p>
 
             <div class="lp-progress-wrap" aria-label="Sadakat ilerlemesi">
                 <div class="lp-progress-head">

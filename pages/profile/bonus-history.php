@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 include __DIR__ . '/database.php';
 
@@ -40,18 +40,35 @@ $profile_close_href_full = '/profile/details';
             <p class="bonus-claims-lead">Panel üzerinden ilettiğiniz bonus taleplerinin durumunu buradan takip edebilirsiniz.</p>
 
             <div class="bonus-history-filters bonus-claims-toolbar">
-                <div class="bghf-group">
-                    <label class="bghf-label" for="bonusClaimsLimit">LİSTE ADEDİ</label>
-                    <select id="bonusClaimsLimit" class="bghf-select" aria-label="Döndürülecek kayıt sayısı">
-                        <option value="10">10</option>
-                        <option value="20" selected>20</option>
-                        <option value="30">30</option>
-                        <option value="50">50</option>
-                    </select>
+                <?php
+                $cm622_filter_form_id = 'bonusClaimsFilterForm';
+                $cm622_filter_no_form = true;
+                $cm622_filter_title = 'FİLTRE';
+                include __DIR__ . '/../../views/partials/cm622-filter-shell-open.php';
+                ?>
+                <div class="u-i-p-control-item-holder-bc">
+                    <?php
+                    $ms_id = 'bonusClaimsLimitMs';
+                    $ms_input_id = 'bonusClaimsLimit';
+                    $ms_name = '';
+                    $ms_title = 'LİSTE ADEDİ';
+                    $ms_selected = '20';
+                    $ms_options = [
+                        '10' => '10',
+                        '20' => '20',
+                        '30' => '30',
+                        '50' => '50',
+                    ];
+                    include __DIR__ . '/../../views/partials/cm622-multi-select.php';
+                    ?>
                 </div>
-                <div class="bghf-group bghf-actions">
-                    <button type="button" id="bonusClaimsReload" class="bghf-btn-show">YENİLE</button>
-                </div>
+                <?php
+                $cm622_filter_submit_label = 'Yenile';
+                $cm622_filter_submit_id = 'bonusClaimsReload';
+                $cm622_filter_submit_type = 'button';
+                $cm622_filter_no_form = true;
+                include __DIR__ . '/../../views/partials/cm622-filter-shell-close.php';
+                ?>
             </div>
 
             <div id="bonusClaimsStatus" class="bonus-claims-status" role="status" aria-live="polite"></div>

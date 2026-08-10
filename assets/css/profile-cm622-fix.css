@@ -1,0 +1,1637 @@
+/**
+ * Runtime bridge for CM622 profile modal.
+ * Original chunk CSS lives in bc-cm622-profile.css — this only protects layout
+ * against Vegas profile.css / JS display overrides.
+ */
+/* CM622 tokens stay on profile surfaces only — never html/body (auth/header leak). */
+html.is-web:not(.is-mobile) #profileModal.user-profile-container,
+html.is-web:not(.is-mobile) #profileModal.is-web,
+html.is-web:not(.is-mobile) .u-i-profile-page-container,
+html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
+  --b: 0, 11, 36;
+  --b-sc: 255, 255, 255;
+  /* Brand accent (thin active bar / CTAs) — never used as accordion fill */
+  --hero: 133, 15, 131;
+  --hero-hover: 168, 40, 165;
+  --hero-sc: 255, 255, 255;
+  --oc-1: 133, 15, 131;
+  --oc-1-hover: 168, 40, 165;
+  --oc-1-sc: 255, 255, 255;
+  --oc-2: 242, 193, 64;
+  --oc-3: 213, 16, 130;
+  --header-sc: 255, 255, 255;
+  --border-radius: 4px;
+  --default-transition-duration: .2s;
+  --default-transition-delay: .15s;
+  --slow-transition-duration: .3s;
+  --padding-page-aside: 10px;
+}
+
+#profileModal.popup-holder-bc.windowed.user-profile-container.is-open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Kill pink outer glow when modal opens */
+#profileModal > .popup-middleware-bc > .popup-inner-bc {
+  box-shadow: 0 12px 48px rgba(0, 0, 0, .55) !important;
+}
+
+/* Keep original flex pane (JS used to force display:block) */
+#profileModal #depositSection.dep-w-info-bc:not(.is-cm622-pane-hidden),
+#profileModal .dep-w-info-bc:not(.is-cm622-pane-hidden),
+#profileModal #withdrawSection.dep-w-info-bc:not(.is-cm622-pane-hidden) {
+  display: flex !important;
+  flex-direction: column !important;
+}
+#profileModal #depositSection.is-cm622-pane-hidden,
+#profileModal #withdrawSection.is-cm622-pane-hidden,
+#profileModal .dep-w-info-bc.is-cm622-pane-hidden {
+  display: none !important;
+}
+
+/* Kill legacy purple glow / button-card look from profile.css */
+#profileModal #depositGrid .m-nav-items-list-item-bc.deposit-card,
+#profileModal #withdrawGrid .m-nav-items-list-item-bc.deposit-card,
+#profileModal #depositGrid .deposit-card,
+#profileModal #withdrawGrid .deposit-card {
+  box-shadow: none !important;
+  justify-content: center !important;
+  min-height: 56px !important;
+  padding: 0 10px !important;
+  overflow: hidden !important;
+  border-radius: var(--border-radius) !important;
+}
+#profileModal #depositGrid .m-nav-items-list-item-bc.deposit-card.is-selected,
+#profileModal #depositGrid .m-nav-items-list-item-bc.deposit-card.active,
+#profileModal #withdrawGrid .m-nav-items-list-item-bc.deposit-card.is-selected,
+#profileModal #withdrawGrid .m-nav-items-list-item-bc.deposit-card.active {
+  border: 1px solid rgba(var(--header-sc), .2) !important;
+  background: rgba(var(--header-sc), .25) !important;
+  box-shadow: none !important;
+}
+#profileModal #depositGrid .payment-logo,
+#profileModal #withdrawGrid .payment-logo,
+#profileModal #depositGrid .deposit-card img,
+#profileModal #withdrawGrid .deposit-card img {
+  width: auto !important;
+  max-width: 90px !important;
+  max-height: 40px !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  border-radius: 0 !important;
+  object-fit: contain !important;
+  background: transparent !important;
+  transform: none !important;
+}
+#profileModal #depositGrid .deposit-card-name,
+#profileModal #withdrawGrid .deposit-card-name,
+#profileModal #depositGrid .deposit-card-arrow,
+#profileModal #withdrawGrid .deposit-card-arrow {
+  display: none !important;
+}
+#profileModal .withdraw-balance-line {
+  margin-top: 8px;
+  color: rgba(var(--b-sc), .75);
+  font-size: 12px;
+}
+
+/* Balance tile colors (also in UserProfile chunk; reinforce) */
+#profileModal .u-i-p-amounts-bc.withdrawable .u-i-p-a-content-bc {
+  background: #109121 !important;
+  color: #fff !important;
+}
+#profileModal .u-i-p-amounts-bc.bonuses .u-i-p-a-content-bc {
+  background: #aa7f00 !important;
+  color: #fff !important;
+}
+
+/* Bakiye göster / gizle göz ikonu */
+.u-i-p-a-c-icon-bc[data-profile-balance-toggle],
+#profileModal .u-i-p-a-c-icon-bc[data-profile-balance-toggle],
+#mprofilePanel .u-i-p-a-c-icon-bc[data-profile-balance-toggle] {
+  cursor: pointer !important;
+  user-select: none;
+  flex-shrink: 0;
+}
+.u-i-p-a-c-icon-bc[data-profile-balance-toggle]:hover,
+#profileModal .u-i-p-a-c-icon-bc[data-profile-balance-toggle]:hover,
+#mprofilePanel .u-i-p-a-c-icon-bc[data-profile-balance-toggle]:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.28) !important;
+}
+.bc-i-eye::before { content: "\e90c"; }
+.bc-i-eye-hidden::before { content: "\e909"; }
+
+/* Promo code: input + UYGULA yan yana (sidebar / modal) */
+#profileModal .profile-panel-promo-code,
+#profileModal .promoCodeWrapper-bc,
+.u-i-profile-page-bc .profile-panel-promo-code,
+.u-i-profile-page-bc .promoCodeWrapper-bc {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 14px !important;
+  padding: 0 0 2px !important;
+}
+
+#profileModal .profile-panel-promo-code form,
+#profileModal .promoCodeWrapper-bc form,
+.u-i-profile-page-bc .profile-panel-promo-code form,
+.u-i-profile-page-bc .promoCodeWrapper-bc form {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#profileModal .profile-panel-promo-code .u-i-p-control-item-holder-bc,
+#profileModal .promoCodeWrapper-bc .u-i-p-control-item-holder-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .u-i-p-control-item-holder-bc,
+.u-i-profile-page-bc .promoCodeWrapper-bc .u-i-p-control-item-holder-bc {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  margin: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 0 !important;
+  order: 0 !important;
+}
+
+#profileModal .profile-panel-promo-code .form-control-bc,
+#profileModal .profile-panel-promo-code .form-control-label-bc.inputs,
+#profileModal .promoCodeWrapper-bc .form-control-bc,
+#profileModal .promoCodeWrapper-bc .form-control-label-bc.inputs,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-label-bc.inputs {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  margin: 0 !important;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+#profileModal .profile-panel-promo-code .form-control-input-bc,
+#profileModal .promoCodeWrapper-bc .form-control-input-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-input-bc {
+  width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 12px !important;
+  font-size: 13px !important;
+  line-height: 40px !important;
+  box-sizing: border-box !important;
+}
+
+#profileModal .profile-panel-promo-code .form-control-title-bc,
+#profileModal .promoCodeWrapper-bc .form-control-title-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-title-bc {
+  top: 50% !important;
+  left: 12px !important;
+  right: 12px !important;
+  width: auto !important;
+  transform: translateY(-50%) !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.12s ease, top 0.12s ease, font-size 0.12s ease, transform 0.12s ease;
+}
+
+/* Yazı varken / odaktayken etiket üste çıksın veya kaybolsun — JS .filled olmasa da :has ile çalışır */
+#profileModal .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
+#profileModal .profile-panel-promo-code .form-control-bc.focused .form-control-title-bc,
+#profileModal .promoCodeWrapper-bc .form-control-bc.filled .form-control-title-bc,
+#profileModal .promoCodeWrapper-bc .form-control-bc.focused .form-control-title-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.focused .form-control-title-bc,
+#profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:focus) .form-control-title-bc,
+#profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
+#profileModal .promoCodeWrapper-bc .form-control-bc:has(.form-control-input-bc:focus) .form-control-title-bc,
+#profileModal .promoCodeWrapper-bc .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:focus) .form-control-title-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc.focused .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc {
+  top: 4px !important;
+  transform: none !important;
+  font-size: 9px !important;
+  line-height: 11px !important;
+  opacity: 1 !important;
+}
+
+/* Değer girilmişken floating label tamamen gizle — metinle üst üste binmesin */
+#profileModal .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
+#profileModal .promoCodeWrapper-bc .form-control-bc.filled .form-control-title-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
+#profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
+#profileModal .promoCodeWrapper-bc .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+#profileModal .profile-panel-promo-code .form-control-bc.filled .form-control-input-bc,
+#profileModal .promoCodeWrapper-bc .form-control-bc.filled .form-control-input-bc,
+#profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-input-bc,
+#profileModal .promoCodeWrapper-bc .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-input-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.filled .form-control-input-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-input-bc {
+  padding: 0 12px !important;
+  line-height: 40px !important;
+}
+
+#profileModal .profile-panel-promo-code .u-i-p-c-footer-bc,
+#profileModal .promoCodeWrapper-bc .u-i-p-c-footer-bc,
+.u-i-profile-page-bc .profile-panel-promo-code .u-i-p-c-footer-bc,
+.u-i-profile-page-bc .promoCodeWrapper-bc .u-i-p-c-footer-bc {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  order: 0 !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  align-self: stretch !important;
+}
+
+#profileModal .profile-panel-promo-code .btn.big-btn,
+#profileModal .promoCodeWrapper-bc .btn.big-btn,
+.u-i-profile-page-bc .profile-panel-promo-code .btn.big-btn,
+.u-i-profile-page-bc .promoCodeWrapper-bc .btn.big-btn {
+  max-width: none !important;
+  width: auto !important;
+  min-width: 84px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+/* Çıkış butonu — promo satırından net boşluk */
+#profileModal .u-i-profile-page-bc .userLogoutBtn,
+.u-i-profile-page-container .userLogoutBtn,
+[data-cm622-profile-sidebar] .userLogoutBtn,
+#profileModal .userLogoutBtn.btn {
+  margin-top: 12px !important;
+}
+
+/* Hide leftover Vegas bilgi chrome inside CM622 deposit pane until opened */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #bilgiModal[hidden] {
+  display: none !important;
+}
+
+/* Withdraw success popup: default hidden; JS toggles .is-open (must beat modal chrome rules) */
+#profileModal #successWithdrawalPopup.popup-container,
+#successWithdrawalPopup.popup-container {
+  display: none;
+}
+#profileModal #successWithdrawalPopup.popup-container.is-open,
+#successWithdrawalPopup.popup-container.is-open {
+  display: flex !important;
+  z-index: 10050;
+}
+
+/* Bilgi mode: hide deposit/withdraw UI; show limits info only (desktop modal only) */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active #depositSection,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active #withdrawSection {
+  display: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active #bilgiModal.is-bilgi-shown {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tabs {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tab {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tab.active {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-list-wrap {
+  background: transparent !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tile {
+  padding: 0 !important;
+  gap: 0 !important;
+  min-height: 96px !important;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tile img,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tile .bilgi-tile-logo {
+  width: 100% !important;
+  height: 70px !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 10px !important;
+  margin: 0 !important;
+  object-fit: contain !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tile-label {
+  width: 100%;
+  padding: 6px 4px 8px !important;
+  font-size: 0.62rem !important;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Right pane: fill height, scroll children — not the broken height:100% slider */
+#profileModal #profileModalContent.u-i-p-c-body-bc {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+#profileModal #profilePlayerMain,
+#profileModal .my-profile-info-block,
+#profileModal .profile-main-content {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: rgb(var(--b)) !important;
+}
+#profileModal #profilePlayerMain > .overlay-header {
+  flex-shrink: 0 !important;
+}
+#profileModal #profilePlayerMain > .dep-w-info-bc {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+/* Fake promo slider used to expand to full pane height via .sdr-image-bc{height:100%} */
+#profileModal .dep-w-info-bc > .slider-bc {
+  display: none !important;
+}
+#profileModal .dep-w-info-bc > .horizontal-sl-list {
+  margin-top: 15px !important;
+}
+#profileModal #profilePlayerMain > .my-profile-info-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  padding: 15px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display: block !important;
+}
+/* Neutralize legacy purple card chrome when class still appears on scroll wrapper */
+#profileModal .my-profile-info-scroll.personal-details-page,
+#profileModal .my-profile-info-scroll[class*="personal-details-page--"] {
+  background: transparent !important;
+  padding: 15px !important;
+}
+#profileModal .my-profile-info-scroll .personal-details-form,
+#profileModal .my-profile-info-scroll .personal-details-grid,
+#profileModal .my-profile-info-scroll .tx-history-filters,
+#profileModal .my-profile-info-scroll .tx-history-content {
+  max-width: 100%;
+}
+
+/*
+ * Sidebar accordion — CM622 original surfaces (hardcoded white alphas).
+ * Do NOT use --hero/--oc-1 here: those are brand magenta and must stay
+ * accents only (active cursor border / primary buttons).
+ */
+#profileModal .u-i-profile-page-bc .user-profile-nav,
+.u-i-profile-page-container .user-profile-nav,
+[data-cm622-profile-sidebar] .user-profile-nav {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+#profileModal .u-i-profile-page-bc .user-profile-nav-header,
+#profileModal .u-i-profile-page-bc .userLogoutBtn,
+.u-i-profile-page-container .user-profile-nav-header,
+.u-i-profile-page-container .userLogoutBtn,
+[data-cm622-profile-sidebar] .user-profile-nav-header,
+[data-cm622-profile-sidebar] .userLogoutBtn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-image: none !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+#profileModal .u-i-profile-page-bc .user-profile-nav-header:hover,
+#profileModal .u-i-profile-page-bc .userLogoutBtn:hover,
+#profileModal .u-i-profile-page-bc .userLogoutBtn:focus,
+.u-i-profile-page-container .user-profile-nav-header:hover,
+.u-i-profile-page-container .userLogoutBtn:hover,
+.u-i-profile-page-container .userLogoutBtn:focus,
+[data-cm622-profile-sidebar] .user-profile-nav-header:hover,
+[data-cm622-profile-sidebar] .userLogoutBtn:hover,
+[data-cm622-profile-sidebar] .userLogoutBtn:focus {
+  background: rgba(255, 255, 255, 0.15) !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  background-image: none !important;
+  color: rgba(255, 255, 255, 1) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+  outline: none !important;
+}
+#profileModal .u-i-profile-page-bc .user-profile-nav-list,
+.u-i-profile-page-container .user-profile-nav-list,
+[data-cm622-profile-sidebar] .user-profile-nav-list {
+  background: rgba(255, 255, 255, 0.10) !important;
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  background-image: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+#profileModal .u-i-profile-page-bc .user-profile-nav-item,
+#profileModal .u-i-profile-page-bc .user-profile-nav-item:visited,
+.u-i-profile-page-container .user-profile-nav-item,
+.u-i-profile-page-container .user-profile-nav-item:visited,
+[data-cm622-profile-sidebar] .user-profile-nav-item,
+[data-cm622-profile-sidebar] .user-profile-nav-item:visited {
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+#profileModal .u-i-profile-page-bc .user-profile-nav-item:hover,
+#profileModal .u-i-profile-page-bc .user-profile-nav-item:focus,
+#profileModal .u-i-profile-page-bc .user-profile-nav-item.active,
+.u-i-profile-page-container .user-profile-nav-item:hover,
+.u-i-profile-page-container .user-profile-nav-item:focus,
+.u-i-profile-page-container .user-profile-nav-item.active,
+[data-cm622-profile-sidebar] .user-profile-nav-item:hover,
+[data-cm622-profile-sidebar] .user-profile-nav-item:focus,
+[data-cm622-profile-sidebar] .user-profile-nav-item.active {
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+  color: rgba(255, 255, 255, 1) !important;
+  outline: none !important;
+}
+/* CM622 active cursor: navy wash + thin brand accent bar */
+#profileModal .u-i-profile-page-bc .user-profile-nav-item-cursor.user-profile-cursor-visible:after,
+.u-i-profile-page-container .user-profile-nav-item-cursor.user-profile-cursor-visible:after,
+[data-cm622-profile-sidebar] .user-profile-nav-item-cursor.user-profile-cursor-visible:after {
+  background-image: linear-gradient(to right, rgba(0, 11, 36, 0.3), rgba(0, 11, 36, 0.1)) !important;
+  border-inline-start: 2px solid rgb(133, 15, 131) !important;
+  box-shadow: none !important;
+}
+#profileModal .u-i-profile-page-bc .u-i-p-a-deposit-bc:hover,
+#profileModal .u-i-profile-page-bc .u-i-p-a-withdraw-bc:hover,
+.u-i-profile-page-container .u-i-p-a-deposit-bc:hover,
+.u-i-profile-page-container .u-i-p-a-withdraw-bc:hover {
+  background: #ffffff26 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+#profileModal .u-i-profile-page-bc a:hover,
+#profileModal .u-i-profile-page-bc button:hover,
+.u-i-profile-page-container a:hover,
+.u-i-profile-page-container button:hover {
+  text-decoration: none !important;
+}
+#profileModal .nav-ico-w-row-bc,
+#profileModal .m-nav-items-list-item-bc .nav-ico-w-row-bc {
+  box-shadow: none !important;
+  filter: none !important;
+}
+#profileModal .form-control-bc.focused .form-control-input-stroke-bc:after,
+#profileModal .form-control-bc.valid .form-control-input-stroke-bc:after {
+  background: rgba(var(--b-sc), .55) !important;
+  box-shadow: none !important;
+}
+#profileModal .count-odd-animation:after {
+  background: rgba(var(--b-sc), .35) !important;
+  color: rgba(var(--b), 1) !important;
+}
+
+/*
+ * Desktop-only CM622 alert (casino warning popup).
+ * Must NOT apply on mobile (.is-mobile / .mobile-site) — mobile keeps profile.css.
+ */
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog {
+  width: min(400px, calc(100vw - 32px));
+  max-width: 400px;
+  transform: translate(-50%, -50%);
+  transition: opacity .2s ease, visibility .2s ease;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog.is-open {
+  transform: translate(-50%, -50%);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__card {
+  background: rgb(0, 11, 36) !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  padding: 40px 15px 15px !important;
+  box-shadow: 0 0 5px rgba(0, 11, 36, 0.1), 0 16px 48px rgba(0, 0, 0, 0.55) !important;
+  text-align: center;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__card::before {
+  display: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__dismiss {
+  top: 11px !important;
+  right: 11px !important;
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 14px !important;
+  line-height: 24px !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__dismiss:hover {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__icon-wrap {
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 0 29px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  font-size: inherit !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__icon-wrap svg {
+  width: 57px;
+  height: 57px;
+  display: block;
+  margin: 0 auto;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__title {
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 18px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase !important;
+  color: rgba(255, 255, 255, 1) !important;
+  word-break: break-word;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__message {
+  margin: 30px 0 !important;
+  max-height: 70vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  word-break: break-word;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__primary {
+  width: auto !important;
+  min-width: 96px;
+  max-width: 100%;
+  margin: 0 auto !important;
+  display: block;
+  padding: 0 14px !important;
+  height: 28px;
+  line-height: 28px !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase;
+  color: #fff !important;
+  background: linear-gradient(329.84deg, #d80d83f2 27.27%, #f037a2f2 66.3%, #d80d83f2 110.73%) !important;
+  box-shadow: 0 1px 6px #fb275c80 !important;
+  filter: none !important;
+  transform: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__primary:hover,
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__primary:focus {
+  filter: brightness(1.05) !important;
+  transform: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__primary:active {
+  transform: none !important;
+}
+
+/*
+ * Desktop CM622 multi-select — all profile modal / profile page filters.
+ * Opens as an overlay panel under the trigger (does not push layout).
+ * Does not apply on mobile (.is-mobile / .mobile-site).
+ *
+ * Floating labels stay INSIDE the 52px field (CM622 original), never above.
+ */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms],
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] {
+  position: relative;
+  outline: none;
+  width: 100%;
+  z-index: 1;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms]:has(.form-control-bc.expanded),
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms]:has(.form-control-bc.expanded) {
+  z-index: 60;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-bc {
+  position: relative;
+  overflow: visible;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-label-bc.inputs,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-label-bc.inputs {
+  position: relative !important;
+  cursor: pointer;
+  height: 52px !important;
+  min-height: 52px !important;
+  display: block !important;
+  overflow: visible !important;
+  border-radius: var(--border-radius, 4px);
+  background: rgba(255, 255, 255, 0.15) !important;
+  box-sizing: border-box !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-select-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-select-bc {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  box-sizing: border-box;
+  padding: 22px 34px 8px 15px !important;
+  margin: 0;
+  border: 0 !important;
+  outline: none;
+  border-radius: var(--border-radius, 4px);
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 14px;
+  line-height: 1.2;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-title-bc {
+  position: absolute !important;
+  left: 0 !important;
+  right: auto !important;
+  top: 16px !important;
+  width: calc(100% - 48px) !important;
+  padding: 0 0 0 15px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  font-size: 14px !important;
+  line-height: 16px !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  transition: top 0.15s ease, font-size 0.15s ease, line-height 0.15s ease, color 0.15s ease !important;
+}
+/* Filled/focused: label inside with comfortable top gap (not clipped) */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-bc.focused .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-bc.focused .form-control-title-bc {
+  top: 8px !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-bc.expanded .form-control-select-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-bc.expanded .form-control-select-bc {
+  background: transparent !important;
+  border-radius: var(--border-radius, 4px) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-bc.expanded .form-control-label-bc.inputs,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-bc.expanded .form-control-label-bc.inputs {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-icon-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-icon-bc {
+  position: absolute !important;
+  top: 50% !important;
+  right: 14px !important;
+  left: auto !important;
+  transform: translateY(-50%) !important;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8) !important;
+  pointer-events: none;
+  z-index: 2;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .form-control-bc.expanded .form-control-icon-bc[class*="bc-i-small-arrow"]:before,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .form-control-bc.expanded .form-control-icon-bc[class*="bc-i-small-arrow"]:before {
+  transform: rotate(180deg);
+  display: inline-block;
+}
+/* Floating list panel — opens under trigger like original screenshot */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .multi-select-label-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .multi-select-label-bc {
+  display: block;
+  position: absolute !important;
+  left: 0;
+  right: 0;
+  top: 100%;
+  width: 100%;
+  max-height: 180px;
+  margin: 3px 0 0;
+  padding: 5px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: rgb(0, 11, 36) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 0 0 300px rgba(255, 255, 255, 0.04);
+  border-radius: var(--border-radius, 4px);
+  z-index: 70;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .multi-select-label-bc[hidden],
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .multi-select-label-bc[hidden] {
+  display: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .checkbox-control-content-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .checkbox-control-content-bc {
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-height: 30px;
+  padding: 4px 15px;
+  margin: 0;
+  border-radius: 0;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  box-sizing: border-box;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .checkbox-control-content-bc:last-child,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .checkbox-control-content-bc:last-child {
+  margin-bottom: 0;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .checkbox-control-content-bc:hover,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .checkbox-control-content-bc.active,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .checkbox-control-content-bc:hover,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .checkbox-control-content-bc.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 1);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .multi-select-bc[data-cm622-ms] .checkbox-control-text-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-select-bc[data-cm622-ms] .checkbox-control-text-bc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.3;
+  color: inherit;
+  pointer-events: none;
+}
+
+/*
+ * Desktop CM622 history filters — original componentFilter / filter-form-w-bc.
+ * Neutralizes leftover Vegas bhf/tx purple chrome inside the profile modal.
+ */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter {
+  width: 100%;
+  position: relative;
+  margin: 0 0 10px;
+  z-index: 10;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .componentFilterLabel-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .componentFilterLabel-bc {
+  display: none;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .componentFilterBody-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .componentFilterBody-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .componentFilterElsWrapper-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .componentFilterElsWrapper-bc {
+  display: block;
+  width: 100%;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .filter-form-w-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .filter-form-w-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bet-history-filters.filter-form-w-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .bet-history-filters.filter-form-w-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .tx-history-filters .filter-form-w-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .tx-history-filters .filter-form-w-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bonus-history-filters .filter-form-w-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .bonus-history-filters .filter-form-w-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .casino-history-filters .filter-form-w-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .casino-history-filters .filter-form-w-bc {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 10px !important;
+  margin: 0 !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 0 !important;
+  border-radius: var(--border-radius, 4px) !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-control-item-holder-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-control-item-holder-bc {
+  position: relative;
+  flex: 1 1 160px;
+  min-width: 140px;
+  max-width: 240px;
+  margin: 0 !important;
+  overflow: visible;
+  align-self: center;
+}
+/* Text / search fields — same 52px floating-label shell as selects */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-control-item-holder-bc > .form-control-bc.default,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-control-item-holder-bc > .form-control-bc.default {
+  position: relative !important;
+  width: 100% !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-control-item-holder-bc > .form-control-bc.default > .form-control-label-bc.inputs,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-control-item-holder-bc > .form-control-bc.default > .form-control-label-bc.inputs {
+  position: relative !important;
+  display: block !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  overflow: visible !important;
+  border-radius: var(--border-radius, 4px) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .form-control-input-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .form-control-input-bc {
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  padding: 22px 34px 8px 15px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  outline: none !important;
+  border-radius: var(--border-radius, 4px) !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .form-control-title-bc {
+  position: absolute !important;
+  left: 0 !important;
+  top: 16px !important;
+  width: calc(100% - 48px) !important;
+  padding: 0 0 0 15px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  font-size: 14px !important;
+  line-height: 16px !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  transition: top 0.15s ease, font-size 0.15s ease, line-height 0.15s ease, color 0.15s ease !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .form-control-bc.focused .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .form-control-bc.focused .form-control-title-bc {
+  top: 8px !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+/* Kill chunk CSS that pulls filled labels above the field (top:-2px) */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-bc.focused .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-bc.focused .form-control-title-bc {
+  top: 8px !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-c-footer-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-c-footer-bc {
+  flex: 0 0 auto;
+  margin: 0 0 0 auto !important;
+  padding: 0 !important;
+  align-self: center;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-c-footer-bc .btn.a-color,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-c-footer-bc .btn.a-color {
+  min-width: 96px;
+  width: auto !important;
+  max-width: none !important;
+  height: 52px !important;
+  padding: 0 18px;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .sport-search-icon,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .sport-search-icon {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+  z-index: 2;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .multi-select-bc[data-cm622-ms],
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .multi-select-bc[data-cm622-ms] {
+  min-width: 0;
+  width: 100%;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-date-range-label,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-date-range-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 52px;
+  padding: 18px 12px 6px;
+  box-sizing: border-box;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-date-range-fields,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-date-range-fields {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-date-range-fields .form-control-input-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-date-range-fields .form-control-input-bc {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 24px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 12px;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-date-sep,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-date-sep {
+  color: rgba(255, 255, 255, 0.55);
+  flex: 0 0 auto;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bhf-date-presets,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .bhf-date-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bhf-date-preset,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .bhf-date-preset {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--border-radius, 4px);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  cursor: pointer;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bhf-date-preset.is-active,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bhf-date-preset:hover,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .bhf-date-preset.is-active,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .bhf-date-preset:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-control-item-holder-bc.bhf-period-custom,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-control-item-holder-bc.bhf-period-custom {
+  flex: 1 1 100%;
+  max-width: none;
+}
+/* Kill Vegas purple filter strip leftovers inside modal */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bet-history-filters:not(.filter-form-w-bc),
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .tx-filter-toolbar,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bhf-btn-show,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .tx-filter-btn-show,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bghf-btn-show {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .personal-details-page--bet-history .bet-history-filters,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .tx-history-filters,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bonus-history-filters,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .casino-history-filters {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  overflow: visible !important;
+}
+
+/*
+ * Kişisel Detaylar — CM622 1:1 (desktop modal only).
+ * Fields scroll; magenta save footer stays pinned.
+ */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain:has(#personalDetailsForm) > .my-profile-info-scroll {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 15px !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm.user-profile,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm.user-profile {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  max-width: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfile-content,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfile-content {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  padding-inline-end: 2px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfileWrapper-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfileWrapper-bc {
+  width: 100%;
+  margin-bottom: 20px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfileWrapper-bc + .userProfileWrapper-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfileWrapper-bc + .userProfileWrapper-bc {
+  margin-bottom: 10px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfileWrapper-bc .u-i-p-control-item-holder-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfileWrapper-bc .u-i-p-control-item-holder-bc {
+  position: relative;
+  margin-bottom: 6px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfileSection-0,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfileSection-0 {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: space-between !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc:first-child,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc:first-child {
+  flex: 0 0 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-inline-start: 0 !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc:not(:first-child),
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc:not(:first-child) {
+  display: flex !important;
+  flex: 0 0 calc(50% - 5px) !important;
+  width: calc(50% - 5px) !important;
+  max-width: calc(50% - 5px) !important;
+  box-sizing: border-box;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc:nth-child(odd):not(:first-child),
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc:nth-child(odd):not(:first-child) {
+  margin-inline-start: 10px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc > .form-control-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc > .multi-select-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc > .form-control-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .userProfileSection-0 > .u-i-p-control-item-holder-bc > .multi-select-bc {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  flex: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-input-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-input-bc {
+  display: block !important;
+  width: 100% !important;
+  min-height: 52px !important;
+  height: 52px !important;
+  box-sizing: border-box !important;
+  padding: 20px 15px 4px !important;
+  line-height: 1.25 !important;
+  background: rgba(var(--b-sc), 0.15) !important;
+  border: 0 !important;
+  border-radius: var(--border-radius, 4px) !important;
+  color: rgba(var(--b-sc), 0.9) !important;
+  font-size: 14px !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-input-bc:read-only,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-input-bc:read-only {
+  color: rgba(var(--b-sc), 0.6) !important;
+  background: rgba(var(--b-sc), 0.05) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-title-bc {
+  left: 15px !important;
+  right: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-size: 14px !important;
+  line-height: 14px !important;
+  text-align: left !important;
+  pointer-events: none;
+  z-index: 3 !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-bc.focused .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-bc.focused .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .multi-select-bc[data-cm622-ms] .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .multi-select-bc[data-cm622-ms] .form-control-bc.focused .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .multi-select-bc[data-cm622-ms] .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .multi-select-bc[data-cm622-ms] .form-control-bc.focused .form-control-title-bc {
+  top: 9px !important;
+  left: 15px !important;
+  padding-left: 0 !important;
+  width: auto !important;
+  max-width: calc(100% - 48px) !important;
+  transform: none !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+  text-align: left !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .dropdownIcon-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .dropdownIcon-bc {
+  position: absolute !important;
+  top: 50% !important;
+  right: 14px !important;
+  left: auto !important;
+  z-index: 3;
+  transform: translateY(-50%);
+  color: rgba(var(--b-sc), 0.55);
+  font-size: 18px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dob-holder,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dob-holder {
+  position: relative;
+  overflow: visible !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm #dob_display,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm #dob_display {
+  cursor: pointer;
+  padding-inline-end: 40px !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-panel,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-panel {
+  position: fixed;
+  width: 260px;
+  max-width: min(260px, calc(100vw - 16px));
+  padding: 10px;
+  background: rgb(var(--b));
+  border: 1px solid rgba(var(--b-sc), 0.18);
+  border-radius: var(--border-radius, 4px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  z-index: 100200;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-panel[hidden],
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-panel[hidden] {
+  display: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-nav,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-prev,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-prev {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(var(--b-sc), 0.2);
+  border-radius: 3px;
+  background: rgba(var(--b-sc), 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-month,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-year,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-month,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-year {
+  display: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select-trigger,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select-trigger {
+  width: 100%;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid rgba(var(--b-sc), 0.2);
+  border-radius: 3px;
+  background: rgba(var(--b-sc), 0.08);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select-value,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select-trigger .bc-i-small-arrow-down,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select-trigger .bc-i-small-arrow-down {
+  flex-shrink: 0;
+  font-size: 10px;
+  opacity: 0.8;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select.is-open .profile-dp-select-trigger .bc-i-small-arrow-down:before,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select.is-open .profile-dp-select-trigger .bc-i-small-arrow-down:before {
+  display: inline-block;
+  transform: rotate(180deg);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select-menu,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 180px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px;
+  background: rgb(12, 8, 40);
+  border: 1px solid rgba(var(--b-sc), 0.22);
+  border-radius: 3px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  z-index: 5;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select-menu[hidden],
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select-menu[hidden] {
+  display: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select-menu--year,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select-menu--year {
+  max-height: 200px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select-option,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select-option {
+  width: 100%;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: rgba(var(--b-sc), 0.92);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select-option:hover,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select-option:hover {
+  background: rgba(var(--b-sc), 0.12);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-dp-select-option.is-active,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-dp-select-option.is-active {
+  background: rgba(var(--oc-1), 1);
+  color: #fff;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-panel,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-panel {
+  width: 280px;
+  max-width: min(280px, calc(100vw - 16px));
+  overflow: visible;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-weekdays,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(var(--b-sc), 0.7);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-days,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 8px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-day,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-day {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: rgba(var(--b-sc), 0.08);
+  color: rgba(var(--b-sc), 0.95);
+  font-size: 11px;
+  cursor: pointer;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-day:hover,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-day:hover {
+  background: rgba(var(--hero), 0.35);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-day.other-month,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-day.other-month {
+  color: rgba(var(--b-sc), 0.3);
+  background: transparent;
+  cursor: default;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-day.selected,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-day.selected {
+  background: rgba(var(--oc-1), 1);
+  color: #fff;
+  border-color: rgba(var(--oc-2), 0.9);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-actions,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-cancel,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-apply,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-cancel,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-apply {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-cancel,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-cancel {
+  background: rgba(var(--b-sc), 0.1);
+  color: rgba(var(--b-sc), 0.9);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .profile-datepicker-apply,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .profile-datepicker-apply {
+  background: rgba(var(--oc-1), 1);
+  color: #fff;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-bc.country-code .form-control-label-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-bc.country-code .form-control-label-bc {
+  position: relative !important;
+  display: block !important;
+  min-height: 52px;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-bc.country-code .form-control-select-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-bc.country-code .form-control-select-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-select .form-control-select-bc.country-select-value,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-select .form-control-select-bc.country-select-value {
+  min-height: 52px !important;
+  height: 52px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  padding: 20px 36px 8px 15px !important;
+  line-height: 1.2 !important;
+  background: transparent !important;
+  border-radius: var(--border-radius, 4px) !important;
+  color: rgba(var(--b-sc), 0.9) !important;
+  font-size: 14px !important;
+  text-align: left !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-select .country-select-text,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-select .country-select-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(var(--b-sc), 0.92) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-bc.country-code .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-bc.country-code .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-select .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-select .form-control-title-bc {
+  left: 15px !important;
+  padding-left: 0 !important;
+  text-align: left !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-bc.country-code,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-bc.country-code {
+  background: rgba(var(--b-sc), 0.15) !important;
+  border-radius: var(--border-radius, 4px);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-select .ftr-lang-bar-flag-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-select .ftr-lang-bar-flag-bc {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  top: auto !important;
+  flex: 0 0 22px !important;
+  width: 22px !important;
+  height: 16px !important;
+  margin: 0 0 2px !important;
+  border-radius: 2px;
+  background-color: transparent;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  z-index: 1;
+  pointer-events: none;
+  align-self: flex-end;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-panel,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-panel {
+  max-height: 260px !important;
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-panel[hidden],
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-panel[hidden] {
+  display: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-search,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-search {
+  flex: 0 0 auto;
+  padding: 8px;
+  border-bottom: 1px solid rgba(var(--b-sc), 0.12);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-search-input,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-search-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(var(--b-sc), 0.18);
+  border-radius: 3px;
+  background: rgba(var(--b-sc), 0.08);
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-options,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-options {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-option-flag,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-option-flag {
+  flex-shrink: 0;
+  width: 22px;
+  height: 16px;
+  margin-inline-end: 8px;
+  border-radius: 2px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-select .checkbox-control-content-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-select .checkbox-control-content-bc {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0;
+  padding-inline: 12px !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .passwordAboveSeparator,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .passwordAboveSeparator {
+  width: 100%;
+  height: 1px;
+  margin: 8px 0 4px;
+  border: 0;
+  background: rgba(var(--b-sc), 0.12);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .entrance-f-item-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .entrance-f-item-bc {
+  position: static !important;
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .entrance-f-error-message-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .entrance-f-error-message-bc {
+  width: 100%;
+  padding: 8px 0 10px;
+  margin: 0;
+  background: none !important;
+  color: rgba(var(--b-sc), 0.9);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.35;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .u-i-p-c-footer-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .u-i-p-c-footer-bc {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-top: 20px !important;
+  padding: 0 !important;
+  order: 4;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .u-i-p-c-footer-bc .btn.a-color,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .u-i-p-c-footer-bc .btn.a-color {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  margin: 0 !important;
+  margin-inline-start: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 26px !important;
+  box-shadow: 0 2px 10px #fb275cb3 !important;
+  background: linear-gradient(329.84deg, #d80d83f2 27.27%, #f037a2f2 66.3%, #d80d83f2 110.73%) !important;
+  color: #fff !important;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .multi-select-bc[data-cm622-ms] .form-control-select-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .multi-select-bc[data-cm622-ms] .form-control-select-bc {
+  min-height: 52px !important;
+  height: 52px !important;
+  box-sizing: border-box !important;
+  padding: 20px 36px 4px 15px !important;
+  line-height: 28px !important;
+  text-align: left !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .cm622-country-select .form-control-select-bc.country-select-value,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .cm622-country-select .form-control-select-bc.country-select-value {
+  padding: 20px 36px 8px 15px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  line-height: 1.2 !important;
+}

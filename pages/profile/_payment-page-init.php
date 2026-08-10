@@ -8,16 +8,13 @@ ini_set('log_errors', 1);
 ini_set('error_log', (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/logs/error.log');
 
 if (session_status() === PHP_SESSION_NONE) {
-    if (function_exists('maltabet_configure_session_security')) {
-        maltabet_configure_session_security();
-    }
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
 
-$csrfKey = 'vegasroyalspin_csrf_token';
+$csrfKey = 'app_csrf_token';
 if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
     $_SESSION[$csrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
         ? $_SESSION['csrf_token']
@@ -29,8 +26,8 @@ $_SESSION['csrf_token'] = $_SESSION[$csrfKey];
 // Tüm yöntem, limit, yatırım ve çekim işlemleri yalnızca /api/v2 endpointleri ile alınır.
 
 // ========== KULLANICI KONTROLÜ ==========
-$isLoggedIn = function_exists('metropol_frontend_member_logged_in')
-    ? metropol_frontend_member_logged_in()
+$isLoggedIn = function_exists('frontend_member_logged_in')
+    ? frontend_member_logged_in()
     : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true);
 $username = $isLoggedIn ? $_SESSION['username'] : '';
 

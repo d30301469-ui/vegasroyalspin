@@ -1,3 +1,6 @@
+/**
+ * @dynamic-file
+ */
 (function () {
   'use strict';
 
@@ -236,16 +239,57 @@
 
   }
 
+  function isProfileBalanceHidden() {
+    try {
+      return localStorage.getItem('vrs_profile_balance_hidden') === '1';
+    } catch (eHide) {
+      return false;
+    }
+  }
+
+  function setProfileBalanceHidden(hidden) {
+    try {
+      localStorage.setItem('vrs_profile_balance_hidden', hidden ? '1' : '0');
+    } catch (eSet) { /* ignore */ }
+    document.documentElement.classList.toggle('is-profile-balance-hidden', !!hidden);
+  }
+
+  function refreshMobileBalanceVisibility(panel) {
+    var root = panel || document.getElementById('mprofilePanel') || document;
+    var hidden = isProfileBalanceHidden();
+    root.querySelectorAll('[data-balance-display]').forEach(function (el) {
+      var real = el.getAttribute('data-balance-display') || '';
+      if (el.hasAttribute('data-balance-target')) {
+        el.textContent = hidden ? '••••••' : String(real).replace(/\s*₺$/, '');
+      } else {
+        el.textContent = hidden ? '•••••• ₺' : real;
+      }
+    });
+    root.querySelectorAll('[data-profile-balance-toggle]').forEach(function (icon) {
+      icon.classList.toggle('bc-i-eye', !hidden);
+      icon.classList.toggle('bc-i-eye-hidden', hidden);
+      icon.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+      icon.setAttribute('aria-label', hidden ? 'Bakiyeyi göster' : 'Bakiyeyi gizle');
+      icon.setAttribute('title', hidden ? 'Bakiyeyi göster' : 'Bakiyeyi gizle');
+    });
+  }
+
   function applyBalanceData(panel, data) {
     var balance = data && data.balance && typeof data.balance === 'object' ? data.balance : data || {};
     var main = balance.balance != null ? balance.balance : data.ana_bakiye;
     var bonus = balance.bonus_balance != null ? balance.bonus_balance : (data.bonus_bakiye != null ? data.bonus_bakiye : data.toplam_bonus);
+    var mainText = moneyText(main || 0);
+    var bonusText = moneyText(bonus || 0);
+    var hidden = isProfileBalanceHidden();
     panel.querySelectorAll('[data-balance-target="mprofileMain"]').forEach(function (target) {
-      target.textContent = moneyText(main || 0).replace(/\s*₺$/, '');
+      target.setAttribute('data-balance-display', mainText);
+      target.textContent = hidden ? '••••••' : mainText.replace(/\s*₺$/, '');
     });
     panel.querySelectorAll('[data-balance-target="mprofileBonus"]').forEach(function (target) {
-      target.textContent = moneyText(bonus || 0).replace(/\s*₺$/, '');
+      target.setAttribute('data-balance-display', bonusText);
+      target.textContent = hidden ? '••••••' : bonusText.replace(/\s*₺$/, '');
     });
+    refreshMobileBalanceVisibility(panel);
   }
 
   function applyLoyaltySummary(panel, data, snapshotOnly) {
@@ -869,7 +913,7 @@
     row = row || {};
     var code = String(row.code || '').toLowerCase();
     var map = {
-      bronze: '/assets/images/loyalty/badges/bronze.png',
+      bronze: '/assets/images/loyalty/badges/bronze.svg',
       silver: '/assets/images/loyalty/badges/silver.svg',
       gold: '/assets/images/loyalty/badges/gold.svg',
       platinum: '/assets/images/loyalty/badges/platinum.svg',
@@ -2232,6 +2276,79 @@
     status.classList.toggle('is-error', type === 'error');
   }
 
+  function setSidebarPromoStatus(wrap, type, message) {
+    var status = wrap && wrap.querySelector('[data-mprofile-promo-status]');
+    if (!status) return;
+    status.textContent = message || '';
+    status.classList.toggle('is-success', type === 'success');
+    status.classList.toggle('is-error', type === 'error');
+    status.hidden = !(message || '');
+  }
+
+  function syncSidebarPromoSubmit(wrap) {
+    wrap = wrap || (getPanel() && getPanel().querySelector('[data-mprofile-promo-wrap]'));
+    if (!wrap) return;
+    var input = wrap.querySelector('[data-mprofile-promo-input]');
+    var button = wrap.querySelector('[data-mprofile-promo-submit]');
+    var control = input && input.closest('.form-control-bc');
+    var label = input && input.closest('.form-control-label-bc');
+    var hasValue = !!(input && String(input.value || '').trim());
+    var isFocused = !!(input && document.activeElement === input);
+    if (control) {
+      control.classList.toggle('filled', hasValue);
+      control.classList.toggle('valid', hasValue);
+      control.classList.toggle('focused', isFocused);
+    }
+    if (label) {
+      label.classList.toggle('has-value', hasValue);
+      label.classList.toggle('focused', isFocused);
+    }
+    if (button) button.disabled = !hasValue || button.getAttribute('data-busy') === '1';
+  }
+
+  function submitSidebarPromo(panel) {
+    var wrap = panel && panel.querySelector('[data-mprofile-promo-wrap]');
+    if (!wrap) return;
+    var input = wrap.querySelector('[data-mprofile-promo-input]');
+    var button = wrap.querySelector('[data-mprofile-promo-submit]');
+    var code = input ? String(input.value || '').trim() : '';
+    if (!code) {
+      setSidebarPromoStatus(wrap, 'error', 'Promosyon kodu girin.');
+      return;
+    }
+    if (button) {
+      button.disabled = true;
+      button.setAttribute('data-busy', '1');
+    }
+    setSidebarPromoStatus(wrap, '', 'Kontrol ediliyor...');
+    fetch(apiUrl('/api/v2/bonus/use-code'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+      body: JSON.stringify({ kod: code })
+    })
+      .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data || {} }; }); })
+      .then(function (result) {
+        var data = result.data || {};
+        var ok = !!(data.success || data.status === 'success');
+        var msg = data.mesaj || data.message || (ok ? 'Promosyon kodu talebiniz alındı.' : 'İşlem yapılamadı.');
+        setSidebarPromoStatus(wrap, ok ? 'success' : 'error', msg);
+        if (ok && input) {
+          input.value = '';
+          syncSidebarPromoSubmit(wrap);
+        }
+      })
+      .catch(function () {
+        setSidebarPromoStatus(wrap, 'error', 'Bağlantı hatası. Lütfen tekrar deneyin.');
+      })
+      .then(function () {
+        if (button) {
+          button.removeAttribute('data-busy');
+          syncSidebarPromoSubmit(wrap);
+        }
+      });
+  }
+
   function submitPromocodeRequest(panel, button) {
     var select = panel && panel.querySelector('[data-mbonus-promocode-select]');
     var note = panel && panel.querySelector('[data-mbonus-promocode-note]');
@@ -2247,7 +2364,7 @@
       .then(function (response) { return response.json().then(function (data) { return { response: response, data: data || {} }; }); })
       .then(function (result) {
         var ok = result.response.ok && !!result.data.success;
-        setBonusStatus(panel, ok ? 'success' : 'error', result.data.message || (ok ? 'Talebiniz alındı.' : 'Talep gönderilemedi.'));
+        setBonusStatus(panel, ok ? 'success' : 'error', result.data.mesaj || result.data.message || (ok ? 'Talebiniz alındı.' : 'Talep gönderilemedi.'));
         if (ok) {
           if (note) note.value = '';
         }
@@ -2268,7 +2385,7 @@
       .then(function (response) { return response.json(); })
       .then(function (data) {
         var ok = data && (data.success || data.status === 'success');
-        setBonusStatus(panel, ok ? 'success' : 'error', data.message || data.mesaj || (ok ? 'Promosyon kodu talebiniz alındı.' : 'İşlem yapılamadı.'));
+        setBonusStatus(panel, ok ? 'success' : 'error', data.mesaj || data.message || (ok ? 'Promosyon kodu talebiniz alındı.' : 'İşlem yapılamadı.'));
         if (ok && input) input.value = '';
       })
       .catch(function () { setBonusStatus(panel, 'error', 'Bağlantı hatası.'); })
@@ -2831,7 +2948,7 @@
       activeProfileIdentity = memberIdentity();
       restoreProfileSnapshot(panel);
       hydrateProfilePanel(panel, true);
-      window.addEventListener('metropol:member-jwt-changed', function (event) {
+      window.addEventListener('app:member-jwt-changed', function (event) {
         var nextIdentity = memberIdentity();
         if (nextIdentity && nextIdentity === activeProfileIdentity) {
           hydrateProfilePanel(panel, true);
@@ -2842,12 +2959,12 @@
         resetProfilePanelData(panel);
         if (event && event.detail && event.detail.authenticated) hydrateProfilePanel(panel, true);
       });
-      window.addEventListener('metropol:member-auth-lost', function () {
+      window.addEventListener('app:member-auth-lost', function () {
         clearProfileSnapshot();
         resetProfilePanelData(panel);
       });
       window.addEventListener('storage', function (event) {
-        if (event.key !== 'metropol_member_jwt') return;
+        if (event.key !== 'app_member_jwt') return;
         var nextIdentity = memberIdentity();
         if (nextIdentity && nextIdentity === activeProfileIdentity) {
           hydrateProfilePanel(panel, true);
@@ -2892,6 +3009,18 @@
       panel.addEventListener('click', function (e) {
         var target = e.target && e.target.closest ? e.target : null;
         if (!target) return;
+
+        var balanceToggle = target.closest('[data-profile-balance-toggle]');
+        if (balanceToggle) {
+          e.preventDefault();
+          e.stopPropagation();
+          setProfileBalanceHidden(!isProfileBalanceHidden());
+          refreshMobileBalanceVisibility(panel);
+          if (typeof window.__refreshProfileBalanceVisibility === 'function') {
+            window.__refreshProfileBalanceVisibility();
+          }
+          return;
+        }
 
         var close = target.closest('.hdr-user-close');
         if (close) {
@@ -2962,7 +3091,7 @@
             showProfileDetails(panel);
             return;
           }
-          if (menuItem.getAttribute('data-href') === '/profile/deposit-withdraw') {
+          if (menuItem.getAttribute('data-href') === '/profile/deposit') {
             showBalancePage(panel, 'deposit');
             return;
           }
@@ -3243,6 +3372,11 @@
       });
 
       panel.addEventListener('submit', function (e) {
+        if (e.target && e.target.closest && e.target.closest('[data-mprofile-promo-form]')) {
+          e.preventDefault();
+          submitSidebarPromo(panel);
+          return;
+        }
         if (e.target && e.target.closest && e.target.closest('#mprofileChangePasswordForm')) {
           e.preventDefault();
           submitPasswordForm(panel);
@@ -3298,7 +3432,26 @@
       panel.addEventListener('input', function (e) {
         if (e.target && e.target.id === 'mprofilePaymentAmount') syncPaymentSubmitState();
         if (e.target && e.target.id === 'mprofileCryptoSearch') filterCryptoOptions(e.target.value);
+        if (e.target && e.target.closest && e.target.closest('[data-mprofile-promo-input]')) {
+          var wrap = e.target.closest('[data-mprofile-promo-wrap]');
+          syncSidebarPromoSubmit(wrap);
+          var status = wrap && wrap.querySelector('[data-mprofile-promo-status]');
+          if (status && status.classList.contains('is-error')) {
+            setSidebarPromoStatus(wrap, '', '');
+          }
+        }
       });
+      panel.addEventListener('focusin', function (e) {
+        if (e.target && e.target.closest && e.target.closest('[data-mprofile-promo-input]')) {
+          syncSidebarPromoSubmit(e.target.closest('[data-mprofile-promo-wrap]'));
+        }
+      });
+      panel.addEventListener('focusout', function (e) {
+        if (e.target && e.target.closest && e.target.closest('[data-mprofile-promo-input]')) {
+          syncSidebarPromoSubmit(e.target.closest('[data-mprofile-promo-wrap]'));
+        }
+      });
+      syncSidebarPromoSubmit();
     }
   }
 

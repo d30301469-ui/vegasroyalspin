@@ -208,6 +208,8 @@
         var player = w.player != null ? w.player : w.user_mask;
         var img = w.gameImageUrl || w.game_image_url || w.cover || w.image || w.game_image || w.image_url || w.thumbnail_url || w.banner;
         var cover = (img && String(img).trim()) ? String(img).trim() : placeholder;
+        var fallbacks = Array.isArray(w.cover_fallbacks) ? w.cover_fallbacks
+          : (Array.isArray(w.image_fallbacks) ? w.image_fallbacks : []);
         var gname = w.gameName || w.game_name;
         var prov = w.providerName || w.provider_name || w.provider;
         var game = [gname, prov].filter(Boolean).join(' · ') || (last ? ('Son kazanç: ' + String(last)) : '—');
@@ -215,13 +217,19 @@
           user_mask: player != null ? String(player) : '',
           game_name: game,
           amount: total,
-          cover: cover
+          cover: cover,
+          cover_fallbacks: fallbacks,
+          image_fallbacks: fallbacks,
+          source: w.source || '',
+          game_id: w.gameId || w.game_id || ''
         };
       });
     }
     return winners.map(function (w) {
       var img = w.gameImageUrl || w.game_image_url || w.cover || w.image || w.game_image || w.image_url || w.thumbnail_url || w.banner;
       var cover = (img && String(img).trim()) ? String(img).trim() : placeholder;
+      var fallbacks = Array.isArray(w.cover_fallbacks) ? w.cover_fallbacks
+        : (Array.isArray(w.image_fallbacks) ? w.image_fallbacks : []);
       var gname = w.gameName || w.game_name;
       var prov = w.providerName || w.provider_name || w.provider;
       var game = [gname, prov].filter(Boolean).join(' · ') || (gname || '');
@@ -232,7 +240,11 @@
         user_mask: player != null ? String(player) : '',
         game_name: game,
         amount: amt,
-        cover: cover
+        cover: cover,
+        cover_fallbacks: fallbacks,
+        image_fallbacks: fallbacks,
+        source: w.source || '',
+        game_id: w.gameId || w.game_id || ''
       };
     });
   }

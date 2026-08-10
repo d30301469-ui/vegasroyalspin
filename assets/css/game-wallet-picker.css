@@ -1,0 +1,350 @@
+/**
+ * Oyun bakiye seçim modalı — CM622 kart + cüzdan ikonu + satır içerik.
+ */
+.wallet-picker-overlay.app-feedback-dialog-overlay,
+.wallet-picker-dialog.app-feedback-dialog {
+  z-index: 100060;
+}
+
+.wallet-picker-dialog.app-feedback-dialog {
+  width: min(400px, calc(100vw - 24px));
+  max-width: 400px;
+  max-height: min(92vh, calc(100dvh - 24px));
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  overflow: hidden;
+}
+
+.wallet-picker-dialog.app-feedback-dialog.is-open {
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.wallet-picker-dialog .wallet-picker-card.app-feedback-dialog__card,
+.wallet-picker-dialog .app-feedback-dialog__card {
+  background: rgb(0, 11, 36) !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  padding: 40px 15px 15px !important;
+  box-shadow: 0 0 5px rgba(0, 11, 36, 0.1), 0 16px 48px rgba(0, 0, 0, 0.55) !important;
+  text-align: center;
+  max-height: min(92vh, calc(100dvh - 24px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+.wallet-picker-dialog .app-feedback-dialog__card::before {
+  display: none !important;
+}
+
+.wallet-picker-dialog .app-feedback-dialog__dismiss {
+  top: 11px !important;
+  right: 11px !important;
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 14px !important;
+  line-height: 24px !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  z-index: 2;
+}
+
+.wallet-picker-dialog .app-feedback-dialog__dismiss:hover {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+}
+
+.wallet-picker-dialog .app-feedback-dialog__icon-wrap,
+.wallet-picker-dialog .wallet-picker-icon {
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 0 22px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #fff !important;
+  font-size: inherit !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wallet-picker-dialog .wallet-picker-icon .bc-i-wallet,
+.wallet-picker-dialog .wallet-picker-icon i.bc-i-wallet {
+  font-family: BetConstruct-Icons !important;
+  speak: never;
+  font-style: normal !important;
+  font-weight: 400 !important;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1 !important;
+  display: inline-block !important;
+  font-size: 56px !important;
+  color: #fff !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.wallet-picker-dialog .wallet-picker-icon .bc-i-wallet::before,
+.wallet-picker-dialog .wallet-picker-icon i.bc-i-wallet::before {
+  content: "\e918" !important;
+  color: #fff !important;
+}
+
+.wallet-picker-dialog .app-feedback-dialog__title {
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 18px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase !important;
+  color: rgba(255, 255, 255, 1) !important;
+  word-break: break-word;
+  flex-shrink: 0;
+}
+
+.wallet-picker-summary {
+  margin: 22px 0 24px !important;
+  max-height: 40vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  text-align: left;
+  flex-shrink: 1;
+}
+
+.wallet-picker-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wallet-picker-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.wallet-picker-row:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.wallet-picker-row:first-child {
+  padding-top: 0;
+}
+
+.wallet-picker-row__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.wallet-picker-row__value {
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wallet-picker-row--main .wallet-picker-row__value {
+  color: #fff;
+}
+
+.wallet-picker-row--bonus .wallet-picker-row__value {
+  color: #7dffa0;
+}
+
+.wallet-picker-row--wager .wallet-picker-row__value {
+  color: #b8ff9a;
+}
+
+.wallet-picker-note {
+  margin: 4px 0 0 !important;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  text-align: center;
+}
+
+.wallet-picker-actions {
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  flex-shrink: 0;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+html body .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary,
+html.is-web:not(.is-mobile) body:not(.mobile-site) .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary,
+html.is-mobile body .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary,
+body.mobile-site .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  margin: 0 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  padding: 0 8px !important;
+  line-height: 44px !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: #fff !important;
+  background: #109121 !important;
+  background-image: none !important;
+  box-shadow: 0 0 7px 2px rgba(22, 255, 0, 0.45) !important;
+  filter: none !important;
+  transform: none !important;
+  cursor: pointer;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+html body .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary:hover,
+html body .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary:focus,
+html.is-web:not(.is-mobile) body:not(.mobile-site) .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary:hover,
+html.is-web:not(.is-mobile) body:not(.mobile-site) .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary:focus {
+  background: #14b02a !important;
+  background-image: none !important;
+  filter: none !important;
+}
+
+html body .wallet-picker-dialog .wallet-picker-btn.is-disabled,
+html body .wallet-picker-dialog .wallet-picker-btn:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+.wallet-picker-dialog .wallet-picker-cancel,
+button.wallet-picker-cancel {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: block !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 14px auto 0 !important;
+  padding: 6px 12px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  text-decoration: none !important;
+  cursor: pointer;
+  text-align: center;
+  flex-shrink: 0;
+  visibility: visible !important;
+}
+
+.wallet-picker-dialog .wallet-picker-cancel:hover,
+button.wallet-picker-cancel:hover {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+}
+
+/* Mobil: dikey butonlar + kompakt ikon (taşma / görünmezlik önleme) */
+@media (max-width: 640px) {
+  .wallet-picker-dialog.app-feedback-dialog {
+    width: calc(100vw - 20px);
+    max-width: none;
+    top: 50%;
+    left: 50%;
+  }
+
+  .wallet-picker-dialog .wallet-picker-card.app-feedback-dialog__card,
+  .wallet-picker-dialog .app-feedback-dialog__card {
+    padding: 32px 12px 12px !important;
+  }
+
+  .wallet-picker-dialog .wallet-picker-icon .bc-i-wallet,
+  .wallet-picker-dialog .wallet-picker-icon i.bc-i-wallet {
+    font-size: 44px !important;
+  }
+
+  .wallet-picker-dialog .app-feedback-dialog__icon-wrap,
+  .wallet-picker-dialog .wallet-picker-icon {
+    margin: 0 0 14px !important;
+  }
+
+  .wallet-picker-summary {
+    margin: 14px 0 16px !important;
+    max-height: 28vh;
+  }
+
+  .wallet-picker-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  html body .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary,
+  html.is-mobile body .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary,
+  body.mobile-site .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    font-size: 12px !important;
+  }
+}
+
+body.mobile-site .wallet-picker-actions,
+html.is-mobile .wallet-picker-actions {
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+body.mobile-site .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary,
+html.is-mobile body .wallet-picker-dialog .wallet-picker-btn.app-feedback-dialog__primary {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+}

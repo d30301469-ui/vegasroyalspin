@@ -10,7 +10,7 @@ if (!defined('BASE_PATH')) {
 }
 
 $assetCssDir = BASE_PATH . '/assets/css';
-$mobileCssDir = BASE_PATH . '/mobile/assets/css';
+$mobileCssDir = BASE_PATH . '/assets/css';
 
 $assetVersion = static function (string $path): string {
   if (!is_file($path)) {
@@ -64,26 +64,30 @@ $headManifestUrl = (function_exists('cms_asset_url') ? cms_asset_url($headManife
 $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
 $requestPathRaw = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $requestPath = $requestPathRaw === '/' ? '/' : rtrim($requestPathRaw, '/');
-$slotRoutes = ['/slot', '/livecasino', '/bgaming', '/sanal-sporlar'];
+$slotRoutes = ['/slot', '/bgaming', '/sanal-sporlar'];
+$isLiveCasinoRoute = ($requestPath === '/livecasino');
 $isSlotRoute = in_array($requestPath, $slotRoutes, true);
 $isPromotionsRoute = ($requestPath === '/promotions' || $requestPath === '/promosyonlar');
-$promoCssVer = (string) (is_file($assetCssDir . '/promosyonlar.css') ? filemtime($assetCssDir . '/promosyonlar.css') : 1);
-$bonusModalCssVer = (string) (is_file($assetCssDir . '/bonus-detail-modal.css') ? filemtime($assetCssDir . '/bonus-detail-modal.css') : 1);
+$promoCssVer = (string) (is_file($assetCssDir . '/promotions.css') ? filemtime($assetCssDir . '/promotions.css') : 1);
+$bonusModalCssVer = (string) (is_file($assetCssDir . '/promotions-bonus-modal.css') ? filemtime($assetCssDir . '/promotions-bonus-modal.css') : 1);
 // Ana sayfada jackpot|kazananlar widget'ı var; CSS sadece slot rotasında
 // yüklenirse paneller/kartlar stillenmez (ham metin listesi gibi görünür).
 $isHomeRoute = ($requestPath === '/');
 $needsJackpotAssets = true;
-$mobileBodyClass = 'mobile-site' . ($isSlotRoute ? ' slot-page-active' : '');
-$mobileHtmlClass = 'is-mobile mobile-root' . ($isSlotRoute ? ' slot-page-active' : '');
+$mobilePageActiveClass = $isLiveCasinoRoute
+    ? ' slot-page-active livecasino-page-active'
+    : ($isSlotRoute ? ' slot-page-active' : '');
+$mobileBodyClass = 'mobile-site' . $mobilePageActiveClass;
+$mobileHtmlClass = 'is-mobile mobile-root' . $mobilePageActiveClass;
 $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOOK_LIGHTWEIGHT_LAYOUT;
 ?>
 <!doctype html>
-<html lang="tr" class="<?= htmlspecialchars($mobileHtmlClass, ENT_QUOTES, 'UTF-8') ?>">
+<html lang="<?= htmlspecialchars(function_exists('current_locale') ? current_locale() : 'tr', ENT_QUOTES, 'UTF-8') ?>" class="<?= htmlspecialchars($mobileHtmlClass, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
   <script>
     try {
-      if (localStorage.getItem('metropol_member_jwt')) {
+      if (localStorage.getItem('app_member_jwt')) {
         document.documentElement.classList.add('member-session-hint');
       }
     } catch (e) {}
@@ -102,8 +106,8 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="manifest" href="<?= htmlspecialchars($headManifestUrl, ENT_QUOTES, 'UTF-8') ?>">
   <title><?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?></title>
   <?php if ($isPromotionsRoute): ?>
-  <link rel="preload" href="/assets/css/promosyonlar.css?v=<?= htmlspecialchars($promoCssVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
-  <link rel="preload" href="/assets/css/bonus-detail-modal.css?v=<?= htmlspecialchars($bonusModalCssVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
+  <link rel="preload" href="/assets/css/promotions.css?v=<?= htmlspecialchars($promoCssVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
+  <link rel="preload" href="/assets/css/promotions-bonus-modal.css?v=<?= htmlspecialchars($bonusModalCssVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
   <?php endif; ?>
   <style>
     html.mobile-root {
@@ -119,61 +123,65 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
     }
   </style>
 
-  <link rel="stylesheet" href="/assets/css/bootstrap-utils.css?v=<?= $ver($assetCssDir . '/global.css') ?>">
-  <link rel="stylesheet" href="/assets/css/global.css?v=<?= $ver($assetCssDir . '/global.css') ?>">
-  <link rel="stylesheet" href="/assets/css/header.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/header.css')) ?>">
-  <link rel="stylesheet" href="/assets/css/sidebar.css?v=<?= $ver($assetCssDir . '/sidebar.css') ?>">
-  <link rel="stylesheet" href="/assets/css/components.css?v=<?= $ver($assetCssDir . '/components.css') ?>">
+  <link rel="stylesheet" href="/assets/css/site-bootstrap-utils.css?v=<?= $ver($assetCssDir . '/site-global.css') ?>">
+  <link rel="stylesheet" href="/assets/css/site-global.css?v=<?= $ver($assetCssDir . '/site-global.css') ?>">
+  <link rel="stylesheet" href="/assets/css/layout-header.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/layout-header.css')) ?>">
+  <link rel="stylesheet" href="/assets/css/layout-sidebar.css?v=<?= $ver($assetCssDir . '/layout-sidebar.css') ?>">
+  <link rel="stylesheet" href="/assets/css/site-components.css?v=<?= $ver($assetCssDir . '/site-components.css') ?>">
   <link rel="stylesheet" href="/assets/css/profile.css?v=<?= $ver($assetCssDir . '/profile.css') ?>">
-  <link rel="stylesheet" href="/assets/css/responsive.css?v=<?= $ver($assetCssDir . '/responsive.css') ?>">
-  <link rel="stylesheet" href="/assets/css/mobile_bottom.css?v=<?= $ver($assetCssDir . '/mobile_bottom.css') ?>">
+  <link rel="stylesheet" href="/assets/css/site-responsive.css?v=<?= $ver($assetCssDir . '/site-responsive.css') ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-bottom.css?v=<?= $ver($assetCssDir . '/mobile-bottom.css') ?>">
   <link rel="stylesheet" href="/assets/css/home.css?v=<?= $ver($assetCssDir . '/home.css') ?>">
   <?php if ($needsJackpotAssets): ?>
-  <?php if ($isSlotRoute): ?>
-  <link rel="stylesheet" href="/assets/css/slots.css?v=<?= $ver($assetCssDir . '/slots.css') ?>">
+  <?php if ($isLiveCasinoRoute): ?>
+  <link rel="stylesheet" href="/assets/css/casino-live.css?v=<?= $ver($assetCssDir . '/casino-live.css') ?>">
+  <?php elseif ($isSlotRoute): ?>
+  <link rel="stylesheet" href="/assets/css/casino-slots.css?v=<?= $ver($assetCssDir . '/casino-slots.css') ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="/assets/css/jackpot.css?v=<?= $ver($assetCssDir . '/jackpot.css') ?>">
-  <link rel="stylesheet" href="/assets/css/winners.css?v=<?= $ver($assetCssDir . '/winners.css') ?>">
+  <link rel="stylesheet" href="/assets/css/home-jackpot.css?v=<?= $ver($assetCssDir . '/home-jackpot.css') ?>">
+  <link rel="stylesheet" href="/assets/css/home-winners.css?v=<?= $ver($assetCssDir . '/home-winners.css') ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="/assets/css/swiper-bundle.min.css?v=<?= $ver($assetCssDir . '/swiper-bundle.min.css') ?>">
-  <link rel="stylesheet" href="/assets/css/slider.css?v=<?= $ver($assetCssDir . '/slider.css') ?>">
-  <link rel="stylesheet" href="/assets/css/slider-mobile-bc.css?v=<?= $ver($assetCssDir . '/slider-mobile-bc.css') ?>">
-  <link rel="stylesheet" href="/assets/css/footer-bc.css?v=<?= $ver($assetCssDir . '/footer-bc.css') ?>">
-  <link rel="stylesheet" href="/assets/css/modal.css?v=<?= $ver($assetCssDir . '/modal.css') ?>">
-  <link rel="stylesheet" href="/assets/css/login.css?v=<?= $ver($assetCssDir . '/login.css') ?>">
-  <link rel="stylesheet" href="/assets/css/register.css?v=<?= $ver($assetCssDir . '/register.css') ?>">
+  <link rel="stylesheet" href="/assets/css/vendor-swiper.css?v=<?= $ver($assetCssDir . '/vendor-swiper.css') ?>">
+  <link rel="stylesheet" href="/assets/css/home-slider.css?v=<?= $ver($assetCssDir . '/home-slider.css') ?>">
+  <link rel="stylesheet" href="/assets/css/home-slider-mobile.css?v=<?= $ver($assetCssDir . '/home-slider-mobile.css') ?>">
+  <link rel="stylesheet" href="/assets/css/layout-footer.css?v=<?= $ver($assetCssDir . '/layout-footer.css') ?>">
+  <link rel="stylesheet" href="/assets/css/site-modal.css?v=<?= $ver($assetCssDir . '/site-modal.css') ?>">
+  <link rel="stylesheet" href="/assets/css/auth-login.css?v=<?= $ver($assetCssDir . '/auth-login.css') ?>">
+  <link rel="stylesheet" href="/assets/css/auth-register.css?v=<?= $ver($assetCssDir . '/auth-register.css') ?>">
   <link rel="stylesheet" href="/assets/css/auth-sliders.css?v=<?= $ver($assetCssDir . '/auth-sliders.css') ?>">
   <?php if ($isPromotionsRoute): ?>
-  <link rel="stylesheet" href="/assets/css/promosyonlar.css?v=<?= htmlspecialchars($promoCssVer, ENT_QUOTES, 'UTF-8') ?>">
-  <link rel="stylesheet" href="/assets/css/bonus-detail-modal.css?v=<?= htmlspecialchars($bonusModalCssVer, ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="/assets/css/promotions.css?v=<?= htmlspecialchars($promoCssVer, ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="/assets/css/promotions-bonus-modal.css?v=<?= htmlspecialchars($bonusModalCssVer, ENT_QUOTES, 'UTF-8') ?>">
   <?php endif; ?>
 
-  <link rel="stylesheet" href="/assets/css/bc-mobile-index.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-index.css')) ?>">
-  <link rel="stylesheet" href="/assets/css/bc-mobile-header-original.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-header-original.css')) ?>">
-  <link rel="stylesheet" href="/assets/css/bc-mobile-maltabet.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-maltabet.css')) ?>">
-  <link rel="stylesheet" href="/assets/css/bc-mobile-custom.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/bc-mobile-custom.css')) ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-bc-index.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-bc-index.css')) ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-bc-header.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-bc-header.css')) ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-bc.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-bc.css')) ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-bc-custom.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-bc-custom.css')) ?>">
 
-  <link rel="stylesheet" href="/mobile/assets/css/base.css?v=<?= $ver($mobileCssDir . '/base.css') ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/header.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/header.css')) ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/menu.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/menu.css')) ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-base.css?v=<?= $ver($mobileCssDir . '/mobile-base.css') ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-header.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/mobile-header.css')) ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-menu.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/mobile-menu.css')) ?>">
   <link rel="stylesheet" href="/assets/css/mobile-smart-panel.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-smart-panel.css')) ?>">
   <link rel="stylesheet" href="/assets/css/mobile-right-sheet.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/mobile-right-sheet.css')) ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/mobile-right-sheet.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/mobile-right-sheet.css')) ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/home.css?v=<?= $ver($mobileCssDir . '/home.css') ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/home-widgets.css?v=<?= $ver($mobileCssDir . '/home-widgets.css') ?>">
-  <?php if ($isSlotRoute): ?>
-  <link rel="stylesheet" href="/mobile/assets/css/slots.css?v=<?= $ver($mobileCssDir . '/slots.css') ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-right-sheet-extra.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/mobile-right-sheet-extra.css')) ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-home.css?v=<?= $ver($mobileCssDir . '/mobile-home.css') ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-home-widgets.css?v=<?= $ver($mobileCssDir . '/mobile-home-widgets.css') ?>">
+  <?php if ($isLiveCasinoRoute): ?>
+  <link rel="stylesheet" href="/assets/css/mobile-live.css?v=<?= $ver($mobileCssDir . '/mobile-live.css') ?>">
+  <?php elseif ($isSlotRoute): ?>
+  <link rel="stylesheet" href="/assets/css/mobile-slots.css?v=<?= $ver($mobileCssDir . '/mobile-slots.css') ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="/mobile/assets/css/bottom-bar.css?v=<?= $ver($mobileCssDir . '/bottom-bar.css') ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/footer.css?v=<?= $ver($mobileCssDir . '/footer.css') ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/auth-modals.css?v=<?= $ver($mobileCssDir . '/auth-modals.css') ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/profile-panel.css?v=<?= $ver($mobileCssDir . '/profile-panel.css') ?>">
-  <link rel="stylesheet" href="/assets/css/login-modal.css?v=<?= $ver($assetCssDir . '/login-modal.css') ?>">
-  <link rel="stylesheet" href="/assets/css/register-modal.css?v=<?= $ver($assetCssDir . '/register-modal.css') ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-bottom-bar.css?v=<?= $ver($mobileCssDir . '/mobile-bottom-bar.css') ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-footer.css?v=<?= $ver($mobileCssDir . '/mobile-footer.css') ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-auth-modals.css?v=<?= $ver($mobileCssDir . '/mobile-auth-modals.css') ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-profile-panel.css?v=<?= $ver($mobileCssDir . '/mobile-profile-panel.css') ?>">
+  <link rel="stylesheet" href="/assets/css/auth-login-modal.css?v=<?= $ver($assetCssDir . '/auth-login-modal.css') ?>">
+  <link rel="stylesheet" href="/assets/css/auth-register-modal.css?v=<?= $ver($assetCssDir . '/auth-register-modal.css') ?>">
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <?php if ($requestPath === '/beni-ara'): ?>
-  <link rel="stylesheet" href="/assets/css/beni-ara.css?v=<?= $ver($assetCssDir . '/beni-ara.css') ?>">
-  <link rel="stylesheet" href="/mobile/assets/css/beni-ara.css?v=<?= $ver($mobileCssDir . '/beni-ara.css') ?>">
+  <link rel="stylesheet" href="/assets/css/page-beni-ara.css?v=<?= $ver($assetCssDir . '/page-beni-ara.css') ?>">
+  <link rel="stylesheet" href="/assets/css/mobile-beni-ara.css?v=<?= $ver($mobileCssDir . '/mobile-beni-ara.css') ?>">
   <?php endif; ?>
   <?php if (!$isSportsbookLightweight): ?>
   <script defer src="/assets/js/swiper-bundle.min.js?v=<?= $ver(BASE_PATH . '/assets/js/swiper-bundle.min.js') ?>"></script>

@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
@@ -457,51 +457,78 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
         include __DIR__ . '/../../views/partials/profile-content-shell-open.php';
         ?>
 
-            <form method="get" action="" class="bet-history-filters" id="betHistoryFilterForm">
+            <?php
+            $cm622_filter_form_id = 'betHistoryFilterForm';
+            $cm622_filter_form_class = 'bet-history-filters';
+            $cm622_filter_method = 'get';
+            $cm622_filter_action = '';
+            $cm622_filter_title = 'FİLTRE';
+            include __DIR__ . '/../../views/partials/cm622-filter-shell-open.php';
+            ?>
                 <?php if ($profile_modal): ?>
                 <input type="hidden" name="modal" value="1">
                 <?php endif; ?>
                 <input type="hidden" name="filter" value="<?= htmlspecialchars($filter) ?>">
-                <div class="bhf-group">
-                    <input type="text" name="bet_id" class="bhf-input" placeholder="BAHİS KİMLİĞİ" value="<?= htmlspecialchars($bet_id) ?>">
+                <?php
+                $fc_id = 'bhBetId';
+                $fc_name = 'bet_id';
+                $fc_title = 'BAHİS KİMLİĞİ';
+                $fc_value = $bet_id;
+                $fc_inputmode = 'decimal';
+                include __DIR__ . '/../../views/partials/cm622-form-control-text.php';
+
+                $fc_id = 'bhSportName';
+                $fc_name = 'sport_name';
+                $fc_title = 'Spor Adı';
+                $fc_value = $sport_name;
+                $fc_inputmode = '';
+                $fc_search_icon = true;
+                include __DIR__ . '/../../views/partials/cm622-form-control-text.php';
+                ?>
+                <div class="u-i-p-control-item-holder-bc">
+                    <?php
+                    $ms_id = 'bhBetTypeMs';
+                    $ms_input_id = 'bhBetType';
+                    $ms_name = 'bet_type';
+                    $ms_title = 'BAHİS TÜRÜ';
+                    $ms_selected = $bet_type_filter;
+                    $ms_options = [
+                        'ALL' => 'TÜMÜ',
+                        'tekli' => 'Tekli',
+                        'kombine' => 'Kombine',
+                        'sistem' => 'Sistem',
+                        'builder' => 'Bahis Oluşturucu',
+                    ];
+                    include __DIR__ . '/../../views/partials/cm622-multi-select.php';
+                    ?>
                 </div>
-                <div class="bhf-group">
-                    <div class="bhf-input-wrap">
-                        <input type="text" name="sport_name" class="bhf-input" placeholder="Spor Adı" value="<?= htmlspecialchars($sport_name) ?>">
-                        <i class="fa-solid fa-magnifying-glass bhf-icon" aria-hidden="true"></i>
-                    </div>
+                <div class="u-i-p-control-item-holder-bc">
+                    <?php
+                    $ms_id = 'bhPeriodMs';
+                    $ms_input_id = 'bhPeriod';
+                    $ms_name = 'period';
+                    $ms_title = 'PERİYOT';
+                    $ms_selected = $period;
+                    $ms_options = [
+                        '24' => '24 saat',
+                        '72' => '72 saat',
+                        '168' => 'Bir hafta',
+                        '720' => '30 Gün',
+                        'custom' => 'Özel',
+                    ];
+                    include __DIR__ . '/../../views/partials/cm622-multi-select.php';
+                    ?>
                 </div>
-                <div class="bhf-group">
-                    <label class="bhf-label">BAHİS TÜRÜ</label>
-                    <select name="bet_type" class="bhf-select">
-                        <option value="ALL" <?= $bet_type_filter === 'ALL' ? 'selected' : '' ?>>TÜMÜ</option>
-                        <option value="tekli" <?= $bet_type_filter === 'tekli' ? 'selected' : '' ?>>Tekli</option>
-                        <option value="kombine" <?= $bet_type_filter === 'kombine' ? 'selected' : '' ?>>Kombine</option>
-                        <option value="sistem" <?= $bet_type_filter === 'sistem' ? 'selected' : '' ?>>Sistem</option>
-                        <option value="builder" <?= $bet_type_filter === 'builder' ? 'selected' : '' ?>>Bahis Oluşturucu</option>
-                    </select>
-                </div>
-                <div class="bhf-group">
-                    <label class="bhf-label">PERİYOT</label>
-                    <select name="period" class="bhf-select" id="bhPeriod">
-                        <option value="24" <?= $period === '24' ? 'selected' : '' ?>>24 saat</option>
-                        <option value="72" <?= $period === '72' ? 'selected' : '' ?>>72 saat</option>
-                        <option value="168" <?= $period === '168' ? 'selected' : '' ?>>Bir hafta</option>
-                        <option value="720" <?= $period === '720' ? 'selected' : '' ?>>30 Gün</option>
-                        <option value="custom" <?= $period === 'custom' ? 'selected' : '' ?>>Özel</option>
-                    </select>
-                </div>
-                <div class="bhf-group bhf-period-custom" id="bhPeriodCustomWrap" style="<?= $period !== 'custom' ? 'display:none' : '' ?>">
-                    <label class="bhf-label">BAŞLANGIÇ – BİTİŞ</label>
-                    <div class="bhf-date-row bhf-date-range-row">
-                        <div class="bhf-date-input-wrap" data-placeholder="GG/AA/YYYY">
-                            <i class="fa-regular fa-calendar bhf-date-icon" aria-hidden="true"></i>
-                            <input type="date" id="bhPeriodStart" name="period_start" class="bhf-input bhf-input-date" value="<?= htmlspecialchars($period_start) ?>" placeholder="GG/AA/YYYY" lang="tr" aria-label="Başlangıç tarihi">
-                        </div>
-                        <span class="bhf-date-sep">–</span>
-                        <div class="bhf-date-input-wrap" data-placeholder="GG/AA/YYYY">
-                            <i class="fa-regular fa-calendar bhf-date-icon" aria-hidden="true"></i>
-                            <input type="date" id="bhPeriodEnd" name="period_end" class="bhf-input bhf-input-date" value="<?= htmlspecialchars($period_end) ?>" placeholder="GG/AA/YYYY" lang="tr" aria-label="Bitiş tarihi">
+                <div class="u-i-p-control-item-holder-bc bhf-period-custom" id="bhPeriodCustomWrap" style="<?= $period !== 'custom' ? 'display:none' : '' ?>">
+                    <div class="form-control-bc default filled valid cm622-date-range">
+                        <div class="form-control-label-bc inputs cm622-date-range-label">
+                            <div class="cm622-date-range-fields">
+                                <input type="date" id="bhPeriodStart" name="period_start" class="form-control-input-bc bhf-input-date" value="<?= htmlspecialchars($period_start) ?>" lang="tr" aria-label="Başlangıç tarihi">
+                                <span class="cm622-date-sep">–</span>
+                                <input type="date" id="bhPeriodEnd" name="period_end" class="form-control-input-bc bhf-input-date" value="<?= htmlspecialchars($period_end) ?>" lang="tr" aria-label="Bitiş tarihi">
+                            </div>
+                            <i class="form-control-input-stroke-bc" aria-hidden="true"></i>
+                            <span class="form-control-title-bc ellipsis">BAŞLANGIÇ – BİTİŞ</span>
                         </div>
                     </div>
                     <div class="bhf-date-presets" id="bhDatePresets" role="group" aria-label="Hızlı tarih aralıkları">
@@ -510,10 +537,11 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
                         <button type="button" class="bhf-date-preset" data-range="last30">Son 30 gün</button>
                     </div>
                 </div>
-                <div class="bhf-group bhf-actions">
-                    <button type="submit" class="bhf-btn-show">GÖSTER</button>
-                </div>
-            </form>
+            <?php
+            $cm622_filter_submit_label = 'Göster';
+            $cm622_filter_submit_type = 'submit';
+            include __DIR__ . '/../../views/partials/cm622-filter-shell-close.php';
+            ?>
 
             <div class="bet-history-content">
                 <?php if (empty($transactions)): ?>

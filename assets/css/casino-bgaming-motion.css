@@ -1,0 +1,121 @@
+/**
+ * BGaming desktop lobby — auto-scroll polish + tile sparkle.
+ * Scoped to .bgaming-page-root / .slot-page-root on /bgaming only.
+ */
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .lobby-games-swiper {
+  position: relative;
+}
+
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .lobby-games-swiper .casinoGameItem {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Soft gold shimmer sweep across game covers */
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .lobby-games-swiper .casinoGameItem::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 236, 170, 0.08) 45%,
+    rgba(255, 248, 210, 0.42) 50%,
+    rgba(255, 236, 170, 0.08) 55%,
+    transparent 65%
+  );
+  transform: translateX(-130%) skewX(-12deg);
+  animation: bgaming-tile-sparkle 4.8s ease-in-out infinite;
+  opacity: 0.9;
+}
+
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .lobby-games-swiper .swiper-slide:nth-child(3n + 1) .casinoGameItem::after {
+  animation-delay: 0s;
+}
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .lobby-games-swiper .swiper-slide:nth-child(3n + 2) .casinoGameItem::after {
+  animation-delay: 1.1s;
+}
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .lobby-games-swiper .swiper-slide:nth-child(3n + 3) .casinoGameItem::after {
+  animation-delay: 2.2s;
+}
+
+/* Ambient edge glow while the row is auto-scrolling */
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .carouselWrapper[data-lobby-carousel-el]:not([data-lobby-carousel-el="lobby-providers"]) {
+  position: relative;
+}
+
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .carouselWrapper[data-lobby-carousel-el]:not([data-lobby-carousel-el="lobby-providers"])::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(252, 172, 0, 0) 0%,
+    rgba(252, 172, 0, 0.16) 35%,
+    rgba(255, 230, 140, 0.22) 50%,
+    rgba(252, 172, 0, 0.16) 65%,
+    rgba(252, 172, 0, 0) 100%
+  );
+  background-size: 220% 100%;
+  animation: bgaming-row-glow 7s linear infinite;
+  opacity: 0.55;
+  filter: blur(10px);
+}
+
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .carouselWrapper[data-lobby-carousel-el]:not([data-lobby-carousel-el="lobby-providers"]) > .swiper {
+  position: relative;
+  z-index: 1;
+}
+
+.bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .lobby-games-swiper.is-autoplay-paused .casinoGameItem::after {
+  animation-play-state: paused;
+}
+
+@keyframes bgaming-tile-sparkle {
+  0%,
+  62% {
+    transform: translateX(-130%) skewX(-12deg);
+    opacity: 0;
+  }
+  68% {
+    opacity: 0.95;
+  }
+  82% {
+    transform: translateX(130%) skewX(-12deg);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateX(130%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes bgaming-row-glow {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: -100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .lobby-games-swiper .casinoGameItem::after,
+  .bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .carouselWrapper[data-lobby-carousel-el]:not([data-lobby-carousel-el="lobby-providers"])::before {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .lobby-games-swiper .casinoGameItem::after,
+  .bgaming-page-root.slot-page-root--cm622 .casinoLobbyContainer .carouselWrapper[data-lobby-carousel-el]:not([data-lobby-carousel-el="lobby-providers"])::before {
+    display: none;
+  }
+}

@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
@@ -61,33 +61,56 @@ $filterLabels = [
              data-source="<?= htmlspecialchars($gameHistorySource, ENT_QUOTES, 'UTF-8') ?>"
              data-api="/api/v2/profile/casino-game-history">
             <div class="bet-history-filters casino-history-filters" aria-label="Casino oyun geçmişi filtresi">
-                <div class="bhf-group">
-                    <label class="bhf-label" for="casinoHistorySourceFilter">Kategori</label>
-                    <select id="casinoHistorySourceFilter" class="bhf-input bhf-input-select">
-                        <?php foreach ($filterLabels as $sourceKey => $sourceLabel): ?>
-                            <option value="<?= htmlspecialchars($sourceKey, ENT_QUOTES, 'UTF-8') ?>" <?= $gameHistorySource === $sourceKey ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($sourceLabel, ENT_QUOTES, 'UTF-8') ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                <?php
+                $cm622_filter_form_id = 'casinoHistoryFilterForm';
+                $cm622_filter_form_class = '';
+                $cm622_filter_no_form = true;
+                $cm622_filter_title = 'FİLTRE';
+                include __DIR__ . '/../../views/partials/cm622-filter-shell-open.php';
+                ?>
+                <div class="u-i-p-control-item-holder-bc">
+                    <?php
+                    $ms_id = 'casinoHistorySourceMs';
+                    $ms_input_id = 'casinoHistorySourceFilter';
+                    $ms_name = '';
+                    $ms_title = 'Kategori';
+                    $ms_selected = $gameHistorySource;
+                    $ms_options = $filterLabels;
+                    include __DIR__ . '/../../views/partials/cm622-multi-select.php';
+                    ?>
                 </div>
-                <div class="bhf-group">
-                    <label class="bhf-label" for="casinoHistoryTxnFilter">İşlem</label>
-                    <select id="casinoHistoryTxnFilter" class="bhf-input bhf-input-select">
-                        <option value="all" selected>TÜMÜ</option>
-                        <option value="bet">BAHİS</option>
-                        <option value="win">KAZANÇ</option>
-                        <option value="refund">İADE</option>
-                        <option value="adjustment">DÜZELTME</option>
-                    </select>
+                <div class="u-i-p-control-item-holder-bc">
+                    <?php
+                    $ms_id = 'casinoHistoryTxnMs';
+                    $ms_input_id = 'casinoHistoryTxnFilter';
+                    $ms_name = '';
+                    $ms_title = 'İşlem';
+                    $ms_selected = 'all';
+                    $ms_options = [
+                        'all' => 'TÜMÜ',
+                        'bet' => 'BAHİS',
+                        'win' => 'KAZANÇ',
+                        'refund' => 'İADE',
+                        'adjustment' => 'DÜZELTME',
+                    ];
+                    include __DIR__ . '/../../views/partials/cm622-multi-select.php';
+                    ?>
                 </div>
-                <div class="bhf-group bhf-grow">
-                    <label class="bhf-label" for="casinoHistoryProviderFilter">Sağlayıcı</label>
-                    <input id="casinoHistoryProviderFilter" class="bhf-input" type="text" placeholder="örn. pragmatic" autocomplete="off">
-                </div>
-                <div class="bghf-group bghf-actions">
-                    <button type="button" id="casinoHistoryApplyBtn" class="bghf-btn-show">GÖSTER</button>
-                </div>
+                <?php
+                $fc_id = 'casinoHistoryProviderFilter';
+                $fc_name = '';
+                $fc_title = 'Sağlayıcı';
+                $fc_value = '';
+                $fc_search_icon = true;
+                $fc_attrs = 'placeholder=""';
+                include __DIR__ . '/../../views/partials/cm622-form-control-text.php';
+
+                $cm622_filter_submit_label = 'Göster';
+                $cm622_filter_submit_id = 'casinoHistoryApplyBtn';
+                $cm622_filter_submit_type = 'button';
+                $cm622_filter_no_form = true;
+                include __DIR__ . '/../../views/partials/cm622-filter-shell-close.php';
+                ?>
             </div>
             <p class="bet-history-empty" data-casino-history-empty hidden>Gösterilecek oyun geçmişi yok</p>
             <div class="table-responsive" data-casino-history-table-wrap>

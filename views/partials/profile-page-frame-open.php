@@ -6,6 +6,11 @@
  * İsteğe bağlı: $profile_include_toastr (bool) — tam sayfada toastr CDN ekler
  */
 if (!empty($profile_modal)) {
+    if (!headers_sent()) {
+        header('Content-Type: text/html; charset=UTF-8');
+    }
+    /* Modal fragments have no <head>; declare UTF-8 for DOMParser/fetch consumers. */
+    echo '<meta charset="utf-8">';
     return;
 }
 require_once __DIR__ . '/../layouts/head_full.php';

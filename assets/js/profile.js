@@ -1,6 +1,12 @@
 /**
  * Profil ile ilgili tüm JavaScript davranışları tek dosyada.
  * Sayfa verisi: window.__PROFILE_PAYMENT_LIMITS__, window.__PROFILE_TRANSACTIONS__, window.__DEPOSIT_HISTORY_API__
+ *
+ * @dynamic-file
+ * @entry openVegaPanel, closeVegaPanel, processVegaDeposit, processInlineVegaDeposit, processVegaWithdrawal
+ * @entry closeSuccessWithdrawalPopup, showAppFeedbackDialog, setCm622MultiSelectValue
+ * @entry openProfileModalFromHeader, openProfileModalUrl
+ * @keep initProfileModal, initProfileSidebar, initCm622MultiSelects, bindCm622FormControls
  */
 (function() {
     'use strict';
@@ -39,7 +45,9 @@
             console.warn('[Profile] ' + (title ? title + ': ' : '') + msg);
         }
     }
-    var TR_LOCALE = 'tr-TR';
+    var TR_LOCALE = (typeof window.__INTL_LOCALE__ === 'string' && window.__INTL_LOCALE__)
+        ? window.__INTL_LOCALE__
+        : 'tr-TR';
     var DEFAULT_LIMITS = { min: 0, max: 999999 };
     var amountFormatter = new Intl.NumberFormat(TR_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     var dateTimeFormatter = new Intl.DateTimeFormat(TR_LOCALE, {
@@ -53,6 +61,14 @@
     var balanceCache = { data: null, fetchedAt: 0, pending: null };
     var BALANCE_CACHE_TTL_MS = 3000;
 
+    function t(key, fallback) {
+        var bag = window.__I18N__;
+        if (bag && typeof bag === 'object' && Object.prototype.hasOwnProperty.call(bag, key) && bag[key] != null && bag[key] !== '') {
+            return String(bag[key]);
+        }
+        return fallback != null ? String(fallback) : key;
+    }
+
     function ready(fn) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', fn);
@@ -63,11 +79,78 @@
 
     function formatTryAmount(value) {
         var text = String(value == null ? '0' : value).trim();
-        text = text.replace(/\s*[₺]|(?:\s*TL)$/gi, '').trim();
+        text = text.replace(/\s*[?]|(?:\s*TL)$/gi, '').trim();
+        text = text.replace(/\s*₺$/g, '').trim();
         if (/^-?\d+(?:\.\d+)?$/.test(text)) {
             return amountFormatter.format(Number(text)) + ' ₺';
         }
         return text + ' ₺';
+    }
+
+    var PROFILE_BALANCE_HIDE_KEY = 'vrs_profile_balance_hidden';
+    var PROFILE_BALANCE_MASK = '•••••• ₺';
+
+    function isProfileBalanceHidden() {
+        try {
+            return localStorage.getItem(PROFILE_BALANCE_HIDE_KEY) === '1';
+        } catch (eHide) {
+            return false;
+        }
+    }
+
+    function setProfileBalanceHidden(hidden) {
+        try {
+            localStorage.setItem(PROFILE_BALANCE_HIDE_KEY, hidden ? '1' : '0');
+        } catch (eSet) { /* ignore */ }
+        document.documentElement.classList.toggle('is-profile-balance-hidden', !!hidden);
+    }
+
+    function writeProfileBalanceEl(el, formatted) {
+        if (!el) return;
+        var value = String(formatted == null ? '' : formatted);
+        el.setAttribute('data-balance-display', value);
+        el.textContent = isProfileBalanceHidden() ? PROFILE_BALANCE_MASK : value;
+    }
+
+    function refreshProfileBalanceVisibility() {
+        var hidden = isProfileBalanceHidden();
+        document.documentElement.classList.toggle('is-profile-balance-hidden', hidden);
+        document.querySelectorAll('[data-balance-display]').forEach(function(el) {
+            var real = el.getAttribute('data-balance-display') || '';
+            el.textContent = hidden ? PROFILE_BALANCE_MASK : real;
+        });
+        document.querySelectorAll('[data-profile-balance-toggle]').forEach(function(icon) {
+            icon.classList.toggle('bc-i-eye', !hidden);
+            icon.classList.toggle('bc-i-eye-hidden', hidden);
+            icon.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+            icon.setAttribute('aria-label', hidden ? t('profile.show_balance', 'Bakiyeyi göster') : t('profile.hide_balance', 'Bakiyeyi gizle'));
+            icon.setAttribute('title', hidden ? t('profile.show_balance', 'Bakiyeyi göster') : t('profile.hide_balance', 'Bakiyeyi gizle'));
+        });
+    }
+
+    function initProfileBalanceToggleOnce() {
+        if (window.__profileBalanceToggleBound) return;
+        window.__profileBalanceToggleBound = true;
+        setProfileBalanceHidden(isProfileBalanceHidden());
+        document.addEventListener('click', function(e) {
+            var icon = e.target && e.target.closest ? e.target.closest('[data-profile-balance-toggle]') : null;
+            if (!icon) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setProfileBalanceHidden(!isProfileBalanceHidden());
+            refreshProfileBalanceVisibility();
+        }, true);
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            var icon = e.target && e.target.closest ? e.target.closest('[data-profile-balance-toggle]') : null;
+            if (!icon) return;
+            e.preventDefault();
+            setProfileBalanceHidden(!isProfileBalanceHidden());
+            refreshProfileBalanceVisibility();
+        }, true);
+        window.__refreshProfileBalanceVisibility = refreshProfileBalanceVisibility;
+        window.__writeProfileBalanceEl = writeProfileBalanceEl;
+        window.__isProfileBalanceHidden = isProfileBalanceHidden;
     }
 
     function normalizeBalancePayload(data) {
@@ -167,7 +250,7 @@
             wagerLabel = String(bonus.wageringRequirement) + 'x';
         }
         if (wagerLabel) {
-            addRow('Çevrim şartı', wagerLabel);
+            addRow('Çevrim sarti', wagerLabel);
         }
         var tgt = bonus.wageringTarget;
         var bet = bonus.totalBetAmount;
@@ -199,7 +282,7 @@
             var pctTxt = document.createElement('p');
             pctTxt.className = 'profile-active-bonus-pct';
             var pctRounded = Math.round(pct * 100) / 100;
-            pctTxt.textContent = pctRounded + '% tamamlandı';
+            pctTxt.textContent = pctRounded + '% tamamlandi';
             card.appendChild(pctTxt);
         }
         var meta = document.createElement('div');
@@ -223,8 +306,8 @@
         }
         var foot = document.createElement('p');
         foot.className = 'profile-active-bonus-dates';
-        foot.textContent = 'Bitiş: ' + formatProfileBonusDate(bonus.deadline)
-            + ' · Veriliş: ' + formatProfileBonusDate(bonus.grantedAt);
+        foot.textContent = 'Bitis: ' + formatProfileBonusDate(bonus.deadline)
+            + ' ? Veriliş: ' + formatProfileBonusDate(bonus.grantedAt);
         card.appendChild(foot);
         return card;
     }
@@ -246,7 +329,7 @@
             return text.indexOf('slot') !== -1
                 || text.indexOf('casino') !== -1
                 || text.indexOf('canli') !== -1
-                || text.indexOf('kayıp') !== -1
+                || text.indexOf('kayip') !== -1
                 || text.indexOf('kayip') !== -1
                 || text.indexOf('freespin') !== -1;
         }
@@ -261,7 +344,7 @@
         var msg = claimPolicy && typeof claimPolicy.depositRequiredMessage === 'string'
             ? claimPolicy.depositRequiredMessage.trim()
             : '';
-        return msg || 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.';
+        return msg || 'Bu bonustan faydalanabilmeniz için yatırım yapmaniz gerekmektedir.';
     }
 
     function submitProfileBonusClaim(promotionId, statusEl, actionBtn) {
@@ -303,11 +386,11 @@
                     statusEl.classList.toggle('is-success', ok);
                     statusEl.classList.toggle('is-error', !ok);
                 }
-                toastNotify(ok ? 'success' : 'error', message, ok ? 'Başarılı' : 'Hata');
+                toastNotify(ok ? 'success' : 'error', message, ok ? t('common.success', 'Başarılı') : t('common.error', 'Hata'));
             })
             .catch(function() {
                 if (statusEl) {
-                    statusEl.textContent = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+                    statusEl.textContent = t('common.connection_error', 'Bağlantı hatası. Lütfen tekrar deneyin.');
                     statusEl.classList.add('is-error');
                     statusEl.classList.remove('is-success');
                 }
@@ -408,8 +491,8 @@
     var activeBonusPromoCache = { pending: null, data: null, fetchedAt: 0 };
     var ACTIVE_BONUS_PROMO_CACHE_TTL_MS = 8000;
 
-    /** /api/v2/active-bonus + /api/v2/content/promotions sonucunu kısa süreliğine önbelleğe alır.
-     * Bonus modal sekmeleri (spor/casino) hızlıca değiştirildiğinde her seferinde yeniden istek atmayı önler. */
+    /** /api/v2/active-bonus + /api/v2/content/promotions sonucunu kısa süreliğine önbelleğe alir.
+     * Bonus modal sekmeleri (spor/casino) hızlıca değiştirildiğinde her seferinde yeniden istek atmayi önler. */
     function fetchActiveBonusAndPromotions(forceRefresh) {
         var now = Date.now();
         if (!forceRefresh && activeBonusPromoCache.data && (now - activeBonusPromoCache.fetchedAt) < ACTIVE_BONUS_PROMO_CACHE_TTL_MS) {
@@ -483,7 +566,7 @@
                         root.innerHTML = '';
                         var err = document.createElement('p');
                         err.className = 'profile-active-bonus-error';
-                        err.textContent = (promoData.message || 'Bonus bilgisi alınamadı.').trim();
+                        err.textContent = (promoData.message || 'Bonus bilgisi alinamadi.').trim();
                         root.appendChild(err);
                         return;
                     }
@@ -494,7 +577,7 @@
                     root.innerHTML = '';
                     var err = document.createElement('p');
                     err.className = 'profile-active-bonus-error';
-                    err.textContent = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+                    err.textContent = t('common.connection_error', 'Bağlantı hatası. Lütfen tekrar deneyin.');
                     root.appendChild(err);
                 });
         });
@@ -523,7 +606,7 @@
         return balanceCache.pending;
     }
 
-    var profileShellHtmlCache = {};
+    var profileShellHtmlCache = {}; /* CM622_PROFILE_CACHE_BUST_20260803x */
     var profileShellFetchPending = {};
     var profileShellPrefetchPending = {};
     var profileShellPrefetchQueued = false;
@@ -587,7 +670,7 @@
         return url === '/logout';
     }
 
-    /** Header / smart panel / kupon: tam sayfa geçişi — profil modalı açılmaz */
+    /** Header / smart panel / kupon: tam sayfa geçişi ? profil modali açılmaz */
     function isFullPageHeaderNavPath(url) {
         if (!url) return false;
         return isPromotionsPagePath(url) || isLogoutPath(url);
@@ -615,7 +698,9 @@
             link.closest('.hdr-deposit-btn') ||
             link.closest('.connect-wallet') ||
             link.closest('.hdr-smart-panel-holder-bc') ||
-            link.closest('#betslipPanel')
+            link.closest('#betslipPanel') ||
+            link.closest('.loyaltyBonusHeader') ||
+            link.closest('[data-loyalty-badge]')
         );
     }
 
@@ -638,6 +723,8 @@
     }
 
     function isMobileSiteContext() {
+        var html = document.documentElement;
+        if (html && html.classList && html.classList.contains('is-mobile')) return true;
         var host = String((window.location && window.location.hostname) || '').toLowerCase();
         if (host.indexOf('m.') === 0) return true;
         var body = document.body;
@@ -652,16 +739,20 @@
         } else if (base.pathname === '/profile/transaction-history') {
             base.pathname = '/profile/deposit-withdraw-history';
         } else if (base.pathname === '/profile/info') {
-            base.pathname = '/profile/deposit-withdraw';
+            base.pathname = '/profile/deposit';
             base.searchParams.set('bilgi', '1');
             base.hash = '#bilgi';
         } else if (base.pathname === '/profile/wallet') {
-            base.pathname = '/profile/deposit-withdraw';
-        } else if (base.pathname === '/profile/deposit-withdraw' && base.searchParams.get('tab') === 'withdraw') {
-            base.pathname = '/profile/withdraw';
-            base.searchParams.delete('tab');
-        } else if (base.pathname === '/profile/deposit-withdraw' && base.searchParams.get('tab') === 'deposit') {
-            base.searchParams.delete('tab');
+            base.pathname = '/profile/deposit';
+        } else if (base.pathname === '/profile/deposit-withdraw') {
+            // legacy alias
+            if (base.searchParams.get('tab') === 'withdraw') {
+                base.pathname = '/profile/withdraw';
+                base.searchParams.delete('tab');
+            } else {
+                base.pathname = '/profile/deposit';
+                base.searchParams.delete('tab');
+            }
         }
         base.searchParams.set('modal', '1');
         return base.pathname + base.search + base.hash;
@@ -862,21 +953,28 @@
         if (!sidebarEl || !profileFullUrl) return;
         var want = profileModalNavComparable(profileFullUrl);
         if (!want) return;
-        sidebarEl.querySelectorAll('.accordion-sub a').forEach(function(a) {
+        sidebarEl.querySelectorAll('.accordion-sub a, .user-profile-nav-item').forEach(function(a) {
             a.classList.remove('active');
         });
-        var links = sidebarEl.querySelectorAll('.accordion-sub a[href]');
+        var links = sidebarEl.querySelectorAll('.accordion-sub a[href], .user-profile-nav-item[href]');
         for (var i = 0; i < links.length; i++) {
             var a = links[i];
             var h = a.getAttribute('href') || '';
             if (!h || h.charAt(0) === '#') continue;
             if (profileModalNavComparable(h) === want) {
                 a.classList.add('active');
-                var item = a.closest('.accordion-item');
+                var item = a.closest('.accordion-item, .user-profile-nav');
                 if (item) {
-                    item.classList.add('open');
+                    item.classList.add('open', 'active');
                     var tr = item.querySelector('a.accordion-trigger');
                     if (tr) tr.classList.add('open');
+                    var arrow = item.querySelector('.user-profile-nav-arrow');
+                    if (arrow) {
+                        arrow.classList.remove('bc-i-small-arrow-down');
+                        arrow.classList.add('bc-i-small-arrow-up');
+                    }
+                    var cursor = item.querySelector('.user-profile-nav-item-cursor');
+                    if (cursor) cursor.classList.add('user-profile-cursor-visible');
                 }
                 break;
             }
@@ -920,9 +1018,13 @@
             } else {
                 var inlineCode = oldScript.textContent || '';
                 if (inlineCode.trim() === '') return;
-                var inlineKey = fastStringHash(inlineCode);
-                if (injectedInline[inlineKey]) return;
-                injectedInline[inlineKey] = true;
+                // Payment page markers must re-run on every SPA navigation
+                var isPaymentBoot = /__PROFILE_PAYMENT_PAGE__|__PROFILE_PAYMENT_LIMITS__|__DEPOSIT_PANEL_SITE_BRAND__/.test(inlineCode);
+                if (!isPaymentBoot) {
+                    var inlineKey = fastStringHash(inlineCode);
+                    if (injectedInline[inlineKey]) return;
+                    injectedInline[inlineKey] = true;
+                }
                 s.textContent = inlineCode;
             }
             document.head.appendChild(s);
@@ -949,20 +1051,22 @@
 
     /**
      * Sidebar yalnızca modal kabuğu ilk açıldığında render edilir; sonraki SPA sekme
-     * geçişlerinde (details/bonus/mesajlar vb.) yalnızca #profilePlayerMain değişir ve
-     * mevcut aside DOM'u aynen korunur (flicker/accordion state kaybı olmasın diye).
-     * Ancak bu, ilk render sırasında isim/soyisim verisi (first_name/surname) her ne
-     * sebeple olursa olsun eksik geldiyse — kullanıcı "Kişisel Detaylar" sekmesine gidip
-     * orada doğru veriyi görse bile — sidebar'ın kalıcı olarak eski/boş veriyle takılı
-     * kalmasına yol açar. Bu yüzden her navigasyonda, en son çekilen HTML'in aside'ından
-     * kimlik alanlarını (avatar baş harfi, kullanıcı adı, kullanıcı id)
-     * canlı sidebar'a senkronize ediyoruz — yapısal DOM'u (accordion vb.) değiştirmeden.
+     * geçişlerinde (details/bonus/mesajlar vb.) yalnızca #profilePlayerMain degisir ve
+     * mevcut aside DOM'u aynen korunur (flicker/accordion state kaybi olmasin diye).
+     * Ancak bu, ilk render sirasinda isim/soyisim verisi (first_name/surname) her ne
+     * sebeple olursa olsun eksik geldiyse ? kullanıcı "Kişisel Detaylar" sekmesine gidip
+     * orada doğru veriyi görse bile ? sidebar'in kalici olarak eski/boş veriyle takili
+     * kalmasina yol açar. Bu yüzden her navigasyonda, en son çekilen HTML'in aside'indan
+     * kimlik alanlarini (avatar bas harfi, kullanıcı adi, kullanıcı id)
+     * canli sidebar'a senkronize ediyoruz ? yapisal DOM'u (accordion vb.) degistirmeden.
      */
     function syncProfileSidebarIdentityFromParsedAside(existingAside, newAside) {
         if (!existingAside || !newAside) return;
         var fields = [
             ['.avatar-holder', 'text'],
-            ['.user-right .username', 'text']
+            ['.u-i-p-p-u-i-avatar-holder-bc', 'text'],
+            ['.user-right .username', 'text'],
+            ['.u-i-p-p-u-i-d-username-bc', 'text']
         ];
         fields.forEach(function(pair) {
             var selector = pair[0];
@@ -972,19 +1076,19 @@
             var newText = newEl.textContent || '';
             if (curEl.textContent !== newText) curEl.textContent = newText;
         });
-        var curId = existingAside.querySelector('.user-right .user-id');
-        var newId = newAside.querySelector('.user-right .user-id');
+        var curId = existingAside.querySelector('.user-right .user-id, .u-i-p-p-u-i-d-user-id-bc.user-id, .user-id');
+        var newId = newAside.querySelector('.user-right .user-id, .u-i-p-p-u-i-d-user-id-bc.user-id, .user-id');
         if (curId && newId) {
             var newIdVal = newId.getAttribute('data-user-id') || '';
             if (curId.getAttribute('data-user-id') !== newIdVal) {
                 curId.setAttribute('data-user-id', newIdVal);
-                var curIdIcon = curId.querySelector('.copy-id-icon');
-                curId.textContent = 'ID: ' + newIdVal + ' ';
+                var curIdIcon = curId.querySelector('.copy-id-icon, .u-i-p-p-u-i-d-user-id-copy-bc');
+                curId.textContent = newIdVal;
                 if (curIdIcon) {
                     curId.appendChild(curIdIcon);
                 } else {
                     var icon = document.createElement('i');
-                    icon.className = 'fa-regular fa-copy copy-id-icon';
+                    icon.className = 'u-i-p-p-u-i-d-user-id-copy-bc bc-i-copy';
                     icon.setAttribute('aria-hidden', 'true');
                     curId.appendChild(icon);
                 }
@@ -994,7 +1098,12 @@
 
     function mergeProfileShellResponse(html, navSyncUrl, shellRoot) {
         if (!shellRoot) return false;
-        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var raw = String(html || '');
+        /* Force UTF-8 for HTML fragments (modal=1 responses lack <head> charset). */
+        if (raw.indexOf('<meta charset') === -1 && raw.indexOf('charset=') === -1) {
+            raw = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>' + raw + '</body></html>';
+        }
+        var doc = new DOMParser().parseFromString(raw, 'text/html');
         if (!doc || !doc.body) return false;
         var newAside = doc.getElementById('profilePlayerSidebar');
         var newMain = doc.getElementById('profilePlayerMain');
@@ -1018,7 +1127,9 @@
             shellRoot.appendChild(document.importNode(newMain, true));
         }
 
-        var sidebarLive = shellRoot.querySelector('.profile-sidebar-v2');
+        var sidebarLive = shellRoot.querySelector('#profilePlayerSidebar')
+            || shellRoot.querySelector('.u-i-profile-page-bc')
+            || shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc') || shellRoot.querySelector('.profile-sidebar-v2');
         syncProfileModalSidebarFromUrl(sidebarLive, navSyncUrl);
 
         var mainLive = shellRoot.querySelector('#profilePlayerMain');
@@ -1026,7 +1137,7 @@
         return true;
     }
 
-    /** Prefetch için: tıklanan link hangi kabuğa ait? (Gezinti tıklaması artık doğrudan kabuk köküne bağlı.) */
+    /** Prefetch için: tıklanan link hangi kabuga ait? (Gezinti tıklaması artık doğrudan kabuk köküne bağlı.) */
     function getProfileShellRootForLink(link) {
         if (!link || !link.closest) return null;
         var sidebar = link.closest('#profilePlayerSidebar');
@@ -1072,6 +1183,7 @@
                 var accItem = link.closest('.accordion-item');
                 if (accItem && accItem.querySelector('.accordion-sub')) return;
             }
+            if (isSidebarProfileLink && link.closest('.user-profile-nav-header')) return;
 
             var rawHref = (link.getAttribute('href') || '').trim();
             if (!rawHref || rawHref.charAt(0) === '#' || rawHref.indexOf('javascript:') === 0) return;
@@ -1120,7 +1232,7 @@
         });
     }
 
-    /** Sidebar’daki tüm SPA profil linklerini arka planda önbelleğe al (hover beklemeden tıklanınca hazır olsun). */
+    /** Sidebar'daki tüm SPA profil linklerini arka planda önbelleğe al (hover beklemeden tıklanınca hazır olsun). */
     function prefetchVisibleProfileSidebarLinks() {
         document.querySelectorAll('#profilePlayerSidebar a[href]').forEach(function(a) {
             var raw = (a.getAttribute('href') || '').trim();
@@ -1171,10 +1283,15 @@
     function runProfileShellInits(profileUrl) {
         initProfileSidebar();
         initProfileActiveBonus();
+        bindCm622FormControls(document.getElementById('profilePlayerMain') || document.getElementById('profileModalContent') || document);
+        initCm622MultiSelects(document.getElementById('profilePlayerMain') || document.getElementById('profileModalContent') || document);
         initDetailsPage();
         initTwoFactorToggle();
         if (document.getElementById('bonusClaimsRoot')) initBonusClaimsMe();
-        if (document.querySelector('.vega-app--in-profile-shell')) {
+        if (document.getElementById('depositSection')
+            || document.getElementById('withdrawSection')
+            || document.getElementById('depositGrid')
+            || document.getElementById('withdrawGrid')) {
             initDepositWithdrawPage(profileUrl);
         }
         if (document.getElementById('transactionTableBody')) initDepositWithdrawHistory();
@@ -1184,6 +1301,8 @@
         if (document.querySelector('[data-profile-promo-block]')) {
             loadProfilePromocodesSelect();
         }
+        bindProfilePromoUi();
+        refreshProfileBalanceVisibility();
         schedulePrefetchAllProfileSidebarLinks();
         try {
             if (profileUrl && profileUrl.indexOf('/profile/messages') !== -1 && window.MemberInboxBadges) {
@@ -1279,7 +1398,12 @@
                     if (shellRoot.id === 'profileModalContent') {
                         shellRoot.innerHTML = html;
                         activateInlineScripts(shellRoot);
-                        syncProfileModalSidebarFromUrl(shellRoot.querySelector('.profile-sidebar-v2'), profileUrl);
+                        syncProfileModalSidebarFromUrl(
+                            shellRoot.querySelector('#profilePlayerSidebar')
+                                || shellRoot.querySelector('.u-i-profile-page-bc')
+                                || shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc') || shellRoot.querySelector('.profile-sidebar-v2'),
+                            profileUrl
+                        );
                     }
                 } else if (isFullPage && !skipPushState) {
                     history.pushState({ profileShell: 1 }, '', modalUrlToDisplayUrl(profileUrl));
@@ -1382,7 +1506,7 @@
         });
     }
 
-    /** Bahis geçmişi yan alt menü URL'lerini arka planda önbelleğe al (tıklanınca anında gelsin). */
+    /** Bahis geçmişi yan alt menü URL'lerini arka planda önbelleğe al (tıklanınca aninda gelsin). */
     function prefetchAllBetHistorySidebarUrls() {
         if (window.__betHistorySidebarPrefetchRan) return;
         window.__betHistorySidebarPrefetchRan = true;
@@ -1416,7 +1540,7 @@
             prefetchAllBetHistorySidebarUrls();
         }
         document.addEventListener('pointerenter', maybePrefetchBetHistory, true);
-        /* Mobil: dokunmada pointerenter olmayabilir; akordeon başlığına tıklanınca önbellekle */
+        /* Mobil: dokunmada pointerenter olmayabilir; akordeon basligina tıklanınca önbellekle */
         document.addEventListener('click', function(e) {
             var trig = e.target.closest && e.target.closest('.profile-sidebar-v2 a.accordion-trigger[href="/profile/bet-history"]');
             if (!trig) return;
@@ -1441,7 +1565,7 @@
             params.set('modal', '1');
             var qs = params.toString();
             var modalUrl = '/profile/bet-history' + (qs ? '?' + qs : '');
-            var sidebarLive = shellRoot.querySelector('.profile-sidebar-v2');
+            var sidebarLive = shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc') || shellRoot.querySelector('.profile-sidebar-v2');
             syncProfileModalSidebarFromUrl(sidebarLive, modalUrl);
             loadProfileShellContent(modalUrl, {
                 shellRoot: shellRoot,
@@ -1527,7 +1651,7 @@
             params.set('modal', '1');
             var qs = params.toString();
             var modalUrl = '/profile/messages' + (qs ? '?' + qs : '');
-            var sidebarLive = shellRoot.querySelector('.profile-sidebar-v2');
+            var sidebarLive = shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc') || shellRoot.querySelector('.profile-sidebar-v2');
             syncProfileModalSidebarFromUrl(sidebarLive, modalUrl);
             loadProfileShellContent(modalUrl, {
                 shellRoot: shellRoot,
@@ -1591,7 +1715,7 @@
                     form.reset();
                 })
                 .catch(function() {
-                    var message = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+                    var message = t('common.connection_error', 'Bağlantı hatası. Lütfen tekrar deneyin.');
                     renderInlineFeedback(form, false, message);
                     if (window.MaltabetToast) {
                         toastNotify('error', message);
@@ -1631,11 +1755,11 @@
                 return;
             }
             if (points % 100 !== 0) {
-                toastNotify('warning', 'Puanlar 100 ve katları şeklinde kullanılabilir.');
+                toastNotify('warning', 'Puanlar 100 ve katlari seklinde kullanilabilir.');
                 return;
             }
             if (redeemable > 0 && points > redeemable) {
-                toastNotify('warning', 'Yetersiz puan. Kullanılabilir puanınız: ' + redeemable + '.');
+                toastNotify('warning', 'Yetersiz puan. Kullanilabilir puaniniz: ' + redeemable + '.');
                 return;
             }
 
@@ -1655,17 +1779,17 @@
                         var data = null;
                         try { data = text ? JSON.parse(text) : null; } catch (eJson) {}
                         var ok = !!(r.ok && data && data.success);
-                        var message = (data && data.message) ? data.message : (ok ? 'Puanlar başarıyla kullanıldı.' : 'Puan kullanımı başarısız.');
+                        var message = (data && data.message) ? data.message : (ok ? 'Puanlar basariyla kullanildi.' : 'Puan kullanimi basarisiz.');
                         return { ok: ok, message: message };
                     });
                 })
                 .then(function(result) {
                     if (!result.ok) {
-                        toastNotify('error', result.message || 'Puan kullanımı başarısız.');
+                        toastNotify('error', result.message || 'Puan kullanimi basarisiz.');
                         return;
                     }
 
-                    toastNotify('success', result.message || 'Puanlar başarıyla kullanıldı.');
+                    toastNotify('success', result.message || 'Puanlar basariyla kullanildi.');
 
                     var modalContent = form.closest('#profileModalContent');
                     var wrap = form.closest('.centerWrap.porfileWrap');
@@ -1698,7 +1822,7 @@
                     });
                 })
                 .catch(function() {
-                    toastNotify('error', 'Bağlantı hatası. Lütfen tekrar deneyin.');
+                    toastNotify('error', t('common.connection_error', 'Bağlantı hatası. Lütfen tekrar deneyin.'));
                 })
                 .finally(function() {
                     if (submitBtn) submitBtn.disabled = false;
@@ -1706,8 +1830,9 @@
         }, false);
     }
 
-    // ----- 0. Header profil modalı (iframe yok, HTML fetch ile) -----
+    // ----- 0. Header profil modali (iframe yok, HTML fetch ile) -----
     function initProfileModal() {
+        if (isMobileSiteContext()) return;
         var overlay = document.getElementById('profileModalOverlay');
         var modal = document.getElementById('profileModal');
         var loadingEl = document.getElementById('profileModalLoading');
@@ -1746,11 +1871,17 @@
         });
 
         function openModal() {
+            // Drop any stale SPA shell HTML from previous CM622 markup iterations
+            try {
+                Object.keys(profileShellHtmlCache).forEach(function (k) { delete profileShellHtmlCache[k]; });
+            } catch (eCache) {}
             overlay.classList.add('is-open');
-            modal.classList.add('is-open');
+            modal.classList.add('is-open', 'is-web');
             overlay.setAttribute('aria-hidden', 'false');
             modal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+            document.documentElement.classList.add('is-web');
+            document.body.classList.add('is-web', 'profile-modal-body');
         }
 
         function closeModal() {
@@ -1758,10 +1889,20 @@
                 document.activeElement.blur();
             }
             overlay.classList.remove('is-open');
-            modal.classList.remove('is-open');
+            modal.classList.remove('is-open', 'is-web');
             overlay.setAttribute('aria-hidden', 'true');
             modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
+            document.body.classList.remove('profile-modal-body');
+        }
+
+        var closeBtn = document.getElementById('close_popup_button_id');
+        if (closeBtn && closeBtn.getAttribute('data-profile-close-bound') !== '1') {
+            closeBtn.setAttribute('data-profile-close-bound', '1');
+            closeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                closeModal();
+            });
         }
 
         profileModalApi.closeModal = closeModal;
@@ -1899,11 +2040,26 @@
         });
     }
 
-    /** Akordeon: tek document dinleyicisi — modal her yüklendiğinde çift toggle hatası olmasın. */
+    /** Akordeon: tek document dinleyicisi ? modal her yüklendiginde çift toggle hatası olmasin. */
     function initProfileAccordionDelegationOnce() {
         if (window.__profileAccordionDelegationBound) return;
         window.__profileAccordionDelegationBound = true;
         document.addEventListener('click', function(e) {
+            var cmHeader = e.target.closest('.user-profile-nav-header[data-toggle-sub]');
+            if (cmHeader) {
+                var nav = cmHeader.closest('.user-profile-nav');
+                if (!nav) return;
+                e.preventDefault();
+                var willOpen = !nav.classList.contains('active');
+                nav.classList.toggle('active', willOpen);
+                nav.classList.toggle('open', willOpen);
+                var arrow = cmHeader.querySelector('.user-profile-nav-arrow');
+                if (arrow) {
+                    arrow.classList.toggle('bc-i-small-arrow-up', willOpen);
+                    arrow.classList.toggle('bc-i-small-arrow-down', !willOpen);
+                }
+                return;
+            }
             var trigger = e.target.closest('.profile-sidebar-v2 a.accordion-trigger[data-toggle-sub]');
             if (!trigger) return;
             if (e.target.closest('.accordion-sub')) return;
@@ -1917,29 +2073,34 @@
 
     // ----- 1. Profil sidebar: bakiye, kullanıcı ID kopyala, akordeon -----
     function initProfileSidebar() {
-        var content = document.querySelector('#profileModalContent .profile-content')
-            || document.querySelector('.profile-sidebar-v2 .profile-content');
+        var content = document.querySelector('#profileModalContent .u-i-profile-page-content')
+            || document.querySelector('#profilePlayerSidebar .u-i-profile-page-content')
+            || document.querySelector('.u-i-profile-page-bc .u-i-profile-page-content');
         if (!content) return;
 
-        if (content.querySelector('.main-balance-card')) {
+        if (content.querySelector('.u-i-p-amounts-bc.withdrawable')) {
             var syncedFromHeader = typeof window.__syncProfileSidebarBalancesFromHeaderDom === 'function'
                 && window.__syncProfileSidebarBalancesFromHeaderDom();
+            if (syncedFromHeader) {
+                refreshProfileBalanceVisibility();
+            }
             if (!syncedFromHeader) {
                 fetchBalanceData()
                     .then(function(data) {
-                        var mainEl = content.querySelector('.main-balance-card .amount');
-                        if (mainEl && data.status === 'success') mainEl.textContent = formatTryAmount(data.ana_bakiye);
-                        content.querySelectorAll('.bonus-balance-card .amount').forEach(function(bonusEl) {
-                            if (data.status === 'success') {
-                                bonusEl.textContent = formatTryAmount(data.bonus_bakiye || data.toplam_bonus || '0');
-                            }
+                        if (data.status !== 'success') return;
+                        content.querySelectorAll('[data-cm622-balance="main"], .u-i-p-amounts-bc.withdrawable .u-i-p-a-amount-bc').forEach(function(mainEl) {
+                            writeProfileBalanceEl(mainEl, formatTryAmount(data.ana_bakiye));
                         });
+                        content.querySelectorAll('[data-cm622-balance="bonus"], .u-i-p-amounts-bc.bonuses .u-i-p-a-amount-bc, .bonus-info-section b').forEach(function(bonusEl) {
+                            writeProfileBalanceEl(bonusEl, formatTryAmount(data.bonus_bakiye || data.toplam_bonus || '0'));
+                        });
+                        refreshProfileBalanceVisibility();
                     })
                     .catch(function() {});
             }
         }
 
-        document.querySelectorAll('.profile-content .user-id').forEach(function(el) {
+        document.querySelectorAll('.u-i-profile-page-content .u-i-p-p-u-i-d-user-id-bc[data-user-id]').forEach(function(el) {
             if (el.getAttribute('data-profile-userid-bound') === '1') return;
             el.setAttribute('data-profile-userid-bound', '1');
             el.addEventListener('click', function() {
@@ -1959,25 +2120,11 @@
         }
     }
 
-    // ----- 2. Kişisel detaylar sayfası: şifre göster, form -----
+    // ----- 2. Kisisel detaylar sayfasi: CM622 form -----
     function initDetailsPage() {
         var form = document.getElementById('personalDetailsForm');
-        var pwdInput = document.getElementById('current_password');
-        var toggleBtn = document.querySelector('.field-toggle-pwd');
         var submitBtn = document.getElementById('saveDetailsBtn');
-
-        if (toggleBtn && pwdInput) {
-            toggleBtn.addEventListener('click', function() {
-                var icon = toggleBtn.querySelector('i');
-                if (pwdInput.type === 'password') {
-                    pwdInput.type = 'text';
-                    if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
-                } else {
-                    pwdInput.type = 'password';
-                    if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
-                }
-            });
-        }
+        if (!form) return;
 
         function notifyProfileFormMessage(ok, message) {
             var msg = message || (ok ? 'Değişiklikler kaydedildi.' : 'Kayıt sırasında hata oluştu.');
@@ -1988,37 +2135,447 @@
             }
         }
 
+        function pad2(n) { return n < 10 ? '0' + n : String(n); }
+        function ymdToDisplay(str) {
+            var m = String(str || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (!m) return '';
+            return m[3] + '.' + m[2] + '.' + m[1];
+        }
         function normalizeDateInput(value) {
             var v = (value || '').trim();
             if (!v) return '';
             var m = v.match(/^(\d{4}-\d{2}-\d{2})/);
             if (m && m[1]) return m[1];
+            var dmy = v.match(/^(\d{2})[./](\d{2})[./](\d{4})$/);
+            if (dmy) return dmy[3] + '-' + dmy[2] + '-' + dmy[1];
             var d = new Date(v);
             if (!isNaN(d.getTime())) {
-                var y = d.getFullYear();
-                var mo = String(d.getMonth() + 1).padStart(2, '0');
-                var da = String(d.getDate()).padStart(2, '0');
-                return y + '-' + mo + '-' + da;
+                return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
             }
             return '';
         }
-
         function normalizeGenderLabel(value) {
             var g = (value || '').trim().toLowerCase();
             if (g === 'male' || g === 'm' || g === 'erkek') return 'Erkek';
-            if (g === 'female' || g === 'f' || g === 'kadın' || g === 'kadin') return 'Kadın';
-            if (g === 'other' || g === 'o' || g === 'diğer' || g === 'diger') return 'Diğer';
+            if (g === 'female' || g === 'f' || g === 'kadin' || g === 'kadın') return 'Kadın';
+            if (g === 'other' || g === 'o' || g === 'diger' || g === 'diğer') return 'Diğer';
             return value || '';
         }
-
+        function normalizeCountryLabel(value) {
+            var c = String(value || '').trim();
+            var u = c.toUpperCase();
+            if (u === 'TR' || u === 'TUR' || u === 'TURKEY' || c.toLowerCase() === 'türkiye' || c.toLowerCase() === 'turkiye') {
+                return 'Türkiye';
+            }
+            return c;
+        }
         function setIfPresent(selector, value) {
-            var el = form ? form.querySelector(selector) : null;
+            var el = form.querySelector(selector);
             if (!el) return;
             el.value = value == null ? '' : String(value);
+            var wrap = el.closest('.form-control-bc');
+            if (wrap) {
+                var filled = String(el.value || '').trim() !== '';
+                wrap.classList.toggle('filled', filled);
+                wrap.classList.toggle('valid', filled);
+            }
+        }
+        function setDobValue(ymd) {
+            var hidden = form.querySelector('#dob');
+            var display = form.querySelector('#dob_display');
+            var control = form.querySelector('#profileDobControl');
+            var next = normalizeDateInput(ymd);
+            if (hidden) hidden.value = next;
+            if (display) display.value = next ? ymdToDisplay(next) : '';
+            if (control) {
+                var filled = !!next;
+                control.classList.toggle('filled', filled);
+                control.classList.toggle('valid', filled);
+            }
         }
 
+        function initProfileDatepicker() {
+            var holder = form.querySelector('.profile-dob-holder');
+            var hidden = form.querySelector('#dob');
+            var display = form.querySelector('#dob_display');
+            var control = form.querySelector('#profileDobControl');
+            var icon = form.querySelector('#profileDobIcon');
+            var panel = form.querySelector('#profile_datepicker_panel');
+            if (!holder || !hidden || !display || !panel || !icon) return;
+            if (holder.getAttribute('data-dob-bound') === '1') return;
+            holder.setAttribute('data-dob-bound', '1');
+
+            var monthWrap = panel.querySelector('[data-dp-select="month"]');
+            var yearWrap = panel.querySelector('[data-dp-select="year"]');
+            var monthValueEl = panel.querySelector('[data-dp-month-value]');
+            var yearValueEl = panel.querySelector('[data-dp-year-value]');
+            var yearMenu = panel.querySelector('[data-dp-year-menu]');
+            var daysEl = panel.querySelector('.profile-datepicker-days');
+            var prevBtn = panel.querySelector('.profile-datepicker-prev');
+            var cancelBtn = panel.querySelector('.profile-datepicker-cancel');
+            var applyBtn = panel.querySelector('.profile-datepicker-apply');
+            var monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+            var viewDate = new Date();
+            var pendingSelected = null;
+
+            function closeDpSelects(except) {
+                panel.querySelectorAll('.profile-dp-select').forEach(function(wrap) {
+                    if (except && wrap === except) return;
+                    var trigger = wrap.querySelector('.profile-dp-select-trigger');
+                    var menu = wrap.querySelector('.profile-dp-select-menu');
+                    wrap.classList.remove('is-open');
+                    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+                    if (menu) menu.setAttribute('hidden', '');
+                });
+            }
+            function openDpSelect(wrap) {
+                if (!wrap) return;
+                var isOpen = wrap.classList.contains('is-open');
+                closeDpSelects();
+                if (isOpen) return;
+                var trigger = wrap.querySelector('.profile-dp-select-trigger');
+                var menu = wrap.querySelector('.profile-dp-select-menu');
+                wrap.classList.add('is-open');
+                if (trigger) trigger.setAttribute('aria-expanded', 'true');
+                if (menu) {
+                    menu.removeAttribute('hidden');
+                    var active = menu.querySelector('.profile-dp-select-option.is-active');
+                    if (active && typeof active.scrollIntoView === 'function') {
+                        active.scrollIntoView({ block: 'nearest' });
+                    }
+                }
+            }
+            function syncMonthYearUi() {
+                if (monthValueEl) monthValueEl.textContent = monthNames[viewDate.getMonth()] || '';
+                if (yearValueEl) yearValueEl.textContent = String(viewDate.getFullYear());
+                if (monthWrap) {
+                    monthWrap.querySelectorAll('.profile-dp-select-option').forEach(function(opt) {
+                        opt.classList.toggle('is-active', String(opt.getAttribute('data-value')) === String(viewDate.getMonth()));
+                    });
+                }
+                if (yearMenu) {
+                    yearMenu.querySelectorAll('.profile-dp-select-option').forEach(function(opt) {
+                        opt.classList.toggle('is-active', String(opt.getAttribute('data-value')) === String(viewDate.getFullYear()));
+                    });
+                }
+            }
+            function fillYears() {
+                if (!yearMenu || yearMenu.getAttribute('data-built') === '1') return;
+                yearMenu.setAttribute('data-built', '1');
+                var currentYear = new Date().getFullYear();
+                var minYear = currentYear - 100;
+                var maxYear = currentYear - 18;
+                yearMenu.innerHTML = '';
+                for (var y = maxYear; y >= minYear; y--) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'profile-dp-select-option';
+                    btn.setAttribute('role', 'option');
+                    btn.setAttribute('data-value', String(y));
+                    btn.textContent = String(y);
+                    yearMenu.appendChild(btn);
+                }
+            }
+            function renderDays() {
+                if (!daysEl) return;
+                var year = viewDate.getFullYear();
+                var month = viewDate.getMonth();
+                var first = new Date(year, month, 1);
+                var last = new Date(year, month + 1, 0);
+                var startOffset = (first.getDay() + 6) % 7;
+                daysEl.innerHTML = '';
+                var i, cell;
+                for (i = 0; i < startOffset; i++) {
+                    cell = document.createElement('span');
+                    cell.className = 'profile-datepicker-day other-month';
+                    cell.setAttribute('aria-hidden', 'true');
+                    daysEl.appendChild(cell);
+                }
+                for (var d = 1; d <= last.getDate(); d++) {
+                    cell = document.createElement('button');
+                    cell.type = 'button';
+                    cell.className = 'profile-datepicker-day';
+                    var dateStr = year + '-' + pad2(month + 1) + '-' + pad2(d);
+                    cell.setAttribute('data-date', dateStr);
+                    cell.textContent = String(d);
+                    if (pendingSelected === dateStr) cell.classList.add('selected');
+                    cell.addEventListener('click', function() {
+                        var dt = this.getAttribute('data-date');
+                        if (!dt) return;
+                        pendingSelected = dt;
+                        daysEl.querySelectorAll('.profile-datepicker-day.selected').forEach(function(el) {
+                            el.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+                    });
+                    daysEl.appendChild(cell);
+                }
+            }
+            function positionPanel() {
+                var anchor = control || icon;
+                var rect = anchor.getBoundingClientRect();
+                var width = 280;
+                var left = Math.min(rect.right - width, window.innerWidth - width - 8);
+                if (left < 8) left = 8;
+                panel.style.position = 'fixed';
+                panel.style.top = Math.min(rect.bottom + 6, window.innerHeight - 340) + 'px';
+                panel.style.left = left + 'px';
+                panel.style.right = 'auto';
+                panel.style.zIndex = '100200';
+            }
+            function openPanel() {
+                fillYears();
+                var val = hidden.value;
+                if (val) {
+                    var parts = val.split('-');
+                    if (parts.length === 3) {
+                        viewDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                        pendingSelected = val;
+                    }
+                } else {
+                    var now = new Date();
+                    viewDate = new Date(now.getFullYear() - 18, now.getMonth(), now.getDate());
+                    pendingSelected = null;
+                }
+                syncMonthYearUi();
+                renderDays();
+                closeDpSelects();
+                positionPanel();
+                panel.removeAttribute('hidden');
+                icon.setAttribute('aria-expanded', 'true');
+                if (control) control.classList.add('focused');
+            }
+            function closePanel() {
+                closeDpSelects();
+                panel.setAttribute('hidden', '');
+                icon.setAttribute('aria-expanded', 'false');
+                if (control) control.classList.remove('focused');
+                panel.style.position = '';
+                panel.style.top = '';
+                panel.style.left = '';
+                panel.style.right = '';
+                panel.style.zIndex = '';
+            }
+            function togglePanel() {
+                if (panel.hasAttribute('hidden')) openPanel();
+                else closePanel();
+            }
+            function applySelection() {
+                if (pendingSelected) setDobValue(pendingSelected);
+                closePanel();
+            }
+
+            display.addEventListener('click', function(e) {
+                e.preventDefault();
+                togglePanel();
+            });
+            icon.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                togglePanel();
+            });
+            icon.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    togglePanel();
+                }
+            });
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function() {
+                    viewDate.setMonth(viewDate.getMonth() - 1);
+                    syncMonthYearUi();
+                    renderDays();
+                });
+            }
+            panel.querySelectorAll('.profile-dp-select-trigger').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openDpSelect(btn.closest('.profile-dp-select'));
+                });
+            });
+            panel.addEventListener('click', function(e) {
+                var opt = e.target && e.target.closest ? e.target.closest('.profile-dp-select-option') : null;
+                if (!opt || !panel.contains(opt)) return;
+                e.preventDefault();
+                e.stopPropagation();
+                var wrap = opt.closest('.profile-dp-select');
+                var val = parseInt(opt.getAttribute('data-value'), 10);
+                if (!wrap || isNaN(val)) return;
+                if (wrap.getAttribute('data-dp-select') === 'month') {
+                    viewDate.setMonth(val);
+                } else {
+                    viewDate.setFullYear(val);
+                }
+                syncMonthYearUi();
+                renderDays();
+                closeDpSelects();
+            });
+            if (cancelBtn) cancelBtn.addEventListener('click', closePanel);
+            if (applyBtn) applyBtn.addEventListener('click', applySelection);
+            document.addEventListener('click', function(e) {
+                if (!panel.hasAttribute('hidden') && !holder.contains(e.target) && !panel.contains(e.target)) closePanel();
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !panel.hasAttribute('hidden')) closePanel();
+            });
+            setDobValue(hidden.value);
+        }
+
+        function initProfileCountrySelect() {
+            var wrap = form.querySelector('.cm622-country-select[data-cm622-country]');
+            if (!wrap || wrap.getAttribute('data-country-bound') === '1') return;
+            wrap.setAttribute('data-country-bound', '1');
+            var control = wrap.querySelector('.form-control-bc');
+            var trigger = wrap.querySelector('.form-control-label-bc');
+            var list = wrap.querySelector('.multi-select-label-bc');
+            var optionsEl = wrap.querySelector('[data-country-options]');
+            var display = wrap.querySelector('[data-country-display]');
+            var flagEl = wrap.querySelector('[data-country-flag]');
+            var hidden = wrap.querySelector('#country');
+            var searchInput = wrap.querySelector('.cm622-country-search-input');
+            if (!control || !trigger || !list || !optionsEl || !display || !hidden) return;
+
+            var countryCodes = [
+                'AF','AX','AL','DZ','AS','AD','AO','AI','AQ','AG','AR','AM','AW','AU','AT','AZ',
+                'BS','BH','BD','BB','BY','BE','BZ','BJ','BM','BT','BO','BQ','BA','BW','BV','BR','IO','BN','BG','BF','BI',
+                'CV','KH','CM','CA','KY','CF','TD','CL','CN','CX','CC','CO','KM','CG','CD','CK','CR','CI','HR','CU','CW','CY','CZ',
+                'DK','DJ','DM','DO','EC','EG','SV','GQ','ER','EE','SZ','ET','FK','FO','FJ','FI','FR','GF','PF','TF',
+                'GA','GM','GE','DE','GH','GI','GR','GL','GD','GP','GU','GT','GG','GN','GW','GY',
+                'HT','HM','VA','HN','HK','HU','IS','IN','ID','IR','IQ','IE','IM','IL','IT','JM','JP','JE','JO',
+                'KZ','KE','KI','KP','KR','KW','KG','LA','LV','LB','LS','LR','LY','LI','LT','LU',
+                'MO','MG','MW','MY','MV','ML','MT','MH','MQ','MR','MU','YT','MX','FM','MD','MC','MN','ME','MS','MA','MZ','MM',
+                'NA','NR','NP','NL','NC','NZ','NI','NE','NG','NU','NF','MK','MP','NO','OM',
+                'PK','PW','PS','PA','PG','PY','PE','PH','PN','PL','PT','PR','QA','RE','RO','RU','RW',
+                'BL','SH','KN','LC','MF','PM','VC','WS','SM','ST','SA','SN','RS','SC','SL','SG','SX','SK','SI','SB','SO','ZA','GS','SS','ES','LK','SD','SR','SJ','SE','CH','SY',
+                'TW','TJ','TZ','TH','TL','TG','TK','TO','TT','TN','TR','TM','TC','TV',
+                'UG','UA','AE','GB','US','UM','UY','UZ','VU','VE','VN','VG','VI','WF','EH','YE','ZM','ZW'
+            ];
+            var trNames = { TR: 'Türkiye', DE: 'Almanya', US: 'Amerika Birleşik Devletleri', GB: 'Birleşik Krallık', AZ: 'Azerbaycan', NL: 'Hollanda', FR: 'Fransa', IT: 'İtalya', ES: 'İspanya', RU: 'Rusya', CY: 'Kıbrıs' };
+
+            function codeToName(code) {
+                if (trNames[code]) return trNames[code];
+                try {
+                    if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
+                        var dn = new Intl.DisplayNames(['tr'], { type: 'region' });
+                        return dn.of(code) || code;
+                    }
+                } catch (e) {}
+                return code;
+            }
+            function flagUrl(code) {
+                return 'https://flagcdn.com/24x18/' + String(code || '').toLowerCase() + '.png';
+            }
+            function setOpen(open) {
+                control.classList.toggle('expanded', open);
+                trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (open) {
+                    list.hidden = false;
+                    list.removeAttribute('hidden');
+                    if (searchInput) {
+                        searchInput.value = '';
+                        filterOptions('');
+                        setTimeout(function() { searchInput.focus(); }, 0);
+                    }
+                } else {
+                    list.hidden = true;
+                    list.setAttribute('hidden', '');
+                }
+            }
+            function applyCountry(code, label, silent) {
+                var name = label || codeToName(code) || '';
+                if (code === 'TR') name = 'Türkiye';
+                hidden.value = name;
+                display.textContent = name || 'Seçin';
+                if (flagEl) {
+                    if (code) {
+                        flagEl.style.backgroundImage = 'url(' + flagUrl(code) + ')';
+                        flagEl.style.backgroundSize = 'cover';
+                        flagEl.style.backgroundPosition = 'center';
+                        flagEl.setAttribute('data-code', code);
+                    } else {
+                        flagEl.style.backgroundImage = '';
+                        flagEl.removeAttribute('data-code');
+                    }
+                }
+                control.classList.toggle('filled', !!name);
+                control.classList.toggle('valid', !!name);
+                optionsEl.querySelectorAll('.checkbox-control-content-bc').forEach(function(item) {
+                    var on = String(item.getAttribute('data-option-code') || '') === String(code || '');
+                    item.classList.toggle('active', on);
+                    item.setAttribute('aria-selected', on ? 'true' : 'false');
+                });
+                if (!silent) setOpen(false);
+            }
+            function findCodeForLabel(label) {
+                var want = normalizeCountryLabel(label);
+                if (!want) return '';
+                if (want === 'Türkiye') return 'TR';
+                var i, code, name;
+                for (i = 0; i < countryCodes.length; i++) {
+                    code = countryCodes[i];
+                    name = codeToName(code);
+                    if (name === want || code === want.toUpperCase()) return code;
+                }
+                return '';
+            }
+            function filterOptions(q) {
+                var query = String(q || '').trim().toLocaleLowerCase('tr');
+                optionsEl.querySelectorAll('.checkbox-control-content-bc').forEach(function(item) {
+                    var label = String(item.getAttribute('data-option-label') || '').toLocaleLowerCase('tr');
+                    var code = String(item.getAttribute('data-option-code') || '').toLowerCase();
+                    var show = !query || label.indexOf(query) !== -1 || code.indexOf(query) !== -1;
+                    item.style.display = show ? '' : 'none';
+                });
+            }
+            function buildOptions() {
+                if (optionsEl.getAttribute('data-built') === '1') return;
+                optionsEl.setAttribute('data-built', '1');
+                var frag = document.createDocumentFragment();
+                countryCodes.forEach(function(code) {
+                    var name = codeToName(code);
+                    var item = document.createElement('label');
+                    item.className = 'checkbox-control-content-bc';
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', 'false');
+                    item.setAttribute('data-option-code', code);
+                    item.setAttribute('data-option-label', name);
+                    item.innerHTML = '<span class="cm622-country-option-flag" style="background-image:url(' + flagUrl(code) + ')"></span><p class="checkbox-control-text-bc ellipsis">' + name + '</p>';
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        applyCountry(code, name, false);
+                    });
+                    frag.appendChild(item);
+                });
+                optionsEl.appendChild(frag);
+            }
+
+            buildOptions();
+            wrap.__cm622CountrySetValue = function(label) {
+                var normalized = normalizeCountryLabel(label);
+                var code = findCodeForLabel(normalized) || (normalized === 'Türkiye' ? 'TR' : '');
+                applyCountry(code, normalized || codeToName(code), true);
+            };
+            wrap.__cm622CountrySetValue(hidden.value || 'Türkiye');
+
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                setOpen(!control.classList.contains('expanded'));
+            });
+            if (searchInput) {
+                searchInput.addEventListener('click', function(e) { e.stopPropagation(); });
+                searchInput.addEventListener('input', function() { filterOptions(searchInput.value); });
+            }
+            document.addEventListener('click', function(e) {
+                if (control.classList.contains('expanded') && !wrap.contains(e.target)) setOpen(false);
+            });
+        }
+
+        initProfileDatepicker();
+        initProfileCountrySelect();
+
         function hydrateDetailsFromApi() {
-            if (!form) return;
             fetch(apiUrl('/api/v2/profile/detail'), {
                 method: 'GET',
                 credentials: 'same-origin',
@@ -2038,21 +2595,34 @@
                     var user = root.user || {};
                     setIfPresent('#first_name', user.name || user.first_name || '');
                     setIfPresent('#surname', user.surname || user.last_name || '');
-                    setIfPresent('#profile_email', user.email || '');
-                    setIfPresent('#profile_phone', user.phone || '');
-                    setIfPresent('#profile_tc', user.identity_number || user.tc || '');
                     setIfPresent('#city', user.city || '');
-                    setIfPresent('#country', user.country || '');
                     setIfPresent('#address', user.address || '');
-                    setIfPresent('#dob', normalizeDateInput(user.dob || user.birth_date || ''));
-                    setIfPresent('#gender', normalizeGenderLabel(user.gender || ''));
+                    setDobValue(normalizeDateInput(user.dob || user.birth_date || ''));
+                    var countryWrap = form.querySelector('.cm622-country-select[data-cm622-country]');
+                    var countryVal = normalizeCountryLabel(user.country || '');
+                    if (countryWrap && typeof countryWrap.__cm622CountrySetValue === 'function') {
+                        countryWrap.__cm622CountrySetValue(countryVal);
+                    } else {
+                        setIfPresent('#country', countryVal);
+                    }
+                    var genderVal = normalizeGenderLabel(user.gender || '');
+                    if (typeof window.setCm622MultiSelectValue === 'function') {
+                        window.setCm622MultiSelectValue('gender', genderVal, true);
+                    } else {
+                        setIfPresent('#gender', genderVal);
+                    }
                 })
-                .catch(function() {});
+                .catch(function(err) {
+                    if (typeof console !== 'undefined' && console.warn) {
+                        console.warn('[ProfileDetail]', err && err.message ? err.message : err);
+                    }
+                });
         }
 
         hydrateDetailsFromApi();
 
-        if (form && submitBtn) {
+        if (submitBtn && form.getAttribute('data-details-submit-bound') !== '1') {
+            form.setAttribute('data-details-submit-bound', '1');
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 submitBtn.disabled = true;
@@ -2062,15 +2632,10 @@
                     surname: (form.querySelector('#surname') || {}).value || '',
                     gender: (form.querySelector('#gender') || {}).value || '',
                     dob: (form.querySelector('#dob') || {}).value || '',
-                    phone: (form.querySelector('#profile_phone') || {}).value || '',
                     city: (form.querySelector('#city') || {}).value || '',
                     country: (form.querySelector('#country') || {}).value || '',
                     address: (form.querySelector('#address') || {}).value || ''
                 };
-                var emailEl = form.querySelector('#profile_email');
-                if (emailEl && emailEl.value) payload.email = emailEl.value;
-                var tcEl = form.querySelector('#profile_tc');
-                if (tcEl && tcEl.value) payload.identity_number = tcEl.value;
 
                 fetch(apiUrl('/api/v2/profile/update'), {
                     method: 'POST',
@@ -2095,12 +2660,12 @@
                     .then(function(data) {
                         if (data.success) {
                             notifyProfileFormMessage(true, data.message || 'Profil güncellendi.');
-                            var modalContent = form.closest('#profileModalContent');
                             Object.keys(profileShellHtmlCache).forEach(function(key) {
                                 if (key.indexOf('/profile/details') === 0 || key.indexOf('/profile/') === 0) {
                                     delete profileShellHtmlCache[key];
                                 }
                             });
+                            var modalContent = form.closest('#profileModalContent');
                             if (modalContent) {
                                 loadProfileShellContent(toModalUrl('/profile/details?refresh=' + Date.now()), {
                                     shellRoot: modalContent,
@@ -2163,7 +2728,7 @@
         });
     }
 
-    // ----- 3. Profil / kişisel detaylar: Toastify, şifre değiştirme -----
+    // ----- 3. Profil / kisisel detaylar: Toastify, sifre degistirme -----
     function initAccountDetails() {
         var changePwdBtn = document.getElementById('changePwdBtn');
         if (!changePwdBtn) return;
@@ -2172,7 +2737,7 @@
             var newPwd = (document.getElementById('newPwd') || {}).value.trim();
             var confirmPass = (document.getElementById('confirmPass') || {}).value.trim();
             if (newPwd !== confirmPass) {
-                toastNotify('error', 'Yeni şifreler uyuşmuyor!');
+                toastNotify('error', 'Yeni sifreler uyusmuyor!');
                 return;
             }
             if (!oldPwd || !newPwd) {
@@ -2210,7 +2775,7 @@
         });
     }
 
-    // ----- 4. Bonus talep listesi: initBonusClaimsMe (escapeHtml sonrası) -----
+    // ----- 4. Bonus talep listesi: initBonusClaimsMe (escapeHtml sonrasi) -----
 
     // ----- 5. Para yatır/çek (deposit-withdraw): Vega panel -----
     function getPaymentLimits() {
@@ -2224,13 +2789,14 @@
     var selectedWithdrawPaymentMethodId = '';
     /** Para yatır API çağrısı sürerken ikinci tıklamayı / çağrıyı engelle */
     var depositSubmitInFlight = false;
-    /** Çekim talebi sürerken ikinci tıklamayı engelle (buton metni yarışından kaçın) */
+    /** Çekim talebi sürerken ikinci tiklamayi engelle (buton metni yarisindan kaçın) */
     var withdrawSubmitInFlight = false;
     var activeDepositStatusPoll = null;
 
     function openDefaultDepositPanel() {
         setTimeout(function() {
-            if (!document.getElementById('depositSection') || document.getElementById('depositSection').style.display === 'none') return;
+            var depSecGate = document.getElementById('depositSection');
+            if (!depSecGate || depSecGate.classList.contains('is-cm622-pane-hidden') || depSecGate.style.display === 'none') return;
             var grid = document.getElementById('depositGrid');
             if (grid) {
                 var match = grid.querySelector('.deposit-card[data-dw-label="Banka Havale"]');
@@ -2238,10 +2804,10 @@
                 var pick = match || cards[0];
                 if (!pick) return;
                 grid.querySelectorAll('.deposit-card').forEach(function(c) {
-                    c.classList.remove('is-selected');
+                    c.classList.remove('is-selected', 'active');
                     c.setAttribute('aria-selected', 'false');
                 });
-                pick.classList.add('is-selected');
+                pick.classList.add('is-selected', 'active');
                 pick.setAttribute('aria-selected', 'true');
                 applyDepositInline(
                     pick.getAttribute('data-dw-method'),
@@ -2266,10 +2832,12 @@
     }
 
     function syncDepositWithdrawShellTitle(tabName) {
-        var el = document.querySelector('.personal-details-page--withdraw-only .personal-details-title')
+        var title = tabName === 'withdraw' ? 'PARA ÇEKİM' : 'PARA YATIR';
+        var el = document.querySelector('#profilePlayerMain .overlay-header')
+            || document.querySelector('.personal-details-page--withdraw-only .personal-details-title')
             || document.querySelector('.personal-details-page--deposit-withdraw .personal-details-title');
         if (!el) return;
-        el.textContent = tabName === 'withdraw' ? 'PARA ÇEKİM' : 'PARA YATIR';
+        el.textContent = title;
     }
 
     function primeWithdrawInlineSelection(opts) {
@@ -2303,10 +2871,10 @@
         }
         if (!first) return;
         grid.querySelectorAll('.deposit-card').forEach(function(x) {
-            x.classList.remove('is-selected');
+            x.classList.remove('is-selected', 'active');
             x.setAttribute('aria-selected', 'false');
         });
-        first.classList.add('is-selected');
+        first.classList.add('is-selected', 'active');
         first.setAttribute('aria-selected', 'true');
         applyWithdrawInline(
             first.getAttribute('data-dw-method'),
@@ -2318,23 +2886,65 @@
         }
     }
 
+    function resolveProfilePaymentPageKind(modalFullUrl) {
+        var path = '';
+        try {
+            var src = modalFullUrl || window.__profileModalContentUrl || window.location.href;
+            path = new URL(src, window.location.origin).pathname || '';
+        } catch (ePath) {
+            path = '';
+        }
+        if (path.indexOf('/profile/withdraw') === 0) return 'withdraw';
+        if (path.indexOf('/profile/deposit') === 0 && path.indexOf('/profile/deposit-withdraw-history') !== 0) return 'deposit';
+        var main = document.getElementById('profilePlayerMain');
+        var attr = main && main.getAttribute('data-profile-payment-page');
+        if (attr === 'withdraw' || attr === 'deposit') return attr;
+        if (document.getElementById('withdrawSection') && !document.getElementById('depositSection')) return 'withdraw';
+        if (document.getElementById('depositSection')) return 'deposit';
+        return window.__PROFILE_PAYMENT_PAGE__ === 'withdraw' ? 'withdraw' : 'deposit';
+    }
+
+    function profilePaymentPageUrl(kind) {
+        var modal = !!(document.getElementById('profileModal') && document.getElementById('profileModal').classList.contains('is-open'));
+        var path = kind === 'withdraw' ? '/profile/withdraw' : '/profile/deposit';
+        return path + (modal ? '?modal=1' : '');
+    }
+
+    function navigateProfilePaymentPage(kind) {
+        var url = profilePaymentPageUrl(kind);
+        if (typeof window.__openProfileModalUrl === 'function' && document.getElementById('profileModalContent')) {
+            if (window.__openProfileModalUrl(url)) return;
+        }
+        window.location.href = url;
+    }
+
     function showVegaTab(tabName, opts) {
         opts = opts || {};
         var depositSection = document.getElementById('depositSection');
         var withdrawSection = document.getElementById('withdrawSection');
+        // Separate pages: never toggle deposit?withdraw in the same document
+        if (tabName === 'withdraw' && !withdrawSection && depositSection) {
+            navigateProfilePaymentPage('withdraw');
+            return;
+        }
+        if (tabName === 'deposit' && !depositSection && withdrawSection) {
+            navigateProfilePaymentPage('deposit');
+            return;
+        }
+        function showCm622Pane(el) {
+            if (!el) return;
+            el.classList.remove('is-cm622-pane-hidden');
+            el.style.removeProperty('display');
+            el.removeAttribute('hidden');
+        }
         if (tabName === 'deposit') {
-            if (depositSection) depositSection.style.display = 'block';
-            if (withdrawSection) withdrawSection.style.display = 'none';
+            showCm622Pane(depositSection);
+            syncDepositWithdrawShellTitle('deposit');
             if (opts.openDefaultDepositPanel) openDefaultDepositPanel();
         } else {
             if (typeof closeVegaPanel === 'function') closeVegaPanel();
-            if (withdrawSection) {
-                if (depositSection) depositSection.style.display = 'none';
-                withdrawSection.style.display = 'block';
-            } else if (depositSection) {
-                /* deposit-withdraw.php: ayrı çekim bölümü yok; sekmeyi gizleme (boş ekran / BİLGİ geçişi) */
-                depositSection.style.display = 'block';
-            }
+            showCm622Pane(withdrawSection);
+            syncDepositWithdrawShellTitle('withdraw');
             if (withdrawSection && !opts.skipWithdrawInlinePrime) primeWithdrawInlineSelection();
         }
         syncDepositWithdrawShellTitle(tabName);
@@ -2377,7 +2987,7 @@
         if (dM) dM.textContent = summaryName;
         if (dMin) dMin.textContent = min.toLocaleString('tr-TR') + ' ₺';
         if (dMax) dMax.textContent = max.toLocaleString('tr-TR') + ' ₺';
-        if (dProc) dProc.textContent = (procD && String(procD).trim()) ? String(procD).trim() : 'Anlık';
+        if (dProc) dProc.textContent = (procD && String(procD).trim()) ? String(procD).trim() : 'Anlik';
         if (cryptoWrap) cryptoWrap.style.display = (provider === 'megapayz' && method === 'crypto') ? '' : 'none';
         if (amt) {
             amt.min = String(min);
@@ -2406,17 +3016,27 @@
         );
     }
 
+    function cm622TextFieldHtml(id, title, attrs) {
+        return '<div class="u-i-p-control-item-holder-bc">' +
+            '<div class="form-control-bc default">' +
+            '<label class="form-control-label-bc inputs">' +
+            '<input type="text" class="form-control-input-bc" id="' + escapeHtml(id) + '" ' + (attrs || '') + ' autocomplete="off">' +
+            '<i class="form-control-input-stroke-bc" aria-hidden="true"></i>' +
+            '<span class="form-control-title-bc ellipsis">' + escapeHtml(title) + '</span>' +
+            '</label></div></div>';
+    }
+
     function withdrawRecipientFieldsHtml(method, provider, name) {
         if (provider === 'megapayz') {
             if (method === 'banktransfer') {
-                return '<div class="form-group vega-withdraw-field"><input type="text" id="iban" placeholder="address" required maxlength="26" minlength="26" autocomplete="off"></div>';
+                return cm622TextFieldHtml('iban', 'IBAN', 'required maxlength="26" minlength="26"');
             }
             if (method === 'crypto') {
-                return '<input type="hidden" id="crypto_network" value="' + getWithdrawCryptoNetworkId(name) + '">' +
-                    '<div class="form-group vega-withdraw-field"><input type="text" id="crypto_address" placeholder="address" required autocomplete="off"></div>';
+                return '<input type="hidden" id="crypto_network" value="' + escapeHtml(String(getWithdrawCryptoNetworkId(name))) + '">' +
+                    cm622TextFieldHtml('crypto_address', 'Adres', 'required');
             }
             if (method === 'wallet' || method === 'papara') {
-                return '<div class="form-group vega-withdraw-field"><input type="text" id="wallet_account" placeholder="address" required pattern="[0-9]{10}" maxlength="10" minlength="10" inputmode="numeric" autocomplete="off"></div>';
+                return cm622TextFieldHtml('wallet_account', 'Hesap No', 'required pattern="[0-9]{10}" maxlength="10" minlength="10" inputmode="numeric"');
             }
             return '';
         }
@@ -2426,8 +3046,14 @@
     function withdrawAmountFieldHtml(limits, provider) {
         var min = limits.min != null ? limits.min : 0;
         var max = limits.max != null ? limits.max : 999999;
-        return '<div class="form-group vega-withdraw-field">' +
-            '<input type="number" id="withdrawAmount" placeholder="Tutar *" min="' + min + '" max="' + max + '" step="' + (provider === 'megapayz' ? '10' : '1') + '" required></div>';
+        var step = provider === 'megapayz' ? '10' : '1';
+        return '<div class="u-i-p-control-item-holder-bc">' +
+            '<div class="form-control-bc default">' +
+            '<label class="form-control-label-bc inputs">' +
+            '<input type="text" inputmode="decimal" class="form-control-input-bc" id="withdrawAmount" name="amount" min="' + min + '" max="' + max + '" step="' + step + '" required autocomplete="off">' +
+            '<i class="form-control-input-stroke-bc" aria-hidden="true"></i>' +
+            '<span class="form-control-title-bc ellipsis">Tutar</span>' +
+            '</label></div></div>';
     }
 
     function buildWithdrawFieldsOnlyHtml(limits, method, provider, name) {
@@ -2454,8 +3080,11 @@
         if (wM) wM.textContent = name;
         if (wMin) wMin.textContent = min.toLocaleString('tr-TR') + ' ₺';
         if (wMax) wMax.textContent = max.toLocaleString('tr-TR') + ' ₺';
-        if (wProcEl) wProcEl.textContent = (procW && String(procW).trim()) ? String(procW).trim() : 'Anlık';
-        if (fieldsEl) fieldsEl.innerHTML = buildWithdrawFieldsOnlyHtml(limits, method, provider, name);
+        if (wProcEl) wProcEl.textContent = (procW && String(procW).trim()) ? String(procW).trim() : 'Anlik';
+        if (fieldsEl) {
+            fieldsEl.innerHTML = buildWithdrawFieldsOnlyHtml(limits, method, provider, name);
+            bindCm622FormControls(fieldsEl);
+        }
     }
 
     function openVegaPanel(type, method, provider, name) {
@@ -2517,10 +3146,10 @@
             processing: 'İşlem kontrol ediliyor',
             approved: 'Ödeme onaylandı',
             confirmed: 'Ödeme onaylandı',
-            completed: 'Ödeme tamamlandı',
-            success: 'Ödeme tamamlandı',
+            completed: 'Ödeme tamamlandi',
+            success: 'Ödeme tamamlandi',
             rejected: 'Ödeme reddedildi',
-            failed: 'Ödeme başarısız oldu',
+            failed: 'Ödeme basarisiz oldu',
             cancelled: 'Ödeme iptal edildi'
         };
 
@@ -2561,7 +3190,7 @@
                     throw new Error('status-unavailable');
                 }
                 var status = String(env.data.status || '').toLowerCase();
-                updateDepositMonitorUi(status, env.message || 'Ödeme onayı bekleniyor.');
+                updateDepositMonitorUi(status, env.message || 'Ödeme onayi bekleniyor.');
                 if (['approved', 'confirmed', 'completed', 'success'].indexOf(status) !== -1) {
                     updateDepositMonitorUi(status, 'Ödemeniz onaylandı. İşlem geçmişiniz açılıyor.');
                     setTimeout(openDesktopDepositResultSurface, 600);
@@ -2637,8 +3266,8 @@
             '<div class="panel-info-cell"><strong>Ödeme Yöntemi</strong><span>' + escapeHtml(summaryName) + '</span></div>' +
             '<div class="panel-info-cell"><strong>Ücret</strong><span>Ücretsiz</span></div>' +
             '<div class="panel-info-cell"><strong>İşlem Süresi</strong><span>Anlık</span></div>' +
-            '<div class="panel-info-cell"><strong>Min.</strong><span>' + min.toLocaleString('tr-TR') + ' ₺</span></div>' +
-            '<div class="panel-info-cell"><strong>Maks.</strong><span>' + max.toLocaleString('tr-TR') + ' ₺</span></div></div>' +
+            '<div class="panel-info-cell"><strong>Min.</strong><span>' + min.toLocaleString('tr-TR') + ' ?</span></div>' +
+            '<div class="panel-info-cell"><strong>Maks.</strong><span>' + max.toLocaleString('tr-TR') + ' ?</span></div></div>' +
             '<div class="panel-instruction vega-deposit-welcome">' + instruction + '</div>';
         if (provider === 'megapayz' && method === 'crypto') {
             formHtml += '<div class="form-group form-group--crypto-type"><label for="cryptoType">Kripto türü *</label>' +
@@ -2668,9 +3297,9 @@
             sports: 'Spor',
             sport: 'Spor',
             spor: 'Spor',
-            live_casino: 'Canlı casino',
+            live_casino: 'Canli casino',
             casino: 'Casino',
-            loss_bonus: 'Kayıp bonusu',
+            loss_bonus: 'Kayip bonusu',
             vip: 'VIP'
         };
         if (map[c]) {
@@ -2685,7 +3314,7 @@
     function bonusClaimStatusLabel(status) {
         var s = String(status || '').toLowerCase();
         if (s === 'pending') return 'Beklemede';
-        if (s === 'approved') return 'Onaylandı';
+        if (s === 'approved') return 'Onaylandi';
         if (s === 'rejected') return 'Reddedildi';
         return status ? String(status) : '—';
     }
@@ -2745,7 +3374,7 @@
                         return;
                     }
                     if (!data.success) {
-                        if (statusEl) statusEl.textContent = data.message || 'Liste alınamadı.';
+                        if (statusEl) statusEl.textContent = data.message || 'Liste alinamadi.';
                         setVisible(emptyEl, true);
                         return;
                     }
@@ -2798,7 +3427,7 @@
                 })
                 .catch(function() {
                     setVisible(loadingEl, false);
-                    if (statusEl) statusEl.textContent = 'Bağlantı hatası.';
+                    if (statusEl) statusEl.textContent = t('common.connection_error', 'Bağlantı hatası.');
                     setVisible(emptyEl, true);
                 });
         }
@@ -2873,18 +3502,19 @@
         var mid = row.method_id ? String(row.method_id) : '';
         var label = row.name ? String(row.name) : mid;
         var idAttr = row.id != null ? String(row.id) : '';
-        var sel = idx === 0 ? ' is-selected' : '';
+        var sel = idx === 0 ? ' is-selected active' : '';
         var ari = idx === 0 ? 'true' : 'false';
-        return '<button type="button" class="deposit-card' + sel + '" role="option" aria-selected="' + ari + '"' +
+        var slug = ('deposit_' + mid).toLowerCase().replace(/[^a-z0-9_-]+/g, '');
+        return '<div class="m-nav-items-list-item-bc deposit-card ' + escapeHtml(slug) + sel + '" role="option" aria-selected="' + ari + '"' +
             ' data-category="' + escapeHtml(cat) + '"' +
             ' data-dw-method="' + escapeHtml(mid) + '"' +
             ' data-dw-provider="' + escapeHtml(prov) + '"' +
             ' data-dw-label="' + escapeHtml(label) + '"' +
             (idAttr ? ' data-dw-api-id="' + escapeHtml(idAttr) + '"' : '') +
-            ' data-dw-processing="' + escapeHtml(row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlık') + '">' +
-            '<img src="' + escapeHtml(logo) + '" alt="" width="36" height="36" loading="lazy">' +
-            '<span class="deposit-card-name">' + escapeHtml(label) + '</span>' +
-            '<span class="deposit-card-arrow" aria-hidden="true">›</span></button>';
+            ' data-dw-processing="' + escapeHtml(row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlik') + '">' +
+            '<div class="nav-ico-w-row-bc">' +
+            (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(label) + '</span>') +
+            '</div></div>';
     }
 
     function buildProfileWithdrawCardHtml(row, idx) {
@@ -2896,18 +3526,19 @@
         var mid = row.method_id ? String(row.method_id) : '';
         var label = row.name ? String(row.name) : mid;
         var idAttr = row.id != null ? String(row.id) : '';
-        var sel = idx === 0 ? ' is-selected' : '';
+        var sel = idx === 0 ? ' is-selected active' : '';
         var ari = idx === 0 ? 'true' : 'false';
-        return '<button type="button" class="deposit-card' + sel + '" role="option" aria-selected="' + ari + '"' +
+        var slug = ('withdraw_' + mid).toLowerCase().replace(/[^a-z0-9_-]+/g, '');
+        return '<div class="m-nav-items-list-item-bc deposit-card ' + escapeHtml(slug) + sel + '" role="option" aria-selected="' + ari + '"' +
             ' data-wcategory="' + escapeHtml(wcat) + '"' +
             ' data-dw-method="' + escapeHtml(mid) + '"' +
             ' data-dw-provider="' + escapeHtml(prov) + '"' +
             ' data-dw-label="' + escapeHtml(label) + '"' +
             (idAttr ? ' data-dw-api-id="' + escapeHtml(idAttr) + '"' : '') +
-            ' data-dw-processing="' + escapeHtml(row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlık') + '">' +
-            '<img src="' + escapeHtml(logo) + '" alt="" width="36" height="36" loading="lazy">' +
-            '<span class="deposit-card-name">' + escapeHtml(label) + '</span>' +
-            '<span class="deposit-card-arrow" aria-hidden="true">›</span></button>';
+            ' data-dw-processing="' + escapeHtml(row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlik') + '">' +
+            '<div class="nav-ico-w-row-bc">' +
+            (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(label) + '</span>') +
+            '</div></div>';
     }
 
     function dwBilgiTileFromApiMethod(row) {
@@ -2915,8 +3546,8 @@
         var type = String((row && row.type) || '').toLowerCase();
         if (mid === 'wallet' || type === 'wallet') return 'WALLET';
         if (mid === 'banktransfer' || type === 'bank_transfer') return 'HAVALE';
-        if (mid === 'creditcard' || type === 'card') return 'KREDİ KARTI';
-        if (mid === 'crypto' || type === 'crypto') return 'KRİPTO';
+        if (mid === 'creditcard' || type === 'card') return 'KREDI KARTI';
+        if (mid === 'crypto' || type === 'crypto') return 'KRIPTO';
         return (row && row.name ? String(row.name) : mid).toUpperCase();
     }
 
@@ -2927,10 +3558,10 @@
         var name = row.name ? String(row.name) : String(row.method_id || '');
         var minA = row.min_amount != null && !isNaN(Number(row.min_amount)) ? amountFormatter.format(Number(row.min_amount)) + ' ₺' : '—';
         var maxA = row.max_amount != null && !isNaN(Number(row.max_amount)) ? amountFormatter.format(Number(row.max_amount)) + ' ₺' : '—';
-        var processing = row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlık';
+        var processing = row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlik';
         return '<div class="bilgi-row" role="row">' +
             '<div class="bilgi-tile" role="cell">' +
-            '<img src="' + escapeHtml(logo) + '" alt="" width="30" height="30" loading="lazy">' +
+            '<img class="bilgi-tile-logo" src="' + escapeHtml(logo) + '" alt="" loading="lazy">' +
             '<span class="bilgi-tile-label">' + escapeHtml(dwBilgiTileFromApiMethod(row)) + '</span>' +
             '</div>' +
             '<div class="bilgi-cell-stack" role="cell"><span class="bilgi-cell-lbl">Ödeme Yöntemi</span><span class="bilgi-cell-val">' + escapeHtml(name) + '</span></div>' +
@@ -3072,7 +3703,7 @@
         var n = String(displayName || '').toUpperCase();
         if (n.indexOf('TRC20') !== -1 || n.indexOf('TRC-20') !== -1) return '65bd7be5964700005d002ae5';
         if (n.indexOf('TRON') !== -1 || n.indexOf('TRX') !== -1) return '65bd7be5964700005d002ae5';
-        if (n.indexOf('BİTCO') !== -1 || n.indexOf('BITCO') !== -1 || n.indexOf('BTC') !== -1) return '65bd7bba964700005d002ae1';
+        if (n.indexOf('BITCO') !== -1 || n.indexOf('BITCO') !== -1 || n.indexOf('BTC') !== -1) return '65bd7bba964700005d002ae1';
         if (n.indexOf('LTC') !== -1 || n.indexOf('LITE') !== -1) return '65bd7bc1964700005d002ae2';
         return '65bd7bd5964700005d002ae4';
     }
@@ -3089,11 +3720,11 @@
             '<div class="panel-info-cell"><strong>Ödeme Yöntemi</strong><span>' + escapeHtml(name) + '</span></div>' +
             '<div class="panel-info-cell"><strong>Ücret</strong><span>Ücretsiz</span></div>' +
             '<div class="panel-info-cell"><strong>İşlem Süresi</strong><span>Anlık</span></div>' +
-            '<div class="panel-info-cell"><strong>Min.</strong><span>' + min.toLocaleString('tr-TR') + ' ₺</span></div>' +
-            '<div class="panel-info-cell"><strong>Maks.</strong><span>' + max.toLocaleString('tr-TR') + ' ₺</span></div></div>' +
+            '<div class="panel-info-cell"><strong>Min.</strong><span>' + min.toLocaleString('tr-TR') + ' ?</span></div>' +
+            '<div class="panel-info-cell"><strong>Maks.</strong><span>' + max.toLocaleString('tr-TR') + ' ?</span></div></div>' +
             '<div class="vega-withdraw-balance" id="withdrawBalanceStats">' +
             '<div class="vega-withdraw-balance-head">Çekilebilir Tutar</div>' +
-            '<div class="vega-withdraw-balance-row"><span class="vega-withdraw-balance-label">Bakiye</span><span class="vega-withdraw-balance-value" id="wdrBalance">0,00 ₺</span></div>' +
+            '<div class="vega-withdraw-balance-row"><span class="vega-withdraw-balance-label">Bakiye</span><span class="vega-withdraw-balance-value" id="wdrBalance">0,00 ?</span></div>' +
             '<div class="vega-withdraw-balance-row"><span class="vega-withdraw-balance-label">Oynanmamış Tutar Yüzdesi</span><span class="vega-withdraw-balance-value" id="wdrUnplayedPct">0%</span></div></div>' +
             '<div class="panel-instruction vega-withdraw-welcome">' + instruction + '</div>';
         formHtml += withdrawRecipientFieldsHtml(method, provider, name);
@@ -3103,6 +3734,31 @@
     }
 
     var appFeedbackDialogBound = false;
+
+    function isDesktopWebUi() {
+        var html = document.documentElement;
+        return html.classList.contains('is-web')
+            && !html.classList.contains('is-mobile')
+            && !(document.body && document.body.classList.contains('mobile-site'));
+    }
+
+    function appFeedbackIconHtml(type) {
+        // Desktop: CM622 casino-popup SVG icons. Mobile keeps Font Awesome.
+        if (isDesktopWebUi()) {
+            if (type === 'warning') {
+                return '<svg viewBox="0 0 57 57" aria-hidden="true"><path fill="#fdbc0c" d="M28.5 5.5L52.5 49H4.5L28.5 5.5z"/><path fill="#000b24" d="M26.2 22.5h4.6v14.2h-4.6zm0 17.8h4.6V45h-4.6z"/></svg>';
+            }
+            if (type === 'error') {
+                return '<svg viewBox="0 0 57 57" aria-hidden="true"><circle cx="28.5" cy="28.5" r="24" fill="#e74c3c"/><path fill="#fff" d="M20.2 20.2l17.6 17.6m0-17.6L20.2 37.8" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>';
+            }
+            return '<svg viewBox="0 0 57 57" aria-hidden="true"><circle cx="28.5" cy="28.5" r="24" fill="#3b82f6"/><path fill="#fff" d="M26.4 22.2h4.2v18.4h-4.2zm0-8.6h4.2V18h-4.2z"/></svg>';
+        }
+        var iconClass = type === 'error' ? 'fa-solid fa-circle-xmark'
+            : type === 'warning' ? 'fa-solid fa-triangle-exclamation'
+                : 'fa-solid fa-circle-info';
+        return '<i class="' + iconClass + '" aria-hidden="true"></i>';
+    }
+
     function initAppFeedbackDialog() {
         var overlay = document.getElementById('appFeedbackDialogOverlay');
         var dialog = document.getElementById('appFeedbackDialog');
@@ -3118,7 +3774,7 @@
             overlay.setAttribute('aria-hidden', 'true');
             dialog.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
-            dialog.classList.remove('app-feedback-dialog--error', 'app-feedback-dialog--warning', 'app-feedback-dialog--info');
+            dialog.classList.remove('app-feedback-dialog--error', 'app-feedback-dialog--warning', 'app-feedback-dialog--info', 'app-feedback-dialog--cm622');
         }
         window.__closeAppFeedbackDialog = closeAppFeedbackDialog;
         overlay.addEventListener('click', closeAppFeedbackDialog);
@@ -3158,16 +3814,16 @@
         }
         var title = opts.title;
         if (!title) {
-            title = type === 'error' ? 'Hata' : type === 'warning' ? 'Uyarı' : 'Bilgi';
+            title = type === 'error' ? t('common.error', 'Hata') : type === 'warning' ? t('common.warning', 'Uyarı') : t('common.ok', 'Bilgi');
         }
-        dialog.classList.remove('app-feedback-dialog--error', 'app-feedback-dialog--warning', 'app-feedback-dialog--info');
+        dialog.classList.remove('app-feedback-dialog--error', 'app-feedback-dialog--warning', 'app-feedback-dialog--info', 'app-feedback-dialog--cm622');
         dialog.classList.add('app-feedback-dialog--' + type);
+        if (isDesktopWebUi()) {
+            dialog.classList.add('app-feedback-dialog--cm622');
+        }
         titleEl.textContent = title;
         msgEl.textContent = opts.message ? String(opts.message) : '';
-        var iconClass = type === 'error' ? 'fa-solid fa-circle-xmark'
-            : type === 'warning' ? 'fa-solid fa-triangle-exclamation'
-                : 'fa-solid fa-circle-info';
-        iconWrap.innerHTML = '<i class="' + iconClass + '" aria-hidden="true"></i>';
+        iconWrap.innerHTML = appFeedbackIconHtml(type);
         overlay.classList.add('is-open');
         dialog.classList.add('is-open');
         overlay.setAttribute('aria-hidden', 'false');
@@ -3196,11 +3852,11 @@
             return;
         }
         if (amount < limits.min) {
-            showAppFeedbackDialog({ type: 'warning', message: 'Minimum para yatırma tutarı ' + limits.min.toLocaleString('tr-TR') + " TL'dir." });
+            showAppFeedbackDialog({ type: 'warning', message: 'Minimum para yatirma tutari ' + limits.min.toLocaleString('tr-TR') + " TL'dir." });
             return;
         }
         if (amount > limits.max) {
-            showAppFeedbackDialog({ type: 'warning', message: 'Maksimum para yatırma tutarı ' + limits.max.toLocaleString('tr-TR') + " TL'dir." });
+            showAppFeedbackDialog({ type: 'warning', message: 'Maksimum para yatirma tutari ' + limits.max.toLocaleString('tr-TR') + " TL'dir." });
             return;
         }
         var payload = { amount: amount };
@@ -3217,7 +3873,7 @@
         document.querySelectorAll('.vega-deposit-submit').forEach(function(b) {
             b.disabled = true;
             b.setAttribute('aria-busy', 'true');
-            b.textContent = 'İşleniyor...';
+            b.textContent = 'Isleniyor...';
         });
         fetch(apiUrl('/api/v2/deposit-payment'), {
             method: 'POST',
@@ -3228,7 +3884,7 @@
             .then(function(response) { return response.json().catch(function() { return null; }); })
             .then(function(data) {
                 if (!data) {
-                    showAppFeedbackDialog({ type: 'error', message: 'Beklenmeyen yanıt. Lütfen tekrar deneyin.' });
+                    showAppFeedbackDialog({ type: 'error', message: 'Beklenmeyen yanit. Lütfen tekrar deneyin.' });
                     return;
                 }
                 if (data.success && data.data && data.data.payment_url) {
@@ -3241,7 +3897,7 @@
                     return;
                 }
                 var msg = (typeof data.message === 'string' && data.message) ? data.message : (data.error || 'İşlem tamamlanamadı.');
-                showAppFeedbackDialog({ type: 'error', title: 'İşlem başarısız', message: msg });
+                showAppFeedbackDialog({ type: 'error', title: 'İşlem basarisiz', message: msg });
             })
             .catch(function() {
                 showAppFeedbackDialog({ type: 'error', message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
@@ -3310,7 +3966,7 @@
             } else if (selectedWithdrawMethod === 'wallet') {
                 var wall = document.getElementById('wallet_account');
                 var wa = wall ? String(wall.value || '').trim() : '';
-                if (!wa) { toastNotify('warning', 'Mega Wallet hesap numarası zorunludur.'); return; }
+                if (!wa) { toastNotify('warning', 'Mega Wallet hesap numarasi zorunludur.'); return; }
                 payload.account_number = wa;
             }
         }
@@ -3319,7 +3975,7 @@
         document.querySelectorAll('.vega-withdraw-submit').forEach(function(b) {
             b.disabled = true;
             b.setAttribute('aria-busy', 'true');
-            b.textContent = 'İşleniyor...';
+            b.textContent = 'Isleniyor...';
         });
         function resetWithdrawSubmitUi() {
             withdrawSubmitInFlight = false;
@@ -3338,7 +3994,7 @@
             .then(function(response) { return response.json().catch(function() { return null; }); })
             .then(function(env) {
                 if (!env) {
-                    toastNotify('error', 'Beklenmeyen yanıt. Lütfen tekrar deneyin.');
+                    toastNotify('error', 'Beklenmeyen yanit. Lütfen tekrar deneyin.');
                     return;
                 }
                 if (env.success && env.data) {
@@ -3349,12 +4005,25 @@
                         return;
                     }
                     if (typeof closeVegaPanel === 'function') closeVegaPanel();
-                    var popup = document.getElementById('successWithdrawalPopup');
-                    var msgEl = popup && popup.querySelector('.popup-body p');
-                    var msg = typeof d.message === 'string' && d.message ? d.message : (env.message || 'Çekim talebiniz alındı.');
+                    var msg = typeof d.message === 'string' && d.message
+                        ? d.message
+                        : (env.message || 'Çekim talebiniz başarılı bir şekilde oluşturulmuştur.');
                     if (d.reference_code) msg += ' Ref: ' + d.reference_code;
-                    if (msgEl) msgEl.textContent = msg;
-                    if (popup) popup.style.display = 'flex';
+                    var popup = document.getElementById('successWithdrawalPopup');
+                    if (popup) {
+                        // Modal içindeki !important hide kurallarını aşmak için body'ye taşı.
+                        if (popup.parentNode !== document.body) {
+                            document.body.appendChild(popup);
+                        }
+                        var msgEl = popup.querySelector('.popup-body p');
+                        if (msgEl) msgEl.textContent = msg;
+                        popup.classList.add('is-open');
+                        popup.style.display = 'flex';
+                    } else if (typeof showAppFeedbackDialog === 'function') {
+                        showAppFeedbackDialog({ type: 'success', title: 'İşlem Başarılı!', message: msg });
+                    } else {
+                        toastNotify('success', msg, 'İşlem Başarılı!');
+                    }
                     fetchBalanceData(true).catch(function() {});
                     return;
                 }
@@ -3386,29 +4055,58 @@
 
     function closeSuccessWithdrawalPopup() {
         var popup = document.getElementById('successWithdrawalPopup');
-        if (popup) popup.style.display = 'none';
+        if (popup) {
+            popup.classList.remove('is-open');
+            popup.style.display = 'none';
+        }
         fetchBalanceData(true).then(function(data) {
             var balanceText = document.querySelector('.amount');
             if (data.status === 'success' && balanceText) balanceText.textContent = formatTryAmount(data.ana_bakiye);
         }).catch(function() {});
     }
 
-    function openBilgiModal() {
+    function profileBilgiTitleEl() {
+        return document.querySelector('#profilePlayerMain .overlay-header')
+            || document.querySelector('.personal-details-title');
+    }
+
+    function setPaymentSectionsHiddenForBilgi(hidden) {
+        ['depositSection', 'withdrawSection'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (hidden) {
+                el.setAttribute('hidden', '');
+            } else {
+                el.removeAttribute('hidden');
+            }
+        });
+    }
+
+    function openBilgiModal(preferWithdraw) {
         var panel = document.getElementById('bilgiModal');
         if (!panel) return;
-        var pageRoot = panel.closest('.personal-details-page--deposit-withdraw')
-            || panel.closest('.personal-details-page');
+        var pageRoot = document.getElementById('profilePlayerMain')
+            || panel.closest('.personal-details-page--deposit-withdraw')
+            || panel.closest('.personal-details-page')
+            || panel.closest('.my-profile-info-block');
         if (pageRoot) pageRoot.classList.add('is-bilgi-active');
+        setPaymentSectionsHiddenForBilgi(true);
         panel.removeAttribute('hidden');
         panel.classList.add('is-bilgi-shown');
         panel.setAttribute('aria-hidden', 'false');
-        var titleEl = document.querySelector('.personal-details-title');
+        var titleEl = profileBilgiTitleEl();
         if (titleEl) {
             if (typeof window.__profileBilgiTitleBackup !== 'string') {
                 window.__profileBilgiTitleBackup = (titleEl.textContent || '').trim();
             }
-            titleEl.textContent = 'BİLGİ';
+            titleEl.textContent = 'BILGI';
         }
+        var wantW = preferWithdraw;
+        if (typeof wantW !== 'boolean') {
+            wantW = resolveProfilePaymentPageKind(window.__profileModalContentUrl || window.location.href) === 'withdraw';
+        }
+        applyBilgiSubTab(wantW);
+        syncProfileSidebarBilgiNav(true);
     }
     function closeBilgiModal() {
         var panel = document.getElementById('bilgiModal');
@@ -3416,10 +4114,11 @@
             panel.classList.remove('is-bilgi-shown');
             panel.setAttribute('hidden', '');
             panel.setAttribute('aria-hidden', 'true');
-            document.querySelectorAll('.personal-details-page.is-bilgi-active').forEach(function(root) {
+            document.querySelectorAll('#profilePlayerMain.is-bilgi-active, .personal-details-page.is-bilgi-active, .my-profile-info-block.is-bilgi-active').forEach(function(root) {
                 root.classList.remove('is-bilgi-active');
             });
-            var titleEl = document.querySelector('.personal-details-title');
+            setPaymentSectionsHiddenForBilgi(false);
+            var titleEl = profileBilgiTitleEl();
             if (titleEl && typeof window.__profileBilgiTitleBackup === 'string' && window.__profileBilgiTitleBackup !== '') {
                 titleEl.textContent = window.__profileBilgiTitleBackup;
             }
@@ -3435,18 +4134,30 @@
 
     /** Sunucu hash görmediği için sadece #bilgi ile gelen isteklerde yan menü vurgusunu düzeltir. */
     function syncProfileSidebarBilgiNav(showBilgi) {
-        var sidebar = document.querySelector('#profileModalContent .profile-sidebar-v2')
+        var sidebar = document.querySelector('#profileModalContent #profilePlayerSidebar')
+            || document.querySelector('#profilePlayerSidebar')
+            || document.querySelector('.u-i-profile-page-bc')
             || document.querySelector('.profile-sidebar-v2');
         if (!sidebar) return;
-        var pageKind = window.__PROFILE_PAYMENT_PAGE__ || 'deposit';
-        var labelWant = pageKind === 'withdraw' ? 'ÇEKİM' : 'PARA YATIR';
-        var items = sidebar.querySelectorAll('.accordion-sub li a');
+        var pageKind = resolveProfilePaymentPageKind(window.__profileModalContentUrl || window.location.href);
+        var items = sidebar.querySelectorAll('.accordion-sub li a, .user-profile-nav-item');
         var mainLink = null;
         var bilgiLink = null;
         for (var i = 0; i < items.length; i++) {
             var h = items[i].getAttribute('href') || '';
-            if (h.indexOf('bilgi=1') !== -1) bilgiLink = items[i];
-            else if ((items[i].textContent || '').trim() === labelWant) mainLink = items[i];
+            if (h.indexOf('bilgi=1') !== -1) {
+                if ((pageKind === 'withdraw' && h.indexOf('/profile/withdraw') !== -1)
+                    || (pageKind !== 'withdraw' && h.indexOf('/profile/deposit') !== -1)) {
+                    bilgiLink = items[i];
+                }
+                continue;
+            }
+            if (pageKind === 'withdraw' && h.indexOf('/profile/withdraw') !== -1 && h.indexOf('bilgi=') === -1) {
+                mainLink = items[i];
+            } else if (pageKind !== 'withdraw' && h.indexOf('/profile/deposit') !== -1
+                && h.indexOf('deposit-withdraw-history') === -1 && h.indexOf('bilgi=') === -1) {
+                mainLink = items[i];
+            }
         }
         if (!bilgiLink || !mainLink) return;
         if (showBilgi) {
@@ -3465,7 +4176,7 @@
     window.processVegaWithdrawal = processVegaWithdrawal;
     window.closeSuccessWithdrawalPopup = closeSuccessWithdrawalPopup;
 
-    /** Birleşik bilgi panelinde (para yatır + çekim sekmeleri) doğru listeyi seç. */
+    /** Birlesik bilgi panelinde (para yatir + Çekim sekmeleri) doğru listeyi seç. */
     function applyBilgiSubTab(preferWithdraw) {
         var panel = document.getElementById('bilgiModal');
         if (!panel) return;
@@ -3485,22 +4196,190 @@
         if (listEl) listEl.classList.add('bilgi-list-active');
     }
 
-    function initDepositWithdrawPage(modalFullUrl) {
-        var shell = document.querySelector('.vega-app--in-profile-shell');
-        if (!shell) return;
-        var vegaPanelEl = document.getElementById('vegaPanel');
-        var modalContentEl = document.getElementById('profileModalContent');
-        var vegaInHeaderModal = !!(vegaPanelEl && modalContentEl && modalContentEl.contains(vegaPanelEl));
-        if (!vegaInHeaderModal) {
-            document.querySelectorAll('.personal-details-page--deposit-withdraw .personal-details-close').forEach(function (a) {
-                a.addEventListener('click', function () {
-                    if (typeof closeVegaPanel === 'function') closeVegaPanel();
+    function bindCm622FormControls(root) {
+        var scope = root || document;
+        scope.querySelectorAll('.form-control-bc .form-control-input-bc, .form-control-bc select.form-control-select-bc').forEach(function(input) {
+            if (input.getAttribute('data-cm622-fc-bound') === '1') return;
+            input.setAttribute('data-cm622-fc-bound', '1');
+            var wrap = input.closest('.form-control-bc');
+            if (!wrap) return;
+            function sync() {
+                var filled = String(input.value || '').trim() !== '';
+                wrap.classList.toggle('filled', filled);
+                wrap.classList.toggle('valid', filled);
+            }
+            input.addEventListener('focus', function() { wrap.classList.add('focused'); });
+            input.addEventListener('blur', function() { wrap.classList.remove('focused'); sync(); });
+            input.addEventListener('input', sync);
+            input.addEventListener('change', sync);
+            sync();
+        });
+    }
+
+    var cm622MultiSelectDocCloseBound = false;
+    function closeCm622MultiSelect(wrap) {
+        if (!wrap) return;
+        var control = wrap.querySelector('.form-control-bc');
+        var trigger = wrap.querySelector('.form-control-label-bc');
+        var list = wrap.querySelector('.multi-select-label-bc');
+        if (control) control.classList.remove('expanded');
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        if (list) {
+            list.hidden = true;
+            list.setAttribute('hidden', '');
+        }
+    }
+    function initCm622MultiSelects(root) {
+        if (isMobileSiteContext()) return;
+        var scope = root && root.querySelectorAll ? root : document;
+        var nodes = scope.querySelectorAll
+            ? scope.querySelectorAll('.multi-select-bc[data-cm622-ms]')
+            : [];
+        Array.prototype.forEach.call(nodes, function(wrap) {
+            if (wrap.getAttribute('data-cm622-ms-bound') === '1') return;
+            if (wrap.getAttribute('data-cm622-country') === '1') return;
+            wrap.setAttribute('data-cm622-ms-bound', '1');
+            var control = wrap.querySelector('.form-control-bc');
+            var trigger = wrap.querySelector('.form-control-label-bc');
+            var list = wrap.querySelector('.multi-select-label-bc');
+            var display = wrap.querySelector('.form-control-select-bc');
+            var hidden = wrap.querySelector('input[type="hidden"]');
+            if (!control || !trigger || !list || !display || !hidden) return;
+
+            function setOpen(open) {
+                control.classList.toggle('expanded', open);
+                trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (open) {
+                    list.hidden = false;
+                    list.removeAttribute('hidden');
+                } else {
+                    list.hidden = true;
+                    list.setAttribute('hidden', '');
+                }
+            }
+            function isOpen() {
+                return control.classList.contains('expanded');
+            }
+            function applyValue(value, label, silent) {
+                var next = value == null ? '' : String(value);
+                var nextLabel = label != null ? String(label) : '';
+                var matched = null;
+                list.querySelectorAll('.checkbox-control-content-bc').forEach(function(item) {
+                    var on = String(item.getAttribute('data-option-value') || '') === next;
+                    item.classList.toggle('active', on);
+                    item.setAttribute('aria-selected', on ? 'true' : 'false');
+                    if (on) matched = item;
+                });
+                if (!nextLabel && matched) {
+                    nextLabel = matched.getAttribute('data-option-label') || (matched.textContent || '').trim();
+                }
+                hidden.value = next;
+                display.textContent = nextLabel;
+                /* Empty option values ('' => Tümü) still keep floating label raised */
+                var isFilled = !!matched || String(nextLabel || '').trim() !== '';
+                control.classList.toggle('filled', isFilled);
+                control.classList.toggle('valid', isFilled);
+                if (!silent) {
+                    try {
+                        hidden.dispatchEvent(new Event('change', { bubbles: true }));
+                        hidden.dispatchEvent(new Event('input', { bubbles: true }));
+                    } catch (eDispatch) {}
+                }
+            }
+            function selectOption(opt) {
+                if (!opt) return;
+                var value = opt.getAttribute('data-option-value');
+                if (value == null) value = '';
+                var label = opt.getAttribute('data-option-label') || (opt.textContent || '').trim();
+                applyValue(value, label, false);
+                setOpen(false);
+            }
+            wrap.__cm622MsSetValue = function(val, silent) {
+                applyValue(val, null, !!silent);
+            };
+            /* Sync visible label from current hidden value (API/server prefill). */
+            if (String(hidden.value || '').trim() !== '' || String(display.textContent || '').trim() !== '') {
+                applyValue(hidden.value, null, true);
+            }
+
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                // close siblings first
+                document.querySelectorAll('.multi-select-bc[data-cm622-ms] .form-control-bc.expanded').forEach(function(openCtrl) {
+                    var openWrap = openCtrl.closest('.multi-select-bc');
+                    if (openWrap && openWrap !== wrap) closeCm622MultiSelect(openWrap);
+                });
+                setOpen(!isOpen());
+            });
+            trigger.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setOpen(!isOpen());
+                } else if (e.key === 'Escape' && isOpen()) {
+                    e.preventDefault();
+                    setOpen(false);
+                }
+            });
+            list.querySelectorAll('.checkbox-control-content-bc').forEach(function(opt) {
+                opt.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectOption(opt);
+                });
+            });
+        });
+
+        if (!cm622MultiSelectDocCloseBound) {
+            cm622MultiSelectDocCloseBound = true;
+            document.addEventListener('click', function(e) {
+                document.querySelectorAll('.multi-select-bc[data-cm622-ms] .form-control-bc.expanded').forEach(function(ctrl) {
+                    var wrap = ctrl.closest('.multi-select-bc');
+                    if (!wrap || wrap.contains(e.target)) return;
+                    closeCm622MultiSelect(wrap);
                 });
             });
         }
+    }
+    window.setCm622MultiSelectValue = function(inputOrName, value, silent) {
+        var input = null;
+        if (typeof inputOrName === 'string') {
+            input = document.getElementById(inputOrName) || document.querySelector('[name="' + inputOrName + '"]');
+        } else {
+            input = inputOrName;
+        }
+        if (!input) return false;
+        var root = input.closest ? input.closest('.multi-select-bc[data-cm622-ms]') : null;
+        if (root && typeof root.__cm622MsSetValue === 'function') {
+            root.__cm622MsSetValue(value, !!silent);
+            return true;
+        }
+        input.value = value == null ? '' : String(value);
+        return false;
+    };
+
+    /** @deprecated use initCm622MultiSelects */
+    function initDepositCryptoMultiSelect(root) {
+        initCm622MultiSelects(root);
+    }
+
+    function initDepositWithdrawPage(modalFullUrl) {
+        if (isMobileSiteContext()) return;
+        var shell = document.getElementById('depositSection')
+            || document.getElementById('withdrawSection')
+            || document.getElementById('depositGrid')
+            || document.getElementById('withdrawGrid');
+        if (!shell) return;
+        // Undo any prior display:block that breaks CM622 flex panes
+        [document.getElementById('depositSection'), document.getElementById('withdrawSection')].forEach(function(el) {
+            if (el && el.style.display === 'block') el.style.removeProperty('display');
+        });
+        bindCm622FormControls(document.getElementById('profilePlayerMain') || shell);
+        initCm622MultiSelects(document.getElementById('profilePlayerMain') || shell);
 
         function continueInitDepositWithdrawPage() {
-        var pageKind = window.__PROFILE_PAYMENT_PAGE__ || 'deposit';
+        var pageKind = resolveProfilePaymentPageKind(modalFullUrl);
+        window.__PROFILE_PAYMENT_PAGE__ = pageKind;
         var hash = '';
         var search = window.location.search;
         if (typeof modalFullUrl === 'string' && modalFullUrl) {
@@ -3515,29 +4394,26 @@
         var params = new URLSearchParams(search);
         var bilgiFromQs = params.get('bilgi') === '1';
         var wantBilgi = hash === '#bilgi' || bilgiFromQs;
-        var bilgiPreferWithdraw = params.get('bilgiTab') === 'withdraw' || hash === '#withdraw';
-        if (pageKind === 'deposit' && window.location.hash === '#withdraw' && document.getElementById('depositSection') && !document.getElementById('withdrawSection')) {
-            window.location.replace('/profile/withdraw' + (window.location.search || ''));
+        // Separate pages: never flip deposit?withdraw via hash/tab on the same document
+        if (pageKind === 'deposit' && hash === '#withdraw') {
+            navigateProfilePaymentPage('withdraw');
+            return;
+        }
+        if (pageKind === 'withdraw' && hash === '#deposit') {
+            navigateProfilePaymentPage('deposit');
             return;
         }
         if (pageKind === 'withdraw') {
             if (wantBilgi) {
-                openBilgiModal();
+                openBilgiModal(true);
             } else {
                 showVegaTab('withdraw', { openDefaultDepositPanel: false, skipWithdrawInlinePrime: false });
             }
         } else if (wantBilgi) {
-            showVegaTab(bilgiPreferWithdraw ? 'withdraw' : 'deposit', {
-                openDefaultDepositPanel: false,
-                skipWithdrawInlinePrime: bilgiPreferWithdraw ? false : true
-            });
-            openBilgiModal();
-            if (document.querySelector('#bilgiModal .bilgi-tab')) {
-                applyBilgiSubTab(bilgiPreferWithdraw);
-            }
+            openBilgiModal(false);
         } else {
             var qsOpenDeposit = params.get('openDepositPanel') === '1';
-            showVegaTab(hash === '#withdraw' ? 'withdraw' : 'deposit', {
+            showVegaTab('deposit', {
                 openDefaultDepositPanel: qsOpenDeposit,
                 skipWithdrawInlinePrime: false
             });
@@ -3548,46 +4424,53 @@
         if (!window.__profileDepositWithdrawHashBound) {
             window.__profileDepositWithdrawHashBound = true;
             window.addEventListener('hashchange', function() {
-                if (!document.querySelector('.vega-app--in-profile-shell')) return;
+                if (!document.getElementById('depositSection')
+                    && !document.getElementById('withdrawSection')
+                    && !document.getElementById('depositGrid')
+                    && !document.getElementById('withdrawGrid')) return;
                 var h = (window.location.hash || '').trim();
-                var pk = window.__PROFILE_PAYMENT_PAGE__ || 'deposit';
+                var pk = resolveProfilePaymentPageKind(window.__profileModalContentUrl || window.location.href);
+                window.__PROFILE_PAYMENT_PAGE__ = pk;
                 var p = new URLSearchParams(window.location.search);
                 var wBilgi = h === '#bilgi' || p.get('bilgi') === '1';
                 if (pk === 'withdraw') {
+                    if (h === '#deposit') {
+                        navigateProfilePaymentPage('deposit');
+                        return;
+                    }
                     if (wBilgi) {
-                        openBilgiModal();
+                        openBilgiModal(true);
                         syncProfileSidebarBilgiNav(true);
                     } else {
                         closeBilgiModal();
                     }
                     return;
                 }
+                if (h === '#withdraw') {
+                    navigateProfilePaymentPage('withdraw');
+                    return;
+                }
                 if (wBilgi) {
-                    var bilgiW = p.get('bilgiTab') === 'withdraw' || h === '#withdraw';
-                    showVegaTab(bilgiW ? 'withdraw' : 'deposit', {
-                        openDefaultDepositPanel: false,
-                        skipWithdrawInlinePrime: bilgiW ? false : true
-                    });
-                    openBilgiModal();
-                    if (document.querySelector('#bilgiModal .bilgi-tab')) {
-                        applyBilgiSubTab(bilgiW);
-                    }
+                    openBilgiModal(false);
                     syncProfileSidebarBilgiNav(true);
                 } else {
                     closeBilgiModal();
                     var qsOpen = new URLSearchParams(window.location.search).get('openDepositPanel') === '1';
-                    if (h === '#withdraw') showVegaTab('withdraw');
                     if (h === '#deposit') showVegaTab('deposit', { openDefaultDepositPanel: qsOpen });
                 }
             });
         }
         document.querySelectorAll('.bilgi-tab').forEach(function(tab) {
+            if (tab.getAttribute('data-dw-tab-bound') === '1') return;
+            tab.setAttribute('data-dw-tab-bound', '1');
             tab.addEventListener('click', function() {
                 var t = this.getAttribute('data-bilgi-tab');
                 applyBilgiSubTab(t === 'withdraw');
             });
         });
         document.querySelectorAll('.deposit-tab').forEach(function(tab) {
+            if (tab.getAttribute('data-dw-tab-bound') === '1') return;
+            tab.setAttribute('data-dw-tab-bound', '1');
             tab.addEventListener('click', function() {
                 document.querySelectorAll('.deposit-tab').forEach(function(t) {
                     t.classList.remove('active');
@@ -3611,10 +4494,10 @@
                         });
                         if (firstVis) {
                             depGrid.querySelectorAll('.deposit-card').forEach(function(c) {
-                                c.classList.remove('is-selected');
+                                c.classList.remove('is-selected', 'active');
                                 c.setAttribute('aria-selected', 'false');
                             });
-                            firstVis.classList.add('is-selected');
+                            firstVis.classList.add('is-selected', 'active');
                             firstVis.setAttribute('aria-selected', 'true');
                             applyDepositInline(
                                 firstVis.getAttribute('data-dw-method'),
@@ -3644,6 +4527,8 @@
             });
         });
         document.querySelectorAll('.withdraw-tab').forEach(function(tab) {
+            if (tab.getAttribute('data-dw-tab-bound') === '1') return;
+            tab.setAttribute('data-dw-tab-bound', '1');
             tab.addEventListener('click', function() {
                 document.querySelectorAll('.withdraw-tab').forEach(function(t) {
                     t.classList.remove('active');
@@ -3698,10 +4583,10 @@
                 var method = card.getAttribute('data-dw-method');
                 if (!method) return;
                 depositGrid.querySelectorAll('.deposit-card').forEach(function(c) {
-                    c.classList.remove('is-selected');
+                    c.classList.remove('is-selected', 'active');
                     c.setAttribute('aria-selected', 'false');
                 });
-                card.classList.add('is-selected');
+                card.classList.add('is-selected', 'active');
                 card.setAttribute('aria-selected', 'true');
                 applyDepositInline(
                     method,
@@ -3727,10 +4612,10 @@
                 var method = card.getAttribute('data-dw-method');
                 if (!method) return;
                 withdrawGrid.querySelectorAll('.deposit-card').forEach(function(c) {
-                    c.classList.remove('is-selected');
+                    c.classList.remove('is-selected', 'active');
                     c.setAttribute('aria-selected', 'false');
                 });
-                card.classList.add('is-selected');
+                card.classList.add('is-selected', 'active');
                 card.setAttribute('aria-selected', 'true');
                 applyWithdrawInline(
                     method,
@@ -3756,7 +4641,9 @@
 
         var bootDepGrid = document.getElementById('depositGrid');
         var bootDepSel = document.getElementById('depositMethodSelect');
-        if ((window.__PROFILE_PAYMENT_PAGE__ || 'deposit') === 'deposit' && document.getElementById('depositSection')) {
+        var bootKind = resolveProfilePaymentPageKind(modalFullUrl);
+        window.__PROFILE_PAYMENT_PAGE__ = bootKind;
+        if (bootKind === 'deposit' && document.getElementById('depositSection')) {
             if (bootDepGrid) {
                 var bootCard = bootDepGrid.querySelector('.deposit-card.is-selected') || bootDepGrid.querySelector('.deposit-card[data-dw-method]');
                 if (bootCard && bootCard.getAttribute('data-dw-method')) {
@@ -3775,14 +4662,14 @@
         loadProfilePaymentMethods().finally(function() {
             continueInitDepositWithdrawPage();
             enrichWithdrawGridFromWithdrawPaymentApi().finally(function() {
-                if ((window.__PROFILE_PAYMENT_PAGE__ || '') === 'withdraw') {
+                if (resolveProfilePaymentPageKind(modalFullUrl) === 'withdraw') {
                     primeWithdrawInlineSelection();
                 }
             });
         });
     }
 
-    // ----- 6. Yatırım geçmişi (JWT /api/v2/deposit-history) veya birleşik işlem listesi -----
+    // ----- 6. Yatirim geçmişi (JWT /api/v2/deposit-history) veya birlesik islem listesi -----
     function parseDepositHistoryDate(str) {
         if (!str) return null;
         var iso = String(str).trim().replace(' ', 'T');
@@ -3840,13 +4727,13 @@
         function getStatusText(s) {
             var m = {
                 pending: 'Beklemede',
-                processing: 'İşleniyor',
-                approved: 'Onaylandı',
-                confirmed: 'Onaylandı',
-                completed: 'Tamamlandı',
+                processing: 'Isleniyor',
+                approved: 'Onaylandi',
+                confirmed: 'Onaylandi',
+                completed: 'Tamamlandi',
                 rejected: 'Reddedildi',
-                failed: 'Başarısız',
-                cancelled: 'İptal'
+                failed: 'Basarisiz',
+                cancelled: 'Iptal'
             };
             return m[s] || s;
         }
@@ -3927,7 +4814,7 @@
                 html += '<tr class="transaction-row">' +
                     '<td data-label="ID">' + escapeHtml(id) + '</td>' +
                     '<td data-label="Yöntem">' + escapeHtml(method) + '</td>' +
-                    '<td data-label="Sağlayıcı">' + escapeHtml(provider) + '</td>' +
+                    '<td data-label="Saglayici">' + escapeHtml(provider) + '</td>' +
                     '<td data-label="Referans">' + escapeHtml(ref) + '</td>' +
                     '<td data-label="Tutar">' + amtTxt + '</td>' +
                     '<td data-label="Ücret">' + feeTxt + '</td>' +
@@ -3956,7 +4843,7 @@
                         try {
                             j = txt ? JSON.parse(txt) : {};
                         } catch (eJson) {
-                            j = { success: false, message: 'Geçersiz yanıt.' };
+                            j = { success: false, message: 'Geçersiz yanit.' };
                         }
                         return { res: res, j: j };
                     });
@@ -3999,7 +4886,7 @@
                     if (emptyEl) emptyEl.style.display = 'none';
                     if (errEl) {
                         errEl.style.display = 'block';
-                        errEl.textContent = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+                        errEl.textContent = t('common.connection_error', 'Bağlantı hatası. Lütfen tekrar deneyin.');
                     }
                     if (pagNav) pagNav.style.display = 'none';
                 });
@@ -4111,10 +4998,10 @@
             return transactionType === optionValue;
         }
         function getStatusText(s) {
-            var m = { pending: 'Beklemede', approved: 'Onaylandı', confirmed: 'Onaylandı', completed: 'Onaylandı', rejected: 'Reddedildi', cancelled: 'İptal Edildi', processing: 'İşleniyor' };
+            var m = { pending: 'Beklemede', approved: 'Onaylandi', confirmed: 'Onaylandi', completed: 'Onaylandi', rejected: 'Reddedildi', cancelled: 'Iptal Edildi', processing: 'Isleniyor' };
             return m[s] || s;
         }
-        function getTypeText(type) { return type === 'deposit' ? 'Yatırım' : 'Çekim Talebi'; }
+        function getTypeText(type) { return type === 'deposit' ? 'Yatirim' : 'Çekim Talebi'; }
         function renderTransactions(transactions) {
             if (transactions.length === 0) {
                 if (emptyEl) emptyEl.style.display = 'block';
@@ -4178,7 +5065,7 @@
                 filterTransactions();
             })
             .catch(function() {
-                toastNotify('error', 'Bağlantı hatası.', 'Çekim geçmişi');
+                toastNotify('error', t('common.connection_error', 'Bağlantı hatası.'), 'Çekim geçmişi');
                 filterTransactions();
             });
 
@@ -4213,13 +5100,13 @@
 
             function sourceText(row) {
                 var source = normalizeSource(row.source || row.category || '');
-                return source === 'live_casino' ? 'Canlı Casino' : 'Slot';
+                return source === 'live_casino' ? 'Canli Casino' : 'Slot';
             }
 
             function txnText(txn) {
                 txn = String(txn || 'bet').toLowerCase();
                 if (txn === 'win') return 'Kazanç';
-                if (txn === 'refund' || txn === 'cancel') return 'İade';
+                if (txn === 'refund' || txn === 'cancel') return 'Iade';
                 if (txn === 'adjustment') return 'Düzeltme';
                 return 'Bahis';
             }
@@ -4276,9 +5163,9 @@
                     return '<tr class="transaction-row" data-bet-type="game_history" data-transaction-id="' + escapeHtml(id) + '">' +
                         '<td data-label="ID">' + (idx + 1) + '</td>' +
                         '<td data-label="Oyun">' + escapeHtml(game) + '</td>' +
-                        '<td data-label="Sağlayıcı">' + escapeHtml(provider || '—') + '</td>' +
+                        '<td data-label="Saglayici">' + escapeHtml(provider || '₺') + '</td>' +
                         '<td data-label="Kategori">' + escapeHtml(sourceText(row)) + '</td>' +
-                        '<td data-label="İşlem"><span class="' + txnClass(txn) + ' fw-bold">' + escapeHtml(txnText(txn)) + '</span></td>' +
+                        '<td data-label="Islem"><span class="' + txnClass(txn) + ' fw-bold">' + escapeHtml(txnText(txn)) + '</span></td>' +
                         '<td data-label="Bahis">' + money(row.betAmount != null ? row.betAmount : row.bet_amount) + '</td>' +
                         '<td data-label="Kazanç">' + money(row.winAmount != null ? row.winAmount : row.win_amount) + '</td>' +
                         '<td data-label="Bakiye">' + money(row.balanceAfter != null ? row.balanceAfter : row.balance_after) + '</td>' +
@@ -4360,7 +5247,7 @@
                         applyLocalFilters();
                     })
                     .catch(function() {
-                        toastNotify('error', 'Bağlantı hatası.', 'Casino geçmişi');
+                        toastNotify('error', t('common.connection_error', 'Bağlantı hatası.'), 'Casino geçmişi');
                         lastLoadedRows = [];
                         render([]);
                     });
@@ -4403,7 +5290,7 @@
         function extractAjaxError(xhr, fallback) {
             var msg = fallback || 'Detaylar yuklenemedi.';
             if (!xhr) return msg;
-            if (xhr.status === 401) return 'Oturum suresi dolmus olabilir. Lutfen tekrar giris yapin.';
+            if (xhr.status === 401) return 'Oturum suresi dolmus olabilir. Lutfen tekrar giriş yapın.';
             if (xhr.status === 404) return 'Kayit bulunamadi veya detay endpointine erisim saglanamadi.';
             var rt = (xhr.responseText || '').trim();
             if (rt) {
@@ -4529,9 +5416,15 @@
         function syncDateVisualState() {
             [bhStart, bhEnd].forEach(function(inputEl) {
                 if (!inputEl) return;
-                var wrap = inputEl.closest('.bhf-date-input-wrap');
+                var wrap = inputEl.closest('.cm622-date-range') || inputEl.closest('.bhf-date-input-wrap');
                 if (!wrap) return;
                 wrap.classList.toggle('has-value', !!String(inputEl.value || '').trim());
+                var control = inputEl.closest('.form-control-bc');
+                if (control) {
+                    var filled = !!(bhStart && bhStart.value) || !!(bhEnd && bhEnd.value);
+                    control.classList.toggle('filled', filled);
+                    control.classList.toggle('valid', filled);
+                }
             });
         }
 
@@ -4553,6 +5446,8 @@
             if (bhForm) {
                 bhForm.classList.toggle('is-custom-period', !!isCustom);
             }
+            var filterWrap = bhForm ? bhForm.closest('.componentFilterWrapper-bc') : null;
+            if (filterWrap) filterWrap.classList.toggle('is-custom-period', !!isCustom);
             if (bhStart) bhStart.required = !!isCustom;
             if (bhEnd) bhEnd.required = !!isCustom;
             if (isCustom) syncDateBounds();
@@ -4580,26 +5475,36 @@
             bhStart.addEventListener('input', syncDateVisualState);
             bhEnd.addEventListener('input', syncDateVisualState);
 
-            var startWrap = bhStart.closest('.bhf-date-input-wrap');
-            var endWrap = bhEnd.closest('.bhf-date-input-wrap');
-            if (startWrap) {
-                startWrap.addEventListener('click', function(e) {
-                    if (e.target === bhStart) return;
-                    openNativePicker(bhStart);
+            var dateRange = (bhStart.closest('.cm622-date-range') || bhEnd.closest('.cm622-date-range'));
+            if (dateRange) {
+                dateRange.addEventListener('click', function(e) {
+                    if (e.target === bhStart || e.target === bhEnd) return;
+                    openNativePicker(!bhStart.value ? bhStart : bhEnd);
                 });
-            }
-            if (endWrap) {
-                endWrap.addEventListener('click', function(e) {
-                    if (e.target === bhEnd) return;
-                    openNativePicker(bhEnd);
-                });
+            } else {
+                var startWrap = bhStart.closest('.bhf-date-input-wrap');
+                var endWrap = bhEnd.closest('.bhf-date-input-wrap');
+                if (startWrap) {
+                    startWrap.addEventListener('click', function(e) {
+                        if (e.target === bhStart) return;
+                        openNativePicker(bhStart);
+                    });
+                }
+                if (endWrap) {
+                    endWrap.addEventListener('click', function(e) {
+                        if (e.target === bhEnd) return;
+                        openNativePicker(bhEnd);
+                    });
+                }
             }
         }
 
         if (bhDatePresets) {
             $(bhDatePresets).off('click.betHistPreset').on('click.betHistPreset', '.bhf-date-preset', function() {
                 if (!(bhPeriod && bhPeriod.value === 'custom')) {
-                    if (bhPeriod) {
+                    if (typeof window.setCm622MultiSelectValue === 'function') {
+                        window.setCm622MultiSelectValue(bhPeriod, 'custom');
+                    } else if (bhPeriod) {
                         bhPeriod.value = 'custom';
                     }
                     updateCustomState();
@@ -4645,7 +5550,7 @@
                                 : window.location.origin + '/register?ref=' + encodeURIComponent(response.referral_code);
                             $('#shareLink').text(shareLink);
                         } else {
-                            $('#userReferralCode').text('Referans kodu bulunamadı.');
+                            $('#userReferralCode').text('Referans kodu bulunamadi.');
                             $('#shareLink').text('N/A');
                         }
                         var referredUsers = response.referred_users || [];
@@ -4693,6 +5598,45 @@
         toastNotify(kind === 'success' ? 'success' : (kind === 'warn' ? 'warning' : 'error'), msg);
     }
 
+    function bindProfilePromoUi() {
+        var input = document.getElementById('profileModalPromoCode');
+        var btn = document.getElementById('profileModalPromoUseLegacy');
+        if (!input) return;
+
+        if (!input.getAttribute('placeholder')) {
+            input.setAttribute('placeholder', ' ');
+        }
+
+        var wrap = input.closest('.form-control-bc');
+
+        function syncPromoField() {
+            var filled = String(input.value || '').trim() !== '';
+            if (wrap) {
+                wrap.classList.toggle('filled', filled);
+                wrap.classList.toggle('valid', filled);
+            }
+            if (btn) {
+                btn.disabled = !filled;
+                btn.setAttribute('aria-disabled', filled ? 'false' : 'true');
+            }
+        }
+
+        if (input.getAttribute('data-promo-float-bound') !== '1') {
+            input.setAttribute('data-promo-float-bound', '1');
+            input.addEventListener('focus', function() {
+                if (wrap) wrap.classList.add('focused');
+            });
+            input.addEventListener('blur', function() {
+                if (wrap) wrap.classList.remove('focused');
+                syncPromoField();
+            });
+            input.addEventListener('input', syncPromoField);
+            input.addEventListener('change', syncPromoField);
+            input.addEventListener('keyup', syncPromoField);
+        }
+        syncPromoField();
+    }
+
     function loadProfilePromocodesSelect() {
         var sel = document.getElementById('profileModalPromoSelect');
         var statusEl = document.getElementById('profilePromocodesStatus');
@@ -4718,7 +5662,7 @@
                 }
                 if (!data.success) {
                     sel.innerHTML = '<option value="">—</option>';
-                    setStatus(data.message || 'Promo listesi alınamadı.', true);
+                    setStatus(data.message || 'Promo listesi alinamadi.', true);
                     return;
                 }
                 var inner = data.data || {};
@@ -4730,7 +5674,7 @@
                 if (list.length === 0) {
                     var opt0 = document.createElement('option');
                     opt0.value = '';
-                    opt0.textContent = 'Kullanılabilir kod yok';
+                    opt0.textContent = 'Kullanilabilir kod yok';
                     sel.appendChild(opt0);
                     setStatus(inner.message || data.message || 'Şu an talep edilebilir panel kodu yok.');
                     return;
@@ -4746,7 +5690,7 @@
                     var amt = row.amount != null ? amountFormatter.format(Number(row.amount)) + ' ₺' : '—';
                     var exp = row.expiresAt != null && row.expiresAt !== '' ? row.expiresAt : 'Süresiz';
                     var rem = row.remainingUses;
-                    var remTxt = rem === null || rem === undefined ? 'Sınırsız' : String(rem);
+                    var remTxt = rem === null || rem === undefined ? 'Sinirsiz' : String(rem);
                     var o = document.createElement('option');
                     o.value = String(id);
                     o.textContent = code + ' · ' + amt + ' · ' + exp + ' · Kalan: ' + remTxt;
@@ -4756,43 +5700,59 @@
             })
             .catch(function() {
                 sel.innerHTML = '<option value="">Yüklenemedi</option>';
-                setStatus('Liste alınamadı.', true);
+                setStatus('Liste alinamadi.', true);
             });
     }
 
     function initProfilePromoBlockOnce() {
         if (window.__profileModalPromoInit) return;
         window.__profileModalPromoInit = true;
+
+        bindProfilePromoUi();
+
         document.body.addEventListener('click', function(e) {
             var talepBtn = e.target && e.target.closest && e.target.closest('#profileModalPromoApply');
             var legacyBtn = e.target && e.target.closest && e.target.closest('#profileModalPromoUseLegacy');
             if (!talepBtn && !legacyBtn) return;
             e.preventDefault();
+            e.stopPropagation();
 
             if (legacyBtn) {
+                if (legacyBtn.disabled) {
+                    profilePromoToast('warn', t('promo.enter_code', 'Promosyon kodu girin.'));
+                    return;
+                }
                 var inputLegacy = document.getElementById('profileModalPromoCode');
                 var kod = inputLegacy && inputLegacy.value ? String(inputLegacy.value).trim() : '';
                 if (!kod) {
-                    profilePromoToast('warn', 'Promosyon kodu girin.');
+                    profilePromoToast('warn', t('promo.enter_code', 'Promosyon kodu girin.'));
                     return;
                 }
+                legacyBtn.disabled = true;
                 fetch(apiUrl('/api/v2/bonus/use-code'), {
                     method: 'POST',
                     headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
                     credentials: 'same-origin',
-                    body: JSON.stringify({ kod: kod })
+                    body: JSON.stringify({ kod: kod, code: kod })
                 })
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (data.status === 'success') {
-                            profilePromoToast('success', data.mesaj || 'Tamam');
-                            if (inputLegacy) inputLegacy.value = '';
+                    .then(function(r) { return r.json().catch(function() { return null; }).then(function(data) { return { ok: r.ok, status: r.status, data: data }; }); })
+                    .then(function(res) {
+                        var data = res.data || {};
+                        var msg = data.mesaj || data.message || t('promo.failed', 'İşlem yapılamadı.');
+                        if (data.status === 'success' || data.success === true) {
+                            profilePromoToast('success', msg || t('common.ok', 'Tamam'));
+                            if (inputLegacy) {
+                                inputLegacy.value = '';
+                            }
+                            bindProfilePromoUi();
                         } else {
-                            profilePromoToast('error', data.mesaj || 'İşlem yapılamadı.');
+                            profilePromoToast('error', msg);
+                            bindProfilePromoUi();
                         }
                     })
                     .catch(function() {
-                        profilePromoToast('error', 'Hata oluştu, lütfen tekrar deneyin.');
+                        profilePromoToast('error', t('common.try_again', 'Hata oluştu, lütfen tekrar deneyin.'));
+                        bindProfilePromoUi();
                     });
                 return;
             }
@@ -4821,7 +5781,7 @@
                     if (data.success) {
                         var d = data.data || {};
                         var m = (typeof d.message === 'string' && d.message.trim()) ? d.message.trim()
-                            : (data.message || 'Talebiniz alındı.');
+                            : (data.message || t('promo.request_ok', 'Talebiniz alındı.'));
                         profilePromoToast('success', m);
                         if (noteEl) noteEl.value = '';
                         loadProfilePromocodesSelect();
@@ -4830,7 +5790,7 @@
                     }
                 })
                 .catch(function() {
-                    profilePromoToast('error', 'Bağlantı hatası.');
+                    profilePromoToast('error', t('common.connection_error', 'Bağlantı hatası.'));
                 })
                 .finally(function() {
                     talepBtn.disabled = false;
@@ -4847,7 +5807,7 @@
         btn.addEventListener('click', function () {
             var password = pwd.value ? String(pwd.value) : '';
             if (!password.trim()) {
-                toastNotify('warning', 'Şifrenizi girin.');
+                toastNotify('warning', 'Sifrenizi girin.');
                 return;
             }
             btn.disabled = true;
@@ -4893,7 +5853,7 @@
                     toastNotify('error', msg);
                 })
                 .catch(function () {
-                    toastNotify('error', 'Bağlantı hatası.');
+                    toastNotify('error', t('common.connection_error', 'Bağlantı hatası.'));
                 })
                 .finally(function () {
                     btn.disabled = false;
@@ -4901,13 +5861,14 @@
         });
     }
 
-    // ----- Hepsi: sayfa öğelerine göre ilgili init’leri çalıştır -----
+    // ----- Hepsi: sayfa öğelerine göre ilgili initleri çalıştır -----
     ready(function() {
         initAppFeedbackDialog();
+        initProfileBalanceToggleOnce();
         initProfilePromoBlockOnce();
         initProfileShellPrefetchOnce();
-        /* Akordeon önce: bubble fazında toggle + alt menü tıkları birlikte doğru çalışsın */
-        if (document.querySelector('.profile-sidebar-v2') || document.querySelector('.profile-content')) {
+        /* Akordeon önce: bubble fazinda toggle + alt menü tıkları birlikte doğru çalışsın */
+        if (document.querySelector('#profilePlayerSidebar') || document.querySelector('.u-i-profile-page-bc') || document.querySelector('.profile-sidebar-v2')) {
             initProfileSidebar();
             initProfileActiveBonus();
             schedulePrefetchAllProfileSidebarLinks();
@@ -4928,11 +5889,20 @@
             window.MemberInboxBadges.applyUnreadToDom(document);
         }
         if (document.getElementById('profileModal')) initProfileModal();
+        if (!isMobileSiteContext()) {
+            bindCm622FormControls(document.getElementById('profilePlayerMain') || document.getElementById('profileModalContent') || document);
+            initCm622MultiSelects(document.getElementById('profilePlayerMain') || document.getElementById('profileModalContent') || document);
+        }
         if (document.getElementById('personalDetailsForm')) initDetailsPage();
         if (document.getElementById('changePwdBtn')) initAccountDetails();
         if (document.getElementById('twofaToggle')) initTwoFactorToggle();
         if (document.getElementById('bonusClaimsRoot')) initBonusClaimsMe();
-        if (document.querySelector('.vega-app--in-profile-shell')) initDepositWithdrawPage();
+        if (!isMobileSiteContext() && (document.getElementById('depositSection')
+            || document.getElementById('withdrawSection')
+            || document.getElementById('depositGrid')
+            || document.getElementById('withdrawGrid'))) {
+            initDepositWithdrawPage();
+        }
         if (document.getElementById('transactionTableBody')) initDepositWithdrawHistory();
         if (document.querySelector('[data-casino-history-root]')) initCasinoGameHistory();
         if (document.getElementById('sporDetailsContent') || document.getElementById('gameHistoryContent')) initBetHistory();

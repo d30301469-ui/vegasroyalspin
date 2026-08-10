@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
@@ -11,7 +11,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit;
 }
 
-$csrfKey = 'vegasroyalspin_csrf_token';
+$csrfKey = 'app_csrf_token';
 if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
     $_SESSION[$csrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
         ? $_SESSION['csrf_token']
@@ -106,6 +106,7 @@ $user_info = [
 $profileActiveTab = 'details';
 $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 
+
 // AJAX ile güncelleme → POST /api/v2/profile/update, Bearer JWT, JSON zarfı
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['ajax'])) {
     require_once SERVICE_PATH . '/PublicApiV2Dispatcher.php';
@@ -117,90 +118,186 @@ include __DIR__ . '/../../views/partials/profile-page-frame-open.php';
 ?>
     <?php include __DIR__ . '/../../views/partials/profile-sidebar.php'; ?>
 
-    <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content">
+    <main id="profilePlayerMain" name="profilePlayerMain" class="my-profile-info-block profile-main-content">
         <?php
         $profile_content_title = 'KİŞİSEL DETAYLAR';
         $profile_close_href_full = '/';
         include __DIR__ . '/../../views/partials/profile-content-shell-open.php';
         ?>
-                <form id="personalDetailsForm" class="personal-details-form" method="post" action="">
+                <form id="personalDetailsForm" class="personal-details-form user-profile" method="post" action="">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars((string) $_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
-                    <div class="personal-details-grid">
-                        <div class="field-row full">
-                            <label class="field-label" for="username">Kullanıcı adı <span class="required">*</span></label>
-                            <input type="text" id="username" name="username" class="field-input" value="<?php echo htmlspecialchars($displayUsername); ?>" required readonly>
-                        </div>
-                        <div class="field-row half">
-                            <label class="field-label" for="profile_email">E-posta</label>
-                            <input type="email" id="profile_email" name="profile_email" class="field-input" value="<?php echo htmlspecialchars($email); ?>" readonly autocomplete="email">
-                        </div>
-                        <?php if ($statusLabel !== ''): ?>
-                        <div class="field-row half">
-                            <span class="field-label">Hesap durumu</span>
-                            <span class="personal-details-status-badge personal-details-status-badge--<?php echo htmlspecialchars($statusClass); ?>" role="status"><?php echo htmlspecialchars($statusLabel); ?></span>
-                        </div>
-                        <?php endif; ?>
-                        <div class="field-row half">
-                            <label class="field-label" for="profile_phone">Telefon</label>
-                            <input type="text" id="profile_phone" name="profile_phone" class="field-input" value="<?php echo htmlspecialchars($phone); ?>" readonly inputmode="tel" autocomplete="tel">
-                        </div>
-                        <div class="field-row half">
-                            <label class="field-label" for="profile_tc">T.C. kimlik no</label>
-                            <input type="text" id="profile_tc" name="profile_tc" class="field-input" value="<?php echo htmlspecialchars($tcDisplay); ?>" readonly autocomplete="off">
-                        </div>
-                        <div class="field-row half">
-                            <label class="field-label" for="first_name">Adı <span class="required">*</span></label>
-                            <input type="text" id="first_name" name="first_name" class="field-input" value="<?php echo htmlspecialchars($firstName); ?>" required>
-                        </div>
-                        <div class="field-row half">
-                            <label class="field-label" for="surname">Soyadı <span class="required">*</span></label>
-                            <input type="text" id="surname" name="surname" class="field-input" value="<?php echo htmlspecialchars($surname); ?>" required>
-                        </div>
-                        <div class="field-row half">
-                            <label class="field-label" for="dob">Doğum tarihi <span class="required">*</span></label>
-                            <div class="field-input-wrap">
-                                <input type="date" id="dob" name="dob" class="field-input" value="<?php echo htmlspecialchars($dob); ?>" required>
-                                <i class="fa-regular fa-calendar field-icon" aria-hidden="true"></i>
+                    <?php
+                    $fc = static function (string $value): string {
+                        return 'form-control-bc default' . ($value !== '' ? ' valid filled' : '');
+                    };
+                    ?>
+                    <div class="userProfile-content" data-scroll-lock-scrollable>
+                        <div class="userProfileWrapper-bc userProfileSection-0">
+                            <div class="u-i-p-control-item-holder-bc">
+                                <div class="<?= htmlspecialchars($fc($displayUsername), ENT_QUOTES, 'UTF-8') ?>">
+                                    <label class="form-control-label-bc inputs" for="username">
+                                        <input type="text" id="username" name="username" class="form-control-input-bc" value="<?= htmlspecialchars($displayUsername, ENT_QUOTES, 'UTF-8') ?>" required readonly autocomplete="username">
+                                        <i class="form-control-input-stroke-bc" aria-hidden="true"></i>
+                                        <span class="form-control-title-bc ellipsis">Kullanıcı adı *</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="u-i-p-control-item-holder-bc">
+                                <div class="<?= htmlspecialchars($fc($firstName), ENT_QUOTES, 'UTF-8') ?>">
+                                    <label class="form-control-label-bc inputs" for="first_name">
+                                        <input type="text" id="first_name" name="first_name" class="form-control-input-bc" value="<?= htmlspecialchars($firstName, ENT_QUOTES, 'UTF-8') ?>" required autocomplete="given-name">
+                                        <i class="form-control-input-stroke-bc" aria-hidden="true"></i>
+                                        <span class="form-control-title-bc ellipsis">Adı *</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="u-i-p-control-item-holder-bc">
+                                <div class="<?= htmlspecialchars($fc($surname), ENT_QUOTES, 'UTF-8') ?>">
+                                    <label class="form-control-label-bc inputs" for="surname">
+                                        <input type="text" id="surname" name="surname" class="form-control-input-bc" value="<?= htmlspecialchars($surname, ENT_QUOTES, 'UTF-8') ?>" required autocomplete="family-name">
+                                        <i class="form-control-input-stroke-bc" aria-hidden="true"></i>
+                                        <span class="form-control-title-bc ellipsis">Soyadı *</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="u-i-p-control-item-holder-bc profile-dob-holder">
+                                <?php
+                                $dobDisplay = '';
+                                if ($dob !== '' && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dob, $dm)) {
+                                    $dobDisplay = $dm[3] . '.' . $dm[2] . '.' . $dm[1];
+                                }
+                                ?>
+                                <div class="form-control-bc default has-icon<?= $dob !== '' ? ' valid filled' : '' ?>" id="profileDobControl">
+                                    <label class="form-control-label-bc inputs" for="dob_display">
+                                        <input type="text" id="dob_display" class="form-control-input-bc" value="<?= htmlspecialchars($dobDisplay, ENT_QUOTES, 'UTF-8') ?>" readonly autocomplete="off" inputmode="none">
+                                        <input type="hidden" id="dob" name="dob" value="<?= htmlspecialchars($dob, ENT_QUOTES, 'UTF-8') ?>" required>
+                                        <i class="form-control-input-stroke-bc" aria-hidden="true"></i>
+                                        <span class="form-control-title-bc ellipsis">Doğum tarihi *</span>
+                                    </label>
+                                </div>
+                                <i class="dropdownIcon-bc bc-i-datepicker" id="profileDobIcon" role="button" tabindex="0" aria-label="Takvim" aria-expanded="false" aria-controls="profile_datepicker_panel"></i>
+                                <div class="profile-datepicker-panel" id="profile_datepicker_panel" role="dialog" aria-label="Doğum tarihi seçin" hidden>
+                                    <div class="profile-datepicker-nav">
+                                        <button type="button" class="profile-datepicker-prev" aria-label="Önceki ay">&lt;</button>
+                                        <div class="profile-dp-select" data-dp-select="month">
+                                            <button type="button" class="profile-dp-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+                                                <span class="profile-dp-select-value" data-dp-month-value>Ocak</span>
+                                                <i class="bc-i-small-arrow-down" aria-hidden="true"></i>
+                                            </button>
+                                            <div class="profile-dp-select-menu" role="listbox" hidden>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="0">Ocak</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="1">Şubat</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="2">Mart</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="3">Nisan</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="4">Mayıs</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="5">Haziran</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="6">Temmuz</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="7">Ağustos</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="8">Eylül</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="9">Ekim</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="10">Kasım</button>
+                                                <button type="button" class="profile-dp-select-option" role="option" data-value="11">Aralık</button>
+                                            </div>
+                                        </div>
+                                        <div class="profile-dp-select" data-dp-select="year">
+                                            <button type="button" class="profile-dp-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+                                                <span class="profile-dp-select-value" data-dp-year-value></span>
+                                                <i class="bc-i-small-arrow-down" aria-hidden="true"></i>
+                                            </button>
+                                            <div class="profile-dp-select-menu profile-dp-select-menu--year" role="listbox" data-dp-year-menu hidden></div>
+                                        </div>
+                                    </div>
+                                    <div class="profile-datepicker-weekdays">
+                                        <span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span>
+                                    </div>
+                                    <div class="profile-datepicker-days"></div>
+                                    <div class="profile-datepicker-actions">
+                                        <button type="button" class="profile-datepicker-cancel">İPTAL</button>
+                                        <button type="button" class="profile-datepicker-apply">UYGULA</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="u-i-p-control-item-holder-bc">
+                                <?php
+                                $ms_id = 'genderMs';
+                                $ms_input_id = 'gender';
+                                $ms_name = 'gender';
+                                $ms_title = 'Cinsiyet *';
+                                $ms_selected = $gender;
+                                $ms_required = true;
+                                $ms_options = [
+                                    'Erkek' => 'Erkek',
+                                    'Kadın' => 'Kadın',
+                                    'Diğer' => 'Diğer',
+                                ];
+                                include __DIR__ . '/../../views/partials/cm622-multi-select.php';
+                                ?>
+                            </div>
+                            <div class="u-i-p-control-item-holder-bc dropdownArrowParent-bc">
+                                <div class="multi-select-bc cm622-country-select" id="countryMs" data-cm622-ms="1" data-cm622-country="1" tabindex="0">
+                                    <div class="form-control-bc select has-icon country-code<?= $country !== '' ? ' valid filled' : '' ?>">
+                                        <div class="form-control-label-bc inputs" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false">
+                                            <div class="form-control-select-bc country-select-value">
+                                                <i class="ftr-lang-bar-flag-bc flag-bc" data-country-flag aria-hidden="true"></i>
+                                                <span class="country-select-text ellipsis" data-country-display><?= htmlspecialchars($country !== '' ? $country : 'Seçin', ENT_QUOTES, 'UTF-8') ?></span>
+                                            </div>
+                                            <i class="form-control-icon-bc bc-i-small-arrow-down" aria-hidden="true"></i>
+                                            <i class="form-control-input-stroke-bc" aria-hidden="true"></i>
+                                            <span class="form-control-title-bc ellipsis">Ülke</span>
+                                        </div>
+                                        <div class="multi-select-label-bc cm622-country-panel" role="listbox" hidden>
+                                            <div class="cm622-country-search">
+                                                <input type="text" class="cm622-country-search-input" placeholder="Ülke ara..." autocomplete="off">
+                                            </div>
+                                            <div class="cm622-country-options" data-country-options></div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="country" name="country" value="<?= htmlspecialchars($country, ENT_QUOTES, 'UTF-8') ?>">
+                                </div>
+                            </div>
+                            <div class="u-i-p-control-item-holder-bc">
+                                <div class="<?= htmlspecialchars($fc($city), ENT_QUOTES, 'UTF-8') ?>">
+                                    <label class="form-control-label-bc inputs" for="city">
+                                        <input type="text" id="city" name="city" class="form-control-input-bc" value="<?= htmlspecialchars($city, ENT_QUOTES, 'UTF-8') ?>" autocomplete="address-level2">
+                                        <i class="form-control-input-stroke-bc" aria-hidden="true"></i>
+                                        <span class="form-control-title-bc ellipsis">Şehir</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="u-i-p-control-item-holder-bc">
+                                <div class="<?= htmlspecialchars($fc($address), ENT_QUOTES, 'UTF-8') ?>">
+                                    <label class="form-control-label-bc inputs" for="address">
+                                        <input type="text" id="address" name="address" class="form-control-input-bc" value="<?= htmlspecialchars($address, ENT_QUOTES, 'UTF-8') ?>" autocomplete="street-address">
+                                        <i class="form-control-input-stroke-bc" aria-hidden="true"></i>
+                                        <span class="form-control-title-bc ellipsis">Adres</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                        <div class="field-row half">
-                            <label class="field-label" for="gender">Cinsiyet <span class="required">*</span></label>
-                            <select id="gender" name="gender" class="field-input field-select" required>
-                                <option value="">Seçin</option>
-                                <option value="Erkek" <?php echo $gender === 'Erkek' ? 'selected' : ''; ?>>Erkek</option>
-                                <option value="Kadın" <?php echo $gender === 'Kadın' ? 'selected' : ''; ?>>Kadın</option>
-                                <option value="Diğer" <?php echo $gender === 'Diğer' ? 'selected' : ''; ?>>Diğer</option>
-                            </select>
-                        </div>
-                        <div class="field-row half">
-                            <label class="field-label" for="country">Ülke</label>
-                            <div class="field-input-wrap field-input-wrap--flag">
-                                <span class="flag-icon flag-icon-tr" aria-hidden="true"></span>
-                                <input type="text" id="country" name="country" class="field-input" value="<?php echo htmlspecialchars($country); ?>" placeholder="Ülke">
+                        <div class="userProfileWrapper-bc userProfileSection-1">
+                            <div class="u-i-p-control-item-holder-bc">
+                                <hr class="passwordAboveSeparator">
+                            </div>
+                            <div class="u-i-p-control-item-holder-bc">
+                                <div class="entrance-f-item-bc">
+                                    <div class="entrance-f-error-message-bc">Değişiklikleri kaydetmek için şifrenizi girin.</div>
+                                </div>
+                            </div>
+                            <div class="u-i-p-control-item-holder-bc">
+                                <div class="form-control-bc default has-icon">
+                                    <label class="form-control-label-bc inputs" for="current_password">
+                                        <input type="password" id="current_password" name="current_password" class="form-control-input-bc" value="" required autocomplete="current-password">
+                                        <i class="form-control-input-stroke-bc" aria-hidden="true"></i>
+                                        <span class="form-control-title-bc ellipsis">Geçerli Şifre *</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                        <div class="field-row half">
-                            <label class="field-label" for="city">Şehir</label>
-                            <input type="text" id="city" name="city" class="field-input" value="<?php echo htmlspecialchars($city); ?>" placeholder="Şehir">
-                        </div>
-                        <div class="field-row full">
-                            <label class="field-label" for="address">Adres</label>
-                            <input type="text" id="address" name="address" class="field-input" value="<?php echo htmlspecialchars($address); ?>" placeholder="Adres">
-                        </div>
                     </div>
-
-                    <div class="personal-details-divider"></div>
-                    <p class="personal-details-hint">Değişiklikleri kaydetmek için şifrenizi girin.</p>
-                    <div class="field-row full">
-                        <label class="field-label" for="current_password">Geçerli Şifre <span class="required">*</span></label>
-                        <div class="field-input-wrap">
-                            <input type="password" id="current_password" name="current_password" class="field-input" placeholder="••••••••" required>
-                            <button type="button" class="field-toggle-pwd" aria-label="Şifreyi göster/gizle"><i class="fa-regular fa-eye-slash" aria-hidden="true"></i></button>
-                        </div>
-                    </div>
-
-                    <div class="personal-details-footer">
-                        <button type="submit" class="personal-details-submit" id="saveDetailsBtn">DEĞİŞİKLİKLERİ KAYDET</button>
+                    <div class="u-i-p-c-footer-bc">
+                        <button type="submit" class="btn a-color right-aligned" id="saveDetailsBtn" title="DEĞİŞİKLİKLERİ KAYDET">
+                            <span>DEĞİŞİKLİKLERİ KAYDET</span>
+                        </button>
                     </div>
                 </form>
         <?php include __DIR__ . '/../../views/partials/profile-content-shell-close.php'; ?>

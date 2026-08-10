@@ -1,70 +1,74 @@
 <?php
 require_once __DIR__ . '/_payment-page-init.php';
-$profileActiveTab = (!empty($_GET['bilgi']) && (string) $_GET['bilgi'] === '1') ? 'withdraw-bilgi' : 'withdraw';
+$is_bilgi_page = (!empty($_GET['bilgi']) && (string) $_GET['bilgi'] === '1');
+$profileActiveTab = $is_bilgi_page ? 'withdraw-bilgi' : 'withdraw';
 $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 ?>
 
 <?php if (!$profile_modal): ?>
 <?php require_once __DIR__ . '/../../views/layouts/head_full.php'; ?>
 <?php endif; ?>
-<script>window.__PROFILE_PAYMENT_LIMITS__ = <?php echo json_encode($paymentLimits); ?>;</script>
-<script>window.__PROFILE_PAYMENT_PAGE__ = 'withdraw';</script>
 <?php if (!$profile_modal): ?>
 <?php include __DIR__ . '/../../views/partials/header.php'; ?>
-<div class="centerWrap porfileWrap">
+<div class="centerWrap porfileWrap popup-holder-bc windowed user-profile-container is-web">
+  <div class="popup-middleware-bc" style="display:contents">
+    <div class="popup-inner-bc u-i-p-c-body-bc" style="display:flex;height:min(900px,88vh)">
 <?php endif; ?>
     <?php include __DIR__ . '/../../views/partials/profile-sidebar.php'; ?>
     <?php
     $dw_site_raw = (is_array($ayar ?? null) && !empty($ayar['site_adi'])) ? $ayar['site_adi'] : 'VegasRoyalSpin';
     $dw_site_brand = htmlspecialchars($dw_site_raw, ENT_QUOTES, 'UTF-8');
-    $dw_site_brand_upper = htmlspecialchars(function_exists('mb_strtoupper') ? mb_strtoupper($dw_site_raw, 'UTF-8') : strtoupper($dw_site_raw), ENT_QUOTES, 'UTF-8');
     ?>
+
+    <div id="profilePlayerMain" class="my-profile-info-block deposit-page<?= $is_bilgi_page ? ' is-bilgi-active' : '' ?>" data-profile-payment-page="withdraw">
+<script>window.__PROFILE_PAYMENT_LIMITS__ = <?php echo json_encode($paymentLimits); ?>;</script>
+<script>window.__PROFILE_PAYMENT_PAGE__ = 'withdraw';</script>
 <script>window.__DEPOSIT_PANEL_SITE_BRAND__ = <?php echo json_encode($dw_site_raw, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>;</script>
+        <div class="overlay-header"><?= $is_bilgi_page ? 'BİLGİ' : 'PARA ÇEKİM' ?></div>
 
-    <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content">
-        <?php
-        $profile_content_title = 'PARA ÇEKİM';
-        $profile_content_page_class = 'personal-details-page--deposit-withdraw personal-details-page--withdraw-only';
-        $profile_close_href_full = '/profile/details';
-        include __DIR__ . '/../../views/partials/profile-content-shell-open.php';
-        ?>
+<div class="dep-w-info-bc" id="withdrawSection" data-scroll-lock-scrollable<?= $is_bilgi_page ? ' hidden' : '' ?>>
+    <div tabindex="0" class="horizontal-sl-list horizontal-items-expanded" role="tablist" aria-label="Çekim kategorileri">
+        <div class="horizontal-sl-wheel" style="transform: translateX(0px);">
+            <div data-id="-1" title="TÜMÜ" data-badge="" class="horizontal-sl-item-bc accordion-button all active withdraw-tab" data-wcategory="all" role="tab" aria-selected="true"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-all"></i><p class="horizontal-sl-title-bc">TÜMÜ</p></div>
+            <div data-id="4" title="Kripto" data-badge="" class="horizontal-sl-item-bc accordion-button crypto withdraw-tab" data-wcategory="crypto" role="tab" aria-selected="false"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-crypto"></i><p class="horizontal-sl-title-bc">Kripto</p></div>
+            <div data-id="5" title="Banka transferi" data-badge="" class="horizontal-sl-item-bc accordion-button transfer withdraw-tab" data-wcategory="bank" role="tab" aria-selected="false"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-transfer"></i><p class="horizontal-sl-title-bc">Banka transferi</p></div>
+        </div>
+    </div>
 
-<div class="vega-app vega-app--in-profile-shell">
-    <div id="withdrawSection" class="withdraw-section">
-        <div class="withdraw-tabs deposit-tabs" role="tablist" aria-label="Çekim kategorileri">
-            <button type="button" class="withdraw-tab deposit-tab active" role="tab" aria-selected="true" data-wcategory="all"><i class="fa-solid fa-grip" aria-hidden="true"></i> TÜMÜ</button>
-            <button type="button" class="withdraw-tab deposit-tab" role="tab" aria-selected="false" data-wcategory="crypto"><i class="fa-brands fa-bitcoin" aria-hidden="true"></i> KRİPTO</button>
-            <button type="button" class="withdraw-tab deposit-tab" role="tab" aria-selected="false" data-wcategory="bank"><i class="fa-solid fa-right-left" aria-hidden="true"></i> BANKA TRANSFERİ</button>
-        </div>
-        <div class="withdraw-method-select-wrap form-group">
-            <div class="deposit-method-grid-label" id="withdrawMethodGridLabel">Ödeme yöntemi</div>
-            <div id="withdrawGrid" class="deposit-grid dw-methods-grid withdraw-methods-grid" role="listbox" aria-labelledby="withdrawMethodGridLabel">
-                <p class="dw-methods-empty" role="status">Ödeme yöntemleri API üzerinden yükleniyor...</p>
-            </div>
-        </div>
-        <div class="withdraw-inline-sheet" id="withdrawInlineFlow" aria-label="Çekim formu">
-            <div class="panel-info-table withdraw-inline-summary vega-withdraw-summary">
-                <div class="panel-info-cell"><strong>Ödeme Yöntemi</strong><span id="wInlineMethod">API üzerinden seçilecek</span></div>
-                <div class="panel-info-cell"><strong>Ücret</strong><span>Ücretsiz</span></div>
-                <div class="panel-info-cell"><strong>İşlem Süresi</strong><span id="wInlineProcTime">Anlık</span></div>
-                <div class="panel-info-cell"><strong>Min.</strong><span id="wInlineMin">—</span></div>
-                <div class="panel-info-cell"><strong>Maks.</strong><span id="wInlineMax">—</span></div>
-            </div>
-            <div class="vega-withdraw-balance" id="withdrawInlineBalance">
-                <div class="vega-withdraw-balance-head">Çekilebilir Tutar</div>
-                <div class="vega-withdraw-balance-row">
-                    <span class="vega-withdraw-balance-label">Bakiye</span>
-                    <span class="vega-withdraw-balance-value" id="wdrBalanceInline">0,00 ₺</span>
+    <div class="m-block-nav-items-bc" id="withdrawGrid" role="listbox" aria-label="Ödeme yöntemi">
+        <p class="dw-methods-empty" role="status">Ödeme yöntemleri API üzerinden yükleniyor...</p>
+    </div>
+
+    <div class="payment-details-scrollable-container" data-scroll-lock-scrollable>
+        <div class="payment-info-bc" tabindex="-1">
+            <div class="payment-info-content">
+                <div class="description-c-row-bc withdraw">
+                    <div class="description-c-row-column-bc texts">
+                        <div class="description-c-row-c-title-bc">
+                            <div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="ödeme yöntemi">ödeme yöntemi</span><span class="description-value ellipsis" id="wInlineMethod" title="">—</span></div>
+                            <div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Ücret">Ücret</span><span class="description-value ellipsis" title="Ücretsiz">Ücretsiz</span></div>
+                            <div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="işlem süresi">işlem süresi</span><span class="description-value ellipsis" id="wInlineProcTime" title="Anlık">Anlık</span></div>
+                            <div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Min.">Min.</span><span class="description-value ellipsis" id="wInlineMin" title="">—</span></div>
+                            <div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Maks.">Maks.</span><span class="description-value ellipsis" id="wInlineMax" title="">—</span></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="vega-withdraw-balance-row">
-                    <span class="vega-withdraw-balance-label">Oynanmamış Tutar Yüzdesi</span>
-                    <span class="vega-withdraw-balance-value" id="wdrUnplayedPctInline">0%</span>
+                <div class="expandableContentWrapper">
+                    <div class="expandableContentData payment-content not-expandable" data-scroll-lock-scrollable>
+                        <div class="container">
+                            <p><?php echo htmlspecialchars($dw_site_brand, ENT_QUOTES, 'UTF-8'); ?> Ailesi olarak kazancınız adına sizleri tebrik eder ve bol şanslar dileriz. Para çekmek için lütfen aşağıdaki tüm gerekli alanları doldurun.</p>
+                            <p class="withdraw-balance-line">Çekilebilir: <b id="wdrBalanceInline">0,00 ₺</b> · Oynanmamış: <b id="wdrUnplayedPctInline">0%</b></p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="panel-instruction vega-withdraw-welcome withdraw-inline-msg"><?php echo htmlspecialchars($dw_site_brand, ENT_QUOTES, 'UTF-8'); ?> Ailesi olarak kazancınız adına sizleri tebrik eder ve bol şanslar dileriz. Para çekmek için lütfen aşağıdaki tüm gerekli alanları doldurun.</div>
-            <div id="withdrawInlineFields" class="withdraw-inline-fields"></div>
-            <div class="panel-actions withdraw-inline-actions">
-                <button type="button" class="vega-withdraw-submit withdraw-btn" id="withdrawInlineSubmit">ÇEKİM YAP</button>
+                <div class="withdraw-form-l-bc" id="withdrawInlineFlow" aria-label="Para çekme formu">
+                    <form id="withdrawScreenArea" onsubmit="event.preventDefault(); var btn=document.getElementById('withdrawInlineSubmit'); if(btn) btn.click(); return false;">
+                        <div id="withdrawInlineFields"></div>
+                        <div class="u-i-p-c-footer-bc">
+                            <button class="btn a-color withdraw" type="button" id="withdrawInlineSubmit" title="ÇEKİM YAP"><span>ÇEKİM YAP</span></button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -77,7 +81,7 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
         </div>
         <div class="popup-body">
             <h2>İşlem Başarılı!</h2>
-            <p>Para çekme talebiniz başarıyla alındı ve işleme konuldu.</p>
+            <p>Çekim talebiniz başarılı bir şekilde oluşturulmuştur.</p>
             <p>En kısa sürede bakiyeniz hesabınıza aktarılacaktır.</p>
         </div>
         <div class="popup-footer">
@@ -86,24 +90,16 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
     </div>
 </div>
 
-<!-- BİLGİ: sadece çekim yöntemleri, ortak kart şablonu -->
-<div id="bilgiModal" class="profile-bilgi-panel profile-bilgi-panel--withdraw-only" hidden aria-hidden="true">
-    <div class="bilgi-list-wrap">
-        <div id="bilgiListWithdraw" class="bilgi-list bilgi-list-active">
-            <div class="bilgi-table-scroll">
-                <div class="bilgi-table" role="table" aria-label="Para çekme yöntemleri">
-                    <p class="dw-methods-empty" data-bilgi-method-list="withdraw" role="status">Çekim bilgileri API üzerinden yükleniyor...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<?php
+$bilgi_open = $is_bilgi_page;
+$bilgi_prefer_withdraw = true;
+include __DIR__ . '/../../views/partials/profile-bilgi-panel.php';
+?>
 
-<?php include __DIR__ . '/../../views/partials/profile-content-shell-close.php'; ?>
-    </main>
+    </div><!-- /#profilePlayerMain -->
 <?php if (!$profile_modal): ?>
+    </div>
+  </div>
 </div>
-<?php endif; ?>
-<?php if (!$profile_modal): ?>
 <?php include __DIR__ . '/../../views/partials/footer.php'; ?>
 <?php endif; ?>

@@ -31,10 +31,10 @@ if (file_exists($mobileBottomPath)) {
 ?>
 
 <?php
-if (!function_exists('metropol_member_api_layout_vars')) {
+if (!function_exists('member_api_layout_vars')) {
     require_once (defined('CONFIG_PATH') ? CONFIG_PATH : dirname(__DIR__, 2) . '/config') . '/member_api_public.php';
 }
-$memberApiLayout = metropol_member_api_layout_vars();
+$memberApiLayout = member_api_layout_vars();
 ?>
 <?php include __DIR__ . '/member-api-layout-script.php'; ?>
 <?php
@@ -47,11 +47,13 @@ $assetVersion = static function (string $relativePath): string {
     return (string) ((is_file($fullPath) ? filemtime($fullPath) : '1') . '-' . (is_file($fullPath) ? filesize($fullPath) : '0'));
 };
 $versionedAsset = static function (string $path) use ($assetVersion): string {
-    return asset_url($path) . '?v=' . rawurlencode($assetVersion($path));
+    // asset_url() already appends ?v= — do not double-version
+    return asset_url($path);
 };
 ?>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/global.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars($versionedAsset('assets/js/auth-shared.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<link rel="stylesheet" href="<?= htmlspecialchars($versionedAsset('assets/css/game-wallet-picker.css'), ENT_QUOTES, 'UTF-8') ?>">
 <script defer src="<?= htmlspecialchars($versionedAsset('assets/js/game-wallet-picker.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/member-api-console.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php
@@ -74,6 +76,9 @@ $headerJsVer = (string) ((is_file($headerJsPath) ? filemtime($headerJsPath) : '1
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-bonus.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars(asset_url('assets/js/profile-kyc.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script defer src="<?= htmlspecialchars($versionedAsset('assets/js/profile.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php if (!empty($_GET['js_usage'])): ?>
+<script defer src="<?= htmlspecialchars($versionedAsset('assets/js/js-usage-probe.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php endif; ?>
 <script defer src="/assets/js/login.js?v=<?= rawurlencode($loginJsVer) ?>"></script>
 <script defer src="/assets/js/register.js?v=<?= rawurlencode($registerJsVer) ?>"></script>
 <script defer src="<?= htmlspecialchars($versionedAsset('assets/js/footer.js'), ENT_QUOTES, 'UTF-8') ?>"></script>

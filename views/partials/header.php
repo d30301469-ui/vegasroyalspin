@@ -19,11 +19,11 @@ $headerContactLinks = $siteContactLinks !== []
     ? $siteContactLinks
     : (class_exists('ApiSiteSettings') ? ApiSiteSettings::normalizeContactLinks(is_array($ayar ?? null) ? $ayar : []) : []);
 $headerPartnershipUrl = (string) ($headerContactLinks['partnership_url'] ?? '/ortaklik');
-$headerPartnershipLabel = (string) ($headerContactLinks['partnership_label'] ?? 'ORTAKLIK');
-$headerPartnershipTitle = (string) ($headerContactLinks['partnership_title'] ?? 'Ortaklık');
+$headerPartnershipLabelRaw = (string) ($headerContactLinks['partnership_label'] ?? 'ORTAKLIK');
+$headerPartnershipTitleRaw = (string) ($headerContactLinks['partnership_title'] ?? 'Ortaklık');
 $headerPartnershipIsExternal = (bool) preg_match('#^https?://#i', $headerPartnershipUrl);
 $headerSupportUrl = (string) ($headerContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : ''));
-$headerSupportTitle = (string) ($headerContactLinks['live_support_title'] ?? 'Canlı Destek');
+$headerSupportTitleRaw = (string) ($headerContactLinks['live_support_title'] ?? 'Canlı Destek');
 $headerSupportUrlJs = json_encode($headerSupportUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 $headerSupportUrlJs = is_string($headerSupportUrlJs) ? $headerSupportUrlJs : '""';
 $headerSupportOnclick = 'window.open(' . $headerSupportUrlJs . ', "_blank"); return false;';
@@ -32,6 +32,18 @@ $headerBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
 $headerSiteName      = (string) ($headerBranding['site_name']         ?? $ayar['site_adi']           ?? 'VegasRoyalSpin');
 $headerLogoUrl       = cms_asset_url((string) ($headerBranding['logo_url']          ?? $ayar['logo_url']          ?? ''));
 $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_url'] ?? $ayar['logo_animated_url'] ?? ''));
+$headerLocale = function_exists('current_locale') ? current_locale() : 'tr';
+$headerLangCode = class_exists('SiteI18n', false) ? SiteI18n::langCode() : 'TUR';
+$headerFlagClass = class_exists('SiteI18n', false) ? SiteI18n::flagClass() : 'flag-icon-tr';
+$headerSupportTitle = function_exists('i18n_label')
+    ? i18n_label($headerSupportTitleRaw !== '' ? $headerSupportTitleRaw : 'Canlı Destek')
+    : ($headerSupportTitleRaw !== '' ? $headerSupportTitleRaw : (function_exists('__') ? __('nav.live_support') : 'Canlı Destek'));
+$headerPartnershipLabel = function_exists('i18n_label')
+    ? i18n_label($headerPartnershipLabelRaw !== '' ? $headerPartnershipLabelRaw : 'ORTAKLIK', $headerPartnershipUrl)
+    : ($headerPartnershipLabelRaw !== '' ? $headerPartnershipLabelRaw : (function_exists('__') ? __('nav.partnership') : 'ORTAKLIK'));
+$headerPartnershipTitle = function_exists('i18n_label')
+    ? i18n_label($headerPartnershipTitleRaw !== '' ? $headerPartnershipTitleRaw : 'Ortaklık', $headerPartnershipUrl)
+    : ($headerPartnershipTitleRaw !== '' ? $headerPartnershipTitleRaw : (function_exists('__') ? __('nav.partnership') : 'Ortaklık'));
 ?>
 <header class="headBar header-bc generic-search-enabled<?= $loggedIn ? ' hdr-auth-user' : ' hdr-auth-guest' ?>">
     <div class="settingBar" aria-hidden="true"></div>
@@ -42,15 +54,20 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                 <?php if ($headerLogoAnimated !== ''): ?>
                     <?php $animExt = strtolower(pathinfo((string) parse_url($headerLogoAnimated, PHP_URL_PATH), PATHINFO_EXTENSION)); ?>
                     <?php if ($animExt === 'webm' || $animExt === 'mp4'): ?>
-                        <video class="hdr-logo-bc" autoplay loop muted playsinline width="240" height="80" aria-label="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>">
-                            <source src="<?= htmlspecialchars($headerLogoAnimated, ENT_QUOTES, 'UTF-8') ?>" type="video/webm">
-                            <img src="<?= htmlspecialchars($headerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>">
+                        <?php
+                        // ImageKit vb. .webm uzantısıyla H.264/MP4 servis edebiliyor; type'ı sıkı tutmayın.
+                        $animMime = $animExt === 'mp4' ? 'video/mp4' : 'video/webm';
+                        ?>
+                        <video class="hdr-logo-bc hdr-logo-animated" autoplay loop muted playsinline width="340" height="100" aria-label="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>">
+                            <source src="<?= htmlspecialchars($headerLogoAnimated, ENT_QUOTES, 'UTF-8') ?>" type="<?= htmlspecialchars($animMime, ENT_QUOTES, 'UTF-8') ?>">
+                            <source src="<?= htmlspecialchars($headerLogoAnimated, ENT_QUOTES, 'UTF-8') ?>" type="video/mp4">
+                            <img src="<?= htmlspecialchars($headerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="70" class="hdr-logo-bc">
                         </video>
                     <?php else: ?>
-                        <img src="<?= htmlspecialchars($headerLogoAnimated, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="80" class="hdr-logo-bc">
+                        <img src="<?= htmlspecialchars($headerLogoAnimated, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="340" height="100" class="hdr-logo-bc hdr-logo-animated">
                     <?php endif; ?>
                 <?php elseif ($headerLogoUrl !== ''): ?>
-                    <img src="<?= htmlspecialchars($headerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="80" class="hdr-logo-bc">
+                    <img src="<?= htmlspecialchars($headerLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($headerSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="70" class="hdr-logo-bc">
                 <?php endif; ?>
             </a>
           </div>
@@ -60,15 +77,26 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
 
                 <?php if ($loggedIn): ?>
 
-                    <div class="loyaltyBonusHeader hasLoyaltyLevel"
-                         title="<?= htmlspecialchars((string) ($headerLoyaltyBadge['name'] ?? 'Bronze'), ENT_QUOTES, 'UTF-8') ?>"
-                         data-loyalty-badge
-                         data-loyalty-code="<?= htmlspecialchars((string) ($headerLoyaltyBadge['code'] ?? 'bronze'), ENT_QUOTES, 'UTF-8') ?>">
+                    <a class="loyaltyBonusHeader hasLoyaltyLevel"
+                       href="/profile/sadakat-puanlari"
+                       data-profile-modal-href="/profile/sadakat-puanlari"
+                       data-nav-mode="modal"
+                       title="<?= htmlspecialchars((string) ($headerLoyaltyBadge['name'] ?? 'Bronze'), ENT_QUOTES, 'UTF-8') ?>"
+                       data-loyalty-badge
+                       data-loyalty-code="<?= htmlspecialchars((string) ($headerLoyaltyBadge['code'] ?? 'bronze'), ENT_QUOTES, 'UTF-8') ?>"
+                       aria-label="<?= htmlspecialchars(__('nav.loyalty'), ENT_QUOTES, 'UTF-8') ?>">
                         <p class="loyaltyBonusHeaderShadow" aria-hidden="true"></p>
                         <p class="loyaltyBonusHeaderBackground" aria-hidden="true"></p>
-                        <span class="loyaltyBonusHeaderText" data-loyalty-level-name><?= htmlspecialchars(strtoupper((string) ($headerLoyaltyBadge['name'] ?? 'Bronze')), ENT_QUOTES, 'UTF-8') ?></span>
-                        <span class="loyaltyBonusImg" aria-hidden="true" data-loyalty-level-initial><?= htmlspecialchars((string) ($headerLoyaltyBadge['initial'] ?? 'B'), ENT_QUOTES, 'UTF-8') ?></span>
-                    </div>
+                        <span class="loyaltyBonusHeaderText ellipsis" data-loyalty-level-name><?= htmlspecialchars(strtoupper((string) ($headerLoyaltyBadge['name'] ?? 'Bronze')), ENT_QUOTES, 'UTF-8') ?></span>
+                        <img class="loyaltyBonusImg"
+                             src="<?= htmlspecialchars((string) ($headerLoyaltyBadge['icon_url'] ?? '/assets/images/loyalty/badges/bronze.svg'), ENT_QUOTES, 'UTF-8') ?>"
+                             alt=""
+                             width="20"
+                             height="20"
+                             loading="lazy"
+                             data-loyalty-level-icon
+                             onerror="this.style.display='none'">
+                    </a>
 
                     <!-- ORTAKLIK + Destek -->
                     <div class="header-custom-buttons">
@@ -85,12 +113,12 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
 
                     <!-- Yeşil PARA YATIR (giriş sonrası — referans: bc-i-wallet) -->
                     <a class="btn a-color header-icon-text bc-i-wallet hdr-deposit-btn"
-                       href="/profile/deposit-withdraw?openDepositPanel=1"
-                       data-profile-modal-href="/profile/deposit-withdraw?openDepositPanel=1"
+                       href="/profile/deposit?openDepositPanel=1"
+                       data-profile-modal-href="/profile/deposit?openDepositPanel=1"
                        data-nav-mode="modal"
                        onclick="event.preventDefault(); redirectToDeposit();"
-                       title="Para Yatır">
-                        <span>PARA YATIR</span>
+                       title="<?= htmlspecialchars(__('nav.deposit'), ENT_QUOTES, 'UTF-8') ?>">
+                        <span><?= htmlspecialchars(__('nav.deposit'), ENT_QUOTES, 'UTF-8') ?></span>
                     </a>
 
                     <!-- CÜZDANA BAĞLAN (ayrı buton) -->
@@ -98,11 +126,11 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                         <button class="btn a-color connect-wallet"
                                 id="connectWalletBtn"
                                 type="button"
-                                data-profile-modal-href="/profile/deposit-withdraw?openDepositPanel=1"
+                                data-profile-modal-href="/profile/deposit?openDepositPanel=1"
                                 data-nav-mode="modal"
                                 onclick="redirectToDeposit();"
-                                title="Cüzdana Bağlan">
-                            CÜZDANA BAĞLAN
+                                title="<?= htmlspecialchars(__('nav.connect_wallet'), ENT_QUOTES, 'UTF-8') ?>">
+                            <?= htmlspecialchars(__('nav.connect_wallet'), ENT_QUOTES, 'UTF-8') ?>
                         </button>
                     </div>
 
@@ -126,20 +154,20 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                                     </div>
                                 </a>
                                 <div class="depositNav hidesection" id="depositNav" role="menu">
-                                    <a class="depositNav-link" href="/profile/deposit-withdraw" data-nav-mode="modal" role="menuitem">
-                                        <i class="depositNav-icon bc-i-circle-dollar" aria-hidden="true"></i> PARA YATIR
+                                    <a class="depositNav-link" href="/profile/deposit" data-nav-mode="modal" role="menuitem">
+                                        <i class="depositNav-icon bc-i-circle-dollar" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.deposit'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                     <a class="depositNav-link" href="/profile/withdraw" data-nav-mode="modal" role="menuitem">
-                                        <i class="depositNav-icon bc-i-withdraw" aria-hidden="true"></i> ÇEKİM
+                                        <i class="depositNav-icon bc-i-withdraw" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.withdraw'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                     <a class="depositNav-link" href="/?profile=open&amp;account=balance&amp;page=history" data-profile-modal-href="/profile/deposit-withdraw-history" data-nav-mode="modal" role="menuitem">
-                                        <i class="depositNav-icon bc-i-bet-history" aria-hidden="true"></i> İŞLEM GEÇMİŞİ
+                                        <i class="depositNav-icon bc-i-bet-history" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.transaction_history'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
-                                    <a class="depositNav-link" href="/profile/deposit-withdraw?bilgi=1#bilgi" data-nav-mode="modal" role="menuitem">
-                                        <i class="depositNav-icon bc-i-info" aria-hidden="true"></i> BİLGİ
+                                    <a class="depositNav-link" href="/profile/deposit?bilgi=1#bilgi" data-nav-mode="modal" role="menuitem">
+                                        <i class="depositNav-icon bc-i-info" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.info'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                     <a class="depositNav-link" href="/profile/withdrawal-status" data-nav-mode="modal" role="menuitem">
-                                        <i class="depositNav-icon bc-i-withdraw" aria-hidden="true"></i> PARA ÇEKME DURUMU
+                                        <i class="depositNav-icon bc-i-withdraw" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.withdrawal_status'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                 </div>
                             </li>
@@ -148,7 +176,7 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                             <li>
                                 <div class="user-nav-icon playerCol" id="playerCol">
                                     <button class="userBtn nav-menu-item" id="toggleButton" type="button"
-                                            aria-expanded="false" aria-label="Profil menüsü">
+                                            aria-expanded="false" aria-label="<?= htmlspecialchars(__('nav.profile_menu'), ENT_QUOTES, 'UTF-8') ?>">
                                         <span class="avatarHolderImg">
                                             <i class="bc-i-user hdr-user-avatar-icon-bc" aria-hidden="true"></i>
                                         </span>
@@ -156,24 +184,24 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                                     <div class="playerNav hidesection" id="playerNav" role="menu">
                                         <div class="playerNav-body">
                                         <a class="pl-link" href="#" id="profileLinkModal" role="menuitem">
-                                            <i class="pl-link-icon bc-i-user" aria-hidden="true"></i> PROFİLİM
+                                            <i class="pl-link-icon bc-i-user" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.my_profile'), ENT_QUOTES, 'UTF-8') ?>
                                         </a>
-                                        <a class="pl-link" href="/profile/deposit-withdraw" data-nav-mode="modal" role="menuitem">
-                                            <i class="pl-link-icon bc-i-deposit" aria-hidden="true"></i> BAKİYE YÖNETİMİ
+                                        <a class="pl-link" href="/profile/deposit" data-nav-mode="modal" role="menuitem">
+                                            <i class="pl-link-icon bc-i-deposit" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.balance_management'), ENT_QUOTES, 'UTF-8') ?>
                                         </a>
                                         <a class="pl-link" href="/profile/bet-history" data-nav-mode="modal" role="menuitem">
-                                            <i class="pl-link-icon bc-i-bet-history" aria-hidden="true"></i> BAHİS GEÇMİŞİ
+                                            <i class="pl-link-icon bc-i-bet-history" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.bet_history'), ENT_QUOTES, 'UTF-8') ?>
                                         </a>
                                         <a class="pl-link" href="/profile/bonus-spor" data-nav-mode="modal" role="menuitem">
-                                            <i class="pl-link-icon bc-i-promotions-3" aria-hidden="true"></i> BONUSLAR
+                                            <i class="pl-link-icon bc-i-promotions-3" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.bonuses'), ENT_QUOTES, 'UTF-8') ?>
                                         </a>
                                         <a class="pl-link" href="/profile/messages" data-nav-mode="modal" role="menuitem">
-                                            <i class="pl-link-icon bc-i-message" aria-hidden="true"></i> MESAJLAR
+                                            <i class="pl-link-icon bc-i-message" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.messages'), ENT_QUOTES, 'UTF-8') ?>
                                         </a>
                                         </div>
                                         <div class="playerNav-footer">
                                         <a class="pl-link pl-link-logout" href="/logout" data-nav-mode="page" role="menuitem">
-                                            <i class="pl-link-icon bc-i-logout" aria-hidden="true"></i> ÇIKIŞ YAP
+                                            <i class="pl-link-icon bc-i-logout" aria-hidden="true"></i> <?= htmlspecialchars(__('nav.logout'), ENT_QUOTES, 'UTF-8') ?>
                                         </a>
                                         </div>
                                     </div>
@@ -199,30 +227,33 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                     <a href="#"
                        class="btn a-color header-icon-text bc-i-wallet hdr-deposit-btn"
                        id="openRegister2" role="button">
-                        <span>PARA YATIR</span>
+                        <span><?= htmlspecialchars(__('nav.deposit'), ENT_QUOTES, 'UTF-8') ?></span>
                     </a>
 
-                    <a href="#" class="btn sign-in loginBtn" id="Giris" role="button">GİRİŞ</a>
-                    <button id="openRegister" class="btn register" type="button">KAYIT</button>
+                    <a href="#" class="btn sign-in loginBtn" id="Giris" role="button"><?= htmlspecialchars(__('nav.login'), ENT_QUOTES, 'UTF-8') ?></a>
+                    <button id="openRegister" class="btn register" type="button"><?= htmlspecialchars(__('nav.register'), ENT_QUOTES, 'UTF-8') ?></button>
 
                 <?php endif; ?>
 
                 <!-- Dil -->
-                <div class="langSelect dropdown" id="langDropdown">
+                <div class="langSelect dropdown" id="langDropdown" data-locale="<?= htmlspecialchars($headerLocale, ENT_QUOTES, 'UTF-8') ?>">
                     <a class="nav-link dropdown-toggle" href="#" role="button"
-                       aria-expanded="false" id="dropdown09">
-                        <span class="flag-icon flag-icon-tr"></span>
-                        <span class="lang-code">TUR</span>
+                       aria-expanded="false" id="dropdown09" aria-label="<?= htmlspecialchars(__('footer.language'), ENT_QUOTES, 'UTF-8') ?>">
+                        <span class="flag-icon <?= htmlspecialchars($headerFlagClass, ENT_QUOTES, 'UTF-8') ?>" data-lang-flag></span>
+                        <span class="lang-code" data-lang-code><?= htmlspecialchars($headerLangCode, ENT_QUOTES, 'UTF-8') ?></span>
                     </a>
                     <div class="dropdown-menu" aria-labelledby="dropdown09">
-                        <a class="dropdown-item" href="?lang=tr">
+                        <a class="dropdown-item<?= $headerLocale === 'tr' ? ' is-active' : '' ?>" href="<?= htmlspecialchars(i18n_switch_url('tr'), ENT_QUOTES, 'UTF-8') ?>">
                             <span class="flag-icon flag-icon-tr"></span><span class="code">TUR</span>
                         </a>
-                        <a class="dropdown-item" href="?lang=en">
+                        <a class="dropdown-item<?= $headerLocale === 'en' ? ' is-active' : '' ?>" href="<?= htmlspecialchars(i18n_switch_url('en'), ENT_QUOTES, 'UTF-8') ?>">
                             <span class="flag-icon flag-icon-us"></span><span class="code">ENG</span>
                         </a>
-                        <a class="dropdown-item" href="?lang=de">
+                        <a class="dropdown-item<?= $headerLocale === 'de' ? ' is-active' : '' ?>" href="<?= htmlspecialchars(i18n_switch_url('de'), ENT_QUOTES, 'UTF-8') ?>">
                             <span class="flag-icon flag-icon-de"></span><span class="code">DEU</span>
+                        </a>
+                        <a class="dropdown-item<?= $headerLocale === 'ru' ? ' is-active' : '' ?>" href="<?= htmlspecialchars(i18n_switch_url('ru'), ENT_QUOTES, 'UTF-8') ?>">
+                            <span class="flag-icon flag-icon-ru"></span><span class="code">RUS</span>
                         </a>
                     </div>
                 </div>
@@ -234,8 +265,8 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                 <div class="smartPanel-bc">
                     <button class="hdr-toggle-button-bc bc-i-vertical-toggle count-odd-animation"
                             id="smart-panel-holder"
-                            title="Akıllı Menü" type="button"
-                            aria-label="Akıllı Menü" aria-expanded="false"
+                            title="<?= htmlspecialchars(__('nav.smart_menu'), ENT_QUOTES, 'UTF-8') ?>" type="button"
+                            aria-label="<?= htmlspecialchars(__('nav.smart_menu'), ENT_QUOTES, 'UTF-8') ?>" aria-expanded="false"
                             data-badge=""></button>
                 </div>
 
@@ -243,7 +274,7 @@ $headerLogoAnimated  = cms_asset_url((string) ($headerBranding['logo_animated_ur
                 <button type="button"
                         class="header-search-btn generic-search-btn"
                         id="headerSearchBtn"
-                        title="Ara" aria-label="Ara" aria-expanded="false">
+                        title="<?= htmlspecialchars(__('nav.search'), ENT_QUOTES, 'UTF-8') ?>" aria-label="<?= htmlspecialchars(__('nav.search'), ENT_QUOTES, 'UTF-8') ?>" aria-expanded="false">
                     <i class="bc-i-search" aria-hidden="true"></i>
                 </button>
 

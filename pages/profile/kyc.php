@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 include __DIR__ . '/database.php';
 require_once dirname(__DIR__, 2) . '/services/ProfileApiHelper.php';
@@ -17,7 +17,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$csrfKey = 'vegasroyalspin_csrf_token';
+$csrfKey = 'app_csrf_token';
 if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
     $_SESSION[$csrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
         ? $_SESSION['csrf_token']

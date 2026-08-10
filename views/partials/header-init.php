@@ -16,7 +16,7 @@ if (!defined('BASE_PATH')) {
 if (session_status() == PHP_SESSION_NONE) {
     if (is_readable(BASE_PATH . '/config/frontend_session.php')) {
         require_once BASE_PATH . '/config/frontend_session.php';
-        metropol_frontend_session_start();
+        frontend_session_start();
     }
 }
 
@@ -28,20 +28,20 @@ if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
 }
 $_SESSION['csrf_token'] = $_SESSION[$csrfKey];
 
-if (!function_exists('metropol_frontend_member_logged_in') && is_readable(BASE_PATH . '/config/member_api_public.php')) {
+if (!function_exists('frontend_member_logged_in') && is_readable(BASE_PATH . '/config/member_api_public.php')) {
     require_once BASE_PATH . '/config/member_api_public.php';
 }
-if (function_exists('metropol_frontend_sanitize_member_session')) {
-    metropol_frontend_sanitize_member_session();
+if (function_exists('frontend_sanitize_member_session')) {
+    frontend_sanitize_member_session();
 }
-$loggedIn = function_exists('metropol_frontend_member_logged_in')
-    ? metropol_frontend_member_logged_in()
+$loggedIn = function_exists('frontend_member_logged_in')
+    ? frontend_member_logged_in()
     : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true);
 $headerInitialBalance = 0.0;
 $headerLoyaltyBadge = [
     'name' => 'Bronze',
     'code' => 'bronze',
-    'icon_url' => '/assets/images/loyalty/badges/bronze.png',
+    'icon_url' => '/assets/images/loyalty/badges/bronze.svg',
     'initial' => 'B',
     'points' => 0,
     'redeemable_points' => 0,
