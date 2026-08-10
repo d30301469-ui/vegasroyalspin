@@ -558,6 +558,60 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerM
 }
 
 /*
+ * App feedback dialog — structural base (was in deleted profile.css).
+ * Without position:fixed the closed dialog stays in document flow and
+ * pushes mainContentWrap down (~167px), stacking with header padding-top.
+ */
+.app-feedback-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100050;
+  background: rgba(0, 0, 0, 0.62);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+.app-feedback-dialog-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.app-feedback-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 100051;
+  width: calc(100vw - 32px);
+  max-width: 420px;
+  transform: translate(-50%, -50%) scale(0.94);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.22s ease, visibility 0.22s ease;
+}
+.app-feedback-dialog.is-open {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.app-feedback-dialog__card {
+  position: relative;
+  text-align: center;
+}
+.app-feedback-dialog__dismiss {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/*
  * Desktop-only CM622 alert (casino warning popup).
  * Must NOT apply on mobile (.is-mobile / .mobile-site).
  */
