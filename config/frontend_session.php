@@ -3,65 +3,57 @@
 declare(strict_types=1);
 
 /**
- * Frontend oturum (API proxy + sayfalar) — cookie domain, Secure, SameSite.
- * /api/* hızlı yolu core/bootstrap.php atladığı için proxy buradan başlatır.
+ * Üye (frontend) oturumu — FRONTSESSID.
+ * Admin paneli ADMINSESSID kullanır; iki cookie asla birleşmez.
  */
-if (!function_exists('metropol_frontend_configure_session_security')) {
-    function metropol_frontend_configure_session_security(): void
+require_once __DIR__ . '/session_global.php';
+
+if (!function_exists('frontend_configure_session_security')) {
+    function frontend_configure_session_security(): void
     {
         ini_set('session.use_strict_mode', '1');
-
-        $isHttps = function_exists('metropol_request_is_https')
-            ? metropol_request_is_https()
-            : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
-
-        $params = session_get_cookie_params();
-        $httpHost = (string) ($_SERVER['HTTP_HOST'] ?? '');
-        $cookieDomain = trim((string) (getenv('SESSION_COOKIE_DOMAIN') ?: ''));
-        if ($cookieDomain === '' && function_exists('deploy_session_cookie_domain_for_host')) {
-            $cookieDomain = deploy_session_cookie_domain_for_host($httpHost);
-        }
-
-        session_set_cookie_params([
-            'lifetime' => 0,
-            'path' => (string) ($params['path'] ?? '/'),
-            'domain' => $cookieDomain !== '' ? $cookieDomain : (string) ($params['domain'] ?? ''),
-            'secure' => $isHttps,
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
-    }
-}
-
-if (!function_exists('metropol_frontend_session_start')) {
-    function metropol_frontend_session_start(): void
-    {
-        if (session_status() !== PHP_SESSION_NONE) {
-            return;
-        }
         if (!function_exists('deploy_session_cookie_domain_for_host')) {
-            require_once __DIR__ . '/deploy_domains.php';
+            $deploy = __DIR__ . '/deploy_domains.php';
+            if (is_readable($deploy)) {
+                require_once $deploy;
+            }
         }
         $cloudflare = __DIR__ . '/cloudflare.php';
         if (is_readable($cloudflare)) {
             require_once $cloudflare;
         }
-        metropol_frontend_configure_session_security();
-        // Use a dedicated session name so frontend and admin sessions never
-        // collide. Admin uses ADMINSESSID; frontend uses FRONTSESSID.
-        // Without this, both share the same cookie on .vegasroyalspin.com
-        // and login state from one overwrites the other.
-        $frontendSessionName = trim((string) (getenv('FRONTEND_SESSION_NAME') ?: 'FRONTSESSID'));
-        if (session_name() !== $frontendSessionName) {
-            session_name($frontendSessionName);
-        }
-        session_start();
+        session_set_cookie_params(app_session_cookie_params());
     }
 }
 
-if (!function_exists('metropol_frontend_session_write_close')) {
-    function metropol_frontend_session_write_close(): void
+if (!function_exists('frontend_session_start')) {
+    function frontend_session_start(): void
+    {
+        $frontendSessionName = app_frontend_session_name();
+        $adminSessionName = app_admin_session_name();
+
+        if (session_status() !== PHP_SESSION_NONE) {
+            // Admin oturumu açıkken üye anahtarlarını ADMINSESSID'ye yazma.
+            if (session_name() === $adminSessionName) {
+                return;
+            }
+            return;
+        }
+
+        frontend_configure_session_security();
+        if (session_name() !== $frontendSessionName) {
+            session_name($frontendSessionName);
+        }
+
+        app_session_adopt_legacy_cookies($frontendSessionName, []);
+
+        session_start();
+        app_session_migrate_to_cookie_domain($frontendSessionName, 'frontend_cookie_domain_migrated');
+    }
+}
+
+if (!function_exists('frontend_session_write_close')) {
+    function frontend_session_write_close(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
@@ -69,66 +61,84 @@ if (!function_exists('metropol_frontend_session_write_close')) {
     }
 }
 
-if (!function_exists('metropol_frontend_member_restore_cookie_name')) {
-    function metropol_frontend_member_restore_cookie_name(): string
+if (!function_exists('frontend_member_restore_cookie_name')) {
+    function frontend_member_restore_cookie_name(): string
     {
-        $name = trim((string) (getenv('FRONTEND_MEMBER_RESTORE_COOKIE') ?: 'metropol_member_restore'));
+        $name = trim((string) (getenv('FRONTEND_MEMBER_RESTORE_COOKIE') ?: 'app_member_restore'));
 
-        return $name !== '' ? $name : 'metropol_member_restore';
+        return $name !== '' ? $name : 'app_member_restore';
     }
 }
 
-if (!function_exists('metropol_frontend_member_restore_cookie_options')) {
+if (!function_exists('frontend_member_restore_cookie_options')) {
     /** @return array{expires:int,path:string,domain:string,secure:bool,httponly:bool,samesite:string} */
-    function metropol_frontend_member_restore_cookie_options(int $expiresAt): array
+    function frontend_member_restore_cookie_options(int $expiresAt): array
     {
-        $params = session_get_cookie_params();
+        $params = app_session_cookie_params();
 
         return [
             'expires' => $expiresAt,
-            'path' => (string) ($params['path'] ?? '/'),
-            'domain' => (string) ($params['domain'] ?? ''),
-            'secure' => (bool) ($params['secure'] ?? true),
+            'path' => $params['path'],
+            'domain' => $params['domain'],
+            'secure' => $params['secure'],
             'httponly' => true,
-            'samesite' => (string) ($params['samesite'] ?? 'Lax'),
+            'samesite' => $params['samesite'],
         ];
     }
 }
 
-if (!function_exists('metropol_frontend_set_member_restore_cookie')) {
-    function metropol_frontend_set_member_restore_cookie(string $jwt, int $ttl = 2592000): void
+if (!function_exists('frontend_set_member_restore_cookie')) {
+    function frontend_set_member_restore_cookie(string $jwt, int $ttl = 2592000): void
     {
         $token = trim($jwt);
         if ($token === '') {
-            metropol_frontend_clear_member_restore_cookie();
+            frontend_clear_member_restore_cookie();
+            return;
+        }
+
+        if (headers_sent()) {
             return;
         }
 
         setcookie(
-            metropol_frontend_member_restore_cookie_name(),
+            frontend_member_restore_cookie_name(),
             $token,
-            metropol_frontend_member_restore_cookie_options(time() + max(300, $ttl))
+            frontend_member_restore_cookie_options(time() + max(300, $ttl))
         );
     }
 }
 
-if (!function_exists('metropol_frontend_clear_member_restore_cookie')) {
-    function metropol_frontend_clear_member_restore_cookie(): void
+if (!function_exists('frontend_clear_member_restore_cookie')) {
+    function frontend_clear_member_restore_cookie(): void
     {
-        setcookie(
-            metropol_frontend_member_restore_cookie_name(),
-            '',
-            metropol_frontend_member_restore_cookie_options(time() - 3600)
-        );
+        if (headers_sent()) {
+            return;
+        }
 
-        // Cleanup older JS-managed fallback cookie too.
-        setcookie('metropol_member_jwt', '', [
-            'expires' => time() - 3600,
-            'path' => '/',
-            'domain' => (string) (session_get_cookie_params()['domain'] ?? ''),
-            'secure' => (bool) (session_get_cookie_params()['secure'] ?? true),
-            'httponly' => false,
-            'samesite' => (string) (session_get_cookie_params()['samesite'] ?? 'Lax'),
-        ]);
+        $opts = frontend_member_restore_cookie_options(time() - 3600);
+        setcookie(frontend_member_restore_cookie_name(), '', $opts);
+        // Legacy restore cookie names.
+        foreach (['metropol_member_restore', 'app_member_restore'] as $legacyName) {
+            if ($legacyName === frontend_member_restore_cookie_name()) {
+                continue;
+            }
+            setcookie($legacyName, '', $opts);
+            if ($opts['domain'] !== '') {
+                $hostOnly = $opts;
+                $hostOnly['domain'] = '';
+                setcookie($legacyName, '', $hostOnly);
+            }
+        }
+
+        foreach (['app_member_jwt', 'metropol_member_jwt'] as $legacyJwtCookie) {
+            setcookie($legacyJwtCookie, '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'domain' => $opts['domain'],
+                'secure' => $opts['secure'],
+                'httponly' => false,
+                'samesite' => $opts['samesite'],
+            ]);
+        }
     }
 }

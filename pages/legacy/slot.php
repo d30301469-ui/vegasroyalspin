@@ -2,7 +2,7 @@
 // En üstte, BOM veya boşluk olmadan session başlat
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 ini_set('display_errors', 0);
@@ -50,8 +50,8 @@ $allUniqueProviders = array_values(array_filter(getAllUniqueProviders(), static 
 $slotDemoHref = static function (array $game): string {
     $gid = (string) ($game['game_id'] ?? '');
 
-    return function_exists('metropol_play_url')
-        ? metropol_play_url($gid, ['mode' => 'fun'])
+    return function_exists('play_url')
+        ? play_url($gid, ['mode' => 'fun'])
         : '/play?game_id=' . str_ireplace('%3A', ':', rawurlencode($gid)) . '&mode=fun';
 };
 
