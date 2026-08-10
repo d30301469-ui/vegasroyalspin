@@ -175,6 +175,19 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   object-fit: contain;
   border-radius: var(--border-radius, 3px);
 }
+/* Profile close — çerçevede dolanan ışık (bakiye kutusu ile aynı dil) */
+@property --mprofile-close-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes mprofileCloseBorderSpin {
+  to {
+    --mprofile-close-angle: 360deg;
+  }
+}
+
 #mprofilePanel .hdr-user-close {
   position: relative !important;
   box-sizing: border-box !important;
@@ -192,20 +205,52 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   color: #fff !important;
   background: rgba(0, 0, 0, 0.32) !important;
   border-radius: 50% !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 0 0 1px rgba(168, 70, 225, 0.22) !important;
   font-family: Arial, Helvetica, sans-serif !important;
   font-size: 0 !important;
   line-height: 0 !important;
   text-align: center;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  isolation: isolate;
+  overflow: visible !important;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+#mprofilePanel .hdr-user-close::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0;
+  border-radius: 50% !important;
+  padding: 1.2px;
+  box-sizing: border-box;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--mprofile-close-angle),
+    transparent 0%,
+    transparent 55%,
+    rgba(168, 70, 225, 0.2) 68%,
+    rgba(168, 70, 225, 0.9) 78%,
+    rgba(255, 220, 255, 0.95) 86%,
+    rgba(168, 70, 225, 0.7) 92%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: mprofileCloseBorderSpin 2.4s linear infinite;
 }
 #mprofilePanel .hdr-user-close::before {
   content: "\00d7" !important;
   position: absolute !important;
   left: 50% !important;
   top: 50% !important;
+  z-index: 1;
   transform: translate(-50%, -50%) !important;
   display: block !important;
   width: 20px !important;
@@ -225,8 +270,13 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .hdr-user-close:focus-visible {
   color: #fff !important;
   background: rgba(0, 0, 0, 0.45) !important;
-  border-color: rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(168, 70, 225, 0.4) !important;
   outline: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #mprofilePanel .hdr-user-close::after {
+    animation: none;
+  }
 }
 #mprofilePanel .u-i-profile-page-bc {
   flex: 1;
