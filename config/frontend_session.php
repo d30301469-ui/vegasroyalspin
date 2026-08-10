@@ -142,3 +142,10 @@ if (!function_exists('frontend_clear_member_restore_cookie')) {
         }
     }
 }
+
+if (!function_exists('metropol_frontend_session_start')) {
+    function metropol_frontend_session_start(): void
+    {
+        frontend_session_start();
+    }
+}

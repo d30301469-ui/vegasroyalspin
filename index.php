@@ -44,18 +44,18 @@ $__isRegisterAjaxCheck = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
     && (string) $_POST['ajax_check'] === 'true';
 if ($__isRegisterAjaxCheck) {
     require_once __DIR__ . '/services/register_ajax_check.php';
-    metropol_handle_register_ajax_check();
+    handle_register_ajax_check();
 }
 
 if (str_starts_with($frontendPath, '/api/')) {
     require_once __DIR__ . '/services/frontend_api_dispatch.php';
-    metropol_handle_public_api_request((string) ($_SERVER['REQUEST_URI'] ?? '/'));
+    handle_public_api_request((string) ($_SERVER['REQUEST_URI'] ?? '/'));
 }
 
 // Start output buffering early to prevent "headers already sent"
 // when views (head.php) output before redirects or header modifications.
-if (!defined('METROPOL_OUTPUT_BUFFERING_STARTED')) {
-    define('METROPOL_OUTPUT_BUFFERING_STARTED', true);
+if (!defined('APP_OUTPUT_BUFFERING_STARTED')) {
+    define('APP_OUTPUT_BUFFERING_STARTED', true);
     ob_start();
 }
 
@@ -65,8 +65,8 @@ try {
     if (is_readable(__DIR__ . '/config/env.php')) {
         require_once __DIR__ . '/config/env.php';
     }
-    if (function_exists('metropol_render_frontend_boot_error')) {
-        metropol_render_frontend_boot_error($bootstrapException);
+    if (function_exists('render_frontend_boot_error')) {
+        render_frontend_boot_error($bootstrapException);
     } else {
         http_response_code(503);
         header('Content-Type: text/html; charset=UTF-8');

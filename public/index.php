@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($requestPath, ['/', '/spor
 
 if (str_starts_with($requestPath, '/api/')) {
     require_once $root . '/services/frontend_api_dispatch.php';
-    metropol_handle_public_api_request((string) ($_SERVER['REQUEST_URI'] ?? '/'));
+    handle_public_api_request((string) ($_SERVER['REQUEST_URI'] ?? '/'));
 }
 
 require_once $root . '/app/bootstrap.php';
@@ -51,7 +51,7 @@ use App\Core\Router;
 
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 $router = new Router();
