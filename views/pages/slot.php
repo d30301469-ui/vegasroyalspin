@@ -19,10 +19,9 @@ $showLoadMore = !empty($showLoadMore);
 $slotGameType = isset($slotGameType) ? (int) $slotGameType : 0;
 $slotShowActionButtons = !empty($slotShowActionButtons);
 $slotHideProviders = !empty($slotHideProviders);
-$slotMobileOriginalNav = !empty($slotMobileOriginalNav);
-// Desktop CM622 lobby for /slot (gameType 0) and /livecasino (gameType 1).
-$slotDesktopLobby = !empty($slotDesktopLobby) && !$slotMobileOriginalNav;
-$lobbyMode = !empty($lobbyMode) && $slotDesktopLobby;
+$slotMobileOriginalNav = false;
+$slotDesktopLobby = true;
+$lobbyMode = !empty($lobbyMode);
 $slotPageIsLive = !empty($slotPageIsLive) || (int) $slotGameType === 1;
 $lobbyGames = isset($lobbyGames) && is_array($lobbyGames) ? $lobbyGames : [];
 $lobbyPopularGames = isset($lobbyPopularGames) && is_array($lobbyPopularGames) ? $lobbyPopularGames : [];
@@ -394,52 +393,9 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
 <?php include VIEW_PATH . '/layouts/head.php'; ?>
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 
-<div class="slot-page-root slot-page-root--unified<?= $slotDesktopLobby ? ' slot-page-root--cm622' : '' ?><?= ((int) $slotGameType === 1) ? ' slot-page-root--live' : '' ?>" data-slot-game-type="<?= (int) $slotGameType ?>">
+<div class="slot-page-root slot-page-root--unified slot-page-root--cm622<?= ((int) $slotGameType === 1) ? ' slot-page-root--live' : '' ?>" data-slot-game-type="<?= (int) $slotGameType ?>">
 <section class="slot-top-section" aria-label="Slot sayfası üst alan">
     <?php $sliderApiCategory = isset($sliderApiCategory) ? (string) $sliderApiCategory : 'slots'; include VIEW_PATH . '/partials/slider.php'; ?>
-    <?php if (!$slotDesktopLobby): ?>
-    <div class="slot-below-hero">
-        <div class="slot-hero-tabs" data-slot-hero-tabs>
-            <div class="slot-hero-tablist" role="tablist" aria-label="Jackpot ve kazananlar">
-                <button type="button"
-                        class="slot-hero-tab slot-hero-tab--active"
-                        id="slot-hero-tab-jackpot"
-                        role="tab"
-                        aria-selected="true"
-                        aria-controls="slot-hero-panel-jackpot"
-                        data-slot-hero-tab="jackpot">JACKPOT</button>
-                <button type="button"
-                        class="slot-hero-tab"
-                        id="slot-hero-tab-winners"
-                        role="tab"
-                        aria-selected="false"
-                        aria-controls="slot-hero-panel-winners"
-                        data-slot-hero-tab="winners">KAZANANLAR</button>
-            </div>
-            <div class="slot-hero-panels">
-                <div class="slot-hero-tabpanel slot-hero-tabpanel--active"
-                     id="slot-hero-panel-jackpot"
-                     role="tabpanel"
-                     aria-labelledby="slot-hero-tab-jackpot"
-                     data-slot-hero-panel="jackpot">
-                    <div class="slot-jackpot-wrap">
-                        <?php include VIEW_PATH . '/partials/jackpot.php'; ?>
-                    </div>
-                </div>
-                <div class="slot-hero-tabpanel"
-                     id="slot-hero-panel-winners"
-                     role="tabpanel"
-                     aria-labelledby="slot-hero-tab-winners"
-                     data-slot-hero-panel="winners"
-                     hidden>
-                    <div class="slot-winners-wrap">
-                        <?php include VIEW_PATH . '/partials/winners.php'; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
 </section>
 
 <?php if ($apiError): ?>
@@ -455,21 +411,21 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
 <?php endif; ?>
 
 <?php
-$chipSizeClass = $slotDesktopLobby ? 'ds-chip-size--md' : 'ds-chip-size--sm';
-$chipLabelClass = $slotDesktopLobby ? 'ds-label--medium-regular' : 'ds-label--small-regular';
-$lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '' && $searchTerm === '' && $selectedProviders === []);
+$chipSizeClass = 'ds-chip-size--md';
+$chipLabelClass = 'ds-label--medium-regular';
+$lobbyChipSelected = $lobbyMode || ($currentSort === '' && $searchTerm === '' && $selectedProviders === []);
 ?>
-<div class="casino-container<?= $slotDesktopLobby ? ' casino-container--desktop-lobby' : '' ?><?= $lobbyMode ? ' casino-container--lobby-mode' : '' ?><?= $slotPageIsLive ? ' casino-container--live' : '' ?>">
+<div class="casino-container casino-container--desktop-lobby<?= $lobbyMode ? ' casino-container--lobby-mode' : '' ?><?= $slotPageIsLive ? ' casino-container--live' : '' ?>">
     <div class="casinoProviderContent slots-filter-and-games" id="slotsFilterAndGames"<?= $lobbyMode ? ' data-lobby-mode="1"' : '' ?>>
-        <?php if ($slotMobileOriginalNav || $slotDesktopLobby): ?>
-        <?= $slotDesktopLobby ? '<div class="casinoGamesContainer">' : '' ?>
+        <?php if (true): ?>
+        <div class="casinoGamesContainer">
         <div class="casinoNavigationAndFilters">
             <?php
             $hsChevronLeft = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M12.9108 4.41083C12.5854 4.08539 12.0579 4.08539 11.7324 4.41083L6.73245 9.41083C6.40701 9.73626 6.40701 10.2638 6.73245 10.5892L11.7324 15.5892C12.0579 15.9146 12.5854 15.9146 12.9108 15.5892C13.2363 15.2638 13.2363 14.7363 12.9108 14.4108L8.50008 10L12.9108 5.58921C13.2363 5.26377 13.2363 4.73626 12.9108 4.41083Z"></path></svg>';
             $hsChevronRight = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7.08917 4.41083C7.41461 4.08539 7.94212 4.08539 8.26755 4.41083L13.2676 9.41083C13.593 9.73626 13.593 10.2638 13.2676 10.5892L8.26755 15.5892C7.94212 15.9146 7.41461 15.9146 7.08917 15.5892C6.76374 15.2638 6.76374 14.7363 7.08917 14.4108L11.4999 10L7.08917 5.58921C6.76374 5.26377 6.76374 4.73626 7.08917 4.41083Z"></path></svg>';
             ?>
-            <div class="horizontal-scroll horizontal-scroll--left<?= $slotDesktopLobby ? ' horizontal-scroll--has-arrows horizontal-scroll--fade-end' : '' ?> casinoCategories" id="slotCategoryRail" data-category-rail="1">
-                <?php if ($slotDesktopLobby): ?>
+            <div class="horizontal-scroll horizontal-scroll--left horizontal-scroll--has-arrows horizontal-scroll--fade-end casinoCategories" id="slotCategoryRail" data-category-rail="1">
+                <?php if (true): ?>
                 <div class="horizontal-scroll__arrow-shadow horizontal-scroll__arrow-shadow--left" id="slotCatArrowShadowLeft" hidden></div>
                 <button type="button"
                         class="ds-btn ds-btn-variant--transparent ds-btn-size--sm ds-btn-radius--full ds-btn-appearance--filled ds-btn--icon horizontal-scroll__arrow horizontal-scroll__arrow--left"
@@ -482,7 +438,7 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                 </button>
                 <?php endif; ?>
                 <div class="horizontal-scroll__inner horizontal-scroll__inner--gap-xs" id="slotCategoryRailInner" style="transform: translateX(0px);">
-                    <?php if ($slotDesktopLobby): ?>
+                    <?php if (true): ?>
                     <div>
                         <a class="ds-chip <?= $chipSizeClass ?> ds-chip-color--primary<?= $lobbyChipSelected ? ' ds-chip--selected' : '' ?>"
                            href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>"
@@ -494,7 +450,7 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                         </div>
                     <?php endif; ?>
                     <?php foreach ($slotCategoryItems as $category): ?>
-                        <?php if (($slotMobileOriginalNav || $slotDesktopLobby) && ($category['sort'] ?? '') === 'special') { continue; } ?>
+                        <?php if (($category['sort'] ?? '') === 'special') { continue; } ?>
                         <?php
                         $catSort = (string) ($category['sort'] ?? '');
                         $isAllGamesChip = $catSort === '';
@@ -524,7 +480,7 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <?php if ($slotDesktopLobby): ?>
+                <?php if (true): ?>
                 <div class="horizontal-scroll__arrow-shadow horizontal-scroll__arrow-shadow--right" id="slotCatArrowShadowRight"></div>
                 <button type="button"
                         class="ds-btn ds-btn-variant--transparent ds-btn-size--sm ds-btn-radius--full ds-btn-appearance--filled ds-btn--icon horizontal-scroll__arrow horizontal-scroll__arrow--right"
@@ -541,11 +497,11 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                     <div class="ds-textfield ds-textfield-size--md ds-textfield-layout--fill">
                         <div class="ds-textfield__field">
                             <div class="ds-textfield__text">
-                                <?php if ($slotDesktopLobby): ?><span class="ds-textfield__label"><?= htmlspecialchars(__('game.search'), ENT_QUOTES, 'UTF-8') ?></span><?php endif; ?>
+                                <?php if (true): ?><span class="ds-textfield__label"><?= htmlspecialchars(__('game.search'), ENT_QUOTES, 'UTF-8') ?></span><?php endif; ?>
                                 <input type="text"
                                        class="ds-textfield__input searchInput games-search-input"
                                        id="gamesFilterSearchInput"
-                                       placeholder="<?= $slotDesktopLobby ? ' ' : 'Oyun Ara' ?>"
+                                       placeholder=" "
                                        aria-label="<?= htmlspecialchars(__('game.search'), ENT_QUOTES, 'UTF-8') ?>"
                                        value="<?= htmlspecialchars($searchTerm, ENT_QUOTES); ?>"
                                        autocomplete="off">
@@ -611,58 +567,12 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                 </div>
             </div>
         <?php endif; ?>
-        <?= $slotDesktopLobby ? '</div><!-- .casinoGamesContainer -->' : '' ?>
-        <?php else: ?>
-        <div class="casinoCategoryChooserContainer slots-category-filters category-tabs-wrapper" id="slotsCategoryFilters">
-        <div tabindex="0" class="horizontalSliderWrapper horizontalItemsExpanded scroll-start">
-        <i class="horizontalSliderNav bc-i-small-arrow-left cat-tab-arrow cat-tab-arrow-left" id="catArrowLeft"></i>
-        <div class="horizontalSliderRow category-tabs-scroll" id="categoryTabsScroll" style="transform: translateX(0px);">
-            <?php foreach ($slotCategoryItems as $category): ?>
-                <?php $isActive = $category['sort'] === $currentSort || ($category['sort'] === '' && $currentSort === ''); ?>
-                <a href="<?= htmlspecialchars($category['href'], ENT_QUOTES, 'UTF-8') ?>"
-                   class="horizontalCategoryItemWrp <?= $isActive ? 'active ' : '' ?><?= htmlspecialchars($category['slug'], ENT_QUOTES, 'UTF-8') ?> cat-tab<?= $isActive ? ' active' : '' ?>"
-                   data-id="<?= htmlspecialchars($category['id'], ENT_QUOTES, 'UTF-8') ?>"
-                   data-sort="<?= htmlspecialchars($category['sort'], ENT_QUOTES, 'UTF-8') ?>">
-                    <div data-id="<?= htmlspecialchars($category['id'], ENT_QUOTES, 'UTF-8') ?>"
-                         title="<?= htmlspecialchars($slotRepairMojibake((string) $category['title']), ENT_QUOTES, 'UTF-8') ?>"
-                         data-badge=""
-                         class="horizontalCategoryItem">
-                        <i class="bc-i-default-icon <?= htmlspecialchars($category['icon'], ENT_QUOTES, 'UTF-8') ?>"></i>
-                        <div class="horCatItemTitleWrp"><p class="horCatItemTitle"><?= htmlspecialchars($slotRepairMojibake((string) $category['title']), ENT_QUOTES, 'UTF-8') ?></p></div>
-                    </div>
-                </a>
-            <?php endforeach; ?>
-        </div>
-        <i class="horizontalSliderNav bc-i-small-arrow-right cat-tab-arrow cat-tab-arrow-right" id="catArrowRight"></i>
-        </div>
-        </div>
+        </div><!-- .casinoGamesContainer -->
 
-        <div class="casinoProviderRow<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>">
+        <div class="casinoProviderAndGame slots-layout<?= $slotHideProviders ? ' slots-layout--full-games' : '' ?><?= $lobbyMode ? ' slots-layout--lobby-mode' : '' ?> slots-layout--desktop-lobby" id="slotsLayout">
             <?php if (!$slotHideProviders): ?>
-            <p class="casinoProviderBlockTitle" id="lineSidebarToggle" title="<?= htmlspecialchars(__('game.toggle_providers'), ENT_QUOTES, 'UTF-8') ?>"><i class="casinoProviderBlockIcon bc-i-small-arrow-left" id="lineSidebarToggleIcon"></i><span id="lineSidebarToggleLabel"><?= htmlspecialchars(__('game.providers'), ENT_QUOTES, 'UTF-8') ?></span></p>
-            <?php endif; ?>
-            <p class="casinoGameListTitle"><?= htmlspecialchars($slotGameType === 1 ? __('game.live_casino_games') : __('game.casino_games'), ENT_QUOTES, 'UTF-8') ?></p>
-            <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(__('winners.all'), ENT_QUOTES, 'UTF-8') ?></a>
-        </div>
-        <?php if (!$slotHideProviders && $allUniqueProviders !== []): ?>
-        <div class="provider-chip-rail" id="providerChipRail" aria-label="<?= htmlspecialchars(__('game.provider_filters'), ENT_QUOTES, 'UTF-8') ?>">
-            <button type="button" class="provider-chip<?= empty($selectedProviders) && empty($searchTerm) ? ' active' : '' ?>" data-provider-all="1" title="<?= htmlspecialchars(__('winners.all'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(__('winners.all'), ENT_QUOTES, 'UTF-8') ?></button>
-            <?php foreach ($allUniqueProviders as $chipProvider): ?>
-                <?php
-                $chipLabel = $slotRepairMojibake((string) $chipProvider);
-                $chipEsc = htmlspecialchars($chipLabel, ENT_QUOTES, 'UTF-8');
-                $chipActive = in_array($chipProvider, $selectedProviders, true) || in_array($chipLabel, $selectedProviders, true);
-                ?>
-                <button type="button" class="provider-chip<?= $chipActive ? ' active' : '' ?>" data-provider="<?= $chipEsc ?>" title="<?= $chipEsc ?>"><?= $chipEsc ?></button>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-        <?php endif; ?>
-
-        <div class="casinoProviderAndGame slots-layout<?= $slotHideProviders ? ' slots-layout--full-games' : '' ?><?= $lobbyMode ? ' slots-layout--lobby-mode' : '' ?><?= $slotDesktopLobby ? ' slots-layout--desktop-lobby' : '' ?>" id="slotsLayout">
-            <?php if (!$slotHideProviders): ?>
-            <div class="<?= ($slotMobileOriginalNav || $slotDesktopLobby) ? 'providers-drawer-wrapper' . ($slotDesktopLobby ? ' slot-page-root--cm622' : '') : 'casinoProviderBlock providers-sidebar' ?>" id="providersSidebar">
-            <?php if ($slotMobileOriginalNav || $slotDesktopLobby): ?>
+            <div class="providers-drawer-wrapper slot-page-root--cm622" id="providersSidebar">
+            <?php if (true): ?>
             <div class="ds-drawer-spring" role="dialog" aria-modal="true" aria-label="<?= htmlspecialchars(__('game.providers'), ENT_QUOTES, 'UTF-8') ?>">
             <div class="ds-drawer ds-drawer--contained provider-sheet">
                 <div class="ds-drawer__header">
@@ -732,131 +642,11 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                 </div>
             </div>
             </div>
-            <?php else: ?>
-            <div class="casinoProviderBlockHolder provider-sheet">
-                <div class="provider-sheet-header">
-                    <button type="button" class="provider-sheet-back" id="providerSheetBackBtn" aria-label="Geri">
-                        <i class="fas fa-chevron-left" aria-hidden="true"></i> GERİ
-                    </button>
-                </div>
-                <div class="providerSearchAndReset provider-sheet-tools">
-                    <div class="providerSearchRow sidebar-search provider-search-bar provider-sheet-search">
-                        <div class="searchInputWrp active">
-                        <input type="text" placeholder="<?= htmlspecialchars(__('game.search_provider'), ENT_QUOTES, 'UTF-8') ?>" id="providerSearchInput" class="searchInput provider-search-input" autocomplete="off">
-                        <p class="searchInputIcon bc-i-search provider-search-btn" id="providerSearchClearBtn" title="Sağlayıcı ara" aria-label="Sağlayıcı ara"><i id="providerSearchClearBtnIcon" aria-hidden="true"></i></p>
-                        </div>
-                    </div>
-                    <div class="providerResetRow"><p class="providerCountTxt" title=""></p><div class="providerTypeIconWrp"><div class="tooltipIconWrapper"><i class="bc-i-view-list provider-sheet-grid-btn" id="providerSheetGridBtn" title="Modül görünümü" aria-label="Modül görünümü"></i></div></div></div>
-                </div>
-                <div class="providerItemsContainer sidebar-providers-list" id="sidebarProvidersList" data-scroll-lock-scrollable="">
-                    <div class="providerItemsHolder module">
-                    <div title="Tümü" class="providerItemsInner sidebar-provider-item <?= empty($selectedProviders) && empty($searchTerm) ? 'active' : '' ?>" role="button" tabindex="0" data-provider-all="1"><div class="providerItemsBtn">TÜMÜ</div></div>
-                    <?php
-                    foreach ($allUniqueProviders as $provider) {
-                        echo $renderProviderBtn($provider);
-                    }
-                    ?>
-                    </div>
-                </div>
-                <div class="provider-sheet-footer">
-                    <button type="button" class="provider-sheet-apply" id="providerSheetApplyBtn">UYGULA</button>
-                </div>
-            </div>
             <?php endif; ?>
         </div>
         <?php endif; ?>
-
-            <?php if (!$lobbyMode && !$slotDesktopLobby): ?>
-            <div class="casinoGameListBlock games-main" id="gamesScrollContainer">
-                <?php if (!$slotMobileOriginalNav): ?>
-                <div class="casinoGameListBlockHeader">
-                    <div class="casinoTitleSearch ">
-                        <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" title="<?= htmlspecialchars(__('game.all_providers'), ENT_QUOTES, 'UTF-8') ?>" aria-label="<?= htmlspecialchars(__('game.open_providers'), ENT_QUOTES, 'UTF-8') ?>">
-                            <span class="mobile-sidebar-toggle__pill">
-                                <i class="fas fa-filter" aria-hidden="true"></i>
-                                <span class="mobile-sidebar-toggle__pill-text"><?= htmlspecialchars(__('game.providers'), ENT_QUOTES, 'UTF-8') ?></span>
-                            </span>
-                            <span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span>
-                        </button>
-                        <div class="selectedProviderBlock"></div>
-                        <div class="games-search-expand" id="gamesSearchExpand" aria-expanded="false">
-                            <div class="casinoInputWrp">
-                                <div class="searchInputWrp active games-search-bar">
-                                    <input type="text"
-                                           class="searchInput games-search-input"
-                                           placeholder="<?= htmlspecialchars(__('game.search'), ENT_QUOTES, 'UTF-8') ?>"
-                                           id="searchModalInput"
-                                           value="<?= htmlspecialchars($searchTerm, ENT_QUOTES); ?>">
-                                    <p class="searchInputIcon bc-i-search games-search-icon-btn" id="searchClearBtn" title="Aramayı temizle" aria-label="Aramayı temizle"></p>
-                                </div>
-                            </div>
-                        </div>
-                        <button type="button" class="random-game-btn" id="randomGameBtn" title="<?= htmlspecialchars(__('game.random'), ENT_QUOTES, 'UTF-8') ?>" aria-label="<?= htmlspecialchars(__('game.random'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(__('game.random'), ENT_QUOTES, 'UTF-8') ?></button>
-                        <div class="tooltipIconWrapper">
-                            <button class="bc-i-sort iconButtonBlock" type="button" id="sortToggleBtn" title="Sıralama" aria-label="Sıralama"></button>
-                        </div>
-                    </div>
-                    <div class="active-filters-row" style="display:none;">
-                        <div id="active-filters-box" class="active-filters-box" style="display:none;"></div>
-                    </div>
-                </div>
-                <?php endif; ?>
-
-                <?php if ($slotMobileOriginalNav): ?>
-                <div class="casinoProviderRow casinoProviderRow--mobile-inline<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>">
-                    <p class="casinoGameListTitle"><?= htmlspecialchars($slotGameType === 1 ? __('game.live_casino_games') : __('game.casino_games'), ENT_QUOTES, 'UTF-8') ?></p>
-                    <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(__('winners.all'), ENT_QUOTES, 'UTF-8') ?></a>
-                </div>
-                <?php endif; ?>
-
-                <div class="casinoGameItemWrp slot-oyun-listesi slots-games-container" id="casino_games_container" aria-label="Oyun listesi">
-                    <script>
-                    window.__gameThumbError = window.__gameThumbError || function (img) {
-                        if (!img) return;
-                        var fallbacks = [];
-                        try {
-                            var raw = img.getAttribute('data-fallbacks');
-                            if (raw) fallbacks = JSON.parse(raw);
-                        } catch (e) {}
-                        var idx = parseInt(img.getAttribute('data-fallback-idx') || '0', 10) + 1;
-                        if (Array.isArray(fallbacks) && idx < fallbacks.length) {
-                            img.setAttribute('data-fallback-idx', String(idx));
-                            img.src = fallbacks[idx];
-                            return;
-                        }
-                        img.onerror = null;
-                        img.onload = null;
-                        img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI4IiBmaWxsPSIjMWExMTJlIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM2NjYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
-                    };
-                    window.__gameThumbLoaded = window.__gameThumbLoaded || function (img) {
-                        if (!img || img.naturalWidth > 0) return;
-                        window.__gameThumbError && window.__gameThumbError(img);
-                    };
-                    </script>
-                    <div class="casinoCategoryGames">
-                <?php if (empty($games)): ?>
-                    <div class="empty-state">
-                        <i class="fas fa-gamepad"></i>
-                        <h3><?= htmlspecialchars($slotEmptyTitle, ENT_QUOTES, 'UTF-8') ?></h3>
-                        <p><?= htmlspecialchars($slotEmptyText, ENT_QUOTES, 'UTF-8') ?></p>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($games as $game): ?>
-                        <?php include VIEW_PATH . '/partials/slot-game-tile.php'; ?>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                    </div>
-                    <div id="load-more-sentinel" aria-hidden="true" style="height:1px;min-height:1px;opacity:0;pointer-events:none;overflow:hidden;"></div>
-                </div>
-            </div>
-            <?php endif; ?>
-        </div>
+        <?php endif; ?>
     </div>
-    <?php if (!$slotDesktopLobby): ?>
-    <div class="slot-games-scrollbar-rail" id="slotGamesScrollbarRail" aria-hidden="true">
-        <div class="slot-games-scrollbar-thumb" id="slotGamesScrollbarThumb"></div>
-    </div>
-    <?php endif; ?>
 </div>
 </div><!-- .slot-page-root -->
 
@@ -880,7 +670,7 @@ window.SLOT_CONFIG = {
     totalSlots: <?= (int)$totalSlots ?>,
     remainingGames: <?= (int)$remainingGames ?>,
     showLoadMore: <?= $showLoadMore ? 'true' : 'false' ?>,
-    desktopLobby: <?= $slotDesktopLobby ? 'true' : 'false' ?>,
+    desktopLobby: true,
     lobbyMode: <?= $lobbyMode ? 'true' : 'false' ?>,
     isLive: <?= $slotPageIsLive ? 'true' : 'false' ?>,
     view: <?= json_encode($viewParam) ?>
@@ -889,15 +679,11 @@ window.SLOT_CONFIG = {
 <?php if (!defined('SURFACE') || SURFACE !== 'mobile'): ?>
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
 <?php endif; ?>
-<?php if ($slotDesktopLobby):
+<?php if (true):
     $bcCm622CssName = $slotPageIsLive ? 'casino-live-cm622.css' : 'casino-slots-cm622.css';
     $bcCm622CssPath = BASE_PATH . '/assets/css/' . $bcCm622CssName;
     $bcCm622CssVer = (string) (is_file($bcCm622CssPath) ? filemtime($bcCm622CssPath) : time());
 ?>
 <link href="/assets/css/<?= htmlspecialchars($bcCm622CssName, ENT_QUOTES, 'UTF-8') ?>?v=<?= htmlspecialchars($bcCm622CssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-<?php endif; ?>
-<?php if (!$slotDesktopLobby): ?>
-<script src="/assets/js/jackpot.js"></script>
-<script src="/assets/js/winners.js?v=<?= htmlspecialchars($slotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php endif; ?>
 <script src="/assets/js/slot.js?v=<?= rawurlencode($slotJsVer) ?>"></script>

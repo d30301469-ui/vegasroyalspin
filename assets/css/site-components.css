@@ -10,7 +10,7 @@ app-landing-dashboard {
 }
 .porfileWrap {
     max-width: 100%;
-    /* Sidebar artık flex satırında (profile.css); fixed + sol padding kullanılmıyor */
+    /* Sidebar flex satırında; fixed + sol padding kullanılmıyor */
     padding: 0;
 }
 

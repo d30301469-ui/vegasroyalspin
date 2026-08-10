@@ -5,7 +5,6 @@
  */
 $assetCssDir = defined('BASE_PATH') ? BASE_PATH . '/assets/css' : (__DIR__ . '/../../assets/css');
 $assetVer = (string)(file_exists($assetCssDir . '/site-global.css') ? filemtime($assetCssDir . '/site-global.css') : 0) ?: '1';
-$profileCssVer = (string)(file_exists($assetCssDir . '/profile.css') ? filemtime($assetCssDir . '/profile.css') : $assetVer);
 $cm622ProfileCssVer = (string)(
     file_exists($assetCssDir . '/profile-cm622.css')
         ? (filemtime($assetCssDir . '/profile-cm622.css') . '-' . filesize($assetCssDir . '/profile-cm622.css'))
@@ -30,7 +29,6 @@ $profileJsVer = (string)((file_exists($assetJsDir . '/profile.js') ? filemtime($
   <link href="/assets/css/site-bootstrap-utils.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-global.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-components.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-  <link href="/assets/css/profile.css?v=<?= htmlspecialchars($profileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622.css?v=<?= htmlspecialchars($cm622ProfileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-fix.css?v=<?= htmlspecialchars($cm622ProfileFixCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-sidebar.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">

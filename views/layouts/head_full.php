@@ -13,7 +13,6 @@ $assetVer = (string) (file_exists($assetCssDir . '/site-global.css') ? filemtime
 $pwaRegisterPath = BASE_PATH . '/assets/js/pwa-register.js';
 $pwaRegisterVer = (string) (is_file($pwaRegisterPath) ? filemtime($pwaRegisterPath) : $assetVer);
 $headerCssVer = (string) (file_exists($assetCssDir . '/layout-header.css') ? filemtime($assetCssDir . '/layout-header.css') : $assetVer);
-$profileCssVer = (string) (file_exists($assetCssDir . '/profile.css') ? filemtime($assetCssDir . '/profile.css') : $assetVer);
 $cm622ProfileCssVer = (string) (
     file_exists($assetCssDir . '/profile-cm622.css')
         ? (filemtime($assetCssDir . '/profile-cm622.css') . '-' . filesize($assetCssDir . '/profile-cm622.css'))
@@ -30,8 +29,6 @@ $loginCssVer = (string) (file_exists($assetCssDir . '/auth-login.css') ? filemti
 $registerModalCssVer = (string) (file_exists($assetCssDir . '/auth-register-modal.css') ? filemtime($assetCssDir . '/auth-register-modal.css') : $assetVer);
 $loginModalCssVer = (string) (file_exists($assetCssDir . '/auth-login-modal.css') ? filemtime($assetCssDir . '/auth-login-modal.css') : $assetVer);
 $footerBcCssVer = (string) (file_exists($assetCssDir . '/layout-footer.css') ? filemtime($assetCssDir . '/layout-footer.css') : $assetVer);
-$slotsCssVer = (string) (file_exists($assetCssDir . '/casino-slots.css') ? filemtime($assetCssDir . '/casino-slots.css') : $assetVer);
-$livecasinoCssVer = (string) (file_exists($assetCssDir . '/casino-live.css') ? filemtime($assetCssDir . '/casino-live.css') : $assetVer);
 $homeCssVer = (string) (file_exists($assetCssDir . '/home.css') ? filemtime($assetCssDir . '/home.css') : $assetVer);
 $requestPathRaw = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $requestPath = $requestPathRaw === '/' ? '/' : rtrim($requestPathRaw, '/');
@@ -101,8 +98,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/layout-header.css?v=<?= htmlspecialchars($headerCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-sidebar.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-components.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-    <link href="/assets/css/profile.css?v=<?= htmlspecialchars($profileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-  <link href="/assets/css/profile-cm622.css?v=<?= htmlspecialchars($cm622ProfileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+    <link href="/assets/css/profile-cm622.css?v=<?= htmlspecialchars($cm622ProfileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-fix.css?v=<?= htmlspecialchars($cm622ProfileFixCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-modal.css?v=<?= htmlspecialchars($modalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-responsive.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
@@ -119,11 +115,14 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <?php endif; ?>
   <?php if ($requestPath === '/livecasino' || $scriptName === 'livecasino.php'):
       $bcCm622LiveCssPath = $assetCssDir . '/casino-live-cm622.css';
-      $bcCm622LiveCssVer = (string) (file_exists($bcCm622LiveCssPath) ? filemtime($bcCm622LiveCssPath) : $livecasinoCssVer);
+      $bcCm622LiveCssVer = (string) (file_exists($bcCm622LiveCssPath) ? filemtime($bcCm622LiveCssPath) : $assetVer);
   ?>
   <link href="/assets/css/casino-live-cm622.css?v=<?= htmlspecialchars($bcCm622LiveCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-  <?php elseif ($requestPath === '/slot' || $requestPath === '/bgaming' || $requestPath === '/sanal-sporlar' || $scriptName === 'slot.php' || $scriptName === 'bgaming.php' || $scriptName === 'sanal-sporlar.php'): ?>
-  <link href="/assets/css/casino-slots.css?v=<?= htmlspecialchars($slotsCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <?php elseif ($requestPath === '/slot' || $requestPath === '/bgaming' || $requestPath === '/sanal-sporlar' || $scriptName === 'slot.php' || $scriptName === 'bgaming.php' || $scriptName === 'sanal-sporlar.php'):
+      $bcCm622SlotsCssPath = $assetCssDir . '/casino-slots-cm622.css';
+      $bcCm622SlotsCssVer = (string) (file_exists($bcCm622SlotsCssPath) ? filemtime($bcCm622SlotsCssPath) : $assetVer);
+  ?>
+  <link href="/assets/css/casino-slots-cm622.css?v=<?= htmlspecialchars($bcCm622SlotsCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/home-jackpot.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/home-winners.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>

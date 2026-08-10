@@ -128,15 +128,22 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="stylesheet" href="/assets/css/layout-header.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/layout-header.css')) ?>">
   <link rel="stylesheet" href="/assets/css/layout-sidebar.css?v=<?= $ver($assetCssDir . '/layout-sidebar.css') ?>">
   <link rel="stylesheet" href="/assets/css/site-components.css?v=<?= $ver($assetCssDir . '/site-components.css') ?>">
-  <link rel="stylesheet" href="/assets/css/profile.css?v=<?= $ver($assetCssDir . '/profile.css') ?>">
+  <link rel="stylesheet" href="/assets/css/profile-cm622.css?v=<?= $ver($assetCssDir . '/profile-cm622.css') ?>">
+  <link rel="stylesheet" href="/assets/css/profile-cm622-fix.css?v=<?= $ver($assetCssDir . '/profile-cm622-fix.css') ?>">
   <link rel="stylesheet" href="/assets/css/site-responsive.css?v=<?= $ver($assetCssDir . '/site-responsive.css') ?>">
   <link rel="stylesheet" href="/assets/css/mobile-bottom.css?v=<?= $ver($assetCssDir . '/mobile-bottom.css') ?>">
   <link rel="stylesheet" href="/assets/css/home.css?v=<?= $ver($assetCssDir . '/home.css') ?>">
   <?php if ($needsJackpotAssets): ?>
   <?php if ($isLiveCasinoRoute): ?>
-  <link rel="stylesheet" href="/assets/css/casino-live.css?v=<?= $ver($assetCssDir . '/casino-live.css') ?>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/casino-live-cm622.css?v=<?= $ver($assetCssDir . '/casino-live-cm622.css') ?>">
   <?php elseif ($isSlotRoute): ?>
-  <link rel="stylesheet" href="/assets/css/casino-slots.css?v=<?= $ver($assetCssDir . '/casino-slots.css') ?>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/casino-slots-cm622.css?v=<?= $ver($assetCssDir . '/casino-slots-cm622.css') ?>">
   <?php endif; ?>
   <link rel="stylesheet" href="/assets/css/home-jackpot.css?v=<?= $ver($assetCssDir . '/home-jackpot.css') ?>">
   <link rel="stylesheet" href="/assets/css/home-winners.css?v=<?= $ver($assetCssDir . '/home-winners.css') ?>">
@@ -167,11 +174,6 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="stylesheet" href="/assets/css/mobile-right-sheet-extra.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/mobile-right-sheet-extra.css')) ?>">
   <link rel="stylesheet" href="/assets/css/mobile-home.css?v=<?= $ver($mobileCssDir . '/mobile-home.css') ?>">
   <link rel="stylesheet" href="/assets/css/mobile-home-widgets.css?v=<?= $ver($mobileCssDir . '/mobile-home-widgets.css') ?>">
-  <?php if ($isLiveCasinoRoute): ?>
-  <link rel="stylesheet" href="/assets/css/mobile-live.css?v=<?= $ver($mobileCssDir . '/mobile-live.css') ?>">
-  <?php elseif ($isSlotRoute): ?>
-  <link rel="stylesheet" href="/assets/css/mobile-slots.css?v=<?= $ver($mobileCssDir . '/mobile-slots.css') ?>">
-  <?php endif; ?>
   <link rel="stylesheet" href="/assets/css/mobile-bottom-bar.css?v=<?= $ver($mobileCssDir . '/mobile-bottom-bar.css') ?>">
   <link rel="stylesheet" href="/assets/css/mobile-footer.css?v=<?= $ver($mobileCssDir . '/mobile-footer.css') ?>">
   <link rel="stylesheet" href="/assets/css/mobile-auth-modals.css?v=<?= $ver($mobileCssDir . '/mobile-auth-modals.css') ?>">

@@ -769,7 +769,7 @@
 
     function ensureFreshProfileCssOnce() {
         if (window.__profileCssRefreshedOnce) return;
-        var links = document.querySelectorAll('link[rel="stylesheet"][href*="/assets/css/profile.css"]');
+        var links = document.querySelectorAll('link[rel="stylesheet"][href*="/assets/css/profile-cm622"]');
         if (!links || !links.length) return;
 
         var stamp = String(Date.now());
@@ -778,7 +778,7 @@
                 var rawHref = link.getAttribute('href') || link.href || '';
                 var hrefUrl = new URL(rawHref, window.location.origin);
                 if (hrefUrl.origin !== window.location.origin) return;
-                if (hrefUrl.pathname.indexOf('/assets/css/profile.css') !== 0) return;
+                if (hrefUrl.pathname.indexOf('/assets/css/profile-cm622') !== 0) return;
                 hrefUrl.searchParams.set('pmcss', stamp);
                 link.setAttribute('href', hrefUrl.pathname + '?' + hrefUrl.searchParams.toString());
             } catch (eCss) {}

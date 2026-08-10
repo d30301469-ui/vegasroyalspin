@@ -1,7 +1,8 @@
 <?php
 /**
- * Mobile /bgaming — dedicated BGaming page markup (same CM622 look as desktop).
+ * Mobile /bgaming — same CM622 lobby as desktop.
  */
-$slotMobileOriginalNav = true;
+$slotDesktopLobby = true;
+$slotMobileOriginalNav = false;
 include VIEW_PATH . '/pages/bgaming.php';
 include MOBILE_PATH . '/views/partials/footer.php';

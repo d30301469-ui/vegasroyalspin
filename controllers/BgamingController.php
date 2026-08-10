@@ -47,12 +47,9 @@ class BgamingController extends Controller
         $slotHideProviders = true;
         $sliderApiCategory = 'bgaming';
 
-        $isMobileSurface = (defined('SURFACE') && SURFACE === 'mobile')
-            || (function_exists('isMobile') && isMobile());
-        $slotMobileOriginalNav = $isMobileSurface;
-        $slotDesktopLobby = !$isMobileSurface;
-        $lobbyMode = $slotDesktopLobby
-            && $currentSort === ''
+        $slotMobileOriginalNav = false;
+        $slotDesktopLobby = true;
+        $lobbyMode = $currentSort === ''
             && $searchTerm === ''
             && $selectedProviders === []
             && $viewParam !== 'all';

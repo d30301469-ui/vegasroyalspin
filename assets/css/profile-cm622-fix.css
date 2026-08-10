@@ -1,7 +1,6 @@
 /**
  * Runtime bridge for CM622 profile modal.
- * Original chunk CSS lives in bc-cm622-profile.css — this only protects layout
- * against Vegas profile.css / JS display overrides.
+ * Keeps CM622 layout intact against leftover display overrides.
  */
 /* CM622 tokens stay on profile surfaces only — never html/body (auth/header leak). */
 html.is-web:not(.is-mobile) #profileModal.user-profile-container,

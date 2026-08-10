@@ -56,8 +56,8 @@ class SlotController extends Controller
         $slotEmptyText  = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin.';
 
         $slotDesktopLobby = true;
-        $lobbyMode = $slotDesktopLobby
-            && $currentSort === ''
+        $slotMobileOriginalNav = false;
+        $lobbyMode = $currentSort === ''
             && $searchTerm === ''
             && $selectedProviders === []
             && $viewParam !== 'all';

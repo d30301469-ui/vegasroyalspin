@@ -76,31 +76,10 @@ $sliderApiCategory = 'live_casino';
 $slotShowActionButtons = true;
 $slotHideProviders = false;
 
-$mobileLiveCasinoView = defined('MOBILE_PATH') ? MOBILE_PATH . '/views/pages/livecasino.php' : '';
-if (defined('SURFACE') && SURFACE === 'mobile' && $mobileLiveCasinoView !== '' && is_file($mobileLiveCasinoView)) {
-    $slotDesktopLobby = false;
-    $lobbyMode = false;
-    $lobbyGames = [];
-    $lobbyPopularGames = [];
-    $lobbyHighWinsGames = [];
-    $lobbyTournamentsGames = [];
-    $lobbyMoreGames = [];
-    $lobbyLiveGames = [];
-    $lobbyPopularTotal = 0;
-    $lobbyHighWinsTotal = 0;
-    $lobbyTournamentsTotal = 0;
-    $lobbyMoreTotal = 0;
-    $lobbyLiveTotal = 0;
-    $lobbyHighWinsProviders = [];
-    $lobbyTournamentsProviders = [];
-    require $mobileLiveCasinoView;
-    return;
-}
-
-// Desktop: same Lobby shell as /slot (category chips + swiper rows).
+// CM622 lobby for desktop and mobile (same shell as /slot).
 $slotDesktopLobby = true;
-$lobbyMode = $slotDesktopLobby
-    && $currentSort === ''
+$slotMobileOriginalNav = false;
+$lobbyMode = $currentSort === ''
     && $searchTerm === ''
     && $selectedProviders === []
     && $viewParam !== 'all';
@@ -154,6 +133,12 @@ if ($lobbyMode) {
         $lobbyMoreGames = $lobbyGames;
         $lobbyMoreTotal = $totalSlots;
     }
+}
+
+$mobileLiveCasinoView = defined('MOBILE_PATH') ? MOBILE_PATH . '/views/pages/livecasino.php' : '';
+if (defined('SURFACE') && SURFACE === 'mobile' && $mobileLiveCasinoView !== '' && is_file($mobileLiveCasinoView)) {
+    require $mobileLiveCasinoView;
+    return;
 }
 
 require VIEW_PATH . '/pages/slot.php';
