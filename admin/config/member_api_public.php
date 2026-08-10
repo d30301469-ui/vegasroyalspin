@@ -5,12 +5,12 @@ declare(strict_types=1);
 /**
  * Public member API base URL (admin host /api/v2) — browser + server-side CMS.
  */
-if (!function_exists('metropol_normalize_member_api_public_url')) {
+if (!function_exists('normalize_member_api_public_url')) {
     /**
      * Normalize member API URLs onto the canonical public API host from deploy_domains.
      * Rewrites legacy api.* / white-label hosts; leaves the canonical admin host intact.
      */
-    function metropol_normalize_member_api_public_url(string $url): string
+    function normalize_member_api_public_url(string $url): string
     {
         $url = rtrim(trim($url), '/');
         if ($url === '' || !preg_match('#^https?://#i', $url)) {
@@ -50,8 +50,8 @@ if (!function_exists('metropol_normalize_member_api_public_url')) {
     }
 }
 
-if (!function_exists('metropol_csp_connect_src_directive')) {
-    function metropol_csp_connect_src_directive(): string
+if (!function_exists('csp_connect_src_directive')) {
+    function csp_connect_src_directive(): string
     {
         $sources = [
             "'self'",
@@ -76,8 +76,8 @@ if (!function_exists('metropol_csp_connect_src_directive')) {
         ];
 
         $urlCandidates = [];
-        if (function_exists('frontend_env_string') && function_exists('metropol_member_api_public_base')) {
-            $urlCandidates[] = metropol_member_api_public_base();
+        if (function_exists('frontend_env_string') && function_exists('member_api_public_base')) {
+            $urlCandidates[] = member_api_public_base();
         }
         foreach (['API_BACKEND_MAIN_BASE_URL', 'API_BACKEND_FALLBACK_BASE_URL', 'API_PUBLIC_BASE_URL'] as $const) {
             if (defined($const)) {
@@ -114,8 +114,8 @@ if (!function_exists('metropol_csp_connect_src_directive')) {
     }
 }
 
-if (!function_exists('metropol_member_api_public_base')) {
-    function metropol_member_api_public_base(): string
+if (!function_exists('member_api_public_base')) {
+    function member_api_public_base(): string
     {
         static $base = null;
         if (is_string($base)) {
@@ -131,14 +131,14 @@ if (!function_exists('metropol_member_api_public_base')) {
         foreach ($candidates as $candidate) {
             $candidate = rtrim(trim($candidate), '/');
             if ($candidate !== '' && preg_match('#^https?://#i', $candidate)) {
-                $base = metropol_normalize_member_api_public_url($candidate);
+                $base = normalize_member_api_public_url($candidate);
 
                 return $base;
             }
         }
 
         if (function_exists('deploy_domain')) {
-            $base = metropol_normalize_member_api_public_url(
+            $base = normalize_member_api_public_url(
                 rtrim(deploy_domain('api_public_base_url', deploy_domain('backend_api_base_url')), '/')
             );
 
@@ -151,8 +151,8 @@ if (!function_exists('metropol_member_api_public_base')) {
     }
 }
 
-if (!function_exists('metropol_frontend_trust_secret')) {
-    function metropol_frontend_trust_secret(): string
+if (!function_exists('frontend_trust_secret')) {
+    function frontend_trust_secret(): string
     {
         // Üye proxy trust imzası için özel secret; tanımlı değilse geçiş
         // uyumluluğu adına CMS purge secret'ına düşer. İki sunucuda da
@@ -166,8 +166,8 @@ if (!function_exists('metropol_frontend_trust_secret')) {
     }
 }
 
-if (!function_exists('metropol_frontend_direct_member_api')) {
-    function metropol_frontend_direct_member_api(): bool
+if (!function_exists('frontend_direct_member_api')) {
+    function frontend_direct_member_api(): bool
     {
         if (!function_exists('frontend_is_api_only') || !frontend_is_api_only()) {
             return false;
@@ -179,11 +179,11 @@ if (!function_exists('metropol_frontend_direct_member_api')) {
     }
 }
 
-if (!function_exists('metropol_frontend_member_logged_in')) {
+if (!function_exists('frontend_member_logged_in')) {
     /**
      * Split-deploy frontend: oturum yalnızca geçerli üye JWT ile sayılır.
      */
-    function metropol_frontend_member_logged_in(): bool
+    function frontend_member_logged_in(): bool
     {
         $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
         if (!$loggedIn) {
@@ -201,35 +201,72 @@ if (!function_exists('metropol_frontend_member_logged_in')) {
     }
 }
 
-if (!function_exists('metropol_frontend_clear_member_session')) {
-    function metropol_frontend_clear_member_session(): void
+if (!function_exists('frontend_clear_member_session')) {
+    function frontend_clear_member_session(): void
     {
+        if (!function_exists('app_clear_member_session_keys')) {
+            $sessionGlobal = __DIR__ . '/session_global.php';
+            if (is_readable($sessionGlobal)) {
+                require_once $sessionGlobal;
+            }
+        }
+        if (function_exists('app_clear_member_session_keys')) {
+            app_clear_member_session_keys();
+
+            return;
+        }
         foreach ([
-            'loggedin',
-            'user_id',
-            'username',
-            'email',
-            'ana_bakiye',
-            'first_name',
-            'surname',
-            'member_jwt',
-            '__header_member_cache',
-            '__member_jwt_proxy_synced',
+            'loggedin', 'user_id', 'username', 'email', 'ana_bakiye',
+            'first_name', 'surname', 'member_jwt', '__header_member_cache',
+            '__member_jwt_proxy_synced', 'login_error',
         ] as $key) {
             unset($_SESSION[$key]);
         }
-        if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
-            metropol_frontend_clear_member_restore_cookie();
+        if (function_exists('frontend_clear_member_restore_cookie')) {
+            frontend_clear_member_restore_cookie();
         }
     }
 }
 
-if (!function_exists('metropol_frontend_sanitize_member_session')) {
+if (!function_exists('frontend_sanitize_member_session')) {
     /**
-     * API-only frontend: loggedin bayrağı var ama JWT yoksa oturumu temizle (401 döngüsünü keser).
+     * Oturum temizliği: API-only JWT eksikliği + banlı hesap kontrolü.
      */
-    function metropol_frontend_sanitize_member_session(): void
+    function frontend_sanitize_member_session(): void
     {
+        if (!empty($_SESSION['loggedin'])) {
+            $userId = (int) ($_SESSION['user_id'] ?? 0);
+            if (
+                $userId > 0
+                && function_exists('frontend_database_allowed')
+                && frontend_database_allowed()
+            ) {
+                try {
+                    $adminDb = dirname(__DIR__) . '/admin/app/Core/AdminDatabase.php';
+                    if (!class_exists('AdminDatabase', false) && is_file($adminDb)) {
+                        if (!defined('ADMIN_APP_PATH')) {
+                            define('ADMIN_APP_PATH', dirname(__DIR__) . '/admin/app');
+                        }
+                        require_once $adminDb;
+                    }
+                    if (class_exists('AdminDatabase', false)) {
+                        $stmt = AdminDatabase::pdo()->prepare('SELECT banned FROM users WHERE id = :id LIMIT 1');
+                        $stmt->execute(['id' => $userId]);
+                        if ((int) $stmt->fetchColumn() === 1) {
+                            if (function_exists('frontend_clear_member_session')) {
+                                frontend_clear_member_session();
+                            }
+                            $_SESSION['login_error'] = 'Hesabınız banlanmıştır. Giriş yapamazsınız.';
+
+                            return;
+                        }
+                    }
+                } catch (Throwable) {
+                    // Sayfa render'ını bozma.
+                }
+            }
+        }
+
         if (!function_exists('frontend_is_api_only') || !frontend_is_api_only()) {
             return;
         }
@@ -248,20 +285,20 @@ if (!function_exists('metropol_frontend_sanitize_member_session')) {
     }
 }
 
-if (!function_exists('metropol_frontend_restore_member_session_from_request')) {
-    function metropol_frontend_restore_member_session_from_request(): bool
+if (!function_exists('frontend_restore_member_session_from_request')) {
+    function frontend_restore_member_session_from_request(): bool
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             if (!is_readable(__DIR__ . '/frontend_session.php')) {
                 return false;
             }
             require_once __DIR__ . '/frontend_session.php';
-            metropol_frontend_session_start();
+            frontend_session_start();
         }
 
         if (isset($_GET['logout']) && (string) $_GET['logout'] === '1') {
-            if (function_exists('metropol_frontend_clear_member_session')) {
-                metropol_frontend_clear_member_session();
+            if (function_exists('frontend_clear_member_session')) {
+                frontend_clear_member_session();
             }
             return false;
         }
@@ -278,11 +315,11 @@ if (!function_exists('metropol_frontend_restore_member_session_from_request')) {
             require_once $servicePath;
         }
 
-        $restoreCookieName = function_exists('metropol_frontend_member_restore_cookie_name')
-            ? metropol_frontend_member_restore_cookie_name()
-            : 'metropol_member_restore';
-        $cookieJwt = trim((string) ($_COOKIE[$restoreCookieName] ?? $_COOKIE['metropol_member_jwt'] ?? ''));
-        $headerJwt = trim((string) ($_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? ''));
+        $restoreCookieName = function_exists('frontend_member_restore_cookie_name')
+            ? frontend_member_restore_cookie_name()
+            : 'app_member_restore';
+        $cookieJwt = trim((string) ($_COOKIE[$restoreCookieName] ?? $_COOKIE['app_member_jwt'] ?? $_COOKIE['metropol_member_jwt'] ?? ''));
+        $headerJwt = trim((string) ($_SERVER['HTTP_X_APP_MEMBER_JWT'] ?? $_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? ''));
         $authHeader = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? ''));
 
         if ($authHeader === '' && function_exists('getallheaders')) {
@@ -290,7 +327,8 @@ if (!function_exists('metropol_frontend_restore_member_session_from_request')) {
             if (is_array($headers)) {
                 $authHeader = trim((string) ($headers['Authorization'] ?? $headers['authorization'] ?? ''));
                 if ($headerJwt === '') {
-                    $headerJwt = trim((string) ($headers['X-Metropol-Member-Jwt'] ?? $headers['x-metropol-member-jwt'] ?? ''));
+                    $headerJwt = trim((string) ($headers['X-App-Member-Jwt'] ?? $headers['x-app-member-jwt']
+                        ?? $headers['X-Metropol-Member-Jwt'] ?? $headers['x-metropol-member-jwt'] ?? ''));
                 }
             }
         }
@@ -307,8 +345,8 @@ if (!function_exists('metropol_frontend_restore_member_session_from_request')) {
         try {
             $restore = MemberLoginService::backendSession($restoreJwt);
             if (!MemberLoginService::succeeded($restore)) {
-                if (function_exists('metropol_frontend_clear_member_session')) {
-                    metropol_frontend_clear_member_session();
+                if (function_exists('frontend_clear_member_session')) {
+                    frontend_clear_member_session();
                 }
                 return false;
             }
@@ -318,8 +356,8 @@ if (!function_exists('metropol_frontend_restore_member_session_from_request')) {
                 $_SESSION['member_jwt'] = $restoreJwt;
             }
             $_SESSION['__member_jwt_proxy_synced'] = true;
-            if (function_exists('metropol_frontend_set_member_restore_cookie') && !empty($_SESSION['member_jwt'])) {
-                metropol_frontend_set_member_restore_cookie((string) $_SESSION['member_jwt']);
+            if (function_exists('frontend_set_member_restore_cookie') && !empty($_SESSION['member_jwt'])) {
+                frontend_set_member_restore_cookie((string) $_SESSION['member_jwt']);
             }
             return true;
         } catch (Throwable) {
@@ -328,21 +366,21 @@ if (!function_exists('metropol_frontend_restore_member_session_from_request')) {
     }
 }
 
-if (!function_exists('metropol_member_api_layout_vars')) {
+if (!function_exists('member_api_layout_vars')) {
     /** @return array<string, mixed> */
-    function metropol_member_api_layout_vars(): array
+    function member_api_layout_vars(): array
     {
         if (!defined('API_BACKEND_MAIN_BASE_URL') && is_readable(__DIR__ . '/bootstrap_api.php')) {
             require_once __DIR__ . '/bootstrap_api.php';
         }
 
-        $base = function_exists('metropol_member_api_public_base')
-            ? metropol_member_api_public_base()
-            : metropol_normalize_member_api_public_url(
+        $base = function_exists('member_api_public_base')
+            ? member_api_public_base()
+            : normalize_member_api_public_url(
                 rtrim((string) (defined('API_BACKEND_MAIN_BASE_URL') ? API_BACKEND_MAIN_BASE_URL : ''), '/')
             );
 
-        $direct = function_exists('metropol_frontend_direct_member_api') && metropol_frontend_direct_member_api();
+        $direct = function_exists('frontend_direct_member_api') && frontend_direct_member_api();
 
         return [
             '__MEMBER_API_BASE__' => $base,
@@ -351,5 +389,36 @@ if (!function_exists('metropol_member_api_layout_vars')) {
                 ? $base . '/site-settings'
                 : '/api/v2/site-settings',
         ];
+    }
+}
+
+if (!function_exists('metropol_member_api_layout_vars') && function_exists('member_api_layout_vars')) {
+    function metropol_member_api_layout_vars(): array
+    {
+        return member_api_layout_vars();
+    }
+}
+if (!function_exists('metropol_normalize_member_api_public_url') && function_exists('normalize_member_api_public_url')) {
+    function metropol_normalize_member_api_public_url(string $url): string
+    {
+        return normalize_member_api_public_url($url);
+    }
+}
+if (!function_exists('metropol_member_api_public_base') && function_exists('member_api_public_base')) {
+    function metropol_member_api_public_base(): string
+    {
+        return member_api_public_base();
+    }
+}
+if (!function_exists('metropol_frontend_restore_member_session_from_request') && function_exists('frontend_restore_member_session_from_request')) {
+    function metropol_frontend_restore_member_session_from_request(): bool
+    {
+        return frontend_restore_member_session_from_request();
+    }
+}
+if (!function_exists('metropol_frontend_clear_member_session') && function_exists('frontend_clear_member_session')) {
+    function metropol_frontend_clear_member_session(): void
+    {
+        frontend_clear_member_session();
     }
 }
