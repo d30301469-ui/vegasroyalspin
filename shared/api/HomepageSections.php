@@ -228,7 +228,7 @@ final class ApiHomepageSections
                 'type' => 'banner',
                 'surface' => 'all',
                 'payload' => [
-                    'image_url' => 'assets/images/artikcekimlerdelimitleretakilmayok.webp',
+                    'image_url' => 'assets/images/banner-yok-limit.webp',
                     'alt' => 'Çekimlerinizde limitlere takılmak yok',
                     'href' => '',
                     'onclick' => '',
@@ -966,7 +966,7 @@ final class ApiHomepageSections
     private static function normalizeBannerPayload(array $payload): array
     {
         $image = trim((string) ($payload['image_url'] ?? ''));
-        $fallback = 'assets/images/artikcekimlerdelimitleretakilmayok.webp';
+        $fallback = 'assets/images/banner-yok-limit.webp';
         // Eski Android PWA promo SVG'si çekim banner'ı olarak kullanılmıştı; doğru kampanya görseline yönlendir.
         $relative = ltrim(str_replace('\\', '/', $image), '/');
         if ($relative !== '' && str_ends_with(strtolower($relative), 'androiduygulamaindir.svg')) {
