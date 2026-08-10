@@ -185,14 +185,14 @@ $sliders             = array_values(array_filter($sliders, 'slider_item_has_medi
 <?php endif; ?>
 <?php
 if (!$sliderMobileBc && !defined('SLIDER_ASSETS_IN_HEAD')) {
-    $sliderCss = BASE_PATH . '/assets/css/slider.css';
+    $sliderCss = BASE_PATH . '/assets/css/home-slider.css';
     $sliderJs  = BASE_PATH . '/assets/js/slider.js';
     $sliderVer = (string) max(
         file_exists($sliderCss) ? filemtime($sliderCss) : 0,
         file_exists($sliderJs) ? filemtime($sliderJs) : 0
     ) ?: '1';
 ?>
-<link href="/assets/css/slider.css?v=<?= htmlspecialchars($sliderVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+<link href="/assets/css/home-slider.css?v=<?= htmlspecialchars($sliderVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
 <script defer src="/assets/js/slider.js?v=<?= htmlspecialchars($sliderVer, ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php } ?>
 <?php endif; ?>

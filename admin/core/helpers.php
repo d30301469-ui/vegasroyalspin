@@ -137,18 +137,17 @@ function maintenance_request_uri_allowed(string $uri): bool
 
 /**
  * TLS üzerinden mi geliyor (reverse proxy dahil)?
+ * Asıl uygulama config/cloudflare.php içindedir; bu yalnızca fallback.
  */
-function request_is_https(): bool
-{
-    if (function_exists('metropol_request_is_https')) {
-        return metropol_request_is_https();
-    }
+if (!function_exists('request_is_https')) {
+    function request_is_https(): bool
+    {
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+            return true;
+        }
 
-    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
-        return true;
+        return strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
     }
-
-    return strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
 }
 
 /**

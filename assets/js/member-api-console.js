@@ -1,6 +1,6 @@
 /**
  * Üye API tanı konsolu — tüm /api/v2 yanıtları ve bootstrap state console'da.
- * Kapatmak: localStorage.removeItem('metropol_member_debug')
+ * Kapatmak: localStorage.removeItem('app_member_debug')
  */
 (function (w) {
     'use strict';
@@ -13,7 +13,7 @@
             return true;
         }
         try {
-            if (w.localStorage.getItem('metropol_member_debug') === '1') {
+            if (w.localStorage.getItem('app_member_debug') === '1') {
                 return true;
             }
             return /(?:\?|&)debug=1(?:&|$)/.test(w.location.search || '');
@@ -151,18 +151,18 @@
     }
 
     function wrapFetch() {
-        if (typeof w.fetch !== 'function' || w.__METROPOL_FETCH_LOGGED__) {
+        if (typeof w.fetch !== 'function' || w.__APP_FETCH_LOGGED__) {
             return;
         }
-        w.__METROPOL_FETCH_LOGGED__ = true;
+        w.__APP_FETCH_LOGGED__ = true;
         var native = w.fetch.bind(w);
         w.fetch = function (input, init) {
             var url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
             return native(input, init).then(function (res) {
                 if (memberPath(url).indexOf('/api/v2/') === 0) {
                     try {
-                        var jwtSync = res.headers.get('X-Metropol-Jwt-Sync');
-                        var proxyBackend = res.headers.get('X-Metropol-Proxy-Backend');
+                        var jwtSync = res.headers.get('X-App-Jwt-Sync');
+                        var proxyBackend = res.headers.get('X-App-Proxy-Backend');
                         if (jwtSync) {
                             log('[Metropol JWT]', memberPath(url), 'sync=' + jwtSync);
                         }
@@ -197,7 +197,7 @@
         }
     }
 
-    w.addEventListener('metropol:member-jwt-ready', function () {
+    w.addEventListener('app:member-jwt-ready', function () {
         log('[Metropol] jwt-ready', snapshot());
         if (w.__USER_LOGGED_IN__ === true && w.MetropolMemberConsole) {
             w.MetropolMemberConsole.fetchAll();

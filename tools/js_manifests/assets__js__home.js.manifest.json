@@ -1,0 +1,28 @@
+{
+  "file": "assets/js/home.js",
+  "generated_at": "2026-08-03T15:56:54.586792+00:00",
+  "mode": "dynamic",
+  "strip_policy": "coverage_required",
+  "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py",
+  "entries": [
+    "activate",
+    "showLoginWarning",
+    "step"
+  ],
+  "keep": [],
+  "stats": {
+    "functions": 9,
+    "reachable": 3,
+    "unreachable_candidates": 6,
+    "coverage_hits": 0
+  },
+  "unreachable_sample": [
+    "handleDemo",
+    "handlePlay",
+    "launch",
+    "memberLoggedInRuntime",
+    "openLoginGate",
+    "openPlayUrl"
+  ],
+  "confidence_note": "mode=dynamic strip_policy=coverage_required; entries=3 funcs=9 reachable=3 unreachable=6 coverage=0"
+}

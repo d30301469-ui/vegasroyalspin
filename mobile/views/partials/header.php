@@ -4,14 +4,14 @@
  */
 global $ayar, $loggedIn, $siteMeta, $siteBranding, $siteContactLinks, $siteSettingsPayload;
 require_once VIEW_PATH . '/partials/header-init.php';
-$loggedIn = !empty($loggedIn) ? true : (function_exists('metropol_frontend_member_logged_in') ? metropol_frontend_member_logged_in() : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true));
+$loggedIn = !empty($loggedIn) ? true : (function_exists('frontend_member_logged_in') ? frontend_member_logged_in() : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true));
 $ayar = isset($ayar) && is_array($ayar) ? $ayar : [];
 $siteBranding = isset($siteBranding) && is_array($siteBranding) ? $siteBranding : [];
 $siteContactLinks = isset($siteContactLinks) && is_array($siteContactLinks) ? $siteContactLinks : [];
 if ($siteContactLinks === [] && isset($siteSettingsPayload['contact']) && is_array($siteSettingsPayload['contact'])) {
     $siteContactLinks = $siteSettingsPayload['contact'];
 }$hdrAuthClass = $loggedIn ? ' hdr-auth-user' : ' hdr-auth-guest';
-$depositHref = '/profile/deposit-withdraw?openDepositPanel=1';
+$depositHref = '/profile/deposit?openDepositPanel=1';
 $balanceHref = $loggedIn ? $depositHref : '#';
 $smartPanelBadge = $loggedIn ? '23' : '2';
 $mobileHeaderBranding = is_array($siteBranding ?? null) ? $siteBranding : [];
@@ -23,7 +23,7 @@ if (class_exists('ApiMediaUrl', false)) {
     $mobileHeaderLogoAnimUrl = ApiMediaUrl::resolve($mobileHeaderLogoAnimUrl);
 }
 $mobileHeaderLoyaltyIconMap = [
-  'bronze' => '/assets/images/loyalty/badges/bronze.png',
+  'bronze' => '/assets/images/loyalty/badges/bronze.svg',
   'silver' => '/assets/images/loyalty/badges/silver.svg',
   'gold' => '/assets/images/loyalty/badges/gold.svg',
   'platinum' => '/assets/images/loyalty/badges/platinum.svg',
@@ -37,13 +37,19 @@ foreach (array_keys($mobileHeaderLoyaltyIconMap) as $mobileHeaderLoyaltyLevelCod
     break;
   }
 }
-$mobileHeaderLoyaltyIconUrl = $mobileHeaderLoyaltyIconMap[$mobileHeaderLoyaltyCode] ?? '/assets/images/loyalty/badges/bronze.png';
+$mobileHeaderLoyaltyIconUrl = $mobileHeaderLoyaltyIconMap[$mobileHeaderLoyaltyCode] ?? '/assets/images/loyalty/badges/bronze.svg';
 $mobileHeaderSupportUrl = (string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : ''));
 $mobileHeaderSupportUrlJs = htmlspecialchars(json_encode($mobileHeaderSupportUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
-$mobileHeaderSupportTitle = (string) ($siteContactLinks['live_support_title'] ?? 'Canlı Destek');
+$mobileHeaderSupportTitle = function_exists('i18n_label')
+    ? i18n_label((string) ($siteContactLinks['live_support_title'] ?? 'Canlı Destek'))
+    : (string) ($siteContactLinks['live_support_title'] ?? 'Canlı Destek');
 $mobileHeaderPartnershipUrl = (string) ($siteContactLinks['partnership_url'] ?? '/ortaklik');
-$mobileHeaderPartnershipTitle = (string) ($siteContactLinks['partnership_title'] ?? 'Ortaklık');
-$mobileHeaderPartnershipLabel = (string) ($siteContactLinks['partnership_label'] ?? 'ORTAKLIK');
+$mobileHeaderPartnershipTitle = function_exists('i18n_label')
+    ? i18n_label((string) ($siteContactLinks['partnership_title'] ?? 'Ortaklık'))
+    : (string) ($siteContactLinks['partnership_title'] ?? 'Ortaklık');
+$mobileHeaderPartnershipLabel = function_exists('i18n_label')
+    ? i18n_label((string) ($siteContactLinks['partnership_label'] ?? 'ORTAKLIK'))
+    : (string) ($siteContactLinks['partnership_label'] ?? 'ORTAKLIK');
 $mobileHeaderPartnershipIsExternal = (bool) preg_match('#^https?://#i', $mobileHeaderPartnershipUrl);
 ?>
 <div class="layout-header-holder-bc mobile-bc-header">
@@ -62,15 +68,16 @@ $mobileHeaderPartnershipIsExternal = (bool) preg_match('#^https?://#i', $mobileH
           <?php if ($mobileHeaderLogoAnimUrl !== ''): ?>
             <?php $mAnimExt = strtolower(pathinfo((string) parse_url($mobileHeaderLogoAnimUrl, PHP_URL_PATH), PATHINFO_EXTENSION)); ?>
             <?php if ($mAnimExt === 'webm' || $mAnimExt === 'mp4'): ?>
-              <video class="hdr-logo-bc" autoplay loop muted playsinline width="190" height="64" aria-label="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
+              <video class="hdr-logo-bc hdr-logo-animated" autoplay loop muted playsinline width="240" height="54" aria-label="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
                 <source src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" type="video/webm">
-                <?php if ($mobileHeaderLogoUrl !== ''): ?><img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
+                <source src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" type="video/mp4">
+                <?php if ($mobileHeaderLogoUrl !== ''): ?><img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="160" height="36"><?php endif; ?>
               </video>
             <?php else: ?>
-              <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="190" height="64">
+              <img class="hdr-logo-bc hdr-logo-animated" src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="54">
             <?php endif; ?>
           <?php elseif ($mobileHeaderLogoUrl !== ''): ?>
-            <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="190" height="64">
+            <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="160" height="36">
           <?php endif; ?>
         </a>
       </div>
@@ -97,14 +104,14 @@ $mobileHeaderPartnershipIsExternal = (bool) preg_match('#^https?://#i', $mobileH
             </a>
           </div>
           <div class="profileDetails" id="playerCol">
-            <button type="button" class="userBtn nav-menu-item" id="toggleButton" aria-expanded="false" aria-label="Profil menüsü">
+            <button type="button" class="userBtn nav-menu-item" id="toggleButton" aria-expanded="false" aria-label="<?= htmlspecialchars(__('nav.profile_menu'), ENT_QUOTES, 'UTF-8') ?>">
               <i class="hdr-user-avatar-icon-bc bc-i-user" aria-hidden="true"></i>
               <span class="backFace" aria-hidden="true"></span>
             </button>
           </div>
         <?php else: ?>
-          <a href="#" class="btn sign-in loginBtn" id="Giris" role="button">GİRİŞ</a>
-          <button id="openRegister" class="btn register" type="button">KAYIT</button>
+          <a href="#" class="btn sign-in loginBtn" id="Giris" role="button"><?= htmlspecialchars(__('nav.login'), ENT_QUOTES, 'UTF-8') ?></a>
+          <button id="openRegister" class="btn register" type="button"><?= htmlspecialchars(__('nav.register'), ENT_QUOTES, 'UTF-8') ?></button>
         <?php endif; ?>
       </div>
 
@@ -112,8 +119,8 @@ $mobileHeaderPartnershipIsExternal = (bool) preg_match('#^https?://#i', $mobileH
         <button type="button"
                 class="hdr-toggle-button-bc bc-i-vertical-toggle count-odd-animation count-blink-even"
                 id="smart-panel-holder"
-                title="Akıllı Menü"
-                aria-label="Akıllı Menü"
+                title="<?= htmlspecialchars(__('nav.smart_menu'), ENT_QUOTES, 'UTF-8') ?>"
+                aria-label="<?= htmlspecialchars(__('nav.smart_menu'), ENT_QUOTES, 'UTF-8') ?>"
                 aria-expanded="false"
                 data-badge="<?= htmlspecialchars($smartPanelBadge, ENT_QUOTES, 'UTF-8') ?>"></button>
       </div>
@@ -159,8 +166,8 @@ $mobileHeaderPartnershipIsExternal = (bool) preg_match('#^https?://#i', $mobileH
           <a href="<?= htmlspecialchars($depositHref, ENT_QUOTES, 'UTF-8') ?>"
              class="user-nav-icon bc-i-wallet"
              onclick="event.preventDefault(); if (typeof window.__openMobileBalancePage === 'function' && window.__openMobileBalancePage('deposit')) return false; if (typeof redirectToDeposit === 'function') redirectToDeposit(); return false;"
-             title="Para Yatır"
-             aria-label="Para Yatır"></a>
+             title="<?= htmlspecialchars(__('nav.deposit'), ENT_QUOTES, 'UTF-8') ?>"
+             aria-label="<?= htmlspecialchars(__('nav.deposit'), ENT_QUOTES, 'UTF-8') ?>"></a>
           <a href="#"
              class="user-nav-icon bc-i-call callPanel"
              onclick="window.open(<?= htmlspecialchars($mobileHeaderSupportUrlJs, ENT_QUOTES, 'UTF-8') ?>,'_blank'); return false;"
@@ -184,8 +191,8 @@ $mobileHeaderPartnershipIsExternal = (bool) preg_match('#^https?://#i', $mobileH
     <div class="hdr-guest-shortcuts" aria-label="Hızlı işlemler">
       <a href="/promotions"
          class="guest-shortcut-icon bc-i-promotions-3"
-         title="Promosyonlar"
-         aria-label="Promosyonlar"></a>
+         title="<?= htmlspecialchars(__('menu.promotions'), ENT_QUOTES, 'UTF-8') ?>"
+         aria-label="<?= htmlspecialchars(__('menu.promotions'), ENT_QUOTES, 'UTF-8') ?>"></a>
       <a href="#"
          class="guest-shortcut-icon bc-i-call callPanel"
          onclick="window.open(<?= htmlspecialchars($mobileHeaderSupportUrlJs, ENT_QUOTES, 'UTF-8') ?>,'_blank'); return false;"

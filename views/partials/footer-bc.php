@@ -5,6 +5,21 @@ $footerCopyrightYear = (int) date('Y');
 $footerCopyrightText = ($footerCopyrightSince === $footerCopyrightYear)
     ? $footerCopyrightYear . ' ' . $footerSiteName
     : $footerCopyrightSince . ' - ' . $footerCopyrightYear . ' ' . $footerSiteName;
+$footerLocale = function_exists('current_locale') ? current_locale() : 'tr';
+$footerLangCode = class_exists('SiteI18n', false) ? SiteI18n::langCode() : 'TUR';
+$footerFlagMap = [
+    'tr' => '/assets/images/flag/tr.svg',
+    'en' => '/assets/images/flag/gb.svg',
+    'de' => '/assets/images/flag/de.svg',
+    'ru' => '/assets/images/flag/ru.svg',
+];
+$footerFlagImage = $footerFlagMap[$footerLocale] ?? '/assets/images/flag/tr.svg';
+$footerLangNames = [
+    'tr' => 'Türkiye',
+    'en' => 'English',
+    'de' => 'Deutsch',
+    'ru' => 'Русский',
+];
 ?>
 <div class="layout-footer-holder-bc">
     <footer class="footer-bc">
@@ -42,28 +57,34 @@ $footerCopyrightText = ($footerCopyrightSince === $footerCopyrightYear)
                         <div class="footerInfoColumn">
                             <div class="footerClockWidget" id="footerClockWidget" aria-live="polite">00:00:00</div>
                             <div class="footerLanguageDropdown languageDropdown">
-                                <button type="button" class="footerLanguageTrigger" aria-haspopup="listbox" aria-expanded="false">
-                                    <img src="<?= htmlspecialchars($footerFlagImage) ?>" alt="Türkiye" width="20" height="14" class="footerLanguageFlag">
-                                    <span class="footerLanguageCode">TUR</span>
+                                <button type="button" class="footerLanguageTrigger" aria-haspopup="listbox" aria-expanded="false" aria-label="<?= htmlspecialchars(__('footer.language_select'), ENT_QUOTES, 'UTF-8') ?>">
+                                    <img src="<?= htmlspecialchars($footerFlagImage) ?>" alt="<?= htmlspecialchars($footerLangNames[$footerLocale] ?? 'Türkiye', ENT_QUOTES, 'UTF-8') ?>" width="20" height="14" class="footerLanguageFlag">
+                                    <span class="footerLanguageCode"><?= htmlspecialchars($footerLangCode, ENT_QUOTES, 'UTF-8') ?></span>
                                     <i class="bc-i-small-arrow-right footerLanguageChevron" aria-hidden="true"></i>
                                 </button>
                                 <ul class="footerLanguageMenu" role="listbox" hidden>
                                     <li>
-                                        <a class="footerLanguageOption is-active" role="option" aria-selected="true" data-lang="tr" href="?lang=tr">
+                                        <a class="footerLanguageOption<?= $footerLocale === 'tr' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $footerLocale === 'tr' ? 'true' : 'false' ?>" data-lang="tr" href="<?= htmlspecialchars(i18n_switch_url('tr'), ENT_QUOTES, 'UTF-8') ?>">
                                             <span class="flag-icon flag-icon-tr" aria-hidden="true"></span>
                                             <span class="code">TUR</span>
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="footerLanguageOption" role="option" aria-selected="false" data-lang="en" href="?lang=en">
+                                        <a class="footerLanguageOption<?= $footerLocale === 'en' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $footerLocale === 'en' ? 'true' : 'false' ?>" data-lang="en" href="<?= htmlspecialchars(i18n_switch_url('en'), ENT_QUOTES, 'UTF-8') ?>">
                                             <span class="flag-icon flag-icon-us" aria-hidden="true"></span>
                                             <span class="code">ENG</span>
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="footerLanguageOption" role="option" aria-selected="false" data-lang="de" href="?lang=de">
+                                        <a class="footerLanguageOption<?= $footerLocale === 'de' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $footerLocale === 'de' ? 'true' : 'false' ?>" data-lang="de" href="<?= htmlspecialchars(i18n_switch_url('de'), ENT_QUOTES, 'UTF-8') ?>">
                                             <span class="flag-icon flag-icon-de" aria-hidden="true"></span>
                                             <span class="code">DEU</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="footerLanguageOption<?= $footerLocale === 'ru' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $footerLocale === 'ru' ? 'true' : 'false' ?>" data-lang="ru" href="<?= htmlspecialchars(i18n_switch_url('ru'), ENT_QUOTES, 'UTF-8') ?>">
+                                            <span class="flag-icon flag-icon-ru" aria-hidden="true"></span>
+                                            <span class="code">RUS</span>
                                         </a>
                                     </li>
                                 </ul>
@@ -114,7 +135,7 @@ $footerCopyrightText = ($footerCopyrightSince === $footerCopyrightYear)
 
                     <div class="sliderGroup">
                         <div class="sliderContent">
-                            <h4 class="sliderTitle">YÖNETMELİKLER &amp; ORTAKLAR</h4>
+                            <h4 class="sliderTitle"><?= htmlspecialchars(__('footer.regulations'), ENT_QUOTES, 'UTF-8') ?></h4>
                             <?php foreach ($footerLicenceRows as $row): ?>
                                 <div class="ftr-partners-row-bc">
                                     <div class="ftr-partners-row-inner-bc">
@@ -124,7 +145,7 @@ $footerCopyrightText = ($footerCopyrightSince === $footerCopyrightYear)
                                             <?php if ($itemType === 'iframe'): ?>
                                                 <div class="ftr-partners-licence-iframe">
                                                     <iframe src="<?= htmlspecialchars((string) ($item['src'] ?? '')) ?>"
-                                                            title="Lisans doğrulama"
+                                                            title="<?= htmlspecialchars(__('footer.license_verify'), ENT_QUOTES, 'UTF-8') ?>"
                                                             loading="lazy"
                                                             scrolling="no"
                                                             frameborder="0"
@@ -150,7 +171,7 @@ $footerCopyrightText = ($footerCopyrightSince === $footerCopyrightYear)
                         </div>
 
                         <div class="sliderContent">
-                            <h4 class="sliderTitle">ÖDEMELER</h4>
+                            <h4 class="sliderTitle"><?= htmlspecialchars(__('footer.payments'), ENT_QUOTES, 'UTF-8') ?></h4>
                             <div class="horizontalSliderWrapper horizontalItemsExpanded alignedCenter"
                                  data-footer-slider>
                                 <i class="horizontalSliderNav bc-i-small-arrow-left" data-slider-prev aria-hidden="true"></i>

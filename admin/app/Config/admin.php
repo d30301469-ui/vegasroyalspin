@@ -105,6 +105,14 @@ return [
             'columns' => ['id', 'user_id', 'username', 'type', 'points', 'source', 'reference_id', 'note', 'created_at'],
             'search_placeholder' => 'Üye, kaynak, referans veya işlem tipi ara...',
         ],
+        'loyalty-cashback' => [
+            'title' => 'Sadakat Cashback Ödemeleri',
+            'table' => 'loyalty_cashback_payments',
+            'active' => 'datatable',
+            'crumbs' => 'Loyalty | Cashback Payouts',
+            'columns' => ['id', 'user_id', 'username', 'kind', 'level_code', 'cashback_rate', 'net_loss', 'total_bets', 'total_wins', 'amount', 'period_start', 'period_end', 'status', 'note', 'created_at'],
+            'search_placeholder' => 'Üye, seviye, tür veya dönem ara...',
+        ],
         'deposits' => [
             'title' => 'Yatırımlar',
             'table' => 'megapayz_transactions',
@@ -248,7 +256,8 @@ return [
             'table' => 'gsc_transactions',
             'active' => 'datatable',
             'crumbs' => 'GSC+ | Transactions',
-            'columns' => ['id', 'user_id', 'member_account', 'direction', 'action', 'amount', 'before_balance', 'after_balance', 'currency', 'product_code', 'game_code', 'wager_code', 'round_id', 'created_at'],
+            // Keep ≤10 columns (admin table UI hard-cap) — prioritize bet identity.
+            'columns' => ['id', 'member_account', 'action', 'amount', 'before_balance', 'after_balance', 'wager_code', 'game_code', 'direction', 'created_at'],
             'search_placeholder' => 'Üye, wager veya işlem ara...',
         ],
         'gsc-plus-wagers' => [
@@ -256,7 +265,7 @@ return [
             'table' => 'gsc_wagers',
             'active' => 'datatable',
             'crumbs' => 'GSC+ | Wagers',
-            'columns' => ['id', 'member_account', 'wager_code', 'product_code', 'game_code', 'game_type', 'bet_amount', 'prize_amount', 'wager_status', 'currency', 'settled_at', 'created_at'],
+            'columns' => ['id', 'member_account', 'wager_code', 'game_code', 'bet_amount', 'prize_amount', 'wager_status', 'currency', 'settled_at', 'updated_at'],
             'search_placeholder' => 'Wager veya üye ara...',
         ],
         'gsc-plus-wallet-logs' => [
@@ -264,8 +273,8 @@ return [
             'table' => 'gsc_wallet_logs',
             'active' => 'datatable',
             'crumbs' => 'GSC+ | Wallet Logs',
-            'columns' => ['id', 'endpoint', 'http_status', 'code', 'duration_ms', 'created_at'],
-            'search_placeholder' => 'Endpoint veya kod ara...',
+            'columns' => ['id', 'method', 'member_account', 'transaction_id', 'http_status', 'status_code', 'error_code', 'duration_ms', 'created_at'],
+            'search_placeholder' => 'Method, üye veya kod ara...',
         ],
         'gsc-plus-settings' => [
             'title' => 'GSC+ Ayarları',
@@ -336,8 +345,8 @@ return [
             'table' => 'bonus_claim_requests',
             'active' => 'datatable',
             'crumbs' => 'Content | Bonus Claims',
-            'columns' => ['id', 'user_id', 'bonus_name', 'requested_amount', 'status', 'processed_by', 'created_at'],
-            'search_placeholder' => 'Bonus talebi ara...',
+            'columns' => ['id', 'user_id', 'full_name', 'bonus_name', 'requested_amount', 'status', 'processed_by', 'created_at'],
+            'search_placeholder' => 'Bonus talebi, isim veya soyisim ara...',
         ],
         'promocodes' => [
             'title' => 'Promocode',
@@ -440,6 +449,7 @@ return [
                 ['key' => 'loyalty-levels', 'text' => 'Sadakat Seviyeleri', 'url' => '/module?key=loyalty-levels', 'active' => 'datatable', 'module' => 'loyalty-levels', 'icon' => '<path d="M12 2 15 8l6 .9-4.5 4.3 1.1 6.1L12 16.4 6.4 19.3l1.1-6.1L3 8.9 9 8z"/>'],
                 ['key' => 'loyalty-accounts', 'text' => 'Üye Puanları', 'url' => '/module?key=loyalty-accounts', 'active' => 'datatable', 'module' => 'loyalty-accounts', 'icon' => '<circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/><path d="m17 11 2 2 4-5"/>'],
                 ['key' => 'loyalty-transactions', 'text' => 'Puan Hareketleri', 'url' => '/module?key=loyalty-transactions', 'active' => 'datatable', 'module' => 'loyalty-transactions', 'icon' => '<path d="M3 3v18h18"/><path d="M7 15h3v3H7zM11 11h3v7h-3zM15 7h3v11h-3z"/>'],
+                ['key' => 'loyalty-cashback', 'text' => 'Cashback Ödemeleri', 'url' => '/module?key=loyalty-cashback', 'active' => 'datatable', 'module' => 'loyalty-cashback', 'icon' => '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/>'],
             ],
         ],
         [
@@ -542,7 +552,7 @@ return [
             'items' => [
                 ['key' => 'call-requests', 'text' => 'Aranma Talepleri', 'url' => '/module?key=call-requests', 'active' => 'datatable', 'module' => 'call-requests', 'icon' => '<path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.1 19a19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-2.92-8.75A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.32 1.77.6 2.61a2 2 0 0 1-.45 2.11L8 9.71a16 16 0 0 0 6.29 6.29l1.27-1.27a2 2 0 0 1 2.11-.45c.84.28 1.71.48 2.61.6A2 2 0 0 1 22 16.92z"/>'],
                 ['key' => 'support-tickets', 'text' => 'Destek Talepleri', 'url' => '/support/tickets', 'active' => 'datatable', 'module' => 'support-tickets', 'icon' => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
-                ['key' => 'chat', 'text' => 'Canlı Talepler', 'url' => '/chat', 'active' => 'chat', 'permission' => 'email', 'icon' => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
+                ['key' => 'chat', 'text' => 'Canlı Talepler', 'url' => '/chat', 'active' => 'chat', 'permission' => 'call-requests', 'icon' => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
                 ['key' => 'member-notifications', 'text' => 'Üye Bildirimleri', 'url' => '/notifications', 'active' => 'datatable', 'module' => 'member-notifications', 'icon' => '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>'],
             ],
         ],
@@ -563,7 +573,7 @@ return [
             'items' => [
                 ['key' => 'compliance-aml', 'text' => 'AML Uyarıları', 'url' => '/compliance/aml-alerts', 'active' => 'datatable', 'module' => 'compliance-aml', 'icon' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/>'],
                 ['key' => 'compliance-risk', 'text' => 'Risk Uyarıları', 'url' => '/compliance/risk-alerts', 'active' => 'datatable', 'module' => 'compliance-risk', 'icon' => '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>'],
-                ['key' => 'risk-analysis', 'text' => 'Risk Analizi', 'url' => '/compliance/risk-analysis', 'active' => 'risk-analysis', 'permission' => 'deposits', 'icon' => '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/><path d="M12 2a10 10 0 0 1 0 20"/>'],
+                ['key' => 'risk-analysis', 'text' => 'Risk Analizi', 'url' => '/compliance/risk-analysis', 'active' => 'risk-analysis', 'permission' => 'compliance-risk', 'icon' => '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/><path d="M12 2a10 10 0 0 1 0 20"/>'],
                 ['key' => 'compliance-audit', 'text' => 'Denetim Logu', 'url' => '/compliance/audit-log', 'active' => 'compliance-audit', 'permission' => 'logs', 'icon' => '<path d="M3 3v18h18"/><path d="M7 8h10M7 12h10M7 16h6"/>'],
             ],
         ],

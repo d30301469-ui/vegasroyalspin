@@ -243,8 +243,50 @@
     }
 
     function playHomeUrl() {
-        var url = window.__PLAY_HOME_URL__ ? String(window.__PLAY_HOME_URL__).trim() : '';
-        return url !== '' ? url : '/slot';
+        var configured = window.__PLAY_HOME_URL__ ? String(window.__PLAY_HOME_URL__).trim() : '';
+        if (configured !== '') {
+            return configured;
+        }
+        try {
+            var ref = document.referrer ? String(document.referrer).trim() : '';
+            if (ref !== '') {
+                var refUrl = new URL(ref, window.location.origin);
+                if (refUrl.origin === window.location.origin) {
+                    var path = refUrl.pathname || '/';
+                    if (path.indexOf('/play') !== 0) {
+                        return refUrl.pathname + refUrl.search + refUrl.hash;
+                    }
+                }
+            }
+        } catch (e) {}
+        return '/';
+    }
+
+    function goPlayHome() {
+        window.location.href = playHomeUrl();
+    }
+
+    function isHomeExitEvent(eventName, eventData) {
+        var name = String(eventName || '').toLowerCase();
+        if (
+            name === 'go_home' ||
+            name === 'gohome' ||
+            name === 'home' ||
+            name === 'exit' ||
+            name === 'close' ||
+            name === 'close_game' ||
+            name === 'closegame' ||
+            name === 'lobby' ||
+            name === 'back_to_lobby' ||
+            name === 'quit'
+        ) {
+            return true;
+        }
+        if (name === 'button-click' || name === 'button_click') {
+            var data = String(eventData || '').toLowerCase();
+            return data === 'home' || data === 'lobby' || data === 'exit' || data === 'close';
+        }
+        return false;
     }
 
     function showNotice(msg, kind) {
@@ -335,8 +377,8 @@
                 return;
             }
 
-            if (eventName === 'go_home') {
-                window.location.href = playHomeUrl();
+            if (isHomeExitEvent(eventName, eventData)) {
+                goPlayHome();
                 return;
             }
 
@@ -425,78 +467,6 @@
         return null;
     }
 
-    var newTabFallbackTimer = null;
-
-    function clearNewTabFallback() {
-        if (newTabFallbackTimer) {
-            window.clearTimeout(newTabFallbackTimer);
-            newTabFallbackTimer = null;
-        }
-        var el = document.getElementById('playNewTabFallback');
-        if (el) {
-            el.hidden = true;
-        }
-    }
-
-    // Provider launch tokens are usually one-shot, so a blocked frame cannot be
-    // recovered by reusing its URL — ask for a fresh launch in redirect mode and
-    // navigate the top-level window instead.
-    function relaunchTopLevel() {
-        var payload = Object.assign({}, lastLaunchPayload || window.__PLAY_LAUNCH_PAYLOAD__ || {});
-        payload.open_mode = 'redirect';
-        clearNewTabFallback();
-        launchInFlight = false;
-        launchGame(payload);
-    }
-
-    function scheduleNewTabFallback(url) {
-        clearNewTabFallback();
-        newTabFallbackTimer = window.setTimeout(function () {
-            showNewTabFallback(url);
-        }, 8000);
-    }
-
-    // Bazı sağlayıcıların oyun sayfası kendi güvenlik/uyum politikası
-    // (X-Frame-Options / CSP frame-ancestors veya bölge kısıtlaması) nedeniyle
-    // iframe içinde sessizce boş kalabilir. Bu durumda kullanıcıya elle
-    // kurtarma imkanı vermek için, oyun bir süre içinde onaylanmazsa küçük bir
-    // "yeni sekmede aç" düğmesi gösterilir — normal çalışan oyunları etkilemez.
-    function showNewTabFallback(url) {
-        var el = document.getElementById('playNewTabFallback');
-        if (!el) {
-            el = document.createElement('div');
-            el.id = 'playNewTabFallback';
-            el.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:5;display:flex;gap:8px;';
-
-            var newTabBtn = document.createElement('button');
-            newTabBtn.type = 'button';
-            newTabBtn.id = 'playNewTabFallbackNewTab';
-            newTabBtn.textContent = 'Oyun açılmadı mı? Yeni sekmede aç';
-            newTabBtn.style.cssText = 'padding:10px 16px;border-radius:10px;border:1px solid rgba(252,172,0,.5);background:rgba(15,5,34,.92);color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.35);';
-            el.appendChild(newTabBtn);
-
-            var sameTabBtn = document.createElement('button');
-            sameTabBtn.type = 'button';
-            sameTabBtn.id = 'playNewTabFallbackSameTab';
-            sameTabBtn.textContent = 'Bu sekmede aç';
-            sameTabBtn.style.cssText = 'padding:10px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(15,5,34,.92);color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.35);';
-            sameTabBtn.onclick = relaunchTopLevel;
-            el.appendChild(sameTabBtn);
-
-            var stage = document.querySelector('.play-stage');
-            if (stage) {
-                stage.appendChild(el);
-            }
-        }
-        var openBtn = document.getElementById('playNewTabFallbackNewTab');
-        if (openBtn) {
-            openBtn.onclick = function () {
-                window.open(url, '_blank', 'noopener,noreferrer');
-            };
-        }
-        el.hidden = false;
-    }
-
     function openLaunchContent(html, openMode) {
         var mode = String(openMode || 'html').toLowerCase();
         if (mode === 'redirect') {
@@ -506,7 +476,6 @@
             return;
         }
         var frame = document.getElementById('playFrame');
-        clearNewTabFallback();
         if (!frame) {
             document.open();
             document.write(html);
@@ -533,23 +502,72 @@
 
     function openLaunchUrl(url, openMode) {
         var mode = String(openMode || 'iframe').toLowerCase();
+        var urlLower = String(url || '').toLowerCase();
+        // GSC+/Pragmatic efinity shells are IP/cookie bound and break in nested
+        // iframes — only those hosts force top-level (never for aggregator iframe mode).
+        var gscEfinityHost = urlLower.indexOf('prerelease-env.biz') !== -1
+            || urlLower.indexOf('efinity') !== -1;
         var forceRedirect = mode === 'redirect'
+            || (gscEfinityHost && mode !== 'iframe')
             || !document.getElementById('playFrame');
+        // Desktop aggregator: keep iframe. Mobile sends open_mode=redirect above.
         if (forceRedirect) {
-            // Single navigation only. Provider tokens are often one-shot — a
-            // follow-up location.href after replace reloads the launch URL with the
-            // same token and yields "It seems you are not logged in."
-            window.location.replace(url);
+            // Anchor the current history entry on the same-origin home URL so
+            // browser Back from the provider lands on the main site (not /play
+            // or a one-shot launch hop). Then assign into the game once.
+            var home = playHomeUrl();
+            try {
+                if (home && home !== window.location.href) {
+                    history.replaceState(null, '', home);
+                }
+            } catch (e) {}
+            window.location.assign(url);
             return;
         }
         var frame = document.getElementById('playFrame');
-        clearNewTabFallback();
-        frame.src = frameSafeUrl(url);
-        scheduleNewTabFallback(url);
+        var loader = document.getElementById('playLoader');
+        var safeUrl = frameSafeUrl(url);
+
+        // Aggregator iframe is unrestricted (see play.php) so bet/wallet
+        // callbacks inside the game client can complete; other providers may
+        // still use a permissive sandbox on the element.
+        function onFrameLoaded() {
+            if (loader) {
+                loader.hidden = true;
+            }
+            launchInFlight = false;
+        }
+        function onFrameError() {
+            if (loader) {
+                loader.hidden = true;
+            }
+            launchInFlight = false;
+            showFatal('Oyun play içinde açılamadı. Lütfen sayfayı yenileyip tekrar deneyin.');
+        }
+
+        frame.removeEventListener('load', onFrameLoaded);
+        frame.removeEventListener('error', onFrameError);
+        frame.addEventListener('load', onFrameLoaded, { once: true });
+        frame.addEventListener('error', onFrameError, { once: true });
+
+        // Safety: if load never fires (opaque cross-origin), hide loader anyway.
+        window.setTimeout(function () {
+            if (loader && !loader.hidden) {
+                loader.hidden = true;
+            }
+            launchInFlight = false;
+        }, 12000);
+
+        try {
+            frame.src = 'about:blank';
+        } catch (e) {}
+        // Assign after a tick so the new load event is attached cleanly.
+        window.setTimeout(function () {
+            frame.src = safeUrl;
+        }, 0);
     }
 
     var launchInFlight = false;
-    var lastLaunchPayload = null;
 
     function launchGame(payload, attempt) {
         var launchAttempt = Number(attempt || 0);
@@ -557,10 +575,7 @@
             return;
         }
         launchInFlight = true;
-        lastLaunchPayload = payload || null;
         var loader = document.getElementById('playLoader');
-        var frame = document.getElementById('playFrame');
-        clearNewTabFallback();
         if (loader) {
             loader.hidden = false;
         }
@@ -697,11 +712,7 @@
         var closeBtn = document.getElementById('playCloseBtn');
         if (closeBtn) {
             closeBtn.addEventListener('click', function () {
-                if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    window.location.href = playHomeUrl();
-                }
+                goPlayHome();
             });
         }
 

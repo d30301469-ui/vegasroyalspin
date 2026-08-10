@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 final class AdminAuth
 {
-    private const PERSIST_COOKIE = 'vrs_admin_auth';
+    private const PERSIST_COOKIE = 'app_admin_auth';
+    private const PERSIST_COOKIE_LEGACY = 'vrs_admin_auth';
 
     private static function config(): array
     {
@@ -49,6 +50,30 @@ final class AdminAuth
         return is_string($decoded) ? $decoded : null;
     }
 
+    /** @return array{path: string, domain: string, secure: bool, httponly: bool, samesite: string} */
+    private static function persistentCookieOptions(): array
+    {
+        $params = session_get_cookie_params();
+        $path = (string) ($params['path'] ?? '/');
+        if ($path === '') {
+            $path = '/';
+        }
+        $domain = function_exists('admin_session_cookie_domain')
+            ? admin_session_cookie_domain()
+            : (string) ($params['domain'] ?? '');
+        $secure = function_exists('admin_session_is_https')
+            ? admin_session_is_https()
+            : (bool) ($params['secure'] ?? true);
+
+        return [
+            'path' => $path,
+            'domain' => $domain,
+            'secure' => $secure,
+            'httponly' => true,
+            'samesite' => (string) ($params['samesite'] ?? 'Lax'),
+        ];
+    }
+
     private static function setPersistentCookie(string $value, int $expiresAt): void
     {
         // Layout veya bir modül çıktı gönderdikten sonra cookie yenileme
@@ -58,14 +83,14 @@ final class AdminAuth
             return;
         }
 
-        $params = session_get_cookie_params();
+        $options = self::persistentCookieOptions();
         setcookie(self::persistentCookieName(), $value, [
             'expires' => $expiresAt,
-            'path' => (string) ($params['path'] ?? '/'),
-            'domain' => (string) ($params['domain'] ?? ''),
-            'secure' => (bool) ($params['secure'] ?? true),
+            'path' => $options['path'],
+            'domain' => $options['domain'],
+            'secure' => $options['secure'],
             'httponly' => true,
-            'samesite' => (string) ($params['samesite'] ?? 'Lax'),
+            'samesite' => $options['samesite'],
         ]);
     }
 
@@ -75,15 +100,19 @@ final class AdminAuth
             return;
         }
 
-        $params = session_get_cookie_params();
-        setcookie(self::persistentCookieName(), '', [
+        $options = self::persistentCookieOptions();
+        $base = [
             'expires' => time() - 3600,
-            'path' => (string) ($params['path'] ?? '/'),
-            'domain' => (string) ($params['domain'] ?? ''),
-            'secure' => (bool) ($params['secure'] ?? true),
+            'path' => $options['path'],
+            'secure' => $options['secure'],
             'httponly' => true,
-            'samesite' => (string) ($params['samesite'] ?? 'Lax'),
-        ]);
+            'samesite' => $options['samesite'],
+        ];
+        // Hem parent-domain hem host-only + legacy cookie adını temizle.
+        foreach ([self::persistentCookieName(), self::PERSIST_COOKIE_LEGACY] as $cookieName) {
+            setcookie($cookieName, '', $base + ['domain' => $options['domain']]);
+            setcookie($cookieName, '', $base + ['domain' => '']);
+        }
     }
 
     private static function issuePersistentCookie(array $admin): void
@@ -118,11 +147,25 @@ final class AdminAuth
 
     public static function restorePersistentLogin(): bool
     {
-        if (self::check()) {
-            return true;
+        // Aktif session varsa sadece touch/timeout kontrolü yap.
+        // Timeout sonrası cookie restore'a düşebilmek için önce check() ile
+        // kalıcı cookie temizlenmez.
+        $config = self::config();
+        $sessionKey = (string) $config['session_key'];
+        $existing = isset($_SESSION[$sessionKey]) && is_array($_SESSION[$sessionKey])
+            ? $_SESSION[$sessionKey]
+            : [];
+        if (!empty($existing['id']) && !empty($existing['username'])) {
+            if (self::check()) {
+                return true;
+            }
+            // check() idle timeout ile temizlediyse aşağıda cookie restore dene.
         }
 
         $raw = trim((string) ($_COOKIE[self::persistentCookieName()] ?? ''));
+        if ($raw === '' || !str_contains($raw, '.')) {
+            $raw = trim((string) ($_COOKIE[self::PERSIST_COOKIE_LEGACY] ?? ''));
+        }
         if ($raw === '' || !str_contains($raw, '.')) {
             return false;
         }
@@ -186,9 +229,9 @@ final class AdminAuth
         $lastActivity = (int) ($_SESSION['admin_last_activity'] ?? 0);
 
         if ($lastActivity > 0 && (time() - $lastActivity) > $timeoutSeconds) {
-            // Oturum süresi doldu — temizle.
-            $_SESSION[$key] = [];
-            unset($_SESSION['admin_last_activity']);
+            // Session idle doldu. Kalıcı cookie'yi burada silme — bootstrap restore
+            // aynı TTL ile cookie hâlâ geçerliyse oturumu geri yükler.
+            unset($_SESSION[$key], $_SESSION['admin_last_activity'], $_SESSION['admin_superadmin_perms_synced']);
             return false;
         }
 
@@ -324,9 +367,11 @@ final class AdminAuth
             'kyc-review' => 'kyc',
             'admin-signup' => 'admins',
             'compliance-audit' => 'logs',
-            'chat', 'compose' => 'email',
+            'compose' => 'email',
+            'chat' => 'call-requests',
             'reports-financial' => 'deposits',
-            'reports-charts', 'reports-calendar', 'backoffice-suite' => 'dashboard',
+            'reports-charts', 'reports-calendar', 'reports-geomap', 'backoffice-suite' => 'dashboard',
+            'risk-analysis' => 'compliance-risk',
             default => $permissionKey,
         };
     }
@@ -366,12 +411,14 @@ final class AdminAuth
             'kyc-review' => 'kyc',
             'admin-signup' => 'admins',
             'compliance-audit' => 'logs',
-            'chat' => 'email',
             'compose' => 'email',
+            'chat' => 'call-requests',
             'reports-financial' => 'deposits',
             'reports-charts' => 'dashboard',
             'reports-calendar' => 'dashboard',
+            'reports-geomap' => 'dashboard',
             'backoffice-suite' => 'dashboard',
+            'risk-analysis' => 'compliance-risk',
             // Eski "be_pages_*" / önceki panel şeması altında kaydedilmiş izinler.
             // Bu admin_permissions satırları hiç güncellenmediyse (yeni sayfa
             // adlarıyla tekrar kaydedilmediyse) aşağıdaki eşlemeler olmadan
@@ -455,6 +502,8 @@ final class AdminAuth
             'role' => (string) ($admin['role'] ?? 'admin'),
             'login_at' => time(),
         ];
+        $_SESSION['admin_last_activity'] = time();
+        unset($_SESSION['admin_superadmin_perms_synced']);
         self::issuePersistentCookie($admin);
         self::ensureAdminTables();
         self::recordSession();
@@ -469,9 +518,33 @@ final class AdminAuth
         $user = self::user();
         self::writeLog((string) ($user['username'] ?? ''), 'logout', 'auth', 'success');
         self::deactivateSession();
-        unset($_SESSION[(string) $config['session_key']]);
+        unset(
+            $_SESSION[(string) $config['session_key']],
+            $_SESSION['admin_last_activity'],
+            $_SESSION['admin_superadmin_perms_synced']
+        );
         self::clearPersistentCookie();
         session_regenerate_id(true);
+    }
+
+    /**
+     * Public (auth gerektirmeyen) admin yolları.
+     *
+     * @return list<string>
+     */
+    public static function publicPaths(): array
+    {
+        return ['/login', '/logout', '/signin'];
+    }
+
+    public static function isPublicPath(string $path): bool
+    {
+        $path = '/' . trim($path, '/');
+        if ($path === '/') {
+            return false;
+        }
+
+        return in_array($path, self::publicPaths(), true);
     }
 
     public static function csrfToken(): string
@@ -669,6 +742,14 @@ final class AdminAuth
                 'ip'             => (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
                 'ua'             => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
             ]);
+            if (class_exists('AdminAuditService', false) || is_file(__DIR__ . '/AdminAuditService.php')) {
+                if (!class_exists('AdminAuditService', false)) {
+                    require_once __DIR__ . '/AdminAuditService.php';
+                }
+                AdminAuditService::write($pdo, $action, $entityType, $entityId !== '' ? $entityId : null, $status, [
+                    'via' => 'AdminAuth::writeLog',
+                ]);
+            }
         } catch (Throwable) {}
     }
 

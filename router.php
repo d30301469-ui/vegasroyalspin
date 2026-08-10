@@ -34,13 +34,13 @@ foreach ($blockedDirs as $dir) {
     }
 }
 
-// config/env.php'deki metropol_is_backend_host() merkezi host kontrolÃ¼nÃ¼ yÃ¼kle.
-if (!function_exists('metropol_is_backend_host')) {
+// config/env.php'deki is_backend_host() merkezi host kontrolÃ¼nÃ¼ yÃ¼kle.
+if (!function_exists('is_backend_host')) {
     require_once __DIR__ . '/config/env.php';
 }
 $trimmedUri = rtrim($uri, '/');
 $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
-$isBackendHost = metropol_is_backend_host($host);
+$isBackendHost = is_backend_host($host);
 if (!$isBackendHost && preg_match('/^(?:admin|api)\.(?:localhost|[^.]+\.(?:test|local))$/', $host) === 1) {
     $isBackendHost = true;
 }

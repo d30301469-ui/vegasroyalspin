@@ -5,7 +5,8 @@ if (!class_exists('ApiMobileMenu', false)) {
     require_once (defined('API_PATH') ? API_PATH : dirname(__DIR__, 3) . '/api') . '/bootstrap.php';
 }
 $mobileMenuPayload = ApiMobileMenu::fetch();
-$mobileMenuTitle = (string) ($mobileMenuPayload['title'] ?? 'Menü');
+$mobileMenuTitleRaw = (string) ($mobileMenuPayload['title'] ?? 'Menü');
+$mobileMenuTitle = function_exists('i18n_label') ? i18n_label($mobileMenuTitleRaw) : $mobileMenuTitleRaw;
 $mobileMenuSections = is_array($mobileMenuPayload['sections'] ?? null) ? $mobileMenuPayload['sections'] : [];
 $mobileTabBar = is_array($mobileMenuPayload['tab_bar'] ?? null) && $mobileMenuPayload['tab_bar'] !== []
     ? $mobileMenuPayload['tab_bar']
@@ -21,13 +22,15 @@ $mobileMenuClass = static function (string $value): string {
         continue;
     }
     $type = strtolower(trim((string) ($tab['type'] ?? 'link')));
-    $label = trim((string) ($tab['label'] ?? ''));
+    $labelRaw = trim((string) ($tab['label'] ?? ''));
+    $label = function_exists('i18n_label') ? i18n_label($labelRaw, trim((string) ($tab['href'] ?? ''))) : $labelRaw;
     $icon = trim((string) ($tab['icon'] ?? ''));
     $badge = trim((string) ($tab['badge'] ?? ''));
-    if ($badge === '' && $type === 'link' && str_contains(strtolower($label), 'canlı')) {
+    if ($badge === '' && $type === 'link' && (str_contains(mb_strtolower($labelRaw, 'UTF-8'), 'canlı') || str_contains(strtolower($labelRaw), 'live'))) {
         $badge = $liveBadge;
     }
-    $aria = trim((string) ($tab['aria_label'] ?? $label));
+    $ariaRaw = trim((string) ($tab['aria_label'] ?? $labelRaw));
+    $aria = function_exists('i18n_label') ? i18n_label($ariaRaw, trim((string) ($tab['href'] ?? ''))) : $ariaRaw;
     $href = trim((string) ($tab['href'] ?? ''));
     $elementId = trim((string) ($tab['id'] ?? ''));
     $extraClass = $type === 'menu' ? ' menu' : '';
@@ -76,7 +79,7 @@ $mobileMenuClass = static function (string $value): string {
   <div class="m-navigation-container-bc">
     <div class="m-nav-title-row-bc">
       <div class="m-nav-title-content-bc"><?= htmlspecialchars($mobileMenuTitle, ENT_QUOTES, 'UTF-8') ?></div>
-      <button type="button" class="closed-n-p-bc" id="mobileMenu-close" aria-label="Kapat">
+      <button type="button" class="closed-n-p-bc" id="mobileMenu-close" aria-label="<?= htmlspecialchars(function_exists('__') ? __('auth.close') : 'Kapat', ENT_QUOTES, 'UTF-8') ?>">
         <i class="bc-i-close-remove" aria-hidden="true"></i>
       </button>
     </div>
@@ -87,7 +90,8 @@ $mobileMenuClass = static function (string $value): string {
           if (!is_array($section)) {
               continue;
           }
-          $sectionTitle = trim((string) ($section['title'] ?? ''));
+          $sectionTitleRaw = trim((string) ($section['title'] ?? ''));
+          $sectionTitle = function_exists('i18n_label') ? i18n_label($sectionTitleRaw) : $sectionTitleRaw;
           $items = is_array($section['items'] ?? null) ? $section['items'] : [];
           ?>
           <?php if ($sectionTitle !== ''): ?>
@@ -111,7 +115,7 @@ $mobileMenuClass = static function (string $value): string {
               <?php if ($iconClass !== ''): ?>
                 <i class="m-nav-icon-bc <?= htmlspecialchars($iconClass, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
               <?php endif; ?>
-              <span class="m-nav-list-item-title-bc"><?= htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+              <span class="m-nav-list-item-title-bc"><?= htmlspecialchars(function_exists('i18n_label') ? i18n_label((string) ($item['label'] ?? ''), (string) ($item['href'] ?? '')) : (string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
               <?php if ($badge !== ''): ?>
                 <span class="m-nav-category"><?= htmlspecialchars($badge, ENT_QUOTES, 'UTF-8') ?></span>
               <?php endif; ?>

@@ -1,0 +1,37 @@
+{
+  "file": "assets/js/header.js",
+  "generated_at": "2026-08-03T15:56:54.565453+00:00",
+  "mode": "dynamic",
+  "strip_policy": "coverage_required",
+  "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py",
+  "entries": [
+    "__closeAllHeaderFlyouts",
+    "__closeSearchPanel",
+    "__closeSmartPanel",
+    "bonusKoduKullan",
+    "closeAllHeaderFlyouts",
+    "closePanel",
+    "closeSearchPanel",
+    "debounce",
+    "hide",
+    "initDepositMenu",
+    "initToastr",
+    "openGame",
+    "positionMenu",
+    "redirectToDeposit",
+    "safeLog",
+    "scheduleClose",
+    "show"
+  ],
+  "keep": [],
+  "stats": {
+    "functions": 54,
+    "reachable": 53,
+    "unreachable_candidates": 1,
+    "coverage_hits": 0
+  },
+  "unreachable_sample": [
+    "readStoredMemberJwt"
+  ],
+  "confidence_note": "mode=dynamic strip_policy=coverage_required; entries=17 funcs=54 reachable=53 unreachable=1 coverage=0"
+}

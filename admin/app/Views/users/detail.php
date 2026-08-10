@@ -23,23 +23,40 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ??
 $badgeClass = static function (mixed $value): string {
     $value = strtolower((string) $value);
     return match (true) {
-        in_array($value, ['active', 'confirmed', 'approved', 'success', '1', 'completed', 'win', 'kazanç'], true) => 'success dot',
-        in_array($value, ['pending', 'waiting_approval', 'draft'], true) => 'warning dot',
-        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'banned', '0', 'bet', 'kayıp'], true) => 'danger dot',
-        in_array($value, ['cancel', 'rollback', 'iptal'], true) => 'warning dot',
+        in_array($value, ['active', 'confirmed', 'approved', 'success', '1', 'completed', 'win', 'kazanç', 'bahis'], true) => 'success dot',
+        in_array($value, ['pending', 'waiting', 'waiting_approval', 'draft'], true) => 'warning dot',
+        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'banned', '0', 'kayıp'], true) => 'danger dot',
+        in_array($value, ['bet', 'cancel', 'rollback', 'refund', 'iptal', 'iade'], true) => 'warning dot',
         default => 'primary',
     };
 };
-$txnTypeLabel = static function (mixed $value): string {
+$txnTypeLabel = static function (mixed $value, bool $sportsbook = false): string {
     $value = strtolower(trim((string) $value));
+    if ($sportsbook) {
+        return match ($value) {
+            'bet', 'promo_bet' => 'Bahis',
+            'win', 'promo_win', 'freespins_win' => 'Kazanç',
+            'cancel', 'rollback', 'refund' => 'İade',
+            default => $value !== '' ? ucfirst($value) : '-',
+        };
+    }
     return match ($value) {
         'bet', 'promo_bet' => 'Kayıp',
         'win', 'promo_win', 'freespins_win' => 'Kazanç',
-        'cancel', 'rollback' => 'İptal',
+        'cancel', 'rollback', 'refund' => 'İptal',
         default => $value !== '' ? ucfirst($value) : '-',
     };
 };
-$renderRows = static function (array $rows, array $columns) use ($text, $money, $badgeClass): void {
+$sportsStatusLabel = static function (mixed $value): string {
+    $value = strtolower(trim((string) $value));
+    return match ($value) {
+        'active' => 'Aktif',
+        'completed' => 'Tamamlandı',
+        'cancelled', 'canceled', 'cancel' => 'İade',
+        default => $value !== '' ? $value : '-',
+    };
+};
+$renderRows = static function (array $rows, array $columns, bool $sportsbook = false) use ($text, $money, $badgeClass, $txnTypeLabel, $sportsStatusLabel): void {
     if ($rows === []) {
         echo '<tr><td colspan="' . (count($columns)) . '">Kayıt bulunamadı.</td></tr>';
         return;
@@ -52,6 +69,12 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
             echo '<td style="overflow-wrap:anywhere">';
             if (preg_match('/amount|balance|fee/i', (string) $column) === 1) {
                 echo '<span class="data-cell-mono">' . $text($money($value)) . '</span>';
+            } elseif ($column === 'txn_type') {
+                $txnLabel = $txnTypeLabel($value, $sportsbook);
+                echo '<span class="badge ' . $text($badgeClass($sportsbook ? $txnLabel : $value)) . '">' . $text($txnLabel) . '</span>';
+            } elseif ($column === 'status' && $sportsbook) {
+                $statusLabel = $sportsStatusLabel($value);
+                echo '<span class="badge ' . $text($badgeClass($value)) . '">' . $text($statusLabel) . '</span>';
             } elseif (preg_match('/status|action/i', (string) $column) === 1) {
                 echo '<span class="badge ' . $text($badgeClass($value)) . '">' . $text($value) . '</span>';
             } else {
@@ -111,7 +134,28 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
     }
     .wagering-progress-bar { margin-top:8px; height:8px; border-radius:999px; background:var(--border-soft); overflow:hidden; }
     .wagering-progress-fill { height:100%; border-radius:999px; background:var(--accent, #6c5ce7); }
+    .wagering-progress-fill--bonus { background:#0d9488; }
     .user-stat-card small { display:block; margin-top:6px; color:var(--t-light); font-size:11px; font-weight:600; }
+    .wagering-section-intro { margin:0 0 14px; color:var(--t-light); font-size:13px; line-height:1.45; max-width:72ch; }
+    .wagering-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; }
+    .wagering-panel { border:1px solid var(--border-soft); border-radius:16px; background:var(--bg-muted); padding:16px; min-width:0; display:flex; flex-direction:column; gap:12px; }
+    .wagering-panel-head { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+    .wagering-panel-head h3 { margin:0; font-size:15px; font-weight:700; color:var(--t-base); }
+    .wagering-panel-head .badge { margin:0; }
+    .wagering-metrics { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
+    .wagering-metric { min-width:0; }
+    .wagering-metric span { display:block; color:var(--t-light); font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-bottom:4px; }
+    .wagering-metric strong { display:block; color:var(--t-base); font-size:16px; line-height:1.25; overflow-wrap:anywhere; }
+    .wagering-panel-note { margin:0; color:var(--t-light); font-size:12px; line-height:1.45; }
+    .wagering-bonus-list { display:flex; flex-direction:column; gap:12px; }
+    .wagering-bonus-item { border:1px solid var(--border); border-radius:12px; background:var(--bg-base, #fff); padding:12px; }
+    .wagering-bonus-item-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+    .wagering-bonus-item-head strong { color:var(--t-base); font-size:14px; }
+    .wagering-empty { margin:0; color:var(--t-light); font-size:13px; }
+    @media (max-width:900px) {
+        .wagering-grid { grid-template-columns:1fr; }
+        .wagering-metrics { grid-template-columns:1fr; }
+    }
 </style>
 
 <div class="user-detail-page">
@@ -132,7 +176,40 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
                 </div>
             </div>
             <span class="badge <?= $text($badgeClass($user['is_verified'] ?? 0)) ?>">Verified: <?= $text($user['is_verified'] ?? 0) ?></span>
-            <span class="badge <?= $text($badgeClass(((string) ($user['banned'] ?? '0') === '1') ? 'banned' : 'active')) ?>">Durum: <?= ((string) ($user['banned'] ?? '0') === '1') ? 'Banned' : 'Active' ?></span>
+            <span class="badge <?= $text($badgeClass(((string) ($user['banned'] ?? '0') === '1') ? 'banned' : 'active')) ?>">Durum: <?= ((string) ($user['banned'] ?? '0') === '1') ? 'Banlı' : 'Aktif' ?></span>
+            <?php if ((string) ($user['banned'] ?? '0') === '1'): ?>
+                <form method="post" action="<?= $text(AdminAuth::url('/user/unban')) ?>" data-admin-confirm="Bu kullanıcının banı kaldırılsın mı?" style="margin-top:8px">
+                    <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
+                    <input type="hidden" name="user_id" value="<?= $text((string) ($user['id'] ?? '')) ?>">
+                    <button class="btn btn--primary" type="submit">Banı kaldır</button>
+                </form>
+            <?php else: ?>
+                <form method="post" action="<?= $text(AdminAuth::url('/user/ban')) ?>" data-admin-confirm="Bu kullanıcı banlansın mı? Giriş yapamayacak ve aktif oturumları kapanacak." style="margin-top:8px">
+                    <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
+                    <input type="hidden" name="user_id" value="<?= $text((string) ($user['id'] ?? '')) ?>">
+                    <button class="btn btn--ghost" type="submit" style="border-color:#ef4444;color:#ef4444">Kullanıcıyı banla</button>
+                </form>
+            <?php endif; ?>
+            <?php $accountFreeze = is_array($accountFreeze ?? null) ? $accountFreeze : null; ?>
+            <?php if ($accountFreeze !== null): ?>
+                <span class="badge danger dot">Dondurulmuş<?= !empty($accountFreeze['frozen_at']) ? ' · ' . $text(date('d.m.Y H:i', strtotime((string) $accountFreeze['frozen_at']))) : '' ?></span>
+                <?php if (!empty($accountFreeze['reason'])): ?>
+                    <div class="user-profile-row"><div class="user-profile-label">Dondurma nedeni</div><div class="user-profile-value"><?= $text($accountFreeze['reason']) ?></div></div>
+                <?php endif; ?>
+                <form method="post" action="<?= $text(AdminAuth::url('/user/unfreeze')) ?>" data-admin-confirm="Bu hesabın dondurması kaldırılsın mı?" style="margin-top:8px">
+                    <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
+                    <input type="hidden" name="user_id" value="<?= $text((string) ($user['id'] ?? '')) ?>">
+                    <input type="hidden" name="redirect" value="user">
+                    <button class="btn btn--primary" type="submit">Dondurmayı kaldır</button>
+                </form>
+            <?php else: ?>
+                <form method="post" action="<?= $text(AdminAuth::url('/user/freeze')) ?>" data-admin-confirm="Bu hesap dondurulsun mu?" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                    <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
+                    <input type="hidden" name="user_id" value="<?= $text((string) ($user['id'] ?? '')) ?>">
+                    <input class="input" type="text" name="reason" placeholder="Dondurma nedeni" style="min-width:180px">
+                    <button class="btn btn--ghost" type="submit">Hesabı dondur</button>
+                </form>
+            <?php endif; ?>
             <div class="user-profile-row"><div class="user-profile-label">Telefon</div><div class="user-profile-value"><?= $text($user['phone'] ?? '-') ?></div></div>
             <div class="user-profile-row"><div class="user-profile-label">Kayıt tarihi</div><div class="user-profile-value"><?= $text($user['created_at'] ?? '-') ?></div></div>
             <div class="user-profile-row"><div class="user-profile-label">Ülke / şehir</div><div class="user-profile-value"><?= $text(trim((string) ($user['country'] ?? '') . ' / ' . (string) ($user['city'] ?? ''), ' /')) ?></div></div>
@@ -152,15 +229,9 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
             <div class="user-stat-card"><span>Manuel eklenen</span><strong><?= $text($money($summary['manual_add'] ?? 0)) ?></strong></div>
             <div class="user-stat-card"><span>Manuel çıkarılan</span><strong><?= $text($money($summary['manual_subtract'] ?? 0)) ?></strong></div>
             <div class="user-stat-card">
-                <span>Ana bakiye çevrim (1x)</span>
-                <strong><?= $text($money($accountWagering['progress'] ?? 0)) ?> / <?= $text($money($accountWagering['required'] ?? 0)) ?></strong>
-                <div class="wagering-progress-bar"><div class="wagering-progress-fill" style="width:<?= $text((float) ($accountWagering['percent'] ?? 0)) ?>%"></div></div>
-                <small><?= $text(number_format((float) ($accountWagering['percent'] ?? 0), 1)) ?>% tamamlandı · Kalan: <?= $text($money($accountWagering['remaining'] ?? 0)) ?></small>
-            </div>
-            <div class="user-stat-card">
-                <span>Aktif oynama modu</span>
-                <strong><?= $text($activeWalletMode === 'bonus' ? 'Bonus Bakiye' : 'Ana Bakiye') ?></strong>
-                <small>Kullanıcının son oyun başlatmada seçtiği bakiye — çevrim takibinin hangi bonusa işlendiğini belirler.</small>
+                <span>Aktif oynama cüzdanı</span>
+                <strong><?= $text($activeWalletMode === 'bonus' ? 'Bonus bakiye' : 'Ana bakiye') ?></strong>
+                <small>Son oyun başlatmada seçilen cüzdan. Bonus çevrimi yalnızca bonus bakiyesiyle oynanınca ilerler.</small>
             </div>
         </div>
         <form method="post" action="<?= htmlspecialchars(AdminAuth::url('/user/balance-adjust'), ENT_QUOTES, 'UTF-8') ?>" class="user-balance-form">
@@ -197,6 +268,115 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
     </section>
     </div>
 
+    <?php
+    $mainRequired = (float) ($accountWagering['required'] ?? 0);
+    $mainProgress = (float) ($accountWagering['progress'] ?? 0);
+    $mainRemaining = (float) ($accountWagering['remaining'] ?? 0);
+    $mainPercent = (float) ($accountWagering['percent'] ?? 0);
+    $mainComplete = !empty($accountWagering['isComplete']);
+    $bonusWageringRows = [];
+    foreach ($activeBonuses as $bonusRow) {
+        $target = (float) ($bonusRow['wagering_target'] ?? 0);
+        $bet = (float) ($bonusRow['total_bet_amount'] ?? 0);
+        $initial = (float) ($bonusRow['initial_amount'] ?? 0);
+        $reqMult = (float) ($bonusRow['wagering_requirement'] ?? 0);
+        $percent = $target > 0 ? min(100.0, round(($bet / $target) * 100, 1)) : 100.0;
+        $complete = ((int) ($bonusRow['is_complete'] ?? 0) === 1) || ($target > 0 && $bet >= $target);
+        $multiplierLabel = '-';
+        if ($reqMult > 0) {
+            $multiplierLabel = rtrim(rtrim(number_format($reqMult, 2, ',', ''), '0'), ',') . 'x';
+        } elseif ($initial > 0 && $target > 0) {
+            $multiplierLabel = rtrim(rtrim(number_format($target / $initial, 2, ',', ''), '0'), ',') . 'x';
+        }
+        $bonusWageringRows[] = [
+            'name' => (string) ($bonusRow['name'] ?? 'Bonus'),
+            'target' => $target,
+            'progress' => $bet,
+            'remaining' => max(0.0, round($target - $bet, 2)),
+            'percent' => $percent,
+            'complete' => $complete,
+            'multiplier' => $multiplierLabel,
+            'balance' => (float) ($bonusRow['current_bonus_balance'] ?? 0),
+            'status' => (string) ($bonusRow['status'] ?? ''),
+        ];
+    }
+    $openBonusCount = count(array_filter(
+        $bonusWageringRows,
+        static fn (array $row): bool => !$row['complete'] && strtolower((string) $row['status']) === 'active'
+    ));
+    ?>
+    <section class="card admin-compact-card user-detail-section">
+        <div class="card-head">
+            <div class="card-title-wrap">
+                <span class="eyebrow">Çevrim</span>
+                <h2 class="card-title">Ana para ve bonus çevrimi</h2>
+            </div>
+        </div>
+        <p class="wagering-section-intro">
+            İki çevrim birbirinden ayrıdır. Ana para çevrimi yatırımın 1 katıdır ve her gerçek bahisle ilerler.
+            Bonus para çevrimi yalnızca kullanıcı <strong>bonus bakiyesi</strong> ile oynarken ilerler.
+        </p>
+        <div class="wagering-grid">
+            <div class="wagering-panel">
+                <div class="wagering-panel-head">
+                    <h3>Ana para çevrimi</h3>
+                    <span class="badge primary">1x yatırım</span>
+                    <span class="badge <?= $mainComplete ? 'success' : 'warning' ?> dot"><?= $mainComplete ? 'Tamam' : 'Devam ediyor' ?></span>
+                </div>
+                <div class="wagering-metrics">
+                    <div class="wagering-metric"><span>Hedef</span><strong><?= $text($money($mainRequired)) ?></strong></div>
+                    <div class="wagering-metric"><span>Çevrilen</span><strong><?= $text($money($mainProgress)) ?></strong></div>
+                    <div class="wagering-metric"><span>Kalan</span><strong><?= $text($money($mainRemaining)) ?></strong></div>
+                </div>
+                <div class="wagering-progress-bar"><div class="wagering-progress-fill" style="width:<?= $text($mainPercent) ?>%"></div></div>
+                <p class="wagering-panel-note">
+                    <?= $text(number_format($mainPercent, 1)) ?>% tamamlandı.
+                    Onaylanan her yatırım hedefe eklenir. Bahisler (ana veya bonus cüzdanından) ana çevrim ilerlemesini artırır.
+                </p>
+            </div>
+            <div class="wagering-panel">
+                <div class="wagering-panel-head">
+                    <h3>Bonus para çevrimi</h3>
+                    <span class="badge <?= $activeWalletMode === 'bonus' ? 'success' : 'primary' ?> dot">
+                        Oynama: <?= $text($activeWalletMode === 'bonus' ? 'Bonus bakiye' : 'Ana bakiye') ?>
+                    </span>
+                    <span class="badge <?= $openBonusCount > 0 ? 'warning' : 'success' ?> dot">
+                        <?= $openBonusCount > 0 ? ($openBonusCount . ' aktif çevrim') : 'Açık bonus çevrimi yok' ?>
+                    </span>
+                </div>
+                <?php if ($bonusWageringRows === []): ?>
+                    <p class="wagering-empty">Aktif veya listelenen bonus kaydı yok. Bonus çevrimi yalnızca tanımlı bonus hedefi olduğunda takip edilir.</p>
+                <?php else: ?>
+                    <div class="wagering-bonus-list">
+                        <?php foreach ($bonusWageringRows as $bonusWager): ?>
+                            <div class="wagering-bonus-item">
+                                <div class="wagering-bonus-item-head">
+                                    <strong><?= $text($bonusWager['name']) ?></strong>
+                                    <span class="badge <?= $bonusWager['complete'] ? 'success' : 'warning' ?> dot">
+                                        <?= $bonusWager['complete'] ? 'Tamam' : 'Devam ediyor' ?>
+                                    </span>
+                                </div>
+                                <div class="wagering-metrics">
+                                    <div class="wagering-metric"><span>Çarpan</span><strong><?= $text($bonusWager['multiplier']) ?></strong></div>
+                                    <div class="wagering-metric"><span>Hedef</span><strong><?= $text($money($bonusWager['target'])) ?></strong></div>
+                                    <div class="wagering-metric"><span>Çevrilen</span><strong><?= $text($money($bonusWager['progress'])) ?></strong></div>
+                                    <div class="wagering-metric"><span>Kalan</span><strong><?= $text($money($bonusWager['remaining'])) ?></strong></div>
+                                    <div class="wagering-metric"><span>Bonus bakiye</span><strong><?= $text($money($bonusWager['balance'])) ?></strong></div>
+                                    <div class="wagering-metric"><span>İlerleme</span><strong><?= $text(number_format((float) $bonusWager['percent'], 1)) ?>%</strong></div>
+                                </div>
+                                <div class="wagering-progress-bar"><div class="wagering-progress-fill wagering-progress-fill--bonus" style="width:<?= $text((float) $bonusWager['percent']) ?>%"></div></div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+                <p class="wagering-panel-note">
+                    Bonus çevrimi, kullanıcının aktif oynama cüzdanı <strong>bonus bakiye</strong> iken yapılan bahislerle artar.
+                    Ana bakiye ile oynanan bahisler bonus çevrimine yazılmaz.
+                </p>
+            </div>
+        </div>
+    </section>
+
     <section class="card admin-compact-card user-detail-section">
         <div class="card-head"><div class="card-title-wrap"><span class="eyebrow">Finans</span><h2 class="card-title">Finans özeti</h2></div></div>
         <div class="user-stat-grid">
@@ -222,8 +402,8 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
         ['title' => 'Yatırımlar', 'rows' => $deposits, 'columns' => ['id' => 'ID', 'method' => 'Metot', 'provider' => 'Provider', 'amount' => 'Tutar', 'status' => 'Durum', 'trx' => 'TRX', 'created_at' => 'Tarih']],
         ['title' => 'Çekimler', 'rows' => $withdrawals, 'columns' => ['id' => 'ID', 'method' => 'Metot', 'provider' => 'Provider', 'amount' => 'Tutar', 'status' => 'Durum', 'admin_status' => 'Admin', 'created_at' => 'Tarih']],
         ['title' => 'Admin bakiye işlemleri', 'rows' => $adjustments, 'columns' => ['id' => 'ID', 'wallet' => 'Cüzdan', 'action' => 'İşlem', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'admin_username' => 'Admin', 'created_at' => 'Tarih']],
-        ['title' => 'Oyun işlemleri', 'type' => 'games', 'rows' => $games, 'columns' => ['id' => 'ID', 'game_name' => 'Oyun', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'txn_type' => 'Tip', 'bet_amount' => 'Bet', 'win_amount' => 'Win', 'balance_after' => 'Bakiye', 'created_at' => 'Tarih']],
-        ['title' => 'Spor kuponları', 'rows' => $sportsbookCoupons, 'columns' => ['id' => 'ID', 'coupon_id' => 'Kupon', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'vendor_code' => 'Vendor', 'game_code' => 'Sport', 'txn_type' => 'Kazanç/Kayıp', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'currency' => 'Para', 'match_result' => 'Maç Sonucu', 'processed_coupon' => 'İşlenmiş Kupon', 'status' => 'Durum', 'created_at' => 'Tarih']],
+        ['title' => 'Oyun geçmişi', 'type' => 'games', 'rows' => $games, 'columns' => ['id' => 'ID', 'game_name' => 'Oyun', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'txn_type' => 'Tip', 'bet_amount' => 'Bet', 'win_amount' => 'Win', 'balance_after' => 'Bakiye', 'created_at' => 'Tarih']],
+        ['title' => 'Spor kuponları', 'type' => 'sportsbook', 'rows' => $sportsbookCoupons, 'columns' => ['id' => 'ID', 'coupon_id' => 'Kupon', 'transaction_id' => 'Transaction', 'round_id' => 'Round', 'vendor_code' => 'Vendor', 'game_code' => 'Sport', 'txn_type' => 'İşlem Türü', 'amount' => 'Tutar', 'before_balance' => 'Önce', 'after_balance' => 'Sonra', 'currency' => 'Para', 'match_result' => 'Maç Sonucu', 'processed_coupon' => 'İşlenmiş Kupon', 'status' => 'Durum', 'created_at' => 'Tarih']],
         ['title' => 'Bonus talepleri', 'rows' => $bonusClaims, 'columns' => ['id' => 'ID', 'bonus_name' => 'Bonus', 'requested_amount' => 'Tutar', 'status' => 'Durum', 'processed_by' => 'İşleyen', 'processed_at' => 'İşlem tarihi', 'created_at' => 'Tarih']],
         ['title' => 'Aktif bonuslar', 'rows' => $activeBonuses, 'columns' => ['id' => 'ID', 'name' => 'Bonus', 'initial_amount' => 'İlk tutar', 'current_bonus_balance' => 'Mevcut', 'cevrim_hedef' => 'Çevrim hedefi', 'cevrim_ilerleme' => 'Çevrim ilerleme', 'cevrim_durumu' => 'Çevrim durumu', 'status' => 'Durum', 'deadline' => 'Deadline', 'created_at' => 'Tarih']],
         ['title' => 'Freespinler', 'rows' => $freespins, 'columns' => ['provider' => 'Sağlayıcı', 'campaign' => 'Kampanya', 'game' => 'Oyun', 'freespins_total' => 'Verilen', 'freespins_done' => 'Kullanılan', 'win_amount' => 'Kazanç', 'status' => 'Durum', 'valid_until' => 'Son kullanım', 'created_at' => 'Veriliş tarihi']],
@@ -272,6 +452,8 @@ $renderRows = static function (array $rows, array $columns) use ($text, $money, 
                                 <?php endforeach; ?>
                             </tr>
                         <?php endforeach; ?>
+                    <?php elseif (($section['type'] ?? '') === 'sportsbook'): ?>
+                        <?php $renderRows($section['rows'], $section['columns'], true); ?>
                     <?php else: ?>
                         <?php $renderRows($section['rows'], $section['columns']); ?>
                     <?php endif; ?>

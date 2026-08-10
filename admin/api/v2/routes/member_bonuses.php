@@ -99,10 +99,23 @@ if ($method === 'GET' && $route === 'promocodes.php') {
     } catch (PDOException $e) {
         $rawRows = str_contains($e->getMessage(), '42S02') ? [] : throw $e;
     }
-    $rows = array_map(static function (array $row): array {
+
+    $usageStmt = $pdo->prepare(
+        "SELECT COUNT(*) FROM promocode_requests
+         WHERE promocode_id = :id AND status IN ('pending', 'approved')"
+    );
+
+    $rows = [];
+    foreach ($rawRows as $row) {
         $limit = (int) ($row['kullanim_limiti'] ?? 0);
-        $used = (int) ($row['mevcut_kullanim'] ?? 0);
-        return [
+        $usedStored = (int) ($row['mevcut_kullanim'] ?? 0);
+        $usageStmt->execute(['id' => (int) ($row['id'] ?? 0)]);
+        $usedLive = (int) $usageStmt->fetchColumn();
+        $used = max($usedStored, $usedLive);
+        if ($limit > 0 && $used >= $limit) {
+            continue; // limit dolu kodları listeden gizle
+        }
+        $rows[] = [
             'id' => (int) ($row['id'] ?? 0),
             'kod' => (string) ($row['kod'] ?? ''),
             'code' => (string) ($row['kod'] ?? ''),
@@ -116,7 +129,7 @@ if ($method === 'GET' && $route === 'promocodes.php') {
             'currentUses' => $used,
             'remainingUses' => $limit > 0 ? max(0, $limit - $used) : null,
         ];
-    }, $rawRows);
+    }
     $memberEnvelope(200, [
         'success' => true,
         'code' => 200,
@@ -134,12 +147,45 @@ if ($method === 'POST' && $route === 'promocode_request.php') {
         $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'promocode_id zorunludur.']);
     }
     $pdo = AdminDatabase::pdo();
-    $promo = $pdo->prepare('SELECT id, kod, miktar FROM promocodes WHERE id = :id LIMIT 1');
+    $now = date('Y-m-d H:i:s');
+    $promo = $pdo->prepare(
+        'SELECT id, kod, miktar, kullanim_limiti, mevcut_kullanim, son_gecerlilik_tarihi
+         FROM promocodes
+         WHERE id = :id
+         LIMIT 1'
+    );
     $promo->execute(['id' => $promocodeId]);
     $row = $promo->fetch(PDO::FETCH_ASSOC);
     if (!is_array($row)) {
         $memberEnvelope(404, ['success' => false, 'code' => 404, 'message' => 'Promocode bulunamadı.']);
     }
+    $expiresAt = trim((string) ($row['son_gecerlilik_tarihi'] ?? ''));
+    if ($expiresAt !== '' && $expiresAt < $now && date('Y-m-d', strtotime($expiresAt)) < date('Y-m-d')) {
+        $memberEnvelope(422, [
+            'success' => false,
+            'code' => 422,
+            'message' => 'Promosyon kodunun süresi dolmuş.',
+        ]);
+    }
+
+    $limit = (int) ($row['kullanim_limiti'] ?? 0);
+    $usedStored = (int) ($row['mevcut_kullanim'] ?? 0);
+    $usageStmt = $pdo->prepare(
+        "SELECT COUNT(*) FROM promocode_requests
+         WHERE promocode_id = :id AND status IN ('pending', 'approved')"
+    );
+    $usageStmt->execute(['id' => (int) $row['id']]);
+    $usedLive = (int) $usageStmt->fetchColumn();
+    $used = max($usedStored, $usedLive);
+    if ($limit > 0 && $used >= $limit) {
+        $memberEnvelope(422, [
+            'success' => false,
+            'code' => 422,
+            'message' => 'Promosyon kodu kullanım limiti dolmuştur.',
+            'mesaj' => 'Promosyon kodu kullanım limiti dolmuştur.',
+        ]);
+    }
+
     $existingPromocodeReq = $pdo->prepare("SELECT id FROM promocode_requests WHERE user_id = :user_id AND promocode_id = :promocode_id AND status IN ('pending','approved') LIMIT 1");
     $existingPromocodeReq->execute(['user_id' => $userId, 'promocode_id' => (int) ($row['id'] ?? 0)]);
     if ($existingPromocodeReq->fetch(PDO::FETCH_ASSOC)) {
@@ -194,9 +240,22 @@ if ($method === 'POST' && $route === 'bonus_use_code.php') {
         $memberEnvelope(404, ['success' => false, 'status' => 'error', 'code' => 404, 'message' => 'Promosyon kodu bulunamadı veya süresi dolmuş.', 'mesaj' => 'Promosyon kodu bulunamadı veya süresi dolmuş.']);
     }
     $limit = (int) ($row['kullanim_limiti'] ?? 0);
-    $used = (int) ($row['mevcut_kullanim'] ?? 0);
+    $usedStored = (int) ($row['mevcut_kullanim'] ?? 0);
+    $usageStmt = $pdo->prepare(
+        "SELECT COUNT(*) FROM promocode_requests
+         WHERE promocode_id = :id AND status IN ('pending', 'approved')"
+    );
+    $usageStmt->execute(['id' => (int) $row['id']]);
+    $usedLive = (int) $usageStmt->fetchColumn();
+    $used = max($usedStored, $usedLive);
     if ($limit > 0 && $used >= $limit) {
-        $memberEnvelope(422, ['success' => false, 'status' => 'error', 'code' => 422, 'message' => 'Promosyon kodu kullanım limiti dolmuş.', 'mesaj' => 'Promosyon kodu kullanım limiti dolmuş.']);
+        $memberEnvelope(422, [
+            'success' => false,
+            'status' => 'error',
+            'code' => 422,
+            'message' => 'Promosyon kodu kullanım limiti dolmuştur.',
+            'mesaj' => 'Promosyon kodu kullanım limiti dolmuştur.',
+        ]);
     }
     $exists = $pdo->prepare("SELECT id FROM promocode_requests WHERE user_id = :user_id AND promocode_id = :promocode_id AND status IN ('pending','approved') LIMIT 1");
     $exists->execute(['user_id' => $userId, 'promocode_id' => (int) $row['id']]);

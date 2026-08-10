@@ -18,7 +18,7 @@ $loginUrl = '/login';
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title><?= htmlspecialchars($siteAdi, ENT_QUOTES, 'UTF-8') ?> — Bakım modu</title>
-  <link rel="stylesheet" href="<?= htmlspecialchars(asset_url('assets/css/maintenance.css'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="<?= htmlspecialchars(asset_url('assets/css/page-maintenance.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="maintenance-page">
   <div class="maintenance-wrap">

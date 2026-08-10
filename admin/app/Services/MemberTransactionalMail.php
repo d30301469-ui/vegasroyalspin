@@ -56,11 +56,11 @@ final class MemberTransactionalMail
             . "\n" . $companyName . ' Ekibi';
 
         $htmlBody = null;
-        $mailerFile = dirname(__DIR__) . '/Services/MetropolMailer.php';
+        $mailerFile = dirname(__DIR__) . '/Services/Mailer.php';
         if (is_file($mailerFile)) {
             require_once $mailerFile;
         }
-        if (function_exists('metropol_mail_render_template')) {
+        if (function_exists('mail_render_template')) {
             $supportEmail = trim((string) ($settings['support_email'] ?? ''));
             if ($supportEmail === '' || filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false) {
                 $domain = (string) (parse_url($siteUrl, PHP_URL_HOST) ?: 'vegasroyalspin.com');
@@ -90,7 +90,7 @@ final class MemberTransactionalMail
             $templateKey = $isDeposit ? 'deposit_approved_template_html' : 'withdraw_approved_template_html';
             $logoUrl = self::resolveLogoUrl($pdo, $siteUrl);
 
-            $htmlBody = metropol_mail_render_template(
+            $htmlBody = mail_render_template(
                 $siteUrl,
                 $preheader,
                 $heading,
@@ -219,7 +219,7 @@ final class MemberTransactionalMail
             return false;
         }
 
-        $mailerFile = dirname(__DIR__) . '/Services/MetropolMailer.php';
+        $mailerFile = dirname(__DIR__) . '/Services/Mailer.php';
         if (is_file($mailerFile)) {
             require_once $mailerFile;
         }
@@ -229,9 +229,9 @@ final class MemberTransactionalMail
             $from = 'no-reply@vegasroyalspin.com';
         }
 
-        if (function_exists('metropol_mail_send')) {
+        if (function_exists('mail_send')) {
             $error = '';
-            $ok = metropol_mail_send($settings, $from, $toEmail, $subject, $messageText, $error, $htmlBody, $toName);
+            $ok = mail_send($settings, $from, $toEmail, $subject, $messageText, $error, $htmlBody, $toName);
             $preview = $ok
                 ? $messageText
                 : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $messageText);

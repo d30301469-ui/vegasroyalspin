@@ -12,7 +12,7 @@ class ApiSignupTrackerController
     {
         if (session_status() === PHP_SESSION_NONE) {
             require_once __DIR__ . '/../../config/frontend_session.php';
-            metropol_frontend_session_start();
+            frontend_session_start();
         }
 
         $ref = ReferralAttribution::normalize((string) ($_GET['ref'] ?? ''));
@@ -24,8 +24,8 @@ class ApiSignupTrackerController
 
         ReferralAttribution::remember($ref);
 
-        $clientIp = function_exists('metropol_cloudflare_client_ip')
-            ? metropol_cloudflare_client_ip()
+        $clientIp = function_exists('cloudflare_client_ip')
+            ? cloudflare_client_ip()
             : (string) ($_SERVER['REMOTE_ADDR'] ?? '');
 
         ReferralAttribution::trackClick($ref, $clientIp, SITE_URL . '/?ref=' . rawurlencode($ref));

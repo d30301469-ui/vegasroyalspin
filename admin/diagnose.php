@@ -31,7 +31,7 @@ $serverSoft = strtolower((string) ($_SERVER['SERVER_SOFTWARE'] ?? ''));
 $result['checks']['server_software'] = $serverSoft !== '' ? $serverSoft : 'unknown';
 if (str_contains($serverSoft, 'nginx')) {
     $result['ok'] = false;
-    $result['hints'][] = 'Sunucu nginx raporluyor — proje Apache-only: nginx Stop, Apache 80/443 (deploy/aapanel/APACHE-ONLY-TR.md)';
+    $result['hints'][] = 'Sunucu nginx raporluyor — proje Apache-only. Domain icin nginx vhost olmamali; Apache ile servis edin.';
 } elseif ($serverSoft !== '' && !str_contains($serverSoft, 'apache')) {
     $result['hints'][] = 'Beklenen web sunucusu: Apache + mod_rewrite + AllowOverride All';
 }

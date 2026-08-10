@@ -6,13 +6,19 @@
  */
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 require_once __DIR__ . '/../core/bootstrap.php';
 
 $pageTitle = 'Spor Bahisleri';
-$sbLang    = trim((string) ($_GET['lang'] ?? 'tr'));
+$sbLang    = trim((string) ($_GET['lang'] ?? ''));
+if ($sbLang === '' && function_exists('current_locale')) {
+    $sbLang = current_locale();
+}
+if ($sbLang === '' || (class_exists('SiteI18n', false) && SiteI18n::normalize($sbLang) === '')) {
+    $sbLang = 'tr';
+}
 ?>
 <?php include VIEW_PATH . '/layouts/head.php'; ?>
 <?php include VIEW_PATH . '/partials/header.php'; ?>

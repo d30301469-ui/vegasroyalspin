@@ -1,6 +1,8 @@
 /**
  * Login modal (#login2) – açma, kapatma. jQuery yoksa modal-polyfill (showModalById/hideModalById) kullanılır.
- */
+ 
+ * @dynamic-file
+*/
 'use strict';
 (function () {
     var $jq = window.jQuery || window.$;
@@ -109,7 +111,17 @@
         });
     }
 
-    function closeMobileSurfacesBeforeAuthModal() {
+    function closeSurfacesBeforeAuthModal() {
+        if (typeof window.__closeAllHeaderFlyouts === 'function') {
+            window.__closeAllHeaderFlyouts();
+        } else {
+            if (typeof window.__closeSmartPanel === 'function') {
+                window.__closeSmartPanel();
+            }
+            if (typeof window.__closeSearchPanel === 'function') {
+                window.__closeSearchPanel();
+            }
+        }
         if (!document.body || !document.body.classList.contains('mobile-site')) {
             return;
         }
@@ -119,9 +131,10 @@
         if (typeof window.__closeMobileNavMenu === 'function') {
             window.__closeMobileNavMenu();
         }
-        if (typeof window.__closeSmartPanel === 'function') {
-            window.__closeSmartPanel();
-        }
+    }
+    /* Back-compat alias */
+    function closeMobileSurfacesBeforeAuthModal() {
+        closeSurfacesBeforeAuthModal();
     }
 
     function showLoginModal() {
@@ -317,7 +330,9 @@
             var showPassword = input.type === 'password';
             input.type = showPassword ? 'text' : 'password';
             toggle.setAttribute('aria-pressed', showPassword ? 'true' : 'false');
-            toggle.setAttribute('aria-label', showPassword ? 'Şifreyi gizle' : 'Şifreyi göster');
+            toggle.setAttribute('aria-label', showPassword
+                ? (window.__ ? window.__('auth.hide_password', 'Şifreyi gizle') : 'Şifreyi gizle')
+                : (window.__ ? window.__('auth.show_password', 'Şifreyi göster') : 'Şifreyi göster'));
             if (toggle.classList) {
                 toggle.classList.toggle('is-password-visible', showPassword);
             }
@@ -713,7 +728,7 @@
                         }                        window.__loginSubmitting = false;                        window.__USER_LOGGED_IN__ = true;
                         window.__HAS_MEMBER_JWT__ = true;
                         window.__MEMBER_LOGIN_AT__ = Date.now();
-                        notify('success', data.message || 'Giriş başarılı.', 'Giriş');
+                        notify('success', data.message || (window.__ ? window.__('auth.login_success', 'Giriş başarılı.') : 'Giriş başarılı.'), (window.__ ? window.__('auth.login_title', 'Giriş') : 'Giriş'));
                         hideLoginModal();
                         loginForm.reset();
                         hideError();
@@ -745,7 +760,7 @@
                 .catch(function () {
                     window.__loginSubmitting = false;
                     setLoading(false);
-                    showError(Shared.MSG_CONN || 'Bağlantı hatası. Lütfen tekrar deneyin.');
+                    showError(Shared.MSG_CONN || (window.__ ? window.__('common.connection_error', 'Bağlantı hatası. Lütfen tekrar deneyin.') : 'Bağlantı hatası. Lütfen tekrar deneyin.'));
                     resetLoginTurnstileWidget();
                 });
         });

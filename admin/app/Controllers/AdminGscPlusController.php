@@ -45,6 +45,7 @@ final class AdminGscPlusController extends AdminController
             'transactionsCount' => $transactionsCount,
             'callbackUrl' => $backendBase . '/api/v2/gsc-plus-wallet',
             'callbackAlias' => $backendBase . '/api/v2/gsc-plus-wallet/v1/api/seamless',
+            'callbackLegacyUrl' => '',
             'agentWallet' => $agentWallet,
             'agentWalletError' => $agentWalletError,
             'flash' => $this->pullFlash(),

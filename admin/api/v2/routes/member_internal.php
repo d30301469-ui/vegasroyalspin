@@ -2,16 +2,28 @@
 /** Sunucu-sunucu güvenilir üye JWT yenileme (frontend proxy → backend). */
 
 if ($method === 'POST' && $route === 'internal/frontend-member-jwt') {
+    $isPlaceholderSecret = static function (string $value): bool {
+        $normalized = strtolower(trim($value));
+        if ($normalized === '' || strlen($normalized) < 32) {
+            return true;
+        }
+        foreach (['change-me', 'changeme', 'example', 'placeholder', 'default'] as $needle) {
+            if (str_contains($normalized, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    };
     // Rotasyon güvenliği: özel trust secret'ı ve (geçiş dönemi için) eski
-    // CMS purge secret'ı aday olarak denenir. İki taraf da
-    // FRONTEND_MEMBER_TRUST_SECRET'a geçince fallback kaldırılabilir.
+    // CMS purge secret'ı aday olarak denenir.
     $secretCandidates = [];
     foreach ([
         trim((string) (getenv('FRONTEND_MEMBER_TRUST_SECRET') ?: '')),
         trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: '')),
         defined('FRONTEND_CMS_PURGE_SECRET') ? trim((string) FRONTEND_CMS_PURGE_SECRET) : '',
     ] as $candidate) {
-        if ($candidate !== '' && !in_array($candidate, $secretCandidates, true)) {
+        if ($candidate !== '' && !$isPlaceholderSecret($candidate) && !in_array($candidate, $secretCandidates, true)) {
             $secretCandidates[] = $candidate;
         }
     }

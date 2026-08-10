@@ -1,12 +1,12 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 require_once defined('BASE_PATH') ? BASE_PATH . '/core/bootstrap.php' : __DIR__ . '/../../core/bootstrap.php';
 
-if (!(function_exists('metropol_frontend_member_logged_in') ? metropol_frontend_member_logged_in() : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true))) {
+if (!(function_exists('frontend_member_logged_in') ? frontend_member_logged_in() : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true))) {
     header('Location: /');
     exit;
 }
@@ -21,10 +21,10 @@ $profilePageMap = [
     'profile|two-factor-authentication' => ['file' => 'two-factor.php', 'extra_get' => []],
     'profile|timeout-limits' => ['file' => 'freeze-account.php', 'extra_get' => []],
 
-    'balance|deposit' => ['file' => 'deposit-withdraw.php', 'extra_get' => []],
+    'balance|deposit' => ['file' => 'deposit.php', 'extra_get' => []],
     'balance|withdraw' => ['file' => 'withdraw.php', 'extra_get' => []],
     'balance|history' => ['file' => 'deposit-withdraw-history.php', 'extra_get' => []],
-    'balance|info' => ['file' => 'deposit-withdraw.php', 'extra_get' => ['bilgi' => '1']],
+    'balance|info' => ['file' => 'deposit.php', 'extra_get' => ['bilgi' => '1']],
     'balance|withdraws' => ['file' => 'withdrawal-status.php', 'extra_get' => []],
 
     'bet|history' => ['file' => 'bet-history.php', 'extra_get' => []],
@@ -99,10 +99,23 @@ echo '</div>';
         var path = (window.location.pathname || '').replace(/\/+$/, '');
         var search = new URLSearchParams(window.location.search || '');
         if (path === '/profile/deposit-withdraw-history') {
-            window.location.replace(canonicalMobileProfileUrl('balance', 'deposit', { openDepositPanel: '1' }));
+            window.location.replace('/?' + new URLSearchParams({ profile: 'open', account: 'balance', page: 'history' }).toString());
             return true;
         }
         if (path === '/profile/deposit-withdraw') {
+            // legacy alias → /profile/deposit
+            if (search.get('bilgi') === '1') {
+                window.location.replace(canonicalMobileProfileUrl('balance', 'info'));
+                return true;
+            }
+            if (search.get('tab') === 'withdraw') {
+                window.location.replace(canonicalMobileProfileUrl('balance', 'withdraw'));
+                return true;
+            }
+            window.location.replace(canonicalMobileProfileUrl('balance', 'deposit', search.get('openDepositPanel') === '1' ? { openDepositPanel: '1' } : {}));
+            return true;
+        }
+        if (path === '/profile/deposit') {
             if (search.get('bilgi') === '1') {
                 window.location.replace(canonicalMobileProfileUrl('balance', 'info'));
                 return true;
@@ -142,7 +155,7 @@ echo '</div>';
         if (p === '/profile/two-factor') return mobileProfileUrl('profile', 'two-factor-authentication');
         if (p === '/profile/freeze-account') return mobileProfileUrl('profile', 'timeout-limits');
 
-        if (p === '/profile/deposit-withdraw') {
+        if (p === '/profile/deposit') {
             if (q.get('bilgi') === '1') return mobileProfileUrl('balance', 'info');
             return mobileProfileUrl('balance', 'deposit');
         }

@@ -33,8 +33,8 @@ $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?
 $legacyBackendHosts = function_exists('deploy_backend_hosts')
     ? deploy_backend_hosts()
     : ['admin.vegasroyalspin.com'];
-$isAdminHost = function_exists('metropol_is_backend_host')
-    ? metropol_is_backend_host($host)
+$isAdminHost = function_exists('is_backend_host')
+    ? is_backend_host($host)
     : in_array($host, array_filter(array_map('trim', array_merge([
         defined('BACKEND_HOST') ? (string) BACKEND_HOST : '',
         getenv('ADMIN_URL_HOST') ?: '',
@@ -76,6 +76,9 @@ if (ayar_bakim_modu_active($ayar) && !maintenance_request_uri_allowed($uri)) {
     exit;
 }
 
+// Partnership URL is CMS-driven (site_ayarlar.partnership_url, default /ortaklik).
+// Do not hard-redirect /ortaklik to a third-party brand domain.
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($uri, '/api/') !== 0 && (
     isset($_POST['register_submit']) ||
     (isset($_POST['ajax_check']) && $_POST['ajax_check'] === 'true')
@@ -90,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($uri, '/api/') !== 0 && (
 $routes = [
     '/'                      => ['HomeController',   'index'],
     '/slot'                  => ['SlotController',   'index'],
+    '/bgaming'               => ['BgamingController', 'index'],
     '/beni-ara'              => ['BeniAraController', 'index'],
     '/login'                 => ['AuthController',   'login'],
     '/register'              => ['AuthController',   'register'],
@@ -98,8 +102,9 @@ $routes = [
     '/logout'                => ['AuthController',   'logout'],
     '/payment/megapayz'      => ['PaymentController', 'megapayzDeposit'],
     '/api'                   => ['ApiCallbackController', 'index'],
-    '/api-gates'             => ['ApiCasinoCallbackController', 'index'],
-    // Ãœye + CMS public API â†’ metropol_handle_public_api_request() â†’ PublicApiV2Dispatcher
+    // Removed legacy provider callback surface (410-only remnant).
+    // '/api-gates'          => ['ApiCasinoCallbackController', 'index'],
+    // Ãœye + CMS public API â†’ handle_public_api_request() â†’ PublicApiV2Dispatcher
     '/search_handler.php'    => ['ApiSearchController', 'advancedSearch'],
     '/track_visit.php'       => ['ApiTrackVisitController', 'index'],
     '/slot_api.php'          => ['ApiSlotController', 'index'],
@@ -114,6 +119,7 @@ $routes = [
     '/bgaming-wallet/promo/rollback'   => ['ApiBgamingWalletController', 'promoRollback'],
     '/bgaming-wallet/auth/token_rotation' => ['ApiBgamingWalletController', 'tokenRotation'],
     '/game/launch'           => ['GameController', 'launch'],
+    '/tg'                    => ['TelegramMiniAppController', 'index'],
 ];
 
 // â”€â”€â”€ Route EÅŸleÅŸtirme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -148,6 +154,14 @@ if ($uri === '/footer' || (isset($segments[0]) && $segments[0] === 'footer' && c
         $footerSlug = (string) $segments[1];
     }
     (new FooterPageController())->show($footerSlug);
+    exit;
+}
+
+// Legacy alias: /profile/deposit-withdraw → /profile/deposit
+if ($uri === '/profile/deposit-withdraw') {
+    $qs = isset($_SERVER['QUERY_STRING']) ? trim((string) $_SERVER['QUERY_STRING']) : '';
+    $target = '/profile/deposit' . ($qs !== '' ? ('?' . $qs) : '');
+    header('Location: ' . $target, true, 301);
     exit;
 }
 

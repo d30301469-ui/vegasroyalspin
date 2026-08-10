@@ -167,21 +167,18 @@ if (is_readable($projectRoot . '/composer.lock')) {
     echo "Copied composer.lock â†’ admin/\n";
 }
 
-// .htaccess â€” standalone admin host (never copy frontend root .htaccess)
-$htaccessSource = $projectRoot . '/deploy/apache/bo-nexthub.site.htaccess';
-if (!is_readable($htaccessSource)) {
-    $htaccessSource = $adminRoot . '/.htaccess';
-}
+// .htaccess — standalone admin host (never copy frontend root .htaccess)
+$htaccessSource = $adminRoot . '/.htaccess';
 if (is_readable($htaccessSource)) {
     copy($htaccessSource, $adminRoot . '/.htaccess');
-    echo "Copied standalone .htaccess â†’ admin/\n";
+    echo "Kept standalone .htaccess → admin/\n";
 }
 
-// ENV template (admin iÃ§inde)
+// ENV template (admin içinde)
 $envExample = $adminRoot . '/.env.example';
-if (!is_readable($envExample) && is_readable($projectRoot . '/deploy/env/backend.env.example')) {
-    copy($projectRoot . '/deploy/env/backend.env.example', $envExample);
-    echo "Copied deploy/env/backend.env.example â†’ admin/.env.example\n";
+if (!is_readable($envExample) && is_readable($projectRoot . '/ENV.example')) {
+    copy($projectRoot . '/ENV.example', $envExample);
+    echo "Copied ENV.example → admin/.env.example\n";
 }
 
 $required = [

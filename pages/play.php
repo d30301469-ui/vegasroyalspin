@@ -7,7 +7,7 @@
  */
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 require_once __DIR__ . '/../core/bootstrap.php';
@@ -27,6 +27,12 @@ if ($playMode === '') {
 }
 
 $playLang     = trim((string) ($_GET['lang'] ?? ''));
+if ($playLang === '' && function_exists('current_locale')) {
+    $playLang = current_locale();
+}
+if ($playLang === '' || (class_exists('SiteI18n', false) && SiteI18n::normalize($playLang) === '')) {
+    $playLang = 'tr';
+}
 $playCurrency = trim((string) ($_GET['currency'] ?? ''));
 $playGameType = strtoupper(trim((string) ($_GET['game_type'] ?? $_GET['gameType'] ?? '')));
 $playRequestedOpenMode = strtolower(trim((string) ($_GET['open_mode'] ?? '')));
@@ -54,13 +60,13 @@ $playPayload = [
  // hits this frontend (Cloudflare), so we capture the real visitor IP here and
  // send it in the game-launch JSON — the admin API often only sees 127.0.0.1
  // through the internal proxy even when CF headers are forwarded.
-if (!function_exists('metropol_cloudflare_client_ip')) {
+if (!function_exists('cloudflare_client_ip')) {
     $cfPath = dirname(__DIR__) . '/config/cloudflare.php';
     if (is_file($cfPath)) {
         require_once $cfPath;
     }
 }
-$playClientIp = function_exists('metropol_cloudflare_client_ip') ? metropol_cloudflare_client_ip() : '';
+$playClientIp = function_exists('cloudflare_client_ip') ? cloudflare_client_ip() : '';
 if ($playClientIp === '' || filter_var($playClientIp, FILTER_VALIDATE_IP) === false) {
     foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'] as $playIpKey) {
         $playIpRaw = trim((string) ($_SERVER[$playIpKey] ?? ''));
@@ -93,9 +99,25 @@ if ($playCanonicalHome !== '') {
 }
 // Prefer WEB for desktop; MOBILE for phone UAs.
 $playPayload['platform'] = $playUaIsMobile ? 'MOBILE' : 'WEB';
+// Casino Aggregator GetGameUrl expects channel=desktop|mobile.
+$playPayload['channel'] = $playUaIsMobile ? 'mobile' : 'desktop';
 $playPayload['open_mode'] = $playRequestedOpenMode !== ''
   ? $playRequestedOpenMode
   : ((function_exists('isMobile') && isMobile()) ? 'redirect' : 'iframe');
+// GSC+/Pragmatic (efinity) sessions are IP-bound and one-shot; iframe / third-party
+// cookie contexts show "It seems you are not logged in." — always top-level navigate.
+// BGaming stays iframe on desktop (provider sends X-Frame-Options: ALLOWALL) so the
+// play chrome (balance / fullscreen / close) remains; mobile still uses redirect above.
+$playGameIdLower = strtolower($playGameId);
+$playIsAggregator = str_starts_with($playGameIdLower, 'aggregator:');
+$playIsMobileClient = $playUaIsMobile || (function_exists('isMobile') && isMobile());
+if (str_starts_with($playGameIdLower, 'gsc:')) {
+    $playPayload['open_mode'] = 'redirect';
+}
+// Casino Aggregator: desktop → /play iframe, mobile → top-level (normal) open.
+if ($playIsAggregator && $playRequestedOpenMode === '') {
+    $playPayload['open_mode'] = $playIsMobileClient ? 'redirect' : 'iframe';
+}
 if ($playMode === 'real' && $playWallet !== '') {
     $playPayload['wallet'] = $playWallet;
 }
@@ -118,19 +140,22 @@ $playAuthSharedPath = BASE_PATH . '/assets/js/auth-shared.js';
 $playAuthSharedVer = (string) ((is_file($playAuthSharedPath) ? filemtime($playAuthSharedPath) : '1') . '-' . (is_file($playAuthSharedPath) ? filesize($playAuthSharedPath) : '0'));
 $playBypassShell = ($playPayload['open_mode'] ?? '') === 'redirect'
     || $playRequestedOpenMode === 'redirect'
-    || (function_exists('isMobile') && isMobile())
-    || $playUaIsMobile;
+    || $playIsMobileClient;
+// Desktop aggregator stays in the /play iframe shell.
+if ($playIsAggregator && ($playPayload['open_mode'] ?? '') === 'iframe') {
+    $playBypassShell = false;
+}
 
 $playTitle = htmlspecialchars((string) ($ayar['site_adi'] ?? 'Oyun'), ENT_QUOTES, 'UTF-8');
 
 if ($playBypassShell) {
-    if (!function_exists('metropol_member_api_layout_vars')) {
+    if (!function_exists('member_api_layout_vars')) {
         require_once __DIR__ . '/../config/member_api_public.php';
     }
-    $memberApiLayout = metropol_member_api_layout_vars();
+    $memberApiLayout = member_api_layout_vars();
     ?>
 <!doctype html>
-<html lang="tr">
+<html lang="<?= htmlspecialchars($playLang !== '' ? $playLang : 'tr', ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
   <base href="/">
@@ -147,6 +172,7 @@ if ($playBypassShell) {
   <div class="play-redirecting"><img src="/assets/images/favicons/favicon.svg" alt=""></div>
   <script>
   window.__PLAY_LAUNCH_PAYLOAD__ = <?= json_encode($playPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+  window.__PLAY_HOME_URL__ = <?= json_encode($playCanonicalHome !== '' ? $playCanonicalHome : '/', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
   window.__USER_LOGGED_IN__ = <?= $playIsAuthenticated ? 'true' : 'false' ?>;
   window.__HAS_MEMBER_JWT__ = <?= $hasMemberJwt ? 'true' : 'false' ?>;
   window.__PLAY_CLIENT_IP__ = <?= json_encode((string) ($playPayload['ip'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
@@ -163,7 +189,7 @@ if ($playBypassShell) {
 }
 ?>
 <!doctype html>
-<html lang="tr">
+<html lang="<?= htmlspecialchars($playLang !== '' ? $playLang : 'tr', ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
   <base href="/">
@@ -425,17 +451,32 @@ if ($playLogoUrl !== '' && class_exists('ApiMediaUrl', false)) {
   <div class="play-error-overlay" id="playErrorOverlay" hidden>
     <div class="play-error-box" id="playErrorText" role="alert"></div>
   </div>
-  <iframe id="playFrame" title="Oyun" allow="fullscreen; payment; autoplay"></iframe>
+  <iframe
+    id="playFrame"
+    title="Oyun"
+    allow="fullscreen; payment; autoplay; encrypted-media; clipboard-write; gyroscope; accelerometer"
+    allowfullscreen
+    referrerpolicy="origin-when-cross-origin"
+    <?php
+    // Aggregator (forever/gs2c) games need an unrestricted iframe for bet/wallet
+    // handshakes. Sandbox was blocking some vendors' bet flow (client E1000)
+    // while GetBalance still succeeded. Non-aggregator keep a permissive sandbox.
+    if (!$playIsAggregator):
+    ?>
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-pointer-lock allow-modals allow-orientation-lock allow-downloads allow-top-navigation allow-top-navigation-by-user-activation"
+    <?php endif; ?>
+  ></iframe>
 </div>
 
 <script>
 <?php
-if (!function_exists('metropol_member_api_layout_vars')) {
+if (!function_exists('member_api_layout_vars')) {
     require_once __DIR__ . '/../config/member_api_public.php';
 }
-$memberApiLayout = metropol_member_api_layout_vars();
+$memberApiLayout = member_api_layout_vars();
 ?>
 window.__PLAY_LAUNCH_PAYLOAD__ = <?= json_encode($playPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+window.__PLAY_HOME_URL__ = <?= json_encode($playCanonicalHome !== '' ? $playCanonicalHome : '/', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 window.__USER_LOGGED_IN__ = <?= $playIsAuthenticated ? 'true' : 'false' ?>;
 window.__HAS_MEMBER_JWT__ = <?= $hasMemberJwt ? 'true' : 'false' ?>;
 window.__PLAY_CLIENT_IP__ = <?= json_encode((string) ($playPayload['ip'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;

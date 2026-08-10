@@ -39,7 +39,7 @@ final class AdminAffiliateController extends AdminController
 
         $stmt = $pdo->prepare(
             "SELECT a.*, cp.name AS plan_name, cp.plan_type,
-                    (SELECT COUNT(*) FROM affiliate_commissions WHERE affiliate_id = a.id AND status = 'pending') AS pending_commissions
+                    (SELECT COUNT(*) FROM affiliate_commissions WHERE affiliate_id = a.id AND status IN ('pending', 'approved')) AS pending_commissions
              FROM affiliates a
              LEFT JOIN affiliate_commission_plans cp ON a.commission_plan_id = cp.id
              {$whereClause}
@@ -97,10 +97,17 @@ final class AdminAffiliateController extends AdminController
         $stmt->execute(['id' => $id]);
         $referredUsers = $stmt->fetchAll();
 
-        // Commission summary
+        // Commission summary — exclude cancelled/void so charts match real earnings
         $stmt = $pdo->prepare(
-            "SELECT commission_type, COUNT(*) AS cnt, SUM(amount) AS total, SUM(CASE WHEN status='paid' THEN amount ELSE 0 END) AS paid
-             FROM affiliate_commissions WHERE affiliate_id = :id GROUP BY commission_type"
+            "SELECT commission_type,
+                    COUNT(*) AS cnt,
+                    SUM(amount) AS total,
+                    SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS paid,
+                    SUM(CASE WHEN status IN ('approved','pending') THEN amount ELSE 0 END) AS open_amount
+             FROM affiliate_commissions
+             WHERE affiliate_id = :id
+               AND status IN ('pending', 'approved', 'paid')
+             GROUP BY commission_type"
         );
         $stmt->execute(['id' => $id]);
         $commissionSummary = $stmt->fetchAll();
@@ -130,6 +137,149 @@ final class AdminAffiliateController extends AdminController
         $stmt->execute(['id' => $id]);
         $clickStats = $stmt->fetch();
 
+        // Period filter for KPI + charts (aligned)
+        $period = strtolower(trim((string) ($_GET['period'] ?? '30')));
+        if (!in_array($period, ['7', '30', '90', 'all'], true)) {
+            $period = '30';
+        }
+        $periodDays = $period === 'all' ? 0 : (int) $period;
+        $periodFrom = $periodDays > 0
+            ? (new DateTimeImmutable('today'))->modify('-' . ($periodDays - 1) . ' days')->format('Y-m-d')
+            : null;
+        $periodLabel = match ($period) {
+            '7' => 'Son 7 gün',
+            '90' => 'Son 90 gün',
+            'all' => 'Tüm zamanlar',
+            default => 'Son 30 gün',
+        };
+
+        $paidStatuses = "('confirmed','approved','success','completed')";
+        $playerCashflow = [
+            'deposits' => 0.0,
+            'withdrawals' => 0.0,
+            'deposit_count' => 0,
+            'withdraw_count' => 0,
+            'referred_total' => 0,
+            'period' => $period,
+            'period_label' => $periodLabel,
+            'period_from' => $periodFrom,
+        ];
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM users WHERE referred_by_affiliate_id = :id"
+            );
+            $stmt->execute(['id' => $id]);
+            $playerCashflow['referred_total'] = (int) $stmt->fetchColumn();
+
+            $cashSql = "SELECT
+                    COALESCE(SUM(CASE WHEN t.type = 'deposit' THEN t.amount ELSE 0 END), 0) AS deposits,
+                    COALESCE(SUM(CASE WHEN t.type = 'withdraw' THEN t.amount ELSE 0 END), 0) AS withdrawals,
+                    COALESCE(SUM(CASE WHEN t.type = 'deposit' THEN 1 ELSE 0 END), 0) AS deposit_count,
+                    COALESCE(SUM(CASE WHEN t.type = 'withdraw' THEN 1 ELSE 0 END), 0) AS withdraw_count
+                 FROM megapayz_transactions t
+                 INNER JOIN users u ON u.id = t.user_id
+                 WHERE u.referred_by_affiliate_id = :id
+                   AND t.status IN {$paidStatuses}
+                   AND t.type IN ('deposit', 'withdraw')";
+            $cashParams = ['id' => $id];
+            if ($periodFrom !== null) {
+                $cashSql .= ' AND t.created_at >= :from_dt';
+                $cashParams['from_dt'] = $periodFrom . ' 00:00:00';
+            }
+            $stmt = $pdo->prepare($cashSql);
+            $stmt->execute($cashParams);
+            $cashRow = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($cashRow)) {
+                $playerCashflow['deposits'] = (float) ($cashRow['deposits'] ?? 0);
+                $playerCashflow['withdrawals'] = (float) ($cashRow['withdrawals'] ?? 0);
+                $playerCashflow['deposit_count'] = (int) ($cashRow['deposit_count'] ?? 0);
+                $playerCashflow['withdraw_count'] = (int) ($cashRow['withdraw_count'] ?? 0);
+            }
+        } catch (Throwable) {
+            // keep zeros
+        }
+
+        $chartData = [
+            'period' => $period,
+            'period_label' => $periodLabel,
+            'trend' => ['labels' => [], 'deposits' => [], 'withdrawals' => [], 'net' => []],
+            'share' => [
+                'deposits' => (float) ($playerCashflow['deposits'] ?? 0),
+                'withdrawals' => (float) ($playerCashflow['withdrawals'] ?? 0),
+                'net' => round((float) ($playerCashflow['deposits'] ?? 0) - (float) ($playerCashflow['withdrawals'] ?? 0), 2),
+            ],
+            'commissions' => ['labels' => [], 'values' => [], 'paid' => []],
+            'earnings' => [
+                'paid' => (float) ($affiliate['total_paid'] ?? 0),
+                'balance' => (float) ($affiliate['balance'] ?? 0),
+                'earned' => (float) ($affiliate['total_earned'] ?? 0),
+            ],
+        ];
+
+        // Daily trend for selected period (cap all-time at last 180 days for readability)
+        try {
+            $trendDays = $periodDays > 0 ? $periodDays : 180;
+            $fromDate = (new DateTimeImmutable('today'))->modify('-' . ($trendDays - 1) . ' days')->format('Y-m-d');
+            $stmt = $pdo->prepare(
+                "SELECT DATE(t.created_at) AS d,
+                        COALESCE(SUM(CASE WHEN t.type = 'deposit' THEN t.amount ELSE 0 END), 0) AS deposits,
+                        COALESCE(SUM(CASE WHEN t.type = 'withdraw' THEN t.amount ELSE 0 END), 0) AS withdrawals
+                 FROM megapayz_transactions t
+                 INNER JOIN users u ON u.id = t.user_id
+                 WHERE u.referred_by_affiliate_id = :id
+                   AND t.status IN {$paidStatuses}
+                   AND t.type IN ('deposit', 'withdraw')
+                   AND t.created_at >= :from_dt
+                 GROUP BY DATE(t.created_at)
+                 ORDER BY d ASC"
+            );
+            $stmt->execute([
+                'id' => $id,
+                'from_dt' => $fromDate . ' 00:00:00',
+            ]);
+            $byDay = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $byDay[(string) ($row['d'] ?? '')] = [
+                    'deposits' => (float) ($row['deposits'] ?? 0),
+                    'withdrawals' => (float) ($row['withdrawals'] ?? 0),
+                ];
+            }
+            $cursor = new DateTimeImmutable($fromDate);
+            $end = new DateTimeImmutable('today');
+            while ($cursor <= $end) {
+                $key = $cursor->format('Y-m-d');
+                $dep = (float) ($byDay[$key]['deposits'] ?? 0);
+                $wd = (float) ($byDay[$key]['withdrawals'] ?? 0);
+                $chartData['trend']['labels'][] = $cursor->format('d.m');
+                $chartData['trend']['deposits'][] = round($dep, 2);
+                $chartData['trend']['withdrawals'][] = round($wd, 2);
+                $chartData['trend']['net'][] = round($dep - $wd, 2);
+                $cursor = $cursor->modify('+1 day');
+            }
+        } catch (Throwable) {
+            // keep empty trend
+        }
+
+        foreach ($commissionSummary as $row) {
+            $type = strtolower((string) ($row['commission_type'] ?? ''));
+            $label = match ($type) {
+                'revshare' => 'RevShare',
+                'cpa' => 'CPA',
+                'hybrid' => 'Hybrid',
+                'manual' => 'Manuel',
+                default => $type !== '' ? ucfirst($type) : 'Diğer',
+            };
+            $chartData['commissions']['labels'][] = $label;
+            $chartData['commissions']['values'][] = round((float) ($row['total'] ?? 0), 2);
+            $chartData['commissions']['paid'][] = round((float) ($row['paid'] ?? 0), 2);
+        }
+
+        $plans = $pdo->query(
+            "SELECT id, name, plan_type, revshare_rate, cpa_amount, is_active, is_default
+             FROM affiliate_commission_plans
+             ORDER BY is_active DESC, is_default DESC, name ASC"
+        )->fetchAll();
+
         $text = static fn (mixed $v): string => htmlspecialchars((string) ($v ?? ''), ENT_QUOTES, 'UTF-8');
         $money = static fn (mixed $v): string => number_format((float) $v, 2, ',', '.');
 
@@ -138,11 +288,16 @@ final class AdminAffiliateController extends AdminController
             'active' => 'affiliates',
             'crumbs' => 'Ortaklık Sistemi | Ortaklar | Detay',
             'affiliate' => $affiliate,
+            'plans' => $plans,
             'referredUsers' => $referredUsers,
             'commissionSummary' => $commissionSummary,
             'recentCommissions' => $recentCommissions,
             'payouts' => $payouts,
             'clickStats' => $clickStats,
+            'playerCashflow' => $playerCashflow,
+            'chartData' => $chartData,
+            'chartPeriod' => $period,
+            'chartPeriodLabel' => $periodLabel,
             'flash' => $this->pullFlash(),
         ]);
     }
@@ -154,7 +309,7 @@ final class AdminAffiliateController extends AdminController
         $pdo = AdminDatabase::pdo();
         $id = max(0, (int) ($_POST['id'] ?? 0));
         $token = (string) ($_POST['_token'] ?? '');
-        if ($token === '' || $token !== AdminAuth::csrfToken()) {
+        if (!AdminAuth::verifyCsrf($token)) {
             $_SESSION['admin_flash'] = 'Güvenlik tokenı geçersiz.';
             $this->redirect(AdminAuth::url('/affiliate/detail?id=' . $id));
         }
@@ -170,9 +325,15 @@ final class AdminAffiliateController extends AdminController
             }
         }
 
-        if (isset($_POST['commission_plan_id'])) {
+        if (array_key_exists('commission_plan_id', $_POST)) {
             $planId = (int) $_POST['commission_plan_id'];
             if ($planId > 0) {
+                $check = $pdo->prepare('SELECT id FROM affiliate_commission_plans WHERE id = :id LIMIT 1');
+                $check->execute(['id' => $planId]);
+                if ($check->fetchColumn() === false) {
+                    $_SESSION['admin_flash'] = 'Seçilen komisyon planı bulunamadı.';
+                    $this->redirect(AdminAuth::url('/affiliate/detail?id=' . $id));
+                }
                 $sets[] = 'commission_plan_id = :commission_plan_id';
                 $params['commission_plan_id'] = $planId;
             } else {
@@ -180,13 +341,23 @@ final class AdminAffiliateController extends AdminController
             }
         }
 
-        // Status changed to active - set approved_at
+        // Status changed to active - set approved_at + ensure a commission plan
         if (isset($_POST['status']) && $_POST['status'] === 'active') {
-            $stmt = $pdo->prepare("SELECT status FROM affiliates WHERE id = :id");
+            $stmt = $pdo->prepare("SELECT status, commission_plan_id FROM affiliates WHERE id = :id");
             $stmt->execute(['id' => $id]);
-            $current = $stmt->fetchColumn();
+            $currentRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $current = (string) ($currentRow['status'] ?? '');
             if ($current === 'pending' || $current === 'rejected') {
                 $sets[] = 'approved_at = NOW()';
+            }
+            $planAlreadySet = array_key_exists('commission_plan_id', $_POST) && (int) ($_POST['commission_plan_id'] ?? 0) > 0;
+            if (!$planAlreadySet && (int) ($currentRow['commission_plan_id'] ?? 0) <= 0) {
+                AffiliateCommissionEngine::ensureSchema($pdo);
+                $defaultPlanId = AffiliateCommissionEngine::defaultPlanId($pdo);
+                if ($defaultPlanId !== null) {
+                    $sets[] = 'commission_plan_id = :auto_plan_id';
+                    $params['auto_plan_id'] = $defaultPlanId;
+                }
             }
         }
 
@@ -207,7 +378,7 @@ final class AdminAffiliateController extends AdminController
         $pdo = AdminDatabase::pdo();
         $id = max(0, (int) ($_POST['id'] ?? 0));
         $token = (string) ($_POST['_token'] ?? '');
-        if ($token === '' || $token !== AdminAuth::csrfToken()) {
+        if (!AdminAuth::verifyCsrf($token)) {
             $_SESSION['admin_flash'] = 'Güvenlik tokenı geçersiz.';
             $this->redirect(AdminAuth::url('/affiliate/detail?id=' . $id));
         }
@@ -248,40 +419,34 @@ final class AdminAffiliateController extends AdminController
 
         $pdo = AdminDatabase::pdo();
         $token = (string) ($_POST['_token'] ?? '');
-        if ($token === '' || $token !== AdminAuth::csrfToken()) {
+        if (!AdminAuth::verifyCsrf($token)) {
             $_SESSION['admin_flash'] = 'Güvenlik tokenı geçersiz.';
             $this->redirect(AdminAuth::url('/affiliate/plans'));
         }
 
-        $name = trim((string) ($_POST['name'] ?? ''));
-        $planType = trim((string) ($_POST['plan_type'] ?? 'revshare'));
-        $revshareRate = (float) ($_POST['revshare_rate'] ?? 0);
-        $cpaAmount = (float) ($_POST['cpa_amount'] ?? 0);
-        $minDeposit = (float) ($_POST['min_deposit'] ?? 0);
-        $description = trim((string) ($_POST['description'] ?? ''));
-        $isDefault = !empty($_POST['is_default']) ? 1 : 0;
-
-        if ($name === '') {
+        $parsed = $this->parsePlanPayload($_POST);
+        if ($parsed['name'] === '') {
             $_SESSION['admin_flash'] = 'Plan adı zorunludur.';
             $this->redirect(AdminAuth::url('/affiliate/plans'));
         }
 
-        if ($isDefault) {
-            $pdo->exec("UPDATE affiliate_commission_plans SET is_default = 0");
+        if ($parsed['is_default']) {
+            $pdo->exec('UPDATE affiliate_commission_plans SET is_default = 0');
         }
 
         $stmt = $pdo->prepare(
-            "INSERT INTO affiliate_commission_plans (name, plan_type, revshare_rate, cpa_amount, min_deposit, is_default, description)
-             VALUES (:name, :plan_type, :revshare_rate, :cpa_amount, :min_deposit, :is_default, :description)"
+            "INSERT INTO affiliate_commission_plans
+             (name, plan_type, revshare_rate, cpa_amount, min_deposit, is_default, is_active, description)
+             VALUES (:name, :plan_type, :revshare_rate, :cpa_amount, :min_deposit, :is_default, 1, :description)"
         );
         $stmt->execute([
-            'name' => $name,
-            'plan_type' => $planType,
-            'revshare_rate' => $revshareRate,
-            'cpa_amount' => $cpaAmount,
-            'min_deposit' => $minDeposit,
-            'is_default' => $isDefault,
-            'description' => $description,
+            'name' => $parsed['name'],
+            'plan_type' => $parsed['plan_type'],
+            'revshare_rate' => $parsed['revshare_rate'],
+            'cpa_amount' => $parsed['cpa_amount'],
+            'min_deposit' => $parsed['min_deposit'],
+            'is_default' => $parsed['is_default'],
+            'description' => $parsed['description'],
         ]);
 
         $_SESSION['admin_flash'] = 'Komisyon planı oluşturuldu.';
@@ -294,28 +459,28 @@ final class AdminAffiliateController extends AdminController
 
         $pdo = AdminDatabase::pdo();
         $token = (string) ($_POST['_token'] ?? '');
-        if ($token === '' || $token !== AdminAuth::csrfToken()) {
+        if (!AdminAuth::verifyCsrf($token)) {
             $_SESSION['admin_flash'] = 'Güvenlik tokenı geçersiz.';
             $this->redirect(AdminAuth::url('/affiliate/plans'));
         }
 
         $id = max(0, (int) ($_POST['id'] ?? 0));
-        $name = trim((string) ($_POST['name'] ?? ''));
-        $planType = trim((string) ($_POST['plan_type'] ?? 'revshare'));
-        $revshareRate = (float) ($_POST['revshare_rate'] ?? 0);
-        $cpaAmount = (float) ($_POST['cpa_amount'] ?? 0);
-        $minDeposit = (float) ($_POST['min_deposit'] ?? 0);
-        $description = trim((string) ($_POST['description'] ?? ''));
-        $isActive = !empty($_POST['is_active']) ? 1 : 0;
-        $isDefault = !empty($_POST['is_default']) ? 1 : 0;
+        $parsed = $this->parsePlanPayload($_POST);
 
-        if ($name === '' || $id === 0) {
+        if ($parsed['name'] === '' || $id === 0) {
             $_SESSION['admin_flash'] = 'Eksik bilgi.';
             $this->redirect(AdminAuth::url('/affiliate/plans'));
         }
 
-        if ($isDefault) {
-            $pdo->exec("UPDATE affiliate_commission_plans SET is_default = 0");
+        $exists = $pdo->prepare('SELECT id FROM affiliate_commission_plans WHERE id = :id LIMIT 1');
+        $exists->execute(['id' => $id]);
+        if ($exists->fetchColumn() === false) {
+            $_SESSION['admin_flash'] = 'Komisyon planı bulunamadı.';
+            $this->redirect(AdminAuth::url('/affiliate/plans'));
+        }
+
+        if ($parsed['is_default']) {
+            $pdo->exec('UPDATE affiliate_commission_plans SET is_default = 0');
         }
 
         $stmt = $pdo->prepare(
@@ -324,14 +489,14 @@ final class AdminAffiliateController extends AdminController
              is_active = :is_active, is_default = :is_default WHERE id = :id"
         );
         $stmt->execute([
-            'name' => $name,
-            'plan_type' => $planType,
-            'revshare_rate' => $revshareRate,
-            'cpa_amount' => $cpaAmount,
-            'min_deposit' => $minDeposit,
-            'description' => $description,
-            'is_active' => $isActive,
-            'is_default' => $isDefault,
+            'name' => $parsed['name'],
+            'plan_type' => $parsed['plan_type'],
+            'revshare_rate' => $parsed['revshare_rate'],
+            'cpa_amount' => $parsed['cpa_amount'],
+            'min_deposit' => $parsed['min_deposit'],
+            'description' => $parsed['description'],
+            'is_active' => $parsed['is_active'],
+            'is_default' => $parsed['is_default'],
             'id' => $id,
         ]);
 
@@ -345,7 +510,7 @@ final class AdminAffiliateController extends AdminController
 
         $pdo = AdminDatabase::pdo();
         $token = (string) ($_POST['_token'] ?? '');
-        if ($token === '' || $token !== AdminAuth::csrfToken()) {
+        if (!AdminAuth::verifyCsrf($token)) {
             $_SESSION['admin_flash'] = 'Güvenlik tokenı geçersiz.';
             $this->redirect(AdminAuth::url('/affiliate/plans'));
         }
@@ -422,7 +587,7 @@ final class AdminAffiliateController extends AdminController
 
         $pdo = AdminDatabase::pdo();
         $token = (string) ($_POST['_token'] ?? '');
-        if ($token === '' || $token !== AdminAuth::csrfToken()) {
+        if (!AdminAuth::verifyCsrf($token)) {
             $_SESSION['admin_flash'] = 'Güvenlik tokenı geçersiz.';
             $this->redirect(AdminAuth::url('/affiliate/payouts'));
         }
@@ -447,14 +612,80 @@ final class AdminAffiliateController extends AdminController
                 throw new RuntimeException('Ödeme bulunamadı.');
             }
 
+            $previousStatus = (string) ($payout['status'] ?? '');
+            $method = strtolower((string) ($payout['method'] ?? ''));
+
+            // Kripto: "İşleniyor/Onay" = MegaPayz API'ye gönder (manuel status yazma değil).
+            if ($method === 'crypto'
+                && in_array($newStatus, ['processing', 'approved'], true)
+                && in_array($previousStatus, ['pending', 'approved'], true)
+                && trim((string) ($payout['megapayz_trx'] ?? '')) === ''
+            ) {
+                $pdo->rollBack();
+
+                if (!class_exists('MegaPayzService')) {
+                    if (function_exists('admin_require_project_file')) {
+                        admin_require_project_file('services/MegaPayzService.php');
+                    } else {
+                        $serviceFile = dirname(__DIR__, 2) . '/services/MegaPayzService.php';
+                        if (!is_file($serviceFile)) {
+                            $serviceFile = dirname(__DIR__, 3) . '/services/MegaPayzService.php';
+                        }
+                        if (is_file($serviceFile)) {
+                            require_once $serviceFile;
+                        }
+                    }
+                }
+                if (!class_exists('MegaPayzService')) {
+                    throw new RuntimeException('MegaPayz servisi yüklenemedi.');
+                }
+
+                $admin = AdminAuth::user();
+                if ($adminNotes !== '') {
+                    $pdo->prepare(
+                        "UPDATE affiliate_payouts
+                         SET admin_notes = CONCAT(IFNULL(admin_notes,''), IF(IFNULL(admin_notes,'')='','', '\n'), :notes),
+                             updated_at = NOW()
+                         WHERE id = :id"
+                    )->execute(['notes' => $adminNotes, 'id' => $id]);
+                }
+
+                $result = MegaPayzService::approveAffiliateCryptoPayout(
+                    $pdo,
+                    $id,
+                    (int) ($admin['id'] ?? 0),
+                    (string) ($admin['username'] ?? $admin['email'] ?? '')
+                );
+                $_SESSION['admin_flash'] = (string) ($result['message'] ?? ($result['success'] ? 'OK' : 'MegaPayz gönderimi başarısız.'));
+                $this->redirect(AdminAuth::url('/affiliate/payouts'));
+            }
+
+            // Kripto ödemeler MegaPayz callback ile tamamlanır; manuel completed yasak.
+            if ($method === 'crypto' && $newStatus === 'completed') {
+                throw new RuntimeException('Kripto ödemeler MegaPayz ile tamamlanır. “MegaPayz’e Gönder” kullanın veya callback bekleyin.');
+            }
+            if ($method === 'crypto'
+                && in_array($previousStatus, ['processing'], true)
+                && trim((string) ($payout['megapayz_trx'] ?? '')) !== ''
+                && !in_array($newStatus, ['rejected', 'cancelled'], true)
+            ) {
+                throw new RuntimeException('MegaPayz işlemi devam ediyor. Durumu callback güncelleyecektir; gerekirse red/iptal kullanın.');
+            }
+
             $stmt = $pdo->prepare(
-                "UPDATE affiliate_payouts SET status = :status, admin_notes = :notes, processed_at = NOW(), updated_at = NOW()
+                "UPDATE affiliate_payouts SET status = :status, admin_notes = :notes, processed_at = NOW(), processed_by = :admin_id, updated_at = NOW()
                  WHERE id = :id"
             );
-            $stmt->execute(['status' => $newStatus, 'notes' => $adminNotes, 'id' => $id]);
+            $admin = AdminAuth::user();
+            $stmt->execute([
+                'status' => $newStatus,
+                'notes' => $adminNotes,
+                'admin_id' => (int) ($admin['id'] ?? 0) ?: null,
+                'id' => $id,
+            ]);
 
             // If completed, update affiliate balance
-            if ($newStatus === 'completed') {
+            if ($newStatus === 'completed' && $previousStatus !== 'completed') {
                 $stmt = $pdo->prepare(
                     "UPDATE affiliates SET total_paid = total_paid + :amount WHERE id = :affiliate_id"
                 );
@@ -468,8 +699,9 @@ final class AdminAffiliateController extends AdminController
                 $stmt->execute(['affiliate_id' => $payout['affiliate_id'], 'requested_at' => $payout['requested_at']]);
             }
 
-            // If rejected or cancelled, restore balance
-            if (in_array($newStatus, ['rejected', 'cancelled'], true) && $payout['status'] === 'pending') {
+            // If rejected or cancelled, restore balance when still unpaid
+            if (in_array($newStatus, ['rejected', 'cancelled'], true)
+                && in_array($previousStatus, ['pending', 'approved', 'processing'], true)) {
                 $stmt = $pdo->prepare(
                     "UPDATE affiliates SET balance = balance + :amount WHERE id = :affiliate_id"
                 );
@@ -486,6 +718,52 @@ final class AdminAffiliateController extends AdminController
         $this->redirect(AdminAuth::url('/affiliate/payouts'));
     }
 
+    public function approvePayoutMegaPayz(): void
+    {
+        $this->requirePermission('affiliates');
+
+        $token = (string) ($_POST['_token'] ?? '');
+        if (!AdminAuth::verifyCsrf($token)) {
+            $_SESSION['admin_flash'] = 'Güvenlik tokenı geçersiz.';
+            $this->redirect(AdminAuth::url('/affiliate/payouts'));
+        }
+
+        $id = max(0, (int) ($_POST['id'] ?? 0));
+        if ($id === 0) {
+            $_SESSION['admin_flash'] = 'Geçersiz ödeme talebi.';
+            $this->redirect(AdminAuth::url('/affiliate/payouts'));
+        }
+
+        if (!class_exists('MegaPayzService')) {
+            if (function_exists('admin_require_project_file')) {
+                admin_require_project_file('services/MegaPayzService.php');
+            } else {
+                $serviceFile = dirname(__DIR__, 2) . '/services/MegaPayzService.php';
+                if (!is_file($serviceFile)) {
+                    $serviceFile = dirname(__DIR__, 3) . '/services/MegaPayzService.php';
+                }
+                if (is_file($serviceFile)) {
+                    require_once $serviceFile;
+                }
+            }
+        }
+
+        if (!class_exists('MegaPayzService')) {
+            $_SESSION['admin_flash'] = 'MegaPayz servisi yüklenemedi.';
+            $this->redirect(AdminAuth::url('/affiliate/payouts'));
+        }
+
+        $admin = AdminAuth::user();
+        $result = MegaPayzService::approveAffiliateCryptoPayout(
+            AdminDatabase::pdo(),
+            $id,
+            (int) ($admin['id'] ?? 0),
+            (string) ($admin['username'] ?? $admin['email'] ?? '')
+        );
+        $_SESSION['admin_flash'] = (string) ($result['message'] ?? ($result['success'] ? 'OK' : 'İşlem başarısız.'));
+        $this->redirect(AdminAuth::url('/affiliate/payouts'));
+    }
+
     // --- Commissions (manual add) ---
 
     public function addCommission(): void
@@ -494,41 +772,72 @@ final class AdminAffiliateController extends AdminController
 
         $pdo = AdminDatabase::pdo();
         $token = (string) ($_POST['_token'] ?? '');
-        if ($token === '' || $token !== AdminAuth::csrfToken()) {
+        $affiliateId = max(0, (int) ($_POST['affiliate_id'] ?? 0));
+        if (!AdminAuth::verifyCsrf($token)) {
             $_SESSION['admin_flash'] = 'Güvenlik tokenı geçersiz.';
-            $this->redirect(AdminAuth::url('/affiliates'));
+            $this->redirect(AdminAuth::url($affiliateId > 0 ? '/affiliate/detail?id=' . $affiliateId : '/affiliates'));
         }
 
-        $affiliateId = max(0, (int) ($_POST['affiliate_id'] ?? 0));
         $userId = max(0, (int) ($_POST['user_id'] ?? 0));
-        $amount = (float) ($_POST['amount'] ?? 0);
+        $amount = round((float) ($_POST['amount'] ?? 0), 2);
         $description = trim((string) ($_POST['description'] ?? 'Manuel komisyon'));
+        if ($description === '') {
+            $description = 'Manuel komisyon';
+        }
 
         if ($affiliateId === 0 || $amount <= 0) {
             $_SESSION['admin_flash'] = 'Geçersiz ortak veya tutar.';
             $this->redirect(AdminAuth::url('/affiliate/detail?id=' . $affiliateId));
         }
 
+        AffiliateCommissionEngine::ensureSchema($pdo);
+
+        // Optional player id: empty/0 must be SQL NULL (FK forbids user_id=0).
+        $resolvedUserId = null;
+        if ($userId > 0) {
+            $check = $pdo->prepare('SELECT id FROM users WHERE id = :id LIMIT 1');
+            $check->execute(['id' => $userId]);
+            if ($check->fetchColumn() === false) {
+                $_SESSION['admin_flash'] = 'Oyuncu #' . $userId . ' bulunamadı. Boş bırakın veya geçerli bir ID girin.';
+                $this->redirect(AdminAuth::url('/affiliate/detail?id=' . $affiliateId));
+            }
+            $resolvedUserId = $userId;
+        }
+
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare(
-                "INSERT INTO affiliate_commissions (affiliate_id, user_id, commission_type, amount, status, description, source)
-                 VALUES (:affiliate_id, :user_id, 'manual', :amount, 'approved', :description, 'manual')"
+                "INSERT INTO affiliate_commissions
+                    (affiliate_id, user_id, commission_type, amount, status, description, source, approved_at)
+                 VALUES
+                    (:affiliate_id, :user_id, 'manual', :amount, 'approved', :description, 'manual', NOW())"
             );
             $stmt->execute([
                 'affiliate_id' => $affiliateId,
-                'user_id' => $userId ?: 0,
-                'amount' => $amount,
+                'user_id' => $resolvedUserId,
+                'amount' => number_format($amount, 2, '.', ''),
                 'description' => $description,
             ]);
 
-            $stmt = $pdo->prepare("UPDATE affiliates SET balance = balance + :amount, total_earned = total_earned + :amount WHERE id = :id");
-            $stmt->execute(['amount' => $amount, 'id' => $affiliateId]);
+            $stmt = $pdo->prepare(
+                'UPDATE affiliates
+                 SET balance = balance + :balance_amount,
+                     total_earned = total_earned + :earned_amount
+                 WHERE id = :id'
+            );
+            $stmt->execute([
+                'balance_amount' => number_format($amount, 2, '.', ''),
+                'earned_amount' => number_format($amount, 2, '.', ''),
+                'id' => $affiliateId,
+            ]);
 
             $pdo->commit();
             $_SESSION['admin_flash'] = number_format($amount, 2, ',', '.') . ' ₺ komisyon eklendi.';
-        } catch (Exception $e) {
-            $pdo->rollBack();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('[AdminAffiliateController::addCommission] ' . $e->getMessage());
             $_SESSION['admin_flash'] = 'Hata: ' . $e->getMessage();
         }
 
@@ -696,6 +1005,62 @@ final class AdminAffiliateController extends AdminController
 
     // --- Helpers ---
 
+    /**
+     * @param array<string, mixed> $input
+     * @return array{name:string,plan_type:string,revshare_rate:float,cpa_amount:float,min_deposit:float,description:string,is_active:int,is_default:int}
+     */
+    private function parsePlanPayload(array $input): array
+    {
+        $planType = strtolower(trim((string) ($input['plan_type'] ?? 'revshare')));
+        if (!in_array($planType, ['revshare', 'cpa', 'hybrid'], true)) {
+            $planType = 'revshare';
+        }
+
+        $revshareRate = $this->parseDecimal($input['revshare_rate'] ?? 0);
+        $cpaAmount = $this->parseDecimal($input['cpa_amount'] ?? 0);
+        $minDeposit = $this->parseDecimal($input['min_deposit'] ?? 0);
+
+        if ($planType === 'cpa') {
+            $revshareRate = 0.0;
+        }
+        if ($planType === 'revshare') {
+            $cpaAmount = 0.0;
+        }
+
+        return [
+            'name' => trim((string) ($input['name'] ?? '')),
+            'plan_type' => $planType,
+            'revshare_rate' => max(0.0, min(100.0, $revshareRate)),
+            'cpa_amount' => max(0.0, $cpaAmount),
+            'min_deposit' => max(0.0, $minDeposit),
+            'description' => trim((string) ($input['description'] ?? '')),
+            'is_active' => !empty($input['is_active']) ? 1 : 0,
+            'is_default' => !empty($input['is_default']) ? 1 : 0,
+        ];
+    }
+
+    private function parseDecimal(mixed $value): float
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return 0.0;
+        }
+
+        // TR locale: "25,5" / "1.250,50"
+        if (str_contains($raw, ',') && str_contains($raw, '.')) {
+            $raw = str_replace('.', '', $raw);
+            $raw = str_replace(',', '.', $raw);
+        } elseif (str_contains($raw, ',')) {
+            $raw = str_replace(',', '.', $raw);
+        }
+
+        return is_numeric($raw) ? (float) $raw : 0.0;
+    }
+
     private function pullFlash(): string
     {
         $flash = $_SESSION['admin_flash'] ?? '';
@@ -712,7 +1077,7 @@ final class AdminAffiliateController extends AdminController
         $action = trim((string) ($_POST['action'] ?? ''));
         $token = (string) ($_POST['_token'] ?? '');
 
-        if ($token === '' || $token !== AdminAuth::csrfToken()) {
+        if (!AdminAuth::verifyCsrf($token)) {
             $_SESSION['admin_flash'] = 'Güvenlik tokenı geçersiz.';
             $this->redirect(AdminAuth::url('/affiliates'));
         }
@@ -723,16 +1088,33 @@ final class AdminAffiliateController extends AdminController
         }
 
         if ($action === 'approve') {
-            $stmt = $pdo->prepare("SELECT status FROM affiliates WHERE id = :id");
+            $stmt = $pdo->prepare("SELECT status, commission_plan_id FROM affiliates WHERE id = :id");
             $stmt->execute(['id' => $id]);
-            $current = $stmt->fetchColumn();
+            $currentRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $current = (string) ($currentRow['status'] ?? '');
 
             if ($current === 'pending' || $current === 'rejected') {
-                $stmt = $pdo->prepare(
-                    "UPDATE affiliates SET status = 'active', approved_at = NOW() WHERE id = :id"
-                );
-                $stmt->execute(['id' => $id]);
-                $_SESSION['admin_flash'] = 'Ortak onaylandı.';
+                AffiliateCommissionEngine::ensureSchema($pdo);
+                $planId = (int) ($currentRow['commission_plan_id'] ?? 0);
+                if ($planId <= 0) {
+                    $planId = (int) (AffiliateCommissionEngine::defaultPlanId($pdo) ?? 0);
+                }
+                if ($planId > 0) {
+                    $stmt = $pdo->prepare(
+                        "UPDATE affiliates
+                         SET status = 'active', approved_at = NOW(), commission_plan_id = :plan
+                         WHERE id = :id"
+                    );
+                    $stmt->execute(['plan' => $planId, 'id' => $id]);
+                } else {
+                    $stmt = $pdo->prepare(
+                        "UPDATE affiliates SET status = 'active', approved_at = NOW() WHERE id = :id"
+                    );
+                    $stmt->execute(['id' => $id]);
+                }
+                $_SESSION['admin_flash'] = $planId > 0
+                    ? 'Ortak onaylandı ve varsayılan komisyon planı atandı.'
+                    : 'Ortak onaylandı. Uyarı: aktif komisyon planı yok — plan atayın.';
             } else {
                 $_SESSION['admin_flash'] = 'Ortak zaten ' . $current . ' durumunda.';
             }
@@ -748,5 +1130,49 @@ final class AdminAffiliateController extends AdminController
         }
 
         $this->redirect(AdminAuth::url('/affiliates'));
+    }
+
+    public function recalculate(): void
+    {
+        $this->requirePermission('affiliates');
+
+        $pdo = AdminDatabase::pdo();
+        $id = max(0, (int) ($_POST['id'] ?? 0));
+        $token = (string) ($_POST['_token'] ?? '');
+        if (!AdminAuth::verifyCsrf($token) || $id <= 0) {
+            $_SESSION['admin_flash'] = 'Güvenlik doğrulaması başarısız.';
+            $this->redirect(AdminAuth::url($id > 0 ? '/affiliate/detail?id=' . $id : '/affiliates'));
+        }
+
+        $dateFrom = trim((string) ($_POST['date_from'] ?? ''));
+        $dateTo = trim((string) ($_POST['date_to'] ?? ''));
+        if ($dateFrom === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom) !== 1) {
+            $dateFrom = date('Y-m-d', strtotime('-1 day'));
+        }
+        if ($dateTo === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) !== 1) {
+            $dateTo = date('Y-m-d', strtotime($dateFrom . ' +1 day'));
+        }
+        // Engine expects end-exclusive window.
+        if ($dateTo <= $dateFrom) {
+            $dateTo = date('Y-m-d', strtotime($dateFrom . ' +1 day'));
+        }
+
+        try {
+            AffiliateCommissionEngine::ensureSchema($pdo);
+            AffiliateCommissionEngine::assignDefaultPlanIfMissing($pdo, $id);
+            $result = AffiliateCommissionEngine::processPeriod($pdo, $dateFrom, $dateTo, $id, true);
+            $_SESSION['admin_flash'] = sprintf(
+                'Komisyon yeniden hesaplandı (%s → %s): %d kayıt, %s ₺',
+                $dateFrom,
+                $dateTo,
+                (int) ($result['processed'] ?? 0),
+                number_format((float) ($result['total'] ?? 0), 2, ',', '.')
+            );
+        } catch (Throwable $e) {
+            error_log('[AdminAffiliateController::recalculate] ' . $e->getMessage());
+            $_SESSION['admin_flash'] = 'Yeniden hesaplama başarısız: ' . $e->getMessage();
+        }
+
+        $this->redirect(AdminAuth::url('/affiliate/detail?id=' . $id));
     }
 }

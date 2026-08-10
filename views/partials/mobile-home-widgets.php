@@ -2,7 +2,7 @@
 $loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 $mobileContactLinks = is_array($siteContactLinks ?? null) ? $siteContactLinks : (class_exists('ApiSiteSettings') ? ApiSiteSettings::normalizeContactLinks(is_array($ayar ?? null) ? $ayar : []) : []);
 $callbackUrl = (string) ($mobileContactLinks['callback_url'] ?? '/beni-ara');
-$callbackText = (string) ($mobileContactLinks['callback_widget_text'] ?? 'Dolandırıcılara geçit verme! Size ulaşan numara bize mi ait tıkla!');
+$callbackText = (string) ($mobileContactLinks['callback_widget_text'] ?? (function_exists('__') ? __('home.scam_warning') : 'Dolandırıcılara geçit verme! Size ulaşan numara bize mi ait tıkla!'));
 $callbackText = trim($callbackText);
 ?>
 <div class="mobile-home-widgets" id="mobileHomeWidgets">
@@ -10,14 +10,14 @@ $callbackText = trim($callbackText);
     <a href="<?= htmlspecialchars($callbackUrl, ENT_QUOTES, 'UTF-8') ?>" class="informative-widget-link informative-widget-bc">
       <div class="informative-widget-container">
         <i class="bc-i-info" aria-hidden="true"></i>
-        <span><?= htmlspecialchars($callbackText !== '' ? $callbackText : 'Dolandırıcılara geçit verme! Size ulaşan numara bize mi ait tıkla!', ENT_QUOTES, 'UTF-8') ?></span>
+        <span><?= htmlspecialchars($callbackText !== '' ? $callbackText : (function_exists('__') ? __('home.scam_warning') : 'Dolandırıcılara geçit verme! Size ulaşan numara bize mi ait tıkla!'), ENT_QUOTES, 'UTF-8') ?></span>
       </div>
       <span class="informative-widget-actions" aria-hidden="true">
         <i class="bc-i-call"></i>
       </span>
     </a>
   </div>
-  <button type="button" class="informative-widget-close" id="informativeWidgetClose" aria-label="Uyarıyı kapat" title="Kapat">
+  <button type="button" class="informative-widget-close" id="informativeWidgetClose" aria-label="<?= htmlspecialchars(function_exists('__') ? __('home.close_warning') : 'Uyarıyı kapat', ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(function_exists('__') ? __('auth.close') : 'Kapat', ENT_QUOTES, 'UTF-8') ?>">
     <i class="bc-i-close-remove" aria-hidden="true"></i>
   </button>
 

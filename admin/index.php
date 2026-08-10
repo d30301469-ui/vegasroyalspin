@@ -37,10 +37,15 @@ $isLightweightRoute = preg_match('#^/api/v2/(?:bgaming-wallet|bgaming)(?:/.*)?$#
     || str_starts_with($backendPath, '/api/v2/sportsbook-wallet/')
     || $backendPath === '/api/v2/casino-aggregator-wallet'
     || str_starts_with($backendPath, '/api/v2/casino-aggregator-wallet/')
+    || $backendPath === '/api/v2/gscw'
+    || str_starts_with($backendPath, '/api/v2/gscw/')
+    || $backendPath === '/api/v2/gsc_wallet'
+    || str_starts_with($backendPath, '/api/v2/gsc_wallet/')
     || $backendPath === '/api/v2/gsc-plus-wallet'
     || str_starts_with($backendPath, '/api/v2/gsc-plus-wallet/')
     || $backendPath === '/api/v2/gsc_plus_wallet'
     || str_starts_with($backendPath, '/api/v2/gsc_plus_wallet/')
+    || (bool) preg_match('#^/api/v2/(?:gscw|gsc_wallet|gsc-plus-wallet|gsc_plus_wallet)#', preg_replace('#(?:%20|\+|\s)+#', '', rawurldecode($backendPath)) ?? $backendPath)
     || $backendPath === '/sportsbook_api'
     || str_starts_with($backendPath, '/sportsbook_api/')
     || $backendPath === '/api/v2/internal'
@@ -51,11 +56,17 @@ $isLightweightRoute = preg_match('#^/api/v2/(?:bgaming-wallet|bgaming)(?:/.*)?$#
 
 if ($isLightweightRoute) {
     if (preg_match('#^/api/v2/(?:bgaming-wallet|bgaming)(?:/(.*))?$#', $backendPath, $bgamingMatch)) {
+        if (!defined('APP_API_NO_SESSION')) {
+            define('APP_API_NO_SESSION', true);
+        }
         $_GET['endpoint'] = trim((string) ($bgamingMatch[1] ?? ''), '/');
         require __DIR__ . '/api/v2/bgaming_callback.php';
         exit;
     }
     if (in_array($backendPath, ['/api/v2/megapayz-callback', '/MegaPayz/deposit', '/megapayz/deposit'], true)) {
+        if (!defined('APP_API_NO_SESSION')) {
+            define('APP_API_NO_SESSION', true);
+        }
         require_once __DIR__ . '/app/Core/AdminPaths.php';
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
@@ -98,6 +109,9 @@ if ($isLightweightRoute) {
         || $backendPath === '/sportsbook_api'
         || str_starts_with($backendPath, '/sportsbook_api/')
     ) {
+        if (!defined('APP_API_NO_SESSION')) {
+            define('APP_API_NO_SESSION', true);
+        }
         require_once __DIR__ . '/app/Core/AdminPaths.php';
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
@@ -107,30 +121,31 @@ if ($isLightweightRoute) {
     if ($backendPath === '/api/v2/casino-aggregator-wallet'
         || str_starts_with($backendPath, '/api/v2/casino-aggregator-wallet/')
     ) {
+        if (!defined('APP_API_NO_SESSION')) {
+            define('APP_API_NO_SESSION', true);
+        }
         require_once __DIR__ . '/app/Core/AdminPaths.php';
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
         require __DIR__ . '/api/v2/casino_aggregator_callback.php';
         exit;
     }
-    if ($backendPath === '/api/v2/gsc-plus-wallet'
-        || str_starts_with($backendPath, '/api/v2/gsc-plus-wallet/')
-        || $backendPath === '/api/v2/gsc_plus_wallet'
-        || str_starts_with($backendPath, '/api/v2/gsc_plus_wallet/')
-    ) {
-        if (!defined('METROPOL_API_NO_SESSION')) {
-            define('METROPOL_API_NO_SESSION', true);
+    $gscWalletPath = preg_replace('#(?:%20|\+|\s)+#', '', rawurldecode($backendPath)) ?? $backendPath;
+    if ((bool) preg_match('#^/api/v2/(?:gscw|gsc_wallet|gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet)(?:/|$)#', $gscWalletPath)) {
+        if (!defined('APP_API_NO_SESSION')) {
+            define('APP_API_NO_SESSION', true);
         }
         require_once __DIR__ . '/app/Core/AdminPaths.php';
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
-        if (preg_match('#^/api/v2/(?:gsc-plus-wallet|gsc_plus_wallet)(?:/(.*))?$#', $backendPath, $gsMatch)) {
-            $_GET['endpoint'] = trim((string) ($gsMatch[1] ?? ''), '/');
-        }
+        // Endpoint is derived inside gsc_plus_callback.php from REQUEST_URI.
         require __DIR__ . '/api/v2/gsc_plus_callback.php';
         exit;
     }
     if ($backendPath === '/api/v2/casino-callback') {
+        if (!defined('APP_API_NO_SESSION')) {
+            define('APP_API_NO_SESSION', true);
+        }
         require_once __DIR__ . '/app/Core/AdminPaths.php';
         admin_paths_bootstrap();
         require_once admin_panel_paths()['panel_app'] . '/bootstrap_api.php';
@@ -149,7 +164,7 @@ if ($isLightweightRoute) {
         } else {
             $_GET['route'] = $internalSuffix;
         }
-        define('METROPOL_API_V2_INTERNAL', true);
+        define('APP_API_V2_INTERNAL', true);
         require __DIR__ . '/api/v2/internal.php';
         exit;
     }
@@ -182,6 +197,7 @@ $router = new AdminRouter();
 
 $router->get('/', [AdminDashboardController::class, 'index']);
 $router->get('/dashboard', [AdminDashboardController::class, 'index']);
+$router->get('/dashboard/live', [AdminDashboardController::class, 'live']);
 $router->get('/backoffice-suite', [AdminBackofficeSuiteController::class, 'index']);
 $router->get('/login', [AdminAuthController::class, 'login']);
 $router->post('/dashboard/cache-purge', [AdminDashboardController::class, 'purgeCaches']);
@@ -221,6 +237,7 @@ $router->get('/casino-aggregator/settings', [AdminCasinoAggregatorController::cl
 $router->post('/casino-aggregator/settings', [AdminCasinoAggregatorController::class, 'updateSettings']);
 $router->post('/casino-aggregator/sync-vendors', [AdminCasinoAggregatorController::class, 'syncVendors']);
 $router->post('/casino-aggregator/sync-games', [AdminCasinoAggregatorController::class, 'syncGames']);
+$router->post('/casino-aggregator/rebuild-catalog', [AdminCasinoAggregatorController::class, 'rebuildCatalog']);
 $router->get('/casino-aggregator/agent-settings', [AdminCasinoAggregatorController::class, 'agentSettings']);
 $router->post('/casino-aggregator/agent-settings', [AdminCasinoAggregatorController::class, 'updateAgentSettings']);
 $router->post('/casino-aggregator/agent-settings/pull', [AdminCasinoAggregatorController::class, 'pullAgentSettings']);
@@ -242,6 +259,7 @@ $router->get('/megapayz/methods', [AdminMegaPayzController::class, 'methods']);
 $router->post('/megapayz/methods', [AdminMegaPayzController::class, 'updateMethods']);
 $router->post('/megapayz/withdraw/approve', [AdminMegaPayzController::class, 'approveWithdraw']);
 $router->post('/megapayz/withdraw/reject', [AdminMegaPayzController::class, 'rejectWithdraw']);
+$router->post('/megapayz/deposit/cancel', [AdminMegaPayzController::class, 'cancelDeposit']);
 $router->get('/footer', [AdminFooterController::class, 'legacyRedirect']);
 $router->post('/footer', [AdminFooterController::class, 'update']);
 $router->get('/site-settings', [AdminSiteSettingsController::class, 'edit']);
@@ -257,6 +275,10 @@ $router->get('/user/edit', [AdminUserController::class, 'edit']);
 $router->post('/user/update', [AdminUserController::class, 'update']);
 $router->post('/user/balance-adjust', [AdminUserController::class, 'balanceAdjust']);
 $router->post('/user/note/store', [AdminUserController::class, 'storeNote']);
+$router->post('/user/unfreeze', [AdminUserController::class, 'unfreeze']);
+$router->post('/user/freeze', [AdminUserController::class, 'freeze']);
+$router->post('/user/ban', [AdminUserController::class, 'ban']);
+$router->post('/user/unban', [AdminUserController::class, 'unban']);
 $router->get('/promotions', [AdminPromotionController::class, 'index']);
 $router->get('/promotion/create', [AdminPromotionController::class, 'create']);
 $router->post('/promotion/store', [AdminPromotionController::class, 'store']);
@@ -294,6 +316,7 @@ $router->post('/email/templates/custom/delete', [AdminCommunicationController::c
 $router->get('/compose', [AdminCommunicationController::class, 'compose']);
 $router->post('/compose', [AdminCommunicationController::class, 'send']);
 $router->get('/chat', [AdminCommunicationController::class, 'chat']);
+$router->post('/call-request/complete', [AdminCommunicationController::class, 'completeCallRequest']);
 $router->get('/support/tickets', [AdminSupportController::class, 'tickets']);
 $router->get('/support/ticket', [AdminSupportController::class, 'ticket']);
 $router->post('/support/reply', [AdminSupportController::class, 'reply']);
@@ -306,7 +329,9 @@ $router->post('/kyc/reject', [AdminKycController::class, 'reject']);
 $router->get('/compliance/aml-alerts', [AdminComplianceController::class, 'amlAlerts']);
 $router->get('/compliance/risk-alerts', [AdminComplianceController::class, 'riskAlerts']);
 $router->post('/compliance/aml/resolve', [AdminComplianceController::class, 'resolveAml']);
+$router->post('/compliance/aml/ignore', [AdminComplianceController::class, 'ignoreAml']);
 $router->post('/compliance/risk/resolve', [AdminComplianceController::class, 'resolveRisk']);
+$router->post('/compliance/risk/ignore', [AdminComplianceController::class, 'ignoreRisk']);
 $router->get('/reports/calendar', [AdminReportController::class, 'calendar']);
 $router->get('/reports/charts', [AdminReportController::class, 'charts']);
 $router->get('/reports/geomap', [AdminSystemController::class, 'googleMaps']);
@@ -317,6 +342,7 @@ $router->post('/affiliate/update', [AdminAffiliateController::class, 'update']);
 $router->post('/affiliate/payment-update', [AdminAffiliateController::class, 'updatePaymentDetails']);
 $router->post('/affiliate/quick-action', [AdminAffiliateController::class, 'quickAction']);
 $router->post('/affiliate/commission-add', [AdminAffiliateController::class, 'addCommission']);
+$router->post('/affiliate/recalculate', [AdminAffiliateController::class, 'recalculate']);
 $router->get('/affiliate/plans', [AdminAffiliateController::class, 'plans']);
 $router->post('/affiliate/plan-store', [AdminAffiliateController::class, 'storePlan']);
 $router->post('/affiliate/plan-update', [AdminAffiliateController::class, 'updatePlan']);
@@ -332,8 +358,11 @@ $router->get('/signin', [AdminAuthController::class, 'login']);
 
 $path = AdminRequest::path();
 $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
-$permission = AdminRoutePermission::resolve($path);
-if ($permission !== null) {
+
+// Global auth gate: login/logout hariç tüm panel yolları oturum ister.
+// Permission map varsa yetki de kontrol edilir; map dışı yollar controller
+// requirePermission ile korunmaya devam eder (defense in depth).
+if (!AdminAuth::isPublicPath($path)) {
     if (!AdminAuth::check()) {
         if (!headers_sent()) {
             header('Location: ' . AdminAuth::url('/login'), true, 302);
@@ -344,7 +373,9 @@ if ($permission !== null) {
         }
         exit;
     }
-    if (!AdminAuth::can($permission)) {
+
+    $permission = AdminRoutePermission::resolve($path);
+    if ($permission !== null && !AdminAuth::can($permission)) {
         http_response_code(403);
         (new AdminController())->view('errors/403', [
             'title' => 'Erişim engellendi',

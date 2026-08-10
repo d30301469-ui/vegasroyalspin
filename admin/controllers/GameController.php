@@ -11,7 +11,7 @@ class GameController
     {
         if (session_status() === PHP_SESSION_NONE) {
             require_once __DIR__ . '/../config/frontend_session.php';
-            metropol_frontend_session_start();
+            frontend_session_start();
         }
 
         $mode = strtolower(trim((string) ($_GET['mode'] ?? 'real')));

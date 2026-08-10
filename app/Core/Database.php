@@ -33,8 +33,8 @@ final class Database
         $charset = (string) ($db['charset'] ?? 'utf8mb4');
         $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset);
 
-        $options = function_exists('metropol_pdo_options')
-            ? metropol_pdo_options()
+        $options = function_exists('pdo_options')
+            ? pdo_options()
             : [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

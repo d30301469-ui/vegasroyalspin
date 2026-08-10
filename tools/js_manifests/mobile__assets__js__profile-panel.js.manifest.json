@@ -1,0 +1,27 @@
+{
+  "file": "mobile/assets/js/profile-panel.js",
+  "generated_at": "2026-08-03T15:56:56.887514+00:00",
+  "mode": "dynamic",
+  "strip_policy": "coverage_required",
+  "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py",
+  "entries": [
+    "__closeMobileProfilePanel",
+    "__openMobileBalancePage",
+    "__openMobileBetHistoryPage",
+    "__openMobileBonusesPage",
+    "__openMobileHomeWithCurrentPage",
+    "__openMobileProfilePanel",
+    "bind",
+    "closePanel",
+    "openPanel"
+  ],
+  "keep": [],
+  "stats": {
+    "functions": 171,
+    "reachable": 171,
+    "unreachable_candidates": 0,
+    "coverage_hits": 0
+  },
+  "unreachable_sample": [],
+  "confidence_note": "mode=dynamic strip_policy=coverage_required; entries=9 funcs=171 reachable=171 unreachable=0 coverage=0"
+}

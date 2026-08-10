@@ -148,7 +148,7 @@ if (!function_exists('frontend_coerce_public_api_url')) {
             $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
             if ($host === '' || $host === 'localhost' || $host === '127.0.0.1' || str_ends_with($host, '.test') || str_ends_with($host, '.local')) {
                 if ($fallback !== '' && $url !== $fallback) {
-                    error_log('[metropol] Runtime host is public (' . $runtimeHost . '), coercing API backend URL "' . $url . '" to fallback ' . $fallback);
+                    error_log('[app] Runtime host is public (' . $runtimeHost . '), coercing API backend URL "' . $url . '" to fallback ' . $fallback);
                 }
 
                 return $fallback !== '' ? $fallback : $url;
@@ -168,7 +168,7 @@ if (!function_exists('frontend_coerce_public_api_url')) {
             || str_ends_with($host, '.test')
         ) {
             if ($fallback !== '' && $url !== $fallback) {
-                error_log('[metropol] Invalid API backend URL "' . $url . '"; using fallback ' . $fallback);
+                error_log('[app] Invalid API backend URL "' . $url . '"; using fallback ' . $fallback);
             }
 
             return $fallback !== '' ? $fallback : $url;
@@ -183,11 +183,11 @@ if (!defined('API_BACKEND_MAIN_BASE_URL')) {
     $rawMainApi = frontend_coerce_public_api_url(
         frontend_env_string('API_BACKEND_MAIN_BASE_URL', frontend_default_member_api_base_url())
     );
-    if (!function_exists('metropol_normalize_member_api_public_url') && is_readable(__DIR__ . '/member_api_public.php')) {
+    if (!function_exists('normalize_member_api_public_url') && is_readable(__DIR__ . '/member_api_public.php')) {
         require_once __DIR__ . '/member_api_public.php';
     }
-    define('API_BACKEND_MAIN_BASE_URL', function_exists('metropol_normalize_member_api_public_url')
-        ? metropol_normalize_member_api_public_url($rawMainApi)
+    define('API_BACKEND_MAIN_BASE_URL', function_exists('normalize_member_api_public_url')
+        ? normalize_member_api_public_url($rawMainApi)
         : $rawMainApi);
 }
 
@@ -199,8 +199,8 @@ if (!defined('API_BACKEND_FALLBACK_BASE_URL')) {
         ),
         deploy_domain('api_public_base_url')
     );
-    define('API_BACKEND_FALLBACK_BASE_URL', function_exists('metropol_normalize_member_api_public_url')
-        ? metropol_normalize_member_api_public_url($fallbackRaw)
+    define('API_BACKEND_FALLBACK_BASE_URL', function_exists('normalize_member_api_public_url')
+        ? normalize_member_api_public_url($fallbackRaw)
         : $fallbackRaw);
 }
 

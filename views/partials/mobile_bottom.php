@@ -25,11 +25,13 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
             continue;
         }
         $type = strtolower(trim((string) ($tab['type'] ?? 'link')));
-        $label = trim((string) ($tab['label'] ?? ''));
-        $icon = trim((string) ($tab['icon'] ?? ''));
         $href = trim((string) ($tab['href'] ?? ''));
+        $labelRaw = trim((string) ($tab['label'] ?? ''));
+        $label = function_exists('i18n_label') ? i18n_label($labelRaw, $href) : $labelRaw;
+        $icon = trim((string) ($tab['icon'] ?? ''));
         $elementId = trim((string) ($tab['id'] ?? ''));
-        $aria = trim((string) ($tab['aria_label'] ?? $label));
+        $ariaRaw = trim((string) ($tab['aria_label'] ?? $labelRaw));
+        $aria = function_exists('i18n_label') ? i18n_label($ariaRaw, $href) : $ariaRaw;
         if ($label === '') {
             continue;
         }
@@ -65,7 +67,7 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
         <a href="/" class="mobileMenu-logo" data-site-logo-link>
             <img src="<?= $h($mobileMenuLogoUrl) ?>" alt="<?= $h($mobileMenuSiteName) ?>">
         </a>
-        <button class="mobileMenu-close" id="mobileMenu-close" type="button" aria-label="Kapat">
+        <button class="mobileMenu-close" id="mobileMenu-close" type="button" aria-label="<?= $h(function_exists('__') ? __('auth.close') : 'Kapat') ?>">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/>
             </svg>
@@ -78,8 +80,9 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
             if (!is_array($section)) {
                 continue;
             }
-            $sectionTitle = trim((string) ($section['title'] ?? ''));
-            $layout = strtolower(trim((string) ($section['layout'] ?? ($sectionTitle === '' ? 'grid' : 'list'))));
+            $sectionTitleRaw = trim((string) ($section['title'] ?? ''));
+            $sectionTitle = function_exists('i18n_label') ? i18n_label($sectionTitleRaw) : $sectionTitleRaw;
+            $layout = strtolower(trim((string) ($section['layout'] ?? ($sectionTitleRaw === '' ? 'grid' : 'list'))));
             $items = is_array($section['items'] ?? null) ? $section['items'] : [];
             $enabledItems = array_values(array_filter($items, static fn ($item) => is_array($item) && !empty($item['enabled'])));
             if ($enabledItems === []) {
@@ -96,15 +99,24 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
                             <?php
                             $icon = trim((string) ($item['icon'] ?? ''));
                             $target = (string) ($item['target'] ?? '_self');
+                            $itemHref = (string) ($item['href'] ?? '#');
+                            $itemLabel = function_exists('i18n_label')
+                                ? i18n_label((string) ($item['label'] ?? ''), $itemHref)
+                                : (string) ($item['label'] ?? '');
+                            $itemBadge = trim((string) ($item['badge'] ?? ''));
+                            if ($itemBadge !== '' && function_exists('i18n_label')) {
+                                $itemBadge = i18n_label($itemBadge);
+                            }
                             ?>
-                            <a href="<?= $h((string) ($item['href'] ?? '#')) ?>"
+                            <a href="<?= $h($itemHref) ?>"
                                class="mobileMenu-card"
                                target="<?= $h($target === '_blank' ? '_blank' : '_self') ?>"
                                <?= $target === '_blank' ? 'rel="noopener"' : '' ?>>
                                 <?php if ($icon !== ''): ?>
                                     <span class="mobileMenu-card-icon"><i class="<?= $h($icon) ?>"></i></span>
                                 <?php endif; ?>
-                                <span class="mobileMenu-card-label"><?= $h((string) ($item['label'] ?? '')) ?></span>
+                                <span class="mobileMenu-card-label"><?= $h($itemLabel) ?></span>
+                                <?php if ($itemBadge !== ''): ?><span class="mobileMenu-card-badge"><?= $h($itemBadge) ?></span><?php endif; ?>
                             </a>
                         <?php endforeach; ?>
                     </div>
@@ -114,15 +126,19 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
                             <?php
                             $icon = trim((string) ($item['icon'] ?? ''));
                             $target = (string) ($item['target'] ?? '_self');
+                            $itemHref = (string) ($item['href'] ?? '#');
+                            $itemLabel = function_exists('i18n_label')
+                                ? i18n_label((string) ($item['label'] ?? ''), $itemHref)
+                                : (string) ($item['label'] ?? '');
                             ?>
-                            <a href="<?= $h((string) ($item['href'] ?? '#')) ?>"
+                            <a href="<?= $h($itemHref) ?>"
                                class="mobileMenu-list-item"
                                target="<?= $h($target === '_blank' ? '_blank' : '_self') ?>"
                                <?= $target === '_blank' ? 'rel="noopener"' : '' ?>>
                                 <?php if ($icon !== ''): ?>
                                     <span class="mobileMenu-list-icon"><i class="<?= $h($icon) ?>"></i></span>
                                 <?php endif; ?>
-                                <span><?= $h((string) ($item['label'] ?? '')) ?></span>
+                                <span><?= $h($itemLabel) ?></span>
                             </a>
                         <?php endforeach; ?>
                     </div>

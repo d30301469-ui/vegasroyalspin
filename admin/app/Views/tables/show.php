@@ -14,7 +14,35 @@ $totalPages = max(1, (int) ceil($total / $perPage));
 $module = is_array($module ?? null) ? $module : [];
 $moduleKey = isset($moduleKey) ? (string) $moduleKey : '';
 $showActiveBonusProgress = $moduleKey === 'active-bonuses';
-$isReadOnlyModule = in_array($moduleKey, ['deposits', 'withdrawals', 'promocode-requests'], true);
+$isReadOnlyModule = in_array($moduleKey, [
+    'deposits',
+    'withdrawals',
+    'promocode-requests',
+    'loyalty-cashback',
+    'loyalty-transactions',
+    'loyalty-accounts',
+    'logs',
+    'sessions',
+    'visitor-logs',
+    'kyc',
+    'bonus-claims',
+    'active-bonuses',
+    'frozen-accounts',
+    'call-requests',
+    'sportsbook-sessions',
+    'sportsbook-transactions',
+    'sportsbook-wallet-logs',
+    'casino-aggregator-sessions',
+    'casino-aggregator-transactions',
+    'casino-aggregator-wallet-logs',
+    'gsc-plus-sessions',
+    'gsc-plus-transactions',
+    'gsc-plus-wagers',
+    'gsc-plus-wallet-logs',
+    'gsc-plus-settings',
+    'bgaming-transactions',
+    'bgaming-wallet-logs',
+], true);
 $isWriteProtectedTable = in_array($table, [
     'users',
     'admin_permissions',
@@ -27,8 +55,33 @@ $isWriteProtectedTable = in_array($table, [
     'bgaming_transactions',
     'bgaming_wallet_logs',
     'casino_aggregator_wallet_logs',
+    'casino_aggregator_transactions',
+    'casino_aggregator_sessions',
+    'gsc_transactions',
+    'gsc_sessions',
+    'gsc_wagers',
+    'gsc_wallet_logs',
+    'gsc_config',
+    'sportsbook_transactions',
+    'sportsbook_sessions',
+    'sportsbook_wallet_logs',
+    'loyalty_cashback_payments',
+    'loyalty_point_transactions',
+    'user_loyalty_accounts',
+    'user_active_bonuses',
+    'user_account_freeze',
+    'kyc_requests',
+    'bonus_claim_requests',
+    'promocode_requests',
+    'call_me_requests',
+    'promotions',
+    'homepage_sections',
+    'mobile_menu_settings',
+    'site_ayarlar',
+    'footer_settings',
+    'megapayz_methods',
 ], true);
-$actionColumnWidth = in_array($moduleKey, ['withdrawals', 'promocode-requests'], true)
+$actionColumnWidth = in_array($moduleKey, ['withdrawals', 'promocode-requests', 'bonus-claims', 'kyc', 'active-bonuses', 'frozen-accounts', 'deposits', 'call-requests'], true)
     ? '17%'
     : (($isReadOnlyModule || $isWriteProtectedTable) ? '7%' : '12%');
 $visibleColumnNames = is_array($visibleColumnNames ?? null) ? $visibleColumnNames : [];
@@ -50,17 +103,17 @@ if ($visibleColumns === []) {
 $pageStart = $total === 0 ? 0 : (($page - 1) * $perPage) + 1;
 $pageEnd = min($total, $page * $perPage);
 
-$formatValue = static function (string $column, mixed $value): string {
-    return AdminFieldPresenter::format($column, $value, 80);
+$formatValue = static function (string $column, mixed $value) use ($moduleKey): string {
+    return AdminFieldPresenter::format($column, $value, 80, $moduleKey);
 };
 
 $badgeClass = static function (string $value): string {
     $value = strtolower($value);
     return match (true) {
-        in_array($value, ['active', 'confirmed', 'approved', 'success', '1', 'win', 'kazanç'], true) => 'success dot',
-        in_array($value, ['pending', 'waiting_approval', 'draft'], true) => 'warning dot',
-        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'banned', '0', 'bet', 'kayıp'], true) => 'danger dot',
-        in_array($value, ['cancel', 'rollback', 'iptal'], true) => 'warning dot',
+        in_array($value, ['active', 'confirmed', 'approved', 'success', '1', 'win', 'kazanç', 'bahis', 'completed'], true) => 'success dot',
+        in_array($value, ['pending', 'waiting_approval', 'draft', 'requested', 'waiting'], true) => 'warning dot',
+        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'banned', '0', 'kayıp'], true) => 'danger dot',
+        in_array($value, ['bet', 'cancel', 'rollback', 'iptal', 'iade'], true) => 'warning dot',
         default => 'primary',
     };
 };
@@ -310,13 +363,67 @@ $userColumns = [
     .players-page-size a, .players-pager a, .players-pager span { border-radius:3px; color:var(--players-soft-text); display:inline-flex; font-size:11px; font-weight:800; min-width:24px; padding:5px 7px; place-content:center; }
     .players-page-size .active, .players-pager .active { background:var(--players-panel-mid); color:var(--players-text); }
     .players-empty { color:var(--players-muted); display:none; font-size:12px; font-weight:800; padding:18px; text-align:center; }
+    .players-adv-filter { background:var(--players-panel-bg); border:1px solid var(--players-border); border-radius:5px; display:none; margin-top:2px; overflow:hidden; }
+    .players-adv-filter.is-open { display:block; }
+    .players-adv-filter-grid { display:grid; gap:12px 14px; grid-template-columns:repeat(6, minmax(0, 1fr)); padding:14px 14px 8px; }
+    .players-adv-field { display:flex; flex-direction:column; gap:5px; min-width:0; }
+    .players-adv-field label { color:var(--players-muted); font-size:10px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; }
+    .players-adv-field input,
+    .players-adv-field select { background:var(--players-input-bg); border:1px solid var(--players-input-border); border-radius:4px; color:var(--players-text); font-size:12px; height:32px; outline:0; padding:0 9px; width:100%; }
+    .players-adv-field input:focus,
+    .players-adv-field select:focus { border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.16); }
+    .players-adv-dob { display:grid; gap:6px; grid-template-columns:1fr 1fr 1.2fr; }
+    .players-adv-toggle { align-items:center; display:inline-flex; gap:10px; min-height:32px; }
+    .players-adv-switch { appearance:none; background:var(--players-panel-mid); border:1px solid var(--players-border); border-radius:999px; cursor:pointer; height:22px; position:relative; transition:background .15s ease; width:40px; }
+    .players-adv-switch:checked { background:#2563eb; border-color:#2563eb; }
+    .players-adv-switch:before { background:#fff; border-radius:50%; content:""; height:16px; left:2px; position:absolute; top:2px; transition:transform .15s ease; width:16px; }
+    .players-adv-switch:checked:before { transform:translateX(18px); }
+    .players-adv-actions { align-items:center; border-top:1px solid var(--players-border); display:flex; gap:8px; justify-content:flex-end; padding:10px 14px; }
+    .players-adv-actions .players-btn.confirm { background:#2563eb; border-color:#2563eb; color:#fff; }
+    .players-adv-actions .players-btn.confirm:hover { background:#1d4ed8; }
+    @media(max-width:1100px) {
+        .players-adv-filter-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    }
     @media(max-width:760px) {
         .players-toolbar { align-items:stretch; flex-direction:column; }
         .players-toolbar-left, .players-toolbar-right { justify-content:flex-start; }
+        .players-adv-filter-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    }
+    @media(max-width:520px) {
+        .players-adv-filter-grid { grid-template-columns:1fr; }
     }
 </style>
 
 <section class="players-page">
+    <?php
+    $playersFilters = is_array($playersFilters ?? null) ? $playersFilters : [];
+    $playersFilterCount = (int) ($playersFilterCount ?? 0);
+    $pfVal = static function (string $key) use ($playersFilters): string {
+        return htmlspecialchars((string) ($playersFilters[$key] ?? ''), ENT_QUOTES, 'UTF-8');
+    };
+    $pfSelected = static function (string $key, string $value) use ($playersFilters): string {
+        return ((string) ($playersFilters[$key] ?? '') === $value) ? ' selected' : '';
+    };
+    $playersPanelOpen = $playersFilterCount > 0 || (isset($_GET['pf']) && is_array($_GET['pf']));
+    $dayOptions = static function (string $selected): string {
+        $html = '<option value="">GG</option>';
+        for ($d = 1; $d <= 31; $d++) {
+            $v = str_pad((string) $d, 2, '0', STR_PAD_LEFT);
+            $sel = $selected === $v || $selected === (string) $d ? ' selected' : '';
+            $html .= '<option value="' . $v . '"' . $sel . '>' . $v . '</option>';
+        }
+        return $html;
+    };
+    $monthOptions = static function (string $selected): string {
+        $html = '<option value="">AA</option>';
+        for ($m = 1; $m <= 12; $m++) {
+            $v = str_pad((string) $m, 2, '0', STR_PAD_LEFT);
+            $sel = $selected === $v || $selected === (string) $m ? ' selected' : '';
+            $html .= '<option value="' . $v . '"' . $sel . '>' . $v . '</option>';
+        }
+        return $html;
+    };
+    ?>
     <div class="players-topline">
         <?php foreach ($userStats as $stat): ?>
             <span class="players-stat" style="--dot:<?= htmlspecialchars((string) $stat['color'], ENT_QUOTES, 'UTF-8') ?>">
@@ -327,20 +434,186 @@ $userColumns = [
     </div>
 
     <div class="players-toolbar">
-        <form class="players-toolbar-left" method="get" action="<?= htmlspecialchars(AdminAuth::url('/module'), ENT_QUOTES, 'UTF-8') ?>">
-            <input type="hidden" name="key" value="users">
-            <input type="hidden" name="per_page" value="<?= htmlspecialchars((string) $perPage, ENT_QUOTES, 'UTF-8') ?>">
-            <button class="players-btn" type="submit"><svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtre <span class="pill"><?= $search !== '' ? '1' : '0' ?></span></button>
-            <input class="players-filter-input admin-search-md" type="search" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>" placeholder="Oyuncu listesinde ara..." data-players-global-filter>
-            <a class="players-btn" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users'), ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></a>
-        </form>
+        <div class="players-toolbar-left">
+            <button class="players-btn" type="button" data-players-filter-toggle aria-expanded="<?= $playersPanelOpen ? 'true' : 'false' ?>">
+                <svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                Filtre <span class="pill" data-players-filter-pill><?= htmlspecialchars((string) $playersFilterCount, ENT_QUOTES, 'UTF-8') ?></span>
+            </button>
+            <form method="get" action="<?= htmlspecialchars(AdminAuth::url('/module'), ENT_QUOTES, 'UTF-8') ?>" style="display:inline-flex;gap:7px;align-items:center;margin:0">
+                <input type="hidden" name="key" value="users">
+                <input type="hidden" name="per_page" value="<?= htmlspecialchars((string) $perPage, ENT_QUOTES, 'UTF-8') ?>">
+                <?php foreach ($playersFilters as $pfKey => $pfValue): ?>
+                    <input type="hidden" name="pf[<?= htmlspecialchars((string) $pfKey, ENT_QUOTES, 'UTF-8') ?>]" value="<?= htmlspecialchars((string) $pfValue, ENT_QUOTES, 'UTF-8') ?>">
+                <?php endforeach; ?>
+                <input class="players-filter-input admin-search-md" type="search" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>" placeholder="Oyuncu listesinde ara..." data-players-global-filter>
+            </form>
+            <a class="players-btn" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users&per_page=' . rawurlencode((string) $perPage)), ENT_QUOTES, 'UTF-8') ?>" title="Sıfırla"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></a>
+        </div>
         <div class="players-toolbar-right">
             <button class="players-btn" type="button" data-players-export><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Excel İndir</button>
-            <a class="players-btn" href="<?= htmlspecialchars(AdminAuth::url('/email'), ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Mail Gönder</a>
-            <a class="players-btn" href="<?= htmlspecialchars(AdminAuth::url('/email'), ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>Mesaj Gönder</a>
+            <a class="players-btn" href="<?= htmlspecialchars(AdminAuth::url('/email/send'), ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Mail Gönder</a>
+            <a class="players-btn" href="<?= htmlspecialchars(AdminAuth::url('/chat'), ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>Mesaj Gönder</a>
             <a class="players-btn primary" href="<?= htmlspecialchars(AdminAuth::url('/user/create'), ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Oyuncu Ekle</a>
         </div>
     </div>
+
+    <form class="players-adv-filter<?= $playersPanelOpen ? ' is-open' : '' ?>" method="get" action="<?= htmlspecialchars(AdminAuth::url('/module'), ENT_QUOTES, 'UTF-8') ?>" data-players-adv-filter>
+        <input type="hidden" name="key" value="users">
+        <input type="hidden" name="per_page" value="<?= htmlspecialchars((string) $perPage, ENT_QUOTES, 'UTF-8') ?>">
+        <?php if ($search !== ''): ?>
+            <input type="hidden" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>">
+        <?php endif; ?>
+        <div class="players-adv-filter-grid">
+            <div class="players-adv-field">
+                <label for="pf-username">Kullanıcı Adı</label>
+                <input id="pf-username" type="text" name="pf[username]" value="<?= $pfVal('username') ?>" autocomplete="off">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-player-type">Oyuncu Tipi</label>
+                <select id="pf-player-type" name="pf[player_type]">
+                    <option value="">Hepsi</option>
+                    <option value="real"<?= $pfSelected('player_type', 'real') ?>>Gerçek</option>
+                    <option value="test"<?= $pfSelected('player_type', 'test') ?>>Test</option>
+                </select>
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-tag">Oyuncu Etiketi</label>
+                <select id="pf-tag" name="pf[tag]">
+                    <option value="">Hepsi</option>
+                    <?php foreach (range('A', 'Z') as $letter): ?>
+                        <option value="<?= $letter ?>"<?= $pfSelected('tag', $letter) ?>><?= $letter ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-bonus">Bonus</label>
+                <select id="pf-bonus" name="pf[bonus]">
+                    <option value="">Hepsi</option>
+                    <option value="yes"<?= $pfSelected('bonus', 'yes') ?>>Var</option>
+                    <option value="no"<?= $pfSelected('bonus', 'no') ?>>Yok</option>
+                </select>
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-has-balance">Sadece Bakiyesi Olanlar</label>
+                <select id="pf-has-balance" name="pf[has_balance]">
+                    <option value="">Hepsi</option>
+                    <option value="yes"<?= $pfSelected('has_balance', 'yes') ?>>Evet</option>
+                    <option value="no"<?= $pfSelected('has_balance', 'no') ?>>Hayır</option>
+                </select>
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-name">İsim</label>
+                <input id="pf-name" type="text" name="pf[name]" value="<?= $pfVal('name') ?>" autocomplete="off">
+            </div>
+
+            <div class="players-adv-field">
+                <label for="pf-surname">Soyadı</label>
+                <input id="pf-surname" type="text" name="pf[surname]" value="<?= $pfVal('surname') ?>" autocomplete="off">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-email">Mail</label>
+                <input id="pf-email" type="text" name="pf[email]" value="<?= $pfVal('email') ?>" autocomplete="off">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-phone">Telefon No</label>
+                <input id="pf-phone" type="text" name="pf[phone]" value="<?= $pfVal('phone') ?>" autocomplete="off">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-gender">Cinsiyet</label>
+                <select id="pf-gender" name="pf[gender]">
+                    <option value="">Hepsi</option>
+                    <option value="male"<?= $pfSelected('gender', 'male') ?>>Erkek</option>
+                    <option value="female"<?= $pfSelected('gender', 'female') ?>>Kadın</option>
+                </select>
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-identity">Kimlik Numarası</label>
+                <input id="pf-identity" type="text" name="pf[identity]" value="<?= $pfVal('identity') ?>" autocomplete="off">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-active">Aktif?</label>
+                <select id="pf-active" name="pf[active]">
+                    <option value="">Hepsi</option>
+                    <option value="1"<?= $pfSelected('active', '1') ?>>Aktif</option>
+                    <option value="0"<?= $pfSelected('active', '0') ?>>Pasif</option>
+                </select>
+            </div>
+
+            <div class="players-adv-field">
+                <label for="pf-currency">Para Birimi</label>
+                <input id="pf-currency" type="text" name="pf[currency]" value="<?= $pfVal('currency') ?>" placeholder="TRY" autocomplete="off">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-partner">Partner</label>
+                <input id="pf-partner" type="text" name="pf[partner]" value="<?= $pfVal('partner') ?>" autocomplete="off">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-last-login-ip">Son Giriş IP’si</label>
+                <input id="pf-last-login-ip" type="text" name="pf[last_login_ip]" value="<?= $pfVal('last_login_ip') ?>" autocomplete="off">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-created-from">Kayıt Tarihi Start</label>
+                <input id="pf-created-from" type="date" name="pf[created_from]" value="<?= $pfVal('created_from') ?>">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-created-to">Kayıt Tarihi End</label>
+                <input id="pf-created-to" type="date" name="pf[created_to]" value="<?= $pfVal('created_to') ?>">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-login-from">Son Giriş Start</label>
+                <input id="pf-login-from" type="date" name="pf[login_from]" value="<?= $pfVal('login_from') ?>">
+            </div>
+
+            <div class="players-adv-field">
+                <label for="pf-login-to">Son Giriş End</label>
+                <input id="pf-login-to" type="date" name="pf[login_to]" value="<?= $pfVal('login_to') ?>">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-first-deposit-from">İlk Yatırım Start</label>
+                <input id="pf-first-deposit-from" type="date" name="pf[first_deposit_from]" value="<?= $pfVal('first_deposit_from') ?>">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-first-deposit-to">İlk Yatırım End</label>
+                <input id="pf-first-deposit-to" type="date" name="pf[first_deposit_to]" value="<?= $pfVal('first_deposit_to') ?>">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-last-deposit-from">Son Yatırım Start</label>
+                <input id="pf-last-deposit-from" type="date" name="pf[last_deposit_from]" value="<?= $pfVal('last_deposit_from') ?>">
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-last-deposit-to">Son Yatırım End</label>
+                <input id="pf-last-deposit-to" type="date" name="pf[last_deposit_to]" value="<?= $pfVal('last_deposit_to') ?>">
+            </div>
+            <div class="players-adv-field">
+                <label>Doğum Günü From</label>
+                <div class="players-adv-dob">
+                    <select name="pf[dob_from_d]" aria-label="Doğum günü from gün"><?= $dayOptions((string) ($playersFilters['dob_from_d'] ?? '')) ?></select>
+                    <select name="pf[dob_from_m]" aria-label="Doğum günü from ay"><?= $monthOptions((string) ($playersFilters['dob_from_m'] ?? '')) ?></select>
+                    <input type="number" name="pf[dob_from_y]" value="<?= $pfVal('dob_from_y') ?>" placeholder="YYYY" min="1900" max="2100" aria-label="Doğum günü from yıl">
+                </div>
+            </div>
+
+            <div class="players-adv-field">
+                <label>Doğum Günü To</label>
+                <div class="players-adv-dob">
+                    <select name="pf[dob_to_d]" aria-label="Doğum günü to gün"><?= $dayOptions((string) ($playersFilters['dob_to_d'] ?? '')) ?></select>
+                    <select name="pf[dob_to_m]" aria-label="Doğum günü to ay"><?= $monthOptions((string) ($playersFilters['dob_to_m'] ?? '')) ?></select>
+                    <input type="number" name="pf[dob_to_y]" value="<?= $pfVal('dob_to_y') ?>" placeholder="YYYY" min="1900" max="2100" aria-label="Doğum günü to yıl">
+                </div>
+            </div>
+            <div class="players-adv-field">
+                <label for="pf-verified">Belge Onaylı</label>
+                <div class="players-adv-toggle">
+                    <input class="players-adv-switch" id="pf-verified" type="checkbox" name="pf[verified]" value="1"<?= ((string) ($playersFilters['verified'] ?? '') === '1') ? ' checked' : '' ?>>
+                </div>
+            </div>
+        </div>
+        <div class="players-adv-actions">
+            <a class="players-btn" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users&per_page=' . rawurlencode((string) $perPage)), ENT_QUOTES, 'UTF-8') ?>">Sıfırla</a>
+            <button class="players-btn" type="button" data-players-filter-close>Kapat</button>
+            <button class="players-btn confirm" type="submit">Onayla</button>
+        </div>
+    </form>
 
     <div class="players-info">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
@@ -423,13 +696,13 @@ $userColumns = [
         <div class="players-foot">
             <div class="players-page-size">
                 <?php foreach ([12, 25, 50, 100, 200] as $size): ?>
-                    <a class="<?= $perPage === $size ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users&search=' . rawurlencode($search) . '&per_page=' . $size), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($size, ENT_QUOTES, 'UTF-8') ?></a>
+                    <a class="<?= $perPage === $size ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url('/module?' . PlayersListFilter::queryString($playersFilters, $size, (string) $search)), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($size, ENT_QUOTES, 'UTF-8') ?></a>
                 <?php endforeach; ?>
             </div>
             <div class="players-pager">
                 <span>Sayfa #<?= htmlspecialchars($page, ENT_QUOTES, 'UTF-8') ?>. Toplam Sayfa: <?= htmlspecialchars($totalPages, ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($total, ENT_QUOTES, 'UTF-8') ?> Adet İçerik)</span>
                 <?php for ($i = max(1, $page - 1); $i <= min($totalPages, $page + 3); $i++): ?>
-                    <a class="<?= $i === $page ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url('/module?key=users&search=' . rawurlencode($search) . '&per_page=' . $perPage . '&page=' . $i), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($i, ENT_QUOTES, 'UTF-8') ?></a>
+                    <a class="<?= $i === $page ? 'active' : '' ?>" href="<?= htmlspecialchars(AdminAuth::url('/module?' . PlayersListFilter::queryString($playersFilters, (int) $perPage, (string) $search, $i)), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($i, ENT_QUOTES, 'UTF-8') ?></a>
                 <?php endfor; ?>
             </div>
         </div>
@@ -446,6 +719,62 @@ $userColumns = [
         var columnFilters = Array.prototype.slice.call(document.querySelectorAll('[data-players-column-filter]'));
         var checkAll = document.querySelector('[data-players-check-all]');
         var exportButton = document.querySelector('[data-players-export]');
+        var advFilter = document.querySelector('[data-players-adv-filter]');
+        var filterToggle = document.querySelector('[data-players-filter-toggle]');
+        var filterClose = document.querySelector('[data-players-filter-close]');
+        var filterPill = document.querySelector('[data-players-filter-pill]');
+
+        function setPanelOpen(open) {
+            if (!advFilter) return;
+            advFilter.classList.toggle('is-open', open);
+            if (filterToggle) filterToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        function countFilledFilters() {
+            if (!advFilter) return 0;
+            var count = 0;
+            var seenDob = { from: false, to: false };
+            Array.prototype.slice.call(advFilter.querySelectorAll('input, select')).forEach(function (el) {
+                var name = el.getAttribute('name') || '';
+                if (name.indexOf('pf[') !== 0) return;
+                if (el.type === 'checkbox') {
+                    if (el.checked) count++;
+                    return;
+                }
+                var value = String(el.value || '').trim();
+                if (!value) return;
+                if (name.indexOf('dob_from_') !== -1) {
+                    if (!seenDob.from) { seenDob.from = true; count++; }
+                    return;
+                }
+                if (name.indexOf('dob_to_') !== -1) {
+                    if (!seenDob.to) { seenDob.to = true; count++; }
+                    return;
+                }
+                count++;
+            });
+            return count;
+        }
+
+        function refreshPill() {
+            if (!filterPill) return;
+            filterPill.textContent = String(countFilledFilters());
+        }
+
+        if (filterToggle) {
+            filterToggle.addEventListener('click', function () {
+                setPanelOpen(!(advFilter && advFilter.classList.contains('is-open')));
+            });
+        }
+        if (filterClose) {
+            filterClose.addEventListener('click', function () {
+                setPanelOpen(false);
+            });
+        }
+        if (advFilter) {
+            advFilter.addEventListener('change', refreshPill);
+            advFilter.addEventListener('input', refreshPill);
+        }
 
         function normalized(value) {
             return String(value || '').toLocaleLowerCase('tr-TR').trim();
@@ -606,7 +935,10 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                 Yeni Kayıt
             </a>
-            <?php if ($moduleKey === 'bonus-claims'): ?>
+        </div>
+        <?php endif; ?>
+        <?php if ($moduleKey === 'bonus-claims'): ?>
+        <div class="hero-actions">
             <form method="post" action="<?= htmlspecialchars(AdminAuth::url('/bonus-claim/reset-all'), ENT_QUOTES, 'UTF-8') ?>" onsubmit="var c = prompt('TÜM bonus taleplerini, aktif bonusları ve promosyon kodu taleplerini SİLMEK için aşağıdaki kodu yazın:\\n\\nRESET_ALL_BONUS_CLAIMS'); if (c !== 'RESET_ALL_BONUS_CLAIMS') { alert('İptal edildi.'); return false; } document.getElementById('reset_confirm_input').value = c; return true;" style="display:inline">
                 <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="confirm" id="reset_confirm_input" value="">
@@ -615,7 +947,6 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                     Tümünü Sıfırla
                 </button>
             </form>
-            <?php endif; ?>
         </div>
         <?php endif; ?>
         <?php if (in_array($moduleKey, ['deposits', 'withdrawals'], true) && AdminAuth::can('deposits') && AdminAuth::can('withdrawals')): ?>
@@ -885,6 +1216,20 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                     <button class="admin-tx-action admin-tx-action--reject" aria-label="Reject withdraw" title="Reddet" type="submit"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Red</button>
                                 </form>
                             <?php endif; ?>
+                            <?php if ($moduleKey === 'deposits' && in_array(strtolower((string) ($row['status'] ?? '')), ['pending', 'failed'], true)): ?>
+                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/megapayz/deposit/cancel'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu bekleyen yatırım iptal edilsin mi? (Bakiye değişmez)">
+                                    <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
+                                    <button class="admin-tx-action admin-tx-action--reject" aria-label="Cancel deposit" title="İptal" type="submit">İptal</button>
+                                </form>
+                            <?php endif; ?>
+                            <?php if ($moduleKey === 'call-requests' && in_array(strtolower((string) ($row['status'] ?? '')), ['pending', 'new', 'open'], true)): ?>
+                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/call-request/complete'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu aranma talebi tamamlandı olarak işaretlensin mi?">
+                                    <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
+                                    <button class="admin-tx-action admin-tx-action--approve" type="submit" title="Tamamla">Tamamla</button>
+                                </form>
+                            <?php endif; ?>
                             <?php if ($moduleKey === 'promocode-requests' && (string) ($row['status'] ?? '') === 'pending'): ?>
                                 <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/promocode-request/approve'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu promo talep onaylansın ve üye bakiyesine eklensin mi?">
                                     <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
@@ -897,7 +1242,7 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                     <button class="admin-tx-action admin-tx-action--reject" aria-label="Reject promo request" title="Reddet" type="submit"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Red</button>
                                 </form>
                             <?php endif; ?>
-                            <?php if ($moduleKey === 'bonus-claims' && (string) ($row['status'] ?? '') === 'pending'): ?>
+                            <?php if ($moduleKey === 'bonus-claims' && in_array(strtolower((string) ($row['status'] ?? '')), ['pending', 'requested', 'waiting'], true)): ?>
                                 <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/bonus-claim/approve'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu bonus talebi onaylansın ve üyeye bonus tanımlansın mı?">
                                     <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
                                     <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
@@ -909,8 +1254,35 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                     <button class="admin-tx-action admin-tx-action--reject" aria-label="Reject bonus claim" title="Reddet" type="submit"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Red</button>
                                 </form>
                             <?php endif; ?>
+                            <?php if ($moduleKey === 'kyc'): ?>
+                                <?php $kycReviewUrl = AdminAuth::url('/kyc/review?id=' . rawurlencode($id)); ?>
+                                <a class="admin-tx-action admin-tx-action--approve" href="<?= htmlspecialchars($kycReviewUrl, ENT_QUOTES, 'UTF-8') ?>" title="KYC İncele">İncele</a>
+                            <?php endif; ?>
+                            <?php if ($moduleKey === 'active-bonuses' && strtolower((string) ($row['status'] ?? '')) === 'active'): ?>
+                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/bonus/revoke'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu aktif bonus iptal edilsin ve kalan bonus bakiyesi düşülsün mü?">
+                                    <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="bonus_id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="redirect_module" value="active-bonuses">
+                                    <button class="admin-tx-action admin-tx-action--reject" aria-label="Revoke bonus" title="İptal" type="submit"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>İptal</button>
+                                </form>
+                            <?php endif; ?>
+                            <?php if ($moduleKey === 'frozen-accounts'): ?>
+                                <?php
+                                $freezeUserId = (string) ($row['user_id'] ?? '');
+                                $userViewUrl = $freezeUserId !== '' ? AdminAuth::url('/user?id=' . rawurlencode($freezeUserId)) : '';
+                                ?>
+                                <?php if ($userViewUrl !== ''): ?>
+                                    <a class="admin-tx-action admin-tx-action--approve" href="<?= htmlspecialchars($userViewUrl, ENT_QUOTES, 'UTF-8') ?>" title="Üyeyi aç">Üye</a>
+                                <?php endif; ?>
+                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/user/unfreeze'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu hesabın dondurması kaldırılsın mı?">
+                                    <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="user_id" value="<?= htmlspecialchars($freezeUserId !== '' ? $freezeUserId : $id, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="redirect" value="frozen">
+                                    <button class="admin-tx-action admin-tx-action--reject" aria-label="Unfreeze account" title="Çöz" type="submit">Çöz</button>
+                                </form>
+                            <?php endif; ?>
                             <?php if (!$isReadOnlyModule && !$isWriteProtectedTable): ?>
-                                <?php $viewUrl = AdminAuth::url($table === 'users' ? '/user?id=' . rawurlencode($id) : '/table/edit?name=' . rawurlencode($table) . '&id=' . rawurlencode($id) . ($moduleKey !== '' ? '&module=' . rawurlencode($moduleKey) : '')); ?>
+                                <?php $viewUrl = AdminAuth::url($table === 'users' ? '/user?id=' . rawurlencode($id) : '/table/view?name=' . rawurlencode($table) . '&id=' . rawurlencode($id) . ($moduleKey !== '' ? '&module=' . rawurlencode($moduleKey) : '')); ?>
                                 <?php $editUrl = AdminAuth::url($table === 'users' ? '/user/edit?id=' . rawurlencode($id) : '/table/edit?name=' . rawurlencode($table) . '&id=' . rawurlencode($id) . ($moduleKey !== '' ? '&module=' . rawurlencode($moduleKey) : '')); ?>
                                 <a class="btn--icon" aria-label="View" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
                                 <a class="btn--icon" aria-label="Edit" href="<?= htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') ?>" data-admin-modal-url="<?= htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') ?>" data-admin-modal-title="<?= htmlspecialchars((string) ($module['title'] ?? $table) . ' düzenle', ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/></svg></a>
@@ -922,7 +1294,11 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                     <button class="btn--icon" aria-label="Delete" type="submit"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6 18 20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
                                 </form>
                             <?php else: ?>
-                                <?php $viewUrl = AdminAuth::url('/table/view?name=' . rawurlencode($table) . '&id=' . rawurlencode($id) . ($moduleKey !== '' ? '&module=' . rawurlencode($moduleKey) : '')); ?>
+                                <?php
+                                $viewUrl = $table === 'users'
+                                    ? AdminAuth::url('/user?id=' . rawurlencode($id))
+                                    : AdminAuth::url('/table/view?name=' . rawurlencode($table) . '&id=' . rawurlencode($id) . ($moduleKey !== '' ? '&module=' . rawurlencode($moduleKey) : ''));
+                                ?>
                                 <a class="btn--icon" aria-label="View" title="Görüntüle" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>" data-admin-modal-url="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>" data-admin-modal-title="<?= htmlspecialchars((string) ($module['title'] ?? $table) . ' görüntüle', ENT_QUOTES, 'UTF-8') ?>"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
                             <?php endif; ?>
                         <?php else: ?>

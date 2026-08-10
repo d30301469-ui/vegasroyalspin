@@ -20,7 +20,7 @@ final class AdminCommunicationController extends AdminController
         $this->requirePermission('email');
         $this->ensureMailTables();
         $settings = $this->mailSettingsRow();
-        require_once ADMIN_APP_PATH . '/Services/MetropolMailInbox.php';
+        require_once ADMIN_APP_PATH . '/Services/MailInbox.php';
         $mailbox = trim((string) ($settings['imap_user'] ?? $settings['smtp_user'] ?? $settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
 
         $this->view('communication/email', [
@@ -29,7 +29,7 @@ final class AdminCommunicationController extends AdminController
             'crumbs' => 'E-posta | Gelen e-postalar',
             'emailSection' => 'inbox',
             'mailbox' => $mailbox,
-            'imapConfigured' => metropol_mail_imap_configured($settings),
+            'imapConfigured' => mail_imap_configured($settings),
             'inboxListUrl' => AdminAuth::url('/email/inbox/list'),
         ]);
     }
@@ -38,9 +38,9 @@ final class AdminCommunicationController extends AdminController
     {
         $this->requirePermission('email');
         $settings = $this->mailSettingsRow();
-        require_once ADMIN_APP_PATH . '/Services/MetropolMailInbox.php';
+        require_once ADMIN_APP_PATH . '/Services/MailInbox.php';
         @set_time_limit(45);
-        $inbox = metropol_mail_fetch_inbox($settings, 25);
+        $inbox = mail_fetch_inbox($settings, 25);
 
         if (!headers_sent()) {
             header('Content-Type: text/html; charset=UTF-8');
@@ -59,8 +59,8 @@ final class AdminCommunicationController extends AdminController
         $this->ensureMailTables();
         $uid = (int) ($_GET['uid'] ?? 0);
         $settings = $this->mailSettingsRow();
-        require_once ADMIN_APP_PATH . '/Services/MetropolMailInbox.php';
-        $result = metropol_mail_fetch_message($settings, $uid);
+        require_once ADMIN_APP_PATH . '/Services/MailInbox.php';
+        $result = mail_fetch_message($settings, $uid);
         $data = [
             'title' => 'E-posta oku',
             'active' => 'email',
@@ -136,7 +136,7 @@ final class AdminCommunicationController extends AdminController
         $this->requirePermission('email');
         $this->ensureMailTables();
         $settings = $this->mailSettingsRow();
-        require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
+        require_once ADMIN_APP_PATH . '/Services/Mailer.php';
         $this->view('communication/templates', [
             'title' => 'E-posta şablonları',
             'active' => 'email',
@@ -187,12 +187,12 @@ final class AdminCommunicationController extends AdminController
             $this->redirect(AdminAuth::url('/email/settings'));
         }
 
-        require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
+        require_once ADMIN_APP_PATH . '/Services/Mailer.php';
         $subject = 'VegasRoyalSpin SMTP Test';
         $body = "Bu bir SMTP test mailidir.\n\nGonderim zamani: " . date('Y-m-d H:i:s') . "\nHost: " . (string) ($settings['smtp_host'] ?? '');
         $siteUrl = $this->frontendSiteUrl();
         $templateOptions = $this->mailTemplateOptions($settings);
-        $htmlBody = metropol_mail_render_template(
+        $htmlBody = mail_render_template(
             $siteUrl,
             'SMTP test mesaji basariyla iletildi',
             'SMTP Test Mesaji',
@@ -203,7 +203,7 @@ final class AdminCommunicationController extends AdminController
             $templateOptions
         );
         $error = '';
-        $ok = metropol_mail_send($settings, $from, $to, $subject, $body, $error, $htmlBody);
+        $ok = mail_send($settings, $from, $to, $subject, $body, $error, $htmlBody);
 
         try {
             $stmt = AdminDatabase::pdo()->prepare(
@@ -578,7 +578,7 @@ final class AdminCommunicationController extends AdminController
             $settings['custom_template_html'] = (string) ($_POST['custom_template_html'] ?? '');
         }
 
-        require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
+        require_once ADMIN_APP_PATH . '/Services/Mailer.php';
         header('Content-Type: text/html; charset=UTF-8');
         echo $this->renderMailTemplatePreview($type, $settings);
         exit;
@@ -657,7 +657,7 @@ final class AdminCommunicationController extends AdminController
         }
 
         if ($enabled) {
-            require_once ADMIN_APP_PATH . '/Services/MetropolMailer.php';
+            require_once ADMIN_APP_PATH . '/Services/Mailer.php';
         }
 
         $siteUrl = $this->frontendSiteUrl();
@@ -698,7 +698,7 @@ final class AdminCommunicationController extends AdminController
                     ? '<p style="margin:0;">' . nl2br(htmlspecialchars($personalizedBody, ENT_QUOTES, 'UTF-8')) . '</p>'
                     : '';
                 $ctaUrl = $siteUrl !== '' ? $siteUrl : 'https://vegasroyalspin.com';
-                $htmlBody = metropol_mail_render_template(
+                $htmlBody = mail_render_template(
                     $siteUrl,
                     $subject,
                     $subject,
@@ -712,7 +712,7 @@ final class AdminCommunicationController extends AdminController
                 if (!$this->htmlHasVisibleContent($htmlBody)) {
                     $fallbackOptions = $templateOptions;
                     unset($fallbackOptions['template_html']);
-                    $htmlBody = metropol_mail_render_template(
+                    $htmlBody = mail_render_template(
                         $siteUrl,
                         $subject,
                         $subject,
@@ -735,7 +735,7 @@ final class AdminCommunicationController extends AdminController
             $this->writeMemberInboxMessage($email, $subject, $plainBody);
 
             if ($enabled) {
-                $ok = metropol_mail_send(
+                $ok = mail_send(
                     $settings,
                     $from,
                     $email,
@@ -986,14 +986,48 @@ final class AdminCommunicationController extends AdminController
 
     public function chat(): void
     {
-        $this->requirePermission('email');
+        $this->requirePermission('call-requests');
         $this->view('communication/chat', [
             'title' => 'Canlı Talepler',
             'active' => 'chat',
             'crumbs' => 'İletişim | Canlı Talepler',
             'requests' => $this->rows('call_me_requests', 'created_at'),
-            'logs' => $this->rows('admin_logs', 'created_at'),
         ]);
+    }
+
+    public function completeCallRequest(): void
+    {
+        $this->requirePermission('call-requests');
+        if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Oturum doğrulaması başarısız.';
+            exit;
+        }
+
+        $id = max(0, (int) ($_POST['id'] ?? 0));
+        if ($id <= 0) {
+            $_SESSION['admin_flash'] = 'Geçersiz talep ID.';
+            $this->redirect(AdminAuth::url('/module?key=call-requests'));
+        }
+
+        try {
+            $stmt = AdminDatabase::pdo()->prepare(
+                "UPDATE call_me_requests
+                 SET status = 'completed', updated_at = NOW()
+                 WHERE id = :id AND LOWER(COALESCE(status, '')) IN ('pending', 'new', 'open')"
+            );
+            $stmt->execute(['id' => $id]);
+            if ($stmt->rowCount() > 0) {
+                AdminAuth::writeLog(AdminAuth::userName(), 'call_request_complete', 'call_me_requests', 'success', (string) $id);
+                $_SESSION['admin_flash'] = 'Aranma talebi tamamlandı olarak işaretlendi.';
+            } else {
+                $_SESSION['admin_flash'] = 'Talep bulunamadı veya zaten işlenmiş.';
+            }
+        } catch (Throwable $exception) {
+            $_SESSION['admin_flash'] = 'Talep güncellenemedi: ' . $exception->getMessage();
+        }
+
+        $this->redirect(AdminAuth::url('/module?key=call-requests'));
     }
 
     private function ensureMailTables(): void
@@ -1117,7 +1151,7 @@ final class AdminCommunicationController extends AdminController
      */
     private function renderMailTemplatePreview(string $type, array $settings): string
     {
-        if (!function_exists('metropol_mail_render_template')) {
+        if (!function_exists('mail_render_template')) {
             return '<!DOCTYPE html><html lang="tr"><body style="font-family:Arial,sans-serif;padding:24px;color:#111;">Önizleme motoru yüklenemedi.</body></html>';
         }
 
@@ -1137,7 +1171,7 @@ final class AdminCommunicationController extends AdminController
                 . 'Bu alan özel şablonunuzun örnek e-posta içeriğidir.'
                 . '</p>';
 
-            return metropol_mail_render_template(
+            return mail_render_template(
                 $siteUrl,
                 $subject !== '' ? $subject : $name,
                 $name !== '' ? $name : 'Özel Şablon',
@@ -1158,7 +1192,7 @@ final class AdminCommunicationController extends AdminController
                 . 'Güvenliğiniz için şifrenizi kimseyle paylaşmayın.'
                 . '</p>';
 
-            return metropol_mail_render_template(
+            return mail_render_template(
                 $siteUrl,
                 $companyName . ' üyeliğiniz başarıyla oluşturuldu',
                 'Aramıza Hoş Geldiniz!',
@@ -1180,7 +1214,7 @@ final class AdminCommunicationController extends AdminController
                 . 'İşlem detaylarını hesabınızdaki geçmiş sayfasından inceleyebilirsiniz.'
                 . '</p>';
 
-            return metropol_mail_render_template(
+            return mail_render_template(
                 $siteUrl,
                 $companyName . ' — yatırımınız bakiyenize eklendi',
                 'Yatırım Onaylandı',
@@ -1202,7 +1236,7 @@ final class AdminCommunicationController extends AdminController
                 . 'Tutar, seçtiğiniz ödeme yöntemine iletildi. İşlem geçmişinizi hesabınızdan kontrol edebilirsiniz.'
                 . '</p>';
 
-            return metropol_mail_render_template(
+            return mail_render_template(
                 $siteUrl,
                 $companyName . ' — çekim talebiniz tamamlandı',
                 'Çekim Tamamlandı',
@@ -1224,7 +1258,7 @@ final class AdminCommunicationController extends AdminController
             . 'Talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.'
             . '</p>';
 
-        return metropol_mail_render_template(
+        return mail_render_template(
             $siteUrl,
             $companyName . ' şifre sıfırlama bağlantınız hazır',
             'Şifre Sıfırlama',

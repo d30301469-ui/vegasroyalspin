@@ -17,6 +17,18 @@
     RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
     RewriteRule (^|/)[^/]+\.(?:log|sql|sqlite|db|bak|backup|old|orig|save|swp|tmp|env|ini|conf|config|pem|key|crt|p12|pfx|ps1|sh|bat|cmd|py|zip|tar|gz|tgz|7z|rar)$ - [F,L,NC]
 
+    # GSC+ wallet funnel — never rewrite into ?route= (AH10411 / trailing %20).
+    RewriteCond %{REQUEST_METHOD} =GET
+    RewriteCond %{REQUEST_URI} (?i)^/api/v2/(gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet|gscw|gsc_wallet)(?:%(?:20|2B|2520)|\+|\s)+(?:/(.*))?$
+    RewriteRule ^ /api/v2/gsc-plus-wallet/%2 [R=308,L,NE,QSA]
+    RewriteRule ^v2/gsc_plus_callback\.php(?:/.*)?$ - [END]
+    RewriteCond %{REQUEST_URI} (?i)^/api/v2/(?:gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet|gscw|gsc_wallet)
+    RewriteRule ^ v2/gsc_plus_callback.php [END,QSA]
+
+    RewriteCond %{REQUEST_URI} !gsc[-_]plus[-_]wallet
+    RewriteCond %{REQUEST_URI} !gamingsoft[-_]wallet
+    RewriteCond %{REQUEST_URI} !/api/v2/gscw
+    RewriteCond %{REQUEST_URI} !/api/v2/gsc_wallet
     RewriteRule ^v2/(.+)$ v2/index.php?route=$1 [END,QSA]
     RewriteRule ^v2/?$ v2/index.php [END,QSA]
 </IfModule>

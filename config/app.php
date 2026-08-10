@@ -56,8 +56,8 @@ if (!function_exists('frontend_resolve_site_url')) {
 
         $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
         if ($host !== '') {
-            if (function_exists('metropol_public_url_scheme')) {
-                $scheme = metropol_public_url_scheme('http');
+            if (function_exists('public_url_scheme')) {
+                $scheme = public_url_scheme('http');
             } else {
                 $https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
                 $scheme = ($https !== '' && $https !== 'off') ? 'https' : 'http';
@@ -184,7 +184,7 @@ if (!function_exists('frontend_assert_active_provider_secret')) {
 if (!defined('SITE_URL')) {
     define('SITE_URL', frontend_resolve_site_url());
 }
-if (metropol_should_run_production_assertions()) {
+if (should_run_production_assertions()) {
     frontend_assert_production_url('SITE_URL', (string) SITE_URL);
 }
 
@@ -227,14 +227,14 @@ if (!function_exists('frontend_default_backend_url')) {
 if (!defined('FRONTEND_URL')) {
     define('FRONTEND_URL', rtrim((string) (getenv('FRONTEND_URL') ?: frontend_domain_setting('frontend_url', frontend_default_public_url())), '/'));
 }
-if (metropol_should_run_production_assertions()) {
+if (should_run_production_assertions()) {
     frontend_assert_production_url('FRONTEND_URL', (string) FRONTEND_URL);
 }
 
 if (!defined('BACKEND_URL')) {
     define('BACKEND_URL', rtrim((string) (getenv('BACKEND_URL') ?: getenv('ADMIN_URL') ?: frontend_domain_setting('backend_url', frontend_default_backend_url())), '/'));
 }
-if (metropol_should_run_production_assertions()) {
+if (should_run_production_assertions()) {
     frontend_assert_production_url('BACKEND_URL', (string) BACKEND_URL);
 }
 
@@ -247,7 +247,7 @@ if (!defined('BACKEND_HOST')) {
 if (!defined('BACKEND_API_BASE_URL')) {
     define('BACKEND_API_BASE_URL', rtrim((string) (getenv('BACKEND_API_BASE_URL') ?: frontend_domain_setting('backend_api_base_url', BACKEND_URL . '/api/v2')), '/'));
 }
-if (metropol_should_run_production_assertions()) {
+if (should_run_production_assertions()) {
     frontend_assert_production_url('BACKEND_API_BASE_URL', (string) BACKEND_API_BASE_URL);
 }
 
@@ -259,12 +259,12 @@ if (!defined('PUBLIC_URL_HOSTS')) {
     define('PUBLIC_URL_HOSTS', (string) (getenv('PUBLIC_URL_HOSTS') ?: frontend_env_value(['PUBLIC_URL_HOSTS'], deploy_domain('public_url_hosts'))));
 }
 
-if (metropol_should_run_production_assertions()) {
+if (should_run_production_assertions()) {
     frontend_assert_production_secret('APP_KEY');
     frontend_assert_production_secret('MEMBER_JWT_SECRET');
     frontend_assert_production_disabled_flag('ALLOW_RUNTIME_MIGRATIONS');
-    frontend_assert_production_disabled_flag('METROPOL_RUNTIME_PROVIDER_BOOTSTRAP');
-    if (!frontend_is_api_only() && !defined('METROPOL_ADMIN_PANEL')) {
+    frontend_assert_production_disabled_flag('APP_RUNTIME_PROVIDER_BOOTSTRAP');
+    if (!frontend_is_api_only() && !defined('APP_ADMIN_PANEL')) {
         frontend_assert_active_provider_secret('BGaming', 'BGAMING_WALLET_SECRET', 'bgaming_config', 'wallet_secret');
         frontend_assert_active_provider_secret('MegaPayz', 'MEGAPAYZ_PRIVATE_KEY', 'megapayz_config', 'private_key');
     }
@@ -277,6 +277,19 @@ if (!defined('LIVE_SUPPORT_URL')) {
 
 if (!defined('TELEGRAM_URL')) {
     define('TELEGRAM_URL', rtrim(frontend_env_value(['TELEGRAM_URL'], 'https://t.me'), '/'));
+}
+
+if (!defined('TELEGRAM_BOT_TOKEN')) {
+    define('TELEGRAM_BOT_TOKEN', frontend_env_value(['TELEGRAM_BOT_TOKEN'], ''));
+}
+if (!defined('TELEGRAM_BOT_USERNAME')) {
+    define('TELEGRAM_BOT_USERNAME', ltrim(frontend_env_value(['TELEGRAM_BOT_USERNAME'], 'vegasroyalspin_bot'), '@'));
+}
+if (!defined('TELEGRAM_WEBHOOK_SECRET')) {
+    define('TELEGRAM_WEBHOOK_SECRET', frontend_env_value(['TELEGRAM_WEBHOOK_SECRET'], ''));
+}
+if (!defined('TELEGRAM_MINIAPP_URL')) {
+    define('TELEGRAM_MINIAPP_URL', rtrim(frontend_env_value(['TELEGRAM_MINIAPP_URL'], 'https://m.vegasroyalspin.com/tg'), '/'));
 }
 
 if (!defined('OKKO_SPORTS_LAUNCH_URL')) {

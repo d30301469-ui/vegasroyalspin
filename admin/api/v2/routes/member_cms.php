@@ -198,6 +198,14 @@ if (in_array($method, ['GET', 'POST'], true) && in_array($route, ['track_visit.p
     $input = $memberInput($payload);
     $countryCode = trim((string) ($input['country_code'] ?? $input['countryCode'] ?? ''));
     $countryName = trim((string) ($input['country_name'] ?? $input['country'] ?? ''));
+    if (class_exists('VisitorCountryNormalizer', false) || is_file(dirname(__DIR__, 3) . '/app/Services/VisitorCountryNormalizer.php')) {
+        if (!class_exists('VisitorCountryNormalizer', false)) {
+            require_once dirname(__DIR__, 3) . '/app/Services/VisitorCountryNormalizer.php';
+        }
+        $normalizedCountry = VisitorCountryNormalizer::normalize($countryCode, $countryName);
+        $countryCode = $normalizedCountry['code'] !== '' ? $normalizedCountry['code'] : $countryCode;
+        $countryName = $normalizedCountry['label'];
+    }
     $region = trim((string) ($input['region'] ?? ''));
     $city = trim((string) ($input['city'] ?? ''));
     $lat = isset($input['lat']) ? (float) $input['lat'] : null;
@@ -294,9 +302,9 @@ if (in_array($method, ['GET', 'POST', 'PUT'], true) && ($route === 'content/foot
 
         // Panel formuyla aynı davranış: kayıt sonrası frontend CMS cache'i temizle,
         // aksi halde değişiklik cache TTL'i dolana kadar frontend'e yansımaz.
-        if (function_exists('metropol_notify_frontend_cms_purge')) {
+        if (function_exists('notify_frontend_cms_purge')) {
             try {
-                metropol_notify_frontend_cms_purge('footer');
+                notify_frontend_cms_purge('footer');
             } catch (Throwable $purgeError) {
                 error_log('Footer API update - cache purge failed: ' . $purgeError->getMessage());
             }
@@ -572,7 +580,12 @@ if ($method === 'GET' && in_array($route, ['currencies', 'countries', 'languages
             'default' => 'TR',
         ],
         'languages' => [
-            'items' => [['code' => 'tr', 'name' => 'Türkçe', 'default' => true]],
+            'items' => [
+                ['code' => 'tr', 'name' => 'Türkçe', 'default' => true],
+                ['code' => 'en', 'name' => 'English', 'default' => false],
+                ['code' => 'de', 'name' => 'Deutsch', 'default' => false],
+                ['code' => 'ru', 'name' => 'Русский', 'default' => false],
+            ],
             'default' => 'tr',
         ],
         default => [

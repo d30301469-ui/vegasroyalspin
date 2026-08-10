@@ -101,9 +101,9 @@ if (!headers_sent()) {
 }
 
 require_once BASE_PATH . '/config/frontend_session.php';
-metropol_frontend_session_start();
+frontend_session_start();
 
-$csrfKey = 'vegasroyalspin_csrf_token';
+$csrfKey = 'app_csrf_token';
 if (empty($_SESSION[$csrfKey]) || !is_string($_SESSION[$csrfKey])) {
     $_SESSION[$csrfKey] = isset($_SESSION['csrf_token']) && is_string($_SESSION['csrf_token'])
         ? $_SESSION['csrf_token']

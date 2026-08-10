@@ -22,6 +22,14 @@
     var claimSubmitListenerBound = false;
     var focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
     var Shared = global.BetcoAuthShared || {};
+    function i18n(key, fallback) {
+        if (global.__ && typeof global.__ === 'function') {
+            try {
+                return global.__(key, fallback);
+            } catch (e) {}
+        }
+        return fallback;
+    }
     function apiUrl(path) {
         return Shared.apiUrl ? Shared.apiUrl(path) : path;
     }
@@ -241,6 +249,17 @@
             '</div>'
         ].join('\n');
         document.body.appendChild(div);
+        var closeBtnEl = div.querySelector('.bonus-modal-close');
+        if (closeBtnEl) closeBtnEl.setAttribute('aria-label', i18n('bonus.close_modal', 'Modalı kapat'));
+        var backBtnEl = div.querySelector('.bonus-modal-back');
+        if (backBtnEl) backBtnEl.setAttribute('aria-label', i18n('common.back', 'Geri'));
+        var linkEl = div.querySelector('#bonus-modal-link');
+        if (linkEl) linkEl.textContent = i18n('bonus.go_promo', 'Promosyona git');
+        var loginEl = div.querySelector('#bonus-modal-claim-login');
+        if (loginEl) loginEl.textContent = i18n('bonus.login', 'Giriş yap');
+        var claimEl = div.querySelector('#bonus-modal-claim-submit');
+        if (claimEl) claimEl.textContent = i18n('bonus.claim', 'Bonus talep et');
+
         getElements();
         bindCloseAndOverlay();
         bindAccordionDelegation();
@@ -322,7 +341,7 @@
                     } else if (j.message) {
                         line = String(j.message);
                     } else {
-                        line = ok ? 'Talebiniz alındı.' : 'İşlem tamamlanamadı.';
+                        line = ok ? i18n('promo.request_ok', 'Talebiniz alındı.') : i18n('promo.failed', 'İşlem tamamlanamadı.');
                     }
                     if (claimStatus) {
                         claimStatus.textContent = line;
@@ -335,7 +354,7 @@
                 })
                 .catch(function () {
                     if (claimStatus) {
-                        claimStatus.textContent = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+                        claimStatus.textContent = i18n('common.connection_error', 'Bağlantı hatası. Lütfen tekrar deneyin.');
                         claimStatus.classList.add('is-error');
                         claimStatus.classList.remove('is-success');
                     }
@@ -418,7 +437,7 @@
             // Önce src'yi temizle, sonra yeni URL'yi ata (cache'lenmiş hatalı state'i kırmak için)
             imgEl.removeAttribute('src');
             imgEl.src = data.imageUrl || '';
-            imgEl.alt = data.title || 'Bonus görseli';
+            imgEl.alt = data.title || i18n('bonus.image_alt', 'Bonus görseli');
         }
         if (accordionList && data.sections && data.sections.length) {
             var fragment = document.createDocumentFragment();
@@ -540,9 +559,9 @@
             };
             if (typeof data.content === 'string' && !payload.sections) {
                 payload.sections = [
-                    { title: 'BONUSTAN NASIL FAYDALANABİLİRİM', content: data.content },
-                    { title: 'BONUS ÇEVRİM ŞARTI', content: '' },
-                    { title: 'BONUS GENEL KURALLARI', content: '' }
+                    { title: i18n('bonus.how', 'BONUSTAN NASIL FAYDALANABİLİRİM'), content: data.content },
+                    { title: i18n('bonus.wager', 'BONUS ÇEVRİM ŞARTI'), content: '' },
+                    { title: i18n('bonus.rules', 'BONUS GENEL KURALLARI'), content: '' }
                 ];
             }
         }

@@ -31,6 +31,11 @@
     var backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop fade show';
     backdrop.setAttribute('data-modal-backdrop', '');
+    if (modalEl.id === 'login2' || modalEl.id === 'registerModal') {
+      backdrop.setAttribute('data-auth-backdrop', modalEl.id);
+      backdrop.style.zIndex = '100099';
+      modalEl.style.zIndex = '100100';
+    }
     modalEl.parentNode.insertBefore(backdrop, modalEl);
     if (typeof window.jQuery !== 'undefined') {
       window.jQuery(modalEl).trigger('shown.bs.modal');

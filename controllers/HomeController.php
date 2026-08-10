@@ -17,6 +17,13 @@ class HomeController extends Controller
             return;
         }
 
+        $csrf = (string) ($_POST['csrf_token'] ?? $_POST['_token'] ?? '');
+        $known = (string) ($_SESSION['csrf_token'] ?? $_SESSION['site_csrf_token'] ?? '');
+        if ($known === '' || $csrf === '' || !hash_equals($known, $csrf)) {
+            $_SESSION['login_error'] = 'Oturum doğrulaması başarısız. Sayfayı yenileyip tekrar deneyin.';
+            return;
+        }
+
         $username = trim((string) $_POST['username']);
         $password = (string) $_POST['password'];
 

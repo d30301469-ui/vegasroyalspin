@@ -9,7 +9,7 @@ class ApiSlotController extends Controller
     {
         if (session_status() === PHP_SESSION_NONE) {
             require_once __DIR__ . '/../../config/frontend_session.php';
-            metropol_frontend_session_start();
+            frontend_session_start();
         }
 
         header('Content-Type: application/json; charset=utf-8');
@@ -28,7 +28,14 @@ class ApiSlotController extends Controller
             $page = intdiv($off, $limit) + 1;
         }
 
-        $result = SlotGamesQuery::slotsPage($searchTerm, $selectedProviders, $limit, $page, $sort);
+        $result = SlotGamesQuery::slotsPage(
+            $searchTerm,
+            $selectedProviders,
+            $limit,
+            $page,
+            $sort === 'all' ? '' : $sort,
+            ['source' => 'aggregator']
+        );
 
         if (!empty($result['apiError'])) {
             http_response_code(503);

@@ -117,8 +117,8 @@ final class AdminHomepageSectionsController extends AdminController
         }
 
         $_SESSION['admin_homepage_sections_flash'] = 'Ana sayfa vitrinleri güncellendi.';
-        if (function_exists('metropol_notify_frontend_cms_purge')) {
-            metropol_notify_frontend_cms_purge('homepage_sections');
+        if (function_exists('notify_frontend_cms_purge')) {
+            notify_frontend_cms_purge('homepage_sections');
         }
         // HTTP purge başarısız olsa bile aynı host/monorepo kurulumda anında yenileme.
         if (class_exists('ApiCmsRemote', false)) {

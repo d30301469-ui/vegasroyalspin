@@ -3,7 +3,7 @@
  */
 'use strict';
 (function (w) {
-    var JWT_KEY = 'metropol_member_jwt';
+    var JWT_KEY = 'app_member_jwt';
 
     var BOOTSTRAP_ROUTES = {
         '/auth/login': true,
@@ -309,7 +309,7 @@
         // where the PHP session may not persist across server instances.
         var jwt = Shared.getMemberJwt();
         if (jwt) {
-            h['X-Metropol-Member-Jwt'] = jwt;
+            h['X-App-Member-Jwt'] = jwt;
         }
         return h;
     }
@@ -321,12 +321,13 @@
         if (value !== '') {
             return;
         }
+        document.cookie = 'app_member_jwt=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
         document.cookie = 'metropol_member_jwt=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     }
 
     function emitJwtReady() {
         try {
-            w.dispatchEvent(new CustomEvent('metropol:member-jwt-ready', {
+            w.dispatchEvent(new CustomEvent('app:member-jwt-ready', {
                 detail: { token: Shared.getMemberJwt() }
             }));
         } catch (e) {
@@ -344,7 +345,18 @@
         },
         getMemberJwt: function () {
             try {
-                return String(w.localStorage.getItem(JWT_KEY) || '').trim();
+                var current = String(w.localStorage.getItem(JWT_KEY) || '').trim();
+                if (current !== '') {
+                    return current;
+                }
+                // Migrate legacy storage key.
+                var legacy = String(w.localStorage.getItem('metropol_member_jwt') || '').trim();
+                if (legacy !== '') {
+                    w.localStorage.setItem(JWT_KEY, legacy);
+                    w.localStorage.removeItem('metropol_member_jwt');
+                    return legacy;
+                }
+                return '';
             } catch (e) {
                 return '';
             }
@@ -355,11 +367,13 @@
             try {
                 if (t === '') {
                     w.localStorage.removeItem(JWT_KEY);
+                    try { w.localStorage.removeItem('metropol_member_jwt'); } catch (eLegacy) {}
                     document.documentElement.classList.remove('member-session-hint');
                     w.__HAS_MEMBER_JWT__ = false;
                     persistMemberJwtCookie('');
                 } else {
                     w.localStorage.setItem(JWT_KEY, t);
+                    try { w.localStorage.removeItem('metropol_member_jwt'); } catch (eLegacy2) {}
                     document.documentElement.classList.add('member-session-hint');
                     w.__MEMBER_LOGIN_AT__ = Date.now();
                     w.__HAS_MEMBER_JWT__ = true;
@@ -370,7 +384,7 @@
                     emitJwtReady();
                 }
                 if (previous !== t) {
-                    w.dispatchEvent(new CustomEvent('metropol:member-jwt-changed', {
+                    w.dispatchEvent(new CustomEvent('app:member-jwt-changed', {
                         detail: { authenticated: t !== '' }
                     }));
                 }
@@ -390,7 +404,7 @@
                 'Content-Type': 'application/json'
             });
             if (savedJwt) {
-                headers['X-Metropol-Member-Jwt'] = savedJwt;
+                headers['X-App-Member-Jwt'] = savedJwt;
                 headers.Authorization = 'Bearer ' + savedJwt;
             }
 
@@ -537,7 +551,7 @@
             var sessionUrl = self.proxyApiUrl('/auth/session');
             var headers = self.memberSessionHeaders({ Accept: 'application/json' });
             if (savedJwt) {
-                headers['X-Metropol-Member-Jwt'] = savedJwt;
+                headers['X-App-Member-Jwt'] = savedJwt;
             }
             return w.fetch(sessionUrl, {
                 method: 'GET',
@@ -571,7 +585,7 @@
                     w.__USER_LOGGED_IN__ = false;
                     w.__HAS_MEMBER_JWT__ = false;
                     try {
-                        w.dispatchEvent(new CustomEvent('metropol:member-auth-lost'));
+                        w.dispatchEvent(new CustomEvent('app:member-auth-lost'));
                     } catch (eEv) {
                         /* ignore */
                     }
@@ -948,7 +962,7 @@
                         if (phpSessionLoggedIn()) {
                             w.__HAS_MEMBER_JWT__ = true;
                             // Tetikle: header upgrade ve balance yenileme
-                            try { w.dispatchEvent(new CustomEvent('metropol:member-jwt-ready', { detail: { token: token } })); } catch (eEv) {}
+                            try { w.dispatchEvent(new CustomEvent('app:member-jwt-ready', { detail: { token: token } })); } catch (eEv) {}
                             if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
                                 w.MetropolMemberConsole.fetchAll();
                             }

@@ -11,65 +11,8 @@ if (ob_get_level() === 0) {
 
 require_once __DIR__ . '/Core/AdminPaths.php';
 admin_paths_bootstrap();
-
-if (session_status() === PHP_SESSION_NONE) {
-    $adminSessionName = trim((string) (getenv('ADMIN_SESSION_NAME') ?: 'VRSADMINSESSID'));
-    if ($adminSessionName === '') {
-        $adminSessionName = 'VRSADMINSESSID';
-    }
-    if (session_name() !== $adminSessionName) {
-        session_name($adminSessionName);
-    }
-
-    $cloudflareConfig = admin_project_path('config/cloudflare.php');
-    if (admin_is_readable_file($cloudflareConfig)) {
-        require_once $cloudflareConfig;
-    }
-    if (!function_exists('maltabet_configure_session_security')) {
-        function maltabet_configure_session_security(): void
-        {
-            ini_set('session.use_strict_mode', '1');
-
-            $isHttps = function_exists('metropol_request_is_https')
-                ? metropol_request_is_https()
-                : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                    || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
-            $params = session_get_cookie_params();
-            $sessionDomain = admin_session_cookie_domain();
-            session_set_cookie_params([
-                'lifetime' => 0,
-                'path' => (string) ($params['path'] ?? '/'),
-                'domain' => $sessionDomain !== '' ? $sessionDomain : (string) ($params['domain'] ?? ''),
-                'secure' => $isHttps,
-                'httponly' => true,
-                'samesite' => 'Lax',
-            ]);
-        }
-    }
-
-    maltabet_configure_session_security();
-    session_start();
-
-    $canonicalSessionDomain = admin_session_cookie_domain();
-    if ($canonicalSessionDomain !== '' && empty($_SESSION['admin_cookie_domain_migrated'])) {
-        $cookieParams = session_get_cookie_params();
-        $cookieOptions = [
-            'expires' => 0,
-            'path' => (string) ($cookieParams['path'] ?? '/'),
-            'domain' => $canonicalSessionDomain,
-            'secure' => (bool) ($cookieParams['secure'] ?? false),
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ];
-        if (!headers_sent()) {
-            setcookie($adminSessionName, session_id(), $cookieOptions);
-            $cookieOptions['expires'] = time() - 3600;
-            $cookieOptions['domain'] = '';
-            setcookie($adminSessionName, '', $cookieOptions);
-        }
-        $_SESSION['admin_cookie_domain_migrated'] = true;
-    }
-}
+require_once __DIR__ . '/Core/AdminSessionBootstrap.php';
+admin_session_bootstrap(true);
 
 if (!headers_sent()) {
     header('Content-Type: text/html; charset=UTF-8');
@@ -79,8 +22,8 @@ if (!headers_sent()) {
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
-    $isHttpsForHsts = function_exists('metropol_request_is_https')
-        ? metropol_request_is_https()
+    $isHttpsForHsts = function_exists('request_is_https')
+        ? request_is_https()
         : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
     if ($isHttpsForHsts) {
@@ -94,18 +37,14 @@ if (!function_exists('admin_register_autoloader') && is_readable($adminAutoloade
     require_once $adminAutoloader;
 }
 if (function_exists('admin_register_autoloader')) {
-    admin_register_autoloader(ADMIN_APP_PATH, defined('METROPOL_ROOT') ? METROPOL_ROOT : admin_project_root());
-}
-
-if (class_exists('AdminAuth', true)) {
-    AdminAuth::restorePersistentLogin();
+    admin_register_autoloader(ADMIN_APP_PATH, defined('APP_ROOT') ? APP_ROOT : admin_project_root());
 }
 
 // Admin/backend host: panel ve API her zaman açılabilmeli. Provider secret'ları panelden
 // yönetildiği için bootstrap sırasında (config/app.php) zorunlu secret assertion'ları atlanır;
 // gerçek doğrulama ilgili callback handler'larında (imza/secret) çalışmaya devam eder.
-if (!defined('METROPOL_ADMIN_PANEL')) {
-    define('METROPOL_ADMIN_PANEL', true);
+if (!defined('APP_ADMIN_PANEL')) {
+    define('APP_ADMIN_PANEL', true);
 }
 
 $rootConfig = admin_project_path('config/app.php');
@@ -129,8 +68,10 @@ admin_require_project_file('services/MemberKycService.php');
 admin_require_project_file('services/MemberNotificationService.php');
 admin_require_project_file('services/SupportTicketService.php');
 admin_require_project_file('services/ComplianceService.php');
+admin_require_project_file('services/AffiliateService.php');
+admin_require_project_file('services/AffiliateCommissionEngine.php');
 $isProduction = in_array(strtolower(trim((string) getenv('APP_ENV'))), ['production', 'prod'], true);
-if (!$isProduction && (string) getenv('METROPOL_RUNTIME_PROVIDER_BOOTSTRAP') === '1') {
+if (!$isProduction && (string) getenv('APP_RUNTIME_PROVIDER_BOOTSTRAP') === '1') {
     try {
         MegaPayzService::bootstrap(AdminDatabase::pdo());
         BgamingService::bootstrap(AdminDatabase::pdo());
@@ -174,3 +115,6 @@ require_once ADMIN_APP_PATH . '/Controllers/AdminSystemController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminPromotionController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminPromocodeRequestController.php';
 require_once ADMIN_APP_PATH . '/Controllers/AdminBonusClaimController.php';
+
+// DB + AdminAuth yüklendikten sonra kalıcı cookie restore (erken restore DB'siz fail ederdi).
+admin_session_restore();

@@ -141,6 +141,9 @@ final class AdminMegaPayzController extends AdminController
         $id = max(0, (int) ($_POST['id'] ?? 0));
         $admin = AdminAuth::userName();
         $result = MegaPayzService::approveWithdraw(AdminDatabase::pdo(), $id, $admin);
+        if (!empty($result['success'])) {
+            AdminAuditService::write(AdminDatabase::pdo(), 'withdraw_approve', 'megapayz_transaction', $id, 'Çekim onaylandı');
+        }
         $this->flashResult($result, 'Çekim onayı tamamlandı.');
         $this->redirect(AdminAuth::url('/module?key=withdrawals'));
     }
@@ -152,8 +155,49 @@ final class AdminMegaPayzController extends AdminController
         $id = max(0, (int) ($_POST['id'] ?? 0));
         $reason = trim((string) ($_POST['reason'] ?? ''));
         $result = MegaPayzService::rejectWithdraw(AdminDatabase::pdo(), $id, $reason);
+        if (!empty($result['success'])) {
+            AdminAuditService::write(
+                AdminDatabase::pdo(),
+                'withdraw_reject',
+                'megapayz_transaction',
+                $id,
+                $reason !== '' ? $reason : 'Çekim reddedildi'
+            );
+        }
         $this->flashResult($result, 'Çekim reddi tamamlandı.');
         $this->redirect(AdminAuth::url('/module?key=withdrawals'));
+    }
+
+    public function cancelDeposit(): void
+    {
+        $this->requirePermission('deposits');
+        $this->ensurePost();
+        $id = max(0, (int) ($_POST['id'] ?? 0));
+        if ($id <= 0) {
+            $this->flash('Geçersiz yatırım ID.');
+            $this->redirect(AdminAuth::url('/module?key=deposits'));
+        }
+
+        $pdo = AdminDatabase::pdo();
+        try {
+            $stmt = $pdo->prepare(
+                "UPDATE megapayz_transactions
+                 SET status = 'cancelled', updated_at = NOW()
+                 WHERE id = :id AND type = 'deposit' AND status IN ('pending', 'failed')"
+            );
+            $stmt->execute(['id' => $id]);
+            if ($stmt->rowCount() > 0) {
+                AdminAuditService::write($pdo, 'deposit_cancel', 'megapayz_transaction', $id, 'Bekleyen yatırım iptal edildi');
+                AdminAuth::writeLog(AdminAuth::userName(), 'deposit_cancel', 'megapayz_transactions', 'success', (string) $id);
+                $this->flash('Bekleyen yatırım iptal edildi (bakiye değişmedi).');
+            } else {
+                $this->flash('İptal edilecek bekleyen/başarısız yatırım bulunamadı.');
+            }
+        } catch (Throwable $exception) {
+            $this->flash('Yatırım iptal edilemedi: ' . $exception->getMessage());
+        }
+
+        $this->redirect(AdminAuth::url('/module?key=deposits'));
     }
 
     private function ensurePost(): void

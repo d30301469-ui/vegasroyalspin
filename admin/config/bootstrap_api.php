@@ -47,7 +47,7 @@ if (!defined('BACKEND_API_BASE_URL')) {
 try {
     require_once __DIR__ . '/backend_api.php';
 } catch (Throwable $bootstrapApiConfigError) {
-    error_log('[metropol] bootstrap_api config: ' . $bootstrapApiConfigError->getMessage());
+    error_log('[app] bootstrap_api config: ' . $bootstrapApiConfigError->getMessage());
     if (!defined('API_BACKEND_MAIN_BASE_URL')) {
         define('API_BACKEND_MAIN_BASE_URL', rtrim(deploy_domain('backend_api_base_url'), '/'));
     }

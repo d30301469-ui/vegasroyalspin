@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-08-03T19:12:58.796982+00:00",
+  "mode": "dry-run",
+  "candidates": [],
+  "actions": [],
+  "skipped": [],
+  "stats": {
+    "total": 0,
+    "actionable": 0,
+    "bytes": 0,
+    "by_kind": {}
+  }
+}

@@ -1,5 +1,30 @@
 <?php
 
+// GSC+ wallet URLs must stay sessionless even when they fall through to this
+// front controller (e.g. missing .htaccess on a fresh host). Detect early.
+// GSC panel often stores the base with trailing spaces → …/gsc-plus-wallet%20%20%20/v1/…
+$__gscNormalize = static function (string $value): string {
+    $value = rawurldecode($value);
+    $value = strtolower(trim($value, "/ \t"));
+    $value = preg_replace('#(?:%20|%2B|%2520|\+|\s)+#i', '', $value) ?? $value;
+
+    return trim($value, "/ \t");
+};
+$__gscWalletUri = $__gscNormalize((string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? ''));
+$__gscWalletRoute = $__gscNormalize((string) ($_GET['route'] ?? ''));
+if (
+    !defined('APP_API_NO_SESSION')
+    && (
+        (bool) preg_match('#/(?:gscw|gsc_wallet|gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet)(?:\.php)?(?:/|$)#i', '/' . $__gscWalletUri)
+        || (bool) preg_match('#^(?:gscw|gsc_wallet|gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet)(?:\.php)?(?:/|$)#i', $__gscWalletRoute)
+        || (bool) preg_match('#/(?:bgaming-wallet|bgaming(?:-wallet)?|megapayz-callback|casino-callback|sportsbook-wallet|casino-aggregator-wallet|telegram/webhook)(?:\.php)?(?:/|$)#i', '/' . $__gscWalletUri)
+        || (bool) preg_match('#^(?:bgaming-wallet|bgaming(?:-wallet)?|megapayz-callback|casino-callback|sportsbook-wallet|casino-aggregator-wallet|telegram/webhook)(?:\.php)?(?:/|$)#i', $__gscWalletRoute)
+    )
+) {
+    define('APP_API_NO_SESSION', true);
+}
+unset($__gscWalletUri, $__gscWalletRoute, $__gscNormalize);
+
 require_once __DIR__ . '/includes/member_api_cors.php';
 
 require_once __DIR__ . '/bootstrap.php';
@@ -13,6 +38,13 @@ admin_require_project_file('services/ComplianceMonitorService.php');
 admin_require_project_file('services/MegaPayzService.php');
 admin_require_project_file('services/BgamingService.php');
 admin_require_project_file('services/SportsbookService.php');
+if (!class_exists('AdminAuditService', false)) {
+    $__auditSvc = (defined('ADMIN_APP_PATH') ? ADMIN_APP_PATH : dirname(__DIR__, 2) . '/app') . '/Services/AdminAuditService.php';
+    if (is_file($__auditSvc)) {
+        require_once $__auditSvc;
+    }
+    unset($__auditSvc);
+}
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -246,14 +278,14 @@ if ($method === 'POST' && in_array($route, ['casino-aggregator-wallet', 'casino_
     exit;
 }
 
-// GSC+ seamless wallet — /api/v2/gsc-plus-wallet
-// Tolerate trailing spaces in the first path segment (GSC panel misconfig).
-$gscWalletRoute = strtolower(trim((string) $route, '/'));
-$gscWalletRoute = preg_replace('#\s+/#', '/', $gscWalletRoute) ?? $gscWalletRoute;
-$gscWalletRoute = preg_replace('#/\s+#', '/', $gscWalletRoute) ?? $gscWalletRoute;
+// GSC+ seamless wallet — /api/v2/gscw (+ legacy gsc-plus-wallet / gamingsoft-wallet)
+// Tolerate trailing spaces / %20 in the first path segment (GSC panel misconfig).
+$gscWalletRoute = rawurldecode((string) $route);
+$gscWalletRoute = strtolower(trim($gscWalletRoute, "/ \t"));
+$gscWalletRoute = preg_replace('#(?:%20|%2B|%2520|\+|\s)+#i', '', $gscWalletRoute) ?? $gscWalletRoute;
 $gscWalletRoute = trim($gscWalletRoute, "/ \t");
 $gscWalletMatched = (bool) preg_match(
-    '#^(?:gsc-plus-wallet|gsc_plus_wallet)(?:\.php)?(?:/(.*))?$#i',
+    '#^(?:gscw|gsc_wallet|gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet)(?:\.php)?(?:/(.*))?$#i',
     $gscWalletRoute,
     $gsRouteMatch
 );
@@ -261,8 +293,8 @@ if (
     in_array($method, ['GET', 'POST', 'OPTIONS'], true)
     && $gscWalletMatched
 ) {
-    if (!defined('METROPOL_API_NO_SESSION')) {
-        define('METROPOL_API_NO_SESSION', true);
+    if (!defined('APP_API_NO_SESSION')) {
+        define('APP_API_NO_SESSION', true);
     }
     $_GET['endpoint'] = trim((string) ($gsRouteMatch[1] ?? ''), '/');
     $GLOBALS['GSC_PLUS_WALLET_PAYLOAD'] = is_array($payload['body'] ?? null) ? $payload['body'] : [];
@@ -346,7 +378,7 @@ if ($isBgamingCallbackRoute) {
     exit;
 }
 
-if (defined('METROPOL_API_V2_INTERNAL') && METROPOL_API_V2_INTERNAL) {
+if (defined('APP_API_V2_INTERNAL') && APP_API_V2_INTERNAL) {
     require __DIR__ . '/includes/admin_routes.php';
     goto admin_api_dispatch;
 }

@@ -34,10 +34,10 @@ if (class_exists('ApiMediaUrl', false)) {
                             <div class="register-top-right e-p-sections-bc">
                                 <div class="e-p-section-item-bc">
                                     <button type="button" class="register-modal-login-link e-p-section-title-bc" id="openLoginFromRegister">
-                                        GİRİŞ
+                                        <?= htmlspecialchars(__('nav.login'), ENT_QUOTES, 'UTF-8') ?>
                                     </button>
                                 </div>
-                                <button type="button" class="register-modal-close" data-dismiss="modal" aria-label="Kapat">
+                                <button type="button" class="register-modal-close" data-dismiss="modal" aria-label="<?= htmlspecialchars(__('auth.close'), ENT_QUOTES, 'UTF-8') ?>">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
@@ -57,8 +57,8 @@ if (class_exists('ApiMediaUrl', false)) {
                     <?php endif; ?>
                     <div class="register-steps-scroll entrance-form-content-bc single-side step-0" data-scroll-lock-scrollable="">
                     <div class="reg-form-content" data-scroll-lock-scrollable="">
-                    <div class="sg-n-text-row-1-bc"><?= htmlspecialchars($registerSiteName, ENT_QUOTES, 'UTF-8') ?>'da Yeni misin?</div>
-                    <div class="sg-n-text-row-2-bc">ŞİMDİ KAYDOLUN, HERŞEY ÇOK KOLAY!</div>
+                    <div class="sg-n-text-row-1-bc"><?= htmlspecialchars(__('auth.register_welcome', ['site' => $registerSiteName]), ENT_QUOTES, 'UTF-8') ?></div>
+                    <div class="sg-n-text-row-2-bc"><?= htmlspecialchars(__('auth.register_cta'), ENT_QUOTES, 'UTF-8') ?></div>
                     <div class="reg-form-fields">
                     <!-- ADIM 1 -->
                     <div class="register-step register-step-1" data-step="1">
@@ -70,9 +70,9 @@ if (class_exists('ApiMediaUrl', false)) {
                             <label class="form-control-label-bc inputs">
                                 <input type="text" class="form-control-input-bc" name="username" id="modal_username" maxlength="20" required>
                                 <i class="form-control-input-stroke-bc"></i>
-                                <span class="form-control-title-bc ellipsis">Kullanıcı adı *</span>
+                                <span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.username_required'), ENT_QUOTES, 'UTF-8') ?></span>
                             </label>
-                            <div class="register-error-text" data-error-for="username">Bu alan gerekli</div>
+                            <div class="register-error-text" data-error-for="username"><?= htmlspecialchars(__('auth.required'), ENT_QUOTES, 'UTF-8') ?></div>
                         </div>
 
                         <div class="form-group entrance-f-item-bc">
@@ -94,7 +94,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                     </span>
                                 </button>
                                 <i class="form-control-input-stroke-bc"></i>
-                                <span class="form-control-title-bc ellipsis">Şifre *</span>
+                                <span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.password_required'), ENT_QUOTES, 'UTF-8') ?></span>
                             </label>
                             <div class="register-error-text" data-error-for="password">Bu alan gerekli</div>
                         </div>
@@ -118,7 +118,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                     </span>
                                 </button>
                                 <i class="form-control-input-stroke-bc"></i>
-                                <span class="form-control-title-bc ellipsis">Şifreyi onayla *</span>
+                                <span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.confirm_password_label'), ENT_QUOTES, 'UTF-8') ?></span>
                             </label>
                             <div class="register-error-text" data-error-for="confirm_password">Bu alan gerekli</div>
                         </div>
@@ -126,7 +126,7 @@ if (class_exists('ApiMediaUrl', false)) {
                         <?php if (!$registerMobileSingleStep): ?>
                         <div class="register-actions register-actions-row">
                             <button type="button" class="register-primary-btn" id="registerNextStep">
-                                SONRAKİ
+                                <?= htmlspecialchars(__('auth.next'), ENT_QUOTES, 'UTF-8') ?>
                             </button>
                         </div>
                         <button type="button" class="register-secondary-btn register-walletconnect-btn register-walletconnect-full">
@@ -153,7 +153,7 @@ if (class_exists('ApiMediaUrl', false)) {
                             <label class="form-control-label-bc inputs">
                                 <input type="text" class="form-control-input-bc" name="firstName" id="modal_firstName" required>
                                 <i class="form-control-input-stroke-bc"></i>
-                                <span class="form-control-title-bc ellipsis">Adı *</span>
+                                <span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.first_name_required'), ENT_QUOTES, 'UTF-8') ?></span>
                             </label>
                             <div class="register-error-text" data-error-for="firstName">Bu alan gerekli</div>
                         </div>
@@ -170,7 +170,7 @@ if (class_exists('ApiMediaUrl', false)) {
                             <label class="form-control-label-bc inputs">
                                 <input type="text" class="form-control-input-bc" name="surname" id="modal_surname" required>
                                 <i class="form-control-input-stroke-bc"></i>
-                                <span class="form-control-title-bc ellipsis">Soyadı *</span>
+                                <span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.last_name_required'), ENT_QUOTES, 'UTF-8') ?></span>
                             </label>
                             <div class="register-error-text" data-error-for="surname">Bu alan gerekli</div>
                         </div>
@@ -180,7 +180,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                 <input type="date" name="dob" id="modal_dob" required class="register-dob-input-hidden" aria-hidden="true" tabindex="-1">
                                 <button type="button" class="register-dob-trigger" aria-expanded="false" aria-haspopup="dialog">
                                     <span class="register-dob-trigger-text">
-                                        <span class="form-control-title-bc register-dob-label">Doğum Tarihi *</span>
+                                        <span class="form-control-title-bc register-dob-label"><?= htmlspecialchars(__('auth.birth_date_required'), ENT_QUOTES, 'UTF-8') ?></span>
                                         <span class="register-dob-value" data-placeholder="gg.aa.yyyy">gg.aa.yyyy</span>
                                     </span>
                                     <span class="register-dob-icon" aria-hidden="true">
@@ -210,11 +210,11 @@ if (class_exists('ApiMediaUrl', false)) {
 
                         <div class="register-form-group bc-custom-select entrance-f-item-bc" data-bc-custom-select data-country-select>
                             <select name="country" id="modal_country" class="bc-custom-select__native" required aria-hidden="true" tabindex="-1">
-                                <option value="" disabled selected>Ülke seçin</option>
+                                <option value="" disabled selected><?= htmlspecialchars(__('auth.country_select'), ENT_QUOTES, 'UTF-8') ?></option>
                             </select>
                             <button type="button" class="bc-custom-select__trigger" aria-expanded="false" aria-haspopup="listbox" id="modal_country_trigger">
-                                <span class="bc-custom-select__label">Ülke *</span>
-                                <span class="bc-custom-select__value">Ülke seçin</span>
+                                <span class="bc-custom-select__label"><?= htmlspecialchars(__('auth.country_required'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="bc-custom-select__value"><?= htmlspecialchars(__('auth.country_select'), ENT_QUOTES, 'UTF-8') ?></span>
                                 <span class="bc-custom-select__arrow" aria-hidden="true"></span>
                             </button>
                             <div class="bc-custom-select__panel" role="listbox" id="modal_country_listbox" hidden></div>
@@ -291,14 +291,14 @@ if (class_exists('ApiMediaUrl', false)) {
 
                         <div class="register-form-group bc-custom-select entrance-f-item-bc" data-bc-custom-select>
                             <select name="gender" id="modal_gender" class="bc-custom-select__native" required aria-hidden="true" tabindex="-1">
-                                <option value="" disabled selected>Cinsiyet seçin</option>
-                                <option value="Erkek">Erkek</option>
-                                <option value="Kadın">Kadın</option>
-                                <option value="Diğer">Diğer</option>
+                                <option value="" disabled selected><?= htmlspecialchars(__('auth.gender_select'), ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="Erkek"><?= htmlspecialchars(__('auth.male'), ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="Kadın"><?= htmlspecialchars(__('auth.female'), ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="Diğer"><?= htmlspecialchars(__('auth.other'), ENT_QUOTES, 'UTF-8') ?></option>
                             </select>
                             <button type="button" class="bc-custom-select__trigger" aria-expanded="false" aria-haspopup="listbox" id="modal_gender_trigger">
-                                <span class="bc-custom-select__label">Cinsiyet *</span>
-                                <span class="bc-custom-select__value">Cinsiyet seçin</span>
+                                <span class="bc-custom-select__label"><?= htmlspecialchars(__('auth.gender_required'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="bc-custom-select__value"><?= htmlspecialchars(__('auth.gender_select'), ENT_QUOTES, 'UTF-8') ?></span>
                                 <span class="bc-custom-select__arrow" aria-hidden="true"></span>
                             </button>
                             <div class="bc-custom-select__panel" role="listbox" id="modal_gender_listbox" hidden>
@@ -335,7 +335,7 @@ if (class_exists('ApiMediaUrl', false)) {
                                         required
                                     >
                                     <i class="form-control-input-stroke-bc"></i>
-                                    <span class="form-control-title-bc ellipsis">Telefon numarası *</span>
+                                    <span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.phone_required'), ENT_QUOTES, 'UTF-8') ?></span>
                                 </label>
                                 <div class="register-error-text" data-error-for="phone">Bu alan gerekli</div>
                             </div>
@@ -345,7 +345,7 @@ if (class_exists('ApiMediaUrl', false)) {
                             <label class="form-control-label-bc inputs">
                                 <input type="text" class="form-control-input-bc" name="bonusCode" id="modal_bonusCode">
                                 <i class="form-control-input-stroke-bc"></i>
-                                <span class="form-control-title-bc ellipsis">Promosyon Kodu</span>
+                                <span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.promo_code'), ENT_QUOTES, 'UTF-8') ?></span>
                             </label>
                         </div>
 
@@ -353,15 +353,15 @@ if (class_exists('ApiMediaUrl', false)) {
                             <label class="register-terms-label">
                                 <input type="checkbox" name="terms_accepted" id="modal_terms_accepted" required class="register-terms-checkbox">
                                 <span class="register-terms-text">
-                                    18 yaşından büyüğüm, Genel Kurallar ve Şartları okudum ve kabul ediyorum.
-                                    <a href="/gizlilik-politikasi" target="_blank" rel="noopener noreferrer">Gizlilik Politikası</a>
+                                    <?= htmlspecialchars(__('auth.terms_accept'), ENT_QUOTES, 'UTF-8') ?>
+                                    <a href="/gizlilik-politikasi" target="_blank" rel="noopener noreferrer"><?= htmlspecialchars(__('auth.privacy_policy'), ENT_QUOTES, 'UTF-8') ?></a>
                                     ve
                                     <a href="/genel-sartlar" target="_blank" rel="noopener noreferrer">Genel Şartlar ve Koşullar</a>
                                 </span>
                             </label>
                             <a href="/gizlilik-politikasi" target="_blank" rel="noopener noreferrer" class="register-terms-secondary-link">
                                 <span class="register-terms-icon" aria-hidden="true"></span>
-                                Gizlilik Politikası ve Kullanım Şartları
+                                <?= htmlspecialchars(__('auth.privacy_and_terms'), ENT_QUOTES, 'UTF-8') ?>
                             </a>
                             <div class="register-error-text" data-error-for="terms_accepted">Devam etmek için bu kutuyu işaretlemelisiniz.</div>
                         </div>
@@ -373,11 +373,11 @@ if (class_exists('ApiMediaUrl', false)) {
                         <div class="register-actions register-actions-row entrance-form-actions-holder-bc reg-ext-1">
                             <?php if (!$registerMobileSingleStep): ?>
                             <button type="button" class="register-secondary-btn" id="registerPrevStep">
-                                GERİ
+                                <?= htmlspecialchars(__('auth.back'), ENT_QUOTES, 'UTF-8') ?>
                             </button>
                             <?php endif; ?>
-                            <button type="submit" class="register-primary-btn btn a-color" id="modalRegisterSubmit" title="Kayıt">
-                                <span>Kayıt</span>
+                            <button type="submit" class="register-primary-btn btn a-color" id="modalRegisterSubmit" title="<?= htmlspecialchars(__('auth.register_btn'), ENT_QUOTES, 'UTF-8') ?>">
+                                <span><?= htmlspecialchars(__('auth.register_btn'), ENT_QUOTES, 'UTF-8') ?></span>
                             </button>
                         </div>
                         <button type="button" class="register-secondary-btn register-walletconnect-btn register-walletconnect-full btn">
@@ -848,9 +848,9 @@ if (class_exists('ApiMediaUrl', false)) {
         <div class="modal-content register-success-box" style="background:radial-gradient(120% 120% at 0% 0%, rgba(133,15,131,.2) 0%, rgba(133,15,131,0) 56%), radial-gradient(125% 130% at 100% 100%, rgba(54,17,133,.2) 0%, rgba(54,17,133,0) 60%), linear-gradient(180deg, rgba(19,7,38,.97) 0%, rgba(11,11,33,.98) 45%, rgba(7,7,26,.99) 100%); border:1px solid rgba(133,15,131,.68); border-radius:14px; box-shadow:0 0 0 1px rgba(133,15,131,.24), 0 22px 56px rgba(0,0,0,.68), 0 0 24px rgba(133,15,131,.26);">
             <div class="register-success-body" style="padding:24px 20px 22px; text-align:center;">
                 <div class="register-success-icon" style="width:54px; height:54px; margin:0 auto 12px; border-radius:50%; line-height:52px; font-size:28px; font-weight:700; color:#67f0ae; border:1px solid rgba(50,210,132,.64); background:radial-gradient(circle at 28% 24%, rgba(76,255,174,.24), rgba(31,177,108,.14)); box-shadow:inset 0 1px 0 rgba(255,255,255,.22), 0 8px 18px rgba(18,102,62,.28);">✓</div>
-                <h4 class="register-success-title" style="font-size:18px; font-weight:700; color:#f8f4ff; margin-bottom:7px; text-transform:uppercase; letter-spacing:.02em;">Kayıt Başarılı</h4>
-                <p class="register-success-text" style="font-size:14px; color:rgba(232,221,255,.84); margin-bottom:16px; line-height:1.4;">Hesabınız oluşturuldu. Giriş yapabilirsiniz.</p>
-                <button type="button" class="register-primary-btn register-success-ok" data-dismiss="modal" id="registerSuccessOk">TAMAM</button>
+                <h4 class="register-success-title" style="font-size:18px; font-weight:700; color:#f8f4ff; margin-bottom:7px; text-transform:uppercase; letter-spacing:.02em;"><?= htmlspecialchars(__('auth.register_success_title'), ENT_QUOTES, 'UTF-8') ?></h4>
+                <p class="register-success-text" style="font-size:14px; color:rgba(232,221,255,.84); margin-bottom:16px; line-height:1.4;"><?= htmlspecialchars(__('auth.register_success_msg'), ENT_QUOTES, 'UTF-8') ?></p>
+                <button type="button" class="register-primary-btn register-success-ok" data-dismiss="modal" id="registerSuccessOk"><?= htmlspecialchars(__('common.ok'), ENT_QUOTES, 'UTF-8') ?></button>
             </div>
         </div>
     </div>

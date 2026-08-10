@@ -93,6 +93,16 @@
             return;
         }
         var code = payload && typeof payload.code === 'number' ? payload.code : status;
+        var banned =
+            status === 403 ||
+            code === 403 ||
+            (payload && payload.error === 'ACCOUNT_BANNED');
+        if (banned) {
+            notifyAndLogout(
+                (payload && payload.message) || (window.__ ? window.__('session.banned', 'Hesabınız banlanmıştır. Giriş yapamazsınız.') : 'Hesabınız banlanmıştır. Giriş yapamazsınız.')
+            );
+            return;
+        }
         var unauthorized =
             status === 401 ||
             code === 401 ||
@@ -155,7 +165,7 @@
         window.__SESSION_HEARTBEAT_STARTED__ = true;
         window.setTimeout(tick, withinLoginGrace() ? 15000 : 8000);
         setInterval(tick, SESSION_INTERVAL_MS);
-        window.addEventListener('metropol:member-jwt-ready', function () {
+        window.addEventListener('app:member-jwt-ready', function () {
             recoveryAttempts = 0;
             window.setTimeout(tick, 5000);
         });

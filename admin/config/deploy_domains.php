@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Production domain defaults — vegasroyalspin.com (frontend) +
+ * Production domain defaults — vegasroyalspin119.com (frontend) +
  * admin.vegasroyalspin.com (backend panel/callback + member API).
  * Ayrı bir api.* subdomain KULLANILMAZ; member API admin host üzerinden
  * /api/v2 path'i ile servis edilir.
@@ -33,15 +33,15 @@ if (!function_exists('deploy_domain_config')) {
         }
 
         return $config = [
-            'frontend_url' => 'https://vegasroyalspin.com',
-            'frontend_fallback_url' => 'https://vegasroyalspin.com',
-            'mobile_url' => 'https://m.vegasroyalspin.com',
+            'frontend_url' => 'https://vegasroyalspin119.com',
+            'frontend_fallback_url' => 'https://vegasroyalspin119.com',
+            'mobile_url' => 'https://m.vegasroyalspin119.com',
             'backend_url' => 'https://admin.vegasroyalspin.com',
             'backend_api_base_url' => 'https://admin.vegasroyalspin.com/api/v2',
-            'public_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com',
-            'allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,admin.vegasroyalspin.com',
-            'default_allowed_url_hosts' => 'vegasroyalspin.com,www.vegasroyalspin.com,m.vegasroyalspin.com,admin.vegasroyalspin.com',
-            'session_cookie_domain' => '.vegasroyalspin.com',
+            'public_url_hosts' => 'vegasroyalspin119.com,www.vegasroyalspin119.com,m.vegasroyalspin119.com',
+            'allowed_url_hosts' => 'vegasroyalspin119.com,www.vegasroyalspin119.com,m.vegasroyalspin119.com,admin.vegasroyalspin.com',
+            'default_allowed_url_hosts' => 'vegasroyalspin119.com,www.vegasroyalspin119.com,m.vegasroyalspin119.com,admin.vegasroyalspin.com',
+            'session_cookie_domain' => '.vegasroyalspin119.com',
             'api_public_base_url' => 'https://admin.vegasroyalspin.com/api/v2',
             'api_subdomain_host' => 'admin.vegasroyalspin.com',
         ];
@@ -110,7 +110,7 @@ if (!function_exists('deploy_domain_config')) {
     function deploy_frontend_host_variants(?string $frontendUrl = null): string
     {
         $url = trim((string) ($frontendUrl ?? deploy_domain('frontend_url')));
-        $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: 'vegasroyalspin.com'));
+        $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: 'vegasroyalspin119.com'));
         if (str_starts_with($host, 'www.')) {
             $host = substr($host, 4);
         }
@@ -147,11 +147,20 @@ if (!function_exists('deploy_domain_config')) {
     function deploy_session_cookie_domain_for_host(string $httpHost): string
     {
         $host = strtolower(preg_replace('/:\d+$/', '', trim($httpHost)) ?? '');
-        if ($host === '' || !str_ends_with($host, 'vegasroyalspin.com')) {
+        if ($host === '') {
             return '';
         }
 
-        return deploy_domain('session_cookie_domain');
+        if ($host === 'vegasroyalspin119.com' || str_ends_with($host, '.vegasroyalspin119.com')) {
+            return '.vegasroyalspin119.com';
+        }
+
+        // Admin / mail and any residual *.vegasroyalspin.com hosts.
+        if ($host === 'vegasroyalspin.com' || str_ends_with($host, '.vegasroyalspin.com')) {
+            return '.vegasroyalspin.com';
+        }
+
+        return '';
     }
 
     /**
@@ -175,6 +184,12 @@ if (!function_exists('deploy_domain_config')) {
             'www.casinomilyon607.com',
             'icons.casinomilyonlisans.com',
             'casinomilyonlisans.com',
+            // Legacy white-label / wrong prod API hosts
+            'bo-nexthub.site',
+            'api.bo-nexthub.site',
+            'bo-backoffice.site',
+            'api.bo-backoffice.site',
+            'api.vegasroyalspin.com',
         ];
     }
 }

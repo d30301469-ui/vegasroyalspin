@@ -31,24 +31,15 @@
     RewriteRule ^[Mm]ega[Pp]ayz/deposit/?$ admin/index.php [END,QSA]
     RewriteRule ^sportsbook_api/?$ admin/index.php [END,QSA]
     RewriteRule ^api/v2/sportsbook-wallet/?$ admin/api/v2/sportsbook_callback.php [END,QSA]
-    # GSC+ seamless wallet — direct callback (bypass api/v2 front controller /
-    # admin sessions). Provider panel base URL:
-    #   https://admin.vegasroyalspin.com/api/v2/gsc-plus-wallet
-    #
-    # CRITICAL: GSC panel sometimes stores the base with trailing spaces, so real
-    # traffic hits …/gsc-plus-wallet%20%20%20/v1/…. Apache 403s that before PHP
-    # and the game shows 0.00. Match THE_REQUEST (still %-encoded) first.
-    RewriteCond %{THE_REQUEST} (?i)^[A-Z]+\s/+api/v2/(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)(?:\%20)+/([^\s\?]+)
-    RewriteRule ^ admin/api/v2/gsc_plus_callback.php?endpoint=%1 [END,QSA,NE]
-    RewriteCond %{THE_REQUEST} (?i)^[A-Z]+\s/+api/v2/(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)(?:\%20)+(?:\s|\?)
+    # GSC+ seamless wallet — funnel to callback (never put URI into ?route=).
+    # Canonical: /api/v2/gsc-plus-wallet (spaced %20 variants also accepted).
+    # See deploy/aapanel/apache-gsc-plus-wallet.conf (vhost Include is primary).
+    RewriteCond %{REQUEST_METHOD} =GET
+    RewriteCond %{REQUEST_URI} (?i)^/api/v2/(gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet|gscw|gsc_wallet)(?:%(?:20|2B|2520)|\+|\s)+(?:/(.*))?$
+    RewriteRule ^ /api/v2/gsc-plus-wallet/%2 [R=308,L,NE,QSA]
+    RewriteRule ^api/v2/gsc_plus_callback\.php(?:/.*)?$ - [END]
+    RewriteCond %{REQUEST_URI} (?i)^/api/v2/(?:gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet|gscw|gsc_wallet)
     RewriteRule ^ admin/api/v2/gsc_plus_callback.php [END,QSA]
-    RewriteRule ^api/v2/gsc_plus_callback\.php$ - [END]
-    RewriteRule ^api/v2/(?:gsc[-_]plus[-_]wallet|gsc_plus_wallet)\s+/(.*)$ admin/api/v2/gsc_plus_callback.php?endpoint=$1 [END,QSA,NC]
-    RewriteRule ^api/v2/(?:gsc[-_]plus[-_]wallet|gsc_plus_wallet)\s*$ admin/api/v2/gsc_plus_callback.php [END,QSA,NC]
-    RewriteRule ^api/v2/(?:gsc-plus-wallet|gsc_plus_wallet)/?(.*)$ admin/api/v2/gsc_plus_callback.php?endpoint=$1 [END,QSA]
-    # Legacy path alias from earlier GamingSoft naming (panel may still store it).
-    RewriteRule ^api/v2/(?:gamingsoft-wallet|gamingsoft_wallet)\s+/(.*)$ admin/api/v2/gsc_plus_callback.php?endpoint=$1 [END,QSA,NC]
-    RewriteRule ^api/v2/(?:gamingsoft-wallet|gamingsoft_wallet)/?(.*)$ admin/api/v2/gsc_plus_callback.php?endpoint=$1 [END,QSA]
 
     # ─── Private paths: never serve directly from webroot ─────────────────────
     # Allow storage/uploads/* (promotion images, favicons, media) — block everything else in storage/
@@ -76,6 +67,10 @@
     # Backend host (api.* and admin.* subdomains) → admin/api/v2 entry point
     # Direct api/v2 requests
     RewriteCond %{ENV:IS_BACKEND_HOST} 1
+    RewriteCond %{REQUEST_URI} !gsc[-_]plus[-_]wallet
+    RewriteCond %{REQUEST_URI} !gamingsoft[-_]wallet
+    RewriteCond %{REQUEST_URI} !/api/v2/gscw
+    RewriteCond %{REQUEST_URI} !/api/v2/gsc_wallet
     RewriteRule ^api/v2/(.+)$ admin/api/v2/index.php?route=$1 [END,QSA]
     RewriteCond %{ENV:IS_BACKEND_HOST} 1
     RewriteRule ^api/v2/?$ admin/api/v2/index.php [END,QSA]
@@ -163,8 +158,12 @@
     #     kurulumlarında Apache gerçek api/ klasörüne düşüp 403 üretebilir.
     RewriteRule ^api/ public/index.php [L,QSA]
 
-    # ─── AMP SEO landing: /guncel-giris → guncel-giris/index.php ──
-    RewriteRule ^guncel-giris/?$ guncel-giris/index.php [L,QSA]
+    # Block leaked diagnostic scripts and third-party license mirror pages.
+    RewriteRule ^_tmp_ - [F,L,NC]
+    RewriteRule ^cert\.gcb\.cw(?:/|$) - [F,L,NC]
+
+    # ─── Legacy /guncel-giris SEO landing → home (avoid SE-flagged mirror page) ──
+    RewriteRule ^guncel-giris/?$ / [R=301,L]
 
     # ─── Gerçek dosyalar dokunma; dizinleri front controller'a bırak ──
     # (footer/ gibi gerçek dizinler -d ile doğrudan servis edilip -Indexes/

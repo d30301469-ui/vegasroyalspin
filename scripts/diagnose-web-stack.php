@@ -245,7 +245,7 @@ if ($hasEnv) {
     echo "    # Tercih: tarayicida https://vegasroyalspin.com/install\n";
     echo "    # veya: php scripts/reset-for-install.php && systemctl restart httpd\n";
     if (is_readable($envExample)) {
-        echo "    cp ENV.example .env && php deploy/aapanel/fix-frontend-env.php\n";
+        echo "    cp ENV.example .env && php scripts/bootstrap-frontend-env.php\n";
     }
     echo "    # MEMBER_JWT_SECRET = bo-nexthub.site ile ayni olmali\n";
 }
@@ -411,8 +411,8 @@ if (isset($workingOrigins['backend'])) {
 }
 
 echo "\n[9] aaPanel checklist\n";
-echo "  - cp ENV.example .env && php deploy/aapanel/fix-frontend-env.php\n";
-echo "  - App Store → Apache: Running | Nginx: Stopped\n";
+echo "  - cp ENV.example .env && php scripts/bootstrap-frontend-env.php\n";
+echo "  - App Store → web sunucusu: Apache (bu proje nginx conf kullanmaz)\n";
 echo "  - Website → both domains Running, PHP 8.1+\n";
 echo "  - From PC: curl -sS https://vegasroyalspin.com/ping.php\n";
 

@@ -30,14 +30,7 @@ if (!is_readable($envFile)) {
     echo ".env already exists — keeping file, running fix pass only.\n";
 }
 
-$fixScript = $root . '/deploy/aapanel/fix-frontend-env.php';
-if (is_readable($fixScript)) {
-    $php = (defined('PHP_BINARY') && is_string(PHP_BINARY) && PHP_BINARY !== '') ? PHP_BINARY : 'php';
-    passthru($php . ' ' . escapeshellarg($fixScript) . ' ' . escapeshellarg($root), $code);
-    exit($code !== 0 ? $code : 0);
-}
-
-echo "Next: edit .env and set MEMBER_JWT_SECRET (same as bo-nexthub.site).\n";
+echo "Next: edit .env and set MEMBER_JWT_SECRET (same as backend).\n";
 echo "Optional: API_BACKEND_INTERNAL_BASE_URL=http://127.0.0.1/api/v2\n";
-echo "Optional: API_BACKEND_INTERNAL_HOST=bo-nexthub.site\n";
+echo "Optional: CLOUDFLARE_SSL=1 and ORIGIN_HTTP=1 for Cloudflare Flexible\n";
 exit(0);

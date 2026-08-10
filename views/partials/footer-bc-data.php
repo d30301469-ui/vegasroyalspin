@@ -84,12 +84,30 @@ $footerLicenceRows = array_values(array_filter(array_map(
             $href = strtolower(trim((string) ($item['href'] ?? '')));
 
             $isLicenceLink = $src !== '' && (
-                str_contains($src, 'casinomilyonlisans.com')
+                str_contains($src, 'casinomilyon')
+                || str_contains($src, 'asyaslots')
+                || str_contains($src, 'deluxebahis')
+                || str_contains($src, 'cert.gcb.cw')
+                || str_contains($src, 'seal.cgcb.info')
                 || str_contains($src, 'licence-widget.html')
             );
-            $isLicenceHref = $href !== '' && str_contains($href, 'casinomilyonlisans.com');
+            $isLicenceHref = $href !== '' && (
+                str_contains($href, 'casinomilyon')
+                || str_contains($href, 'asyaslots')
+                || str_contains($href, 'deluxebahis')
+                || str_contains($href, 'cert.gcb.cw')
+                || str_contains($href, 'seal.cgcb.info')
+            );
+            $html = strtolower(trim((string) ($item['html'] ?? '')));
+            $isForeignBrandHtml = $html !== '' && (
+                str_contains($html, 'casinomilyon')
+                || str_contains($html, 'asyaslots')
+                || str_contains($html, 'deluxebahis')
+                || str_contains($html, 'haleon')
+                || str_contains($html, 'july sun')
+            );
 
-            if ($type === 'iframe' || $isLicenceLink || $isLicenceHref) {
+            if ($type === 'iframe' || $isLicenceLink || $isLicenceHref || $isForeignBrandHtml) {
                 continue;
             }
 

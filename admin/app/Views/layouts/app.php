@@ -84,14 +84,14 @@ foreach ($rawNavigation as $group) {
     if (!is_array($group)) {
         continue;
     }
-    $items = [];
-    foreach ((array) ($group['items'] ?? []) as $item) {
-        if (is_array($item) && $canAccessItem($item)) {
-            $items[] = $item;
+    $navGroupItems = [];
+    foreach ((array) ($group['items'] ?? []) as $navItem) {
+        if (is_array($navItem) && $canAccessItem($navItem)) {
+            $navGroupItems[] = $navItem;
         }
     }
-    if ($items !== []) {
-        $group['items'] = $items;
+    if ($navGroupItems !== []) {
+        $group['items'] = $navGroupItems;
         $navigation[] = $group;
     }
 }
@@ -131,12 +131,12 @@ $messageRows = $canEmail ? $layoutRows('SELECT * FROM member_inbox_messages ORDE
 $logRows = $canLogs ? $layoutRows('SELECT admin_username, action, status, created_at FROM admin_logs ORDER BY created_at DESC LIMIT 3') : [];
 $paletteItems = [];
 foreach ($navigation as $group) {
-    foreach ((array) ($group['items'] ?? []) as $item) {
+    foreach ((array) ($group['items'] ?? []) as $navItem) {
         $paletteItems[] = [
-            'label' => (string) ($item['text'] ?? ''),
+            'label' => (string) ($navItem['text'] ?? ''),
             'section' => (string) ($group['label'] ?? 'Admin'),
-            'href' => AdminAuth::url((string) ($item['url'] ?? '/dashboard')),
-            'icon' => (string) ($item['icon'] ?? ''),
+            'href' => AdminAuth::url((string) ($navItem['url'] ?? '/dashboard')),
+            'icon' => (string) ($navItem['icon'] ?? ''),
         ];
     }
 }
@@ -1180,7 +1180,11 @@ $adminStyleVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/style.css') ?: tim
         .payment-method-card,
         .suite-card,
         .permissions-stat,
-        .user-stat-card {
+        .user-stat-card,
+        .db-kpi,
+        .db-qa,
+        .fin-kpi,
+        .aff-kpi {
             border-radius: 12px !important;
             box-shadow: var(--shadow-card) !important;
         }
@@ -1354,23 +1358,23 @@ $adminStyleVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/style.css') ?: tim
         </div>
         <div class="sidebar-nav">
             <?php foreach ($navigation as $group): ?>
-                <?php $items = is_array($group['items'] ?? null) ? $group['items'] : []; ?>
+                <?php $navGroupItems = is_array($group['items'] ?? null) ? $group['items'] : []; ?>
                 <nav class="nav-section">
                     <div class="nav-label">
                         <span class="nav-group-title"><?= htmlspecialchars((string) ($group['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                     </div>
-                    <?php foreach ($items as $item): ?>
+                    <?php foreach ($navGroupItems as $navItem): ?>
                         <?php
-                        $url = (string) ($item['url'] ?? '#');
-                        $icon = (string) ($item['icon'] ?? '<circle cx="12" cy="12" r="8"/>');
-                        $badge = trim((string) ($item['badge'] ?? ''));
-                        $activeClass = $isNavItemActive($item) ? ' is-active' : '';
+                        $url = (string) ($navItem['url'] ?? '#');
+                        $icon = (string) ($navItem['icon'] ?? '<circle cx="12" cy="12" r="8"/>');
+                        $badge = trim((string) ($navItem['badge'] ?? ''));
+                        $activeClass = $isNavItemActive($navItem) ? ' is-active' : '';
                         $navColor = $navIconPalette[$navIconIndex % count($navIconPalette)];
                         $navIconIndex++;
                         ?>
                         <a class="nav-link<?= htmlspecialchars($activeClass, ENT_QUOTES, 'UTF-8') ?>" style="--nav-icon-color:<?= htmlspecialchars($navColor, ENT_QUOTES, 'UTF-8') ?>;--nav-icon-bg:<?= htmlspecialchars($navColor, ENT_QUOTES, 'UTF-8') ?>22" href="<?= htmlspecialchars(AdminAuth::url($url), ENT_QUOTES, 'UTF-8') ?>">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><?= $icon ?></svg>
-                            <span class="nav-link-text"><?= htmlspecialchars((string) ($item['text'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                            <span class="nav-link-text"><?= htmlspecialchars((string) ($navItem['text'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                             <?php if ($badge !== ''): ?>
                                 <span class="nav-badge"><?= htmlspecialchars($badge, ENT_QUOTES, 'UTF-8') ?></span>
                             <?php endif; ?>

@@ -23,10 +23,10 @@
     }
 
     function showNativeToast(label, type, options) {
-        var wrap = document.getElementById("maltabet-toastify-stack");
+        var wrap = document.getElementById("app-toastify-stack");
         if (!wrap) {
             wrap = document.createElement("div");
-            wrap.id = "maltabet-toastify-stack";
+            wrap.id = "app-toastify-stack";
             wrap.style.position = "fixed";
             wrap.style.top = "18px";
             wrap.style.right = "18px";
@@ -38,7 +38,7 @@
         }
 
         var toast = document.createElement("div");
-        toast.className = "toastify maltabet-toastify-fallback";
+        toast.className = "toastify app-toastify-fallback";
         toast.setAttribute("role", "status");
         toast.textContent = label;
         toast.style.background = palette(type);

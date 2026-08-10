@@ -128,12 +128,41 @@
     function syncProfileSidebarFromFormatted(mainFormatted, bonusFormatted) {
         var mainWith = mainFormatted + ' ₺';
         var bonusWith = bonusFormatted + ' ₺';
-        document.querySelectorAll('.profile-sidebar-v2 .main-balance-card .total-balance .amount').forEach(function (el) {
-            el.textContent = mainWith;
+        var writeEl = typeof window.__writeProfileBalanceEl === 'function'
+            ? window.__writeProfileBalanceEl
+            : function (el, text) {
+                if (!el) return;
+                el.setAttribute('data-balance-display', text);
+                var hidden = false;
+                try { hidden = localStorage.getItem('vrs_profile_balance_hidden') === '1'; } catch (eH) {}
+                el.textContent = hidden ? '•••••• ₺' : text;
+            };
+        document.querySelectorAll(
+            '#profilePlayerSidebar [data-cm622-balance="main"],' +
+            '#profilePlayerSidebar .u-i-p-amounts-bc.withdrawable .u-i-p-a-amount-bc,' +
+            '#profileModalContent [data-cm622-balance="main"],' +
+            '#profileModalContent .u-i-p-amounts-bc.withdrawable .u-i-p-a-amount-bc,' +
+            '.u-i-profile-page-bc [data-cm622-balance="main"],' +
+            '.u-i-profile-page-bc .u-i-p-amounts-bc.withdrawable .u-i-p-a-amount-bc'
+        ).forEach(function (el) {
+            writeEl(el, mainWith);
         });
-        document.querySelectorAll('.profile-sidebar-v2 .bonus-balance-card .amount').forEach(function (el) {
-            el.textContent = bonusWith;
+        document.querySelectorAll(
+            '#profilePlayerSidebar [data-cm622-balance="bonus"],' +
+            '#profilePlayerSidebar .u-i-p-amounts-bc.bonuses .u-i-p-a-amount-bc,' +
+            '#profilePlayerSidebar .bonus-info-section b,' +
+            '#profileModalContent [data-cm622-balance="bonus"],' +
+            '#profileModalContent .u-i-p-amounts-bc.bonuses .u-i-p-a-amount-bc,' +
+            '#profileModalContent .bonus-info-section b,' +
+            '.u-i-profile-page-bc [data-cm622-balance="bonus"],' +
+            '.u-i-profile-page-bc .u-i-p-amounts-bc.bonuses .u-i-p-a-amount-bc,' +
+            '.u-i-profile-page-bc .bonus-info-section b'
+        ).forEach(function (el) {
+            writeEl(el, bonusWith);
         });
+        if (typeof window.__refreshProfileBalanceVisibility === 'function') {
+            window.__refreshProfileBalanceVisibility();
+        }
     }
 
     function applyBalances(row) {
@@ -158,7 +187,7 @@
             return {
                 name: badge.name || 'Bronze',
                 code: badge.code || 'bronze',
-                icon_url: badge.icon_url || '/content/images/loyalty_points/bronze.png',
+                icon_url: badge.icon_url || '/assets/images/loyalty/badges/bronze.svg',
                 initial: badge.initial || String(badge.name || 'Bronze').charAt(0).toUpperCase(),
                 points: badge.points != null ? badge.points : 0,
                 redeemable_points: badge.redeemable_points != null ? badge.redeemable_points : 0,
@@ -171,7 +200,7 @@
         return {
             name: level.name || 'Bronze',
             code: level.code || account.level_code || 'bronze',
-            icon_url: level.icon_url || '/content/images/loyalty_points/bronze.png',
+            icon_url: level.icon_url || '/assets/images/loyalty/badges/bronze.svg',
             initial: (level.name || 'Bronze').charAt(0).toUpperCase(),
             points: account.points != null ? account.points : 0,
             redeemable_points: account.redeemable_points != null ? account.redeemable_points : 0,
@@ -181,7 +210,7 @@
 
     function localLoyaltyIconUrl(row) {
         var icons = {
-            bronze: '/assets/images/loyalty/badges/bronze.png',
+            bronze: '/assets/images/loyalty/badges/bronze.svg',
             silver: '/assets/images/loyalty/badges/silver.svg',
             gold: '/assets/images/loyalty/badges/gold.svg',
             platinum: '/assets/images/loyalty/badges/platinum.svg',
@@ -384,11 +413,11 @@
             tick(true);
             loyaltyTick(true);
         });
-        window.addEventListener('maltabet:balance-refresh', function () {
+        window.addEventListener('app:balance-refresh', function () {
             tick(true);
             loyaltyTick(true);
         });
-        window.addEventListener('metropol:member-jwt-ready', function () {
+        window.addEventListener('app:member-jwt-ready', function () {
             tick(true);
             loyaltyTick(true);
         });

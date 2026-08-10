@@ -260,42 +260,21 @@ if ($method === 'POST' && in_array($route, ['loyalty/redeem', 'loyalty/redeem-po
     $userId = $memberRequireLogin();
     $input  = $memberInput($payload);
     $points = (int) ($input['points'] ?? 0);
-    if ($points <= 0) {
-        $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Geçerli bir puan miktarı giriniz.']);
-    }
+    admin_require_project_file('services/LoyaltyService.php');
     try {
-        $stmt = $pdo->prepare('SELECT COALESCE(redeemable_points, 0) FROM user_loyalty_accounts WHERE user_id = :uid LIMIT 1');
-        $stmt->execute(['uid' => $userId]);
-        $available = (int) $stmt->fetchColumn();
-        if ($available < $points) {
-            $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => "Yetersiz puan. Mevcut: $available"]);
-        }
-        // 100 puan = 1 TRY (konfigüre edilebilir)
-        $bonusAmount = round($points / 100, 2);
-        $pdo->beginTransaction();
-        $pdo->prepare(
-            "INSERT INTO loyalty_point_transactions (user_id, type, points, note, created_at)
-             VALUES (:uid, 'redeem', :pts, :note, NOW())"
-        )->execute(['uid' => $userId, 'pts' => -$points, 'note' => "$points puan kullanıldı ($bonusAmount TRY bonus)"]);
-        // Kullanıcının redeemable_points bakiyesini düş
-        $pdo->prepare(
-            "UPDATE user_loyalty_accounts SET redeemable_points = GREATEST(0, redeemable_points - :pts) WHERE user_id = :uid"
-        )->execute(['pts' => $points, 'uid' => $userId]);
-        $pdo->prepare(
-            "INSERT INTO user_active_bonuses
-             (user_id, name, category, initial_amount, current_bonus_balance, wagering_requirement, wagering_target, total_bet_amount, status, granted_at, deadline)
-             VALUES (:uid, 'Sadakat Bonusu', 'loyalty', :amt, :amt, 1, :amt, 0, 'active', NOW(), :dl)"
-        )->execute(['uid' => $userId, 'amt' => number_format($bonusAmount, 2, '.', ''), 'dl' => date('Y-m-d H:i:s', strtotime('+7 days'))]);
-        $pdo->commit();
+        $result = LoyaltyService::redeem($pdo, $userId, $points);
+    } catch (InvalidArgumentException $e) {
+        $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => $e->getMessage()]);
+    } catch (RuntimeException $e) {
+        $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => $e->getMessage()]);
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
         $memberEnvelope(500, ['success' => false, 'code' => 500, 'message' => 'Puan kullanımı başarısız.']);
     }
     $memberEnvelope(200, [
         'success' => true,
         'code'    => 200,
-        'message' => "$points puan kullanıldı, $bonusAmount TRY bonus hesabınıza eklendi.",
-        'data'    => ['points_used' => $points, 'bonus_amount' => $bonusAmount],
+        'message' => $result['points_used'] . ' puan kullanıldı, ' . $result['bonus_amount'] . ' TRY bonus hesabınıza eklendi.',
+        'data'    => $result,
     ]);
 }
 

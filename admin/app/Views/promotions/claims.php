@@ -15,7 +15,7 @@ $badgeClass = static function (string $v): string {
     return match (strtolower($v)) {
         'active' => 'success dot',
         'completed' => 'primary',
-        'revoked', 'expired' => 'danger dot',
+        'cancelled', 'revoked', 'expired' => 'danger dot',
         default => 'warning dot',
     };
 };
@@ -43,7 +43,7 @@ $promoId = (string) ($promotion['id'] ?? '');
             <h2 class="card-title">Talepler <span class="badge primary"><?= htmlspecialchars($total, ENT_QUOTES, 'UTF-8') ?></span></h2>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-            <?php foreach (['', 'active', 'completed', 'revoked', 'expired'] as $s): ?>
+            <?php foreach (['', 'active', 'completed', 'cancelled', 'expired'] as $s): ?>
                 <a href="<?= $text(AdminAuth::url('/promotion/claims?id=' . rawurlencode($promoId) . ($s !== '' ? '&status=' . rawurlencode($s) : ''))) ?>"
                    class="btn btn--ghost" style="font-size:11px<?= ($statusFilter === $s ? ';font-weight:900;text-decoration:underline' : '') ?>">
                     <?= $s === '' ? 'Tümü' : ucfirst($text($s)) ?>

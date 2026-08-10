@@ -152,9 +152,9 @@ final class AdminFooterController extends AdminController
 
         error_log('Footer update - COMPLETED SUCCESSFULLY');
         $_SESSION['admin_footer_flash'] = 'Footer ayarları güncellendi.';
-        if (function_exists('metropol_notify_frontend_cms_purge')) {
+        if (function_exists('notify_frontend_cms_purge')) {
             try {
-                metropol_notify_frontend_cms_purge('footer');
+                notify_frontend_cms_purge('footer');
             } catch (Throwable $e) {
                 error_log('Footer update - cache purge failed: ' . $e->getMessage());
             }

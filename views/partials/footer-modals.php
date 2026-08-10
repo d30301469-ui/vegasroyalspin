@@ -13,7 +13,7 @@
         <div _ngcontent-ujd-c27="" class="modal-body contentBox">
             <h5 _ngcontent-ujd-c27="">Gizlilik Politikası</h5>
             <p _ngcontent-ujd-c27="" class="mb-4">Hakkınızdaki bilgilerin nasıl kullanıldığını önemsediğinizi biliyoruz
-                ve www.deluxebahis.com web sitemizi ve onunla ilgili hizmetleri (topluca “Web Sitesi”) kullandığınızda
+                ve vegasroyalspin.com web sitemizi ve onunla ilgili hizmetleri (topluca “Web Sitesi”) kullandığınızda
                 kendinizi rahat hissetmeniz ve bilgileriniz konusunda bize güvenmeniz bizim için önemli.</p>
             <p _ngcontent-ujd-c27="" class="mb-4">Gizlilik Politikamız (“Gizlilik Politikası”), Web Sitemizi desteklemek
                 için işlediğimiz bilgiler de dahil olmak üzere bilgi uygulamalarımızı açıklamaya yardımcı olur. Örneğin
@@ -47,11 +47,7 @@
                 etmelisiniz. Web Sitemizi kullanmak istiyorsanız lütfen Şartlar ve Koşullarımızı okuyup kabul
                 ettiğinizden emin olun.</p>
             <p _ngcontent-ujd-c27="" class="mb-4">Tarafımıza sağlanan veya tarafımızdan toplanan tüm kişisel bilgiler,
-                Birleşik Krallık yasalarına göre 12276638 kayıt numarasıyla kayıtlı ve kayıtlı adresi Woodgate House,
-                2-8 Games olan Haleon Solutions Limited'in sahibi olduğu ve işlettiği bu Web Sitesi tarafından kontrol
-                edilmektedir. Road, Cockfosters, Herts, Birleşik Krallık, EN4 9HN (“Şirket”). deluxebahis, Philippine
-                Amusement and Gaming Corporation tarafından Spor Bahisleri ve E-Oyunlar için Offshore Oyun Lisansı No:
-                18-0022 tarafından lisanslanmakta ve denetlenmektedir..</p>
+                bu Web Sitesinin işletmecisi (“Şirket”) tarafından kontrol edilmektedir. Vegasroyalspin, geçerli oyun mevzuatına uygun şekilde işletilmektedir.</p>
             <h5 _ngcontent-ujd-c27="">Topladığımız Kişisel Bilgiler</h5>
             <h6 _ngcontent-ujd-c27="">Hakkınızda topladığımız ve işlediğimiz kişisel bilgiler ve veriler aşağıdakileri
                 içerir:</h6>
@@ -105,7 +101,7 @@
                 iletişimlerden vazgeçebilirsiniz.</p>
             <p _ngcontent-ujd-c27="" class="mb-4">Kullanıcı adınızı ve/veya adınızı ve/veya soyadınızın ilk harfini
                 ve/veya bölgenizi tanıtım amacıyla kullanabilir ve yayınlayabiliriz. İletişime geçerek bu konudaki
-                onayınızı geri çekebilirsiniz. destek@deluxebahis.com .</p>
+                onayınızı geri çekebilirsiniz. destek@vegasroyalspin.com .</p>
             <h5 _ngcontent-ujd-c27="">Kişisel Bilgilerinizin Saklanması</h5>
             <p _ngcontent-ujd-c27="" class="mb-4">Kişisel bilgilerinizi, kişisel bilgilerin işlenme amaçları için
                 gerekenden daha uzun süre tutmayız.</p>
@@ -193,7 +189,7 @@
                 <li _ngcontent-ujd-c27="">(d) verileri silmek, verilerin kullanımına itiraz etmek, verilerin kullanımını
                     sınırlamak veya kısıtlamak, herhangi bir zamanda bize herhangi bir kişisel bilgi vermek için
                     verdiğiniz izni reddetmek veya geri çekmek. Ancak, bir kez bu talebi yaptığınızda Web Sitemizi Onay,
-                    herhangi bir zamanda destek@deluxebahis.com adresine bir talep göndererek geri çekilebilir. <br
+                    herhangi bir zamanda destek@vegasroyalspin.com adresine bir talep göndererek geri çekilebilir. <br
                         _ngcontent-ujd-c27=""><br _ngcontent-ujd-c27=""> Yasal yükümlülüklerimize (kanuni yaptırım
                     talepleri dahil) uymak, yasal gereklilikleri karşılamak, anlaşmazlıkları çözmek, güvenliği
                     sürdürmek, sahtekarlığı ve kötüye kullanımı önlemek için makul ölçüde gerekliyse, hesabınızı
@@ -206,7 +202,7 @@
                     tutulacak güvenli, ayrı bir sistemde tecrit edeceğiz. Gerekli olmayan tüm veriler silinecek ve
                     gerekli sürenin sonunda tutulan tüm veriler silinecektir.</li>
             </ul>
-            <p _ngcontent-ujd-c27="" class="mb-4">Destek e-postası olan destek@deluxebahis.com adresine yapılan herhangi
+            <p _ngcontent-ujd-c27="" class="mb-4">Destek e-postası olan destek@vegasroyalspin.com adresine yapılan herhangi
                 bir veri sağlama, düzeltme, kısıtlama veya silme talebine talep aldıktan sonra 4 hafta içinde herhangi
                 yanıt vereceğiz.</p>
             <h5 _ngcontent-ujd-c27="">Çerezleri ve Benzer Araçları Nasıl Kullanıyoruz?</h5>
@@ -231,7 +227,7 @@
                 2009/136/EC tarafından düzenlenmiş EC Directive/2002/58/EC) AB Elektronik İletişim Gizlilik Direktifi’ne
                 bağlıyız.</p>
             <p _ngcontent-ujd-c27="" class="mb-4">Gizlilik Politikamız hakkında hâlâ sorularınız varsa, lütfen bize
-                destek@deluxebahis.com adresine bir e-posta göndererek ulaşmaktan çekinmeyin.</p>
+                destek@vegasroyalspin.com adresine bir e-posta göndererek ulaşmaktan çekinmeyin.</p>
         </div>
         <div _ngcontent-ujd-c27="" class="modal-footer">            <!-- Kapat butonu -->
 <button class="btn btn-secondary" onclick="closePrivacyPolicyModal()">Kapat</button>
@@ -246,7 +242,7 @@
             <h5 class="modal-title">İptal ve İade Politikası</h5>
             <button class="close" onclick="closeModal()">&times;</button>
         </div>
-       <div class="modal-body contentBox"><h5>Ödeme Politikası</h5><p class="mb-4">5000 TRY ve üzeri çekim işlemi yapabilmeniz için hesabınız onaylı olmalıdır. Hesabınızın onaylanabilmesi için yatırım yöntemine göre sizden belge talep edilecektir. Kimlik ön ve arka kısım fotoğrafı, İkametgah Belgesi; Kart ile yatırım sağlamanız durumunda bu belgelere ek olarak kartınızın ön ve arka kısım fotoğrafı ile sitemize yatırımınızı gösteren banka hesap hareketleri ekran görüntüsü talep edilir. Kimliğinizin seri numarasını ufak bir kağıt parçası ile kapatabilirsiniz kalan tüm bilgiler açık olmalıdır. Kartınızın orta kısmında bulunan rakamları küçük bir kağıt parçası ile kapatabilirsiniz. deluxebahis ek belge talep etme hakkına sahiptir.</p><ol><li>deluxebahis her işlem ve her ödeme sistemi için belirlenen maksimum tutarı herhangi bir zamanda veya önceden bilgi vermeden değiştirme hakkına sahiptir.</li><li>Bahis kazancı kadar çekim yapılabilir.</li><li>İptal edilen bonus bakiyelerinin dönüşü mümkün değildir.</li><li>deluxebahis toplam bahsin son yatırımdan az olması durumunda çekim işlemini reddetme hakkına sahiptir.</li><li>7/24 saatleri arasında verilen tüm para çekme talepleri aynı gün içerisinde en kısa sürede işleme alınmaktadır. İşleme alınan çekim talepleri işlem sırasına göre 1-60 dakika içerisinde gönderilmektedir. Banka veya seçilen işlem metoduna bağlı olarak süre farklılık gösterebilir. Günde sınırsız defa para çekme hakkı mevcuttur.</li><li>Hesabınızda bulunan tutar üstünde çekim yapamazsınız.</li><li>Para çekme işlemlerinizi Sitede Hesabım kısmından Para çekme butonundan yapabilirsiniz.</li><li>Para çekme işlemi iptal edildiğinde tutar hesabınıza geri döner. deluxebahis, siz veya bizim tarafımızdan para çekme iptali sonrasında oyun sırasında herhangi bir tutar kullanılır ise bir sorumluluk kabul etmez.</li><li>Oyun sırasında bahis aldıgınızda paranız hesabınızdan anında çekilir. Bu sebeple oynadıktan sonra oyun iptali yada bakiye iadesi kabul edilmez.Gerçek para ile oyun oynadığınızda para anında bakiyenizden çekilir.</li><li>Daha yüksek tutar kabul edilmediği sürece, Günde max 50.000 Türk Lirası çekim yapabilirsiniz. 30 günlük sürede ise max 500.000 Türk Lirası tutarını (hesabınızın para birimindeki karşılığı) çekebilirsiniz.</li><li>Para çekme işlemi kabul etmeden önce, gerekli olduğunu düşündüğümüz pasaport, kimlik, diğer onaylı belgeleri talep edebiliriz. Ayrıca belirttiğiniz kişi olduğunuzu doğrulama adına telefon doğrulaması, yüz doğrulaması yada farklı bir doğrulama yapabiliriz.</li><li>Herhangi bir anda her ödeme yönteminden yalnızca bir defa çekim talebi verebilirsiniz. Her 24 saatte iki defa çekim hakkınız mevcuttur.</li><li>Eğer 200.000 TL (ya da üyelik para birimine eşit tutarda) üzeri kazanç sağlarsanız, deluxebahis kullanıcı adına yapılacak ödemeleri, her biri en fazla 50.000 TL olmak üzere ödenecek tutar tamamlanana kadar aylık eşit parçalara bölme hakkını saklı tutmaktadır.</li><li>Her kullanıcı için günlük kazanılabilecek tutar üst limiti bulunmamaktadır.</li><li>Banka Havalesi ile bir seferde minimum para çekme limiti 500 TL’dir. 500 TL’nin üzerindeki rakamlar 10 TL ve katları olmalıdır. Bir günde maksimum para çekme limiti 50.000 TL - Bir ay içerisinde maksimum 500.000 TL olarak belirlenmiştir. deluxebahis'de aynı anda yalnızca bir para çekme talebiniz işleme alınabilir.</li><li>Eğer para çekme talimatınızdaki bilgilerde sorun yoksa tüm ödemeler 24 saat içinde tamamlanacaktır. Hafta sonu ve resmi tatillerde Bank transfer yönetimi ile yapılan para çekim taleplerde gecikme yaşanabilir. ATM arızası ve bankalardan kaynaklı yaşanan gecikmelerden deluxebahis sorumlu değildir..</li></ol></div>
+       <div class="modal-body contentBox"><h5>Ödeme Politikası</h5><p class="mb-4">5000 TRY ve üzeri çekim işlemi yapabilmeniz için hesabınız onaylı olmalıdır. Hesabınızın onaylanabilmesi için yatırım yöntemine göre sizden belge talep edilecektir. Kimlik ön ve arka kısım fotoğrafı, İkametgah Belgesi; Kart ile yatırım sağlamanız durumunda bu belgelere ek olarak kartınızın ön ve arka kısım fotoğrafı ile sitemize yatırımınızı gösteren banka hesap hareketleri ekran görüntüsü talep edilir. Kimliğinizin seri numarasını ufak bir kağıt parçası ile kapatabilirsiniz kalan tüm bilgiler açık olmalıdır. Kartınızın orta kısmında bulunan rakamları küçük bir kağıt parçası ile kapatabilirsiniz. Vegasroyalspin ek belge talep etme hakkına sahiptir.</p><ol><li>Vegasroyalspin her işlem ve her ödeme sistemi için belirlenen maksimum tutarı herhangi bir zamanda veya önceden bilgi vermeden değiştirme hakkına sahiptir.</li><li>Bahis kazancı kadar çekim yapılabilir.</li><li>İptal edilen bonus bakiyelerinin dönüşü mümkün değildir.</li><li>Vegasroyalspin toplam bahsin son yatırımdan az olması durumunda çekim işlemini reddetme hakkına sahiptir.</li><li>7/24 saatleri arasında verilen tüm para çekme talepleri aynı gün içerisinde en kısa sürede işleme alınmaktadır. İşleme alınan çekim talepleri işlem sırasına göre 1-60 dakika içerisinde gönderilmektedir. Banka veya seçilen işlem metoduna bağlı olarak süre farklılık gösterebilir. Günde sınırsız defa para çekme hakkı mevcuttur.</li><li>Hesabınızda bulunan tutar üstünde çekim yapamazsınız.</li><li>Para çekme işlemlerinizi Sitede Hesabım kısmından Para çekme butonundan yapabilirsiniz.</li><li>Para çekme işlemi iptal edildiğinde tutar hesabınıza geri döner. Vegasroyalspin, siz veya bizim tarafımızdan para çekme iptali sonrasında oyun sırasında herhangi bir tutar kullanılır ise bir sorumluluk kabul etmez.</li><li>Oyun sırasında bahis aldıgınızda paranız hesabınızdan anında çekilir. Bu sebeple oynadıktan sonra oyun iptali yada bakiye iadesi kabul edilmez.Gerçek para ile oyun oynadığınızda para anında bakiyenizden çekilir.</li><li>Daha yüksek tutar kabul edilmediği sürece, Günde max 50.000 Türk Lirası çekim yapabilirsiniz. 30 günlük sürede ise max 500.000 Türk Lirası tutarını (hesabınızın para birimindeki karşılığı) çekebilirsiniz.</li><li>Para çekme işlemi kabul etmeden önce, gerekli olduğunu düşündüğümüz pasaport, kimlik, diğer onaylı belgeleri talep edebiliriz. Ayrıca belirttiğiniz kişi olduğunuzu doğrulama adına telefon doğrulaması, yüz doğrulaması yada farklı bir doğrulama yapabiliriz.</li><li>Herhangi bir anda her ödeme yönteminden yalnızca bir defa çekim talebi verebilirsiniz. Her 24 saatte iki defa çekim hakkınız mevcuttur.</li><li>Eğer 200.000 TL (ya da üyelik para birimine eşit tutarda) üzeri kazanç sağlarsanız, Vegasroyalspin kullanıcı adına yapılacak ödemeleri, her biri en fazla 50.000 TL olmak üzere ödenecek tutar tamamlanana kadar aylık eşit parçalara bölme hakkını saklı tutmaktadır.</li><li>Her kullanıcı için günlük kazanılabilecek tutar üst limiti bulunmamaktadır.</li><li>Banka Havalesi ile bir seferde minimum para çekme limiti 500 TL’dir. 500 TL’nin üzerindeki rakamlar 10 TL ve katları olmalıdır. Bir günde maksimum para çekme limiti 50.000 TL - Bir ay içerisinde maksimum 500.000 TL olarak belirlenmiştir. Vegasroyalspin'de aynı anda yalnızca bir para çekme talebiniz işleme alınabilir.</li><li>Eğer para çekme talimatınızdaki bilgilerde sorun yoksa tüm ödemeler 24 saat içinde tamamlanacaktır. Hafta sonu ve resmi tatillerde Bank transfer yönetimi ile yapılan para çekim taleplerde gecikme yaşanabilir. ATM arızası ve bankalardan kaynaklı yaşanan gecikmelerden Vegasroyalspin sorumlu değildir..</li></ol></div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal()">Kapat</button>
         </div>
@@ -314,15 +310,15 @@
                                         gösteren banka hesap hareketleri ekran görüntüsü talep edilir. Kimliğinizin seri
                                         numarasını ufak bir kağıt parçası ile kapatabilirsiniz kalan tüm bilgiler açık
                                         olmalıdır. Kartınızın orta kısmında bulunan rakamları küçük bir kağıt parçası
-                                        ile kapatabilirsiniz. deluxebahis ek belge talep etme hakkına sahiptir.</p>
+                                        ile kapatabilirsiniz. Vegasroyalspin ek belge talep etme hakkına sahiptir.</p>
                                     <ol>
-                                        <li>deluxebahis her işlem ve her ödeme sistemi için belirlenen
+                                        <li>Vegasroyalspin her işlem ve her ödeme sistemi için belirlenen
                                             maksimum tutarı herhangi bir zamanda veya önceden bilgi vermeden değiştirme
                                             hakkına sahiptir.</li>
                                         <li>Bahis kazancı kadar çekim yapılabilir.</li>
                                         <li>İptal edilen bonus bakiyelerinin dönüşü mümkün
                                             değildir.</li>
-                                        <li>deluxebahis toplam bahsin son yatırımdan az olması
+                                        <li>Vegasroyalspin toplam bahsin son yatırımdan az olması
                                             durumunda çekim işlemini reddetme hakkına sahiptir.</li>
                                         <li>7/24 saatleri arasında verilen tüm para çekme
                                             talepleri aynı gün içerisinde en kısa sürede işleme alınmaktadır. İşleme
@@ -334,7 +330,7 @@
                                         <li>Para çekme işlemlerinizi Sitede Hesabım kısmından Para
                                             çekme butonundan yapabilirsiniz.</li>
                                         <li>Para çekme işlemi iptal edildiğinde tutar hesabınıza
-                                            geri döner. deluxebahis, siz veya bizim tarafımızdan para çekme iptali
+                                            geri döner. Vegasroyalspin, siz veya bizim tarafımızdan para çekme iptali
                                             sonrasında oyun sırasında herhangi bir tutar kullanılır ise bir sorumluluk
                                             kabul etmez.</li>
                                         <li>Oyun sırasında bahis aldıgınızda paranız hesabınızdan
@@ -353,7 +349,7 @@
                                             defa çekim talebi verebilirsiniz. Her 24 saatte iki defa çekim hakkınız
                                             mevcuttur.</li>
                                         <li>Eğer 200.000 TL (ya da üyelik para birimine eşit
-                                            tutarda) üzeri kazanç sağlarsanız, deluxebahis kullanıcı adına yapılacak
+                                            tutarda) üzeri kazanç sağlarsanız, Vegasroyalspin kullanıcı adına yapılacak
                                             ödemeleri, her biri en fazla 50.000 TL olmak üzere ödenecek tutar
                                             tamamlanana kadar aylık eşit parçalara bölme hakkını saklı tutmaktadır.</li>
                                         <li>Her kullanıcı için günlük kazanılabilecek tutar üst
@@ -361,13 +357,13 @@
                                         <li>Banka Havalesi ile bir seferde minimum para çekme
                                             limiti 500 TL’dir. 500 TL’nin üzerindeki rakamlar 10 TL ve katları
                                             olmalıdır. Bir günde maksimum para çekme limiti 50.000 TL - Bir ay
-                                            içerisinde maksimum 500.000 TL olarak belirlenmiştir. deluxebahis'de aynı anda
+                                            içerisinde maksimum 500.000 TL olarak belirlenmiştir. Vegasroyalspin'de aynı anda
                                             yalnızca bir para çekme talebiniz işleme alınabilir.</li>
                                         <li>Eğer para çekme talimatınızdaki bilgilerde sorun yoksa
                                             tüm ödemeler 24 saat içinde tamamlanacaktır. Hafta sonu ve resmi tatillerde
                                             Bank transfer yönetimi ile yapılan para çekim taleplerde gecikme
                                             yaşanabilir. ATM arızası ve bankalardan kaynaklı yaşanan gecikmelerden
-                                            deluxebahis sorumlu değildir..</li>
+                                            Vegasroyalspin sorumlu değildir..</li>
                                     </ol>
                                 </div>
                                 <div class="modal-footer"><button                                        class="btn btn-secondary" data-dismiss="modal" type="button">Kapat</button>
@@ -388,7 +384,7 @@
                                 <div class="modal-body contentBox">
                                     <h5>Gizlilik Politikası</h5>
                                     <p class="mb-4">Hakkınızdaki bilgilerin nasıl kullanıldığını
-                                        önemsediğinizi biliyoruz ve www.deluxebahis.com web sitemizi ve onunla ilgili
+                                        önemsediğinizi biliyoruz ve vegasroyalspin.com web sitemizi ve onunla ilgili
                                         hizmetleri (topluca “Web Sitesi”) kullandığınızda kendinizi rahat hissetmeniz ve
                                         bilgileriniz konusunda bize güvenmeniz bizim için önemli.</p>
                                     <p class="mb-4">Gizlilik Politikamız (“Gizlilik Politikası”),
@@ -430,13 +426,8 @@
                                         Koşullarımızı da kabul etmelisiniz. Web Sitemizi kullanmak istiyorsanız lütfen
                                         Şartlar ve Koşullarımızı okuyup kabul ettiğinizden emin olun.</p>
                                     <p class="mb-4">Tarafımıza sağlanan veya tarafımızdan toplanan
-                                        tüm kişisel bilgiler, Birleşik Krallık yasalarına göre 12276638 kayıt
-                                        numarasıyla kayıtlı ve kayıtlı adresi Woodgate House, 2-8 Games olan Haleon
-                                        Solutions Limited'in sahibi olduğu ve işlettiği bu Web Sitesi tarafından kontrol
-                                        edilmektedir. Road, Cockfosters, Herts, Birleşik Krallık, EN4 9HN (“Şirket”).
-                                        deluxebahis, Philippine Amusement and Gaming Corporation tarafından Spor Bahisleri
-                                        ve E-Oyunlar için Offshore Oyun Lisansı No: 18-0022 tarafından lisanslanmakta ve
-                                        denetlenmektedir..</p>
+                                        tüm kişisel bilgiler, bu Web Sitesinin işletmecisi (“Şirket”) tarafından kontrol
+                                        edilmektedir. Vegasroyalspin, geçerli oyun mevzuatına uygun şekilde işletilmektedir.</p>
                                     <h5>Topladığımız Kişisel Bilgiler</h5>
                                     <h6>Hakkınızda topladığımız ve işlediğimiz kişisel bilgiler ve
                                         veriler aşağıdakileri içerir:</h6>
@@ -505,7 +496,7 @@
                                     <p class="mb-4">Kullanıcı adınızı ve/veya adınızı ve/veya
                                         soyadınızın ilk harfini ve/veya bölgenizi tanıtım amacıyla kullanabilir ve
                                         yayınlayabiliriz. İletişime geçerek bu konudaki onayınızı geri çekebilirsiniz.
-                                        destek@deluxebahis.com .</p>
+                                        destek@vegasroyalspin.com .</p>
                                     <h5>Kişisel Bilgilerinizin Saklanması</h5>
                                     <p class="mb-4">Kişisel bilgilerinizi, kişisel bilgilerin
                                         işlenme amaçları için gerekenden daha uzun süre tutmayız.</p>
@@ -614,7 +605,7 @@
                                             etmek, verilerin kullanımını sınırlamak veya kısıtlamak, herhangi bir
                                             zamanda bize herhangi bir kişisel bilgi vermek için verdiğiniz izni
                                             reddetmek veya geri çekmek. Ancak, bir kez bu talebi yaptığınızda Web
-                                            Sitemizi Onay, herhangi bir zamanda destek@deluxebahis.com adresine bir talep
+                                            Sitemizi Onay, herhangi bir zamanda destek@vegasroyalspin.com adresine bir talep
                                             göndererek geri çekilebilir. <br><br> Yasal yükümlülüklerimize (kanuni yaptırım
                                             talepleri dahil) uymak, yasal gereklilikleri karşılamak, anlaşmazlıkları
                                             çözmek, güvenliği sürdürmek, sahtekarlığı ve kötüye kullanımı önlemek için
@@ -629,7 +620,7 @@
                                             bir sistemde tecrit edeceğiz. Gerekli olmayan tüm veriler silinecek ve
                                             gerekli sürenin sonunda tutulan tüm veriler silinecektir.</li>
                                     </ul>
-                                    <p class="mb-4">Destek e-postası olan destek@deluxebahis.com
+                                    <p class="mb-4">Destek e-postası olan destek@vegasroyalspin.com
                                         adresine yapılan herhangi bir veri sağlama, düzeltme, kısıtlama veya silme
                                         talebine talep aldıktan sonra 4 hafta içinde herhangi yanıt vereceğiz.</p>
                                     <h5>Çerezleri ve Benzer Araçları Nasıl Kullanıyoruz?</h5>
@@ -658,7 +649,7 @@
                                         95/46/EC) ve (Directive 2009/136/EC tarafından düzenlenmiş EC
                                         Directive/2002/58/EC) AB Elektronik İletişim Gizlilik Direktifi’ne bağlıyız.</p>
                                     <p class="mb-4">Gizlilik Politikamız hakkında hâlâ sorularınız
-                                        varsa, lütfen bize destek@deluxebahis.com adresine bir e-posta göndererek
+                                        varsa, lütfen bize destek@vegasroyalspin.com adresine bir e-posta göndererek
                                         ulaşmaktan çekinmeyin.</p>
                                 </div>
                                 <div class="modal-footer"><button                                        class="btn btn-secondary" data-dismiss="modal" type="button">Kapat</button>
@@ -679,15 +670,15 @@
                                 <div class="modal-body contentBox">
                                     <h5>Sorumlu Oyun</h5>
                                     <p class="mb-4">Sorumlu oyun, temelimizin önemli bir
-                                        parçasıdır. Lisanslı bir kumarhane olarak, deluxebahis.com, tüm oyunlarımızın
+                                        parçasıdır. Lisanslı bir kumarhane olarak, vegasroyalspin.com, tüm oyunlarımızın
                                         düzenleyiciler tarafından belirlenen gereksinimlere uyacak ve özellikle adil
                                         oyun, oyuncu koruması ve güvenlik üzerinde duracak şekilde en yüksek
                                         standartlarda sunulmasını sağlar. Tüm oyuncular, oynadıkları online casinonun
                                         müşterileridir. Bizim için online casino oyunları, heyecan verici bir eğlencedir
-                                        ve deluxebahis.com, hizmetlerimizi kullanan herkesin yasal yaş sınırının üzerinde
+                                        ve vegasroyalspin.com, hizmetlerimizi kullanan herkesin yasal yaş sınırının üzerinde
                                         olmasını ve doğru sebepten dolayı - eğlenmek için - bunu yapmasını ister.</p>
                                     <h5>Kimler oynayabilir?</h5>
-                                    <h6>deluxebahis.com'a üye olabilir ve hizmetlerimizden ancak
+                                    <h6>vegasroyalspin.com'a üye olabilir ve hizmetlerimizden ancak
                                         aşağıdaki koşulların tümünü karşılıyor ve kabul ediyorsanız yararlanabilirsiniz:
                                     </h6>
                                     <ol>
@@ -753,14 +744,14 @@
                                         sitemizdeki herhangi bir oyunu oynamaktan kendinizi hariç tutmayı
                                         seçebilirsiniz. Oyunlara veya hizmetlere erişiminizi engellemek ve kendinizi
                                         hariç tutmak için müşteri desteğimizle iletişime geçmelisiniz.</p>
-                                    <p class="mb-4">Kendi kendini men etme tesisimiz, deluxebahis.com
+                                    <p class="mb-4">Kendi kendini men etme tesisimiz, vegasroyalspin.com
                                         ve sizin aranızda ortak bir taahhüdü içerir. Hesabınızı yeniden açmanızı veya
                                         yeni bir hesap açmanızı engellemek için makul adımlar atacağız ancak hesabınızı
                                         yeniden açmaya veya yeni hesaplar açmaya çalışmamalısınız.</p>
                                     <p class="mb-4">Lütfen tüm kendi kendini dışlamaların ve zaman
                                         aşımlarının belirtilen süre boyunca geri alınamayacağını unutmayın. Ayrıca, tüm
                                         kendini men etme süreleri tüm oyunları içerir. Kendinizi men etme hakkınız,
-                                        hesabınız ve oynamak için deluxebahis.com kimliğinizi gerektiren tüm ürünler için
+                                        hesabınız ve oynamak için vegasroyalspin.com kimliğinizi gerektiren tüm ürünler için
                                         geçerli olacaktır.</p>
                                     <p class="mb-4">Herhangi bir kısıtlamanın kalıcı olarak veya
                                         belirli bir süre için geçerli olmasını istiyorsanız, lütfen talebinizle birlikte

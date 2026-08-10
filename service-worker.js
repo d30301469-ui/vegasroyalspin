@@ -80,8 +80,9 @@ function isAuthAppAsset(requestUrl) {
     requestUrl.pathname.startsWith('/assets/js/pwa-register') ||
     requestUrl.pathname.startsWith('/assets/css/login') ||
     requestUrl.pathname.startsWith('/assets/css/register') ||
+    requestUrl.pathname.startsWith('/assets/css/mobile-bottom') ||
     requestUrl.pathname.startsWith('/assets/css/mobile_bottom') ||
-    requestUrl.pathname.startsWith('/mobile/assets/css/auth-modals')
+    requestUrl.pathname.startsWith('/assets/css/auth-modals')
   );
 }
 

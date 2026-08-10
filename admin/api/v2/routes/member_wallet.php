@@ -404,7 +404,8 @@ if (in_array($method, ['GET', 'POST'], true) && ($route === 'deposit_payment.php
         $result = MegaPayzService::createWithdraw($pdo, $user, $methodKey, $amount, $fields);
         $memberEnvelope(!empty($result['success']) ? 200 : 422, $result);
     }
-    $result = MegaPayzService::createDeposit($pdo, $user, $methodKey, $amount);
+    $returnUrl = trim((string) ($input['return_url'] ?? ''));
+    $result = MegaPayzService::createDeposit($pdo, $user, $methodKey, $amount, $returnUrl);
     $memberEnvelope(!empty($result['success']) ? 200 : 422, $result);
 }
 

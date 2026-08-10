@@ -11,14 +11,14 @@ $winners_period = isset($_GET['winners_period']) && in_array($_GET['winners_peri
 <section class="winners-section" aria-label="Son kazananlar">
   <div class="winners-inner">
     <div class="winners-main-tabs" role="tablist">
-      <button type="button" class="winners-main-tab <?= $winners_tab === 'recent' ? 'active' : '' ?>" data-winners-tab="recent" role="tab" aria-selected="<?= $winners_tab === 'recent' ? 'true' : 'false' ?>">SON KAZANANLAR</button>
-      <button type="button" class="winners-main-tab <?= $winners_tab === 'top' ? 'active' : '' ?>" data-winners-tab="top" role="tab" aria-selected="<?= $winners_tab === 'top' ? 'true' : 'false' ?>">EN ÇOK KAZANANLAR</button>
+      <button type="button" class="winners-main-tab <?= $winners_tab === 'recent' ? 'active' : '' ?>" data-winners-tab="recent" role="tab" aria-selected="<?= $winners_tab === 'recent' ? 'true' : 'false' ?>"><?= htmlspecialchars(__('winners.latest'), ENT_QUOTES, 'UTF-8') ?></button>
+      <button type="button" class="winners-main-tab <?= $winners_tab === 'top' ? 'active' : '' ?>" data-winners-tab="top" role="tab" aria-selected="<?= $winners_tab === 'top' ? 'true' : 'false' ?>"><?= htmlspecialchars(__('winners.top'), ENT_QUOTES, 'UTF-8') ?></button>
     </div>
     <div class="winners-period-tabs<?= $winners_tab === 'recent' ? ' winners-period-tabs--hidden' : '' ?>" role="tablist" aria-hidden="<?= $winners_tab === 'recent' ? 'true' : 'false' ?>">
-      <button type="button" class="winners-period-tab <?= $winners_period === 'day' ? 'active' : '' ?>" data-period="day" role="tab">GÜN</button>
-      <button type="button" class="winners-period-tab <?= $winners_period === 'week' ? 'active' : '' ?>" data-period="week" role="tab">HAFTA</button>
-      <button type="button" class="winners-period-tab <?= $winners_period === 'month' ? 'active' : '' ?>" data-period="month" role="tab">AY</button>
-      <button type="button" class="winners-period-tab <?= $winners_period === 'all' ? 'active' : '' ?>" data-period="all" role="tab">TÜMÜ</button>
+      <button type="button" class="winners-period-tab <?= $winners_period === 'day' ? 'active' : '' ?>" data-period="day" role="tab"><?= htmlspecialchars(__('winners.day'), ENT_QUOTES, 'UTF-8') ?></button>
+      <button type="button" class="winners-period-tab <?= $winners_period === 'week' ? 'active' : '' ?>" data-period="week" role="tab"><?= htmlspecialchars(__('winners.week'), ENT_QUOTES, 'UTF-8') ?></button>
+      <button type="button" class="winners-period-tab <?= $winners_period === 'month' ? 'active' : '' ?>" data-period="month" role="tab"><?= htmlspecialchars(__('winners.month'), ENT_QUOTES, 'UTF-8') ?></button>
+      <button type="button" class="winners-period-tab <?= $winners_period === 'all' ? 'active' : '' ?>" data-period="all" role="tab"><?= htmlspecialchars(__('winners.all'), ENT_QUOTES, 'UTF-8') ?></button>
     </div>
     <div class="winners-list is-loading" role="list">
       <?php for ($i = 0; $i < 8; $i++): ?>

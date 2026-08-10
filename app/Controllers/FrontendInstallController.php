@@ -50,8 +50,8 @@ final class FrontendInstallController
         if (!is_readable($this->root . '/config/cloudflare.php')) {
             require_once $this->root . '/config/cloudflare.php';
         }
-        $frontendUrl = function_exists('metropol_build_public_origin_url')
-            ? metropol_build_public_origin_url($host)
+        $frontendUrl = function_exists('build_public_origin_url')
+            ? build_public_origin_url($host)
             : (((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
                 || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https')
                 ? 'https'
@@ -67,8 +67,8 @@ final class FrontendInstallController
 
         $defaults = [
             'frontend_url' => $frontendUrl,
-            'backend_url' => function_exists('metropol_coerce_public_https_url')
-                ? metropol_coerce_public_https_url('https://bo-nexthub.site')
+            'backend_url' => function_exists('coerce_public_https_url')
+                ? coerce_public_https_url('https://bo-nexthub.site')
                 : 'https://bo-nexthub.site',
             'live_support_url' => 'https://direct.lc.chat/19301899/',
             'telegram_url' => 'https://t.me',

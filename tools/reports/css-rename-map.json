@@ -1,0 +1,344 @@
+{
+  "moved": [
+    {
+      "from": "assets/css/global.css",
+      "to": "assets/css/site-global.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bootstrap-utils.css",
+      "to": "assets/css/site-bootstrap-utils.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/components.css",
+      "to": "assets/css/site-components.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/responsive.css",
+      "to": "assets/css/site-responsive.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/modal.css",
+      "to": "assets/css/site-modal.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/header.css",
+      "to": "assets/css/layout-header.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/sidebar.css",
+      "to": "assets/css/layout-sidebar.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/footer-bc.css",
+      "to": "assets/css/layout-footer.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/footer-bc-icons.css",
+      "to": "assets/css/layout-footer-icons.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/login.css",
+      "to": "assets/css/auth-login.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/login-modal.css",
+      "to": "assets/css/auth-login-modal.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/register.css",
+      "to": "assets/css/auth-register.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/register-modal.css",
+      "to": "assets/css/auth-register-modal.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/auth-sliders.css",
+      "to": "assets/css/auth-sliders.css",
+      "action": "keep"
+    },
+    {
+      "from": "assets/css/reset-password.css",
+      "to": "assets/css/auth-reset-password.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/home.css",
+      "to": "assets/css/home.css",
+      "action": "keep"
+    },
+    {
+      "from": "assets/css/jackpot.css",
+      "to": "assets/css/home-jackpot.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/winners.css",
+      "to": "assets/css/home-winners.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/slider.css",
+      "to": "assets/css/home-slider.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/slider-mobile-bc.css",
+      "to": "assets/css/home-slider-mobile.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/slots.css",
+      "to": "assets/css/casino-slots.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bc-cm622-slots.css",
+      "to": "assets/css/casino-slots-cm622.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bc-cm622-bgaming.css",
+      "to": "assets/css/casino-bgaming-cm622.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bgaming-lobby-motion.css",
+      "to": "assets/css/casino-bgaming-motion.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/livecasino.css",
+      "to": "assets/css/casino-live.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bc-cm622-livecasino.css",
+      "to": "assets/css/casino-live-cm622.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/profile.css",
+      "to": "assets/css/profile.css",
+      "action": "keep"
+    },
+    {
+      "from": "assets/css/bc-cm622-profile.css",
+      "to": "assets/css/profile-cm622.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bc-cm622-profile-fix.css",
+      "to": "assets/css/profile-cm622-fix.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/promosyonlar.css",
+      "to": "assets/css/promotions.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bonus-detail-modal.css",
+      "to": "assets/css/promotions-bonus-modal.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/beni-ara.css",
+      "to": "assets/css/page-beni-ara.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/maintenance.css",
+      "to": "assets/css/page-maintenance.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/mobile_bottom.css",
+      "to": "assets/css/mobile-bottom.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/mobile-right-sheet.css",
+      "to": "assets/css/mobile-right-sheet.css",
+      "action": "keep"
+    },
+    {
+      "from": "assets/css/mobile-smart-panel.css",
+      "to": "assets/css/mobile-smart-panel.css",
+      "action": "keep"
+    },
+    {
+      "from": "assets/css/bc-mobile.css",
+      "to": "assets/css/mobile-bc.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bc-mobile-custom.css",
+      "to": "assets/css/mobile-bc-custom.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bc-mobile-header-original.css",
+      "to": "assets/css/mobile-bc-header.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/bc-mobile-index.css",
+      "to": "assets/css/mobile-bc-index.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/daterangepicker.css",
+      "to": "assets/css/vendor-daterangepicker.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/css/swiper-bundle.min.css",
+      "to": "assets/css/vendor-swiper.css",
+      "action": "moved"
+    },
+    {
+      "from": "assets/sports-icon.css",
+      "to": "assets/css/sports-icon.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/base.css",
+      "to": "assets/css/mobile-base.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/header.css",
+      "to": "assets/css/mobile-header.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/menu.css",
+      "to": "assets/css/mobile-menu.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/home.css",
+      "to": "assets/css/mobile-home.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/home-widgets.css",
+      "to": "assets/css/mobile-home-widgets.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/livecasino.css",
+      "to": "assets/css/mobile-live.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/slots.css",
+      "to": "assets/css/mobile-slots.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/bottom-bar.css",
+      "to": "assets/css/mobile-bottom-bar.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/footer.css",
+      "to": "assets/css/mobile-footer.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/auth-modals.css",
+      "to": "assets/css/mobile-auth-modals.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/profile-panel.css",
+      "to": "assets/css/mobile-profile-panel.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/mobile-right-sheet.css",
+      "to": "assets/css/mobile-right-sheet-extra.css",
+      "action": "moved"
+    },
+    {
+      "from": "mobile/assets/css/beni-ara.css",
+      "to": "assets/css/mobile-beni-ara.css",
+      "action": "moved"
+    }
+  ],
+  "missing": [],
+  "files_changed": 32,
+  "map": {
+    "assets/css/global.css": "assets/css/site-global.css",
+    "assets/css/bootstrap-utils.css": "assets/css/site-bootstrap-utils.css",
+    "assets/css/components.css": "assets/css/site-components.css",
+    "assets/css/responsive.css": "assets/css/site-responsive.css",
+    "assets/css/modal.css": "assets/css/site-modal.css",
+    "assets/css/header.css": "assets/css/layout-header.css",
+    "assets/css/sidebar.css": "assets/css/layout-sidebar.css",
+    "assets/css/footer-bc.css": "assets/css/layout-footer.css",
+    "assets/css/footer-bc-icons.css": "assets/css/layout-footer-icons.css",
+    "assets/css/login.css": "assets/css/auth-login.css",
+    "assets/css/login-modal.css": "assets/css/auth-login-modal.css",
+    "assets/css/register.css": "assets/css/auth-register.css",
+    "assets/css/register-modal.css": "assets/css/auth-register-modal.css",
+    "assets/css/auth-sliders.css": "assets/css/auth-sliders.css",
+    "assets/css/reset-password.css": "assets/css/auth-reset-password.css",
+    "assets/css/home.css": "assets/css/home.css",
+    "assets/css/jackpot.css": "assets/css/home-jackpot.css",
+    "assets/css/winners.css": "assets/css/home-winners.css",
+    "assets/css/slider.css": "assets/css/home-slider.css",
+    "assets/css/slider-mobile-bc.css": "assets/css/home-slider-mobile.css",
+    "assets/css/slots.css": "assets/css/casino-slots.css",
+    "assets/css/bc-cm622-slots.css": "assets/css/casino-slots-cm622.css",
+    "assets/css/bc-cm622-bgaming.css": "assets/css/casino-bgaming-cm622.css",
+    "assets/css/bgaming-lobby-motion.css": "assets/css/casino-bgaming-motion.css",
+    "assets/css/livecasino.css": "assets/css/casino-live.css",
+    "assets/css/bc-cm622-livecasino.css": "assets/css/casino-live-cm622.css",
+    "assets/css/profile.css": "assets/css/profile.css",
+    "assets/css/bc-cm622-profile.css": "assets/css/profile-cm622.css",
+    "assets/css/bc-cm622-profile-fix.css": "assets/css/profile-cm622-fix.css",
+    "assets/css/promosyonlar.css": "assets/css/promotions.css",
+    "assets/css/bonus-detail-modal.css": "assets/css/promotions-bonus-modal.css",
+    "assets/css/beni-ara.css": "assets/css/page-beni-ara.css",
+    "assets/css/maintenance.css": "assets/css/page-maintenance.css",
+    "assets/css/mobile_bottom.css": "assets/css/mobile-bottom.css",
+    "assets/css/mobile-right-sheet.css": "assets/css/mobile-right-sheet.css",
+    "assets/css/mobile-smart-panel.css": "assets/css/mobile-smart-panel.css",
+    "assets/css/bc-mobile.css": "assets/css/mobile-bc.css",
+    "assets/css/bc-mobile-custom.css": "assets/css/mobile-bc-custom.css",
+    "assets/css/bc-mobile-header-original.css": "assets/css/mobile-bc-header.css",
+    "assets/css/bc-mobile-index.css": "assets/css/mobile-bc-index.css",
+    "assets/css/daterangepicker.css": "assets/css/vendor-daterangepicker.css",
+    "assets/css/swiper-bundle.min.css": "assets/css/vendor-swiper.css",
+    "assets/sports-icon.css": "assets/css/sports-icon.css",
+    "mobile/assets/css/base.css": "assets/css/mobile-base.css",
+    "mobile/assets/css/header.css": "assets/css/mobile-header.css",
+    "mobile/assets/css/menu.css": "assets/css/mobile-menu.css",
+    "mobile/assets/css/home.css": "assets/css/mobile-home.css",
+    "mobile/assets/css/home-widgets.css": "assets/css/mobile-home-widgets.css",
+    "mobile/assets/css/livecasino.css": "assets/css/mobile-live.css",
+    "mobile/assets/css/slots.css": "assets/css/mobile-slots.css",
+    "mobile/assets/css/bottom-bar.css": "assets/css/mobile-bottom-bar.css",
+    "mobile/assets/css/footer.css": "assets/css/mobile-footer.css",
+    "mobile/assets/css/auth-modals.css": "assets/css/mobile-auth-modals.css",
+    "mobile/assets/css/profile-panel.css": "assets/css/mobile-profile-panel.css",
+    "mobile/assets/css/mobile-right-sheet.css": "assets/css/mobile-right-sheet-extra.css",
+    "mobile/assets/css/beni-ara.css": "assets/css/mobile-beni-ara.css"
+  }
+}

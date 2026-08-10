@@ -13,21 +13,23 @@ $mobileFooterLinkHref = static function (array $link): string {
     }
     return $href;
 };
-$activeLang = strtolower((string) ($_GET['lang'] ?? 'tr'));
-if (!in_array($activeLang, ['tr', 'en', 'de'], true)) {
+$activeLang = function_exists('current_locale') ? current_locale() : strtolower((string) ($_GET['lang'] ?? 'tr'));
+if (!in_array($activeLang, ['tr', 'en', 'de', 'ru'], true)) {
   $activeLang = 'tr';
 }
 $footerLangCodeMap = [
   'tr' => 'TUR',
   'en' => 'ENG',
   'de' => 'DEU',
+  'ru' => 'RUS',
 ];
 $footerLangFlagMap = [
   'tr' => '/assets/images/flag/tr.svg',
   'en' => '/assets/images/flag/gb.svg',
   'de' => '/assets/images/flag/de.svg',
+  'ru' => '/assets/images/flag/ru.svg',
 ];
-$footerCurrentCode = $footerLangCodeMap[$activeLang] ?? 'TUR';
+$footerCurrentCode = class_exists('SiteI18n', false) ? SiteI18n::langCode() : ($footerLangCodeMap[$activeLang] ?? 'TUR');
 $footerCurrentFlag = $footerLangFlagMap[$activeLang] ?? '/assets/images/flag/tr.svg';
 ?>
 <footer class="mobile-footer-bc" aria-label="Site footer">
@@ -58,28 +60,34 @@ $footerCurrentFlag = $footerLangFlagMap[$activeLang] ?? '/assets/images/flag/tr.
     <div class="mobile-footer-bc__meta">
       <div class="mobile-footer-bc__clock" id="footerClockWidget" aria-live="polite">00:00:00</div>
       <div class="mobile-footer-bc__language-dropdown footerLanguageDropdown">
-        <button type="button" class="mobile-footer-bc__language footerLanguageTrigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Dil seçimi">
+        <button type="button" class="mobile-footer-bc__language footerLanguageTrigger" aria-haspopup="listbox" aria-expanded="false" aria-label="<?= htmlspecialchars(__('footer.language_select'), ENT_QUOTES, 'UTF-8') ?>">
           <img src="<?= htmlspecialchars($footerCurrentFlag, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($footerCurrentCode, ENT_QUOTES, 'UTF-8') ?>" width="20" height="14" class="footerLanguageFlag">
           <span class="footerLanguageCode"><?= htmlspecialchars($footerCurrentCode, ENT_QUOTES, 'UTF-8') ?></span>
           <i class="bc-i-small-arrow-right footerLanguageChevron" aria-hidden="true"></i>
         </button>
         <ul class="footerLanguageMenu" role="listbox" hidden>
           <li>
-            <a class="footerLanguageOption<?= $activeLang === 'tr' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'tr' ? 'true' : 'false' ?>" data-lang="tr" href="?lang=tr">
+            <a class="footerLanguageOption<?= $activeLang === 'tr' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'tr' ? 'true' : 'false' ?>" data-lang="tr" href="<?= htmlspecialchars(i18n_switch_url('tr'), ENT_QUOTES, 'UTF-8') ?>">
               <span class="flag-icon flag-icon-tr" aria-hidden="true"></span>
               <span class="code">TUR</span>
             </a>
           </li>
           <li>
-            <a class="footerLanguageOption<?= $activeLang === 'en' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'en' ? 'true' : 'false' ?>" data-lang="en" href="?lang=en">
+            <a class="footerLanguageOption<?= $activeLang === 'en' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'en' ? 'true' : 'false' ?>" data-lang="en" href="<?= htmlspecialchars(i18n_switch_url('en'), ENT_QUOTES, 'UTF-8') ?>">
               <span class="flag-icon flag-icon-us" aria-hidden="true"></span>
               <span class="code">ENG</span>
             </a>
           </li>
           <li>
-            <a class="footerLanguageOption<?= $activeLang === 'de' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'de' ? 'true' : 'false' ?>" data-lang="de" href="?lang=de">
+            <a class="footerLanguageOption<?= $activeLang === 'de' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'de' ? 'true' : 'false' ?>" data-lang="de" href="<?= htmlspecialchars(i18n_switch_url('de'), ENT_QUOTES, 'UTF-8') ?>">
               <span class="flag-icon flag-icon-de" aria-hidden="true"></span>
               <span class="code">DEU</span>
+            </a>
+          </li>
+          <li>
+            <a class="footerLanguageOption<?= $activeLang === 'ru' ? ' is-active' : '' ?>" role="option" aria-selected="<?= $activeLang === 'ru' ? 'true' : 'false' ?>" data-lang="ru" href="<?= htmlspecialchars(i18n_switch_url('ru'), ENT_QUOTES, 'UTF-8') ?>">
+              <span class="flag-icon flag-icon-ru" aria-hidden="true"></span>
+              <span class="code">RUS</span>
             </a>
           </li>
         </ul>

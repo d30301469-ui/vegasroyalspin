@@ -2,15 +2,21 @@
  * Oyun başlatma - bakiye seçim modalı.
  * assets/js/game-wallet-picker.js
  *
- * Kullanıcının aktif bir bonusu varsa, gerçek para modunda (mode=real) oyun
- * başlatılmadan önce "Ana Bakiye" / "Bonus Bakiye" seçtirir. Aktif bonus yoksa
- * (veya bu script yüklenmemişse) hiçbir davranış değişmez — doğrudan ana bakiye
- * ile başlatılır.
+ * Görünüm: para çekim CM622 kartı; ikon/içerik bakiye seçimine özel.
+ * Gerçek para modunda Ana / Bonus bakiye seçtirir.
  */
 (function (global) {
     'use strict';
 
     var Shared = global.BetcoAuthShared || {};
+
+    function t(key, fallback) {
+        var bag = global.__I18N__;
+        if (bag && typeof bag === 'object' && Object.prototype.hasOwnProperty.call(bag, key) && bag[key] != null && bag[key] !== '') {
+            return String(bag[key]);
+        }
+        return fallback != null ? String(fallback) : key;
+    }
 
     function apiUrl(path) {
         return Shared.apiUrl ? Shared.apiUrl(path) : path;
@@ -46,62 +52,155 @@
         return { lock: function () {}, unlock: function () {} };
     }
 
+    function money(n) {
+        var v = Number(n);
+        if (!isFinite(v)) v = 0;
+        var loc = (typeof global.__INTL_LOCALE__ === 'string' && global.__INTL_LOCALE__) ? global.__INTL_LOCALE__ : 'tr-TR';
+        return v.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function escapeHtml(str) {
+        return String(str == null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     var overlay = null;
     var modalBox = null;
     var summaryEl = null;
+    var mainBtn = null;
+    var bonusBtn = null;
 
     function ensureModal() {
         if (modalBox) return;
 
         overlay = document.createElement('div');
-        overlay.className = 'wallet-picker-overlay';
-        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(8,5,18,.74);z-index:100000;display:none;align-items:center;justify-content:center;padding:16px;';
+        overlay.className = 'app-feedback-dialog-overlay wallet-picker-overlay';
+        overlay.setAttribute('aria-hidden', 'true');
 
         modalBox = document.createElement('div');
-        modalBox.className = 'wallet-picker-modal';
+        modalBox.className = 'app-feedback-dialog app-feedback-dialog--cm622 wallet-picker-dialog';
         modalBox.setAttribute('role', 'dialog');
         modalBox.setAttribute('aria-modal', 'true');
-        modalBox.setAttribute('aria-label', 'Bakiye seçimi');
-        modalBox.style.cssText = 'background:#17102b;border:1px solid rgba(255,255,255,.1);border-radius:16px;max-width:380px;width:100%;padding:22px;color:#fff;box-shadow:0 24px 64px rgba(0,0,0,.55);font-family:inherit;';
+        modalBox.setAttribute('aria-labelledby', 'walletPickerTitle');
+        modalBox.setAttribute('aria-hidden', 'true');
         modalBox.innerHTML =
-            '<h3 style="margin:0 0 8px;font-size:17px;font-weight:700;">Hangi bakiye ile oynamak istersiniz?</h3>' +
-            '<p class="wallet-picker-summary" style="margin:0 0 18px;font-size:13px;line-height:1.5;color:rgba(255,255,255,.68);"></p>' +
-            '<div style="display:flex;flex-direction:column;gap:10px;">' +
-            '<button type="button" data-wallet="main" style="padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:14px;cursor:pointer;">Ana Bakiye ile Oyna</button>' +
-            '<button type="button" data-wallet="bonus" style="padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#8a3ffb,#4c1fb0);color:#fff;font-weight:700;font-size:14px;cursor:pointer;">Bonus Bakiye ile Oyna</button>' +
-            '</div>' +
-            '<button type="button" data-wallet-cancel style="margin-top:14px;width:100%;background:none;border:none;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;">Vazgeç</button>';
+            '<div class="app-feedback-dialog__card wallet-picker-card">'
+            + '  <button type="button" class="app-feedback-dialog__dismiss" data-wallet-cancel aria-label="' + escapeHtml(t('common.cancel', 'Kapat')) + '">&times;</button>'
+            + '  <div class="app-feedback-dialog__icon-wrap wallet-picker-icon" aria-hidden="true"><i class="bc-i-wallet"></i></div>'
+            + '  <h2 class="app-feedback-dialog__title" id="walletPickerTitle">' + escapeHtml(t('wallet.title', 'BAKIYE SEÇİMİ')) + '</h2>'
+            + '  <div class="wallet-picker-summary" role="status"></div>'
+            + '  <div class="wallet-picker-actions">'
+            + '    <button type="button" class="app-feedback-dialog__primary wallet-picker-btn" data-wallet="main">' + escapeHtml(t('wallet.main', 'Ana Bakiye')) + '</button>'
+            + '    <button type="button" class="app-feedback-dialog__primary wallet-picker-btn" data-wallet="bonus">' + escapeHtml(t('wallet.bonus', 'Bonus Bakiye')) + '</button>'
+            + '  </div>'
+            + '  <button type="button" class="wallet-picker-cancel" data-wallet-cancel>' + escapeHtml(t('wallet.cancel', 'Vazgeç')) + '</button>'
+            + '</div>';
 
-        overlay.appendChild(modalBox);
         document.body.appendChild(overlay);
+        document.body.appendChild(modalBox);
         summaryEl = modalBox.querySelector('.wallet-picker-summary');
+        mainBtn = modalBox.querySelector('[data-wallet="main"]');
+        bonusBtn = modalBox.querySelector('[data-wallet="bonus"]');
     }
 
-    function formatBonusSummary(bonus) {
-        if (!bonus) {
-            return 'Bonus bakiyeyi seçerseniz, ileride kazanacağınız bir bonusun çevrim şartına bahisleriniz işlenir. Aktif bonusunuz yoksa bu seçim bahsinizi etkilemez.';
-        }
-        var name = bonus.name || bonus.displayName || 'Aktif bonus';
-        var remaining = typeof bonus.remainingBet === 'number' ? bonus.remainingBet : null;
-        if (remaining !== null) {
-            var remainingText = remaining.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            return name + ' bonusunuz aktif. Bonus bakiyeyi seçerseniz bahisleriniz bu bonusun çevrimine de işlenir (kalan: ' + remainingText + ' ₺).';
-        }
-        return name + ' bonusunuz aktif. Bonus bakiyeyi seçerseniz bahisleriniz bu bonusun çevrimine de işlenir.';
+    function setButtonState(btn, enabled, label) {
+        if (!btn) return;
+        btn.disabled = !enabled;
+        btn.textContent = label;
+        btn.classList.toggle('is-disabled', !enabled);
+        btn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
     }
 
-    function showPicker(bonus) {
+    function summaryRow(label, value, tone) {
+        return ''
+            + '<div class="wallet-picker-row' + (tone ? ' wallet-picker-row--' + tone : '') + '">'
+            + '  <span class="wallet-picker-row__label">' + escapeHtml(label) + '</span>'
+            + '  <span class="wallet-picker-row__value">' + escapeHtml(value) + '</span>'
+            + '</div>';
+    }
+
+    function formatSummaryHtml(balances, bonus) {
+        var mainBal = Number(balances && balances.main) || 0;
+        var bonusBal = Number(balances && balances.bonus) || 0;
+        var html = '<div class="wallet-picker-panel">';
+
+        html += summaryRow(t('wallet.main_label', 'Ana bakiye'), money(mainBal) + ' ₺', 'main');
+        html += summaryRow(t('wallet.bonus_label', 'Bonus bakiye'), money(bonusBal) + ' ₺', 'bonus');
+
+        if (bonus) {
+            var name = bonus.name || bonus.displayName || t('wallet.bonus', 'Aktif bonus');
+            var remaining = typeof bonus.remainingBet === 'number' ? bonus.remainingBet : null;
+            if (remaining !== null) {
+                html += summaryRow(name + ' çevrimi kalan', money(remaining) + ' ₺', 'wager');
+            } else {
+                html += '<p class="wallet-picker-note">' + escapeHtml(t('wallet.bonus_wager_note', 'Bonus seçerseniz çevrime işlenir.')) + '</p>';
+            }
+        } else if (mainBal <= 0 && bonusBal <= 0) {
+            html += '<p class="wallet-picker-note">' + escapeHtml(t('wallet.empty_both', 'Oynamak için bakiyenizi yükleyin.')) + '</p>';
+        } else if (mainBal <= 0 && bonusBal > 0) {
+            html += '<p class="wallet-picker-note">' + escapeHtml(t('wallet.empty_main', 'Ana bakiyeniz boş. Bonus bakiye ile devam edin.')) + '</p>';
+        } else if (bonusBal <= 0 && mainBal > 0) {
+            html += '<p class="wallet-picker-note">' + escapeHtml(t('wallet.empty_bonus', 'Bonus bakiyeniz boş. Ana bakiye ile devam edin.')) + '</p>';
+        } else {
+            html += '<p class="wallet-picker-note">' + escapeHtml(t('wallet.choose', 'Hangi bakiye ile oynamak istersiniz?')) + '</p>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function openUi() {
+        overlay.classList.add('is-open');
+        modalBox.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        modalBox.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeUi() {
+        overlay.classList.remove('is-open');
+        modalBox.classList.remove('is-open');
+        overlay.setAttribute('aria-hidden', 'true');
+        modalBox.setAttribute('aria-hidden', 'true');
+    }
+
+    function showPicker(balances, bonus) {
         return new Promise(function (resolve) {
             ensureModal();
+            var mainBal = Number(balances && balances.main) || 0;
+            var bonusBal = Number(balances && balances.bonus) || 0;
+            var mainOk = mainBal > 0;
+            var bonusOk = bonusBal > 0;
+
+            setButtonState(mainBtn, mainOk, t('wallet.main', 'Ana Bakiye') + ' (' + money(mainBal) + ' ₺)');
+            setButtonState(bonusBtn, bonusOk, t('wallet.bonus', 'Bonus Bakiye') + ' (' + money(bonusBal) + ' ₺)');
+
             if (summaryEl) {
-                summaryEl.textContent = formatBonusSummary(bonus);
+                summaryEl.innerHTML = formatSummaryHtml(balances, bonus);
             }
+
+            if (mainOk && !bonusOk) {
+                resolve('main');
+                return;
+            }
+            if (bonusOk && !mainOk) {
+                resolve('bonus');
+                return;
+            }
+            if (!mainOk && !bonusOk) {
+                resolve(null);
+                return;
+            }
+
             var scrollLock = getScrollLock();
-            overlay.style.display = 'flex';
+            openUi();
             scrollLock.lock();
 
             function cleanup(result) {
-                overlay.style.display = 'none';
+                closeUi();
                 scrollLock.unlock();
                 overlay.removeEventListener('click', onOverlayClick);
                 modalBox.removeEventListener('click', onModalClick);
@@ -121,6 +220,7 @@
                     cleanup(null);
                     return;
                 }
+                if (btn.disabled || btn.classList.contains('is-disabled')) return;
                 cleanup(btn.getAttribute('data-wallet'));
             }
             function onKeydown(e) {
@@ -135,44 +235,53 @@
         });
     }
 
-    function fetchActiveBonus() {
-        if (!isLoggedIn()) {
-            return Promise.resolve(null);
-        }
-        return fetch(apiUrl('/api/v2/active-bonus'), {
+    function fetchJson(path) {
+        return fetch(apiUrl(path), {
             method: 'GET',
             credentials: 'same-origin',
             headers: memberAuthHeaders({ Accept: 'application/json' }),
             cache: 'no-store'
-        })
-            .then(function (res) { return res.json().catch(function () { return null; }); })
-            .then(function (json) {
-                if (json && json.success === true && json.data && json.data.hasActiveBonus) {
-                    return json.data.bonus || {};
-                }
-                return null;
-            })
-            .catch(function () { return null; });
+        }).then(function (res) {
+            return res.json().catch(function () { return null; });
+        }).catch(function () { return null; });
     }
 
-    /**
-     * Giriş yapılmışsa her gerçek para başlatmasında kullanıcıya ana/bonus
-     * bakiye seçimini sorar (aktif bir bonusu olup olmadığına bakılmaksızın).
-     * Giriş yapılmamışsa doğrudan 'main' döner. Kullanıcı iptal ederse null
-     * döner (çağıran taraf oyunu başlatmamalı).
-     * @returns {Promise<'main'|'bonus'|null>}
-     */
+    function fetchActiveBonus() {
+        if (!isLoggedIn()) {
+            return Promise.resolve(null);
+        }
+        return fetchJson('/api/v2/active-bonus').then(function (json) {
+            if (json && json.success === true && json.data && json.data.hasActiveBonus) {
+                return json.data.bonus || {};
+            }
+            return null;
+        });
+    }
+
+    function fetchBalances() {
+        if (!isLoggedIn()) {
+            return Promise.resolve({ main: 0, bonus: 0 });
+        }
+        return fetchJson('/api/v2/balance').then(function (json) {
+            var data = (json && json.data) || {};
+            var nested = data.balance && typeof data.balance === 'object' ? data.balance : data;
+            var main = Number(nested.balance ?? data.amount ?? data.ana_bakiye ?? 0);
+            var bonus = Number(nested.bonus_balance ?? data.bonus_balance ?? data.bonus_bakiye ?? 0);
+            if (!isFinite(main)) main = 0;
+            if (!isFinite(bonus)) bonus = 0;
+            return { main: main, bonus: bonus };
+        }).catch(function () {
+            return { main: 0, bonus: 0 };
+        });
+    }
+
     function resolveWalletChoice() {
         if (!isLoggedIn()) {
             return Promise.resolve('main');
         }
-        var choice = showPicker(null);
-        fetchActiveBonus().then(function (bonus) {
-            if (bonus && summaryEl && overlay && overlay.style.display === 'flex') {
-                summaryEl.textContent = formatBonusSummary(bonus);
-            }
+        return Promise.all([fetchBalances(), fetchActiveBonus()]).then(function (parts) {
+            return showPicker(parts[0] || { main: 0, bonus: 0 }, parts[1] || null);
         });
-        return choice;
     }
 
     function patchWalletParam(url, wallet) {
@@ -189,12 +298,6 @@
         }
     }
 
-    /**
-     * Gerçek para modundaki (mode=real) /play URL'lerini bakiye seçim modalıyla
-     * açar. Demo/fun modundaki URL'ler doğrudan navigateFn'e geçer.
-     * @param {string} url
-     * @param {(finalUrl: string) => void} navigateFn
-     */
     function launch(url, navigateFn) {
         var target = String(url || '');
         var isRealMode = /(\?|&)mode=real(&|$)/.test(target);

@@ -1,0 +1,283 @@
+{
+  "version": 1,
+  "description": "Long-term dynamic JS policy index. Prevents false-positive symbol stripping.",
+  "coverage_file": "tools/reports/js-runtime-usage.json",
+  "annotation_docs": {
+    "@entry": "Mark a function as a live entry point",
+    "@keep": "Never report/strip this symbol",
+    "@dynamic-file": "Treat entire file as dynamic (coverage required to strip)"
+  },
+  "files": {
+    "assets/js/profile.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "__PROFILE_PAYMENT_CURRENCY__",
+        "__PROFILE_PAYMENT_LIMITS__",
+        "__PROFILE_PAYMENT_METHODS_ENVELOPE__",
+        "__PROFILE_PAYMENT_PAGE__",
+        "__WITHDRAW_PAYMENT_METHODS_ENRICH__",
+        "__closeAppFeedbackDialog",
+        "__openProfileModalInitial",
+        "__openProfileModalUrl",
+        "__profileModalContentUrl",
+        "addRow",
+        "bonusCategoryMatchesPageKind",
+        "bootKind",
+        "buildActiveBonusCard",
+        "closeAppFeedbackDialog",
+        "closeSuccessWithdrawalPopup",
+        "closeVegaPanel",
+        "env",
+        "formatProfileBonusDate",
+        "formatProfileMoneyPlain",
+        "formatTryAmount",
+        "lim",
+        "methods",
+        "normalizeBalancePayload",
+        "openProfileModalFromHeader",
+        "openProfileModalUrl",
+        "openVegaPanel",
+        "pageKind",
+        "pk",
+        "processInlineVegaDeposit",
+        "processVegaDeposit",
+        "processVegaWithdrawal",
+        "profileUrl",
+        "setCm622MultiSelectValue",
+        "showAppFeedbackDialog"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "assets/js/header.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "__closeAllHeaderFlyouts",
+        "__closeSearchPanel",
+        "__closeSmartPanel",
+        "bonusKoduKullan",
+        "closeAllHeaderFlyouts",
+        "closePanel",
+        "closeSearchPanel",
+        "debounce",
+        "hide",
+        "initDepositMenu",
+        "initToastr",
+        "openGame",
+        "positionMenu",
+        "redirectToDeposit",
+        "safeLog",
+        "scheduleClose",
+        "show"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "assets/js/home.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "activate",
+        "showLoginWarning",
+        "step"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "assets/js/slot.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "__gameThumbError",
+        "__gameThumbLoaded",
+        "__slotHandlePlayIntent",
+        "__slotLaunchPlayUrl",
+        "__slotOpenLoginModal",
+        "__slotOpenPlayUrl",
+        "activate",
+        "clearAllUrlFilters",
+        "gameThumbError",
+        "gameThumbLoaded",
+        "getCasinoCategoryGames",
+        "getCasinoGamesContainer",
+        "getSlotSearchInput",
+        "handlePlayIntent",
+        "initLobbyCarousels",
+        "initSlotEdgeScrollbar",
+        "initSlotHeroTabs",
+        "initSlotScrollLock",
+        "launchPlayUrl",
+        "loadSlots",
+        "openLoginModal",
+        "openPlayUrl",
+        "refreshSlotEdgeScrollbar",
+        "removeFilter",
+        "removeSearch",
+        "runAfterLayout",
+        "runtimeMemberLoggedIn",
+        "scrollActiveCategoryIntoView",
+        "selectAllProviders",
+        "setActiveCategoryTab",
+        "syncMobileFilterControls",
+        "toggleProvider",
+        "updateScrollbar",
+        "updateUrl"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "assets/js/bgaming.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "__bgamingHandlePlayIntent",
+        "__gameThumbError",
+        "__gameThumbLoaded",
+        "__slotLaunchPlayUrl",
+        "__slotOpenLoginModal",
+        "__slotOpenPlayUrl",
+        "activate",
+        "clearAllUrlFilters",
+        "gameThumbError",
+        "gameThumbLoaded",
+        "getCasinoCategoryGames",
+        "getCasinoGamesContainer",
+        "getSlotSearchInput",
+        "handlePlayIntent",
+        "initLobbyCarousels",
+        "initSlotEdgeScrollbar",
+        "initSlotHeroTabs",
+        "initSlotScrollLock",
+        "launchPlayUrl",
+        "loadSlots",
+        "openLoginModal",
+        "openPlayUrl",
+        "refreshSlotEdgeScrollbar",
+        "removeFilter",
+        "removeSearch",
+        "runAfterLayout",
+        "runtimeMemberLoggedIn",
+        "scrollActiveCategoryIntoView",
+        "selectAllProviders",
+        "setActiveCategoryTab",
+        "syncMobileFilterControls",
+        "toggleProvider",
+        "updateScrollbar",
+        "updateUrl"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "assets/js/login.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "Date",
+        "MaltabetAuth",
+        "__MEMBER_LOGIN_AT__",
+        "__ensureLoginTurnstileWidget",
+        "__openLoginModal",
+        "__openRegisterModal",
+        "applyMobileAuthLayoutFix",
+        "ensureLoginTurnstileWidget",
+        "showLoginModal",
+        "showRegisterModal",
+        "window"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "assets/js/register.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "__ensureRegisterTurnstileWidget",
+        "applyMobileRegisterLayoutFix",
+        "ensureRegisterTurnstileWidget",
+        "relocateMobileFooterActions"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "mobile/assets/js/navigation.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "__closeMobileNavMenu",
+        "__openMobileNavMenu",
+        "boot"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "mobile/assets/js/mobile-header.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "__mobileProfileIconTap",
+        "__mobileUpgradeUserHeader",
+        "boot",
+        "isBodyStuckLocked",
+        "openProfileFromAvatarTap",
+        "recoverScrollLock"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "mobile/assets/js/profile-panel.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "__closeMobileProfilePanel",
+        "__openMobileBalancePage",
+        "__openMobileBetHistoryPage",
+        "__openMobileBonusesPage",
+        "__openMobileHomeWithCurrentPage",
+        "__openMobileProfilePanel",
+        "bind",
+        "closePanel",
+        "openPanel"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "admin/admin-ui.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "__adminRenderThemeIcon",
+        "init",
+        "renderIcon"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "admin/2026.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "admin/vendors.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [
+        "jsVectorMap",
+        "ol"
+      ],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    },
+    "admin/runtime.js": {
+      "mode": "dynamic",
+      "strip_policy": "coverage_required",
+      "entries": [],
+      "keep": [],
+      "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py"
+    }
+  },
+  "updated_at": "2026-08-03T15:56:50.437656+00:00"
+}

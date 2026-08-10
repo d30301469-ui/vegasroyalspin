@@ -1,9 +1,13 @@
 <?php
 
-if (defined('METROPOL_CORE_BOOTSTRAP_LOADED')) {
+if (defined('APP_CORE_BOOTSTRAP_LOADED')) {
     return;
 }
-define('METROPOL_CORE_BOOTSTRAP_LOADED', true);
+define('APP_CORE_BOOTSTRAP_LOADED', true);
+
+if (function_exists('date_default_timezone_set')) {
+    date_default_timezone_set('Europe/Istanbul');
+}
 
 require_once __DIR__ . '/../config/deploy_domains.php';
 $cloudflareBootstrap = __DIR__ . '/../config/cloudflare.php';
@@ -19,7 +23,7 @@ $isApiRequest = str_starts_with($requestPath, '/api/')
 
 if (!$isApiRequest) {
     require_once __DIR__ . '/../config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
     if (is_readable(CONFIG_PATH . '/member_api_public.php')) {
         require_once CONFIG_PATH . '/member_api_public.php';
     }
@@ -27,8 +31,8 @@ if (!$isApiRequest) {
         isset($_GET['logout'])
         && (string) $_GET['logout'] === '1'
     ) {
-        if (function_exists('metropol_frontend_clear_member_session')) {
-            metropol_frontend_clear_member_session();
+        if (function_exists('frontend_clear_member_session')) {
+            frontend_clear_member_session();
         }
     }
 }
@@ -39,7 +43,7 @@ if (!headers_sent()) {
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
-    if (function_exists('metropol_request_is_https') ? metropol_request_is_https() : (
+    if (function_exists('request_is_https') ? request_is_https() : (
         (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https'
     )) {
@@ -47,15 +51,15 @@ if (!headers_sent()) {
     }
 }
 
-if (function_exists('metropol_register_early_error_handler')) {
-    metropol_register_early_error_handler();
+if (function_exists('register_early_error_handler')) {
+    register_early_error_handler();
 }
 
 try {
     require_once __DIR__ . '/../config/app.php';
 } catch (Throwable $bootException) {
-    if (function_exists('metropol_render_frontend_boot_error')) {
-        metropol_render_frontend_boot_error($bootException);
+    if (function_exists('render_frontend_boot_error')) {
+        render_frontend_boot_error($bootException);
     } elseif (class_exists(\App\Core\ErrorHandler::class, false)) {
         \App\Core\ErrorHandler::handleException($bootException);
     } else {
@@ -99,8 +103,8 @@ if (!$isApiRequest) {
     }
     $_SESSION['csrf_token'] = $_SESSION[$csrfKey];
 
-    if (function_exists('metropol_frontend_restore_member_session_from_request')) {
-        metropol_frontend_restore_member_session_from_request();
+    if (function_exists('frontend_restore_member_session_from_request')) {
+        frontend_restore_member_session_from_request();
     }
 }
 
@@ -176,12 +180,12 @@ $ayar = array_merge($ayar, is_array($siteSettingsPayload['site_settings'] ?? nul
 if (!$isApiRequest) {
     if (is_readable(CONFIG_PATH . '/member_api_public.php')) {
         require_once CONFIG_PATH . '/member_api_public.php';
-        if (function_exists('metropol_frontend_sanitize_member_session')) {
-            metropol_frontend_sanitize_member_session();
+        if (function_exists('frontend_sanitize_member_session')) {
+            frontend_sanitize_member_session();
         }
     }
-    $loggedIn = function_exists('metropol_frontend_member_logged_in')
-        ? metropol_frontend_member_logged_in()
+    $loggedIn = function_exists('frontend_member_logged_in')
+        ? frontend_member_logged_in()
         : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true);
     if (
         function_exists('frontend_database_allowed')

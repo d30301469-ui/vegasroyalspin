@@ -148,8 +148,8 @@ final class AdminInstaller
             require_once $this->root . '/config/cloudflare.php';
         }
         $backendUrl = rtrim(trim((string) ($input['backend_url'] ?? '')), '/');
-        if ($backendUrl === '' && function_exists('metropol_build_public_origin_url')) {
-            $backendUrl = metropol_build_public_origin_url($backendHost);
+        if ($backendUrl === '' && function_exists('build_public_origin_url')) {
+            $backendUrl = build_public_origin_url($backendHost);
         } elseif ($backendUrl === '') {
             $backendScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
                 || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https'
@@ -157,12 +157,12 @@ final class AdminInstaller
                 : 'http';
             $backendUrl = rtrim($backendScheme . '://' . $backendHost, '/');
         }
-        if (function_exists('metropol_coerce_public_https_url')) {
-            $backendUrl = metropol_coerce_public_https_url($backendUrl);
+        if (function_exists('coerce_public_https_url')) {
+            $backendUrl = coerce_public_https_url($backendUrl);
         }
         $frontendUrl = rtrim(trim((string) ($input['frontend_url'] ?? 'https://vegasroyalspin.com')), '/');
-        if (function_exists('metropol_coerce_public_https_url')) {
-            $frontendUrl = metropol_coerce_public_https_url($frontendUrl);
+        if (function_exists('coerce_public_https_url')) {
+            $frontendUrl = coerce_public_https_url($frontendUrl);
         }
         $siteName = trim((string) ($input['site_name'] ?? 'Vegas Royal Spin'));
 

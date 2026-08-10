@@ -7,7 +7,9 @@ $currencyValue = strtoupper(trim((string) ($configRow['currency'] ?? '')));
 if ($currencyValue === '') {
     $currencyValue = GscPlusService::DEFAULT_CURRENCY;
 }
-$callbackUrl = (string) ($callbackUrl ?? '');
+$callbackUrl = rtrim((string) ($callbackUrl ?? ''), "/ \t");
+$callbackAlias = rtrim((string) ($callbackAlias ?? ''), "/ \t");
+$callbackLegacyUrl = rtrim((string) ($callbackLegacyUrl ?? ''), "/ \t");
 
 $agentWallet = is_array($agentWallet ?? null) ? $agentWallet : null;
 $contractedCurrencies = [];
@@ -185,9 +187,35 @@ $currencyChoices = array_values(array_unique(array_merge(
 
         <?php if ($callbackUrl !== ''): ?>
             <div style="margin-top:18px">
-                <div class="field-label">Callback URL</div>
-                <p class="gsc-code gsc-help" style="margin-top:6px"><?= $text($callbackUrl) ?></p>
+                <div class="field-label">Callback URL (GSC paneline yapıştırın)</div>
+                <p class="gsc-code gsc-help" style="margin-top:6px" id="gsc-callback-url"><?= $text($callbackUrl) ?></p>
+                <?php if ($callbackAlias !== ''): ?>
+                    <p class="gsc-help" style="margin-top:8px;font-size:12px;opacity:.85">
+                        Seamless path: <code><?= $text($callbackAlias) ?></code>
+                    </p>
+                <?php endif; ?>
+                <p class="gsc-help" style="margin-top:8px;color:#b45309;font-size:12px;line-height:1.45">
+                    GSC paneline bu URL’yi yapıştırın; sonunda boşluk / <code>%20</code>
+                    bırakmayın. Apache yine de <code>gsc-plus-wallet%20%20%20</code>
+                    isteklerini kabul eder (AH10411 bypass).
+                </p>
+                <button type="button" class="btn" style="margin-top:8px" data-copy-gsc-callback>URL’yi kopyala</button>
             </div>
+            <script>
+            (function () {
+                var btn = document.querySelector('[data-copy-gsc-callback]');
+                var el = document.getElementById('gsc-callback-url');
+                if (!btn || !el) return;
+                btn.addEventListener('click', function () {
+                    var text = (el.textContent || '').trim();
+                    if (!text || !navigator.clipboard) return;
+                    navigator.clipboard.writeText(text).then(function () {
+                        btn.textContent = 'Kopyalandı';
+                        setTimeout(function () { btn.textContent = 'URL’yi kopyala'; }, 1500);
+                    });
+                });
+            })();
+            </script>
         <?php endif; ?>
     </aside>
 </div>

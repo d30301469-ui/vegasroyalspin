@@ -204,9 +204,9 @@ final class FrontendInstaller
         if (is_readable($this->root . '/config/cloudflare.php')) {
             require_once $this->root . '/config/cloudflare.php';
         }
-        if (function_exists('metropol_coerce_public_https_url')) {
-            $frontendUrl = self::normalizeSiteOrigin(metropol_coerce_public_https_url($frontendUrl));
-            $backendUrl = self::normalizeSiteOrigin(metropol_coerce_public_https_url($backendUrl));
+        if (function_exists('coerce_public_https_url')) {
+            $frontendUrl = self::normalizeSiteOrigin(coerce_public_https_url($frontendUrl));
+            $backendUrl = self::normalizeSiteOrigin(coerce_public_https_url($backendUrl));
         }
         $memberJwt = trim((string) ($input['member_jwt_secret'] ?? ''));
         $purgeSecret = trim((string) ($input['frontend_cms_purge_secret'] ?? ''));

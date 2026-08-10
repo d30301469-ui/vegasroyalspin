@@ -2,15 +2,15 @@
 
 /** HTML profile detail fragments for bet-history modals (split-deploy backend). */
 
-if (!function_exists('member_profile_html_escape')) {
-    function member_profile_html_escape(string $value): string
+if (!function_exists('admin_member_profile_html_escape')) {
+    function admin_member_profile_html_escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 }
 
-if (!function_exists('member_profile_emit_html')) {
-    function member_profile_emit_html(int $status, string $html): never
+if (!function_exists('admin_member_profile_emit_html')) {
+    function admin_member_profile_emit_html(int $status, string $html): never
     {
         if (!headers_sent()) {
             http_response_code($status);
@@ -21,43 +21,43 @@ if (!function_exists('member_profile_emit_html')) {
     }
 }
 
-if (!function_exists('member_profile_detail_badge')) {
-    function member_profile_detail_badge(string $label, string $variant = 'neutral'): string
+if (!function_exists('admin_member_profile_detail_badge')) {
+    function admin_member_profile_detail_badge(string $label, string $variant = 'neutral'): string
     {
         $variant = in_array($variant, ['neutral', 'info', 'success', 'warning', 'danger', 'primary'], true) ? $variant : 'neutral';
 
-        return '<span class="profile-detail-badge profile-detail-badge--' . member_profile_html_escape($variant) . '">' . member_profile_html_escape($label) . '</span>';
+        return '<span class="profile-detail-badge profile-detail-badge--' . admin_member_profile_html_escape($variant) . '">' . admin_member_profile_html_escape($label) . '</span>';
     }
 }
 
-if (!function_exists('member_profile_detail_meta_row')) {
-    function member_profile_detail_meta_row(string $label, string $value, bool $code = false): string
+if (!function_exists('admin_member_profile_detail_meta_row')) {
+    function admin_member_profile_detail_meta_row(string $label, string $value, bool $code = false): string
     {
         $valueHtml = $code
-            ? '<code>' . member_profile_html_escape($value !== '' ? $value : '-') . '</code>'
-            : member_profile_html_escape($value !== '' ? $value : '-');
+            ? '<code>' . admin_member_profile_html_escape($value !== '' ? $value : '-') . '</code>'
+            : admin_member_profile_html_escape($value !== '' ? $value : '-');
 
         return '<div class="profile-detail-meta-row">'
-            . '<div class="profile-detail-meta-label">' . member_profile_html_escape($label) . '</div>'
+            . '<div class="profile-detail-meta-label">' . admin_member_profile_html_escape($label) . '</div>'
             . '<div class="profile-detail-meta-value">' . $valueHtml . '</div>'
             . '</div>';
     }
 }
 
-if (!function_exists('member_profile_detail_stat')) {
-    function member_profile_detail_stat(string $label, string $value, string $tone = 'neutral'): string
+if (!function_exists('admin_member_profile_detail_stat')) {
+    function admin_member_profile_detail_stat(string $label, string $value, string $tone = 'neutral'): string
     {
         $tone = in_array($tone, ['neutral', 'info', 'success', 'warning', 'danger', 'primary'], true) ? $tone : 'neutral';
 
-        return '<div class="profile-detail-stat profile-detail-stat--' . member_profile_html_escape($tone) . '">'
-            . '<div class="profile-detail-stat__label">' . member_profile_html_escape($label) . '</div>'
-            . '<div class="profile-detail-stat__value">' . member_profile_html_escape($value !== '' ? $value : '-') . '</div>'
+        return '<div class="profile-detail-stat profile-detail-stat--' . admin_member_profile_html_escape($tone) . '">'
+            . '<div class="profile-detail-stat__label">' . admin_member_profile_html_escape($label) . '</div>'
+            . '<div class="profile-detail-stat__value">' . admin_member_profile_html_escape($value !== '' ? $value : '-') . '</div>'
             . '</div>';
     }
 }
 
-if (!function_exists('member_profile_spor_detail_humanize_key')) {
-    function member_profile_spor_detail_humanize_key(string $key): string
+if (!function_exists('admin_member_profile_spor_detail_humanize_key')) {
+    function admin_member_profile_spor_detail_humanize_key(string $key): string
     {
         $key = trim($key);
         if ($key === '') {
@@ -106,8 +106,8 @@ if (!function_exists('member_profile_spor_detail_humanize_key')) {
     }
 }
 
-if (!function_exists('member_profile_spor_detail_format_scalar')) {
-    function member_profile_spor_detail_format_scalar(mixed $value, string $key = ''): string
+if (!function_exists('admin_member_profile_spor_detail_format_scalar')) {
+    function admin_member_profile_spor_detail_format_scalar(mixed $value, string $key = ''): string
     {
         if ($value === null || $value === '') {
             return '—';
@@ -163,22 +163,22 @@ if (!function_exists('member_profile_spor_detail_format_scalar')) {
     }
 }
 
-if (!function_exists('member_profile_spor_detail_is_assoc')) {
-    function member_profile_spor_detail_is_assoc(array $value): bool
+if (!function_exists('admin_member_profile_spor_detail_is_assoc')) {
+    function admin_member_profile_spor_detail_is_assoc(array $value): bool
     {
         return !array_is_list($value);
     }
 }
 
-if (!function_exists('member_profile_spor_detail_render_value')) {
-    function member_profile_spor_detail_render_value(mixed $value, string $key = '', int $depth = 0): string
+if (!function_exists('admin_member_profile_spor_detail_render_value')) {
+    function admin_member_profile_spor_detail_render_value(mixed $value, string $key = '', int $depth = 0): string
     {
         if (is_array($value)) {
             if ($value === []) {
                 return '—';
             }
 
-            if (!member_profile_spor_detail_is_assoc($value)) {
+            if (!admin_member_profile_spor_detail_is_assoc($value)) {
                 $items = [];
                 foreach ($value as $index => $item) {
                     if (is_array($item)) {
@@ -193,49 +193,49 @@ if (!function_exists('member_profile_spor_detail_render_value')) {
                         $items[] = '<div class="card bg-transparent border-secondary flex-grow-1" style="min-width: 220px;">'
                             . '<div class="card-body py-2 px-3">'
                             . '<div class="fw-semibold text-white mb-2">'
-                            . member_profile_html_escape($titleSource !== '' ? $titleSource : 'Öğe ' . ($index + 1))
+                            . admin_member_profile_html_escape($titleSource !== '' ? $titleSource : 'Öğe ' . ($index + 1))
                             . '</div>'
-                            . member_profile_spor_detail_render_block($item, $depth + 1)
+                            . admin_member_profile_spor_detail_render_block($item, $depth + 1)
                             . '</div>'
                             . '</div>';
                     } else {
-                        $items[] = '<span class="badge rounded-pill text-bg-secondary">' . member_profile_html_escape(member_profile_spor_detail_format_scalar($item, $key)) . '</span>';
+                        $items[] = '<span class="badge rounded-pill text-bg-secondary">' . admin_member_profile_html_escape(admin_member_profile_spor_detail_format_scalar($item, $key)) . '</span>';
                     }
                 }
 
                 return '<div class="d-flex flex-wrap gap-2">' . implode('', $items) . '</div>';
             }
 
-            return member_profile_spor_detail_render_block($value, $depth + 1);
+            return admin_member_profile_spor_detail_render_block($value, $depth + 1);
         }
 
-        return member_profile_html_escape(member_profile_spor_detail_format_scalar($value, $key));
+        return admin_member_profile_html_escape(admin_member_profile_spor_detail_format_scalar($value, $key));
     }
 }
 
-if (!function_exists('member_profile_spor_detail_render_block')) {
-    function member_profile_spor_detail_render_block(array $data, int $depth = 0): string
+if (!function_exists('admin_member_profile_spor_detail_render_block')) {
+    function admin_member_profile_spor_detail_render_block(array $data, int $depth = 0): string
     {
         $rows = '';
 
         foreach ($data as $key => $value) {
-            $label = member_profile_spor_detail_humanize_key((string) $key);
+            $label = admin_member_profile_spor_detail_humanize_key((string) $key);
 
             if (is_array($value)) {
                 if ($value === []) {
-                    $rows .= '<tr><th style="width: 30%;">' . member_profile_html_escape($label) . '</th><td>—</td></tr>';
+                    $rows .= '<tr><th style="width: 30%;">' . admin_member_profile_html_escape($label) . '</th><td>—</td></tr>';
                     continue;
                 }
 
-                $rows .= '<tr><th colspan="2" class="bg-light">' . member_profile_html_escape($label) . '</th></tr>';
+                $rows .= '<tr><th colspan="2" class="bg-light">' . admin_member_profile_html_escape($label) . '</th></tr>';
                 $rows .= '<tr><td colspan="2" style="padding: 0;">'
-                    . member_profile_spor_detail_render_value($value, (string) $key, $depth)
+                    . admin_member_profile_spor_detail_render_value($value, (string) $key, $depth)
                     . '</td></tr>';
                 continue;
             }
 
-            $rows .= '<tr><th style="width: 30%;">' . member_profile_html_escape($label) . '</th><td>'
-                . member_profile_spor_detail_render_value($value, (string) $key, $depth)
+            $rows .= '<tr><th style="width: 30%;">' . admin_member_profile_html_escape($label) . '</th><td>'
+                . admin_member_profile_spor_detail_render_value($value, (string) $key, $depth)
                 . '</td></tr>';
         }
 
@@ -247,8 +247,8 @@ if (!function_exists('member_profile_spor_detail_render_block')) {
     }
 }
 
-if (!function_exists('member_profile_normalize_history_id')) {
-    function member_profile_normalize_history_id(string $raw): string
+if (!function_exists('admin_member_profile_normalize_history_id')) {
+    function admin_member_profile_normalize_history_id(string $raw): string
     {
         $raw = trim($raw);
         if ($raw === '') {
@@ -262,12 +262,12 @@ if (!function_exists('member_profile_normalize_history_id')) {
     }
 }
 
-if (!function_exists('member_profile_render_game_history_detail')) {
-    function member_profile_render_game_history_detail(PDO $pdo, int $userId, string $historyId): void
+if (!function_exists('admin_member_profile_render_game_history_detail')) {
+    function admin_member_profile_render_game_history_detail(PDO $pdo, int $userId, string $historyId): void
     {
-        $historyId = member_profile_normalize_history_id($historyId);
+        $historyId = admin_member_profile_normalize_history_id($historyId);
         if ($historyId === '') {
-            member_profile_emit_html(200, '<div class="alert alert-danger">Geçersiz istek</div>');
+            admin_member_profile_emit_html(200, '<div class="alert alert-danger">Geçersiz istek</div>');
         }
 
         $source = '';
@@ -278,7 +278,7 @@ if (!function_exists('member_profile_render_game_history_detail')) {
             $localId = trim((string) $rawId);
         }
         if ($localId === '' || !ctype_digit($localId)) {
-            member_profile_emit_html(200, '<div class="alert alert-danger">Geçersiz istek</div>');
+            admin_member_profile_emit_html(200, '<div class="alert alert-danger">Geçersiz istek</div>');
         }
 
         $id = (int) $localId;
@@ -351,7 +351,7 @@ if (!function_exists('member_profile_render_game_history_detail')) {
         }
 
         if (!is_array($row)) {
-            member_profile_emit_html(200, '<div class="alert alert-warning">Oyun işlemi bulunamadı</div>');
+            admin_member_profile_emit_html(200, '<div class="alert alert-warning">Oyun işlemi bulunamadı</div>');
         }
 
         $providerName = (string) ($row['provider_name'] ?? '');
@@ -406,16 +406,16 @@ if (!function_exists('member_profile_render_game_history_detail')) {
 <div class="profile-detail-shell game-history-details">
     <div class="profile-detail-hero">
         <div class="profile-detail-hero__kicker">Oyun Geçmişi Detayı</div>
-        <div class="profile-detail-hero__title"><?= member_profile_html_escape($gameName !== '' ? $gameName : '-') ?></div>
+        <div class="profile-detail-hero__title"><?= admin_member_profile_html_escape($gameName !== '' ? $gameName : '-') ?></div>
         <div class="profile-detail-hero__subtitle">
-            <?= member_profile_html_escape($providerName !== '' ? $providerName : '-') ?>
+            <?= admin_member_profile_html_escape($providerName !== '' ? $providerName : '-') ?>
             <span class="profile-detail-hero__dot">•</span>
-            <?= member_profile_html_escape($providerCode !== '' ? $providerCode : '-') ?>
+            <?= admin_member_profile_html_escape($providerCode !== '' ? $providerCode : '-') ?>
         </div>
         <div class="profile-detail-badges">
-            <?= member_profile_detail_badge($sourceText, 'info') ?>
-            <?= member_profile_detail_badge($transactionLabel, $txnTone) ?>
-            <?= member_profile_detail_badge('Durum: ' . $statusLabel, $statusTone) ?>
+            <?= admin_member_profile_detail_badge($sourceText, 'info') ?>
+            <?= admin_member_profile_detail_badge($transactionLabel, $txnTone) ?>
+            <?= admin_member_profile_detail_badge('Durum: ' . $statusLabel, $statusTone) ?>
         </div>
     </div>
 
@@ -423,22 +423,22 @@ if (!function_exists('member_profile_render_game_history_detail')) {
         <section class="profile-detail-panel">
             <div class="profile-detail-panel__title">Oyun Bilgileri</div>
             <div class="profile-detail-meta-list">
-                <?= member_profile_detail_meta_row('Kaynak', $sourceText) ?>
-                <?= member_profile_detail_meta_row('Oyun', $gameName !== '' ? $gameName : '-') ?>
-                <?= member_profile_detail_meta_row('Sağlayıcı', $providerName !== '' ? $providerName : '-') ?>
-                <?= member_profile_detail_meta_row('Provider Kodu', $providerCode !== '' ? $providerCode : '-', true) ?>
-                <?= member_profile_detail_meta_row('Oyun ID', (string) ($row['game_id'] ?? '-'), true) ?>
+                <?= admin_member_profile_detail_meta_row('Kaynak', $sourceText) ?>
+                <?= admin_member_profile_detail_meta_row('Oyun', $gameName !== '' ? $gameName : '-') ?>
+                <?= admin_member_profile_detail_meta_row('Sağlayıcı', $providerName !== '' ? $providerName : '-') ?>
+                <?= admin_member_profile_detail_meta_row('Provider Kodu', $providerCode !== '' ? $providerCode : '-', true) ?>
+                <?= admin_member_profile_detail_meta_row('Oyun ID', (string) ($row['game_id'] ?? '-'), true) ?>
             </div>
         </section>
 
         <section class="profile-detail-panel">
             <div class="profile-detail-panel__title">İşlem Bilgileri</div>
             <div class="profile-detail-meta-list">
-                <?= member_profile_detail_meta_row('İşlem', $transactionLabel) ?>
-                <?= member_profile_detail_meta_row('Status', $statusLabel) ?>
-                <?= member_profile_detail_meta_row('Transaction', $transactionText, true) ?>
-                <?= member_profile_detail_meta_row('Round', $roundText, true) ?>
-                <?= member_profile_detail_meta_row('Oturum', $sessionText, true) ?>
+                <?= admin_member_profile_detail_meta_row('İşlem', $transactionLabel) ?>
+                <?= admin_member_profile_detail_meta_row('Status', $statusLabel) ?>
+                <?= admin_member_profile_detail_meta_row('Transaction', $transactionText, true) ?>
+                <?= admin_member_profile_detail_meta_row('Round', $roundText, true) ?>
+                <?= admin_member_profile_detail_meta_row('Oturum', $sessionText, true) ?>
             </div>
         </section>
     </div>
@@ -446,30 +446,30 @@ if (!function_exists('member_profile_render_game_history_detail')) {
     <section class="profile-detail-panel">
         <div class="profile-detail-panel__title">Finansal Özet</div>
         <div class="profile-detail-stat-grid profile-detail-stat-grid--four">
-            <?= member_profile_detail_stat('Bahis', number_format($betAmount, 2) . ' ₺', 'danger') ?>
-            <?= member_profile_detail_stat('Kazanç', number_format($winAmount, 2) . ' ₺', 'success') ?>
-            <?= member_profile_detail_stat('Bakiye Sonrası', $balanceText, 'primary') ?>
-            <?= member_profile_detail_stat('Net', ($netAmount >= 0 ? '+' : '') . number_format($netAmount, 2) . ' ₺', $netTone) ?>
+            <?= admin_member_profile_detail_stat('Bahis', number_format($betAmount, 2) . ' ₺', 'danger') ?>
+            <?= admin_member_profile_detail_stat('Kazanç', number_format($winAmount, 2) . ' ₺', 'success') ?>
+            <?= admin_member_profile_detail_stat('Bakiye Sonrası', $balanceText, 'primary') ?>
+            <?= admin_member_profile_detail_stat('Net', ($netAmount >= 0 ? '+' : '') . number_format($netAmount, 2) . ' ₺', $netTone) ?>
         </div>
     </section>
 
     <section class="profile-detail-panel">
         <div class="profile-detail-panel__title">Zaman</div>
         <div class="profile-detail-time">
-            <?= $createdAt !== '' ? member_profile_html_escape(date('d.m.Y H:i:s', strtotime($createdAt))) : '—' ?>
+            <?= $createdAt !== '' ? admin_member_profile_html_escape(date('d.m.Y H:i:s', strtotime($createdAt))) : '—' ?>
         </div>
     </section>
 </div>
         <?php
-        member_profile_emit_html(200, (string) ob_get_clean());
+        admin_member_profile_emit_html(200, (string) ob_get_clean());
     }
 }
 
-if (!function_exists('member_profile_fetch_spor_bet_row')) {
+if (!function_exists('admin_member_profile_fetch_spor_bet_row')) {
     /**
      * @return array<string, mixed>|null
      */
-    function member_profile_fetch_spor_bet_row(PDO $pdo, int $userId, int $betId): ?array
+    function admin_member_profile_fetch_spor_bet_row(PDO $pdo, int $userId, int $betId): ?array
     {
         if ($betId <= 0 || $userId <= 0) {
             return null;
@@ -486,7 +486,7 @@ if (!function_exists('member_profile_fetch_spor_bet_row')) {
             $stmt->execute(['id' => $betId, 'user_id' => $userId]);
             $sbRow = $stmt->fetch(PDO::FETCH_ASSOC);
             if (is_array($sbRow)) {
-                return member_profile_normalize_sportsbook_row($sbRow);
+                return admin_member_profile_normalize_sportsbook_row($sbRow);
             }
         } catch (PDOException $e) {
             if (!str_contains($e->getMessage(), '42S02')) {
@@ -515,7 +515,7 @@ if (!function_exists('member_profile_fetch_spor_bet_row')) {
     }
 }
 
-if (!function_exists('member_profile_normalize_sportsbook_row')) {
+if (!function_exists('admin_member_profile_normalize_sportsbook_row')) {
     /**
      * Maps a `sportsbook_transactions` row (BetBy wallet ledger) onto the field shape the
      * spor bet detail renderer expects (legacy spor_bets-style columns).
@@ -523,7 +523,7 @@ if (!function_exists('member_profile_normalize_sportsbook_row')) {
      * @param array<string, mixed> $row
      * @return array<string, mixed>
      */
-    function member_profile_normalize_sportsbook_row(array $row): array
+    function admin_member_profile_normalize_sportsbook_row(array $row): array
     {
         $txnType = strtolower(trim((string) ($row['txn_type'] ?? 'bet')));
         $amount  = abs((float) ($row['amount'] ?? 0));
@@ -562,16 +562,16 @@ if (!function_exists('member_profile_normalize_sportsbook_row')) {
     }
 }
 
-if (!function_exists('member_profile_render_spor_bet_detail')) {
-    function member_profile_render_spor_bet_detail(PDO $pdo, int $userId, int $betId): void
+if (!function_exists('admin_member_profile_render_spor_bet_detail')) {
+    function admin_member_profile_render_spor_bet_detail(PDO $pdo, int $userId, int $betId): void
     {
         if ($betId <= 0) {
-            member_profile_emit_html(200, '<div class="alert alert-danger">Geçersiz istek!</div>');
+            admin_member_profile_emit_html(200, '<div class="alert alert-danger">Geçersiz istek!</div>');
         }
 
-        $bet = member_profile_fetch_spor_bet_row($pdo, $userId, $betId);
+        $bet = admin_member_profile_fetch_spor_bet_row($pdo, $userId, $betId);
         if (!is_array($bet)) {
-            member_profile_emit_html(200, '<div class="alert alert-danger">Bahis bulunamadı veya erişim izniniz yok.</div>');
+            admin_member_profile_emit_html(200, '<div class="alert alert-danger">Bahis bulunamadı veya erişim izniniz yok.</div>');
         }
 
         $providers = [1 => 'TLT', 2 => 'Nexsus', 3 => 'TBS2', 4 => 'LX'];
@@ -599,9 +599,9 @@ if (!function_exists('member_profile_render_spor_bet_detail')) {
         $balanceAfter = $bet['balance_after'] ?? null;
         $netAmount = $winAmount - $betAmount;
         $netTone = $netAmount >= 0 ? 'success' : 'danger';
-        $sourceLabel = member_profile_spor_detail_humanize_key('game_code');
+        $sourceLabel = admin_member_profile_spor_detail_humanize_key('game_code');
         $detailSourceLabel = 'Spor Bahis Detayları';
-        $gameCodeText = member_profile_spor_detail_format_scalar((string) ($bet['game_code'] ?? '-'), 'game_code');
+        $gameCodeText = admin_member_profile_spor_detail_format_scalar((string) ($bet['game_code'] ?? '-'), 'game_code');
 
         ob_start();
         ?>
@@ -610,10 +610,10 @@ if (!function_exists('member_profile_render_spor_bet_detail')) {
         <h6 class="border-bottom pb-2">Bahis Bilgileri</h6>
         <table class="table table-sm table-bordered mb-0">
             <tr><th style="width: 40%;">Bahis ID:</th><td><strong><?= (int) ($bet['id'] ?? 0) ?></strong></td></tr>
-            <tr><th>Transaction ID:</th><td><code><?= member_profile_html_escape((string) ($bet['transaction_id'] ?? '-')) ?></code></td></tr>
-            <tr><th>Round ID:</th><td><code><?= member_profile_html_escape((string) ($bet['round_id'] ?? '-')) ?></code></td></tr>
-            <tr><th>Oyun Kodu:</th><td><?= member_profile_html_escape((string) ($bet['game_code'] ?? '-')) ?></td></tr>
-            <tr><th>Sağlayıcı:</th><td><?= member_profile_html_escape($providerLabel) ?></td></tr>
+            <tr><th>Transaction ID:</th><td><code><?= admin_member_profile_html_escape((string) ($bet['transaction_id'] ?? '-')) ?></code></td></tr>
+            <tr><th>Round ID:</th><td><code><?= admin_member_profile_html_escape((string) ($bet['round_id'] ?? '-')) ?></code></td></tr>
+            <tr><th>Oyun Kodu:</th><td><?= admin_member_profile_html_escape((string) ($bet['game_code'] ?? '-')) ?></td></tr>
+            <tr><th>Sağlayıcı:</th><td><?= admin_member_profile_html_escape($providerLabel) ?></td></tr>
         </table>
     </div>
     <div class="col-md-6">
@@ -622,8 +622,8 @@ if (!function_exists('member_profile_render_spor_bet_detail')) {
             <tr><th style="width: 40%;">Bahis Miktarı:</th><td class="fw-bold text-danger"><?= number_format($betAmount, 2) ?> ₺</td></tr>
             <tr><th>Kazanç Miktarı:</th><td class="fw-bold text-success"><?= number_format($winAmount, 2) ?> ₺</td></tr>
             <tr><th>Net:</th><td class="fw-bold <?= $netTone === 'success' ? 'text-success' : 'text-danger' ?>"><?= ($netAmount >= 0 ? '+' : '') . number_format($netAmount, 2) ?> ₺</td></tr>
-            <tr><th>Durum:</th><td><span class="badge bg-<?= member_profile_html_escape($statusClass) ?>"><?= member_profile_html_escape($statusLabel) ?></span></td></tr>
-            <tr><th>Oluşturulma:</th><td><?= !empty($bet['created_at']) ? member_profile_html_escape(date('d.m.Y H:i:s', strtotime((string) $bet['created_at']))) : '—' ?></td></tr>
+            <tr><th>Durum:</th><td><span class="badge bg-<?= admin_member_profile_html_escape($statusClass) ?>"><?= admin_member_profile_html_escape($statusLabel) ?></span></td></tr>
+            <tr><th>Oluşturulma:</th><td><?= !empty($bet['created_at']) ? admin_member_profile_html_escape(date('d.m.Y H:i:s', strtotime((string) $bet['created_at']))) : '—' ?></td></tr>
             <tr><th>Son Bakiye:</th><td><?= $balanceAfter !== null && $balanceAfter !== '' ? number_format((float) $balanceAfter, 2) . ' ₺' : '-' ?></td></tr>
         </table>
     </div>
@@ -631,7 +631,7 @@ if (!function_exists('member_profile_render_spor_bet_detail')) {
 <?php if ($sporDetails !== []): ?>
 <div class="mt-3">
     <h6 class="border-bottom pb-2">Spor Bahis Detayları</h6>
-    <?= member_profile_spor_detail_render_block($sporDetails) ?>
+    <?= admin_member_profile_spor_detail_render_block($sporDetails) ?>
 </div>
 <?php else: ?>
 <div class="mt-3"><div class="alert alert-info mb-0"><i class="fas fa-info-circle me-2"></i>Bu bahis için detay bilgisi bulunmuyor.</div></div>
@@ -639,10 +639,10 @@ if (!function_exists('member_profile_render_spor_bet_detail')) {
 <?php if (!empty($bet['spor_results'])): ?>
 <div class="mt-3">
     <h6 class="border-bottom pb-2">Sonuç Analizi</h6>
-    <div class="alert alert-info mb-0"><?= nl2br(member_profile_html_escape((string) $bet['spor_results'])) ?></div>
+    <div class="alert alert-info mb-0"><?= nl2br(admin_member_profile_html_escape((string) $bet['spor_results'])) ?></div>
 </div>
 <?php endif; ?>
         <?php
-        member_profile_emit_html(200, (string) ob_get_clean());
+        admin_member_profile_emit_html(200, (string) ob_get_clean());
     }
 }

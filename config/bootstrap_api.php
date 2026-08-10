@@ -47,7 +47,7 @@ if (!defined('BACKEND_API_BASE_URL')) {
 try {
     require_once __DIR__ . '/backend_api.php';
 } catch (Throwable $bootstrapApiConfigError) {
-    error_log('[metropol] bootstrap_api config: ' . $bootstrapApiConfigError->getMessage());
+    error_log('[app] bootstrap_api config: ' . $bootstrapApiConfigError->getMessage());
 }
 
 // Safety net: backend_api.php may be empty/incomplete on some deployments (or the
@@ -101,8 +101,8 @@ if (is_readable(API_PATH . '/MediaUrl.php')) {
 }
 
 if (!defined('FRONTEND_CMS_PURGE_SECRET')) {
-    define('FRONTEND_CMS_PURGE_SECRET', function_exists('metropol_frontend_trust_secret')
-        ? metropol_frontend_trust_secret()
+    define('FRONTEND_CMS_PURGE_SECRET', function_exists('frontend_trust_secret')
+        ? frontend_trust_secret()
         : frontend_env_string('FRONTEND_CMS_PURGE_SECRET', ''));
 }
 if (!defined('MEMBER_JWT_SECRET')) {

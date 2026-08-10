@@ -19,7 +19,7 @@ class UserRepository
         unset($username);
         if (session_status() === PHP_SESSION_NONE) {
             require_once __DIR__ . '/../config/frontend_session.php';
-            metropol_frontend_session_start();
+            frontend_session_start();
         }
         $jwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
         if ($jwt === '') {
@@ -47,7 +47,7 @@ class UserRepository
     {
         if (session_status() === PHP_SESSION_NONE) {
             require_once __DIR__ . '/../config/frontend_session.php';
-            metropol_frontend_session_start();
+            frontend_session_start();
         }
         $jwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
         if ($jwt === '') {

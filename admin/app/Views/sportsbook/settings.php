@@ -162,9 +162,9 @@ $apiMode      = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 
             <div style="font-weight:700;margin-bottom:12px">🗂 Modüller</div>
             <?php
             $moduleLinks = [
-                'sportsbook-sessions'     => ['label' => 'Oturumlar',      'path' => '/admin/tables/sportsbook_sessions'],
-                'sportsbook-transactions' => ['label' => 'İşlemler',       'path' => '/admin/tables/sportsbook_transactions'],
-                'sportsbook-wallet-logs'  => ['label' => 'Wallet Logları', 'path' => '/admin/tables/sportsbook_wallet_logs'],
+                'sportsbook-sessions'     => ['label' => 'Oturumlar',      'path' => '/module?key=sportsbook-sessions'],
+                'sportsbook-transactions' => ['label' => 'İşlemler',       'path' => '/module?key=sportsbook-transactions'],
+                'sportsbook-wallet-logs'  => ['label' => 'Wallet Logları', 'path' => '/module?key=sportsbook-wallet-logs'],
             ];
             foreach ($moduleLinks as $mKey => $mInfo):
                 $mUrl = AdminAuth::url($mInfo['path']);

@@ -87,6 +87,7 @@ return static function (PDO $pdo): void {
             currency         VARCHAR(8) NOT NULL DEFAULT 'TRY',
             lang             VARCHAR(8) NOT NULL DEFAULT 'tr',
             channel          VARCHAR(20) NOT NULL DEFAULT 'desktop',
+            wallet_mode      VARCHAR(10) NOT NULL DEFAULT 'main',
             launch_url       TEXT NULL,
             request_payload  JSON NULL,
             response_payload JSON NULL,

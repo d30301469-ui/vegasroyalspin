@@ -25,7 +25,7 @@ $dbOk = false;
 $dbError = '';
 $pdo = null;
 if (is_readable($envFile)) {
-    if (!function_exists('metropol_pdo_options')) {
+    if (!function_exists('pdo_options')) {
         $envHelper = $root . '/config/env.php';
         if (is_readable($envHelper)) {
             require_once $envHelper;

@@ -128,7 +128,7 @@ final class AdminBackofficeSuiteController extends AdminController
                 'statusText' => 'Hazır',
                 'description' => 'Promosyon, slider, auth slider, duyuru, homepage section, footer ve mobil menü yönetimi mevcut.',
                 'reference' => 'cms-banners.webp',
-                'localRoute' => '/module?key=promotions',
+                'localRoute' => '/promotions',
                 'localLabel' => 'Promosyonlar',
                 'nextStep' => 'Media library ve popup/story içerikleri için ek modül aç.',
             ],

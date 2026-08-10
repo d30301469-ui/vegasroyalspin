@@ -53,6 +53,17 @@ class ApiTrackVisitController
             $apiMessage = $curlErr ?: 'empty_response';
         }
 
+        $normalizerPath = dirname(__DIR__, 2) . '/admin/app/Services/VisitorCountryNormalizer.php';
+        if (is_file($normalizerPath)) {
+            require_once $normalizerPath;
+            $normalized = VisitorCountryNormalizer::normalize(
+                is_string($countryCode) ? $countryCode : '',
+                is_string($country) ? $country : ''
+            );
+            $countryCode = $normalized['code'] !== '' ? $normalized['code'] : $countryCode;
+            $country = $normalized['label'] !== '' ? $normalized['label'] : $country;
+        }
+
         $logged = BackendApiClient::request('POST', BackendApiClient::SVC_MAIN, '/analytics/visit', [], [
             'ip'            => $ip,
             'country_code'  => $countryCode,
@@ -84,8 +95,8 @@ class ApiTrackVisitController
 
     private function getUserIp(): string
     {
-        if (function_exists('metropol_cloudflare_client_ip')) {
-            $ip = metropol_cloudflare_client_ip();
+        if (function_exists('cloudflare_client_ip')) {
+            $ip = cloudflare_client_ip();
             if ($ip !== '') {
                 return $ip;
             }

@@ -60,7 +60,7 @@ $composerJson = $root . '/composer.json';
 if (is_readable($composerJson)) {
     $composerRaw = (string) file_get_contents($composerJson);
     if (str_contains($composerRaw, '"admin/"') || str_contains($composerRaw, '"admin\\\\"')) {
-        $errors[] = 'composer.json monorepo sürümü — frontend zip deploy/composer.frontend.json kullanmalı';
+        $errors[] = 'composer.json monorepo sürümü — frontend paketinde admin/ path olmamalı';
         echo "[FAIL] composer.json admin/ referansı içeriyor\n";
     } else {
         echo "[OK] composer.json (frontend deploy sürümü)\n";
@@ -115,7 +115,4 @@ if ($errors !== []) {
 echo "\nSonraki adım: tarayıcıda https://{$host}/install\n";
 echo "Ping: https://{$host}/ping.php\n";
 echo "Durum: https://{$host}/install-status.php\n";
-if (is_file($root . '/deploy/aapanel/fix-apache-deploy.php')) {
-    echo "Apache düzeltme: php deploy/aapanel/fix-apache-deploy.php\n";
-}
 exit(0);

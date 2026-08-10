@@ -1,0 +1,17 @@
+{
+  "file": "admin/runtime.js",
+  "generated_at": "2026-08-03T15:56:57.092717+00:00",
+  "mode": "dynamic",
+  "strip_policy": "coverage_required",
+  "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py",
+  "entries": [],
+  "keep": [],
+  "stats": {
+    "functions": 0,
+    "reachable": 0,
+    "unreachable_candidates": 0,
+    "coverage_hits": 0
+  },
+  "unreachable_sample": [],
+  "confidence_note": "mode=dynamic strip_policy=coverage_required; entries=0 funcs=0 reachable=0 unreachable=0 coverage=0"
+}

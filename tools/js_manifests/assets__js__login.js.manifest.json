@@ -1,0 +1,29 @@
+{
+  "file": "assets/js/login.js",
+  "generated_at": "2026-08-03T15:56:55.405494+00:00",
+  "mode": "dynamic",
+  "strip_policy": "coverage_required",
+  "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py",
+  "entries": [
+    "Date",
+    "MaltabetAuth",
+    "__MEMBER_LOGIN_AT__",
+    "__ensureLoginTurnstileWidget",
+    "__openLoginModal",
+    "__openRegisterModal",
+    "applyMobileAuthLayoutFix",
+    "ensureLoginTurnstileWidget",
+    "showLoginModal",
+    "showRegisterModal",
+    "window"
+  ],
+  "keep": [],
+  "stats": {
+    "functions": 37,
+    "reachable": 37,
+    "unreachable_candidates": 0,
+    "coverage_hits": 0
+  },
+  "unreachable_sample": [],
+  "confidence_note": "mode=dynamic strip_policy=coverage_required; entries=11 funcs=37 reachable=37 unreachable=0 coverage=0"
+}

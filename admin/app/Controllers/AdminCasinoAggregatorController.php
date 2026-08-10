@@ -33,6 +33,7 @@ final class AdminCasinoAggregatorController extends AdminController
             'activeGamesCount'  => (int) $pdo->query('SELECT COUNT(*) FROM casino_aggregator_games WHERE is_active = 1')->fetchColumn(),
             'sessionsCount'     => $sessionsCount,
             'transactionsCount' => $transactionsCount,
+            'catalogJob'        => CasinoAggregatorService::catalogJobStatus(),
             'flash'             => $this->pullFlash(),
         ]);
     }
@@ -43,6 +44,15 @@ final class AdminCasinoAggregatorController extends AdminController
         $this->ensurePost();
         CasinoAggregatorService::updateConfig(AdminDatabase::pdo(), $_POST);
         $this->flash('Casino aggregator ayarları güncellendi.');
+        $this->redirect(AdminAuth::url('/casino-aggregator/settings'));
+    }
+
+    public function rebuildCatalog(): void
+    {
+        $this->requirePermission('casino-aggregator-settings');
+        $this->ensurePost();
+        $start = CasinoAggregatorService::startCatalogJob('rebuild');
+        $this->flash((string) ($start['message'] ?? 'Katalog işlemi başlatıldı.'));
         $this->redirect(AdminAuth::url('/casino-aggregator/settings'));
     }
 
@@ -63,31 +73,8 @@ final class AdminCasinoAggregatorController extends AdminController
     {
         $this->requirePermission('casino-aggregator-settings');
         $this->ensurePost();
-        try {
-            $result = CasinoAggregatorService::syncGames(AdminDatabase::pdo());
-            if (class_exists('SlotGamesQuery', false)) {
-                SlotGamesQuery::purgeCache();
-            } elseif (is_file(dirname(__DIR__, 3) . '/services/SlotGamesQuery.php')) {
-                require_once dirname(__DIR__, 3) . '/services/SlotGamesQuery.php';
-                SlotGamesQuery::purgeCache();
-            }
-            $msg = 'Oyun sync tamamlandı: ' . (int) ($result['game_count'] ?? 0) . ' oyun, '
-                . (int) ($result['vendor_count'] ?? 0) . ' vendor.';
-            if (((int) ($result['repaired_vendors'] ?? 0)) > 0 || ((int) ($result['repaired_games'] ?? 0)) > 0) {
-                $msg .= ' Etiket düzeltme: ' . (int) ($result['repaired_vendors'] ?? 0) . ' vendor, '
-                    . (int) ($result['repaired_games'] ?? 0) . ' oyun.';
-            }
-            if (((int) ($result['egt_vip_png'] ?? 0)) > 0) {
-                $msg .= ' EGT VIP PNG: ' . (int) $result['egt_vip_png'] . ' oyun.';
-            }
-            $errors = is_array($result['errors'] ?? null) ? $result['errors'] : [];
-            if ($errors !== []) {
-                $msg .= ' Uyarı: ' . implode(' | ', array_slice($errors, 0, 3));
-            }
-            $this->flash($msg);
-        } catch (Throwable $exception) {
-            $this->flash('Oyun sync hatası: ' . $exception->getMessage());
-        }
+        $start = CasinoAggregatorService::startCatalogJob('sync-games');
+        $this->flash((string) ($start['message'] ?? 'Oyun sync başlatıldı.'));
         $this->redirect(AdminAuth::url('/casino-aggregator/settings'));
     }
 

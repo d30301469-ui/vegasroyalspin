@@ -4,7 +4,7 @@ require_once dirname(__DIR__, 2) . '/services/ProfileApiHelper.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     require_once dirname(__DIR__, 2) . '/config/frontend_session.php';
-    metropol_frontend_session_start();
+    frontend_session_start();
 }
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || empty($_SESSION['username'])) {

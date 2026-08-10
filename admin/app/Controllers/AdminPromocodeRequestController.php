@@ -52,7 +52,7 @@ final class AdminPromocodeRequestController extends AdminController
                 $limit = (int) ($promo['kullanim_limiti'] ?? 0);
                 $used = (int) ($promo['mevcut_kullanim'] ?? 0);
                 if ($limit > 0 && $used >= $limit) {
-                    throw new RuntimeException('Promocode kullanım limiti dolmuş.');
+                    throw new RuntimeException('Promosyon kodu kullanım limiti dolmuştur.');
                 }
                 $pdo->prepare('UPDATE promocodes SET mevcut_kullanim = mevcut_kullanim + 1 WHERE id = :id')->execute(['id' => $promoId]);
             }

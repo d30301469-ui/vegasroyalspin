@@ -132,9 +132,9 @@ if ($result['checks']['env_file'] === 'present' && is_readable($root . '/config/
             $result['ok'] = false;
             $result['hints'][] = 'Ortam hatası: ' . implode('; ', array_slice($envErrors, 0, 3));
             if (!$isBackend) {
-                $result['hints'][] = 'Onar: php deploy/aapanel/fix-frontend-env.php';
+                $result['hints'][] = 'Onar: php scripts/bootstrap-frontend-env.php';
             } else {
-                $result['hints'][] = 'Onar: php deploy/aapanel/fix-backend-env.php';
+                $result['hints'][] = 'Onar: .env ve MEMBER_JWT_SECRET kontrol edin';
             }
         } else {
             $result['checks']['env_valid'] = 'ok';

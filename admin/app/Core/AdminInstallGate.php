@@ -144,7 +144,7 @@ final class AdminInstallGate
         self::loadEnv($root);
 
         $configEnv = self::root($root) . '/config/env.php';
-        if (!function_exists('metropol_pdo_options') && is_readable($configEnv)) {
+        if (!function_exists('pdo_options') && is_readable($configEnv)) {
             require_once $configEnv;
         }
 

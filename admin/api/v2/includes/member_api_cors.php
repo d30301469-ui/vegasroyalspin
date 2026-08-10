@@ -3,8 +3,8 @@
  * Member API CORS — vegasroyalspin.com → admin.vegasroyalspin.com/api/v2 doğrudan çağrılar için.
  * .env yüklenmeden önce çalışır; ALLOWED_URL_HOSTS + deploy_domains fallback kullanır.
  */
-if (!function_exists('member_api_cors_project_root')) {
-    function member_api_cors_project_root(): string
+if (!function_exists('admin_member_api_cors_project_root')) {
+    function admin_member_api_cors_project_root(): string
     {
         static $root = null;
         if (is_string($root) && $root !== '') {
@@ -33,8 +33,8 @@ if (!function_exists('member_api_cors_project_root')) {
     }
 }
 
-if (!function_exists('member_api_cors_bootstrap_env')) {
-    function member_api_cors_bootstrap_env(): void
+if (!function_exists('admin_member_api_cors_bootstrap_env')) {
+    function admin_member_api_cors_bootstrap_env(): void
     {
         static $loaded = false;
         if ($loaded) {
@@ -42,7 +42,7 @@ if (!function_exists('member_api_cors_bootstrap_env')) {
         }
         $loaded = true;
 
-        $root = member_api_cors_project_root();
+        $root = admin_member_api_cors_project_root();
         if (is_readable($root . '/config/env.php')) {
             require_once $root . '/config/env.php';
             if (function_exists('frontend_load_dotenv')) {
@@ -59,8 +59,8 @@ if (!function_exists('member_api_cors_bootstrap_env')) {
     }
 }
 
-if (!function_exists('member_api_env_value')) {
-    function member_api_env_value(string $key): string
+if (!function_exists('admin_member_api_env_value')) {
+    function admin_member_api_env_value(string $key): string
     {
         $value = getenv($key);
         if ($value !== false && trim((string) $value) !== '') {
@@ -80,20 +80,20 @@ if (!function_exists('member_api_env_value')) {
     }
 }
 
-if (!function_exists('member_api_allowed_origins')) {
+if (!function_exists('admin_member_api_allowed_origins')) {
     /** @return list<string> */
-    function member_api_allowed_origins(): array
+    function admin_member_api_allowed_origins(): array
     {
         static $cache = null;
         if (is_array($cache)) {
             return $cache;
         }
 
-        member_api_cors_bootstrap_env();
+        admin_member_api_cors_bootstrap_env();
 
         $origins = [];
         foreach (['ALLOWED_URL_HOSTS', 'DEFAULT_ALLOWED_URL_HOSTS', 'PUBLIC_URL_HOSTS'] as $envKey) {
-            foreach (array_filter(array_map('trim', explode(',', member_api_env_value($envKey)))) as $host) {
+            foreach (array_filter(array_map('trim', explode(',', admin_member_api_env_value($envKey)))) as $host) {
                 $host = strtolower($host);
                 if ($host === '') {
                     continue;
@@ -126,7 +126,7 @@ if (!function_exists('member_api_allowed_origins')) {
         }
 
         foreach (['FRONTEND_URL', 'FRONTEND_FALLBACK_URL', 'SITE_URL'] as $key) {
-            $url = member_api_env_value($key);
+            $url = admin_member_api_env_value($key);
             if ($url !== '' && preg_match('#^https?://#i', $url)) {
                 $origins[] = rtrim($url, '/');
             }
@@ -142,7 +142,7 @@ if (!function_exists('member_api_allowed_origins')) {
         }
 
         // LOCAL_URL_HOSTS: geliştirim ortamına özgü host listesi (ör. vegasroyalspin.test,m.vegasroyalspin.test)
-        foreach (array_filter(array_map('trim', explode(',', member_api_env_value('LOCAL_URL_HOSTS')))) as $host) {
+        foreach (array_filter(array_map('trim', explode(',', admin_member_api_env_value('LOCAL_URL_HOSTS')))) as $host) {
             $host = strtolower($host);
             if ($host !== '') {
                 $origins[] = 'https://' . $host;
@@ -156,18 +156,18 @@ if (!function_exists('member_api_allowed_origins')) {
     }
 }
 
-if (!function_exists('member_api_apply_cors')) {
-    function member_api_apply_cors(): void
+if (!function_exists('admin_member_api_apply_cors')) {
+    function admin_member_api_apply_cors(): void
     {
         $origin = trim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
-        $allowed = member_api_allowed_origins();
+        $allowed = admin_member_api_allowed_origins();
 
         $originAllowed = $origin !== '' && in_array($origin, $allowed, true);
 
         // Geliştirim modu: APP_ENV production değilse *.test originleri otomatik izin ver (Laragon/Herd)
         // .test TLD prodüksiyonda hiçbir zaman origin olarak gelmez; APP_ENV boşsa da güvenli.
         if (!$originAllowed && $origin !== '') {
-            $env = strtolower(member_api_env_value('APP_ENV'));
+            $env = strtolower(admin_member_api_env_value('APP_ENV'));
             if (!in_array($env, ['production', 'prod'], true)) {
                 $originHost = strtolower((string) (parse_url($origin, PHP_URL_HOST) ?: ''));
                 if ($originHost !== '' && str_ends_with($originHost, '.test')) {
@@ -183,7 +183,7 @@ if (!function_exists('member_api_apply_cors')) {
         }
 
         header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Authorization, Content-Type, X-CSRF-Token, X-Requested-With, X-Metropol-Member-Jwt, X-Frontend-Trust, X-Member-Proxy-User-Id');
+        header('Access-Control-Allow-Headers: Authorization, Content-Type, X-CSRF-Token, X-Requested-With, X-App-Member-Jwt, X-Metropol-Member-Jwt, X-Frontend-Trust, X-Member-Proxy-User-Id');
         header('Access-Control-Max-Age: 86400');
 
         if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? '')) === 'OPTIONS') {
@@ -193,4 +193,4 @@ if (!function_exists('member_api_apply_cors')) {
     }
 }
 
-member_api_apply_cors();
+admin_member_api_apply_cors();

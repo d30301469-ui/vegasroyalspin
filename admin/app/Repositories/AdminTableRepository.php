@@ -48,14 +48,15 @@ final class AdminTableRepository
     {
         [$where, $params] = $this->searchWhere($table, $search);
         [$where, $params] = $this->mergeWhere($where, $params, $fixedWhere, $fixedParams);
-        $sql = 'SELECT COUNT(*) FROM ' . $this->quoteIdentifier($table) . $where;
+        $from = $this->fromClause($table);
+        $sql = 'SELECT COUNT(*) FROM ' . $from . $where;
         $stmt = AdminDatabase::pdo()->prepare($sql);
         $stmt->execute($params);
 
         return (int) $stmt->fetchColumn();
     }
 
-    public function rows(string $table, int $page = 1, int $perPage = 25, string $search = '', string $fixedWhere = '', array $fixedParams = []): array
+    public function rows(string $table, int $page = 1, int $perPage = 25, string $search = '', string $fixedWhere = '', array $fixedParams = [], string $orderBy = ''): array
     {
         $this->assertTable($table);
         $page = max(1, $page);
@@ -64,9 +65,10 @@ final class AdminTableRepository
         $primaryKey = $this->primaryKey($table);
         [$where, $params] = $this->searchWhere($table, $search);
         [$where, $params] = $this->mergeWhere($where, $params, $fixedWhere, $fixedParams);
-        $order = $primaryKey !== null ? ' ORDER BY ' . $this->quoteIdentifier($primaryKey) . ' DESC' : '';
+        $order = $this->resolveOrderBy($table, $primaryKey, $orderBy);
+        $from = $this->fromClause($table);
 
-        $sql = 'SELECT * FROM ' . $this->quoteIdentifier($table) . $where . $order . ' LIMIT :limit OFFSET :offset';
+        $sql = 'SELECT ' . $this->quoteIdentifier($table) . '.* FROM ' . $from . $where . $order . ' LIMIT :limit OFFSET :offset';
         $stmt = AdminDatabase::pdo()->prepare($sql);
         foreach ($params as $key => $value) {
             $stmt->bindValue(':' . ltrim((string) $key, ':'), $value);
@@ -76,9 +78,26 @@ final class AdminTableRepository
         $stmt->execute();
         $rows = $stmt->fetchAll();
 
-        return in_array($table, ['megapayz_transactions', 'user_active_bonuses'], true)
+        return in_array($table, ['megapayz_transactions', 'user_active_bonuses', 'bonus_claim_requests'], true)
             ? $this->withUserFullNames($rows)
             : $rows;
+    }
+
+    private function fromClause(string $table): string
+    {
+        return $this->quoteIdentifier($table);
+    }
+
+    private function resolveOrderBy(string $table, ?string $primaryKey, string $orderBy): string
+    {
+        $orderBy = trim($orderBy);
+        if ($orderBy !== '') {
+            return ' ORDER BY ' . $orderBy;
+        }
+        if ($table === 'users') {
+            return ' ORDER BY COALESCE(last_login_at, created_at) DESC, id DESC';
+        }
+        return $primaryKey !== null ? ' ORDER BY ' . $this->quoteIdentifier($primaryKey) . ' DESC' : '';
     }
 
     /**
@@ -204,7 +223,7 @@ final class AdminTableRepository
             return null;
         }
 
-        if ($table === 'megapayz_transactions') {
+        if (in_array($table, ['megapayz_transactions', 'user_active_bonuses', 'bonus_claim_requests'], true)) {
             $rows = $this->withUserFullNames([$row]);
             return $rows[0] ?? $row;
         }
@@ -579,7 +598,7 @@ final class AdminTableRepository
                 $params[$param] = $search;
             }
         }
-        if (in_array($table, ['megapayz_transactions', 'user_active_bonuses'], true)) {
+        if (in_array($table, ['megapayz_transactions', 'user_active_bonuses', 'bonus_claim_requests'], true)) {
             try {
                 $stmt = AdminDatabase::pdo()->prepare(
                     "SELECT id
@@ -656,9 +675,6 @@ final class AdminTableRepository
                 $userId = (int) ($row['user_id'] ?? 0);
                 if ($userId > 0 && isset($users[$userId]) && trim($users[$userId]) !== '') {
                     $row['full_name'] = $users[$userId];
-                    if (array_key_exists('username', $row)) {
-                        $row['username'] = $users[$userId];
-                    }
                 }
             }
             unset($row);

@@ -1,3 +1,6 @@
+/**
+ * @dynamic-file
+ */
 (function () {
     'use strict';
 

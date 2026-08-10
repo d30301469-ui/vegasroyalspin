@@ -1,0 +1,24 @@
+{
+  "file": "mobile/assets/js/mobile-header.js",
+  "generated_at": "2026-08-03T15:56:55.782788+00:00",
+  "mode": "dynamic",
+  "strip_policy": "coverage_required",
+  "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py",
+  "entries": [
+    "__mobileProfileIconTap",
+    "__mobileUpgradeUserHeader",
+    "boot",
+    "isBodyStuckLocked",
+    "openProfileFromAvatarTap",
+    "recoverScrollLock"
+  ],
+  "keep": [],
+  "stats": {
+    "functions": 23,
+    "reachable": 23,
+    "unreachable_candidates": 0,
+    "coverage_hits": 0
+  },
+  "unreachable_sample": [],
+  "confidence_note": "mode=dynamic strip_policy=coverage_required; entries=6 funcs=23 reachable=23 unreachable=0 coverage=0"
+}

@@ -5,13 +5,13 @@ declare(strict_types=1);
 /**
  * Layout script: member API + oturum bayrakları (desktop + mobile ortak).
  */
-if (!function_exists('metropol_member_api_layout_vars')) {
+if (!function_exists('member_api_layout_vars')) {
     require_once (defined('CONFIG_PATH') ? CONFIG_PATH : dirname(__DIR__, 2) . '/config') . '/member_api_public.php';
 }
 global $siteSettingsPayload, $siteContactLinks, $ayar, $siteBranding, $siteMeta;
-$memberApiLayout = metropol_member_api_layout_vars();
-$loggedInPhp = function_exists('metropol_frontend_member_logged_in')
-    ? metropol_frontend_member_logged_in()
+$memberApiLayout = member_api_layout_vars();
+$loggedInPhp = function_exists('frontend_member_logged_in')
+    ? frontend_member_logged_in()
     : (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true);
 $hasJwtPhp = !empty($_SESSION['member_jwt']);
 $memberJwtBootstrap = $hasJwtPhp ? trim((string) $_SESSION['member_jwt']) : '';
@@ -41,17 +41,36 @@ $memberBootstrapState = [
     window.__TURNSTILE_ENABLED__ = <?php echo json_encode(!empty((is_array($siteSettingsPayload ?? null) ? $siteSettingsPayload : [])['turnstile_enabled'])); ?>;
     window.__TURNSTILE_SITE_KEY__ = <?php echo json_encode((string) ((is_array($siteSettingsPayload ?? null) ? $siteSettingsPayload : [])['turnstile_site_key'] ?? ''), JSON_UNESCAPED_SLASHES); ?>;
     window.__SITE_SETTINGS_API__ = <?php echo json_encode((string) ($memberApiLayout['__SITE_SETTINGS_API__'] ?? '/api/v2/site-settings'), JSON_UNESCAPED_SLASHES); ?>;
+    window.__LOCALE__ = <?php echo json_encode(function_exists('current_locale') ? current_locale() : 'tr'); ?>;
+    window.__INTL_LOCALE__ = <?php echo json_encode(function_exists('current_intl_locale') ? current_intl_locale() : 'tr-TR'); ?>;
+    window.__I18N__ = <?php
+        $i18nBag = class_exists('SiteI18n', false) ? SiteI18n::jsMessages() : [];
+        echo json_encode($i18nBag, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    ?>;
+    window.__ = function (key, fallback) {
+        var bag = window.__I18N__ || {};
+        if (Object.prototype.hasOwnProperty.call(bag, key) && bag[key] != null && bag[key] !== '') {
+            return String(bag[key]);
+        }
+        return fallback != null ? String(fallback) : key;
+    };
     window.__FRONTEND_CONNECTIONS__ = <?php echo json_encode([
         'liveSupportUrl' => (string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : '')),
-        'liveSupportTitle' => (string) ($siteContactLinks['live_support_title'] ?? 'Canlı Destek'),
+        'liveSupportTitle' => function_exists('i18n_label')
+            ? i18n_label((string) ($siteContactLinks['live_support_title'] ?? 'Canlı Destek'))
+            : (string) ($siteContactLinks['live_support_title'] ?? 'Canlı Destek'),
         'telegramUrl' => (string) ($siteContactLinks['telegram_url'] ?? (defined('TELEGRAM_URL') ? TELEGRAM_URL : '')),
         'whatsappUrl' => (string) ($siteContactLinks['whatsapp_url'] ?? (defined('WHATSAPP_URL') ? WHATSAPP_URL : '')),
         'contactPhone' => (string) ($siteContactLinks['contact_phone'] ?? ''),
         'callbackUrl' => (string) ($siteContactLinks['callback_url'] ?? '/beni-ara'),
         'callbackWidgetText' => (string) ($siteContactLinks['callback_widget_text'] ?? ''),
         'partnershipUrl' => (string) ($siteContactLinks['partnership_url'] ?? '/ortaklik'),
-        'partnershipLabel' => (string) ($siteContactLinks['partnership_label'] ?? 'ORTAKLIK'),
-        'partnershipTitle' => (string) ($siteContactLinks['partnership_title'] ?? 'Ortaklık'),
+        'partnershipLabel' => function_exists('i18n_label')
+            ? i18n_label((string) ($siteContactLinks['partnership_label'] ?? 'ORTAKLIK'))
+            : (string) ($siteContactLinks['partnership_label'] ?? 'ORTAKLIK'),
+        'partnershipTitle' => function_exists('i18n_label')
+            ? i18n_label((string) ($siteContactLinks['partnership_title'] ?? 'Ortaklık'))
+            : (string) ($siteContactLinks['partnership_title'] ?? 'Ortaklık'),
         'megapayzLogoBaseUrl' => defined('MEGAPAYZ_LOGO_BASE_URL') ? (string) MEGAPAYZ_LOGO_BASE_URL : '',
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 

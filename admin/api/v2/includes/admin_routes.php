@@ -28,10 +28,11 @@ $routes = [
         };
         $success([
             'users' => (int) $scalar($pdo, 'SELECT COUNT(*) FROM users'),
-            'deposits_confirmed' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE type='deposit' AND status='confirmed'"),
+            'deposits_confirmed' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE type='deposit' AND status IN ('confirmed','approved','success','completed')"),
             'withdrawals_pending' => (int) $scalar($pdo, "SELECT COUNT(*) FROM megapayz_transactions WHERE type='withdraw' AND status='pending'"),
             'games_active' => (int) ($scalar($pdo, 'SELECT COUNT(*) FROM bgaming_games WHERE is_active = 1')
-                + $scalar($pdo, 'SELECT COUNT(*) FROM casino_aggregator_games WHERE is_active = 1')),
+                + $scalar($pdo, 'SELECT COUNT(*) FROM casino_aggregator_games WHERE is_active = 1')
+                + $scalar($pdo, 'SELECT COUNT(*) FROM gsc_games WHERE is_active = 1')),
             'call_requests_pending' => (int) $scalar($pdo, "SELECT COUNT(*) FROM call_me_requests WHERE status='pending'"),
             'support_tickets_open' => (int) $scalar($pdo, "SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','answered')"),
             'aml_alerts_open' => ComplianceService::countOpen($pdo, 'aml_alerts'),
@@ -191,8 +192,8 @@ $routes = [
         $success([
             'user' => $user,
             'summary' => [
-                'deposit_total' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE user_id=:user_id AND type='deposit' AND status='confirmed'", $id),
-                'withdraw_total' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE user_id=:user_id AND type='withdraw' AND status='confirmed'", $id),
+                'deposit_total' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE user_id=:user_id AND type='deposit' AND status IN ('confirmed','approved','success','completed')", $id),
+                'withdraw_total' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE user_id=:user_id AND type='withdraw' AND status IN ('confirmed','approved','success','completed')", $id),
                 'manual_add' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM admin_balance_adjustments WHERE user_id=:user_id AND action='add'", $id),
                 'manual_subtract' => $scalar($pdo, "SELECT COALESCE(SUM(amount),0) FROM admin_balance_adjustments WHERE user_id=:user_id AND action='subtract'", $id),
             ],
@@ -342,7 +343,19 @@ $routes = [
         $chk->execute(['id' => $id]);
         if (!$chk->fetch()) { $error(404, 'Kullanıcı bulunamadı.'); }
         $pdo->prepare('UPDATE users SET banned = 1 WHERE id = :id')->execute(['id' => $id]);
-        $success(['id' => $id, 'locked' => true]);
+        if (class_exists('MemberJwtService', false) || is_file(dirname(__DIR__, 3) . '/services/MemberJwtService.php')) {
+            if (!class_exists('MemberJwtService', false)) {
+                require_once dirname(__DIR__, 3) . '/services/MemberJwtService.php';
+            }
+            MemberJwtService::revokeAllForUser($pdo, $id);
+        } else {
+            try {
+                $pdo->prepare('UPDATE member_jwt_tokens SET revoked_at = NOW() WHERE user_id = :id AND revoked_at IS NULL')
+                    ->execute(['id' => $id]);
+            } catch (Throwable) {
+            }
+        }
+        $success(['id' => $id, 'locked' => true, 'banned' => true]);
     }],
     ['POST', 'users/{id}/unlock', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
         $requirePermission('users');
@@ -354,7 +367,7 @@ $routes = [
         $chk->execute(['id' => $id]);
         if (!$chk->fetch()) { $error(404, 'Kullanıcı bulunamadı.'); }
         $pdo->prepare('UPDATE users SET banned = 0 WHERE id = :id')->execute(['id' => $id]);
-        $success(['id' => $id, 'locked' => false]);
+        $success(['id' => $id, 'locked' => false, 'banned' => false]);
     }],
     ['POST', 'users/{id}/verify', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
         $requirePermission('users');
@@ -376,9 +389,72 @@ $routes = [
         $withdrawals = MegaPayzService::history(AdminDatabase::pdo(), $id, 'withdraw', ['limit' => 50]);
         $success(['deposits' => $deposits['items'] ?? [], 'withdrawals' => $withdrawals['items'] ?? []]);
     }],
-    ['GET', 'users/{id}/bets', static function (array $params) use ($requirePermission, $success): void {
+    ['GET', 'users/{id}/bets', static function (array $params) use ($requirePermission, $success, $error): void {
         $requirePermission('users');
-        $success(['items' => [], 'user_id' => (int) ($params['id'] ?? 0)], ['resource' => 'users/bets', 'status' => 'not_configured']);
+        $userId = max(0, (int) ($params['id'] ?? 0));
+        if ($userId <= 0) {
+            $error(422, 'Geçersiz kullanıcı ID.');
+        }
+        $pdo = AdminDatabase::pdo();
+        $items = [];
+        $push = static function (array $row) use (&$items): void {
+            $items[] = $row;
+        };
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT CONCAT('bgaming:', t.id) AS id,
+                        COALESCE(g.title, t.game_identifier, '-') AS game_name,
+                        COALESCE(NULLIF(g.provider, ''), 'BGaming') AS provider_name,
+                        LOWER(COALESCE(t.txn_type, 'bet')) AS txn_type,
+                        COALESCE(t.amount, 0) AS amount,
+                        COALESCE(t.processed_at, t.created_at) AS created_at
+                 FROM bgaming_transactions t
+                 LEFT JOIN bgaming_games g ON g.identifier = t.game_identifier
+                 WHERE t.user_id = :user_id ORDER BY t.id DESC LIMIT 50"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $push($row);
+            }
+        } catch (Throwable) {
+        }
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT CONCAT('gsc:', t.id) AS id,
+                        COALESCE(NULLIF(t.game_code, ''), CONCAT('GSC ', t.product_code), '-') AS game_name,
+                        'GSC+' AS provider_name,
+                        LOWER(COALESCE(NULLIF(t.action, ''), 'bet')) AS txn_type,
+                        COALESCE(t.amount, 0) AS amount,
+                        t.created_at
+                 FROM gsc_transactions t
+                 WHERE t.user_id = :user_id ORDER BY t.id DESC LIMIT 50"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $push($row);
+            }
+        } catch (Throwable) {
+        }
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT CONCAT('agg:', t.id) AS id,
+                        COALESCE(NULLIF(t.game_code, ''), '-') AS game_name,
+                        COALESCE(NULLIF(t.vendor_code, ''), 'Aggregator') AS provider_name,
+                        LOWER(COALESCE(t.txn_type, 'bet')) AS txn_type,
+                        COALESCE(t.amount, 0) AS amount,
+                        t.created_at
+                 FROM casino_aggregator_transactions t
+                 WHERE t.user_id = :user_id ORDER BY t.id DESC LIMIT 50"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $push($row);
+            }
+        } catch (Throwable) {
+        }
+        usort($items, static fn (array $a, array $b): int => strcmp((string) ($b['created_at'] ?? ''), (string) ($a['created_at'] ?? '')));
+        $items = array_slice($items, 0, 100);
+        $success(['items' => $items, 'user_id' => $userId, 'total' => count($items)]);
     }],
     ['GET', 'users/{id}/sessions', static function (array $params) use ($requirePermission, $success): void {
         $requirePermission('users');
@@ -499,29 +575,41 @@ $routes = [
         $stmt->execute();
         $success(['items' => $stmt->fetchAll(), 'total' => $total], ['page' => $page, 'per_page' => $perPage]);
     }],
-    ['POST', 'withdrawals/{id}/approve', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success): void {
+    ['POST', 'withdrawals/{id}/approve', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
         $requirePermission('withdrawals');
         $validateCsrf($payload);
         $admin = AdminAuth::user();
         $result = MegaPayzService::approveWithdraw(AdminDatabase::pdo(), (int) ($params['id'] ?? 0), (string) ($admin['username'] ?? 'Admin'));
+        if (empty($result['success'])) {
+            $error(422, (string) ($result['message'] ?? 'Çekim onaylanamadı.'), $result);
+        }
         $success($result);
     }],
-    ['POST', 'withdrawals/{id}/reject', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success): void {
+    ['POST', 'withdrawals/{id}/reject', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
         $requirePermission('withdrawals');
         $validateCsrf($payload);
         $reason = trim((string) ($payload['body']['reason'] ?? ''));
         $result = MegaPayzService::rejectWithdraw(AdminDatabase::pdo(), (int) ($params['id'] ?? 0), $reason);
+        if (empty($result['success'])) {
+            $error(422, (string) ($result['message'] ?? 'Çekim reddedilemedi.'), $result);
+        }
         $success($result);
     }],
-    ['POST', 'deposits/{id}/approve', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success): void {
+    ['POST', 'deposits/{id}/approve', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $error): void {
         $requirePermission('deposits');
         $validateCsrf($payload);
-        $success(['id' => (int) ($params['id'] ?? 0), 'approved' => false], ['status' => 'provider_managed']);
+        $error(501, 'Yatırım onayı sağlayıcı callback ile yönetilir; manuel onay desteklenmiyor.', [
+            'id' => (int) ($params['id'] ?? 0),
+            'status' => 'provider_managed',
+        ]);
     }],
-    ['POST', 'deposits/{id}/reject', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success): void {
+    ['POST', 'deposits/{id}/reject', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $error): void {
         $requirePermission('deposits');
         $validateCsrf($payload);
-        $success(['id' => (int) ($params['id'] ?? 0), 'rejected' => false], ['status' => 'provider_managed']);
+        $error(501, 'Yatırım reddi sağlayıcı callback ile yönetilir; manuel red desteklenmiyor.', [
+            'id' => (int) ($params['id'] ?? 0),
+            'status' => 'provider_managed',
+        ]);
     }],
     ['GET', 'financial-reports', static function (array $params, array $payload) use ($requireAnyPermission, $success, $getInput): void {
         $requireAnyPermission(['deposits', 'withdrawals']);
@@ -591,8 +679,19 @@ $routes = [
         $page = max(1, (int) $getInput($payload, 'page', 1));
         $perPage = min(100, max(10, (int) $getInput($payload, 'per_page', 25)));
         $status = trim((string) $getInput($payload, 'status', 'open'));
-        $result = ComplianceService::listRiskAlerts(AdminDatabase::pdo(), $page, $perPage, $status);
-        $success(['items' => $result['items'], 'total' => $result['total']], [
+        $filters = [
+            'status' => $status,
+            'severity' => trim((string) $getInput($payload, 'severity', '')),
+            'rule' => trim((string) $getInput($payload, 'rule', '')),
+            'q' => trim((string) $getInput($payload, 'q', '')),
+        ];
+        $result = ComplianceService::listRiskAlerts(AdminDatabase::pdo(), $page, $perPage, $status, $filters);
+        $success([
+            'items' => $result['items'],
+            'total' => $result['total'],
+            'summary' => ComplianceService::summary(AdminDatabase::pdo(), 'risk_alerts'),
+            'charts' => ComplianceService::chartBundle(AdminDatabase::pdo(), 'risk_alerts'),
+        ], [
             'resource' => 'risk/alerts',
             'page' => $page,
             'per_page' => $perPage,
@@ -601,7 +700,26 @@ $routes = [
     }],
     ['GET', 'risk/rules', static function () use ($requirePermission, $success): void {
         $requirePermission('dashboard');
-        $success(['items' => [], 'total' => 0], ['resource' => 'risk/rules', 'status' => 'not_configured']);
+        $success([
+            'items' => [
+                ['code' => 'large_withdraw', 'channel' => 'aml', 'title' => 'Yüksek tutarlı çekim'],
+                ['code' => 'large_deposit', 'channel' => 'aml', 'title' => 'Yüksek tutarlı yatırım'],
+                ['code' => 'rapid_deposit_withdraw', 'channel' => 'aml', 'title' => 'Hızlı yatırım sonrası çekim'],
+                ['code' => 'new_account_large_withdraw', 'channel' => 'aml', 'title' => 'Yeni hesap yüksek çekim'],
+                ['code' => 'withdraw_without_deposit', 'channel' => 'aml', 'title' => 'Yatırımsız çekim'],
+                ['code' => 'withdraw_exceeds_deposits', 'channel' => 'aml', 'title' => 'Çekim yatırımını aşıyor'],
+                ['code' => 'withdraw_without_kyc', 'channel' => 'aml', 'title' => 'KYC’siz yüksek çekim'],
+                ['code' => 'deposit_structuring', 'channel' => 'aml', 'title' => 'Parçalı yatırım'],
+                ['code' => 'shared_identity', 'channel' => 'aml', 'title' => 'Paylaşılan kimlik'],
+                ['code' => 'period_withdraw_ratio', 'channel' => 'aml', 'title' => 'Dönemsel çekim oranı'],
+                ['code' => 'multiple_pending_withdrawals', 'channel' => 'risk', 'title' => 'Çoklu bekleyen çekim'],
+                ['code' => 'new_account_large_deposit', 'channel' => 'risk', 'title' => 'Yeni hesap yüksek yatırım'],
+                ['code' => 'shared_phone', 'channel' => 'risk', 'title' => 'Paylaşılan telefon'],
+                ['code' => 'kyc_missing_high_balance', 'channel' => 'risk', 'title' => 'KYC’siz yüksek bakiye'],
+                ['code' => 'withdraw_velocity', 'channel' => 'risk', 'title' => 'Çekim hızı'],
+            ],
+            'total' => 15,
+        ], ['resource' => 'risk/rules', 'status' => 'configured']);
     }],
     ['GET', 'compliance/kyc-queue', static function (array $params, array $payload) use ($requirePermission, $success, $getInput): void {
         $requirePermission('kyc');
@@ -643,24 +761,46 @@ $routes = [
         $page = max(1, (int) $getInput($payload, 'page', 1));
         $perPage = min(100, max(10, (int) $getInput($payload, 'per_page', 25)));
         $status = trim((string) $getInput($payload, 'status', 'open'));
-        $result = ComplianceService::listAmlAlerts(AdminDatabase::pdo(), $page, $perPage, $status);
-        $success(['items' => $result['items'], 'total' => $result['total']], [
+        $filters = [
+            'status' => $status,
+            'severity' => trim((string) $getInput($payload, 'severity', '')),
+            'rule' => trim((string) $getInput($payload, 'rule', '')),
+            'q' => trim((string) $getInput($payload, 'q', '')),
+        ];
+        $result = ComplianceService::listAmlAlerts(AdminDatabase::pdo(), $page, $perPage, $status, $filters);
+        $success([
+            'items' => $result['items'],
+            'total' => $result['total'],
+            'summary' => ComplianceService::summary(AdminDatabase::pdo(), 'aml_alerts'),
+            'charts' => ComplianceService::chartBundle(AdminDatabase::pdo(), 'aml_alerts'),
+        ], [
             'resource' => 'compliance/aml-alerts',
             'page' => $page,
             'per_page' => $perPage,
             'status' => $status,
         ]);
     }],
-    ['GET', 'compliance/audit-log', static function (array $params, array $payload) use ($requirePermission, $success, $repo, $getInput): void {
+    ['GET', 'compliance/audit-log', static function (array $params, array $payload) use ($requirePermission, $success, $getInput): void {
         $requirePermission('logs');
         $page = max(1, (int) $getInput($payload, 'page', 1));
         $perPage = min(100, max(10, (int) $getInput($payload, 'per_page', 25)));
-        $table = 'admin_audit_logs';
-        try {
-            $success(['items' => $repo->rows($table, $page, $perPage, '')], ['page' => $page, 'per_page' => $perPage, 'total' => $repo->countRows($table, '')]);
-        } catch (Throwable) {
-            $success(['items' => [], 'total' => 0], ['resource' => 'compliance/audit-log', 'status' => 'not_configured']);
-        }
+        $result = AdminAuditService::listUnified(AdminDatabase::pdo(), [
+            'page' => $page,
+            'per_page' => $perPage,
+            'q' => trim((string) $getInput($payload, 'q', '')),
+            'action' => trim((string) $getInput($payload, 'action', '')),
+            'admin' => trim((string) $getInput($payload, 'admin', '')),
+            'source' => trim((string) $getInput($payload, 'source', '')),
+        ]);
+        $success([
+            'items' => $result['items'],
+            'total' => $result['total'],
+        ], [
+            'resource' => 'compliance/audit-log',
+            'page' => $result['page'],
+            'per_page' => $result['per_page'],
+            'total_pages' => $result['total_pages'],
+        ]);
     }],
     ['POST', 'compliance/kyc/{id}/approve', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
         $requirePermission('kyc');
@@ -708,11 +848,29 @@ $routes = [
             $error(422, 'Geçersiz AML kaydı.');
         }
         $note = trim((string) ($payload['body']['note'] ?? ''));
-        $ok = ComplianceService::resolveAml(AdminDatabase::pdo(), $id, AdminAuth::userName(), $note);
+        $pdo = AdminDatabase::pdo();
+        $ok = ComplianceService::resolveAml($pdo, $id, AdminAuth::userName(), $note);
         if (!$ok) {
             $error(404, 'AML kaydı bulunamadı.');
         }
+        AdminAuditService::write($pdo, 'aml_resolve', 'aml_alert', $id, $note !== '' ? $note : 'AML uyarısı çözüldü');
         $success(['id' => $id, 'resolved' => true]);
+    }],
+    ['POST', 'compliance/aml-alerts/{id}/ignore', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
+        $requirePermission('compliance-aml');
+        $validateCsrf($payload);
+        $id = (int) ($params['id'] ?? 0);
+        if ($id <= 0) {
+            $error(422, 'Geçersiz AML kaydı.');
+        }
+        $note = trim((string) ($payload['body']['note'] ?? ''));
+        $pdo = AdminDatabase::pdo();
+        $ok = ComplianceService::ignoreAml($pdo, $id, AdminAuth::userName(), $note);
+        if (!$ok) {
+            $error(404, 'AML kaydı bulunamadı.');
+        }
+        AdminAuditService::write($pdo, 'aml_ignore', 'aml_alert', $id, $note !== '' ? $note : 'AML uyarısı yoksayıldı');
+        $success(['id' => $id, 'ignored' => true]);
     }],
     ['POST', 'compliance/risk-alerts/{id}/resolve', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
         $requirePermission('compliance-risk');
@@ -722,20 +880,34 @@ $routes = [
             $error(422, 'Geçersiz risk kaydı.');
         }
         $note = trim((string) ($payload['body']['note'] ?? ''));
-        $ok = ComplianceService::resolveRisk(AdminDatabase::pdo(), $id, AdminAuth::userName(), $note);
+        $pdo = AdminDatabase::pdo();
+        $ok = ComplianceService::resolveRisk($pdo, $id, AdminAuth::userName(), $note);
         if (!$ok) {
             $error(404, 'Risk kaydı bulunamadı.');
         }
+        AdminAuditService::write($pdo, 'risk_resolve', 'risk_alert', $id, $note !== '' ? $note : 'Risk uyarısı çözüldü');
         $success(['id' => $id, 'resolved' => true]);
     }],
-    ['POST', 'wallet/manual-adjustment', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
+    ['POST', 'compliance/risk-alerts/{id}/ignore', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
+        $requirePermission('compliance-risk');
+        $validateCsrf($payload);
+        $id = (int) ($params['id'] ?? 0);
+        if ($id <= 0) {
+            $error(422, 'Geçersiz risk kaydı.');
+        }
+        $note = trim((string) ($payload['body']['note'] ?? ''));
+        $pdo = AdminDatabase::pdo();
+        $ok = ComplianceService::ignoreRisk($pdo, $id, AdminAuth::userName(), $note);
+        if (!$ok) {
+            $error(404, 'Risk kaydı bulunamadı.');
+        }
+        AdminAuditService::write($pdo, 'risk_ignore', 'risk_alert', $id, $note !== '' ? $note : 'Risk uyarısı yoksayıldı');
+        $success(['id' => $id, 'ignored' => true]);
+    }],
+    ['POST', 'wallet/manual-adjustment', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $error): void {
         $requirePermission('users');
         $validateCsrf($payload);
-        $userId = (int) ($payload['body']['user_id'] ?? 0);
-        if ($userId <= 0) {
-            $error(422, 'user_id zorunludur.');
-        }
-        $success(['user_id' => $userId, 'created' => false], ['status' => 'use_users_balance_adjust']);
+        $error(410, 'Bu uç nokta kaldırıldı. POST users/{id}/balance-adjust kullanın.');
     }],
     ['GET', 'casino/providers', static function () use ($requireAnyPermission, $success): void {
         $requireAnyPermission(['bgaming-games']);
@@ -764,7 +936,7 @@ $routes = [
         $updated = false;
         foreach (['bgaming_games'] as $table) {
             try {
-                $stmt = $pdo->prepare("UPDATE $table SET is_active = 1 WHERE id = :id OR game_id = :gid");
+                $stmt = $pdo->prepare("UPDATE `$table` SET is_active = 1 WHERE id = :id OR identifier = :gid");
                 $stmt->execute(['id' => is_numeric($gameId) ? (int) $gameId : 0, 'gid' => $gameId]);
                 if ($stmt->rowCount() > 0) { $updated = true; break; }
             } catch (Throwable) {}
@@ -781,7 +953,7 @@ $routes = [
         $updated = false;
         foreach (['bgaming_games'] as $table) {
             try {
-                $stmt = $pdo->prepare("UPDATE $table SET is_active = 0 WHERE id = :id OR game_id = :gid");
+                $stmt = $pdo->prepare("UPDATE `$table` SET is_active = 0 WHERE id = :id OR identifier = :gid");
                 $stmt->execute(['id' => is_numeric($gameId) ? (int) $gameId : 0, 'gid' => $gameId]);
                 if ($stmt->rowCount() > 0) { $updated = true; break; }
             } catch (Throwable) {}
@@ -796,15 +968,62 @@ $routes = [
         $pdo = AdminDatabase::pdo();
         $success(['bgaming' => BgamingService::syncGames($pdo)]);
     }],
-    ['POST', 'internal/jobs/sync-odds', static function (array $params, array $payload) use ($requireAuth, $validateCsrf, $success): void {
+    ['POST', 'internal/jobs/sync-odds', static function (array $params, array $payload) use ($requireAuth, $validateCsrf, $error): void {
         $requireAuth();
         $validateCsrf($payload);
-        $success(['queued' => false], ['status' => 'not_configured']);
+        $error(501, 'Odds senkronizasyonu bu panelde yok; sportsbook sağlayıcı back-office kullanılır.');
     }],
     ['POST', 'internal/jobs/recalculate-balances', static function (array $params, array $payload) use ($requireAuth, $validateCsrf, $success): void {
         $requireAuth();
         $validateCsrf($payload);
-        $success(['queued' => false], ['status' => 'not_configured']);
+        $pdo = AdminDatabase::pdo();
+        $checked = 0;
+        $mismatches = 0;
+        $samples = [];
+        try {
+            $rows = $pdo->query(
+                "SELECT u.id, u.username, u.bonus_balance,
+                        COALESCE((SELECT SUM(current_bonus_balance) FROM user_active_bonuses b WHERE b.user_id = u.id AND b.status = 'active'), 0) AS active_bonus_sum
+                 FROM users u
+                 WHERE u.bonus_balance > 0 OR EXISTS (
+                    SELECT 1 FROM user_active_bonuses b WHERE b.user_id = u.id AND b.status = 'active'
+                 )
+                 ORDER BY u.id DESC
+                 LIMIT 500"
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            foreach ($rows as $row) {
+                $checked++;
+                $wallet = round((float) ($row['bonus_balance'] ?? 0), 2);
+                $sum = round((float) ($row['active_bonus_sum'] ?? 0), 2);
+                if (abs($wallet - $sum) > 0.01) {
+                    $mismatches++;
+                    if (count($samples) < 20) {
+                        $samples[] = [
+                            'user_id' => (int) ($row['id'] ?? 0),
+                            'username' => (string) ($row['username'] ?? ''),
+                            'bonus_balance' => $wallet,
+                            'active_bonus_sum' => $sum,
+                            'delta' => round($wallet - $sum, 2),
+                        ];
+                    }
+                }
+            }
+        } catch (Throwable $exception) {
+            $success([
+                'queued' => false,
+                'checked' => $checked,
+                'mismatches' => $mismatches,
+                'error' => $exception->getMessage(),
+            ], ['status' => 'partial']);
+            return;
+        }
+        $success([
+            'queued' => false,
+            'mode' => 'audit_only',
+            'checked' => $checked,
+            'mismatches' => $mismatches,
+            'samples' => $samples,
+        ], ['status' => 'ok']);
     }],
     ['GET', 'internal/health', static function () use ($requireAuth, $success): void {
         $requireAuth();
@@ -812,7 +1031,30 @@ $routes = [
     }],
     ['GET', 'internal/metrics', static function () use ($requireAuth, $success): void {
         $requireAuth();
-        $success(['metrics' => []], ['status' => 'not_configured']);
+        $pdo = AdminDatabase::pdo();
+        $scalar = static function (string $sql) use ($pdo): float {
+            try {
+                return (float) $pdo->query($sql)->fetchColumn();
+            } catch (Throwable) {
+                return 0.0;
+            }
+        };
+        $success([
+            'metrics' => [
+                'users_total' => (int) $scalar('SELECT COUNT(*) FROM users'),
+                'users_active_24h' => (int) $scalar("SELECT COUNT(*) FROM users WHERE COALESCE(last_login_at, updated_at, created_at) >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"),
+                'withdrawals_pending' => (int) $scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type='withdraw' AND status='pending'"),
+                'deposits_pending' => (int) $scalar("SELECT COUNT(*) FROM megapayz_transactions WHERE type='deposit' AND status='pending'"),
+                'kyc_pending' => (int) $scalar("SELECT COUNT(*) FROM kyc_requests WHERE status='pending'"),
+                'call_requests_pending' => (int) $scalar("SELECT COUNT(*) FROM call_me_requests WHERE status='pending'"),
+                'support_tickets_open' => (int) $scalar("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','answered')"),
+                'aml_alerts_open' => (int) $scalar("SELECT COUNT(*) FROM aml_alerts WHERE status IN ('open','new','pending')"),
+                'risk_alerts_open' => (int) $scalar("SELECT COUNT(*) FROM risk_alerts WHERE status IN ('open','new','pending')"),
+                'deposit_volume_today' => $scalar("SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE type='deposit' AND status IN ('confirmed','approved','success','completed') AND DATE(created_at)=CURDATE()"),
+                'withdraw_volume_today' => $scalar("SELECT COALESCE(SUM(amount),0) FROM megapayz_transactions WHERE type='withdraw' AND status IN ('confirmed','approved','success','completed') AND DATE(created_at)=CURDATE()"),
+            ],
+            'generated_at' => date('c'),
+        ], ['status' => 'ok']);
     }],
     ['GET', 'promotions', static function (array $params, array $payload) use ($requirePermission, $success, $getInput): void {
         $requirePermission('promotions');
@@ -1152,7 +1394,7 @@ $routes = [
         $admin = AdminAuth::user();
         $where = $bonusId > 0 ? 'id = :id' : "user_id = :user_id AND status = 'active'";
         $bind  = $bonusId > 0 ? ['id' => $bonusId] : ['user_id' => $userId];
-        $stmt  = $pdo->prepare("UPDATE user_active_bonuses SET status = 'revoked' WHERE $where");
+        $stmt  = $pdo->prepare("UPDATE user_active_bonuses SET status = 'cancelled', current_bonus_balance = 0 WHERE $where");
         $stmt->execute($bind);
         $revoked = $stmt->rowCount();
         if ($revoked === 0) { $error(404, 'Aktif bonus bulunamadı.'); }
@@ -1291,8 +1533,8 @@ $routes = [
             'ends_at'     => trim((string) ($body['ends_at']    ?? '')) ?: null,
         ]);
         $success(['id' => (int) $pdo->lastInsertId(), 'created' => true]);
-        if (function_exists('metropol_notify_frontend_cms_purge')) {
-            metropol_notify_frontend_cms_purge('sliders');
+        if (function_exists('notify_frontend_cms_purge')) {
+            notify_frontend_cms_purge('sliders');
         }
     }],
     ['POST', 'banners/{id}', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
@@ -1311,8 +1553,8 @@ $routes = [
         $sets[] = 'updated_at = NOW()';
         $pdo->prepare('UPDATE sliders SET ' . implode(', ', $sets) . ' WHERE id = :id')->execute($bind);
         $success(['id' => $id, 'updated' => true]);
-        if (function_exists('metropol_notify_frontend_cms_purge')) {
-            metropol_notify_frontend_cms_purge('sliders');
+        if (function_exists('notify_frontend_cms_purge')) {
+            notify_frontend_cms_purge('sliders');
         }
     }],
     ['DELETE', 'banners/{id}', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
@@ -1326,8 +1568,8 @@ $routes = [
         if (!$stmt->fetch()) { $error(404, 'Banner bulunamadı.'); }
         $pdo->prepare('DELETE FROM sliders WHERE id = :id')->execute(['id' => $id]);
         $success(['id' => $id, 'deleted' => true]);
-        if (function_exists('metropol_notify_frontend_cms_purge')) {
-            metropol_notify_frontend_cms_purge('sliders');
+        if (function_exists('notify_frontend_cms_purge')) {
+            notify_frontend_cms_purge('sliders');
         }
     }],
     ['GET', 'call-requests', static function (array $params, array $payload) use ($requirePermission, $success, $repo, $getInput): void {

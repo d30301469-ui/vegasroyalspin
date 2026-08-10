@@ -84,12 +84,12 @@ $installMessage = trim((string) ($installMessage ?? ''));
             </li>
             <li>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-                <span>Sorun olursa: <code>php deploy/aapanel/fix-frontend-env.php</code> ve <code>php scripts/post-upload-check.php</code></span>
+                <span>Sorun olursa: <code>php scripts/bootstrap-frontend-env.php</code> ve <code>php scripts/post-upload-check.php</code></span>
             </li>
         </ul>
 
         <?php if (!$backendVerified): ?>
-            <div class="iz-warn">Backend doğrulaması atlandı. bo-nexthub.site kurulumunu bitirdikten sonra <code>php deploy/aapanel/fix-frontend-env.php</code> çalıştırın ve ana sayfayı yenileyin.</div>
+            <div class="iz-warn">Backend doğrulaması atlandı. bo-nexthub.site kurulumunu bitirdikten sonra <code>php scripts/bootstrap-frontend-env.php</code> çalıştırın ve ana sayfayı yenileyin.</div>
         <?php endif; ?>
 
         <div class="iz-actions">

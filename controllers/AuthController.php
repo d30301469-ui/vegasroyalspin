@@ -66,22 +66,28 @@ class AuthController extends Controller
         if (is_readable(CONFIG_PATH . '/member_api_public.php')) {
             require_once CONFIG_PATH . '/member_api_public.php';
         }
-        if (function_exists('metropol_frontend_clear_member_session')) {
-            metropol_frontend_clear_member_session();
+        if (function_exists('frontend_clear_member_session')) {
+            frontend_clear_member_session();
         }
 
-        $_SESSION = [];
-
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(
-                session_name(), '', time() - 42000,
-                $params['path'], $params['domain'],
-                $params['secure'], $params['httponly']
-            );
+        // Yalnızca FRONTSESSID yok edilir; ADMINSESSID (admin paneli) korunur.
+        $frontendName = function_exists('app_frontend_session_name') ? app_frontend_session_name() : 'FRONTSESSID';
+        $hasAdmin = function_exists('app_session_has_admin_user') && app_session_has_admin_user();
+        if (session_name() === $frontendName && !$hasAdmin) {
+            if (ini_get('session.use_cookies')) {
+                $params = session_get_cookie_params();
+                setcookie(
+                    session_name(),
+                    '',
+                    time() - 42000,
+                    $params['path'],
+                    $params['domain'],
+                    $params['secure'],
+                    $params['httponly']
+                );
+            }
+            session_destroy();
         }
-
-        session_destroy();
         $this->redirect('/?logout=1');
     }
 }

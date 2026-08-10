@@ -12,10 +12,18 @@ final class SecurityHeadersMiddleware
     {
         if (!headers_sent()) {
             header('X-Content-Type-Options: nosniff');
-            header('X-Frame-Options: SAMEORIGIN');
             header('Referrer-Policy: strict-origin-when-cross-origin');
             header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
-            header("Content-Security-Policy: object-src 'self' https:; base-uri 'self'; frame-ancestors 'self'");
+
+            $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+            $isTelegramMiniApp = preg_match('#(^|/)tg/?$#', $path) === 1;
+            if ($isTelegramMiniApp) {
+                // Telegram Desktop Mini App cross-origin iframe içinde açılır.
+                header("Content-Security-Policy: object-src 'self' https:; base-uri 'self'; frame-ancestors 'self' https://web.telegram.org https://*.telegram.org https://telegram.org");
+            } else {
+                header('X-Frame-Options: SAMEORIGIN');
+                header("Content-Security-Policy: object-src 'self' https:; base-uri 'self'; frame-ancestors 'self'");
+            }
 
             $this->applyCorsHeaders();
         }
@@ -44,7 +52,7 @@ final class SecurityHeadersMiddleware
         }
 
         header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Authorization, Content-Type, X-CSRF-Token, X-Requested-With');
+        header('Access-Control-Allow-Headers: Authorization, Content-Type, X-CSRF-Token, X-Requested-With, X-App-Member-Jwt, X-Metropol-Member-Jwt, X-Frontend-Trust, X-Member-Proxy-User-Id');
         header('Access-Control-Max-Age: 86400');
         header('Vary: Origin');
     }

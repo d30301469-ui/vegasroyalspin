@@ -299,8 +299,8 @@ if (class_exists('ApiMediaUrl', false)) {
                                     <img data-site-logo-link src="<?= htmlspecialchars($loginLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($loginSiteName, ENT_QUOTES, 'UTF-8') ?>" class="login-logo-img">
                                 </div>
                                 <div class="login-header-actions e-p-sections-bc">
-                                    <button type="button" class="login-register-btn e-p-section-title-bc" id="openRegisterFromLogin">KAYIT</button>
-                                    <button type="button" class="login-close e-p-close-icon-bc" data-dismiss="modal" aria-label="Kapat">
+                                    <button type="button" class="login-register-btn e-p-section-title-bc" id="openRegisterFromLogin"><?= htmlspecialchars(__('nav.register'), ENT_QUOTES, 'UTF-8') ?></button>
+                                    <button type="button" class="login-close e-p-close-icon-bc" data-dismiss="modal" aria-label="<?= htmlspecialchars(__('auth.close'), ENT_QUOTES, 'UTF-8') ?>">
                                         <span aria-hidden="true">&times;</span>
                                     </button>
                                 </div>
@@ -310,22 +310,22 @@ if (class_exists('ApiMediaUrl', false)) {
                                 <form method="POST" action="#" novalidate class="login-form entrance-form-bc sign-in popup" id="loginForm" onsubmit="if(!window.__loginAjaxReady){console.warn('Login form not ready');return false;}return true;">
                                     <input type="hidden" name="next" id="loginFormNext" value="<?= htmlspecialchars($login_next_safe, ENT_QUOTES, 'UTF-8') ?>">
                                     <div class="entrance-form-content-bc single-side step-0">
-                                        <div class="sg-n-text-row-1-bc login-text-block" id="loginScreenHeader">Hesabınız var mı?</div>
-                                        <div class="sg-n-text-row-2-bc login-text-block">HEMEN GİRİŞ YAPIN!</div>
+                                        <div class="sg-n-text-row-1-bc login-text-block" id="loginScreenHeader"><?= htmlspecialchars(__('auth.have_account'), ENT_QUOTES, 'UTF-8') ?></div>
+                                        <div class="sg-n-text-row-2-bc login-text-block"><?= htmlspecialchars(__('auth.login_now'), ENT_QUOTES, 'UTF-8') ?></div>
 
                                         <div class="form-group entrance-f-item-bc">
                                             <label class="form-control-label-bc inputs">
                                                 <input type="text" class="form-control-input-bc" name="username" id="loginUsername" value="" required>
                                                 <i class="form-control-input-stroke-bc"></i>
-                                                <span class="form-control-title-bc ellipsis">E-posta / Kullanıcı Adı *</span>
+                                                <span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.email_or_username'), ENT_QUOTES, 'UTF-8') ?></span>
                                             </label>
-                                            <div class="login-error-text" data-error-for="username">Bu alan gerekli</div>
+                                            <div class="login-error-text" data-error-for="username"><?= htmlspecialchars(__('auth.required'), ENT_QUOTES, 'UTF-8') ?></div>
                                         </div>
 
                                         <div class="form-group entrance-f-item-bc">
                                             <label class="form-control-label-bc inputs login-password-field">
                                                 <input type="password" class="form-control-input-bc password-input" name="password" id="loginPassword" value="" required>
-                                                <button type="button" class="login-password-toggle" aria-label="Şifreyi göster" aria-pressed="false" data-target-password="#loginPassword">
+                                                <button type="button" class="login-password-toggle" aria-label="<?= htmlspecialchars(__('auth.show_password'), ENT_QUOTES, 'UTF-8') ?>" aria-pressed="false" data-target-password="#loginPassword">
                                                     <span class="login-password-toggle-icon login-password-toggle-icon-show" aria-hidden="true">
                                                         <svg viewBox="0 0 24 24" role="presentation" focusable="false" aria-hidden="true">
                                                             <path d="M2 12c1.8-4 6.1-7 10-7s8.2 3 10 7c-1.8 4-6.1 7-10 7S3.8 16 2 12Z"></path>
@@ -341,15 +341,15 @@ if (class_exists('ApiMediaUrl', false)) {
                                                     </span>
                                                 </button>
                                                 <i class="form-control-input-stroke-bc"></i>
-                                                <span class="form-control-title-bc ellipsis">Şifre *</span>
+                                                <span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.password_required'), ENT_QUOTES, 'UTF-8') ?></span>
                                             </label>
-                                            <div class="login-error-text" data-error-for="password">Bu alan gerekli</div>
+                                            <div class="login-error-text" data-error-for="password"><?= htmlspecialchars(__('auth.required'), ENT_QUOTES, 'UTF-8') ?></div>
                                         </div>
 
                                         <div class="login-remember-row">
                                             <label class="login-remember-label">
                                                 <input type="checkbox" name="remember_me" class="login-remember-checkbox">
-                                                <span>Beni hatırla</span>
+                                                <span><?= htmlspecialchars(__('auth.remember_me'), ENT_QUOTES, 'UTF-8') ?></span>
                                             </label>
                                         </div>
 
@@ -369,14 +369,14 @@ if (class_exists('ApiMediaUrl', false)) {
 
                                         <div class="entrance-form-actions-holder-bc reg-ext-1">
                                             <button type="submit" class="login-btn btn a-color">
-                                                <span class="btn-text">GİRİŞ YAP</span>
+                                                <span class="btn-text"><?= htmlspecialchars(__('auth.login_submit_caps'), ENT_QUOTES, 'UTF-8') ?></span>
                                                 <span class="loading" style="display: none;"></span>
                                             </button>
                                         </div>
 
                                         <div class="login-or-separator">
                                             <span class="login-or-line"></span>
-                                            <span class="login-or-text">VEYA</span>
+                                            <span class="login-or-text"><?= htmlspecialchars(__('auth.or'), ENT_QUOTES, 'UTF-8') ?></span>
                                             <span class="login-or-line"></span>
                                         </div>
 
@@ -397,8 +397,8 @@ if (class_exists('ApiMediaUrl', false)) {
 
                             <div id="forgotPasswordScreen" class="d-none">
                                 <div class="login-text-block login-forgot-heading">
-                                    <p class="login-top-text">Şifrenizi mi unuttunuz?</p>
-                                    <h2 class="login-main-title login-forgot-title">Şifre sıfırlama</h2>
+                                    <p class="login-top-text"><?= htmlspecialchars(__('auth.forgot_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                                    <h2 class="login-main-title login-forgot-title"><?= htmlspecialchars(__('auth.forgot_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
                                     <p class="login-forgot-hint">E-posta adresinizi girin. Hesabınız varsa şifre sıfırlama bağlantısını hemen gönderelim.</p>
                                 </div>
                                 <form method="POST" action="#" novalidate class="login-form" id="forgotPasswordForm">
@@ -418,10 +418,10 @@ if (class_exists('ApiMediaUrl', false)) {
                                     </button>
                                     <div class="login-forgot-note" role="note">
                                         <i class="bc-i-player-info" aria-hidden="true"></i>
-                                        <span>Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz.</span>
+                                        <span><?= htmlspecialchars(__('auth.forgot_hint'), ENT_QUOTES, 'UTF-8') ?></span>
                                     </div>
                                     <div class="login-forgot login-back-row">
-                                        <a href="#" id="backToLoginFromForgot">Girişe dön</a>
+                                        <a href="#" id="backToLoginFromForgot"><?= htmlspecialchars(__('auth.back_to_login'), ENT_QUOTES, 'UTF-8') ?></a>
                                     </div>
                                 </form>
                             </div>
@@ -429,7 +429,7 @@ if (class_exists('ApiMediaUrl', false)) {
                             <div class="login-support reg-form-footer-bc">
                                 <a href="<?= htmlspecialchars((string) ($siteContactLinks['live_support_url'] ?? (defined('LIVE_SUPPORT_URL') ? LIVE_SUPPORT_URL : '')), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="live-chat-adviser-bc">
                                     <i class="bc-i-live-chat" aria-hidden="true"></i>
-                                    <span>CANLI DESTEK İLE İLETİŞİME GEÇİN</span>
+                                    <span><?= htmlspecialchars(__('nav.live_support'), ENT_QUOTES, 'UTF-8') ?></span>
                                 </a>
                             </div>
                         </div>

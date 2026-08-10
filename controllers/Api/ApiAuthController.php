@@ -84,8 +84,8 @@ class ApiAuthController
             return false;
         }
 
-        $ip = function_exists('metropol_cloudflare_client_ip')
-            ? metropol_cloudflare_client_ip()
+        $ip = function_exists('cloudflare_client_ip')
+            ? cloudflare_client_ip()
             : (string) ($_SERVER['REMOTE_ADDR'] ?? '');
 
         $response = self::postTurnstileVerify($settings['secret_key'], $token, $ip);
@@ -440,8 +440,8 @@ class ApiAuthController
         $referred_by_affiliate_id = '';
 
         try {
-            $ip = function_exists('metropol_cloudflare_client_ip')
-                ? metropol_cloudflare_client_ip()
+            $ip = function_exists('cloudflare_client_ip')
+                ? cloudflare_client_ip()
                 : (string) ($_SERVER['REMOTE_ADDR'] ?? '');
             if ($ip === '') {
                 $ip = '0.0.0.0';
@@ -480,7 +480,8 @@ class ApiAuthController
         }
 
         if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['ajax_check']) && $_POST['ajax_check'] === 'true') {
-            $response = ['success' => true, 'username' => true, 'email' => true];
+            // success:false by default — asla "müsait" varsayma (eski davranış sahte yeşil tik üretiyordu).
+            $response = ['success' => true, 'code' => 200, 'username' => null, 'email' => null];
             $username = trim($_POST['username'] ?? '');
             $email    = trim($_POST['email'] ?? '');
 
@@ -489,8 +490,9 @@ class ApiAuthController
                 'email'    => $email,
             ]);
             if ($check === null) {
-                // Mevcut admin/member API'de ayrı availability ucu yok; kayıt ucu nihai validasyonu yapar.
-                self::registerWriteLog('AJAX kontrol: availability ucu yok veya yanıt vermedi; kayıt validasyonuna bırakıldı', 'INFO');
+                self::registerWriteLog('AJAX kontrol: availability ucu yok veya yanıt vermedi; UI tik göstermeyecek', 'INFO');
+                $response['success'] = false;
+                $response['code'] = 503;
             } else {
                 $c = BackendApiClient::unwrap($check);
                 if (isset($c['username_available'])) {
@@ -1063,6 +1065,17 @@ class ApiAuthController
 
                 return;
             }
+            if (($local['error'] ?? '') === 'ACCOUNT_BANNED' || (int) ($local['code'] ?? 0) === 403) {
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'code' => 403,
+                    'error' => 'ACCOUNT_BANNED',
+                    'message' => (string) ($local['message'] ?? 'Hesabınız banlanmıştır. Giriş yapamazsınız.'),
+                ], JSON_UNESCAPED_UNICODE);
+
+                return;
+            }
         }
 
         $res = MemberLoginService::login($username_input, $password_input);
@@ -1206,24 +1219,27 @@ class ApiAuthController
         if (is_readable(CONFIG_PATH . '/member_api_public.php')) {
             require_once CONFIG_PATH . '/member_api_public.php';
         }
-        if (function_exists('metropol_frontend_clear_member_session')) {
-            metropol_frontend_clear_member_session();
+        if (function_exists('frontend_clear_member_session')) {
+            frontend_clear_member_session();
         }
 
-        $_SESSION = [];
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(
-                session_name(),
-                '',
-                time() - 42000,
-                $params['path'],
-                $params['domain'],
-                $params['secure'],
-                $params['httponly']
-            );
+        $frontendName = function_exists('app_frontend_session_name') ? app_frontend_session_name() : 'FRONTSESSID';
+        $hasAdmin = function_exists('app_session_has_admin_user') && app_session_has_admin_user();
+        if (session_name() === $frontendName && !$hasAdmin) {
+            if (ini_get('session.use_cookies')) {
+                $params = session_get_cookie_params();
+                setcookie(
+                    session_name(),
+                    '',
+                    time() - 42000,
+                    $params['path'],
+                    $params['domain'],
+                    $params['secure'],
+                    $params['httponly']
+                );
+            }
+            session_destroy();
         }
-        session_destroy();
 
         http_response_code(200);
         echo json_encode([
@@ -1236,14 +1252,13 @@ class ApiAuthController
 
     private static function stripMemberAuthKeepingCsrf(): void
     {
-        $csrf = $_SESSION['csrf_token'] ?? null;
-        $ref  = $_SESSION['referral_code'] ?? null;
-        $_SESSION = [];
-        if ($csrf !== null) {
-            $_SESSION['csrf_token'] = $csrf;
+        if (function_exists('frontend_clear_member_session')) {
+            frontend_clear_member_session();
+
+            return;
         }
-        if ($ref !== null) {
-            $_SESSION['referral_code'] = $ref;
+        if (function_exists('app_clear_member_session_keys')) {
+            app_clear_member_session_keys();
         }
     }
 
@@ -1449,7 +1464,7 @@ class ApiAuthController
                 return ['success' => false, 'message' => 'Kullanıcı adı veya şifre hatalı.'];
             }
 
-            $stmt = $pdo->prepare('SELECT id, username, email, password FROM users WHERE username = :username OR email = :email LIMIT 1');
+            $stmt = $pdo->prepare('SELECT id, username, email, password, banned FROM users WHERE username = :username OR email = :email LIMIT 1');
             $stmt->execute([
                 'username' => $login,
                 'email' => $login,
@@ -1457,6 +1472,14 @@ class ApiAuthController
             $user = $stmt->fetch(\PDO::FETCH_ASSOC);
             if (!is_array($user)) {
                 return ['success' => false, 'message' => 'Kullanıcı adı veya şifre hatalı.'];
+            }
+            if (!empty($user['banned'])) {
+                return [
+                    'success' => false,
+                    'code' => 403,
+                    'error' => 'ACCOUNT_BANNED',
+                    'message' => 'Hesabınız banlanmıştır. Giriş yapamazsınız.',
+                ];
             }
 
             $hash = (string) ($user['password'] ?? '');
@@ -1536,7 +1559,7 @@ class ApiAuthController
             ),
             (string) ($db['username'] ?? 'root'),
             (string) ($db['password'] ?? ''),
-            function_exists('metropol_pdo_options') ? metropol_pdo_options() : [
+            function_exists('pdo_options') ? pdo_options() : [
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
                 \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
                 \PDO::ATTR_EMULATE_PREPARES => false,

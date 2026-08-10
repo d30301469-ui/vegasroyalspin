@@ -1,0 +1,21 @@
+{
+  "file": "mobile/assets/js/navigation.js",
+  "generated_at": "2026-08-03T15:56:55.734792+00:00",
+  "mode": "dynamic",
+  "strip_policy": "coverage_required",
+  "notes": "Auto-seeded dynamic surface; regenerate with tools/generate_js_manifests.py",
+  "entries": [
+    "__closeMobileNavMenu",
+    "__openMobileNavMenu",
+    "boot"
+  ],
+  "keep": [],
+  "stats": {
+    "functions": 24,
+    "reachable": 24,
+    "unreachable_candidates": 0,
+    "coverage_hits": 0
+  },
+  "unreachable_sample": [],
+  "confidence_note": "mode=dynamic strip_policy=coverage_required; entries=3 funcs=24 reachable=24 unreachable=0 coverage=0"
+}

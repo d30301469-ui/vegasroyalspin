@@ -1,8 +1,8 @@
 <?php
 /** Üye API modülü — index.php tarafından include edilir. */
 
-if (!function_exists('memberResetBaseUrl')) {
-    function memberResetBaseUrl(): string
+if (!function_exists('admin_member_reset_base_url')) {
+    function admin_member_reset_base_url(): string
     {
         $candidates = [
             getenv('FRONTEND_URL') ?: '',
@@ -27,17 +27,17 @@ if (!function_exists('memberResetBaseUrl')) {
     }
 }
 
-if (!function_exists('memberResetLink')) {
-    function memberResetLink(string $token): string
+if (!function_exists('admin_member_reset_link')) {
+    function admin_member_reset_link(string $token): string
     {
-        $base = memberResetBaseUrl();
+        $base = admin_member_reset_base_url();
         $path = '/reset-password?token=' . rawurlencode($token);
         return $base !== '' ? ($base . $path) : $path;
     }
 }
 
-if (!function_exists('memberIsValidTurkishIdentityNumber')) {
-    function memberIsValidTurkishIdentityNumber(string $tc): bool
+if (!function_exists('admin_member_is_valid_turkish_identity_number')) {
+    function admin_member_is_valid_turkish_identity_number(string $tc): bool
     {
         if (!preg_match('/^\d{11}$/', $tc)) {
             return false;
@@ -60,9 +60,9 @@ if (!function_exists('memberIsValidTurkishIdentityNumber')) {
     }
 }
 
-if (!function_exists('memberMailSettings')) {
+if (!function_exists('admin_member_mail_settings')) {
     /** @return array<string,mixed> */
-    function memberMailSettings(PDO $pdo): array
+    function admin_member_mail_settings(PDO $pdo): array
     {
         try {
             $stmt = $pdo->query('SELECT * FROM mail_settings ORDER BY id ASC LIMIT 1');
@@ -74,8 +74,8 @@ if (!function_exists('memberMailSettings')) {
     }
 }
 
-if (!function_exists('memberLogOutboundMail')) {
-    function memberLogOutboundMail(PDO $pdo, string $toEmail, string $subject, string $bodyPreview, string $status): void
+if (!function_exists('admin_member_log_outbound_mail')) {
+    function admin_member_log_outbound_mail(PDO $pdo, string $toEmail, string $subject, string $bodyPreview, string $status): void
     {
         try {
             $pdo->exec(
@@ -115,9 +115,9 @@ if (!function_exists('memberLogOutboundMail')) {
     }
 }
 
-if (!function_exists('memberResolveMailLogoUrl')) {
+if (!function_exists('admin_member_resolve_mail_logo_url')) {
     /** Mail şablonunda kullanılacak site favicon/logo URL'sini üretir (mutlak). */
-    function memberResolveMailLogoUrl(PDO $pdo, string $siteUrl): string
+    function admin_member_resolve_mail_logo_url(PDO $pdo, string $siteUrl): string
     {
         $siteUrl = rtrim($siteUrl, '/');
         $favicon = '';
@@ -146,13 +146,13 @@ if (!function_exists('memberResolveMailLogoUrl')) {
     }
 }
 
-if (!function_exists('memberResolveDisplayName')) {
+if (!function_exists('admin_member_resolve_display_name')) {
     /**
      * Üyenin görünen adını çözer (name/surname, first_name/last_name, username).
      *
      * @param array<string,mixed>|null $userHint
      */
-    function memberResolveDisplayName(PDO $pdo, string $toEmail, ?array $userHint = null): string
+    function admin_member_resolve_display_name(PDO $pdo, string $toEmail, ?array $userHint = null): string
     {
         $row = is_array($userHint) ? $userHint : null;
         if ($row === null) {
@@ -199,9 +199,9 @@ if (!function_exists('memberResolveDisplayName')) {
     }
 }
 
-if (!function_exists('memberMailFromAddress')) {
+if (!function_exists('admin_member_mail_from_address')) {
     /** @param array<string,mixed> $settings */
-    function memberMailFromAddress(array $settings): string
+    function admin_member_mail_from_address(array $settings): string
     {
         $from = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
         if ($from === '') {
@@ -211,16 +211,16 @@ if (!function_exists('memberMailFromAddress')) {
             return $from;
         }
 
-        $host = (string) (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+        $host = (string) (parse_url(admin_member_reset_base_url(), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
         return 'no-reply@' . $host;
     }
 }
 
-if (!function_exists('memberDeliverMail')) {
+if (!function_exists('admin_member_deliver_mail')) {
     /**
      * @param array<string,mixed> $settings
      */
-    function memberDeliverMail(
+    function admin_member_deliver_mail(
         PDO $pdo,
         array $settings,
         string $toEmail,
@@ -231,19 +231,19 @@ if (!function_exists('memberDeliverMail')) {
     ): bool {
         $enabled = (int) ($settings['enabled'] ?? $settings['mail_enabled'] ?? 0) === 1;
         if (!$enabled) {
-            memberLogOutboundMail($pdo, $toEmail, $subject, '[mail_disabled] ' . $messageText, 'not_configured');
+            admin_member_log_outbound_mail($pdo, $toEmail, $subject, '[mail_disabled] ' . $messageText, 'not_configured');
             return false;
         }
 
         $mailerFile = null;
         if (defined('ADMIN_APP_PATH')) {
-            $candidate = rtrim((string) ADMIN_APP_PATH, '/\\') . '/Services/MetropolMailer.php';
+            $candidate = rtrim((string) ADMIN_APP_PATH, '/\\') . '/Services/Mailer.php';
             if (is_file($candidate)) {
                 $mailerFile = $candidate;
             }
         }
         if ($mailerFile === null) {
-            $candidate = dirname(__DIR__, 3) . '/app/Services/MetropolMailer.php';
+            $candidate = dirname(__DIR__, 3) . '/app/Services/Mailer.php';
             if (is_file($candidate)) {
                 $mailerFile = $candidate;
             }
@@ -252,14 +252,14 @@ if (!function_exists('memberDeliverMail')) {
             require_once $mailerFile;
         }
 
-        $from = memberMailFromAddress($settings);
-        if (function_exists('metropol_mail_send')) {
+        $from = admin_member_mail_from_address($settings);
+        if (function_exists('mail_send')) {
             $error = '';
-            $ok = metropol_mail_send($settings, $from, $toEmail, $subject, $messageText, $error, $htmlBody, $toName);
+            $ok = mail_send($settings, $from, $toEmail, $subject, $messageText, $error, $htmlBody, $toName);
             $preview = $ok
                 ? $messageText
                 : ('[smtp_error] ' . ($error !== '' ? $error : 'send_failed') . "\n\n" . $messageText);
-            memberLogOutboundMail($pdo, $toEmail, $subject, $preview, $ok ? 'sent' : 'failed');
+            admin_member_log_outbound_mail($pdo, $toEmail, $subject, $preview, $ok ? 'sent' : 'failed');
             return $ok;
         }
 
@@ -271,19 +271,19 @@ if (!function_exists('memberDeliverMail')) {
             'X-Mailer: PHP/' . phpversion(),
         ];
         $sent = @mail($toEmail, $subject, $messageText, implode("\r\n", $headers));
-        memberLogOutboundMail($pdo, $toEmail, $subject, $messageText, $sent ? 'sent' : 'failed');
+        admin_member_log_outbound_mail($pdo, $toEmail, $subject, $messageText, $sent ? 'sent' : 'failed');
         return $sent;
     }
 }
 
-if (!function_exists('memberSendResetMail')) {
+if (!function_exists('admin_member_send_reset_mail')) {
     /**
      * @param array<string,mixed>|null $userHint users satırı (name/surname için)
      */
-    function memberSendResetMail(PDO $pdo, string $toEmail, string $token, ?array $userHint = null): bool
+    function admin_member_send_reset_mail(PDO $pdo, string $toEmail, string $token, ?array $userHint = null): bool
     {
-        $settings = memberMailSettings($pdo);
-        $memberName = memberResolveDisplayName($pdo, $toEmail, $userHint);
+        $settings = admin_member_mail_settings($pdo);
+        $memberName = admin_member_resolve_display_name($pdo, $toEmail, $userHint);
 
         $companyName = trim((string) ($settings['company_name'] ?? ''));
         if ($companyName === '') {
@@ -291,7 +291,7 @@ if (!function_exists('memberSendResetMail')) {
         }
 
         $subject = $companyName . ' — Şifre Sıfırlama';
-        $link = memberResetLink($token);
+        $link = admin_member_reset_link($token);
         $messageText = 'Merhaba ' . $memberName . ",\n\n"
             . $companyName . " hesabınız için şifre sıfırlama talebinde bulundunuz.\n"
             . "Şifrenizi sıfırlamak için aşağıdaki bağlantıyı kullanın:\n\n"
@@ -300,18 +300,18 @@ if (!function_exists('memberSendResetMail')) {
             . $companyName . ' Ekibi';
 
         $htmlBody = null;
-        $mailerFile = dirname(__DIR__, 3) . '/app/Services/MetropolMailer.php';
+        $mailerFile = dirname(__DIR__, 3) . '/app/Services/Mailer.php';
         if (is_file($mailerFile)) {
             require_once $mailerFile;
         }
-        if (function_exists('metropol_mail_render_template')) {
+        if (function_exists('mail_render_template')) {
             $supportEmail = trim((string) ($settings['support_email'] ?? ''));
             if ($supportEmail === '' || filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false) {
-                $domain = (string) (parse_url(memberResetBaseUrl(), PHP_URL_HOST) ?: 'vegasroyalspin.com');
+                $domain = (string) (parse_url(admin_member_reset_base_url(), PHP_URL_HOST) ?: 'vegasroyalspin.com');
                 $supportEmail = 'support@' . $domain;
             }
 
-            $siteUrl = memberResetBaseUrl();
+            $siteUrl = admin_member_reset_base_url();
             // Eski / uyumsuz özel sablonlar ad-soyadi gostermez; markali varsayilana dus.
             $customHtml = trim((string) ($settings['reset_template_html'] ?? ''));
             if ($customHtml !== '' && (
@@ -329,7 +329,7 @@ if (!function_exists('memberSendResetMail')) {
                 'company_name' => $companyName,
                 'support_email' => $supportEmail,
                 'company_address' => (string) ($settings['company_address'] ?? ''),
-                'logo_url' => memberResolveMailLogoUrl($pdo, $siteUrl),
+                'logo_url' => admin_member_resolve_mail_logo_url($pdo, $siteUrl),
                 'member_name' => $memberName,
             ];
 
@@ -347,7 +347,7 @@ if (!function_exists('memberSendResetMail')) {
             if (stripos($customHtml, '{{MEMBER_NAME}}') === false) {
                 $bodyHtml = '<p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#dcccf3;">Merhaba <strong style="color:#ffffff;">' . $safeName . '</strong>,</p>' . $bodyHtml;
             }
-            $htmlBody = metropol_mail_render_template(
+            $htmlBody = mail_render_template(
                 $siteUrl,
                 $companyName . ' şifre sıfırlama bağlantınız hazır',
                 'Şifre Sıfırlama',
@@ -358,27 +358,27 @@ if (!function_exists('memberSendResetMail')) {
             );
         }
 
-        return memberDeliverMail($pdo, $settings, $toEmail, $subject, $messageText, $htmlBody, $memberName);
+        return admin_member_deliver_mail($pdo, $settings, $toEmail, $subject, $messageText, $htmlBody, $memberName);
     }
 }
 
-if (!function_exists('memberSendRegistrationSuccessMail')) {
+if (!function_exists('admin_member_send_registration_success_mail')) {
     /**
      * Başarılı üyelik kaydından sonra bilgilendirme e-postası gönderir.
      *
      * @param array<string,mixed>|null $userHint
      */
-    function memberSendRegistrationSuccessMail(PDO $pdo, string $toEmail, ?array $userHint = null): bool
+    function admin_member_send_registration_success_mail(PDO $pdo, string $toEmail, ?array $userHint = null): bool
     {
-        $settings = memberMailSettings($pdo);
-        $memberName = memberResolveDisplayName($pdo, $toEmail, $userHint);
+        $settings = admin_member_mail_settings($pdo);
+        $memberName = admin_member_resolve_display_name($pdo, $toEmail, $userHint);
         $companyName = trim((string) ($settings['company_name'] ?? ''));
         if ($companyName === '') {
             $companyName = 'Vegasroyalspin';
         }
 
         $subject = $companyName . ' — Kayıt Başarılı';
-        $siteUrl = memberResetBaseUrl();
+        $siteUrl = admin_member_reset_base_url();
         $messageText = 'Merhaba ' . $memberName . ",\n\n"
             . $companyName . " ailesine hoş geldiniz. Hesabınız başarıyla oluşturuldu.\n"
             . "Artık hesabınıza giriş yaparak oyunları ve kampanyaları keşfedebilirsiniz.\n\n"
@@ -387,11 +387,11 @@ if (!function_exists('memberSendRegistrationSuccessMail')) {
             . $companyName . ' Ekibi';
 
         $htmlBody = null;
-        $mailerFile = dirname(__DIR__, 3) . '/app/Services/MetropolMailer.php';
+        $mailerFile = dirname(__DIR__, 3) . '/app/Services/Mailer.php';
         if (is_file($mailerFile)) {
             require_once $mailerFile;
         }
-        if (function_exists('metropol_mail_render_template')) {
+        if (function_exists('mail_render_template')) {
             $supportEmail = trim((string) ($settings['support_email'] ?? ''));
             if ($supportEmail === '' || filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false) {
                 $domain = (string) (parse_url($siteUrl, PHP_URL_HOST) ?: 'vegasroyalspin.com');
@@ -405,7 +405,7 @@ if (!function_exists('memberSendRegistrationSuccessMail')) {
                 . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
                 . 'Güvenliğiniz için şifrenizi kimseyle paylaşmayın.'
                 . '</p>';
-            $htmlBody = metropol_mail_render_template(
+            $htmlBody = mail_render_template(
                 $siteUrl,
                 $companyName . ' üyeliğiniz başarıyla oluşturuldu',
                 'Aramıza Hoş Geldiniz!',
@@ -417,22 +417,22 @@ if (!function_exists('memberSendRegistrationSuccessMail')) {
                     'company_name' => $companyName,
                     'support_email' => $supportEmail,
                     'company_address' => (string) ($settings['company_address'] ?? ''),
-                    'logo_url' => memberResolveMailLogoUrl($pdo, $siteUrl),
+                    'logo_url' => admin_member_resolve_mail_logo_url($pdo, $siteUrl),
                     'member_name' => $memberName,
                 ]
             );
         }
 
-        return memberDeliverMail($pdo, $settings, $toEmail, $subject, $messageText, $htmlBody, $memberName);
+        return admin_member_deliver_mail($pdo, $settings, $toEmail, $subject, $messageText, $htmlBody, $memberName);
     }
 }
 
-if (!function_exists('memberEnsureUserTableColumns')) {
+if (!function_exists('admin_member_ensure_user_table_columns')) {
     /**
      * Auto-create any missing columns on the users table to prevent login failures.
      * Runs before every login attempt — idempotent via IF NOT EXISTS / SHOW COLUMNS check.
      */
-    function memberEnsureUserTableColumns(PDO $pdo): void
+    function admin_member_ensure_user_table_columns(PDO $pdo): void
     {
         static $ensured = false;
         if ($ensured) {
@@ -480,9 +480,9 @@ if (!function_exists('memberEnsureUserTableColumns')) {
             }
             try {
                 $pdo->exec("ALTER TABLE `users` ADD COLUMN `{$col}` {$def}");
-                error_log('[memberEnsureUserTableColumns] Added missing column: users.' . $col);
+                error_log('[admin_member_ensure_user_table_columns] Added missing column: users.' . $col);
             } catch (Throwable $e) {
-                error_log('[memberEnsureUserTableColumns] Failed to add ' . $col . ': ' . $e->getMessage());
+                error_log('[admin_member_ensure_user_table_columns] Failed to add ' . $col . ': ' . $e->getMessage());
             }
         }
 
@@ -514,9 +514,9 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
     }
     $pdo = AdminDatabase::pdo();
     // Auto-migrate: ensure all required columns exist before query
-    memberEnsureUserTableColumns($pdo);
+    admin_member_ensure_user_table_columns($pdo);
     try {
-        $stmt = $pdo->prepare('SELECT id, username, email, password, name, surname FROM users WHERE username = :username OR email = :email LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, username, email, password, name, surname, banned FROM users WHERE username = :username OR email = :email LIMIT 1');
         $stmt->execute(['username' => $login, 'email' => $login]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
@@ -525,9 +525,9 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
         }
         // Also catch unknown column errors (42S22) and auto-fix
         if (str_contains($e->getMessage(), '42S22')) {
-            memberEnsureUserTableColumns($pdo);
+            admin_member_ensure_user_table_columns($pdo);
             try {
-                $stmt = $pdo->prepare('SELECT id, username, email, password, name, surname FROM users WHERE username = :username OR email = :email LIMIT 1');
+                $stmt = $pdo->prepare('SELECT id, username, email, password, name, surname, banned FROM users WHERE username = :username OR email = :email LIMIT 1');
                 $stmt->execute(['username' => $login, 'email' => $login]);
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
             } catch (PDOException $e2) {
@@ -540,6 +540,9 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
     }
     if (!is_array($user)) {
         $memberEnvelope(401, ['success' => false, 'code' => 401, 'message' => 'Kullanıcı adı veya şifre hatalı.']);
+    }
+    if (!empty($user['banned'])) {
+        $memberEnvelope(403, ['success' => false, 'code' => 403, 'error' => 'ACCOUNT_BANNED', 'message' => 'Hesabınız banlanmıştır. Giriş yapamazsınız.']);
     }
     $hash = (string) ($user['password'] ?? '');
     if (!$memberPasswordMatches($password, $hash)) {
@@ -556,7 +559,7 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
             // Eski hash yükseltilemese bile giriş başarısız olmamalı.
         }
     }
-    if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
+    if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
         $_SESSION['loggedin'] = true;
         $_SESSION['user_id'] = (int) ($user['id'] ?? 0);
         $_SESSION['username'] = (string) ($user['username'] ?? $login);
@@ -573,18 +576,18 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
     $jwt = '';
     try {
         $jwt = $memberJwtIssue($pdo, $user);
-        if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
+        if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
             $_SESSION['member_jwt'] = $jwt;
-            if (function_exists('metropol_frontend_set_member_restore_cookie')) {
-                metropol_frontend_set_member_restore_cookie($jwt);
+            if (function_exists('frontend_set_member_restore_cookie')) {
+                frontend_set_member_restore_cookie($jwt);
             }
         }
     } catch (Throwable $jwtError) {
         error_log('[member_auth/login] JWT issue failed: ' . $jwtError->getMessage());
-        if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
+        if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
             unset($_SESSION['member_jwt']);
-            if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
-                metropol_frontend_clear_member_restore_cookie();
+            if (function_exists('frontend_clear_member_restore_cookie')) {
+                frontend_clear_member_restore_cookie();
             }
         }
     }
@@ -593,7 +596,7 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
             'success' => false,
             'code' => 503,
             'message' => 'Oturum servisi hazır değil. Backend kurulumunu tamamlayın (member_jwt_tokens tablosu).',
-            'hint' => 'https://bo-backoffice.site/install — migration çalıştırın',
+            'hint' => 'https://admin.vegasroyalspin.com/install — migration çalıştırın',
         ]);
     }
     $memberEnvelope(200, [
@@ -609,6 +612,36 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
                 'email' => (string) ($user['email'] ?? ''),
                 'name' => trim((string) (($user['name'] ?? '') . ' ' . ($user['surname'] ?? ''))),
             ],
+        ],
+    ]);
+}
+
+if ($method === 'POST' && ($route === 'auth/check-availability' || $route === 'check-availability' || $route === 'check_availability.php')) {
+    $input = $memberInput($payload);
+    $username = trim((string) ($input['username'] ?? ''));
+    $email = trim((string) ($input['email'] ?? ''));
+    $pdo = AdminDatabase::pdo();
+    $usernameAvailable = true;
+    $emailAvailable = true;
+    if ($username !== '') {
+        $stmt = $pdo->prepare('SELECT 1 FROM users WHERE username = :username LIMIT 1');
+        $stmt->execute(['username' => $username]);
+        $usernameAvailable = !$stmt->fetchColumn();
+    }
+    if ($email !== '') {
+        $stmt = $pdo->prepare('SELECT 1 FROM users WHERE email = :email OR LOWER(email) = LOWER(:email2) LIMIT 1');
+        $stmt->execute(['email' => $email, 'email2' => $email]);
+        $emailAvailable = !$stmt->fetchColumn();
+    }
+    $memberEnvelope(200, [
+        'success' => true,
+        'code' => 200,
+        'message' => 'OK',
+        'data' => [
+            'username_available' => $usernameAvailable,
+            'email_available' => $emailAvailable,
+            'username' => $usernameAvailable,
+            'email' => $emailAvailable,
         ],
     ]);
 }
@@ -681,7 +714,7 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
     if ($country === 'TR') {
         if (strlen((string) $tc) !== 11) {
             $errors['tc'] = 'Türkiye için 11 haneli T.C. kimlik numarası gerekli.';
-        } elseif (!memberIsValidTurkishIdentityNumber((string) $tc)) {
+        } elseif (!admin_member_is_valid_turkish_identity_number((string) $tc)) {
             $errors['tc'] = 'T.C. kimlik numarası geçersiz.';
         }
     }
@@ -755,88 +788,115 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
             break;
         }
     }
-    $insert = $pdo->prepare(
-        'INSERT INTO users
-        (name, surname, username, email, identity_number, gender, dob, phone, city, country, password, bonus_code, referral_code, address, password_changed_at, created_at)
-        VALUES
-        (:name, :surname, :username, :email, :identity_number, :gender, :dob, :phone, :city, :country, :password, :bonus_code, :referral_code, :address, NOW(), NOW())'
-    );
-    $insert->execute([
-        'name' => $firstName,
-        'surname' => $surname,
-        'username' => $username,
-        'email' => $email,
-        'identity_number' => $tc !== '' ? $tc : null,
-        'gender' => $gender,
-        'dob' => $dob,
-        'phone' => $phoneDigits,
-        'city' => $city,
-        'country' => $country,
-        'password' => $passwordHash,
-        'bonus_code' => $bonusCode !== '' ? $bonusCode : null,
-        'referral_code' => $referralCode !== '' ? $referralCode : null,
-        'address' => $address !== '' ? $address : null,
-    ]);
-    $userId = (int) $pdo->lastInsertId();
+
+    $clientIp = (string) ($input['client_ip'] ?? $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '');
+    if (str_contains($clientIp, ',')) {
+        $clientIp = trim(explode(',', $clientIp, 2)[0]);
+    }
 
     try {
-        admin_require_project_file('services/AffiliateService.php');
-        AffiliateService::attributeRegistration(
-            $pdo,
-            $userId,
-            $inboundReferral,
-            (string) ($input['client_ip'] ?? $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '')
+        $pdo->beginTransaction();
+        $insert = $pdo->prepare(
+            'INSERT INTO users
+            (name, surname, username, email, identity_number, gender, dob, phone, city, country, password, bonus_code, referral_code, address, password_changed_at, created_at)
+            VALUES
+            (:name, :surname, :username, :email, :identity_number, :gender, :dob, :phone, :city, :country, :password, :bonus_code, :referral_code, :address, NOW(), NOW())'
         );
-    } catch (Throwable $affiliateError) {
-        error_log('[member_auth/register] Referral attribution failed: ' . $affiliateError->getMessage());
-    }
-
-    if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
-        $_SESSION['loggedin'] = true;
-        $_SESSION['user_id'] = $userId;
-        $_SESSION['username'] = $username;
-        $_SESSION['email'] = $email;
-        unset($_SESSION['login_error']);
-    }
-    $jwt = '';
-    try {
-        $jwt = $memberJwtIssue($pdo, [
-            'id' => $userId,
+        $insert->execute([
+            'name' => $firstName,
+            'surname' => $surname,
             'username' => $username,
             'email' => $email,
+            'identity_number' => $tc !== '' ? $tc : null,
+            'gender' => $gender,
+            'dob' => $dob,
+            'phone' => $phoneDigits,
+            'city' => $city,
+            'country' => $country,
+            'password' => $passwordHash,
+            'bonus_code' => $bonusCode !== '' ? $bonusCode : null,
+            'referral_code' => $referralCode !== '' ? $referralCode : null,
+            'address' => $address !== '' ? $address : null,
         ]);
-        if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
-            $_SESSION['member_jwt'] = $jwt;
-            if (function_exists('metropol_frontend_set_member_restore_cookie')) {
-                metropol_frontend_set_member_restore_cookie($jwt);
+        $userId = (int) $pdo->lastInsertId();
+
+        try {
+            admin_require_project_file('services/AffiliateService.php');
+            AffiliateService::attributeRegistration(
+                $pdo,
+                $userId,
+                $inboundReferral,
+                $clientIp
+            );
+        } catch (Throwable $affiliateError) {
+            error_log('[member_auth/register] Referral attribution failed: ' . $affiliateError->getMessage());
+        }
+
+        if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
+            $_SESSION['loggedin'] = true;
+            $_SESSION['user_id'] = $userId;
+            $_SESSION['username'] = $username;
+            $_SESSION['email'] = $email;
+            unset($_SESSION['login_error']);
+        }
+        $jwt = '';
+        try {
+            $jwt = $memberJwtIssue($pdo, [
+                'id' => $userId,
+                'username' => $username,
+                'email' => $email,
+            ]);
+            if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
+                $_SESSION['member_jwt'] = $jwt;
+                if (function_exists('frontend_set_member_restore_cookie')) {
+                    frontend_set_member_restore_cookie($jwt);
+                }
+            }
+        } catch (Throwable $jwtError) {
+            error_log('[member_auth/register] JWT issue failed: ' . $jwtError->getMessage());
+            if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
+                unset($_SESSION['member_jwt']);
+                if (function_exists('frontend_clear_member_restore_cookie')) {
+                    frontend_clear_member_restore_cookie();
+                }
             }
         }
-    } catch (Throwable $jwtError) {
-        error_log('[member_auth/register] JWT issue failed: ' . $jwtError->getMessage());
-        if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
-            unset($_SESSION['member_jwt']);
-            if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
-                metropol_frontend_clear_member_restore_cookie();
+        if ($jwt === '') {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
             }
+            if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
+                unset($_SESSION['loggedin'], $_SESSION['user_id'], $_SESSION['username'], $_SESSION['email'], $_SESSION['member_jwt']);
+            }
+            $memberEnvelope(503, [
+                'success' => false,
+                'code' => 503,
+                'message' => 'Oturum servisi hazır değil. Backend kurulumunu tamamlayın (member_jwt_tokens tablosu).',
+                'hint' => 'https://admin.vegasroyalspin.com/install — migration çalıştırın',
+            ]);
         }
-    }
-    if ($jwt === '') {
-        $memberEnvelope(503, [
+        $pdo->commit();
+    } catch (Throwable $registerError) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        error_log('[member_auth/register] Insert failed: ' . $registerError->getMessage());
+        $memberEnvelope(500, [
             'success' => false,
-            'code' => 503,
-            'message' => 'Oturum servisi hazır değil. Backend kurulumunu tamamlayın (member_jwt_tokens tablosu).',
-            'hint' => 'https://bo-backoffice.site/install — migration çalıştırın',
+            'code' => 500,
+            'message' => 'Kayıt tamamlanamadı. Lütfen tekrar deneyin.',
         ]);
     }
+
     try {
-        memberSendRegistrationSuccessMail($pdo, $email, [
+        admin_member_send_registration_success_mail($pdo, $email, [
             'name' => $firstName,
             'surname' => $surname,
             'username' => $username,
             'email' => $email,
         ]);
     } catch (Throwable $mailError) {
-        memberLogOutboundMail(
+        admin_member_log_outbound_mail(
             $pdo,
             $email,
             'Vegasroyalspin — Kayıt Başarılı',
@@ -866,7 +926,7 @@ if ($method === 'GET' && ($route === 'session.php' || $route === 'auth/session')
     $pdo = AdminDatabase::pdo();
     $userId = $memberJwtRequireUserId($pdo);
     $sessionToken = $memberJwtExtractBearer();
-    $apiNoSession = defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION;
+    $apiNoSession = defined('APP_API_NO_SESSION') && APP_API_NO_SESSION;
     if ($sessionToken === '' && !$apiNoSession) {
         $sessionToken = (string) ($_SESSION['member_jwt'] ?? '');
         if ($sessionToken === '' && !empty($_SESSION['loggedin']) && $userId > 0) {
@@ -877,8 +937,8 @@ if ($method === 'GET' && ($route === 'session.php' || $route === 'auth/session')
                     'email' => (string) ($_SESSION['email'] ?? ''),
                 ]);
                 $_SESSION['member_jwt'] = $sessionToken;
-                if (function_exists('metropol_frontend_set_member_restore_cookie')) {
-                    metropol_frontend_set_member_restore_cookie($sessionToken);
+                if (function_exists('frontend_set_member_restore_cookie')) {
+                    frontend_set_member_restore_cookie($sessionToken);
                 }
             } catch (Throwable) {
                 $sessionToken = '';
@@ -892,6 +952,25 @@ if ($method === 'GET' && ($route === 'session.php' || $route === 'auth/session')
             'code' => 401,
             'error' => 'UNAUTHORIZED',
             'message' => 'Geçersiz veya süresi dolmuş token',
+        ]);
+    }
+    if (!empty($user['banned'])) {
+        try {
+            MemberJwtService::revokeAllForUser($pdo, $userId);
+        } catch (Throwable) {
+        }
+        if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
+            if (function_exists('frontend_clear_member_session')) {
+                frontend_clear_member_session();
+            } else {
+                unset($_SESSION['loggedin'], $_SESSION['user_id'], $_SESSION['username'], $_SESSION['email'], $_SESSION['member_jwt']);
+            }
+        }
+        $memberEnvelope(403, [
+            'success' => false,
+            'code' => 403,
+            'error' => 'ACCOUNT_BANNED',
+            'message' => 'Hesabınız banlanmıştır. Giriş yapamazsınız.',
         ]);
     }
     $memberEnvelope(200, [
@@ -937,10 +1016,10 @@ if ($method === 'POST' && $route === 'auth/refresh') {
     }
     $memberJwtRevokeCurrent($pdo);
     $jwt = $memberJwtIssue($pdo, $user);
-    if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
+    if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
         $_SESSION['member_jwt'] = $jwt;
-        if (function_exists('metropol_frontend_set_member_restore_cookie')) {
-            metropol_frontend_set_member_restore_cookie($jwt);
+        if (function_exists('frontend_set_member_restore_cookie')) {
+            frontend_set_member_restore_cookie($jwt);
         }
     }
     $memberEnvelope(200, [
@@ -1012,17 +1091,21 @@ if ($method === 'GET' && in_array($route, ['me/security-sessions', 'me/security-
 if ($method === 'POST' && ($route === 'logout.php' || $route === 'auth/logout')) {
     $pdo = AdminDatabase::pdo();
     $memberJwtRevokeCurrent($pdo);
-    $csrf = $_SESSION['csrf_token'] ?? null;
-    $ref = $_SESSION['referral_code'] ?? null;
-    $_SESSION = [];
-    if ($csrf !== null) {
-        $_SESSION['csrf_token'] = $csrf;
-    }
-    if ($ref !== null) {
-        $_SESSION['referral_code'] = $ref;
-    }
-    if (function_exists('metropol_frontend_clear_member_restore_cookie')) {
-        metropol_frontend_clear_member_restore_cookie();
+    // Admin paneli ile aynı PHP session cookie'sini paylaşabilir; tüm $_SESSION'ı
+    // silmek bo_backoffice_admin_user dahil admin oturumunu düşürür.
+    if (function_exists('frontend_clear_member_session')) {
+        frontend_clear_member_session();
+    } else {
+        foreach ([
+            'loggedin', 'user_id', 'username', 'email', 'ana_bakiye',
+            'first_name', 'surname', 'member_jwt', '__header_member_cache',
+            '__member_jwt_proxy_synced', 'login_error',
+        ] as $memberSessionKey) {
+            unset($_SESSION[$memberSessionKey]);
+        }
+        if (function_exists('frontend_clear_member_restore_cookie')) {
+            frontend_clear_member_restore_cookie();
+        }
     }
     $memberEnvelope(200, [
         'success' => true,
@@ -1052,9 +1135,9 @@ if ($method === 'POST' && ($route === 'forgot_password.php' || $route === 'auth/
             $pdo->prepare(
                 'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
             )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
-            memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token, $user);
+            admin_member_send_reset_mail($pdo, (string) ($user['email'] ?? $email), $token, $user);
         } else {
-            memberLogOutboundMail($pdo, $email, 'Vegasroyalspin — Şifre Sıfırlama', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
+            admin_member_log_outbound_mail($pdo, $email, 'Vegasroyalspin — Şifre Sıfırlama', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
         }
     } catch (Throwable $forgotPasswordError) {
         error_log('[member_auth/forgot_password] ' . $forgotPasswordError->getMessage());
@@ -1125,9 +1208,9 @@ if ($method === 'POST' && ($route === 'password_reset.php' || $route === 'auth/p
                 $pdo->prepare(
                     'UPDATE users SET password_reset_token = :token, password_reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = :id'
                 )->execute(['token' => $token, 'id' => (int) ($user['id'] ?? 0)]);
-                memberSendResetMail($pdo, (string) ($user['email'] ?? $email), $token, $user);
+                admin_member_send_reset_mail($pdo, (string) ($user['email'] ?? $email), $token, $user);
             } else {
-                memberLogOutboundMail($pdo, $email, 'Vegasroyalspin — Şifre Sıfırlama', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
+                admin_member_log_outbound_mail($pdo, $email, 'Vegasroyalspin — Şifre Sıfırlama', '[user_not_found] Bu e-posta users tablosunda bulunamadi, mail gonderilmedi.', 'user_not_found');
             }
         } catch (Throwable $passwordResetRequestError) {
             error_log('[member_auth/password_reset.request] ' . $passwordResetRequestError->getMessage());
@@ -1267,10 +1350,16 @@ if ($method === 'POST' && ($route === 'account_freeze.php' || $route === 'accoun
         $pdo->prepare('INSERT INTO user_account_freeze (user_id, frozen_at) VALUES (:user_id, NOW()) ON DUPLICATE KEY UPDATE frozen_at = VALUES(frozen_at)')
             ->execute(['user_id' => $userId]);
         $memberJwtRevokeCurrent($pdo);
-        $csrf = $_SESSION['csrf_token'] ?? null;
-        $_SESSION = [];
-        if ($csrf !== null) {
-            $_SESSION['csrf_token'] = $csrf;
+        if (function_exists('frontend_clear_member_session')) {
+            frontend_clear_member_session();
+        } else {
+            foreach ([
+                'loggedin', 'user_id', 'username', 'email', 'ana_bakiye',
+                'first_name', 'surname', 'member_jwt', '__header_member_cache',
+                '__member_jwt_proxy_synced', 'login_error',
+            ] as $memberSessionKey) {
+                unset($_SESSION[$memberSessionKey]);
+            }
         }
         $memberEnvelope(200, [
             'success' => true,

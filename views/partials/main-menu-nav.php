@@ -16,7 +16,9 @@ $h = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_Q
                 if (!is_array($item) || empty($item['enabled'])) {
                     continue;
                 }
-                $label = trim((string) ($item['label'] ?? ''));
+                $label = function_exists('i18n_label')
+                    ? i18n_label(trim((string) ($item['label'] ?? '')), trim((string) ($item['href'] ?? '')))
+                    : trim((string) ($item['label'] ?? ''));
                 $href = trim((string) ($item['href'] ?? ''));
                 $icon = trim((string) ($item['icon'] ?? ''));
                 if ($label === '' || $href === '') {

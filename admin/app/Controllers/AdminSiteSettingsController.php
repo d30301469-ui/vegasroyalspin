@@ -83,8 +83,8 @@ final class AdminSiteSettingsController extends AdminController
             $_SESSION['admin_site_settings_flash'] = ($sections[$section]['label'] ?? 'Ayar') . ' kaydedildi.';
 
             // 1) HTTP purge — split frontend kurulumunda frontend cache'i temizler.
-            if (function_exists('metropol_notify_frontend_cms_purge')) {
-                metropol_notify_frontend_cms_purge('site_settings');
+            if (function_exists('notify_frontend_cms_purge')) {
+                notify_frontend_cms_purge('site_settings');
             }
 
             // 2) Doğrudan cache dosyası silme — HTTP purge fail olsa bile çalışır.
@@ -117,7 +117,7 @@ final class AdminSiteSettingsController extends AdminController
                 'caption' => 'Logo ve görsel varlıklar',
                 'fields' => [
                     ['name' => 'logo_url',          'label' => 'Ana Logo URL',               'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo.png',        'help' => 'PNG/SVG/WebP — desktop ve footer fallback'],
-                    ['name' => 'logo_animated_url', 'label' => 'Animasyonlu Logo URL',       'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo.webm',       'help' => 'WebM/GIF — header\'da oynayan logo. Boş bırakılırsa ana logo kullanılır.'],
+                    ['name' => 'logo_animated_url', 'label' => 'Animasyonlu Logo URL',       'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo.webm',       'help' => 'Şeffaf zemin için VP9 WebM (alpha) veya animasyonlu WebP/GIF kullanın. H.264/MP4 siyah zemin gösterir (CSS blend ile yumuşatılır). Boşsa ana logo.'],
                     ['name' => 'logo_mobile_url',   'label' => 'Mobil Logo URL',             'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo-mobile.png', 'help' => 'PNG/WebP — mobil header için ayrı logo. Boş bırakılırsa ana logo kullanılır.'],
                     ['name' => 'logo_dark_url',     'label' => 'Koyu Tema Logo URL',         'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo-dark.png',   'help' => 'Açık arka plan için koyu logo versiyonu. Opsiyonel.'],
                     ['name' => 'logo_footer_url',   'label' => 'Footer Logo URL',            'type' => 'text', 'placeholder' => 'https://cdn.example.com/logo-footer.png', 'help' => 'Footer\'da ayrı logo kullanmak istiyorsanız. Boş bırakılırsa ana logo kullanılır.'],

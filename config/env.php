@@ -18,8 +18,8 @@ if (!function_exists('frontend_load_dotenv')) {
         $frontendGateFile = $root . '/app/Core/FrontendInstallGate.php';
         if (is_readable($frontendGateFile)) {
             require_once $frontendGateFile;
-            $includeExample = (defined('METROPOL_INSTALL_WIZARD') && METROPOL_INSTALL_WIZARD)
-                || (defined('METROPOL_ALLOW_ENV_EXAMPLE') && METROPOL_ALLOW_ENV_EXAMPLE);
+            $includeExample = (defined('APP_INSTALL_WIZARD') && APP_INSTALL_WIZARD)
+                || (defined('APP_ALLOW_ENV_EXAMPLE') && APP_ALLOW_ENV_EXAMPLE);
             FrontendInstallGate::loadEnv($root, $includeExample);
             $loaded = true;
 
@@ -145,14 +145,21 @@ if (!function_exists('frontend_is_api_only')) {
 
         $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
         if ($host !== '') {
-            if (function_exists('metropol_is_backend_host') && metropol_is_backend_host($host)) {
+            if (function_exists('is_backend_host') && is_backend_host($host)) {
                 return false;
             }
             if ($host === 'admin.vegasroyalspin.com') {
                 return false;
             }
 
-            $publicHosts = ['vegasroyalspin.com', 'www.vegasroyalspin.com', 'm.vegasroyalspin.com'];
+            $publicHosts = [
+                'vegasroyalspin119.com',
+                'www.vegasroyalspin119.com',
+                'm.vegasroyalspin119.com',
+                'vegasroyalspin.com',
+                'www.vegasroyalspin.com',
+                'm.vegasroyalspin.com',
+            ];
             foreach (['PUBLIC_URL_HOSTS', 'ALLOWED_FRONTEND_HOSTS'] as $key) {
                 foreach (explode(',', frontend_env_string($key)) as $candidate) {
                     $candidate = strtolower(preg_replace('/:\d+$/', '', trim((string) $candidate)) ?? '');
@@ -199,7 +206,7 @@ if (!function_exists('frontend_has_database_credentials')) {
     }
 }
 
-if (!function_exists('metropol_is_backend_host')) {
+if (!function_exists('is_backend_host')) {
     /**
      * Tek yetkili "bu istek admin/backend hostundan mı geliyor?" kontrolü.
      * Tüm katmanlar (router.php, legacy_dispatch.php, Request::isAdminHost) buraya delege eder.
@@ -209,7 +216,7 @@ if (!function_exists('metropol_is_backend_host')) {
      *  2. deploy_backend_hosts() — config/deploy_domains.php tanımlıysa
      *  3. Sabit fallback listesi
      */
-    function metropol_is_backend_host(string $httpHost): bool
+    function is_backend_host(string $httpHost): bool
     {
         $host = strtolower(preg_replace('/:\d+$/', '', trim($httpHost)) ?? '');
         if ($host === '') {
@@ -247,7 +254,7 @@ if (!function_exists('frontend_database_allowed')) {
      */
     function frontend_database_allowed(): bool
     {
-        if (defined('METROPOL_ADMIN_PANEL') && METROPOL_ADMIN_PANEL) {
+        if (defined('APP_ADMIN_PANEL') && APP_ADMIN_PANEL) {
             return true;
         }
 
@@ -257,14 +264,21 @@ if (!function_exists('frontend_database_allowed')) {
 
         $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '');
         if ($host !== '') {
-            if (function_exists('metropol_is_backend_host') && metropol_is_backend_host($host)) {
+            if (function_exists('is_backend_host') && is_backend_host($host)) {
                 return true;
             }
             if ($host === 'admin.vegasroyalspin.com') {
                 return true;
             }
 
-            $publicHosts = ['vegasroyalspin.com', 'www.vegasroyalspin.com', 'm.vegasroyalspin.com'];
+            $publicHosts = [
+                'vegasroyalspin119.com',
+                'www.vegasroyalspin119.com',
+                'm.vegasroyalspin119.com',
+                'vegasroyalspin.com',
+                'www.vegasroyalspin.com',
+                'm.vegasroyalspin.com',
+            ];
             foreach (['PUBLIC_URL_HOSTS', 'ALLOWED_FRONTEND_HOSTS'] as $key) {
                 foreach (explode(',', frontend_env_string($key)) as $candidate) {
                     $candidate = strtolower(preg_replace('/:\d+$/', '', trim((string) $candidate)) ?? '');
@@ -298,7 +312,7 @@ if (!function_exists('frontend_assert_split_frontend_has_no_database_credentials
             return;
         }
 
-        if (defined('METROPOL_ADMIN_PANEL') && METROPOL_ADMIN_PANEL) {
+        if (defined('APP_ADMIN_PANEL') && APP_ADMIN_PANEL) {
             return;
         }
 
@@ -443,10 +457,10 @@ if (!function_exists('frontend_controller_is_backend_only')) {
     }
 }
 
-if (!function_exists('metropol_is_install_wizard')) {
-    function metropol_is_install_wizard(): bool
+if (!function_exists('is_install_wizard')) {
+    function is_install_wizard(): bool
     {
-        if (defined('METROPOL_INSTALL_WIZARD') && METROPOL_INSTALL_WIZARD) {
+        if (defined('APP_INSTALL_WIZARD') && APP_INSTALL_WIZARD) {
             return true;
         }
 
@@ -462,19 +476,19 @@ if (!function_exists('metropol_is_install_wizard')) {
     }
 }
 
-if (!function_exists('metropol_should_run_production_assertions')) {
-    function metropol_should_run_production_assertions(): bool
+if (!function_exists('should_run_production_assertions')) {
+    function should_run_production_assertions(): bool
     {
         if (!frontend_app_is_production()) {
             return false;
         }
-        if (metropol_is_install_wizard()) {
+        if (is_install_wizard()) {
             return false;
         }
-        if (defined('METROPOL_API_V2_BOOTSTRAP') && METROPOL_API_V2_BOOTSTRAP) {
+        if (defined('APP_API_V2_BOOTSTRAP') && APP_API_V2_BOOTSTRAP) {
             return false;
         }
-        if (defined('METROPOL_SKIP_PRODUCTION_ASSERTIONS') && METROPOL_SKIP_PRODUCTION_ASSERTIONS) {
+        if (defined('APP_SKIP_PRODUCTION_ASSERTIONS') && APP_SKIP_PRODUCTION_ASSERTIONS) {
             return false;
         }
 
@@ -482,8 +496,8 @@ if (!function_exists('metropol_should_run_production_assertions')) {
     }
 }
 
-if (!function_exists('metropol_render_frontend_boot_error')) {
-    function metropol_render_frontend_boot_error(Throwable $exception): void
+if (!function_exists('render_frontend_boot_error')) {
+    function render_frontend_boot_error(Throwable $exception): void
     {
         if (!headers_sent()) {
             http_response_code(503);
@@ -496,7 +510,7 @@ if (!function_exists('metropol_render_frontend_boot_error')) {
             'ping.php ve install-probe.php çalışıyor mu kontrol edin.',
             'Zip site köküne açılmış olmalı: /www/wwwroot/vegasroyalspin.com/index.php',
             'aaPanel: Force HTTPS KAPAT, origin HTTP :80 (Cloudflare SSL).',
-            'SSH: cd /www/wwwroot/vegasroyalspin.com && php deploy/aapanel/fix-cloudflare-env.php',
+            'SSH: cd /www/wwwroot/vegasroyalspin.com && php scripts/bootstrap-frontend-env.php',
             'MEMBER_JWT_SECRET backend ile aynı ve en az 32 karakter olmalı.',
             'Frontend .env içinde DB_* satırı olmamalı.',
         ];
@@ -519,8 +533,8 @@ if (!function_exists('metropol_render_frontend_boot_error')) {
     }
 }
 
-if (!function_exists('metropol_register_early_error_handler')) {
-    function metropol_register_early_error_handler(): void
+if (!function_exists('register_early_error_handler')) {
+    function register_early_error_handler(): void
     {
         static $registered = false;
         if ($registered) {
@@ -614,8 +628,8 @@ if (!function_exists('frontend_api_proxy_timeout')) {
     }
 }
 
-if (!function_exists('metropol_backend_reachability_cache_path')) {
-    function metropol_backend_reachability_cache_path(): string
+if (!function_exists('backend_reachability_cache_path')) {
+    function backend_reachability_cache_path(): string
     {
         $base = defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__);
 
@@ -623,11 +637,11 @@ if (!function_exists('metropol_backend_reachability_cache_path')) {
     }
 }
 
-if (!function_exists('metropol_backend_internal_probe_request')) {
+if (!function_exists('backend_internal_probe_request')) {
     /**
      * @return array{url: string, headers: list<string>}|null
      */
-    function metropol_backend_internal_probe_request(): ?array
+    function backend_internal_probe_request(): ?array
     {
         $internal = trim((string) (getenv('API_BACKEND_INTERNAL_BASE_URL') ?: ''));
         if ($internal === '') {
@@ -663,8 +677,8 @@ if (!function_exists('metropol_backend_internal_probe_request')) {
     }
 }
 
-if (!function_exists('metropol_backend_probe_url')) {
-    function metropol_backend_probe_url(): string
+if (!function_exists('backend_probe_url')) {
+    function backend_probe_url(): string
     {
         foreach (['BACKEND_URL', 'BACKEND_FALLBACK_URL', 'API_BACKEND_MAIN_BASE_URL'] as $key) {
             $value = trim((string) (getenv($key) ?: ''));
@@ -682,11 +696,11 @@ if (!function_exists('metropol_backend_probe_url')) {
     }
 }
 
-if (!function_exists('metropol_backend_is_reachable')) {
+if (!function_exists('backend_is_reachable')) {
     /**
      * Split frontend: one quick probe per request; cache down-state briefly to avoid 504 storms.
      */
-    function metropol_backend_is_reachable(int $timeoutSeconds = 2): bool
+    function backend_is_reachable(int $timeoutSeconds = 2): bool
     {
         static $state = null;
         if ($state !== null) {
@@ -699,7 +713,7 @@ if (!function_exists('metropol_backend_is_reachable')) {
             return true;
         }
 
-        $cachePath = metropol_backend_reachability_cache_path();
+        $cachePath = backend_reachability_cache_path();
         if (is_readable($cachePath)) {
             $raw = @file_get_contents($cachePath);
             $payload = is_string($raw) ? json_decode($raw, true) : null;
@@ -716,38 +730,38 @@ if (!function_exists('metropol_backend_is_reachable')) {
             }
         }
 
-        $internalRequest = metropol_backend_internal_probe_request();
+        $internalRequest = backend_internal_probe_request();
         if (is_array($internalRequest) && ($internalRequest['url'] ?? '') !== '') {
-            $state = metropol_http_probe_ok(
+            $state = http_probe_ok(
                 (string) $internalRequest['url'],
                 $timeoutSeconds,
                 (array) ($internalRequest['headers'] ?? [])
             );
-            metropol_write_backend_reachability_cache($state);
+            write_backend_reachability_cache($state);
 
             return $state;
         }
 
-        $probeUrl = metropol_backend_probe_url();
+        $probeUrl = backend_probe_url();
         if ($probeUrl === '') {
             $state = false;
-            metropol_write_backend_reachability_cache(false);
+            write_backend_reachability_cache(false);
 
             return false;
         }
 
         $timeoutSeconds = max(1, min(5, $timeoutSeconds));
-        $state = metropol_http_probe_ok($probeUrl, $timeoutSeconds);
-        metropol_write_backend_reachability_cache($state);
+        $state = http_probe_ok($probeUrl, $timeoutSeconds);
+        write_backend_reachability_cache($state);
 
         return $state;
     }
 }
 
-if (!function_exists('metropol_write_backend_reachability_cache')) {
-    function metropol_write_backend_reachability_cache(bool $reachable): void
+if (!function_exists('write_backend_reachability_cache')) {
+    function write_backend_reachability_cache(bool $reachable): void
     {
-        $path = metropol_backend_reachability_cache_path();
+        $path = backend_reachability_cache_path();
         $dir = dirname($path);
         if (!is_dir($dir)) {
             @mkdir($dir, 0755, true);
@@ -759,11 +773,11 @@ if (!function_exists('metropol_write_backend_reachability_cache')) {
     }
 }
 
-if (!function_exists('metropol_http_probe_ok')) {
+if (!function_exists('http_probe_ok')) {
     /**
      * @param list<string> $extraHeaders
      */
-    function metropol_http_probe_ok(string $url, int $timeoutSeconds = 2, array $extraHeaders = []): bool
+    function http_probe_ok(string $url, int $timeoutSeconds = 2, array $extraHeaders = []): bool
     {
         if (!function_exists('curl_init')) {
             $ctx = stream_context_create([
@@ -808,8 +822,8 @@ if (!function_exists('metropol_http_probe_ok')) {
     }
 }
 
-if (!function_exists('metropol_cms_api_circuit_cache_path')) {
-    function metropol_cms_api_circuit_cache_path(): string
+if (!function_exists('cms_api_circuit_cache_path')) {
+    function cms_api_circuit_cache_path(): string
     {
         $base = defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__);
 
@@ -817,8 +831,8 @@ if (!function_exists('metropol_cms_api_circuit_cache_path')) {
     }
 }
 
-if (!function_exists('metropol_cms_api_circuit_seconds')) {
-    function metropol_cms_api_circuit_seconds(): int
+if (!function_exists('cms_api_circuit_seconds')) {
+    function cms_api_circuit_seconds(): int
     {
         $custom = (int) frontend_env_string('FRONTEND_CMS_CIRCUIT_SECONDS', '8');
         if ($custom <= 0) {
@@ -829,11 +843,11 @@ if (!function_exists('metropol_cms_api_circuit_seconds')) {
     }
 }
 
-if (!function_exists('metropol_cms_api_circuit_is_open')) {
+if (!function_exists('cms_api_circuit_is_open')) {
     /**
      * Short cooldown after a failed backend API attempt (avoids 504 storms without blocking on health.php).
      */
-    function metropol_cms_api_circuit_is_open(): bool
+    function cms_api_circuit_is_open(): bool
     {
         if (!function_exists('frontend_is_api_only') || !frontend_is_api_only()) {
             return false;
@@ -842,12 +856,12 @@ if (!function_exists('metropol_cms_api_circuit_is_open')) {
             return false;
         }
 
-        $ttl = metropol_cms_api_circuit_seconds();
+        $ttl = cms_api_circuit_seconds();
         if ($ttl <= 0) {
             return false;
         }
 
-        $path = metropol_cms_api_circuit_cache_path();
+        $path = cms_api_circuit_cache_path();
         if (!is_readable($path)) {
             return false;
         }
@@ -864,17 +878,17 @@ if (!function_exists('metropol_cms_api_circuit_is_open')) {
     }
 }
 
-if (!function_exists('metropol_cms_api_mark_failure')) {
-    function metropol_cms_api_mark_failure(): void
+if (!function_exists('cms_api_mark_failure')) {
+    function cms_api_mark_failure(): void
     {
         if (!function_exists('frontend_is_api_only') || !frontend_is_api_only()) {
             return;
         }
-        if (metropol_cms_api_circuit_seconds() <= 0) {
+        if (cms_api_circuit_seconds() <= 0) {
             return;
         }
 
-        $path = metropol_cms_api_circuit_cache_path();
+        $path = cms_api_circuit_cache_path();
         $dir = dirname($path);
         if (!is_dir($dir)) {
             @mkdir($dir, 0755, true);
@@ -885,10 +899,10 @@ if (!function_exists('metropol_cms_api_mark_failure')) {
     }
 }
 
-if (!function_exists('metropol_cms_api_mark_success')) {
-    function metropol_cms_api_mark_success(): void
+if (!function_exists('cms_api_mark_success')) {
+    function cms_api_mark_success(): void
     {
-        $path = metropol_cms_api_circuit_cache_path();
+        $path = cms_api_circuit_cache_path();
         if (is_file($path)) {
             @unlink($path);
         }
@@ -896,30 +910,30 @@ if (!function_exists('metropol_cms_api_mark_success')) {
 }
 
 /** Shared backend API circuit (CMS SSR + member proxy). */
-if (!function_exists('metropol_backend_api_circuit_is_open')) {
-    function metropol_backend_api_circuit_is_open(): bool
+if (!function_exists('backend_api_circuit_is_open')) {
+    function backend_api_circuit_is_open(): bool
     {
-        return metropol_cms_api_circuit_is_open();
+        return cms_api_circuit_is_open();
     }
 }
 
-if (!function_exists('metropol_backend_api_mark_failure')) {
-    function metropol_backend_api_mark_failure(): void
+if (!function_exists('backend_api_mark_failure')) {
+    function backend_api_mark_failure(): void
     {
-        metropol_cms_api_mark_failure();
+        cms_api_mark_failure();
     }
 }
 
-if (!function_exists('metropol_backend_api_mark_success')) {
-    function metropol_backend_api_mark_success(): void
+if (!function_exists('backend_api_mark_success')) {
+    function backend_api_mark_success(): void
     {
-        metropol_cms_api_mark_success();
-        metropol_member_api_mark_success();
+        cms_api_mark_success();
+        member_api_mark_success();
     }
 }
 
-if (!function_exists('metropol_member_api_circuit_cache_path')) {
-    function metropol_member_api_circuit_cache_path(): string
+if (!function_exists('member_api_circuit_cache_path')) {
+    function member_api_circuit_cache_path(): string
     {
         $base = defined('BASE_PATH') ? (string) BASE_PATH : dirname(__DIR__);
 
@@ -927,8 +941,8 @@ if (!function_exists('metropol_member_api_circuit_cache_path')) {
     }
 }
 
-if (!function_exists('metropol_member_api_circuit_seconds')) {
-    function metropol_member_api_circuit_seconds(): int
+if (!function_exists('member_api_circuit_seconds')) {
+    function member_api_circuit_seconds(): int
     {
         $custom = (int) frontend_env_string('FRONTEND_MEMBER_API_CIRCUIT_SECONDS', '0');
         if ($custom <= 0) {
@@ -939,8 +953,8 @@ if (!function_exists('metropol_member_api_circuit_seconds')) {
     }
 }
 
-if (!function_exists('metropol_member_api_circuit_is_open')) {
-    function metropol_member_api_circuit_is_open(): bool
+if (!function_exists('member_api_circuit_is_open')) {
+    function member_api_circuit_is_open(): bool
     {
         if (!function_exists('frontend_is_api_only') || !frontend_is_api_only()) {
             return false;
@@ -949,12 +963,12 @@ if (!function_exists('metropol_member_api_circuit_is_open')) {
             return false;
         }
 
-        $ttl = metropol_member_api_circuit_seconds();
+        $ttl = member_api_circuit_seconds();
         if ($ttl <= 0) {
             return false;
         }
 
-        $path = metropol_member_api_circuit_cache_path();
+        $path = member_api_circuit_cache_path();
         if (!is_readable($path)) {
             return false;
         }
@@ -971,17 +985,17 @@ if (!function_exists('metropol_member_api_circuit_is_open')) {
     }
 }
 
-if (!function_exists('metropol_member_api_mark_failure')) {
-    function metropol_member_api_mark_failure(): void
+if (!function_exists('member_api_mark_failure')) {
+    function member_api_mark_failure(): void
     {
         if (!function_exists('frontend_is_api_only') || !frontend_is_api_only()) {
             return;
         }
-        if (metropol_member_api_circuit_seconds() <= 0) {
+        if (member_api_circuit_seconds() <= 0) {
             return;
         }
 
-        $path = metropol_member_api_circuit_cache_path();
+        $path = member_api_circuit_cache_path();
         $dir = dirname($path);
         if (!is_dir($dir)) {
             @mkdir($dir, 0755, true);
@@ -992,18 +1006,18 @@ if (!function_exists('metropol_member_api_mark_failure')) {
     }
 }
 
-if (!function_exists('metropol_member_api_mark_success')) {
-    function metropol_member_api_mark_success(): void
+if (!function_exists('member_api_mark_success')) {
+    function member_api_mark_success(): void
     {
-        $path = metropol_member_api_circuit_cache_path();
+        $path = member_api_circuit_cache_path();
         if (is_file($path)) {
             @unlink($path);
         }
     }
 }
 
-if (!function_exists('metropol_notify_frontend_cms_purge')) {
-    function metropol_notify_frontend_cms_purge(?string $prefix = null): void
+if (!function_exists('notify_frontend_cms_purge')) {
+    function notify_frontend_cms_purge(?string $prefix = null): void
     {
         $service = (defined('BASE_PATH') ? rtrim((string) BASE_PATH, '/\\') : dirname(__DIR__)) . '/services/FrontendCmsCachePurge.php';
         if (!is_readable($service)) {
@@ -1018,12 +1032,12 @@ if (!function_exists('metropol_notify_frontend_cms_purge')) {
     }
 }
 
-if (!function_exists('metropol_should_skip_remote_backend')) {
+if (!function_exists('should_skip_remote_backend')) {
     /**
      * When true, SSR CMS skips live backend HTTP and uses stale cache / defaults only.
      * Default: API failure circuit (not health.php). Legacy: FRONTEND_SKIP_REMOTE_ON_HEALTH_FAIL=1
      */
-    function metropol_should_skip_remote_backend(): bool
+    function should_skip_remote_backend(): bool
     {
         if (!function_exists('frontend_is_api_only') || !frontend_is_api_only()) {
             return false;
@@ -1032,19 +1046,19 @@ if (!function_exists('metropol_should_skip_remote_backend')) {
             return false;
         }
         if (trim((string) (getenv('API_BACKEND_INTERNAL_BASE_URL') ?: '')) !== '') {
-            return metropol_cms_api_circuit_is_open();
+            return cms_api_circuit_is_open();
         }
 
         if (frontend_env_string('FRONTEND_SKIP_REMOTE_ON_HEALTH_FAIL', '') === '1') {
-            return !metropol_backend_is_reachable();
+            return !backend_is_reachable();
         }
 
-        return metropol_cms_api_circuit_is_open();
+        return cms_api_circuit_is_open();
     }
 }
 
-if (!function_exists('metropol_pdo_connect_timeout')) {
-    function metropol_pdo_connect_timeout(): int
+if (!function_exists('pdo_connect_timeout')) {
+    function pdo_connect_timeout(): int
     {
         if (function_exists('frontend_env_string')) {
             $custom = (int) frontend_env_string('DB_CONNECT_TIMEOUT', '3');
@@ -1057,11 +1071,11 @@ if (!function_exists('metropol_pdo_connect_timeout')) {
     }
 }
 
-if (!function_exists('metropol_pdo_options')) {
+if (!function_exists('pdo_options')) {
     /**
      * @return array<int, mixed>
      */
-    function metropol_pdo_options(bool $emulatePrepares = false): array
+    function pdo_options(bool $emulatePrepares = false): array
     {
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -1071,7 +1085,7 @@ if (!function_exists('metropol_pdo_options')) {
             $options[PDO::ATTR_EMULATE_PREPARES] = false;
         }
         if (defined('PDO::MYSQL_ATTR_CONNECT_TIMEOUT')) {
-            $options[PDO::MYSQL_ATTR_CONNECT_TIMEOUT] = metropol_pdo_connect_timeout();
+            $options[PDO::MYSQL_ATTR_CONNECT_TIMEOUT] = pdo_connect_timeout();
         }
 
         return $options;

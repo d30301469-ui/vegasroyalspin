@@ -562,16 +562,23 @@ final class AdminPromotionController extends AdminController
 
     public function revokeBonus(): void
     {
-        $this->requirePermission('promotions');
+        $this->requireAuth();
+        if (!AdminAuth::can('promotions') && !AdminAuth::can('active-bonuses')) {
+            $this->forbidden();
+        }
         $this->ensurePost();
         self::ensurePromotionSchema();
 
         $bonusId = max(0, (int) ($_POST['bonus_id'] ?? 0));
         $userId = max(0, (int) ($_POST['user_id'] ?? 0));
+        $redirectModule = trim((string) ($_POST['redirect_module'] ?? ''));
+        $fallbackRedirect = $redirectModule === 'active-bonuses'
+            ? AdminAuth::url('/module?key=active-bonuses')
+            : AdminAuth::url('/promotions');
 
         if ($bonusId <= 0 && $userId <= 0) {
             $this->flash('bonus_id veya user_id zorunludur.');
-            $this->redirect(AdminAuth::url('/promotions'));
+            $this->redirect($fallbackRedirect);
         }
 
         $pdo = AdminDatabase::pdo();
@@ -584,17 +591,31 @@ final class AdminPromotionController extends AdminController
             $affected->execute($bind);
             $bonusRows = $affected->fetchAll(PDO::FETCH_ASSOC);
 
-            $stmt = $pdo->prepare("UPDATE user_active_bonuses SET status = 'revoked', current_bonus_balance = 0 WHERE $where");
+            // status ENUM: active|completed|cancelled|expired (revoked geçerli değil)
+            $stmt = $pdo->prepare("UPDATE user_active_bonuses SET status = 'cancelled', current_bonus_balance = 0 WHERE $where");
             $stmt->execute($bind);
             $count = $stmt->rowCount();
 
             // İptal edilen bonusun henüz kullanılmamış tutarını kullanıcının
             // bonus_balance alanından geri düşer (0'ın altına inmez).
+            $touchedUsers = [];
             foreach ($bonusRows as $row) {
+                $uid = (int) ($row['user_id'] ?? 0);
+                if ($uid > 0) {
+                    $touchedUsers[$uid] = true;
+                }
                 $refund = round((float) ($row['current_bonus_balance'] ?? 0), 2);
-                if ($refund > 0) {
+                if ($refund > 0 && $uid > 0) {
                     $pdo->prepare('UPDATE users SET bonus_balance = GREATEST(0, bonus_balance - :amount) WHERE id = :id')
-                        ->execute(['amount' => number_format($refund, 2, '.', ''), 'id' => (int) $row['user_id']]);
+                        ->execute(['amount' => number_format($refund, 2, '.', ''), 'id' => $uid]);
+                }
+            }
+            foreach (array_keys($touchedUsers) as $uid) {
+                $left = $pdo->prepare("SELECT COUNT(*) FROM user_active_bonuses WHERE user_id = :uid AND status = 'active'");
+                $left->execute(['uid' => $uid]);
+                if ((int) $left->fetchColumn() === 0) {
+                    $pdo->prepare("UPDATE users SET active_wallet_mode = 'main' WHERE id = :id")
+                        ->execute(['id' => $uid]);
                 }
             }
             $pdo->commit();
@@ -616,7 +637,7 @@ final class AdminPromotionController extends AdminController
         if ($redirectUser !== '' && is_numeric($redirectUser)) {
             $this->redirect(AdminAuth::url('/user?id=' . rawurlencode($redirectUser)));
         }
-        $this->redirect(AdminAuth::url('/promotions'));
+        $this->redirect($fallbackRedirect);
     }
 
     private function findPromotion(int $id): ?array

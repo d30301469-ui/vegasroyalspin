@@ -63,8 +63,8 @@ final class AdminMobileMenuController extends AdminController
         }
 
         $_SESSION['admin_mobile_menu_flash'] = 'Mobil menü ayarları güncellendi.';
-        if (function_exists('metropol_notify_frontend_cms_purge')) {
-            metropol_notify_frontend_cms_purge('mobile_menu');
+        if (function_exists('notify_frontend_cms_purge')) {
+            notify_frontend_cms_purge('mobile_menu');
         }
         // HTTP purge başarısız olsa bile aynı host/monorepo kurulumda anında yenileme.
         if (class_exists('ApiCmsRemote', false)) {

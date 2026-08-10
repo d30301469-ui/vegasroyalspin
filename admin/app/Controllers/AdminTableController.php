@@ -22,6 +22,7 @@ final class AdminTableController extends AdminController
     {
         $this->requireAuth();
         $table = $this->tableName('view');
+        $this->redirectDedicatedEditor($table);
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $search = trim((string) ($_GET['search'] ?? ''));
         $perPage = min(100, max(10, (int) ($_GET['per_page'] ?? 25)));
@@ -50,6 +51,7 @@ final class AdminTableController extends AdminController
     {
         $this->requireAuth();
         $table = $this->tableName('write');
+        $this->redirectDedicatedEditor($table);
         $this->denyReadOnlyModule($table, trim((string) ($_GET['module'] ?? '')));
         $data = [
             'title' => $table . ' Ekle',
@@ -78,6 +80,7 @@ final class AdminTableController extends AdminController
         $this->requireAuth();
         $this->ensurePost();
         $table = $this->tableName('write');
+        $this->redirectDedicatedEditor($table);
         $this->denyReadOnlyModule($table, trim((string) ($_POST['module'] ?? '')));
         $this->validatePasswordConfirmation($table, $_POST);
         $this->ensureSliderSchema($table);
@@ -98,6 +101,7 @@ final class AdminTableController extends AdminController
     {
         $this->requireAuth();
         $table = $this->tableName('write');
+        $this->redirectDedicatedEditor($table);
         $this->denyReadOnlyModule($table, trim((string) ($_GET['module'] ?? '')));
         $primaryKey = $this->tables->primaryKey($table);
         if ($primaryKey === null) {
@@ -175,6 +179,7 @@ final class AdminTableController extends AdminController
         $this->requireAuth();
         $this->ensurePost();
         $table = $this->tableName('write');
+        $this->redirectDedicatedEditor($table);
         $this->denyReadOnlyModule($table, trim((string) ($_POST['module'] ?? '')));
         $primaryKey = $this->tables->primaryKey($table);
         if ($primaryKey === null) {
@@ -206,6 +211,7 @@ final class AdminTableController extends AdminController
         $this->requireAuth();
         $this->ensurePost();
         $table = $this->tableName('delete');
+        $this->redirectDedicatedEditor($table);
         $this->denyReadOnlyModule($table, trim((string) ($_POST['module'] ?? '')));
         $primaryKey = $this->tables->primaryKey($table);
         if ($primaryKey !== null) {
@@ -281,18 +287,105 @@ final class AdminTableController extends AdminController
             'bgaming_config',
             'bgaming_transactions',
             'bgaming_wallet_logs',
+            'casino_aggregator_wallet_logs',
+            'casino_aggregator_transactions',
+            'casino_aggregator_sessions',
+            'gsc_transactions',
+            'gsc_sessions',
+            'gsc_wagers',
+            'gsc_wallet_logs',
+            'gsc_config',
+            'sportsbook_transactions',
+            'sportsbook_sessions',
+            'sportsbook_wallet_logs',
+            'loyalty_cashback_payments',
+            'loyalty_point_transactions',
+            'user_loyalty_accounts',
+            'user_active_bonuses',
+            'user_account_freeze',
+            'kyc_requests',
+            'bonus_claim_requests',
+            'promocode_requests',
+            'call_me_requests',
+            'promotions',
+            'homepage_sections',
+            'mobile_menu_settings',
+            'site_ayarlar',
+            'footer_settings',
+            'megapayz_methods',
         ];
+    }
+
+    private function redirectDedicatedEditor(string $table): void
+    {
+        $map = [
+            'promotions' => '/promotions',
+            'homepage_sections' => '/homepage-sections',
+            'mobile_menu_settings' => '/mobile-menu',
+            'site_ayarlar' => '/site-settings',
+            'footer_settings' => '/footer',
+            'megapayz_methods' => '/megapayz/methods',
+            'gsc_config' => '/gsc-plus/settings',
+        ];
+        if (!isset($map[$table])) {
+            return;
+        }
+        $this->redirect(AdminAuth::url($map[$table]));
     }
 
     private function denyReadOnlyModule(string $table, string $moduleKey): void
     {
-        if (in_array($moduleKey, ['deposits', 'withdrawals'], true) && $table === 'megapayz_transactions') {
-            $message = $moduleKey === 'withdrawals'
-                ? 'Çekim kayıtları salt okunurdur; düzenleme ve silme kapalıdır.'
-                : 'Yatırım kayıtları salt okunurdur; düzenleme ve silme kapalıdır.';
-            $this->flash($message);
-            $this->redirect(AdminAuth::url('/module?key=' . rawurlencode($moduleKey)));
+        $readOnlyModules = [
+            'deposits',
+            'withdrawals',
+            'promocode-requests',
+            'loyalty-cashback',
+            'loyalty-transactions',
+            'loyalty-accounts',
+            'logs',
+            'sessions',
+            'visitor-logs',
+            'kyc',
+            'bonus-claims',
+            'active-bonuses',
+            'frozen-accounts',
+            'call-requests',
+            'sportsbook-sessions',
+            'sportsbook-transactions',
+            'sportsbook-wallet-logs',
+            'casino-aggregator-sessions',
+            'casino-aggregator-transactions',
+            'casino-aggregator-wallet-logs',
+            'gsc-plus-sessions',
+            'gsc-plus-transactions',
+            'gsc-plus-wagers',
+            'gsc-plus-wallet-logs',
+            'gsc-plus-settings',
+            'bgaming-transactions',
+            'bgaming-wallet-logs',
+        ];
+        if (!in_array($moduleKey, $readOnlyModules, true)) {
+            return;
         }
+
+        $message = match ($moduleKey) {
+            'withdrawals' => 'Çekim kayıtları salt okunurdur; onay/red için satır aksiyonlarını kullanın.',
+            'deposits' => 'Yatırım kayıtları salt okunurdur; düzenleme ve silme kapalıdır.',
+            'promocode-requests' => 'Promocode talepleri salt okunurdur; onay/red için satır aksiyonlarını kullanın.',
+            'loyalty-cashback' => 'Cashback ödemeleri sistem tarafından oluşturulur; manuel düzenleme kapalıdır.',
+            'loyalty-transactions' => 'Puan hareketleri sistem tarafından oluşturulur; manuel düzenleme kapalıdır.',
+            'loyalty-accounts' => 'Üye puan hesapları salt okunurdur; puanlar sistem tarafından güncellenir.',
+            'kyc' => 'KYC kayıtları salt okunurdur; inceleme için satır aksiyonunu kullanın.',
+            'bonus-claims' => 'Bonus talepleri salt okunurdur; onay/red için satır aksiyonlarını kullanın.',
+            'active-bonuses' => 'Aktif bonuslar salt okunurdur; iptal için satır aksiyonunu kullanın.',
+            'frozen-accounts' => 'Dondurulan hesaplar salt okunurdur; çözmek için satır aksiyonunu kullanın.',
+            'call-requests' => 'Aranma talepleri salt okunurdur; tamamlamak için satır aksiyonunu kullanın.',
+            'gsc-plus-settings' => 'GSC+ ayarları özel ekrandan yönetilir.',
+            'logs', 'sessions', 'visitor-logs' => 'Bu kayıtlar salt okunurdur; düzenleme ve silme kapalıdır.',
+            default => 'Bu modül salt okunurdur; düzenleme ve silme kapalıdır.',
+        };
+        $this->flash($message);
+        $this->redirect(AdminAuth::url('/module?key=' . rawurlencode($moduleKey)));
     }
 
     private function ensurePost(): void
@@ -408,9 +501,9 @@ final class AdminTableController extends AdminController
             default => [],
         };
 
-        if ($prefixes !== [] && function_exists('metropol_notify_frontend_cms_purge')) {
+        if ($prefixes !== [] && function_exists('notify_frontend_cms_purge')) {
             foreach ($prefixes as $prefix) {
-                metropol_notify_frontend_cms_purge($prefix);
+                notify_frontend_cms_purge($prefix);
             }
         }
     }

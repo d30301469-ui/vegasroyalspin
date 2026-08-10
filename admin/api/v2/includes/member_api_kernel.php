@@ -23,6 +23,12 @@ if ($route === '') {
         $route = trim(substr($uriPath, $position + strlen($prefix)), '/');
     }
 }
+// GSC backoffice sometimes stores the seamless wallet base with trailing spaces:
+// /api/v2/gsc-plus-wallet%20%20%20/v1/api/seamless/balance → must not 403/CSRF.
+$route = rawurldecode($route);
+$route = preg_replace('#\s+/#', '/', $route) ?? $route;
+$route = preg_replace('#/\s+#', '/', $route) ?? $route;
+$route = trim($route, "/ \t");
 
 $routeAliases = [
     'auth/email-verification' => 'email_verification.php',
@@ -142,8 +148,8 @@ if (isset($routeAliases[$route])) {
     $route = $routeAliases[$route];
 }
 
-if (!function_exists('member_api_require_provider_services')) {
-    function member_api_require_provider_services(): void
+if (!function_exists('admin_member_api_require_provider_services')) {
+    function admin_member_api_require_provider_services(): void
     {
         static $loaded = false;
         if ($loaded) {
@@ -415,7 +421,21 @@ $memberJwtIssue = static function (PDO $pdo, array $user, int $ttl = 2592000): s
     return MemberJwtService::issue($pdo, $user, $ttl);
 };
 
-$memberFrontendTrustUserId = static function (string $scope = 'member-proxy'): int {
+$memberIsPlaceholderSecret = static function (string $value): bool {
+    $normalized = strtolower(trim($value));
+    if ($normalized === '' || strlen($normalized) < 32) {
+        return true;
+    }
+    foreach (['change-me', 'changeme', 'example', 'placeholder', 'default'] as $needle) {
+        if (str_contains($normalized, $needle)) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+$memberFrontendTrustUserId = static function (string $scope = 'member-proxy') use ($memberIsPlaceholderSecret): int {
     // Rotasyon güvenliği: önce özel FRONTEND_MEMBER_TRUST_SECRET, geçiş
     // dönemi için eski CMS purge secret'ı da aday olarak denenir.
     $secretCandidates = [];
@@ -424,7 +444,7 @@ $memberFrontendTrustUserId = static function (string $scope = 'member-proxy'): i
         trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: '')),
         defined('FRONTEND_CMS_PURGE_SECRET') ? trim((string) FRONTEND_CMS_PURGE_SECRET) : '',
     ] as $candidate) {
-        if ($candidate !== '' && !str_contains($candidate, 'CHANGE-ME') && !in_array($candidate, $secretCandidates, true)) {
+        if ($candidate !== '' && !$memberIsPlaceholderSecret($candidate) && !in_array($candidate, $secretCandidates, true)) {
             $secretCandidates[] = $candidate;
         }
     }
@@ -456,7 +476,8 @@ $memberJwtExtractBearer = static function (): string {
     if (preg_match('/^\s*Bearer\s+(.+)\s*$/i', $header, $m) === 1) {
         return trim((string) ($m[1] ?? ''));
     }
-    $altJwt = trim((string) ($_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? $_SERVER['REDIRECT_HTTP_X_METROPOL_MEMBER_JWT'] ?? ''));
+    $altJwt = trim((string) ($_SERVER['HTTP_X_APP_MEMBER_JWT'] ?? $_SERVER['REDIRECT_HTTP_X_APP_MEMBER_JWT']
+        ?? $_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? $_SERVER['REDIRECT_HTTP_X_METROPOL_MEMBER_JWT'] ?? ''));
     if ($altJwt !== '') {
         return $altJwt;
     }
@@ -478,7 +499,8 @@ $memberJwtHasBearerHeader = static function (): bool {
         return true;
     }
 
-    return trim((string) ($_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? $_SERVER['REDIRECT_HTTP_X_METROPOL_MEMBER_JWT'] ?? '')) !== '';
+    return trim((string) ($_SERVER['HTTP_X_APP_MEMBER_JWT'] ?? $_SERVER['REDIRECT_HTTP_X_APP_MEMBER_JWT']
+            ?? $_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? $_SERVER['REDIRECT_HTTP_X_METROPOL_MEMBER_JWT'] ?? '')) !== '';
 };
 
 $memberJwtValidate = static function (PDO $pdo, string $jwt) use ($memberJwtEnsureTable, $memberJwtSecret, $memberJwtB64Dec): ?array {
@@ -568,7 +590,7 @@ $memberJwtValidate = static function (PDO $pdo, string $jwt) use ($memberJwtEnsu
  * uyarılarının kök nedeni buydu.
  */
 $memberJwtSyncPhpSession = static function (PDO $pdo, int $userId) use ($memberUserById): void {
-    if (defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION) {
+    if (defined('APP_API_NO_SESSION') && APP_API_NO_SESSION) {
         return;
     }
     if ($userId <= 0) {
@@ -591,12 +613,60 @@ $memberJwtSyncPhpSession = static function (PDO $pdo, int $userId) use ($memberU
     }
 };
 
-$memberJwtRequireUserId = static function (PDO $pdo) use ($memberEnvelope, $memberJwtExtractBearer, $memberJwtValidate, $memberJwtHasBearerHeader, $memberFrontendTrustUserId, $memberJwtSyncPhpSession): int {
+$memberClearLocalSession = static function (): void {
+    if (defined('APP_API_NO_SESSION') && APP_API_NO_SESSION) {
+        return;
+    }
+    if (function_exists('frontend_clear_member_session')) {
+        frontend_clear_member_session();
+
+        return;
+    }
+    foreach ([
+        'loggedin', 'user_id', 'username', 'email', 'ana_bakiye',
+        'first_name', 'surname', 'member_jwt', '__header_member_cache',
+        '__member_jwt_proxy_synced', 'login_error',
+    ] as $key) {
+        unset($_SESSION[$key]);
+    }
+};
+
+$memberRejectIfBanned = static function (PDO $pdo, int $userId) use ($memberEnvelope, $memberClearLocalSession): void {
+    if ($userId <= 0) {
+        return;
+    }
+    try {
+        $stmt = $pdo->prepare('SELECT banned FROM users WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $userId]);
+        $banned = (int) $stmt->fetchColumn();
+    } catch (Throwable) {
+        return;
+    }
+    if ($banned !== 1) {
+        return;
+    }
+    try {
+        if (class_exists('MemberJwtService', false)) {
+            MemberJwtService::revokeAllForUser($pdo, $userId);
+        }
+    } catch (Throwable) {
+        // Ban reddi JWT iptaline bağlı olmamalı.
+    }
+    $memberClearLocalSession();
+    $memberEnvelope(403, [
+        'success' => false,
+        'code' => 403,
+        'error' => 'ACCOUNT_BANNED',
+        'message' => 'Hesabınız banlanmıştır. Giriş yapamazsınız.',
+    ]);
+};
+
+$memberJwtRequireUserId = static function (PDO $pdo) use ($memberEnvelope, $memberJwtExtractBearer, $memberJwtValidate, $memberJwtHasBearerHeader, $memberFrontendTrustUserId, $memberJwtSyncPhpSession, $memberRejectIfBanned): int {
     $token = $memberJwtExtractBearer();
     $bearerProvided = $memberJwtHasBearerHeader();
     $sessionUserId = !empty($_SESSION['loggedin']) ? (int) ($_SESSION['user_id'] ?? 0) : 0;
     if ($token === '' && !$bearerProvided && !empty($_SESSION['loggedin']) && (int) ($_SESSION['user_id'] ?? 0) > 0) {
-        if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
+        if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
             try {
                 $token = MemberJwtService::ensureSessionToken($pdo);
             } catch (Throwable) {
@@ -613,8 +683,9 @@ $memberJwtRequireUserId = static function (PDO $pdo) use ($memberEnvelope, $memb
         $trustedUid = $memberFrontendTrustUserId('member-proxy');
         if ($trustedUid > 0) {
             if (!headers_sent()) {
-                header('X-Metropol-Auth-Mode: frontend-trust');
+                header('X-App-Auth-Mode: frontend-trust');
             }
+            $memberRejectIfBanned($pdo, $trustedUid);
             $memberJwtSyncPhpSession($pdo, $trustedUid);
 
             return $trustedUid;
@@ -622,8 +693,10 @@ $memberJwtRequireUserId = static function (PDO $pdo) use ($memberEnvelope, $memb
         if (
             !$bearerProvided
             && $sessionUserId > 0
-            && !(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)
+            && !(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)
         ) {
+            $memberRejectIfBanned($pdo, $sessionUserId);
+
             return $sessionUserId;
         }
         $memberEnvelope(401, [
@@ -633,14 +706,16 @@ $memberJwtRequireUserId = static function (PDO $pdo) use ($memberEnvelope, $memb
             'message' => 'Geçersiz veya süresi dolmuş JWT token.',
         ]);
     }
-    if ($token !== '' && !(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
+    $resolvedUserId = (int) $auth['user_id'];
+    $memberRejectIfBanned($pdo, $resolvedUserId);
+    if ($token !== '' && !(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
         $_SESSION['member_jwt'] = $token;
     }
-    $memberJwtSyncPhpSession($pdo, (int) $auth['user_id']);
-    return (int) $auth['user_id'];
+    $memberJwtSyncPhpSession($pdo, $resolvedUserId);
+    return $resolvedUserId;
 };
 
-$memberJwtOptionalUserId = static function (PDO $pdo) use ($memberJwtExtractBearer, $memberJwtValidate, $memberJwtHasBearerHeader, $memberJwtSyncPhpSession): ?int {
+$memberJwtOptionalUserId = static function (PDO $pdo) use ($memberJwtExtractBearer, $memberJwtValidate, $memberJwtHasBearerHeader, $memberJwtSyncPhpSession, $memberClearLocalSession): ?int {
     $token = $memberJwtExtractBearer();
     if ($token !== '' || $memberJwtHasBearerHeader()) {
         if ($token === '') {
@@ -655,7 +730,19 @@ $memberJwtOptionalUserId = static function (PDO $pdo) use ($memberJwtExtractBear
         if ($userId <= 0) {
             return null;
         }
-        if (!(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION)) {
+        try {
+            $bannedStmt = $pdo->prepare('SELECT banned FROM users WHERE id = :id LIMIT 1');
+            $bannedStmt->execute(['id' => $userId]);
+            if ((int) $bannedStmt->fetchColumn() === 1) {
+                MemberJwtService::revokeAllForUser($pdo, $userId);
+                $memberClearLocalSession();
+
+                return null;
+            }
+        } catch (Throwable) {
+            // Ban kontrolü başarısızsa isteğe bağlı auth'u düşürme.
+        }
+        if (!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION)) {
             $_SESSION['member_jwt'] = $token;
         }
         $memberJwtSyncPhpSession($pdo, $userId);
@@ -664,6 +751,19 @@ $memberJwtOptionalUserId = static function (PDO $pdo) use ($memberJwtExtractBear
     }
 
     $sessionUserId = !empty($_SESSION['loggedin']) ? (int) ($_SESSION['user_id'] ?? 0) : 0;
+    if ($sessionUserId > 0) {
+        try {
+            $bannedStmt = $pdo->prepare('SELECT banned FROM users WHERE id = :id LIMIT 1');
+            $bannedStmt->execute(['id' => $sessionUserId]);
+            if ((int) $bannedStmt->fetchColumn() === 1) {
+                MemberJwtService::revokeAllForUser($pdo, $sessionUserId);
+                $memberClearLocalSession();
+
+                return null;
+            }
+        } catch (Throwable) {
+        }
+    }
 
     return $sessionUserId > 0 ? $sessionUserId : null;
 };
@@ -722,6 +822,7 @@ $memberStateChangingRoutes = [
     'kyc/source-of-funds' => true,
     'notifications/read-all' => true,
     'loyalty/redeem' => true,
+    'loyalty/redeem-points' => true,
     'responsible-gaming/limits' => true,
     'responsible-gaming/cool-off' => true,
     'responsible-gaming/self-exclusion' => true,
@@ -755,13 +856,14 @@ $memberIsPublicDemoGameLaunch = static function (string $route) use ($payload): 
     return in_array($mode, ['fun', 'demo'], true) || !empty($body['demo']) || !empty($body['isDemo']);
 };
 
-// Split-deploy backend (METROPOL_API_NO_SESSION): CSRF oturumu frontend'te; API host stateless.
+// Split-deploy backend (APP_API_NO_SESSION): CSRF oturumu frontend'te; API host stateless.
 // Oyun launch / ödeme vb. JWT veya X-Frontend-Trust ile korunur — boş $_SESSION['csrf_token'] 403 üretmesin.
-$memberApiUsesSessionCsrf = !(defined('METROPOL_API_NO_SESSION') && METROPOL_API_NO_SESSION);
+$memberApiUsesSessionCsrf = !(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION);
 
 if ($memberApiUsesSessionCsrf
     && in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)
     && $memberRouteRequiresCsrf($route)
+    && !preg_match('#^(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)#i', $route)
     && !$memberJwtHasBearerHeader()
     && !$memberIsPublicDemoGameLaunch($route)
 ) {

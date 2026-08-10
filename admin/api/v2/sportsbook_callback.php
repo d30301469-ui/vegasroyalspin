@@ -11,11 +11,16 @@ declare(strict_types=1);
  * public key. Host-independent (providers call the bare backend domain).
  */
 
+// Wallet callbacks are machine-to-machine; never open an admin PHP session.
+if (!defined('APP_API_NO_SESSION')) {
+    define('APP_API_NO_SESSION', true);
+}
+
 require_once __DIR__ . '/bootstrap.php';
 admin_require_project_file('services/SportsbookService.php');
 
-if (!function_exists('sportsbook_callback_log_debug')) {
-    function sportsbook_callback_log_debug(string $stage, array $context = []): void
+if (!function_exists('admin_sportsbook_callback_log_debug')) {
+    function admin_sportsbook_callback_log_debug(string $stage, array $context = []): void
     {
         $base = dirname(__DIR__, 3);
         $dir  = $base . '/storage/logs';
@@ -58,7 +63,7 @@ if (!is_array($payload)) {
 
 if (!is_array($payload)) {
     http_response_code(400);
-    sportsbook_callback_log_debug('invalid_payload', ['raw' => substr($rawBody, 0, 1000)]);
+    admin_sportsbook_callback_log_debug('invalid_payload', ['raw' => substr($rawBody, 0, 1000)]);
     echo json_encode(['status' => 13, 'msg' => 'INVALID_PARAMETER']);
     exit;
 }
@@ -76,7 +81,7 @@ try {
     $pdo    = AdminDatabase::pdo();
     $result = SportsbookService::wallet($pdo, $payload, $rawBody, $signature);
 
-    sportsbook_callback_log_debug('handled', [
+    admin_sportsbook_callback_log_debug('handled', [
         'method' => (string) ($payload['method'] ?? $payload['action'] ?? ''),
         'status' => (int) ($result['status'] ?? 200),
         'body' => is_array($result['body'] ?? null) ? $result['body'] : [],
@@ -86,7 +91,7 @@ try {
     http_response_code((int) ($result['status'] ?? 200));
     echo json_encode($result['body'] ?? ['status' => 1, 'msg' => 'INTERNAL_ERROR']);
 } catch (Throwable $e) {
-    sportsbook_callback_log_debug('exception', ['message' => $e->getMessage()]);
+    admin_sportsbook_callback_log_debug('exception', ['message' => $e->getMessage()]);
     http_response_code(500);
     echo json_encode(['status' => 1, 'msg' => 'INTERNAL_ERROR']);
 }

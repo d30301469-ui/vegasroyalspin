@@ -71,6 +71,46 @@ if (!function_exists('memberHasConfirmedDepositV2')) {
     }
 }
 
+if (!function_exists('memberPromotionIsFirstDepositV2')) {
+    /**
+     * Promosyonun "ilk yatırım / hoşgeldin" tipi olup olmadığını tespit eder.
+     * bonus_type, bonus_rules.applies_to ve başlık metnine bakar.
+     */
+    function memberPromotionIsFirstDepositV2(array $promotion): bool
+    {
+        $bonusType = strtolower(trim((string) ($promotion['bonus_type'] ?? '')));
+        if (in_array($bonusType, ['first_deposit_pct', 'first_deposit', 'firstdeposit'], true)) {
+            return true;
+        }
+
+        $rawRules = $promotion['bonus_rules'] ?? null;
+        if (is_string($rawRules) && trim($rawRules) !== '') {
+            $decoded = json_decode($rawRules, true);
+            $rules = [];
+            if (is_array($decoded)) {
+                $rules = array_is_list($decoded) ? $decoded : [$decoded];
+            }
+            foreach ($rules as $rule) {
+                if (!is_array($rule)) {
+                    continue;
+                }
+                $appliesTo = strtolower((string) ($rule['applies_to'] ?? ''));
+                if (in_array($appliesTo, ['first_deposit', 'firstdeposit'], true)) {
+                    return true;
+                }
+            }
+        }
+
+        $title = mb_strtolower((string) ($promotion['title'] ?? ''), 'UTF-8');
+        $titleClean = preg_replace('/\s+/u', ' ', $title) ?? $title;
+
+        return preg_match(
+            '/(?:ilk\s*yat[ıi]r[ıi]m|ho[sş]geldin|ilk\s*para\s*yat[ıi]rma|first\s*deposit)/u',
+            $titleClean
+        ) === 1;
+    }
+}
+
 if (!function_exists('memberPromotionResolveClaimAmountV2')) {
     /**
      * Talep tutarını promosyon kaydı + bonus_rules + onaylı yatırım üzerinden hesaplar.
@@ -82,11 +122,14 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
      *
      * KRİTİK KURAL: Hesaplanan bonus tutarı hiçbir zaman kullanıcının
      * onaylı yatırım toplamından fazla olamaz.
+     * İlk yatırım bonuslarında taban her zaman ilk onaylı yatırımdır.
      */
     function memberPromotionResolveClaimAmountV2(PDO $pdo, int $userId, array $promotion): float
     {
         $bonusType = strtolower(trim((string) ($promotion['bonus_type'] ?? '')));
         $totalDeposit = memberApprovedDepositTotalV2($pdo, $userId);
+        $isFirstDepositPromo = memberPromotionIsFirstDepositV2($promotion);
+        $firstDeposit = $isFirstDepositPromo ? memberFirstApprovedDepositAmountV2($pdo, $userId) : 0.0;
 
         // --- bonus_rules JSON parse ---
         $rules = [];
@@ -127,7 +170,8 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
         // --- bonus_rules varsa onu kullan ---
         if ($rule !== null && $ruleValue > 0) {
             $isRulePct = $ruleType === 'percentage';
-            $isFirstDeposit = in_array($ruleAppliesTo, ['first_deposit', 'firstdeposit'], true);
+            $isFirstDeposit = $isFirstDepositPromo
+                || in_array($ruleAppliesTo, ['first_deposit', 'firstdeposit'], true);
 
             if ($isRulePct) {
                 $baseAmount = $isFirstDeposit
@@ -157,11 +201,19 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
             }
         }
 
-        // --- bonus_type alanına göre hesaplama ---
-        if ($bonusType === 'first_deposit_pct') {
-            $firstDeposit = memberFirstApprovedDepositAmountV2($pdo, $userId);
+        // --- İlk yatırım / hoşgeldin: yüzde her zaman ilk yatırım üzerinden ---
+        if ($isFirstDepositPromo || $bonusType === 'first_deposit_pct') {
+            if ($firstDeposit <= 0) {
+                $firstDeposit = memberFirstApprovedDepositAmountV2($pdo, $userId);
+            }
             if ($firstDeposit > 0) {
                 $pct = (float) ($promotion['bonus_amount'] ?? 0);
+                if ($pct <= 0 || $pct > 200) {
+                    $title = mb_strtolower((string) ($promotion['title'] ?? ''), 'UTF-8');
+                    if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/u', $title, $m)) {
+                        $pct = (float) str_replace(',', '.', (string) ($m[1] ?? '0'));
+                    }
+                }
                 if ($pct > 0 && $pct <= 200) {
                     $calculated = round(($firstDeposit * $pct) / 100, 2);
                     if ($totalDeposit > 0) {
@@ -197,16 +249,10 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
             }
 
             if ($titlePct > 0 && $titlePct <= 200) {
-                // İlk yatırım ifadesi var mı?
-                $isFirstDepositTitle = preg_match(
-                    '/(?:ilk\s*yat[ıi]r[ıi]m|ho[sş]geldin|ilk\s*para\s*yat[ıi]rma|first\s*deposit)/u',
-                    $titleClean
-                ) === 1;
-
-                if ($isFirstDepositTitle) {
-                    $firstDeposit = memberFirstApprovedDepositAmountV2($pdo, $userId);
-                    if ($firstDeposit > 0) {
-                        $calculated = round(($firstDeposit * $titlePct) / 100, 2);
+                if ($isFirstDepositPromo) {
+                    $base = memberFirstApprovedDepositAmountV2($pdo, $userId);
+                    if ($base > 0) {
+                        $calculated = round(($base * $titlePct) / 100, 2);
                         if ($totalDeposit > 0) {
                             $calculated = min($calculated, $totalDeposit);
                         }
@@ -290,12 +336,38 @@ if (!function_exists('memberApprovedClaimCountForPromotionV2')) {
     }
 }
 
+if (!function_exists('memberPriorClaimCountForPromotionV2')) {
+    /**
+     * Pending/approved/rejected talepler (yeniden başvuru engeli için).
+     * Pending kayıtlar replace edildiği için ayrı tutulmaz; burada sayılırsa
+     * caller zaten pending'i silmeden önce kontrol etmemeli — claim path
+     * pending'i sildikten sonra değil, önce limit kontrolü yapar; pending varsa
+     * replace ile devam eder, bu yüzden pending'i "tüketilmiş hak" saymayız.
+     */
+    function memberPriorClaimCountForPromotionV2(PDO $pdo, int $userId, int $promotionId): int
+    {
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM bonus_claim_requests
+                 WHERE user_id = :user_id
+                   AND promotion_id = :promotion_id
+                   AND status IN ('approved', 'rejected')"
+            );
+            $stmt->execute(['user_id' => $userId, 'promotion_id' => $promotionId]);
+
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+}
+
 if (!function_exists('memberCheckPromotionClaimLimitV2')) {
     /**
      * Kullanıcının bu promosyondan kaç kez daha faydalanabileceğini kontrol eder.
      *
-     * Kural: Her onaylı yatırım = 1 talep hakkı.
-     * Örnek: 3 onaylı yatırım, 2 onaylı talep → 1 hak kaldı.
+     * Genel kural: Her onaylı yatırım = 1 talep hakkı (yalnızca approved talepler hak tüketir).
+     * İlk yatırım / hoşgeldin: ömür boyu 1 hak — approved VEYA rejected sonrası yeniden talep yok.
      *
      * @return array{canClaim: bool, approvedDeposits: int, approvedClaims: int, remainingRights: int, message: string}
      */
@@ -303,7 +375,20 @@ if (!function_exists('memberCheckPromotionClaimLimitV2')) {
     {
         $approvedDeposits = memberApprovedDepositCountV2($pdo, $userId);
         $approvedClaims = memberApprovedClaimCountForPromotionV2($pdo, $userId, $promotionId);
-        $remaining = max(0, $approvedDeposits - $approvedClaims);
+
+        $promotion = null;
+        try {
+            $promoStmt = $pdo->prepare(
+                'SELECT id, title, bonus_type, bonus_rules FROM promotions WHERE id = :id LIMIT 1'
+            );
+            $promoStmt->execute(['id' => $promotionId]);
+            $row = $promoStmt->fetch(PDO::FETCH_ASSOC);
+            $promotion = is_array($row) ? $row : null;
+        } catch (Throwable) {
+            $promotion = null;
+        }
+
+        $isFirstDeposit = is_array($promotion) && memberPromotionIsFirstDepositV2($promotion);
 
         if ($approvedDeposits <= 0) {
             return [
@@ -314,6 +399,29 @@ if (!function_exists('memberCheckPromotionClaimLimitV2')) {
                 'message' => 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.',
             ];
         }
+
+        if ($isFirstDeposit) {
+            $priorClaims = memberPriorClaimCountForPromotionV2($pdo, $userId, $promotionId);
+            if ($priorClaims > 0) {
+                return [
+                    'canClaim' => false,
+                    'approvedDeposits' => $approvedDeposits,
+                    'approvedClaims' => $approvedClaims,
+                    'remainingRights' => 0,
+                    'message' => 'Bu promosyondan yalnızca ilk yatırımınız için bir kez yararlanabilirsiniz.',
+                ];
+            }
+
+            return [
+                'canClaim' => true,
+                'approvedDeposits' => $approvedDeposits,
+                'approvedClaims' => $approvedClaims,
+                'remainingRights' => 1,
+                'message' => 'Bu promosyondan yalnızca ilk yatırımınız için bir kez yararlanabilirsiniz.',
+            ];
+        }
+
+        $remaining = max(0, $approvedDeposits - $approvedClaims);
 
         if ($remaining <= 0) {
             return [

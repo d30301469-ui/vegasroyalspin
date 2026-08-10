@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 include __DIR__ . '/header-banners-data.php';
 $banners = $headerBanners;
 $bannerBase = $headerBannerBase;
@@ -18,8 +18,30 @@ if (!function_exists('homeSectionH')) {
 if (!function_exists('homeSectionJs')) {
     function homeSectionJs(mixed $value): string
     {
-        $encoded = json_encode((string) $value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // Match slot-game-tile: hex-escape quotes so onclick survives htmlspecialchars.
+        $encoded = json_encode(
+            (string) $value,
+            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
         return is_string($encoded) ? $encoded : '""';
+    }
+}
+
+if (!function_exists('homePlayHref')) {
+    /**
+     * Same play URL shape as /slot and /livecasino (literal `:` in game_id).
+     */
+    function homePlayHref(string $gameId, bool $demo = false): string
+    {
+        $gid = trim($gameId);
+        if ($gid === '' || $gid === '0') {
+            return '#';
+        }
+        $encoded = str_ireplace('%3A', ':', rawurlencode($gid));
+
+        return $demo
+            ? '/play?game_id=' . $encoded . '&mode=fun&demo=1'
+            : '/play?game_id=' . $encoded . '&mode=real&wallet=main';
     }
 }
 
@@ -183,20 +205,19 @@ if (!function_exists('homeRenderGameCard')) {
         $imageFit = (string) ($card['image_fit'] ?? 'fill');
         $imageFit = in_array($imageFit, ['cover', 'fill'], true) ? $imageFit : 'fill';
         $imageScale = $imageFit === 'fill' ? 1 : max(40, min(120, (int) ($card['image_scale'] ?? 100))) / 100;
-        $gameIdJs = $gameId !== '' ? homeSectionJs($gameId) : '';
-        $onclick = $gameId !== ''
-            ? 'handlePlay(' . $gameIdJs . ')'
-            : ($link !== '' ? 'window.location.href=' . homeSectionJs($link) : '');
-        $playHref = $link !== '' ? $link : ($gameId !== '' ? '/play?game_id=' . rawurlencode($gameId) . '&mode=real&wallet=main' : '#');
-        $playOnclick = $gameId !== ''
-            ? 'handlePlay(' . $gameIdJs . '); return false;'
-            : ($link !== '' ? '' : 'event.stopPropagation(); return false;');
-        $demoHref = $gameId !== ''
-            ? '/play?game_id=' . rawurlencode($gameId) . '&mode=fun&demo=1'
-            : '#';
-        $demoOnclick = $gameId !== ''
-            ? 'handleDemo(' . $gameIdJs . '); return false;'
-            : 'event.stopPropagation(); return false;';
+        $playHref = $link !== '' ? $link : homePlayHref($gameId, false);
+        $demoHref = homePlayHref($gameId, true);
+        $playHrefJs = homeSectionJs($playHref);
+        $demoHrefJs = homeSectionJs($demoHref);
+        // Same intent pattern as views/partials/slot-game-tile.php (full URL, not raw game_id).
+        $playIntentJs = $gameId !== ''
+            ? 'if(event){event.preventDefault();event.stopPropagation();}if(window.__homeHandlePlayIntent){window.__homeHandlePlayIntent(event,' . $playHrefJs . ');}else{window.location.href=' . $playHrefJs . ';}'
+            : ($link !== ''
+                ? 'if(event){event.preventDefault();event.stopPropagation();}window.location.href=' . $playHrefJs
+                : '');
+        $demoIntentJs = $gameId !== ''
+            ? 'if(event){event.preventDefault();event.stopPropagation();}window.location.href=' . $demoHrefJs
+            : 'if(event){event.stopPropagation();}return false;';
         $fallbacks = homeGameImageFallbacks($image);
         $image = $fallbacks[0] ?? $image;
         $fallbackJson = count($fallbacks) > 1
@@ -204,7 +225,7 @@ if (!function_exists('homeRenderGameCard')) {
             : '';
         $onerror = '(function(img){var f=[],i;try{f=JSON.parse(img.getAttribute(\'data-fallbacks\')||\'[]\');}catch(e){}i=parseInt(img.getAttribute(\'data-fallback-idx\')||\'0\',10)+1;if(Array.isArray(f)&&i<f.length){img.setAttribute(\'data-fallback-idx\',String(i));img.src=f[i];return;}img.onerror=null;})(this)';
         ?>
-        <div class="<?= homeSectionH($class) ?>"<?= $onclick !== '' ? ' onclick="' . homeSectionH($onclick) . '"' : '' ?>>
+        <div class="<?= homeSectionH($class) ?>"<?= $playIntentJs !== '' ? ' onclick="' . homeSectionH($playIntentJs) . '"' : '' ?>>
             <img loading="lazy" decoding="async" referrerpolicy="no-referrer" src="<?= homeSectionH($image) ?>" alt="<?= homeSectionH($alt) ?>" width="200" height="200" style="object-fit: <?= homeSectionH($imageFit) ?>; --home-image-scale: <?= homeSectionH((string) $imageScale) ?>;"<?= $fallbackJson !== '' ? ' data-fallbacks="' . $fallbackJson . '" data-fallback-idx="0"' : '' ?> onerror="<?= homeSectionH($onerror) ?>">
             <div class="game-overlay">
                 <div class="game-overlay-top">
@@ -215,8 +236,8 @@ if (!function_exists('homeRenderGameCard')) {
                     <p class="game-title-text"><?= homeSectionH($title) ?></p>
                 </div>
                 <div class="game-actions">
-                    <a href="<?= homeSectionH($playHref) ?>" class="play-btn"<?= $playOnclick !== '' ? ' onclick="' . homeSectionH($playOnclick) . '"' : '' ?>>OYNA</a>
-                    <a href="<?= homeSectionH($demoHref) ?>" class="demo-btn" onclick="<?= homeSectionH($demoOnclick) ?>">DEMO</a>
+                    <a href="<?= homeSectionH($playHref) ?>" class="play-btn"<?= $playIntentJs !== '' ? ' onclick="' . homeSectionH($playIntentJs) . '"' : '' ?>>OYNA</a>
+                    <a href="<?= homeSectionH($demoHref) ?>" class="demo-btn" onclick="<?= homeSectionH($demoIntentJs) ?>">DEMO</a>
                 </div>
             </div>
         </div>
@@ -362,7 +383,7 @@ try {
               role="tab"
               aria-selected="false"
               aria-controls="home-hero-panel-winners"
-              data-slot-hero-tab="winners">KAZANANLAR</button>
+              data-slot-hero-tab="winners"><?= htmlspecialchars(__('game.winners'), ENT_QUOTES, 'UTF-8') ?></button>
     </div>
     <div class="slot-hero-panels">
       <div class="slot-hero-tabpanel slot-hero-tabpanel--active"

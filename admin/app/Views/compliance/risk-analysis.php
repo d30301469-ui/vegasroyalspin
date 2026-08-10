@@ -4,8 +4,23 @@ $multiWithdraw = is_array($multiWithdraw ?? null) ? $multiWithdraw : [];
 $highDepositors = is_array($highDepositors ?? null) ? $highDepositors : [];
 $frozenAccounts = is_array($frozenAccounts ?? null) ? $frozenAccounts : [];
 $kycPendingHighBalance = is_array($kycPendingHighBalance ?? null) ? $kycPendingHighBalance : [];
+$chartData = is_array($chartData ?? null) ? $chartData : [];
 $number = $number ?? static fn ($v): string => number_format((float) $v, 2, ',', '.');
 $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.');
+$amlOpen = is_array($chartData['aml_open'] ?? null) ? $chartData['aml_open'] : [];
+$riskOpen = is_array($chartData['risk_open'] ?? null) ? $chartData['risk_open'] : [];
+$text = static fn (mixed $value): string => htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
+$memberLabel = static function (array $r): string {
+    $name = trim((string) ($r['member_name'] ?? ''));
+    if ($name !== '') {
+        return $name;
+    }
+    $full = trim((string) ($r['name'] ?? '') . ' ' . (string) ($r['surname'] ?? ''));
+    if ($full !== '') {
+        return $full;
+    }
+    return (string) ($r['fullname'] ?? $r['username'] ?? '-');
+};
 ?>
 <style>
     .risk-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
@@ -23,7 +38,16 @@ $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.'
     .risk-link { color:var(--primary); font-weight:800; }
     .risk-empty { color:var(--t-muted); font-size:12px; padding:20px; text-align:center; }
     .risk-num { font-family:'JetBrains Mono',monospace; font-size:11px; }
-    @media (max-width:1000px) { .risk-grid { grid-template-columns:1fr; } }
+    .risk-kpi { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+    .risk-kpi-card { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow:var(--shadow-card); }
+    .risk-kpi-card .muted { font-size:11px; margin-bottom:4px; }
+    .risk-kpi-card strong { font-size:20px; }
+    @media (max-width:1000px) {
+        .risk-grid, .risk-kpi { grid-template-columns:1fr 1fr; }
+    }
+    @media (max-width:720px) {
+        .risk-grid, .risk-kpi { grid-template-columns:1fr; }
+    }
 </style>
 
 <section class="admin-surface">
@@ -31,12 +55,53 @@ $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.'
     <div class="hero-text">
         <span class="eyebrow">Uyum · Risk</span>
         <h1 class="hero-title">Risk <span class="accent">Analizi</span></h1>
-        <p class="hero-sub">Çoklu bekleyen çekim, yüksek hacimli yatırım, dondurulmuş hesap ve KYC bekleyen yüksek bakiyeli oyuncu sinyalleri.</p>
+        <p class="hero-sub">Canlı sinyal paneli, risk skorları ve AML/Risk trend grafikleri.</p>
+    </div>
+    <div class="hero-actions">
+        <a class="btn btn--ghost" href="<?= $text(AdminAuth::url('/compliance/aml-alerts')) ?>">AML Uyarıları</a>
+        <a class="btn btn--ghost" href="<?= $text(AdminAuth::url('/compliance/risk-alerts')) ?>">Risk Uyarıları</a>
     </div>
 </div>
 
+<div class="risk-kpi">
+    <div class="risk-kpi-card"><div class="muted">Açık AML</div><strong><?= (int) ($amlOpen['open'] ?? 0) ?></strong></div>
+    <div class="risk-kpi-card"><div class="muted">AML Critical</div><strong><?= (int) ($amlOpen['critical'] ?? 0) ?></strong></div>
+    <div class="risk-kpi-card"><div class="muted">Açık Risk</div><strong><?= (int) ($riskOpen['open'] ?? 0) ?></strong></div>
+    <div class="risk-kpi-card"><div class="muted">Risk Critical</div><strong><?= (int) ($riskOpen['critical'] ?? 0) ?></strong></div>
+</div>
+
+<div class="cmp-charts">
+    <div class="cmp-chart-card">
+        <div class="cmp-chart-head"><h3 class="cmp-chart-title">Operasyon sinyalleri</h3></div>
+        <div class="cmp-chart-wrap"><canvas id="analysis-signals"></canvas></div>
+    </div>
+    <div class="cmp-chart-card">
+        <div class="cmp-chart-head"><h3 class="cmp-chart-title">Üye risk skor seviyeleri</h3></div>
+        <div class="cmp-chart-wrap"><canvas id="analysis-levels"></canvas></div>
+    </div>
+    <div class="cmp-chart-card wide">
+        <div class="cmp-chart-head"><h3 class="cmp-chart-title">Çoklu bekleyen çekim (tutar)</h3></div>
+        <div class="cmp-chart-wrap"><canvas id="analysis-withdraw"></canvas></div>
+    </div>
+    <div class="cmp-chart-card wide">
+        <div class="cmp-chart-head"><h3 class="cmp-chart-title">Yüksek hacimli yatırımlar</h3></div>
+        <div class="cmp-chart-wrap"><canvas id="analysis-deposit"></canvas></div>
+    </div>
+    <div class="cmp-chart-card wide">
+        <div class="cmp-chart-head"><h3 class="cmp-chart-title">AML 14 günlük trend</h3></div>
+        <div class="cmp-chart-wrap tall"><canvas id="analysis-aml-trend"></canvas></div>
+    </div>
+    <div class="cmp-chart-card wide">
+        <div class="cmp-chart-head"><h3 class="cmp-chart-title">Risk 14 günlük trend</h3></div>
+        <div class="cmp-chart-wrap tall"><canvas id="analysis-risk-trend"></canvas></div>
+    </div>
+</div>
+<?php
+$chartPrefix = 'analysis';
+require __DIR__ . '/_charts-boot.php';
+?>
+
 <div class="risk-grid">
-    <!-- Multi Withdrawals -->
     <div class="risk-card">
         <div class="risk-card-head">
             <h2 class="risk-card-title">Çoklu Bekleyen Çekim</h2>
@@ -51,9 +116,9 @@ $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.'
             <tbody>
             <?php foreach ($multiWithdraw as $r): ?>
                 <tr>
-                    <td><a class="risk-link" href="<?= htmlspecialchars(AdminAuth::url('/user?id=' . ($r['user_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string) ($r['fullname'] ?? $r['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></a></td>
+                    <td><a class="risk-link" href="<?= $text(AdminAuth::url('/user?id=' . ($r['user_id'] ?? 0))) ?>"><?= $text($memberLabel($r)) ?></a></td>
                     <td class="risk-num"><?= (int) ($r['pending_count'] ?? 0) ?> adet</td>
-                    <td class="risk-num"><?= htmlspecialchars($money($r['total_amount'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td class="risk-num"><?= $text($money($r['total_amount'] ?? 0)) ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -62,7 +127,6 @@ $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.'
         <?php endif; ?>
     </div>
 
-    <!-- High Depositors -->
     <div class="risk-card">
         <div class="risk-card-head">
             <h2 class="risk-card-title">Yüksek Hacimli Yatırımcılar</h2>
@@ -77,10 +141,10 @@ $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.'
             <tbody>
             <?php foreach ($highDepositors as $r): ?>
                 <tr>
-                    <td><a class="risk-link" href="<?= htmlspecialchars(AdminAuth::url('/user?id=' . ($r['user_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string) ($r['fullname'] ?? $r['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></a></td>
+                    <td><a class="risk-link" href="<?= $text(AdminAuth::url('/user?id=' . ($r['user_id'] ?? 0))) ?>"><?= $text($memberLabel($r)) ?></a></td>
                     <td class="risk-num"><?= (int) ($r['tx_count'] ?? 0) ?></td>
-                    <td class="risk-num"><?= htmlspecialchars($money($r['total_deposited'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td class="risk-num"><?= htmlspecialchars($money($r['max_single'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td class="risk-num"><?= $text($money($r['total_deposited'] ?? 0)) ?></td>
+                    <td class="risk-num"><?= $text($money($r['max_single'] ?? 0)) ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -89,7 +153,6 @@ $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.'
         <?php endif; ?>
     </div>
 
-    <!-- Frozen Accounts -->
     <div class="risk-card">
         <div class="risk-card-head">
             <h2 class="risk-card-title">Dondurulmuş Hesaplar</h2>
@@ -100,14 +163,22 @@ $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.'
         <?php else: ?>
         <div style="overflow-x:auto">
         <table class="risk-table">
-            <thead><tr><th>Oyuncu</th><th>Bakiye</th><th>Bonus</th><th>Tarih</th></tr></thead>
+            <thead><tr><th>Oyuncu</th><th>Bakiye</th><th>Bonus</th><th>Tarih</th><th>İşlem</th></tr></thead>
             <tbody>
             <?php foreach ($frozenAccounts as $r): ?>
                 <tr>
-                    <td><a class="risk-link" href="<?= htmlspecialchars(AdminAuth::url('/user?id=' . ($r['id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(trim((string) ($r['name'] ?? '') . ' ' . (string) ($r['surname'] ?? '')), ENT_QUOTES, 'UTF-8') ?: htmlspecialchars((string) ($r['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></a></td>
-                    <td class="risk-num"><?= htmlspecialchars($money($r['balance'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td class="risk-num"><?= htmlspecialchars($money($r['bonus_balance'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars(date('d.m.Y', strtotime((string) ($r['updated_at'] ?? 'now'))), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><a class="risk-link" href="<?= $text(AdminAuth::url('/user?id=' . ($r['id'] ?? 0))) ?>"><?= $text($memberLabel($r)) ?></a></td>
+                    <td class="risk-num"><?= $text($money($r['balance'] ?? 0)) ?></td>
+                    <td class="risk-num"><?= $text($money($r['bonus_balance'] ?? 0)) ?></td>
+                    <td><?= $text(date('d.m.Y', strtotime((string) ($r['updated_at'] ?? 'now')))) ?></td>
+                    <td>
+                        <form method="post" action="<?= $text(AdminAuth::url('/user/unfreeze')) ?>" data-admin-confirm="Bu hesabın dondurması kaldırılsın mı?" style="display:inline">
+                            <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
+                            <input type="hidden" name="user_id" value="<?= $text((string) ($r['id'] ?? '')) ?>">
+                            <input type="hidden" name="redirect" value="risk">
+                            <button class="btn btn--ghost" type="submit" style="font-size:11px;padding:4px 8px">Çöz</button>
+                        </form>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -116,7 +187,6 @@ $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.'
         <?php endif; ?>
     </div>
 
-    <!-- KYC Pending High Balance -->
     <div class="risk-card">
         <div class="risk-card-head">
             <h2 class="risk-card-title">KYC Bekleyen Yüksek Bakiye</h2>
@@ -131,9 +201,9 @@ $money = static fn ($v): string => '₺' . number_format((float) $v, 2, ',', '.'
             <tbody>
             <?php foreach ($kycPendingHighBalance as $r): ?>
                 <tr>
-                    <td><a class="risk-link" href="<?= htmlspecialchars(AdminAuth::url('/user?id=' . ($r['id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(trim((string) ($r['name'] ?? '') . ' ' . (string) ($r['surname'] ?? '')), ENT_QUOTES, 'UTF-8') ?: htmlspecialchars((string) ($r['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></a></td>
-                    <td class="risk-num"><?= htmlspecialchars($money($r['balance'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars(date('d.m.Y', strtotime((string) ($r['submitted_at'] ?? 'now'))), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><a class="risk-link" href="<?= $text(AdminAuth::url('/user?id=' . ($r['id'] ?? 0))) ?>"><?= $text($memberLabel($r)) ?></a></td>
+                    <td class="risk-num"><?= $text($money($r['balance'] ?? 0)) ?></td>
+                    <td><?= $text(date('d.m.Y', strtotime((string) ($r['submitted_at'] ?? 'now')))) ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+// Wallet callbacks are machine-to-machine; never open an admin PHP session.
+if (!defined('APP_API_NO_SESSION')) {
+    define('APP_API_NO_SESSION', true);
+}
+
 require_once __DIR__ . '/bootstrap.php';
 admin_require_project_file('controllers/Api/ApiBgamingWalletController.php');
 

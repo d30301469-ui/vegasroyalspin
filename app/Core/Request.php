@@ -33,8 +33,8 @@ final class Request
         }
 
         // config/env.php yüklenmiş olduğunda merkezi kontrol fonksiyonuna delege et.
-        if (function_exists('metropol_is_backend_host')) {
-            return metropol_is_backend_host($host);
+        if (function_exists('is_backend_host')) {
+            return is_backend_host($host);
         }
 
         return in_array($host, $this->configuredAdminHosts(), true);

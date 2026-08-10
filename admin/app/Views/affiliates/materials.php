@@ -83,7 +83,7 @@ $flash = (string) ($flash ?? '');
         </div>
         <div class="field">
             <label class="field-label">Hedef URL</label>
-            <input class="input" name="target_url" placeholder="https://vegasroyalspin.com/?ref={kod}">
+            <input class="input" name="target_url" placeholder="https://vegasroyalspin119.com/?ref={kod}">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div class="field">

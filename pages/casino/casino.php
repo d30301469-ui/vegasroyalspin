@@ -407,8 +407,8 @@ function casinoApiUrl(path) {
 function loadGames(provider, element) {
     const isHepsi = (provider === 'hepsi');
     const filePath = isHepsi
-        ? casinoApiUrl('/pages/games/hepsi.php?type=casino')
-        : casinoApiUrl(`/pages/games/games.php?type=casino&provider=${encodeURIComponent(provider)}`);
+        ? casinoApiUrl('/games/hepsi?type=casino')
+        : casinoApiUrl(`/games/games?type=casino&provider=${encodeURIComponent(provider)}`);
     fetch(filePath)
         .then(response => {
             if (!response.ok) throw new Error('Network response was not ok');

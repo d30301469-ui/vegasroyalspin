@@ -37,8 +37,8 @@ final class AdminBonusClaimController extends AdminController
             if (!is_array($request)) {
                 throw new RuntimeException('Talep bulunamadı.');
             }
-            if ((string) ($request['status'] ?? '') !== 'pending') {
-                throw new RuntimeException('Sadece pending talepler onaylanabilir.');
+            if (!in_array((string) ($request['status'] ?? ''), ['pending', 'requested', 'waiting'], true)) {
+                throw new RuntimeException('Sadece bekleyen talepler onaylanabilir.');
             }
 
             $userId = (int) ($request['user_id'] ?? 0);
@@ -126,7 +126,7 @@ final class AdminBonusClaimController extends AdminController
         $stmt = $pdo->prepare(
             "UPDATE bonus_claim_requests
              SET status = 'rejected', processed_by = :processed_by, processed_at = NOW(), updated_at = NOW()
-             WHERE id = :id AND status = 'pending'"
+             WHERE id = :id AND status IN ('pending', 'requested', 'waiting')"
         );
         $stmt->bindValue(':processed_by', $processedByBinding['value'], $processedByBinding['type']);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
@@ -136,7 +136,7 @@ final class AdminBonusClaimController extends AdminController
             AdminAuth::writeLog($adminUsername, 'bonus_claim_reject', 'bonus_claim_requests', 'success', (string) $id);
             $this->flash('Bonus talebi reddedildi.');
         } else {
-            $this->flash('Talep bulunamadı veya pending değil.');
+            $this->flash('Talep bulunamadı veya bekleyen durumda değil.');
         }
 
         $this->redirect(AdminAuth::url('/module?key=bonus-claims'));

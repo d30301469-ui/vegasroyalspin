@@ -2,6 +2,9 @@
 
 $configRow = is_array($configRow ?? null) ? $configRow : [];
 $flash = trim((string) ($flash ?? ''));
+$catalogJob = is_array($catalogJob ?? null) ? $catalogJob : [];
+$catalogJobState = strtolower(trim((string) ($catalogJob['state'] ?? 'idle')));
+$catalogJobRunning = $catalogJobState === 'running';
 $text = static fn (mixed $value): string => htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 
 $siteEndpoint = trim((string) ($configRow['site_endpoint'] ?? ''));
@@ -37,6 +40,18 @@ $apiMode = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 'seam
 
 <?php if ($flash !== ''): ?>
     <div class="alert alert--info" style="margin-bottom:16px"><?= $text($flash) ?></div>
+<?php endif; ?>
+
+<?php if ($catalogJobState === 'running'): ?>
+    <div class="alert alert--info" style="margin-bottom:16px">
+        <?= $text((string) ($catalogJob['message'] ?? 'Katalog işlemi çalışıyor…')) ?>
+        <div class="ca-help" style="margin-top:8px">Bu işlem 3–6 dakika sürebilir. Sayfayı yenileyerek durumu kontrol edin.</div>
+    </div>
+    <script>setTimeout(function () { window.location.reload(); }, 15000);</script>
+<?php elseif ($catalogJobState === 'completed' && trim((string) ($catalogJob['message'] ?? '')) !== ''): ?>
+    <div class="alert alert--info" style="margin-bottom:16px"><?= $text((string) $catalogJob['message']) ?></div>
+<?php elseif ($catalogJobState === 'failed'): ?>
+    <div class="alert alert--danger" style="margin-bottom:16px"><?= $text((string) ($catalogJob['message'] ?? 'Katalog işlemi başarısız.')) ?></div>
 <?php endif; ?>
 
 <div class="ca-grid">
@@ -144,8 +159,19 @@ $apiMode = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 'seam
         <form class="ca-card" method="post" action="<?= $text(AdminAuth::url('/casino-aggregator/sync-games')) ?>">
             <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
             <div style="font-weight:700;margin-bottom:8px">Oyun Sync</div>
-            <p class="ca-help" style="margin-bottom:12px">Aktif vendorlar için GetVendorGames ile oyun kataloğunu günceller (vendor başına ~1 sn).</p>
-            <button class="btn btn--primary" type="submit">Oyun Sync</button>
+            <p class="ca-help" style="margin-bottom:12px">Aktif vendorlar için GetVendorGames ile oyun kataloğunu günceller. Uzun sürdüğü için arka planda çalışır.</p>
+            <button class="btn btn--primary" type="submit" <?= $catalogJobRunning ? 'disabled' : '' ?>>Oyun Sync</button>
+        </form>
+
+        <form class="ca-card" method="post" action="<?= $text(AdminAuth::url('/casino-aggregator/rebuild-catalog')) ?>"
+              onsubmit="return confirm(&quot;Tüm vendor ve oyunlar silinip API'den sıfırdan çekilecek. Devam edilsin mi?&quot;);">
+            <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
+            <div style="font-weight:700;margin-bottom:8px">Katalog Sıfırla + Sync</div>
+            <p class="ca-help" style="margin-bottom:12px">Veritabanındaki tüm aggregator vendor/oyun kayıtlarını siler, GetVendors + GetVendorGames ile güncel kataloğu yeniden yazar. Arka planda çalışır (3–6 dk); 503 vermez.</p>
+            <button class="btn btn--ghost" type="submit" style="border-color:#b45309;color:#b45309">Sil ve Yeniden Sync</button>
+            <?php if ($catalogJobRunning): ?>
+                <p class="ca-help" style="margin-top:8px;color:#b45309">Aktif katalog işlemi varsa durdurulup yeniden başlatılır.</p>
+            <?php endif; ?>
         </form>
 
         <div class="ca-card">

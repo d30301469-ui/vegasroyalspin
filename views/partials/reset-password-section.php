@@ -22,10 +22,10 @@ $resetHeroStyle = $resetHeroImage !== ''
     ? "--reset-hero-image: url('" . str_replace(["'", '"'], ['%27', '%22'], $resetHeroImage) . "');"
     : '';
 
-$resetCssPath = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/assets/css/reset-password.css';
+$resetCssPath = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/assets/css/auth-reset-password.css';
 $resetCssVer = is_file($resetCssPath) ? (string) filemtime($resetCssPath) : (string) time();
 ?>
-<link rel="stylesheet" href="/assets/css/reset-password.css?v=<?= $h($resetCssVer) ?>">
+<link rel="stylesheet" href="/assets/css/auth-reset-password.css?v=<?= $h($resetCssVer) ?>">
 <section class="mainWrap reset-password-shell">
     <div class="modal show d-block" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordTitle" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-define('METROPOL_INSTALL_WIZARD', true);
+define('APP_INSTALL_WIZARD', true);
 
 @set_time_limit(120);
 
@@ -10,10 +10,11 @@ if (session_status() === PHP_SESSION_NONE) {
     if (is_readable(__DIR__ . '/config/cloudflare.php')) {
         require_once __DIR__ . '/config/cloudflare.php';
     }
-    $https = function_exists('metropol_request_is_https')
-        ? metropol_request_is_https()
+    $https = function_exists('request_is_https')
+        ? request_is_https()
         : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
+    session_name('FRONTINSTALLSESSID');
     session_set_cookie_params([
         'lifetime' => 0,
         'path' => '/',

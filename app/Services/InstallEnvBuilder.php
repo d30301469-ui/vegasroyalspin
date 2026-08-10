@@ -160,7 +160,7 @@ final class InstallEnvBuilder
             'APP_KEY' => $input['app_key'],
             'CLOUDFLARE_SSL' => '1',
             'ORIGIN_HTTP' => '1',
-            'METROPOL_ROOT' => rtrim(str_replace('\\', '/', $input['root']), '/'),
+            'APP_ROOT' => rtrim(str_replace('\\', '/', $input['root']), '/'),
             'ADMIN_URL_PREFIX' => '',
             'BACKEND_HOST' => $backendHost,
             'BACKEND_URL' => $backendUrl,
@@ -184,7 +184,7 @@ final class InstallEnvBuilder
             'DB_USERNAME' => $input['db_username'],
             'DB_PASSWORD' => $input['db_password'],
             'ALLOW_RUNTIME_MIGRATIONS' => '0',
-            'METROPOL_RUNTIME_PROVIDER_BOOTSTRAP' => '0',
+            'APP_RUNTIME_PROVIDER_BOOTSTRAP' => '0',
         ];
     }
 
@@ -247,7 +247,7 @@ final class InstallEnvBuilder
             'TELEGRAM_URL' => rtrim(trim((string) ($input['telegram_url'] ?? 'https://t.me')), '/'),
             'WHATSAPP_URL' => trim((string) ($input['whatsapp_url'] ?? '')),
             'ALLOW_RUNTIME_MIGRATIONS' => '0',
-            'METROPOL_RUNTIME_PROVIDER_BOOTSTRAP' => '0',
+            'APP_RUNTIME_PROVIDER_BOOTSTRAP' => '0',
         ];
 
         return self::finalizeSplitFrontendEnv($env);
@@ -276,7 +276,7 @@ final class InstallEnvBuilder
         $env['FRONTEND_MEMBER_API_CIRCUIT_SECONDS'] = $env['FRONTEND_MEMBER_API_CIRCUIT_SECONDS'] ?? '0';
         $env['FRONTEND_API_PROXY_TIMEOUT'] = $env['FRONTEND_API_PROXY_TIMEOUT'] ?? '60';
         $env['ALLOW_RUNTIME_MIGRATIONS'] = '0';
-        $env['METROPOL_RUNTIME_PROVIDER_BOOTSTRAP'] = '0';
+        $env['APP_RUNTIME_PROVIDER_BOOTSTRAP'] = '0';
 
         unset($env['API_BACKEND_INTERNAL_BASE_URL'], $env['API_BACKEND_INTERNAL_HOST']);
 
@@ -300,7 +300,7 @@ final class InstallEnvBuilder
         }
 
         $env['ALLOW_RUNTIME_MIGRATIONS'] = $env['ALLOW_RUNTIME_MIGRATIONS'] ?? '0';
-        $env['METROPOL_RUNTIME_PROVIDER_BOOTSTRAP'] = $env['METROPOL_RUNTIME_PROVIDER_BOOTSTRAP'] ?? '0';
+        $env['APP_RUNTIME_PROVIDER_BOOTSTRAP'] = $env['APP_RUNTIME_PROVIDER_BOOTSTRAP'] ?? '0';
 
         return $env;
     }

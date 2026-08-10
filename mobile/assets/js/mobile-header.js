@@ -1,4 +1,7 @@
-(function () {
+/**
+ * @dynamic-file
+ */
+﻿(function () {
     'use strict';
     if ('scrollRestoration' in history) {
         history.scrollRestoration = 'manual';
@@ -149,7 +152,7 @@
     function mobileUserHeaderMarkup() {
         return ''
             + '<div class="user-balance-dropdown">'
-            + '  <a class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" href="/profile/deposit-withdraw?openDepositPanel=1" aria-label="Bakiye" role="button" aria-expanded="false" aria-haspopup="true">'
+            + '  <a class="nav-menu-item hdr-balance-trigger" id="balanceTrigger" href="/profile/deposit?openDepositPanel=1" aria-label="Bakiye" role="button" aria-expanded="false" aria-haspopup="true">'
             + '    <div class="hdr-user-info-content-bc">'
             + '      <div class="hdr-user-info-texts-bc ext-1 ellipsis" data-header-balance-main>'
             + '        <p class="balanceAmount"><span id="headerBalanceMain" data-balance-target="headerBalanceMain">0</span><span class="currencySymbol"> ₺</span></p>'
@@ -209,11 +212,9 @@
             || siteContact.partnership_url
             || '/ortaklik';
         var partnershipTitle = connections.partnershipTitle
-            || siteContact.partnership_title
-            || 'Ortaklık';
+            || (window.__ ? window.__('nav.partnership', 'Ortaklık') : 'Ortaklık');
         var partnershipLabel = connections.partnershipLabel
-            || siteContact.partnership_label
-            || 'ORTAKLIK';
+            || (window.__ ? window.__('nav.partnership', 'ORTAKLIK') : 'ORTAKLIK');
         var partnershipIsExternal = /^https?:\/\//i.test(partnershipUrl);
         var partnershipUrlEnc = String(partnershipUrl).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         var partnershipTitleEnc = String(partnershipTitle).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -231,7 +232,7 @@
             + '    <p class="loyaltyBonusHeaderBackground" aria-hidden="true"></p>'
             + '    <p class="loyaltyBonusHeaderText ellipsis" data-loyalty-level-name>Bronze</p>'
             + '    <img class="loyaltyBonusImg"'
-            + '         src="/assets/images/loyalty/badges/bronze.png"'
+            + '         src="/assets/images/loyalty/badges/bronze.svg"'
             + '         alt=""'
             + '         width="24"'
             + '         height="24"'
@@ -257,7 +258,7 @@
             + '      </p>'
             + '    </div>'
             + '    <div class="hdr-shortcuts-icons">'
-            + '      <a href="/profile/deposit-withdraw?openDepositPanel=1"'
+            + '      <a href="/profile/deposit?openDepositPanel=1"'
             + '         class="user-nav-icon bc-i-wallet"'
             + '         onclick="event.preventDefault(); if (typeof window.__openMobileBalancePage === \'function\' && window.__openMobileBalancePage(\'deposit\')) return false; if (typeof redirectToDeposit === \'function\') redirectToDeposit(); return false;"'
             + '         title="Para Yatır"'

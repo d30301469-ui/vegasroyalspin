@@ -23,8 +23,8 @@ if (!function_exists('admin_paths_bootstrap')) {
         if ($root !== ADMIN_BASE_PATH) {
             admin_load_env_files($root);
         }
-        if (!defined('METROPOL_ROOT')) {
-            define('METROPOL_ROOT', $root);
+        if (!defined('APP_ROOT')) {
+            define('APP_ROOT', $root);
         }
 
         admin_define_project_constants($root);
@@ -125,7 +125,7 @@ if (!function_exists('admin_paths_bootstrap')) {
             return $root;
         }
 
-        foreach (['METROPOL_ROOT', 'PROJECT_ROOT'] as $envKey) {
+        foreach (['APP_ROOT', 'PROJECT_ROOT'] as $envKey) {
             $fromEnv = getenv($envKey);
             if (is_string($fromEnv) && trim($fromEnv) !== '') {
                 return $root = rtrim(str_replace('\\', '/', trim($fromEnv)), '/');

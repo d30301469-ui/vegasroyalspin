@@ -5,16 +5,8 @@ $footerWhatsappUrl = trim((string) ($footerContactLinks['whatsapp_url'] ?? ''));
 $footerContactPhone = trim((string) ($footerContactLinks['contact_phone'] ?? ''));
 $footerPhoneHref = $footerContactPhone !== '' ? 'tel:' . preg_replace('/[^0-9+]/', '', $footerContactPhone) : '';
 ?>
-<!-- Lisans rozeti + sosyal (sayfa altı, footerRow dışı) -->
-<div style="text-align:center; margin-top:20px; margin-bottom:16px;">
-    <span style="display:inline-block; transition:transform 0.3s ease;">
-        <img loading="lazy" src="https://seal.cgcb.info/1c0246df-1aa7-485a-a24c-21ae5e730000"
-             alt="Lisans Logosu" width="130" height="65"
-             style="height:65px; width:auto; display:block; margin:0 auto; border-radius:6px;">
-    </span>
-</div>
-
-<div class="license-social-wrapper" style="text-align:center; margin-bottom:32px;">
+<!-- Sosyal (sayfa altı, footerRow dışı) -->
+<div class="license-social-wrapper" style="text-align:center; margin-top:20px; margin-bottom:32px;">
     <div class="socialMedia">
         <a href="https://x.com" class="socialLink" target="_blank" rel="noopener" aria-label="X (Twitter)">
             <i class="fa-brands fa-twitter"></i>

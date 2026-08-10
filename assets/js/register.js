@@ -1,3 +1,6 @@
+/**
+ * @dynamic-file
+ */
 'use strict';
 // Kayıt sayfası / kayıt modalı betikleri (sayfaya özel)
 (function () {
@@ -55,7 +58,7 @@
             return;
         }
         window.location.href = isDepositTrigger
-            ? '/profile/deposit-withdraw?openDepositPanel=1'
+            ? '/profile/deposit?openDepositPanel=1'
             : '/profile/details';
     }
 
@@ -165,6 +168,16 @@
     function showModalByElement(modalEl) {
         var jq = getJq();
         if (!modalEl) return;
+        if (typeof window.__closeAllHeaderFlyouts === 'function') {
+            window.__closeAllHeaderFlyouts();
+        } else {
+            if (typeof window.__closeSmartPanel === 'function') {
+                window.__closeSmartPanel();
+            }
+            if (typeof window.__closeSearchPanel === 'function') {
+                window.__closeSearchPanel();
+            }
+        }
         if (jq && jq.fn && typeof jq.fn.modal === 'function') {
             jq(modalEl).modal('show');
             if (modalEl.id === 'registerModal') {
@@ -483,7 +496,9 @@
             if (password !== confirmPassword || !confirmPassword) {
                 var cErr = form.querySelector('.' + errorClass + '[data-error-for="confirm_password"]');
                 if (cErr) {
-                    cErr.textContent = !confirmPassword ? 'Bu alan gerekli' : 'Şifreler eşleşmiyor';
+                    cErr.textContent = !confirmPassword
+                        ? (window.__ ? window.__('auth.required', 'Bu alan gerekli') : 'Bu alan gerekli')
+                        : (window.__ ? window.__('auth.passwords_mismatch', 'Şifreler eşleşmiyor') : 'Şifreler eşleşmiyor');
                     cErr.classList.remove('d-none');
                     valid = false;
                 }
@@ -1162,7 +1177,15 @@
                         submitBtn.disabled = false;
                     }
                     var data = r.body || {};
-                    var okRegister = data.success === true && (data.code === 201 || data.code === undefined);
+                    var payload = data.data && typeof data.data === 'object' ? data.data : {};
+                    var registeredUserId = Number(payload.user_id || (payload.user && payload.user.id) || 0);
+                    var registeredToken = String(payload.token || '').trim();
+                    // Yalnızca gerçek 201 + oluşturulmuş user_id; code'suz {success:true} (ör. ajax_check) başarı sayılmaz.
+                    var okRegister = r.ok
+                        && data.success === true
+                        && Number(data.code) === 201
+                        && registeredUserId > 0
+                        && registeredToken !== '';
                     if (okRegister) {
                         if (Shared.applyLoginEnvelope) {
                             Shared.applyLoginEnvelope(data);
@@ -1171,7 +1194,7 @@
                             window.__HAS_MEMBER_JWT__ = true;
                         }
                         hideRegisterError();
-                        notify('success', data.message || 'Kayıt başarılı.', 'Kayıt');
+                        notify('success', data.message || (window.__ ? window.__('auth.register_success', 'Kayıt başarılı.') : 'Kayıt başarılı.'), (window.__ ? window.__('auth.register_title', 'Kayıt') : 'Kayıt'));
                         hideModalByElement(registerModal);
                         if (successModal) {
                             showModalByElement(successModal);
@@ -1319,6 +1342,7 @@
                 return response.json();
             })
             .then(function (data) {
+                // null/undefined = kontrol yapılamadı; false = dolu; true = müsait
                 if (data.username === false) {
                     if (usernameFeedback) usernameFeedback.classList.remove('d-none');
                 } else {

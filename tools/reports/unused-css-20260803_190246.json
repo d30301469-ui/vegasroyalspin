@@ -1,0 +1,170 @@
+{
+  "generated_at": "2026-08-03T15:02:46.697633+00:00",
+  "root": "C:\\laragon\\www\\vegasroyalspin",
+  "mode": "apply",
+  "css_files_total": 63,
+  "unused_files": [
+    {
+      "file": "assets/css/bc-casino-slots-ref.css",
+      "size": 30641,
+      "sha1": "32b681eaa2a2a9a8917d745bb280f4c0b4d7b3ce",
+      "is_backup": false,
+      "duplicate_of": null,
+      "reason": "no-reference"
+    },
+    {
+      "file": "assets/css/bc-cm622-custom.css",
+      "size": 40693,
+      "sha1": "eeb120d80dab3cb3ebaf13669ec0bdaa20669d11",
+      "is_backup": false,
+      "duplicate_of": null,
+      "reason": "no-reference"
+    },
+    {
+      "file": "assets/css/bc-cm622-fds-fix.css",
+      "size": 22612,
+      "sha1": "36c8918b02a24c3b2d974d1527eb516503159666",
+      "is_backup": false,
+      "duplicate_of": null,
+      "reason": "no-reference"
+    },
+    {
+      "file": "assets/css/bc-cm622-index.css",
+      "size": 543361,
+      "sha1": "7c086575341557c3ee7b1513f62a92d957289c8f",
+      "is_backup": false,
+      "duplicate_of": null,
+      "reason": "no-reference"
+    },
+    {
+      "file": "assets/css/bc-cm622-live-fix.css",
+      "size": 22709,
+      "sha1": "a85b472821258aa6cc45709840c2150988dc1584",
+      "is_backup": false,
+      "duplicate_of": null,
+      "reason": "no-reference"
+    },
+    {
+      "file": "assets/css/bc-cm622-profile.css.bak-authfix",
+      "size": 226272,
+      "sha1": "4b0dcabb1b1de278932124560ebacf9ddf75ef11",
+      "is_backup": true,
+      "duplicate_of": null,
+      "reason": "no-reference;backup"
+    },
+    {
+      "file": "assets/css/slots-desktop-lobby.css",
+      "size": 16259,
+      "sha1": "5b040239e2c8c63f7a1130a8ac55504319e7f7f6",
+      "is_backup": false,
+      "duplicate_of": null,
+      "reason": "no-reference"
+    }
+  ],
+  "backup_files": [
+    {
+      "rel": "assets/css/bc-cm622-profile.css.bak-authfix",
+      "path": "C:\\laragon\\www\\vegasroyalspin\\assets\\css\\bc-cm622-profile.css.bak-authfix",
+      "size": 226272,
+      "sha1": "4b0dcabb1b1de278932124560ebacf9ddf75ef11",
+      "referenced": false,
+      "reference_hits": [],
+      "keep_forced": false,
+      "is_backup": true,
+      "duplicate_of": null
+    }
+  ],
+  "duplicate_files": [
+    {
+      "file": "assets/css/bc-cm622-bgaming.css",
+      "duplicate_of": "assets/css/bc-cm622-slots.css",
+      "size": 743250,
+      "sha1": "8d4f51b8b2a44b5c1b7b367f6ba8d1acf1cbba37",
+      "referenced": true
+    }
+  ],
+  "unused_selectors": [],
+  "kept_files": [
+    "assets/css/auth-sliders.css",
+    "assets/css/bc-cm622-bgaming.css",
+    "assets/css/bc-cm622-livecasino.css",
+    "assets/css/bc-cm622-profile-fix.css",
+    "assets/css/bc-cm622-profile.css",
+    "assets/css/bc-cm622-slots.css",
+    "assets/css/bc-mobile-custom.css",
+    "assets/css/bc-mobile-header-original.css",
+    "assets/css/bc-mobile-index.css",
+    "assets/css/bc-mobile.css",
+    "assets/css/beni-ara.css",
+    "assets/css/bgaming-lobby-motion.css",
+    "assets/css/bonus-detail-modal.css",
+    "assets/css/bootstrap-utils.css",
+    "assets/css/components.css",
+    "assets/css/daterangepicker.css",
+    "assets/css/footer-bc-icons.css",
+    "assets/css/footer-bc.css",
+    "assets/css/global.css",
+    "assets/css/header.css",
+    "assets/css/home.css",
+    "assets/css/jackpot.css",
+    "assets/css/livecasino.css",
+    "assets/css/login-modal.css",
+    "assets/css/login.css",
+    "assets/css/maintenance.css",
+    "assets/css/mobile-right-sheet.css",
+    "assets/css/mobile-smart-panel.css",
+    "assets/css/mobile_bottom.css",
+    "assets/css/modal.css",
+    "assets/css/profile.css",
+    "assets/css/promosyonlar.css",
+    "assets/css/register-modal.css",
+    "assets/css/register.css",
+    "assets/css/reset-password.css",
+    "assets/css/responsive.css",
+    "assets/css/sidebar.css",
+    "assets/css/slider-mobile-bc.css",
+    "assets/css/slider.css",
+    "assets/css/slots.css",
+    "assets/css/swiper-bundle.min.css",
+    "assets/css/winners.css",
+    "assets/sports-icon.css",
+    "mobile/assets/css/auth-modals.css",
+    "mobile/assets/css/base.css",
+    "mobile/assets/css/beni-ara.css",
+    "mobile/assets/css/bottom-bar.css",
+    "mobile/assets/css/footer.css",
+    "mobile/assets/css/header.css",
+    "mobile/assets/css/home-widgets.css",
+    "mobile/assets/css/home.css",
+    "mobile/assets/css/livecasino.css",
+    "mobile/assets/css/menu.css",
+    "mobile/assets/css/mobile-right-sheet.css",
+    "mobile/assets/css/profile-panel.css",
+    "mobile/assets/css/slots.css"
+  ],
+  "actions": [
+    "QUARANTINED assets/css/bc-casino-slots-ref.css -> tools/css_quarantine/20260803_190252/assets__css__bc-casino-slots-ref.css",
+    "QUARANTINED assets/css/bc-cm622-custom.css -> tools/css_quarantine/20260803_190252/assets__css__bc-cm622-custom.css",
+    "QUARANTINED assets/css/bc-cm622-fds-fix.css -> tools/css_quarantine/20260803_190252/assets__css__bc-cm622-fds-fix.css",
+    "QUARANTINED assets/css/bc-cm622-index.css -> tools/css_quarantine/20260803_190252/assets__css__bc-cm622-index.css",
+    "QUARANTINED assets/css/bc-cm622-live-fix.css -> tools/css_quarantine/20260803_190252/assets__css__bc-cm622-live-fix.css",
+    "QUARANTINED assets/css/bc-cm622-profile.css.bak-authfix -> tools/css_quarantine/20260803_190252/assets__css__bc-cm622-profile.css.bak-authfix",
+    "QUARANTINED assets/css/slots-desktop-lobby.css -> tools/css_quarantine/20260803_190252/assets__css__slots-desktop-lobby.css"
+  ],
+  "warnings": [
+    "Scanned 63 CSS files (ref=False, admin=False)",
+    "Selector scan skipped (pass --scan-rules to enable)."
+  ],
+  "stats": {
+    "css_files": 63,
+    "referenced_files": 56,
+    "unused_files": 7,
+    "backup_files": 1,
+    "duplicate_groups": 1,
+    "class_tokens_in_code": 7280,
+    "id_tokens_in_code": 837,
+    "loose_tokens_in_code": 26936,
+    "unused_selectors_reported": 0,
+    "unused_selectors_raw": 0
+  }
+}

@@ -3,6 +3,7 @@
 
 require __DIR__ . '/../routes/affiliate_tracking.php';
 require __DIR__ . '/../routes/member_auth.php';
+require __DIR__ . '/../routes/member_telegram.php';
 require __DIR__ . '/../routes/member_engagement.php';
 require __DIR__ . '/../routes/member_wallet.php';
 require __DIR__ . '/../routes/member_cms.php';

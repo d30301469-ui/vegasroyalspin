@@ -145,7 +145,7 @@
 
     function redirectToDeposit() {
         var mobileTarget = "/?profile=open&account=balance&page=deposit";
-        var desktopTarget = "/profile/deposit-withdraw?openDepositPanel=1";
+        var desktopTarget = "/profile/deposit?openDepositPanel=1";
         // Mobilde masaüstü modali ile hiçbir zaman işimiz yok — önce native mobil bakiye paneli.
         if (document.body.classList.contains("mobile-site")) {
             if (Shared.ensureSessionForPage && !Shared.ensureSessionForPage(mobileTarget)) {
@@ -169,7 +169,7 @@
 
     function openGame(gameId) {
         if (!gameId) return;
-        var url = "/play?game_id=" + encodeURIComponent(gameId) + "&mode=real&wallet=main";
+        var url = "/play?game_id=" + encodeURIComponent(gameId).replace(/%3A/gi, ":") + "&mode=real&wallet=main";
         var isMobileSite = !!(document.body && document.body.classList.contains("mobile-site"));
         if (!isMobileSite) {
             var hasTouch = (navigator.maxTouchPoints || 0) > 0;
@@ -199,11 +199,12 @@
     }
 
     function initFooterLanguageDropdown() {
-        var codeByLang = { tr: "TUR", en: "ENG", de: "DEU" };
+        var codeByLang = { tr: "TUR", en: "ENG", de: "DEU", ru: "RUS" };
         var flagByLang = {
             tr: "/assets/images/flag/tr.svg",
             en: "/assets/images/flag/gb.svg",
-            de: "/assets/images/flag/de.svg"
+            de: "/assets/images/flag/de.svg",
+            ru: "/assets/images/flag/ru.svg"
         };
 
         function setOpen(wrap, open) {
@@ -236,7 +237,12 @@
             });
         }
 
-        var currentLang = (new URLSearchParams(window.location.search)).get("lang") || "tr";
+        var currentLang = (window.__LOCALE__ && /^(tr|en|de|ru)$/i.test(String(window.__LOCALE__)))
+            ? String(window.__LOCALE__).toLowerCase()
+            : ((new URLSearchParams(window.location.search)).get("lang") || "tr");
+        if (!/^(tr|en|de|ru)$/i.test(currentLang)) {
+            currentLang = "tr";
+        }
         document.querySelectorAll(".footerLanguageDropdown").forEach(function (wrap) {
             setActiveLang(wrap, currentLang);
             setOpen(wrap, false);
@@ -281,13 +287,13 @@
         }
 
         Swal.fire({
-            title: "Bonus Kodunuzu Girin",
+            title: (window.__ ? window.__('promo.enter_bonus_title', 'Bonus Kodunuzu Girin') : 'Bonus Kodunuzu Girin'),
             input: "text",
-            inputLabel: "Bonus Kodu",
-            inputPlaceholder: "Kodu buraya girin",
+            inputLabel: (window.__ ? window.__('promo.bonus_code', 'Bonus Kodu') : 'Bonus Kodu'),
+            inputPlaceholder: (window.__ ? window.__('promo.code_placeholder', 'Kodu buraya girin') : 'Kodu buraya girin'),
             showCancelButton: true,
-            confirmButtonText: "Kullan",
-            cancelButtonText: "İptal"
+            confirmButtonText: (window.__ ? window.__('promo.use', 'Kullan') : 'Kullan'),
+            cancelButtonText: (window.__ ? window.__('promo.cancel', 'İptal') : 'İptal')
         }).then(function (result) {
             if (!result.isConfirmed) return;
 
@@ -303,16 +309,16 @@
             })
                 .then(function (response) { return response.json(); })
                 .then(function (data) {
-                    var msg = data.mesaj || data.message || "İşlem tamamlanamadı.";
+                    var msg = data.mesaj || data.message || (window.__ ? window.__('promo.failed', 'İşlem tamamlanamadı.') : 'İşlem tamamlanamadı.');
                     if (data.status === "success" || data.success === true) {
-                        window.MaltabetToast ? MaltabetToast.success(msg, "Başarılı") : alert(msg);
+                        window.MaltabetToast ? MaltabetToast.success(msg, (window.__ ? window.__('common.success', 'Başarılı') : 'Başarılı')) : alert(msg);
                     } else {
-                        window.MaltabetToast ? MaltabetToast.error(msg, "Hata") : alert(msg);
+                        window.MaltabetToast ? MaltabetToast.error(msg, (window.__ ? window.__('common.error', 'Hata') : 'Hata')) : alert(msg);
                     }
                 })
                 .catch(function (error) {
-                    if (window.MaltabetToast) MaltabetToast.error("Hata oluştu, lütfen tekrar deneyin.", "Hata");
-                    else alert("Hata oluştu, lütfen tekrar deneyin.");
+                    if (window.MaltabetToast) MaltabetToast.error((window.__ ? window.__('promo.error_retry', 'Hata oluştu, lütfen tekrar deneyin.') : 'Hata oluştu, lütfen tekrar deneyin.'), (window.__ ? window.__('common.error', 'Hata') : 'Hata'));
+                    else alert((window.__ ? window.__('promo.error_retry', 'Hata oluştu, lütfen tekrar deneyin.') : 'Hata oluştu, lütfen tekrar deneyin.'));
                     console.error("Error:", error);
                 });
         });
@@ -456,7 +462,10 @@
             var drawerDate = document.getElementById("notificationDrawerDate");
             if (!drawerDate) return;
             var now = new Date();
-            var months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            var months = [1,2,3,4,5,6,7,8,9,10,11,12].map(function (n) {
+                var fb = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"][n-1];
+                return window.__ ? window.__("month." + n, fb) : fb;
+            });
             drawerDate.textContent = now.getDate() + " " + months[now.getMonth()] + " " + now.getFullYear();
         }
 
@@ -587,7 +596,7 @@
                 .map(function (x) { return String((x && x.campaign_code) || '') + ':' + String((x && x.status) || ''); })
                 .sort()
                 .join('|');
-            var key = 'metropol_freespin_notice_' + fingerprint;
+            var key = 'app_freespin_notice_' + fingerprint;
             try {
                 if (sessionStorage.getItem(key) === '1') {
                     return;
@@ -597,7 +606,7 @@
                 // ignore storage errors
             }
 
-            MaltabetToast.warning(activeCount + ' adet kullanılabilir freespin bulundu. Profil > Casino Freespinleri bölümünü kontrol edin.', 'Freespin Uyarısı');
+            MaltabetToast.warning((window.__ ? window.__("promo.freespin_warn", ":count adet kullanılabilir freespin bulundu. Profil > Casino Freespinleri bölümünü kontrol edin.").replace(":count", String(activeCount)) : (activeCount + " adet kullanılabilir freespin bulundu. Profil > Casino Freespinleri bölümünü kontrol edin.")), (window.__ ? window.__('promo.freespin_warn_title', 'Freespin Uyarısı') : 'Freespin Uyarısı'));
         }
 
         function appendNotificationDrawerItem(drawerList, opts) {
@@ -618,7 +627,7 @@
 
             var text = document.createElement("span");
             text.className = "notification-drawer__text";
-            text.textContent = opts.title || "Bildirim";
+            text.textContent = opts.title || (window.__ ? window.__('common.notification', 'Bildirim') : 'Bildirim');
             body.appendChild(text);
 
             if (opts.detail) {
@@ -631,7 +640,7 @@
             var closeBtn = document.createElement("button");
             closeBtn.type = "button";
             closeBtn.className = "notification-drawer__item-close";
-            closeBtn.setAttribute("aria-label", "Kaldır");
+            closeBtn.setAttribute("aria-label", (window.__ ? window.__('common.remove', 'Kaldır') : 'Kaldır'));
             closeBtn.innerHTML = "&times;";
 
             item.appendChild(icons);
@@ -647,7 +656,7 @@
             var baseUrl = drawerList.getAttribute("data-announcements-url") || "/api/v2/announcements";
             var url = appendQuery(apiUrl(baseUrl), "action=all");
             var token = ++announcementsLoadToken;
-            drawerList.innerHTML = "<p class=\"notification-drawer__loading\" role=\"status\">Yükleniyor…</p>";
+            drawerList.innerHTML = "<p class=\"notification-drawer__loading\" role=\"status\">" + (window.__ ? window.__('common.loading', 'Yükleniyor…') : 'Yükleniyor…') + "</p>";
             var loggedIn = isLoggedInUser();
             var memberPromise = loggedIn ? fetchMemberNotificationItems() : Promise.resolve({ items: [], unread: 0 });
             var freespinPromise = loggedIn ? fetchFreespinNotificationItems() : Promise.resolve([]);
@@ -675,7 +684,7 @@
                         var parseErr = document.createElement("p");
                         parseErr.className = "notification-drawer__error";
                         parseErr.setAttribute("role", "alert");
-                        parseErr.textContent = "Bildirimler yüklenemedi. Lütfen tekrar deneyin.";
+                        parseErr.textContent = (window.__ ? window.__('panel.notifications_fail', 'Bildirimler yüklenemedi.') : 'Bildirimler yüklenemedi.');
                         drawerList.appendChild(parseErr);
                         updateNotificationBadge(0);
                         return;
@@ -742,7 +751,7 @@
                     if (memberItems.length === 0 && announcements.length === 0 && freespinItems.length === 0) {
                         var empty = document.createElement("p");
                         empty.className = "notification-drawer__loading";
-                        empty.textContent = "Henüz bildirim veya duyuru yok.";
+                        empty.textContent = (window.__ ? window.__('panel.notifications_empty', 'Henüz bildirim veya duyuru yok.') : 'Henüz bildirim veya duyuru yok.');
                         drawerList.appendChild(empty);
                     }
 
@@ -758,7 +767,7 @@
                     var err = document.createElement("p");
                     err.className = "notification-drawer__error";
                     err.setAttribute("role", "alert");
-                    err.textContent = "Bildirimler yüklenemedi. Lütfen tekrar deneyin.";
+                    err.textContent = (window.__ ? window.__('panel.notifications_fail', 'Bildirimler yüklenemedi.') : 'Bildirimler yüklenemedi.');
                     drawerList.appendChild(err);
                     updateNotificationBadge(0);
                 });
@@ -855,7 +864,7 @@
             wrap.appendChild(body);
 
             window.MobileRightSheet.open({
-                title: "FAVORİLER",
+                title: (window.__ ? window.__('panel.favorites_title', 'FAVORİLER') : 'FAVORİLER'),
                 bodyElement: wrap,
                 onClose: function () {
                     var headerEl = drawer.querySelector(".right-sidebar__header");
@@ -1182,6 +1191,21 @@
                 options.querySelectorAll(".settings-sidebar__option").forEach(function (opt) {
                     opt.addEventListener("click", function (e) {
                         e.stopPropagation();
+                        var fieldName = field.getAttribute("data-settings-field") || "";
+                        if (fieldName === "language") {
+                            var href = this.getAttribute("data-i18n-href");
+                            var lang = this.getAttribute("data-lang") || this.getAttribute("data-value");
+                            if (href) {
+                                window.location.href = href;
+                                return;
+                            }
+                            if (lang && /^(tr|en|de|ru)$/.test(lang)) {
+                                var url = new URL(window.location.href);
+                                url.searchParams.set("lang", lang);
+                                window.location.href = url.toString();
+                                return;
+                            }
+                        }
                         var val = this.getAttribute("data-value");
                         if (valueEl.classList.contains("settings-sidebar__value--with-icon")) {
                             valueEl.innerHTML = this.innerHTML;

@@ -62,19 +62,34 @@
         return seen;
     }
 
+    function logoExt(fileUrl) {
+        if (!fileUrl) {
+            return '';
+        }
+        var path = String(fileUrl).split('?')[0];
+        var dot = path.lastIndexOf('.');
+        return dot === -1 ? '' : path.substring(dot + 1).toLowerCase();
+    }
+
     function applyLogo(url, animatedUrl, name) {
         if (!url && !animatedUrl) {
             return;
         }
+        var animExt = logoExt(animatedUrl);
+        var useVideo = animExt === 'webm' || animExt === 'mp4';
+        // Header: animasyonlu logo varsa onu göster (GIF/WebP img veya webm/mp4 video).
+        var headerSrc = animatedUrl || url;
+
         var links = logoLinks();
         for (var i = 0; i < links.length; i++) {
             var link = links[i];
 
             // Marker is directly on the <img> (no wrapping link/video structure),
-            // e.g. footer logo or login modal logo.
+            // e.g. footer logo or login modal logo — static brand mark.
             if (link.tagName === 'IMG') {
-                if (url && link.getAttribute('src') !== url) {
-                    link.setAttribute('src', url);
+                var directSrc = url || animatedUrl;
+                if (directSrc && link.getAttribute('src') !== directSrc) {
+                    link.setAttribute('src', directSrc);
                 }
                 if (name) {
                     link.setAttribute('alt', name);
@@ -82,31 +97,69 @@
                 continue;
             }
 
-            var video = link.querySelector('video');
-            if (video) {
-                if (animatedUrl) {
-                    var source = video.querySelector('source');
-                    if (source && source.getAttribute('src') !== animatedUrl) {
-                        source.setAttribute('src', animatedUrl);
+            var isHeaderLogo = link.classList.contains('headLogo')
+                || link.getAttribute('data-site-logo-link') != null
+                || (link.closest && link.closest('.logo-container'));
+
+            if (isHeaderLogo && useVideo && animatedUrl) {
+                var video = link.querySelector('video.hdr-logo-bc') || link.querySelector('video');
+                if (!video) {
+                    // GIF/img'den video'ya gecis
+                    var oldImg = link.querySelector('img.hdr-logo-bc') || link.querySelector('img');
+                    if (oldImg && oldImg.parentNode) {
+                        oldImg.parentNode.removeChild(oldImg);
+                    }
+                    video = d.createElement('video');
+                    video.className = 'hdr-logo-bc hdr-logo-animated';
+                    video.setAttribute('autoplay', '');
+                    video.setAttribute('loop', '');
+                    video.setAttribute('muted', '');
+                    video.setAttribute('playsinline', '');
+                    var source = d.createElement('source');
+                    source.setAttribute('src', animatedUrl);
+                    source.setAttribute('type', animExt === 'mp4' ? 'video/mp4' : 'video/webm');
+                    video.appendChild(source);
+                    if (url) {
+                        var fb = d.createElement('img');
+                        fb.className = 'hdr-logo-bc';
+                        fb.setAttribute('src', url);
+                        if (name) fb.setAttribute('alt', name);
+                        video.appendChild(fb);
+                    }
+                    link.appendChild(video);
+                    try { video.play(); } catch (ePlay) { /* ignore */ }
+                } else {
+                    video.classList.add('hdr-logo-animated');
+                    var sourceEl = video.querySelector('source');
+                    if (sourceEl && sourceEl.getAttribute('src') !== animatedUrl) {
+                        sourceEl.setAttribute('src', animatedUrl);
+                        try { video.load(); video.play(); } catch (eReload) { /* ignore */ }
                     }
                 }
-                var fallbackImg = video.querySelector('img');
-                if (fallbackImg && url && fallbackImg.getAttribute('src') !== url) {
-                    fallbackImg.setAttribute('src', url);
-                }
-                if (fallbackImg && name) {
-                    fallbackImg.setAttribute('alt', name);
+                if (name) {
+                    video.setAttribute('aria-label', name);
                 }
                 continue;
             }
+
+            // Header img (GIF/WebP animasyon) veya video yoksa
+            var staleVideo = link.querySelector('video');
+            if (staleVideo && !useVideo && isHeaderLogo) {
+                staleVideo.parentNode.removeChild(staleVideo);
+            }
+
             var img = link.querySelector('img.hdr-logo-bc') || link.querySelector('img');
-            if (!img && url) {
+            if (!img && headerSrc) {
                 img = d.createElement('img');
                 img.className = 'hdr-logo-bc';
                 link.appendChild(img);
             }
-            if (img && url && img.getAttribute('src') !== url) {
-                img.setAttribute('src', url);
+            var nextSrc = isHeaderLogo ? headerSrc : (url || animatedUrl);
+            if (img && nextSrc && img.getAttribute('src') !== nextSrc) {
+                img.setAttribute('src', nextSrc);
+            }
+            if (img && isHeaderLogo && animatedUrl && nextSrc === animatedUrl) {
+                img.classList.add('hdr-logo-animated');
             }
             if (img && name) {
                 img.setAttribute('alt', name);

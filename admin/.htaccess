@@ -45,21 +45,23 @@
     RewriteRule ^api/v2/bgaming/?(.*)$ api/v2/bgaming_callback.php?endpoint=$1 [L,QSA]
     RewriteRule ^api/v2/sportsbook_callback\.php$ - [L]
     RewriteRule ^api/v2/sportsbook-wallet/?$ api/v2/sportsbook_callback.php [L,QSA]
-    # Spaced wallet base (…/gsc-plus-wallet%20%20%20/…) → otherwise Apache 403.
-    RewriteCond %{THE_REQUEST} (?i)^[A-Z]+\s/+api/v2/(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)(?:\%20)+/([^\s\?]+)
-    RewriteRule ^ api/v2/gsc_plus_callback.php?endpoint=%1 [L,QSA,NE]
-    RewriteCond %{THE_REQUEST} (?i)^[A-Z]+\s/+api/v2/(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)(?:\%20)+(?:\s|\?)
+    # GSC+ wallet funnel — never rewrite into ?route= (AH10411 / trailing %20).
+    RewriteCond %{REQUEST_METHOD} =GET
+    RewriteCond %{REQUEST_URI} (?i)^/api/v2/(gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet|gscw|gsc_wallet)(?:%(?:20|2B|2520)|\+|\s)+(?:/(.*))?$
+    RewriteRule ^ /api/v2/gsc-plus-wallet/%2 [R=308,L,NE,QSA]
+    RewriteRule ^api/v2/gsc_plus_callback\.php(?:/.*)?$ - [L]
+    RewriteCond %{REQUEST_URI} (?i)^/api/v2/(?:gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet|gscw|gsc_wallet)
     RewriteRule ^ api/v2/gsc_plus_callback.php [L,QSA]
-    RewriteRule ^api/v2/gsc_plus_callback\.php$ - [L]
-    RewriteRule ^api/v2/(?:gsc[-_]plus[-_]wallet|gsc_plus_wallet)\s+/(.*)$ api/v2/gsc_plus_callback.php?endpoint=$1 [L,QSA,NC]
-    RewriteRule ^api/v2/(?:gsc-plus-wallet|gsc_plus_wallet)/?(.*)$ api/v2/gsc_plus_callback.php?endpoint=$1 [L,QSA]
-    RewriteRule ^api/v2/(?:gamingsoft-wallet|gamingsoft_wallet)/?(.*)$ api/v2/gsc_plus_callback.php?endpoint=$1 [L,QSA]
     RewriteRule ^api/v2/megapayz-callback/?$ index.php [L,QSA]
     RewriteRule ^[Mm]ega[Pp]ayz/deposit/?$ index.php [L,QSA]
 
     # ─── API v2 front controller ──────────────────────────────────────
     RewriteRule ^api/v2/index\.php$ - [L]
     RewriteRule ^api/v2/?$ api/v2/index.php [L,QSA]
+    RewriteCond %{REQUEST_URI} !gsc[-_]plus[-_]wallet
+    RewriteCond %{REQUEST_URI} !gamingsoft[-_]wallet
+    RewriteCond %{REQUEST_URI} !/api/v2/gscw
+    RewriteCond %{REQUEST_URI} !/api/v2/gsc_wallet
     RewriteRule ^api/v2/(.+)$ api/v2/index.php?route=$1 [L,QSA]
 
     # ─── Static assets (files only — avoid directory pass-through loops) ─
