@@ -23,7 +23,6 @@ $showLoadMore = !empty($showLoadMore);
 $slotGameType = isset($slotGameType) ? (int) $slotGameType : 0;
 $slotShowActionButtons = !empty($slotShowActionButtons);
 $slotHideProviders = !empty($slotHideProviders);
-$slotMobileOriginalNav = false;
 $slotDesktopLobby = true;
 $lobbyMode = !empty($lobbyMode);
 $slotPageIsLive = !empty($slotPageIsLive) || (int) $slotGameType === 1;
@@ -421,7 +420,6 @@ $lobbyChipSelected = $lobbyMode || ($currentSort === '' && $searchTerm === '' &&
 ?>
 <div class="casino-container casino-container--desktop-lobby<?= $lobbyMode ? ' casino-container--lobby-mode' : '' ?><?= $slotPageIsLive ? ' casino-container--live' : '' ?>">
     <div class="casinoProviderContent slots-filter-and-games" id="slotsFilterAndGames"<?= $lobbyMode ? ' data-lobby-mode="1"' : '' ?>>
-        <?php if (true): ?>
         <div class="casinoGamesContainer">
         <div class="casinoNavigationAndFilters">
             <?php
@@ -429,7 +427,6 @@ $lobbyChipSelected = $lobbyMode || ($currentSort === '' && $searchTerm === '' &&
             $hsChevronRight = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7.08917 4.41083C7.41461 4.08539 7.94212 4.08539 8.26755 4.41083L13.2676 9.41083C13.593 9.73626 13.593 10.2638 13.2676 10.5892L8.26755 15.5892C7.94212 15.9146 7.41461 15.9146 7.08917 15.5892C6.76374 15.2638 6.76374 14.7363 7.08917 14.4108L11.4999 10L7.08917 5.58921C6.76374 5.26377 6.76374 4.73626 7.08917 4.41083Z"></path></svg>';
             ?>
             <div class="horizontal-scroll horizontal-scroll--left horizontal-scroll--has-arrows horizontal-scroll--fade-end casinoCategories" id="bgamingCategoryRail" data-category-rail="1">
-                <?php if (true): ?>
                 <div class="horizontal-scroll__arrow-shadow horizontal-scroll__arrow-shadow--left" id="bgamingCatArrowShadowLeft" hidden></div>
                 <button type="button"
                         class="ds-btn ds-btn-variant--transparent ds-btn-size--sm ds-btn-radius--full ds-btn-appearance--filled ds-btn--icon horizontal-scroll__arrow horizontal-scroll__arrow--left"
@@ -440,7 +437,6 @@ $lobbyChipSelected = $lobbyMode || ($currentSort === '' && $searchTerm === '' &&
                         hidden>
                     <span class="CMSIconSVGWrapper btn__icon btn__icon--left"><?= $hsChevronLeft ?></span>
                 </button>
-                <?php endif; ?>
                 <div class="horizontal-scroll__inner horizontal-scroll__inner--gap-xs" id="bgamingCategoryRailInner" style="transform: translateX(0px);">
                     <?php if ($slotDesktopLobby && !$slotPageIsLive): ?>
                     <div>
@@ -452,7 +448,6 @@ $lobbyChipSelected = $lobbyMode || ($currentSort === '' && $searchTerm === '' &&
                             <span class="ds-label <?= $chipLabelClass ?> chip__label">Lobby</span>
                         </a>
                     </div>
-                    <?php endif; ?>
                     <?php foreach ($slotCategoryItems as $category): ?>
                         <?php if (($category['sort'] ?? '') === 'special') { continue; } ?>
                         <?php
@@ -488,7 +483,6 @@ $lobbyChipSelected = $lobbyMode || ($currentSort === '' && $searchTerm === '' &&
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <?php if (true): ?>
                 <div class="horizontal-scroll__arrow-shadow horizontal-scroll__arrow-shadow--right" id="bgamingCatArrowShadowRight"></div>
                 <button type="button"
                         class="ds-btn ds-btn-variant--transparent ds-btn-size--sm ds-btn-radius--full ds-btn-appearance--filled ds-btn--icon horizontal-scroll__arrow horizontal-scroll__arrow--right"
@@ -498,14 +492,13 @@ $lobbyChipSelected = $lobbyMode || ($currentSort === '' && $searchTerm === '' &&
                         aria-busy="false">
                     <span class="CMSIconSVGWrapper btn__icon btn__icon--left"><?= $hsChevronRight ?></span>
                 </button>
-                <?php endif; ?>
             </div>
             <div class="casinoGameProviderFilters<?= !$slotPageIsLive ? ' casinoGameProviderFilters--withRandomGame' : '' ?><?= $slotHideProviders ? ' casinoGameProviderFilters--noProviders' : '' ?>">
                 <div class="casinoSearchWrapper">
                     <div class="ds-textfield ds-textfield-size--md ds-textfield-layout--fill">
                         <div class="ds-textfield__field">
                             <div class="ds-textfield__text">
-                                <?php if (true): ?><span class="ds-textfield__label">Oyun Ara</span><?php endif; ?>
+                                <span class="ds-textfield__label">Oyun Ara</span>
                                 <input type="text"
                                        class="ds-textfield__input searchInput games-search-input"
                                        id="gamesFilterSearchInput"
@@ -582,7 +575,6 @@ $lobbyChipSelected = $lobbyMode || ($currentSort === '' && $searchTerm === '' &&
         <div class="casinoProviderAndGame slots-layout<?= $slotHideProviders ? ' slots-layout--full-games' : '' ?><?= $lobbyMode ? ' slots-layout--lobby-mode' : '' ?> slots-layout--desktop-lobby" id="slotsLayout">
             <?php if (!$slotHideProviders): ?>
             <div class="providers-drawer-wrapper bgaming-page-root--cm622 slot-page-root--cm622" id="providersSidebar">
-            <?php if (true): ?>
             <div class="ds-drawer-spring" role="dialog" aria-modal="true" aria-label="Sağlayıcılar">
             <div class="ds-drawer ds-drawer--contained provider-sheet">
                 <div class="ds-drawer__header">
@@ -652,7 +644,6 @@ $lobbyChipSelected = $lobbyMode || ($currentSort === '' && $searchTerm === '' &&
                 </div>
             </div>
             </div>
-            <?php endif; ?>
         </div>
         <?php endif; ?>
         <?php endif; ?>
@@ -689,7 +680,7 @@ window.BGAMING_CONFIG = {
 <?php if (!defined('SURFACE') || SURFACE !== 'mobile'): ?>
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
 <?php endif; ?>
-<?php if (true):
+<?php
     $bcCm622CssName = 'casino-slots-cm622.css';
     $bcCm622CssPath = BASE_PATH . '/assets/css/' . $bcCm622CssName;
     $bcCm622CssVer = (string) (is_file($bcCm622CssPath) ? filemtime($bcCm622CssPath) : time());
@@ -698,5 +689,4 @@ window.BGAMING_CONFIG = {
 ?>
 <link href="/assets/css/<?= htmlspecialchars($bcCm622CssName, ENT_QUOTES, 'UTF-8') ?>?v=<?= htmlspecialchars($bcCm622CssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
 <link href="/assets/css/casino-bgaming-motion.css?v=<?= htmlspecialchars($bgamingMotionCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-<?php endif; ?>
 <script src="/assets/js/bgaming.js?v=<?= rawurlencode($bgamingJsVer) ?>"></script>

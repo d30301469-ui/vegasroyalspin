@@ -1129,7 +1129,7 @@
 
         var sidebarLive = shellRoot.querySelector('#profilePlayerSidebar')
             || shellRoot.querySelector('.u-i-profile-page-bc')
-            || shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc') || shellRoot.querySelector('.profile-sidebar-v2');
+            || shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc');
         syncProfileModalSidebarFromUrl(sidebarLive, navSyncUrl);
 
         var mainLive = shellRoot.querySelector('#profilePlayerMain');
@@ -1401,7 +1401,7 @@
                         syncProfileModalSidebarFromUrl(
                             shellRoot.querySelector('#profilePlayerSidebar')
                                 || shellRoot.querySelector('.u-i-profile-page-bc')
-                                || shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc') || shellRoot.querySelector('.profile-sidebar-v2'),
+                                || shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc'),
                             profileUrl
                         );
                     }
@@ -1534,15 +1534,15 @@
         function maybePrefetchBetHistory(e) {
             var t = e.target;
             if (!t || !t.closest) return;
-            var subBet = t.closest('.profile-sidebar-v2 .accordion-sub a[href*="/profile/bet-history"], .profile-sidebar-v2 .accordion-sub a[href*="/profile/casino-history"]');
-            var trigBet = t.closest('.profile-sidebar-v2 a.accordion-trigger[href="/profile/bet-history"]');
+            var subBet = t.closest('.__removed_legacy_profile_sidebar .accordion-sub a[href*="/profile/bet-history"] .accordion-sub a[href*="/profile/casino-history"]');
+            var trigBet = t.closest('.__removed_legacy_profile_sidebar a.accordion-trigger[href="/profile/bet-history"]');
             if (!subBet && !trigBet) return;
             prefetchAllBetHistorySidebarUrls();
         }
         document.addEventListener('pointerenter', maybePrefetchBetHistory, true);
         /* Mobil: dokunmada pointerenter olmayabilir; akordeon basligina tıklanınca önbellekle */
         document.addEventListener('click', function(e) {
-            var trig = e.target.closest && e.target.closest('.profile-sidebar-v2 a.accordion-trigger[href="/profile/bet-history"]');
+            var trig = e.target.closest && e.target.closest('.__removed_legacy_profile_sidebar a.accordion-trigger[href="/profile/bet-history"]');
             if (!trig) return;
             prefetchAllBetHistorySidebarUrls();
         }, true);
@@ -1565,7 +1565,7 @@
             params.set('modal', '1');
             var qs = params.toString();
             var modalUrl = '/profile/bet-history' + (qs ? '?' + qs : '');
-            var sidebarLive = shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc') || shellRoot.querySelector('.profile-sidebar-v2');
+            var sidebarLive = shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc');
             syncProfileModalSidebarFromUrl(sidebarLive, modalUrl);
             loadProfileShellContent(modalUrl, {
                 shellRoot: shellRoot,
@@ -1596,13 +1596,13 @@
         document.addEventListener('pointerenter', function(e) {
             var t = e.target;
             if (!t || !t.closest) return;
-            var subMsg = t.closest('.profile-sidebar-v2 .accordion-sub a[href*="/profile/messages"]');
-            var trigMsg = t.closest('.profile-sidebar-v2 a.accordion-trigger[href="/profile/messages"]');
+            var subMsg = t.closest('.__removed_legacy_profile_sidebar .accordion-sub a[href*="/profile/messages"]');
+            var trigMsg = t.closest('.__removed_legacy_profile_sidebar a.accordion-trigger[href="/profile/messages"]');
             if (!subMsg && !trigMsg) return;
             prefetchAllMessagesSidebarUrls();
         }, true);
         document.addEventListener('click', function(e) {
-            var trig = e.target.closest && e.target.closest('.profile-sidebar-v2 a.accordion-trigger[href="/profile/messages"]');
+            var trig = e.target.closest && e.target.closest('.__removed_legacy_profile_sidebar a.accordion-trigger[href="/profile/messages"]');
             if (!trig) return;
             prefetchAllMessagesSidebarUrls();
         }, true);
@@ -1651,7 +1651,7 @@
             params.set('modal', '1');
             var qs = params.toString();
             var modalUrl = '/profile/messages' + (qs ? '?' + qs : '');
-            var sidebarLive = shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc') || shellRoot.querySelector('.profile-sidebar-v2');
+            var sidebarLive = shellRoot.querySelector('#profilePlayerSidebar') || shellRoot.querySelector('.u-i-profile-page-bc');
             syncProfileModalSidebarFromUrl(sidebarLive, modalUrl);
             loadProfileShellContent(modalUrl, {
                 shellRoot: shellRoot,
@@ -2060,7 +2060,7 @@
                 }
                 return;
             }
-            var trigger = e.target.closest('.profile-sidebar-v2 a.accordion-trigger[data-toggle-sub]');
+            var trigger = e.target.closest('.__removed_legacy_profile_sidebar a.accordion-trigger[data-toggle-sub]');
             if (!trigger) return;
             if (e.target.closest('.accordion-sub')) return;
             var item = trigger.closest('.accordion-item');
@@ -4137,7 +4137,7 @@
         var sidebar = document.querySelector('#profileModalContent #profilePlayerSidebar')
             || document.querySelector('#profilePlayerSidebar')
             || document.querySelector('.u-i-profile-page-bc')
-            || document.querySelector('.profile-sidebar-v2');
+           ;
         if (!sidebar) return;
         var pageKind = resolveProfilePaymentPageKind(window.__profileModalContentUrl || window.location.href);
         var items = sidebar.querySelectorAll('.accordion-sub li a, .user-profile-nav-item');
@@ -5868,7 +5868,7 @@
         initProfilePromoBlockOnce();
         initProfileShellPrefetchOnce();
         /* Akordeon önce: bubble fazinda toggle + alt menü tıkları birlikte doğru çalışsın */
-        if (document.querySelector('#profilePlayerSidebar') || document.querySelector('.u-i-profile-page-bc') || document.querySelector('.profile-sidebar-v2')) {
+        if (document.querySelector('#profilePlayerSidebar') || document.querySelector('.u-i-profile-page-bc')) {
             initProfileSidebar();
             initProfileActiveBonus();
             schedulePrefetchAllProfileSidebarLinks();

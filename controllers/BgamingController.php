@@ -6,7 +6,7 @@ require_once SERVICE_PATH . '/ProviderLogoSvgMap.php';
 
 /**
  * Dedicated BGaming page (direct SoftSwiss).
- * Own view/JS/CSS (pages/bgaming + bgaming.js + bc-cm622-bgaming.css).
+ * Own view/JS/CSS (pages/bgaming + bgaming.js + casino-slots-cm622.css).
  * Catalogue from BgamingGamesQuery — never SlotGamesQuery / pages/slot.
  */
 class BgamingController extends Controller
@@ -47,7 +47,6 @@ class BgamingController extends Controller
         $slotHideProviders = true;
         $sliderApiCategory = 'bgaming';
 
-        $slotMobileOriginalNav = false;
         $slotDesktopLobby = true;
         $lobbyMode = $currentSort === ''
             && $searchTerm === ''
@@ -118,7 +117,6 @@ class BgamingController extends Controller
             'slotPageBaseUrl',
             'slotHideProviders',
             'slotDesktopLobby',
-            'slotMobileOriginalNav',
             'lobbyMode',
             'lobbyGames',
             'lobbyPopularGames',

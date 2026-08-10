@@ -456,7 +456,7 @@ body.mobile-site .mainContentWrap .home-hero-slider {
 
   /* Profil modalı içinde hub menüsü (sidebar) mobilde görünür kalmalı. */
   .profile-modal__content .playersidebarMain,
-  .profile-modal__content .sidebarMain.playersidebarMain.profile-sidebar-v2 {
+  .profile-modal__content .sidebarMain.playersidebarMain {
     display: block !important;
   }
 

@@ -50,7 +50,7 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
   display: none !important;
 }
 
-/* Kill legacy purple glow / button-card look from profile.css */
+/* Kill leftover purple glow / button-card look overrides */
 #profileModal #depositGrid .m-nav-items-list-item-bc.deposit-card,
 #profileModal #withdrawGrid .m-nav-items-list-item-bc.deposit-card,
 #profileModal #depositGrid .deposit-card,
@@ -559,7 +559,7 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerM
 
 /*
  * Desktop-only CM622 alert (casino warning popup).
- * Must NOT apply on mobile (.is-mobile / .mobile-site) — mobile keeps profile.css.
+ * Must NOT apply on mobile (.is-mobile / .mobile-site).
  */
 html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog {
   width: min(400px, calc(100vw - 32px));

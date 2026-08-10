@@ -33,7 +33,7 @@
     </div>
     <div class="button-group">
         <button type="button" onclick="history.back()">← Geri Dön</button>
-        <button type="button" onclick="window.location.href='/casino'">🎮 Casino Sayfası</button>
+        <button type="button" onclick="window.location.href='/slot'">🎮 Casino Sayfası</button>
     </div>
 </div>
 </body>

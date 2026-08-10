@@ -78,7 +78,6 @@ $slotHideProviders = false;
 
 // CM622 lobby for desktop and mobile (same shell as /slot).
 $slotDesktopLobby = true;
-$slotMobileOriginalNav = false;
 $lobbyMode = $currentSort === ''
     && $searchTerm === ''
     && $selectedProviders === []
