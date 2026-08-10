@@ -179,16 +179,42 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   flex-shrink: 0;
   margin-inline-start: auto !important;
   margin-left: auto !important;
-  width: 24px;
-  height: 24px;
-  color: rgba(var(--header-sc, 255, 255, 255), 0.6);
-  font-size: 14px;
-  line-height: 24px;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  color: #fff !important;
+  background: rgba(0, 0, 0, 0.32) !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
   text-align: center;
   cursor: pointer;
-  transition: color var(--default-transition-duration, 0.24s);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
-#mprofilePanel .hdr-user-close:hover { color: rgba(var(--header-sc, 255, 255, 255), 0.9); }
+#mprofilePanel .hdr-user-close::before {
+  content: "\00d7" !important;
+  display: block;
+  font-family: inherit !important;
+  font-size: 20px !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  color: #fff !important;
+  speak: never;
+}
+#mprofilePanel .hdr-user-close:hover,
+#mprofilePanel .hdr-user-close:focus-visible {
+  color: #fff !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  outline: none;
+}
 #mprofilePanel .u-i-profile-page-bc {
   flex: 1;
   min-height: 0;
@@ -2609,12 +2635,15 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   object-fit: contain;
 }
 #mprofilePanel .mprofile-payment-header .hdr-user-close {
-  width: 20px !important;
-  height: 20px !important;
-  margin-left: auto;
-  color: #c7bbe5;
-  font-size: 20px !important;
-  line-height: 20px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  margin-left: auto !important;
+  margin-inline-start: auto !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+  color: #fff !important;
 }
 #mprofilePanel .mprofile-payment-titlebar {
   height: 37px;
