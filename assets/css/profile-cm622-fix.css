@@ -608,12 +608,25 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerM
  * Must NOT apply on mobile (.is-mobile / .mobile-site).
  */
 html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog {
+  position: fixed !important;
   width: min(400px, calc(100vw - 32px));
   max-width: 400px;
   transform: translate(-50%, -50%);
   transition: opacity .2s ease, visibility .2s ease;
 }
+html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog:not(.is-open) {
+  width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+}
 html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog.is-open {
+  width: min(400px, calc(100vw - 32px));
+  max-width: 400px;
+  height: auto;
+  max-height: none;
+  overflow: visible;
   transform: translate(-50%, -50%);
 }
 html.is-web:not(.is-mobile) body:not(.mobile-site) .app-feedback-dialog__card {

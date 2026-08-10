@@ -31,6 +31,11 @@ $cm622ProfileFixCssVer = (string) (
         ? (filemtime($assetCssDir . '/profile-cm622-fix.css') . '-' . filesize($assetCssDir . '/profile-cm622-fix.css'))
         : $assetVer
 );
+$siteComponentsCssVer = (string) (
+    file_exists($assetCssDir . '/site-components.css')
+        ? (filemtime($assetCssDir . '/site-components.css') . '-' . filesize($assetCssDir . '/site-components.css'))
+        : $assetVer
+);
 $modalCssVer    = (string) (file_exists($assetCssDir . '/site-modal.css') ? filemtime($assetCssDir . '/site-modal.css') : $assetVer);
 $registerCssVer = (string) (file_exists($assetCssDir . '/auth-register.css') ? filemtime($assetCssDir . '/auth-register.css') : $assetVer);
 $loginCssVer    = (string) (file_exists($assetCssDir . '/auth-login.css') ? filemtime($assetCssDir . '/auth-login.css') : $assetVer);
@@ -130,7 +135,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/site-global.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-header.css?v=<?= htmlspecialchars($headerCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-sidebar.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-  <link href="/assets/css/site-components.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/site-components.css?v=<?= htmlspecialchars($siteComponentsCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622.css?v=<?= htmlspecialchars($cm622ProfileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-fix.css?v=<?= htmlspecialchars($cm622ProfileFixCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-modal.css?v=<?= htmlspecialchars($modalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">

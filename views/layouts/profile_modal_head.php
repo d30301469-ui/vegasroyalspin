@@ -15,6 +15,11 @@ $cm622ProfileFixCssVer = (string)(
         ? (filemtime($assetCssDir . '/profile-cm622-fix.css') . '-' . filesize($assetCssDir . '/profile-cm622-fix.css'))
         : $assetVer
 );
+$siteComponentsCssVer = (string)(
+    file_exists($assetCssDir . '/site-components.css')
+        ? (filemtime($assetCssDir . '/site-components.css') . '-' . filesize($assetCssDir . '/site-components.css'))
+        : $assetVer
+);
 $assetJsDir = defined('BASE_PATH') ? BASE_PATH . '/assets/js' : (__DIR__ . '/../../assets/js');
 $authSharedVer = (string)((file_exists($assetJsDir . '/auth-shared.js') ? filemtime($assetJsDir . '/auth-shared.js') : 1) . '-' . (file_exists($assetJsDir . '/auth-shared.js') ? filesize($assetJsDir . '/auth-shared.js') : 0));
 $profileJsVer = (string)((file_exists($assetJsDir . '/profile.js') ? filemtime($assetJsDir . '/profile.js') : 1) . '-' . (file_exists($assetJsDir . '/profile.js') ? filesize($assetJsDir . '/profile.js') : 0));
@@ -28,7 +33,7 @@ $profileJsVer = (string)((file_exists($assetJsDir . '/profile.js') ? filemtime($
   <title>Profil</title>
   <link href="/assets/css/site-bootstrap-utils.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-global.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-  <link href="/assets/css/site-components.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/site-components.css?v=<?= htmlspecialchars($siteComponentsCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622.css?v=<?= htmlspecialchars($cm622ProfileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-fix.css?v=<?= htmlspecialchars($cm622ProfileFixCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-sidebar.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">

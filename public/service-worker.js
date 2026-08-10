@@ -1,6 +1,6 @@
 /* vegasroyalspin PWA service worker */
 'use strict';
-const SW_VERSION = 'v22-mobile-nav-perf';
+const SW_VERSION = 'v23-header-gap-cache';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
