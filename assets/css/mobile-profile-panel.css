@@ -176,6 +176,8 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   border-radius: var(--border-radius, 3px);
 }
 #mprofilePanel .hdr-user-close {
+  position: relative !important;
+  box-sizing: border-box !important;
   flex-shrink: 0;
   margin-inline-start: auto !important;
   margin-left: auto !important;
@@ -192,19 +194,30 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   border-radius: 50% !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  font-family: Arial, Helvetica, sans-serif !important;
   font-size: 0 !important;
-  line-height: 1 !important;
+  line-height: 0 !important;
   text-align: center;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 #mprofilePanel .hdr-user-close::before {
   content: "\00d7" !important;
-  display: block;
-  font-family: inherit !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
   font-size: 20px !important;
   font-weight: 400 !important;
-  line-height: 1 !important;
+  font-style: normal !important;
+  line-height: 20px !important;
+  text-align: center !important;
   color: #fff !important;
   speak: never;
 }
