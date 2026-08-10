@@ -183,8 +183,17 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 #mprofilePanel .u-i-profile-page-bc {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 10px var(--padding-page-aside, 10px);
+  box-sizing: border-box;
 }
 #mprofilePanel.mprofile-detail-active .u-i-profile-page-bc { display: none; }
 #mprofilePanel.mprofile-balance-active .u-i-profile-page-bc { display: none; }
@@ -1545,9 +1554,10 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 
 #mprofilePanel .u-i-p-links-lists-holder-bc {
   width: 100%;
+  flex-shrink: 0;
   border-radius: var(--border-radius, 3px);
   margin-bottom: 15px;
-  overflow: hidden;
+  overflow: visible;
 }
 #mprofilePanel .u-i-p-l-head-bc {
   position: relative;
@@ -1604,6 +1614,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 
 #mprofilePanel .profile-panel-promo-code {
   width: 100%;
+  flex-shrink: 0;
   padding: 0 0 10px;
   margin: 0;
 }
@@ -3460,6 +3471,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 
 #mprofilePanel .userLogoutBtn.btn {
   width: 100%;
+  flex-shrink: 0;
   height: 42px;
   border: 0;
   border-radius: var(--border-radius, 3px);

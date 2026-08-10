@@ -169,11 +169,11 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
 .bc-i-eye::before { content: "\e90c"; }
 .bc-i-eye-hidden::before { content: "\e909"; }
 
-/* Promo code: input + UYGULA yan yana (sidebar / modal) */
+/* Promo code: input + UYGULA yan yana (desktop modal / sidebar only — not mobile #mprofilePanel) */
 #profileModal .profile-panel-promo-code,
 #profileModal .promoCodeWrapper-bc,
-.u-i-profile-page-bc .profile-panel-promo-code,
-.u-i-profile-page-bc .promoCodeWrapper-bc {
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code,
+#profileModal .u-i-profile-page-bc .promoCodeWrapper-bc {
   width: 100%;
   box-sizing: border-box;
   margin: 0 0 14px !important;
@@ -182,8 +182,8 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
 
 #profileModal .profile-panel-promo-code form,
 #profileModal .promoCodeWrapper-bc form,
-.u-i-profile-page-bc .profile-panel-promo-code form,
-.u-i-profile-page-bc .promoCodeWrapper-bc form {
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code form,
+#profileModal .u-i-profile-page-bc .promoCodeWrapper-bc form {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
@@ -196,8 +196,8 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
 
 #profileModal .profile-panel-promo-code .u-i-p-control-item-holder-bc,
 #profileModal .promoCodeWrapper-bc .u-i-p-control-item-holder-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .u-i-p-control-item-holder-bc,
-.u-i-profile-page-bc .promoCodeWrapper-bc .u-i-p-control-item-holder-bc {
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .u-i-p-control-item-holder-bc,
+#profileModal .u-i-profile-page-bc .promoCodeWrapper-bc .u-i-p-control-item-holder-bc {
   flex: 1 1 auto !important;
   min-width: 0 !important;
   max-width: none !important;
@@ -212,8 +212,8 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
 #profileModal .profile-panel-promo-code .form-control-label-bc.inputs,
 #profileModal .promoCodeWrapper-bc .form-control-bc,
 #profileModal .promoCodeWrapper-bc .form-control-label-bc.inputs,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-label-bc.inputs {
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-bc,
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-label-bc.inputs {
   position: relative !important;
   display: block !important;
   width: 100% !important;
@@ -226,7 +226,7 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
 
 #profileModal .profile-panel-promo-code .form-control-input-bc,
 #profileModal .promoCodeWrapper-bc .form-control-input-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-input-bc {
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-input-bc {
   width: 100% !important;
   height: 40px !important;
   min-height: 40px !important;
@@ -238,7 +238,7 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
 
 #profileModal .profile-panel-promo-code .form-control-title-bc,
 #profileModal .promoCodeWrapper-bc .form-control-title-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-title-bc {
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-title-bc {
   top: 50% !important;
   left: 12px !important;
   right: 12px !important;
@@ -258,14 +258,14 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
 #profileModal .profile-panel-promo-code .form-control-bc.focused .form-control-title-bc,
 #profileModal .promoCodeWrapper-bc .form-control-bc.filled .form-control-title-bc,
 #profileModal .promoCodeWrapper-bc .form-control-bc.focused .form-control-title-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.focused .form-control-title-bc,
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.focused .form-control-title-bc,
 #profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:focus) .form-control-title-bc,
 #profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
 #profileModal .promoCodeWrapper-bc .form-control-bc:has(.form-control-input-bc:focus) .form-control-title-bc,
 #profileModal .promoCodeWrapper-bc .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:focus) .form-control-title-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:focus) .form-control-title-bc,
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc.focused .form-control-title-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc {
@@ -279,10 +279,10 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-
 /* Değer girilmişken floating label tamamen gizle — metinle üst üste binmesin */
 #profileModal .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
 #profileModal .promoCodeWrapper-bc .form-control-bc.filled .form-control-title-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
 #profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
 #profileModal .promoCodeWrapper-bc .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc.filled .form-control-title-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-title-bc {
   opacity: 0 !important;
@@ -293,16 +293,16 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-
 #profileModal .promoCodeWrapper-bc .form-control-bc.filled .form-control-input-bc,
 #profileModal .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-input-bc,
 #profileModal .promoCodeWrapper-bc .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-input-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.filled .form-control-input-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-input-bc {
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-bc.filled .form-control-input-bc,
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .form-control-bc:has(.form-control-input-bc:not(:placeholder-shown)) .form-control-input-bc {
   padding: 0 12px !important;
   line-height: 40px !important;
 }
 
 #profileModal .profile-panel-promo-code .u-i-p-c-footer-bc,
 #profileModal .promoCodeWrapper-bc .u-i-p-c-footer-bc,
-.u-i-profile-page-bc .profile-panel-promo-code .u-i-p-c-footer-bc,
-.u-i-profile-page-bc .promoCodeWrapper-bc .u-i-p-c-footer-bc {
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .u-i-p-c-footer-bc,
+#profileModal .u-i-profile-page-bc .promoCodeWrapper-bc .u-i-p-c-footer-bc {
   flex: 0 0 auto !important;
   width: auto !important;
   max-width: none !important;
@@ -318,8 +318,8 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .profile-panel-
 
 #profileModal .profile-panel-promo-code .btn.big-btn,
 #profileModal .promoCodeWrapper-bc .btn.big-btn,
-.u-i-profile-page-bc .profile-panel-promo-code .btn.big-btn,
-.u-i-profile-page-bc .promoCodeWrapper-bc .btn.big-btn {
+#profileModal .u-i-profile-page-bc .profile-panel-promo-code .btn.big-btn,
+#profileModal .u-i-profile-page-bc .promoCodeWrapper-bc .btn.big-btn {
   max-width: none !important;
   width: auto !important;
   min-width: 84px !important;
