@@ -135,15 +135,9 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="stylesheet" href="/assets/css/home.css?v=<?= $ver($assetCssDir . '/home.css') ?>">
   <?php if ($needsJackpotAssets): ?>
   <?php if ($isLiveCasinoRoute): ?>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/casino-live-cm622.css?v=<?= $ver($assetCssDir . '/casino-live-cm622.css') ?>">
+  <link rel="stylesheet" href="/assets/css/casino-live.css?v=<?= $ver($assetCssDir . '/casino-live.css') ?>">
   <?php elseif ($isSlotRoute): ?>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/casino-slots-cm622.css?v=<?= $ver($assetCssDir . '/casino-slots-cm622.css') ?>">
+  <link rel="stylesheet" href="/assets/css/casino-slots.css?v=<?= $ver($assetCssDir . '/casino-slots.css') ?>">
   <?php endif; ?>
   <link rel="stylesheet" href="/assets/css/home-jackpot.css?v=<?= $ver($assetCssDir . '/home-jackpot.css') ?>">
   <link rel="stylesheet" href="/assets/css/home-winners.css?v=<?= $ver($assetCssDir . '/home-winners.css') ?>">

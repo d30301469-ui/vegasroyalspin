@@ -169,7 +169,7 @@
     }
 
     // Surum parametresi CDN/edge cache'ini atlayarak yeni SW'nin inmesini garantiler.
-    navigator.serviceWorker.register('/service-worker.js?v=24-mobile-casino-restore', { scope: '/' })
+    navigator.serviceWorker.register('/service-worker.js?v=25-provider-filter-restore', { scope: '/' })
       .then(function (reg) {
         if (reg && typeof reg.update === 'function') {
           reg.update().catch(function () { /* ignore */ });
