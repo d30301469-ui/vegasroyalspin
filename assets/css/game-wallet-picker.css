@@ -1,12 +1,18 @@
 /**
  * Oyun bakiye seçim modalı — CM622 kart + cüzdan ikonu + satır içerik.
+ * position:fixed is declared here so the picker does not depend on feedback-dialog base.
  */
-.wallet-picker-overlay.app-feedback-dialog-overlay,
-.wallet-picker-dialog.app-feedback-dialog {
+.wallet-picker-overlay.app-feedback-dialog-overlay {
+  position: fixed;
+  inset: 0;
   z-index: 100060;
 }
 
 .wallet-picker-dialog.app-feedback-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 100060;
   width: min(400px, calc(100vw - 24px));
   max-width: 400px;
   max-height: min(92vh, calc(100dvh - 24px));
