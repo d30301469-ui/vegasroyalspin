@@ -1,7 +1,7 @@
 <?php
 /**
- * Mobile /bgaming — same CM622 lobby as desktop.
+ * Mobile /bgaming — mobile original lobby nav + mobile-slots.css skin.
  */
-$slotDesktopLobby = true;
+$slotMobileOriginalNav = true;
 include VIEW_PATH . '/pages/bgaming.php';
 include MOBILE_PATH . '/views/partials/footer.php';

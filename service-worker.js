@@ -1,6 +1,6 @@
 /* vegasroyalspin PWA service worker */
 'use strict';
-const SW_VERSION = 'v23-header-gap-cache';
+const SW_VERSION = 'v24-mobile-casino-restore';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [

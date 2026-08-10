@@ -174,6 +174,11 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <link rel="stylesheet" href="/assets/css/mobile-right-sheet-extra.css?v=<?= rawurlencode($assetFingerprint($mobileCssDir . '/mobile-right-sheet-extra.css')) ?>">
   <link rel="stylesheet" href="/assets/css/mobile-home.css?v=<?= $ver($mobileCssDir . '/mobile-home.css') ?>">
   <link rel="stylesheet" href="/assets/css/mobile-home-widgets.css?v=<?= $ver($mobileCssDir . '/mobile-home-widgets.css') ?>">
+  <?php if ($isLiveCasinoRoute): ?>
+  <link rel="stylesheet" href="/assets/css/mobile-live.css?v=<?= $ver($mobileCssDir . '/mobile-live.css') ?>">
+  <?php elseif ($isSlotRoute): ?>
+  <link rel="stylesheet" href="/assets/css/mobile-slots.css?v=<?= $ver($mobileCssDir . '/mobile-slots.css') ?>">
+  <?php endif; ?>
   <link rel="stylesheet" href="/assets/css/mobile-bottom-bar.css?v=<?= $ver($mobileCssDir . '/mobile-bottom-bar.css') ?>">
   <link rel="stylesheet" href="/assets/css/mobile-footer.css?v=<?= $ver($mobileCssDir . '/mobile-footer.css') ?>">
   <link rel="stylesheet" href="/assets/css/mobile-auth-modals.css?v=<?= $ver($mobileCssDir . '/mobile-auth-modals.css') ?>">

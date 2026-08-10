@@ -76,7 +76,7 @@ $sliderApiCategory = 'live_casino';
 $slotShowActionButtons = true;
 $slotHideProviders = false;
 
-// CM622 lobby for desktop and mobile (same shell as /slot).
+// Desktop CM622 lobby; mobile pages override via $slotMobileOriginalNav.
 $slotDesktopLobby = true;
 $lobbyMode = $currentSort === ''
     && $searchTerm === ''
