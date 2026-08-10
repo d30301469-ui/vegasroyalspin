@@ -1,22 +1,11 @@
 <?php
 
 /**
- * Üye JWT ile bonus talep listesi (GET bonus_claims_me.php, api.md).
+ * Thin loader — canonical implementation lives in shared/api/MemberBonusClaims.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiMemberBonusClaims
-{
-    /**
-     * @return array<string, mixed>|null
-     */
-    public static function fetch(string $bearerJwt, int $limit = 20): ?array
-    {
-        $limit = max(1, min(50, $limit));
+declare(strict_types=1);
 
-        return ApiMemberApi::relayGetWithMemberJwt(
-            MemberApiPaths::BONUS_CLAIMS_ME,
-            $bearerJwt,
-            ['limit' => $limit],
-            20
-        );
-    }
-}
+
+require_once dirname(__DIR__) . '/shared/runtime.php';
+require_once dirname(__DIR__) . '/shared/api/MemberBonusClaims.php';

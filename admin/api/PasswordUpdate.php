@@ -1,22 +1,20 @@
 <?php
 
 /**
- * POST /api/v2/password_update.php — oturumlu üye, Bearer JWT (zarf; {updated:true, redirect:null}).
+ * Thin loader — canonical implementation lives in shared/api/PasswordUpdate.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiPasswordUpdate
-{
-    /**
-     * @param array<string, mixed> $body current_password, password, password_confirmation (api.md)
-     *
-     * @return array<string, mixed>|null
-     */
-    public static function submitEnvelope(string $memberJwt, array $body, int $timeout = 25): ?array
-    {
-        return ApiMemberApi::relayPostWithMemberJwt(
-            MemberApiPaths::PASSWORD_UPDATE,
-            $memberJwt,
-            $body,
-            $timeout
-        );
+declare(strict_types=1);
+
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/PasswordUpdate.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/PasswordUpdate.php';

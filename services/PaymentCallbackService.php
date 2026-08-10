@@ -1,74 +1,11 @@
 <?php
 
-require_once SERVICE_PATH . '/BackendApiClient.php';
-require_once REPOSITORY_PATH . '/UserRepository.php';
-require_once REPOSITORY_PATH . '/DepositRepository.php';
-
 /**
- * Ödeme/çekim callback iş mantığı (api/index.php kaynağı).
+ * Thin loader — canonical implementation lives in shared/services/PaymentCallbackService.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-class PaymentCallbackService
-{
-    private UserRepository $userRepo;
-    private DepositRepository $depositRepo;
+declare(strict_types=1);
 
-    public function __construct()
-    {
-        $this->userRepo    = new UserRepository(BackendApiClient::SVC_PAYMENT_CALLBACK);
-        $this->depositRepo = new DepositRepository(BackendApiClient::SVC_PAYMENT_CALLBACK);
-    }
 
-    public function handleWithdrawalReturn(array $data): array
-    {
-        $status = $data['Status'] ?? '';
-        if ($status !== 'onay' && $status !== 'ret') {
-            return ['status' => 'error', 'message' => 'Geçersiz durum', 'http' => 400];
-        }
-        return ['status' => 'ok', 'http' => 200];
-    }
-
-    public function handleDepositResult(array $data): array
-    {
-        $durum = $data['durum'] ?? '';
-        if ($durum !== 'onay' && $durum !== 'ret') {
-            return ['status' => 'error', 'message' => 'Geçersiz durum', 'http' => 400];
-        }
-
-        $kullanici_id = (int) ($data['kullanici_id'] ?? 0);
-        $tutar        = (float) ($data['tutar'] ?? 0);
-        $db_durum     = $durum === 'onay' ? 0 : 1;
-        $status       = $durum === 'onay' ? 'onay' : 'red';
-
-        $user = $this->userRepo->findById($kullanici_id);
-        if (!$user) {
-            return ['status' => 'error', 'message' => 'Kullanıcı bulunamadı', 'http' => 404];
-        }
-
-        if ($db_durum === 0) {
-            // Bakiye yüklenemediyse sağlayıcıya başarı dönmek kaydı kaybettirir;
-            // 502 ile sağlayıcının retry mekanizması devreye girer.
-            if (!$this->userRepo->updateBalance($kullanici_id, $tutar)) {
-                return ['status' => 'error', 'message' => 'Bakiye güncellenemedi', 'http' => 502];
-            }
-            $db_durum = 2;
-        }
-
-        $inserted = $this->depositRepo->insert(
-            $data['id'] ?? null,
-            $kullanici_id,
-            $tutar,
-            $data['yontem'] ?? '',
-            $data['referans'] ?? null,
-            $data['tarih'] ?? null,
-            $db_durum,
-            $status,
-            $data['token'] ?? null,
-            $data['kullanici_isim'] ?? null
-        );
-        if (!$inserted) {
-            return ['status' => 'error', 'message' => 'Yatırım kaydı oluşturulamadı', 'http' => 502];
-        }
-
-        return ['status' => true, 'http' => 200];
-    }
-}
+require_once dirname(__DIR__) . '/shared/runtime.php';
+require_once dirname(__DIR__) . '/shared/services/PaymentCallbackService.php';

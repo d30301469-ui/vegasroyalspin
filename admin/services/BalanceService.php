@@ -1,24 +1,20 @@
 <?php
 
-require_once CONFIG_PATH . '/db.php';
-require_once SERVICE_PATH . '/BackendApiClient.php';
-require_once REPOSITORY_PATH . '/UserRepository.php';
-
 /**
- * Bakiye iş mantığı – UserRepository (HTTP API).
+ * Thin loader — canonical implementation lives in shared/services/BalanceService.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-class BalanceService
-{
-    public static function getBalanceForUsername(string $username): array
-    {
-        $repo    = new UserRepository(BackendApiClient::SVC_MAIN);
-        $balance = $repo->getBalanceByUsername($username);
+declare(strict_types=1);
 
-        if ($balance === null) {
-            return ['status' => 'error', 'message' => 'Kullanıcı bulunamadı.'];
-        }
-
-        $formatted = number_format($balance, 2, ',', '.') . ' ₺';
-        return ['status' => 'success', 'ana_bakiye' => $formatted];
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for services/BalanceService.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/services/BalanceService.php';

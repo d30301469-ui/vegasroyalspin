@@ -1,20 +1,11 @@
 <?php
 
 /**
- * Üye JWT ile aktif bonus (GET active_bonus.php, api.md).
+ * Thin loader — canonical implementation lives in shared/api/MemberActiveBonus.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiMemberActiveBonus
-{
-    /**
-     * @return array<string, mixed>|null
-     */
-    public static function fetch(string $bearerJwt): ?array
-    {
-        return ApiMemberApi::relayGetWithMemberJwt(
-            MemberApiPaths::ACTIVE_BONUS,
-            $bearerJwt,
-            [],
-            15
-        );
-    }
-}
+declare(strict_types=1);
+
+
+require_once dirname(__DIR__) . '/shared/runtime.php';
+require_once dirname(__DIR__) . '/shared/api/MemberActiveBonus.php';

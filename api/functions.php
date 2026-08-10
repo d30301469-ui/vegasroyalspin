@@ -1,28 +1,11 @@
 <?php
 
 /**
- * Prosedürel kısayollar (tercihen sınıfları doğrudan kullanın: ApiClient, ApiEnvelope, …).
- *
- * @param array<string, mixed>|null $json
- * @return array<string, mixed>
+ * Thin loader — canonical implementation lives in shared/api/functions.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-function api_unwrap(?array $json): array
-{
-    return ApiEnvelope::data($json);
-}
+declare(strict_types=1);
 
-/**
- * @return list<string>
- */
-function api_bases_member_api(): array
-{
-    return ApiBases::forMemberApi();
-}
 
-/**
- * @return list<string>
- */
-function api_member_api_path_alternates(string $baseUrl, string $endpointFile): array
-{
-    return ApiMemberApi::pathAlternatesForBase($baseUrl, $endpointFile);
-}
+require_once dirname(__DIR__) . '/shared/runtime.php';
+require_once dirname(__DIR__) . '/shared/api/functions.php';

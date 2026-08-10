@@ -1,34 +1,20 @@
 <?php
 
 /**
- * Üye JWT ile çekim formu / çekim talebi (GET|POST withdraw_payment.php, api v2).
+ * Thin loader — canonical implementation lives in shared/api/WithdrawPayment.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiWithdrawPayment
-{
-    /**
-     * @return array<string, mixed>|null
-     */
-    public static function fetch(string $bearerJwt): ?array
-    {
-        return ApiMemberApi::relayGetWithMemberJwt(
-            MemberApiPaths::WITHDRAW_PAYMENT,
-            $bearerJwt,
-            [],
-            25
-        );
-    }
+declare(strict_types=1);
 
-    /**
-     * @param array<string, mixed> $body
-     * @return array<string, mixed>|null
-     */
-    public static function submit(string $bearerJwt, array $body): ?array
-    {
-        return ApiMemberApi::relayPostWithMemberJwt(
-            MemberApiPaths::WITHDRAW_PAYMENT,
-            $bearerJwt,
-            $body,
-            30
-        );
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/WithdrawPayment.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/WithdrawPayment.php';

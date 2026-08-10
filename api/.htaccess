@@ -16,6 +16,24 @@
     RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
     RewriteRule (^|/)[^/]+\.(?:log|sql|sqlite|db|bak|backup|old|orig|save|swp|tmp|env|ini|conf|config|pem|key|crt|p12|pfx|ps1|sh|bat|cmd|py|zip|tar|gz|tgz|7z|rar)$ - [F,L,NC]
 
+    # GSC+ seamless wallet — hit the callback PHP directly so provider balance /
+    # withdraw / deposit never depends on the member-API front controller.
+    # Spaced base (…/gsc-plus-wallet%20%20%20/…) must be rewritten or Apache 403s.
+    RewriteCond %{THE_REQUEST} (?i)^[A-Z]+\s/+api/v2/(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)(?:\%20)+/([^\s\?]+)
+    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/gsc_plus_callback.php -f
+    RewriteRule ^ ../admin/api/v2/gsc_plus_callback.php?endpoint=%1 [END,QSA,NE]
+    RewriteCond %{THE_REQUEST} (?i)^[A-Z]+\s/+api/v2/(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)(?:\%20)+(?:\s|\?)
+    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/gsc_plus_callback.php -f
+    RewriteRule ^ ../admin/api/v2/gsc_plus_callback.php [END,QSA]
+    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/gsc_plus_callback.php -f
+    RewriteRule ^v2/gsc_plus_callback\.php$ ../admin/api/v2/gsc_plus_callback.php [END,QSA]
+    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/gsc_plus_callback.php -f
+    RewriteRule ^v2/(?:gsc[-_]plus[-_]wallet|gsc_plus_wallet)\s+/(.*)$ ../admin/api/v2/gsc_plus_callback.php?endpoint=$1 [END,QSA,NC]
+    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/gsc_plus_callback.php -f
+    RewriteRule ^v2/(?:gsc-plus-wallet|gsc_plus_wallet)/?(.*)$ ../admin/api/v2/gsc_plus_callback.php?endpoint=$1 [END,QSA]
+    RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/gsc_plus_callback.php -f
+    RewriteRule ^v2/(?:gamingsoft-wallet|gamingsoft_wallet)/?(.*)$ ../admin/api/v2/gsc_plus_callback.php?endpoint=$1 [END,QSA]
+
     # Monorepo deployment: admin/api/v2/index.php exists → route all v2/* requests to it.
     # Works for any domain (frontend, api subdomain, admin subdomain) without hardcoded names.
     RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/index.php -f

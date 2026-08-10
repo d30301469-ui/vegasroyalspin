@@ -1,24 +1,11 @@
 <?php
 
 /**
- * Üye API GET payment_methods — kimlik doğrulamasız (public) zarf proxy.
+ * Thin loader — canonical implementation lives in shared/api/PaymentMethods.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiPaymentMethods
-{
-    /**
-     * Backend zarfını olduğu gibi döndürür; bağlantı/parse hatasında null.
-     *
-     * @return array<string, mixed>|null
-     */
-    public static function fetchEnvelope(): ?array
-    {
-        return ApiMemberApi::relayGet(
-            MemberApiPaths::PAYMENT_METHODS,
-            [],
-            15,
-            null,
-            null,
-            ApiMemberApi::acceptNonEmptyResponse()
-        );
-    }
-}
+declare(strict_types=1);
+
+
+require_once dirname(__DIR__) . '/shared/runtime.php';
+require_once dirname(__DIR__) . '/shared/api/PaymentMethods.php';

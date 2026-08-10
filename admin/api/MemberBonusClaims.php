@@ -1,22 +1,20 @@
 <?php
 
 /**
- * Üye JWT ile bonus talep listesi (GET bonus_claims_me.php, api.md).
+ * Thin loader — canonical implementation lives in shared/api/MemberBonusClaims.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiMemberBonusClaims
-{
-    /**
-     * @return array<string, mixed>|null
-     */
-    public static function fetch(string $bearerJwt, int $limit = 20): ?array
-    {
-        $limit = max(1, min(50, $limit));
+declare(strict_types=1);
 
-        return ApiMemberApi::relayGetWithMemberJwt(
-            MemberApiPaths::BONUS_CLAIMS_ME,
-            $bearerJwt,
-            ['limit' => $limit],
-            20
-        );
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/MemberBonusClaims.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/MemberBonusClaims.php';

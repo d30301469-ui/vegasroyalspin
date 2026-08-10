@@ -1,24 +1,20 @@
 <?php
 
 /**
- * Üye API GET payment_methods — kimlik doğrulamasız (public) zarf proxy.
+ * Thin loader — canonical implementation lives in shared/api/PaymentMethods.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiPaymentMethods
-{
-    /**
-     * Backend zarfını olduğu gibi döndürür; bağlantı/parse hatasında null.
-     *
-     * @return array<string, mixed>|null
-     */
-    public static function fetchEnvelope(): ?array
-    {
-        return ApiMemberApi::relayGet(
-            MemberApiPaths::PAYMENT_METHODS,
-            [],
-            15,
-            null,
-            null,
-            ApiMemberApi::acceptNonEmptyResponse()
-        );
+declare(strict_types=1);
+
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/PaymentMethods.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/PaymentMethods.php';

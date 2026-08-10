@@ -31,8 +31,10 @@ jobs:
 
             # Admin panel DocumentRoot is a separate host. Sync admin/ so
             # E-posta ayarları / şablonları / API changes actually reach production.
+            # Also sync shared/ into the admin docroot (standalone loaders resolve it there).
             ADMIN_HOST="/www/wwwroot/admin.vegasroyalspin.com"
-            if [ -d "$ADMIN_HOST" ] && [ -d /www/wwwroot/vegasroyalspin.com/admin ]; then
+            FRONT_HOST="/www/wwwroot/vegasroyalspin.com"
+            if [ -d "$ADMIN_HOST" ] && [ -d "$FRONT_HOST/admin" ]; then
               rsync -a --delete \
                 --exclude '.env' \
                 --exclude '.env.*' \
@@ -41,8 +43,16 @@ jobs:
                 --exclude 'storage/logs/' \
                 --exclude 'storage/cache/' \
                 --exclude 'storage/sessions/' \
-                /www/wwwroot/vegasroyalspin.com/admin/ \
+                "$FRONT_HOST/admin/" \
                 "$ADMIN_HOST/"
+              if [ -d "$FRONT_HOST/shared" ]; then
+                rsync -a --delete \
+                  "$FRONT_HOST/shared/" \
+                  "$ADMIN_HOST/shared/"
+                echo "Admin shared/ synced: $ADMIN_HOST/shared"
+              else
+                echo "WARN: frontend shared/ missing — admin thin loaders will fail"
+              fi
               echo "Admin host synced: $ADMIN_HOST"
             else
               echo "Admin host sync skipped (missing $ADMIN_HOST or admin/)"

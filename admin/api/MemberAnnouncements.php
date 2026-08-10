@@ -1,52 +1,20 @@
 <?php
 
 /**
- * GET /api/v2/announcements.php — public · envelope (api.md).
+ * Thin loader — canonical implementation lives in shared/api/MemberAnnouncements.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiAnnouncements
-{
-    /**
-     * @param array<string, mixed> $get
-     * @return array<string, string|int>
-     */
-    public static function normalizeQuery(array $get): array
-    {
-        $actionRaw = $get['action'] ?? 'all';
-        $action    = is_string($actionRaw) ? strtolower(trim($actionRaw)) : 'all';
-        $allowed   = ['active', 'featured', 'type', 'all'];
-        if (!in_array($action, $allowed, true)) {
-            $action = 'all';
-        }
+declare(strict_types=1);
 
-        $query = ['action' => $action];
-
-        if ($action === 'featured') {
-            $limit = isset($get['limit']) ? (int) $get['limit'] : 10;
-            $limit = max(1, min(100, $limit));
-            $query['limit'] = $limit;
-        }
-
-        if ($action === 'type') {
-            $type = isset($get['type']) ? trim((string) $get['type']) : '';
-            if ($type !== '') {
-                $query['type'] = $type;
-            }
-        }
-
-        return $query;
-    }
-
-    /**
-     * @param array<string, string|int> $query
-     * @return array<string, mixed>|null
-     */
-    public static function fetchEnvelope(array $query): ?array
-    {
-        return ApiMemberApi::relayGet(
-            MemberApiPaths::ANNOUNCEMENTS,
-            $query,
-            30,
-            null
-        );
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/MemberAnnouncements.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/MemberAnnouncements.php';

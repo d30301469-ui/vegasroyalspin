@@ -1,30 +1,20 @@
 <?php
 
 /**
- * T.C. kimlik no: 10. ve 11. hane kontrolü (api.md / App\Support\TurkishNationalId ile uyumlu mantık).
+ * Thin loader — canonical implementation lives in shared/services/TurkishNationalId.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class TurkishNationalId
-{
-    public static function isValid(string $tc): bool
-    {
-        if (!preg_match('/^\d{11}$/', $tc)) {
-            return false;
-        }
-        if ($tc[0] === '0') {
-            return false;
-        }
+declare(strict_types=1);
 
-        $d = array_map('intval', str_split($tc));
-
-        $oddSum = $d[0] + $d[2] + $d[4] + $d[6] + $d[8];
-        $evenSum = $d[1] + $d[3] + $d[5] + $d[7];
-        $d10 = ((($oddSum * 7) - $evenSum) % 10 + 10) % 10;
-        if ($d[9] !== $d10) {
-            return false;
-        }
-
-        $sum10 = array_sum(array_slice($d, 0, 10));
-
-        return ($sum10 % 10) === $d[10];
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for services/TurkishNationalId.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/services/TurkishNationalId.php';

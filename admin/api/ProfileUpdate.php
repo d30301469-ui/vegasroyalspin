@@ -1,46 +1,20 @@
 <?php
 
 /**
- * POST /api/v2/profile_update.php — profil güncelleme, Bearer JWT (zarf + data.errors).
+ * Thin loader — canonical implementation lives in shared/api/ProfileUpdate.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiProfileUpdate
-{
-    /**
-     * @param array<string, mixed> $body JSON gövde (current_password zorunlu; diğer alanlar API şemasına göre)
-     * @return array<string, mixed>|null
-     */
-    public static function submitEnvelope(string $memberJwt, array $body, int $timeout = 25): ?array
-    {
-        return ApiMemberApi::relayPostWithMemberJwt(
-            MemberApiPaths::PROFILE_UPDATE,
-            $memberJwt,
-            $body,
-            $timeout
-        );
-    }
+declare(strict_types=1);
 
-    /**
-     * data.errors alan haritasından okunabilir tek mesaj.
-     *
-     * @param array<string, mixed> $data Zarfın data nesnesi
-     */
-    public static function concatFieldErrors(array $data): string
-    {
-        $errors = $data['errors'] ?? null;
-        if (!is_array($errors) || $errors === []) {
-            return '';
-        }
-        $parts = [];
-        foreach ($errors as $msg) {
-            if (is_array($msg)) {
-                foreach ($msg as $m) {
-                    $parts[] = trim((string) $m);
-                }
-            } else {
-                $parts[] = trim((string) $msg);
-            }
-        }
-
-        return trim(implode(' ', array_filter($parts)));
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/ProfileUpdate.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/ProfileUpdate.php';

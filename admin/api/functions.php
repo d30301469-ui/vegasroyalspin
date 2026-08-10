@@ -1,28 +1,20 @@
 <?php
 
 /**
- * Prosedürel kısayollar (tercihen sınıfları doğrudan kullanın: ApiClient, ApiEnvelope, …).
- *
- * @param array<string, mixed>|null $json
- * @return array<string, mixed>
+ * Thin loader — canonical implementation lives in shared/api/functions.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-function api_unwrap(?array $json): array
-{
-    return ApiEnvelope::data($json);
-}
+declare(strict_types=1);
 
-/**
- * @return list<string>
- */
-function api_bases_member_api(): array
-{
-    return ApiBases::forMemberApi();
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
+    }
 }
-
-/**
- * @return list<string>
- */
-function api_member_api_path_alternates(string $baseUrl, string $endpointFile): array
-{
-    return ApiMemberApi::pathAlternatesForBase($baseUrl, $endpointFile);
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/functions.php (deploy shared/ next to admin or at monorepo root).');
 }
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/functions.php';

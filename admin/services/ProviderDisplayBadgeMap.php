@@ -1,42 +1,20 @@
 <?php
 
 /**
- * games_provider API maskelenmiş görünen ad → eski slug anahtarı (providerBadges).
+ * Thin loader — canonical implementation lives in shared/services/ProviderDisplayBadgeMap.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ProviderDisplayBadgeMap
-{
-    public static function slugForDisplay(string $display): ?string
-    {
-        static $map = [
-            'pragmatic play'   => 'pragmatic',
-            'pg soft'          => 'pgsoft',
-            'spribe'           => 'spribe',
-            'hacksaw'          => 'hacksaw',
-            'hacksaw gaming'   => 'hacksaw',
-            'hacksaw-openrgs'  => 'hacksaw',
-            'nolimit city'     => 'nolimitcity-A',
-            'nolimitcity'      => 'nolimitcity-A',
-            'nolimitcity a'    => 'nolimitcity-A',
-            'bgaming'          => 'bgaming',
-            'evoplay'          => 'evoplay',
-            'play son'         => 'play-son',
-            'playson'          => 'play-son',
-            '3oaks'            => '3oaksgaming',
-            '3oaksp'           => '3oaksgaming',
-            'booming'          => 'booming',
-            'booming games'    => 'booming',
-            'quickspin'        => 'quickspin',
-            'amusnet'          => 'amusnet',
-            'egt digital'      => 'egt-digital',
-            'egtdigital'       => 'egtdigital',
-            'voltent'          => 'voltent',
-            'popok'            => 'popok',
-            'popok gaming'     => 'popok-gaming',
-            'habanero'         => 'habanero',
-        ];
+declare(strict_types=1);
 
-        $n = mb_strtolower(trim($display), 'UTF-8');
-
-        return $map[$n] ?? null;
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for services/ProviderDisplayBadgeMap.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/services/ProviderDisplayBadgeMap.php';

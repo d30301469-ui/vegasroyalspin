@@ -1,21 +1,20 @@
 <?php
 
 /**
- * POST /api/v2/account_freeze.php — hesap dondurma, Bearer JWT (zarf + data.errors).
+ * Thin loader — canonical implementation lives in shared/api/AccountFreeze.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiAccountFreeze
-{
-    /**
-     * @param array<string, mixed> $body en az password
-     * @return array<string, mixed>|null
-     */
-    public static function submitEnvelope(string $memberJwt, array $body, int $timeout = 25): ?array
-    {
-        return ApiMemberApi::relayPostWithMemberJwt(
-            MemberApiPaths::ACCOUNT_FREEZE,
-            $memberJwt,
-            $body,
-            $timeout
-        );
+declare(strict_types=1);
+
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/AccountFreeze.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/AccountFreeze.php';

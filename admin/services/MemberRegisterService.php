@@ -1,34 +1,20 @@
 <?php
 
-require_once __DIR__ . '/BackendApiClient.php';
-require_once __DIR__ . '/MemberLoginService.php';
-
 /**
- * Üye API: POST /register.php (JSON envelope, api.md).
+ * Thin loader — canonical implementation lives in shared/services/MemberRegisterService.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class MemberRegisterService
-{
-    /**
-     * @param array<string, mixed> $body
-     * @return array<string, mixed>|null
-     */
-    public static function register(array $body): ?array
-    {
-        return BackendApiClient::request('POST', BackendApiClient::SVC_MAIN, '/register.php', [], $body);
-    }
+declare(strict_types=1);
 
-    public static function succeeded(?array $res): bool
-    {
-        return MemberLoginService::envelopeSucceeded($res, 201);
-    }
-
-    public static function applySession(array $res, string $usernameFallback): void
-    {
-        MemberLoginService::applySession($res, $usernameFallback);
-    }
-
-    public static function failureMessage(?array $res): string
-    {
-        return MemberLoginService::envelopeMessageOr($res, 'Kayıt başarısız.');
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for services/MemberRegisterService.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/services/MemberRegisterService.php';

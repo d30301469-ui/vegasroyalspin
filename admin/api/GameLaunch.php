@@ -1,28 +1,20 @@
 <?php
 
 /**
- * Üye API POST game_launch.php — api.md /api/v2/game-launch.
+ * Thin loader — canonical implementation lives in shared/api/GameLaunch.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiGameLaunch
-{
-    /**
-     * @param array<string, mixed> $body
-     * @return array<string, mixed>|null
-     */
-    public static function post(array $body, ?string $memberJwt, int $timeout = 60): ?array
-    {
-        $auth = null;
-        if ($memberJwt !== null && trim($memberJwt) !== '') {
-            $auth = ApiMemberApi::bearerAuthorizationHeader($memberJwt);
-        }
+declare(strict_types=1);
 
-        return ApiMemberApi::relayPost(
-            MemberApiPaths::GAME_LAUNCH,
-            $body,
-            $timeout,
-            $auth,
-            null,
-            static fn (?array $r): bool => $r !== null
-        );
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/GameLaunch.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/GameLaunch.php';

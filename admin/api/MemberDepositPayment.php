@@ -1,41 +1,20 @@
 <?php
 
 /**
- * Üye JWT ile yatırım yönlendirmesi: GET / POST deposit_payment.php (api.md, zarf).
+ * Thin loader — canonical implementation lives in shared/api/MemberDepositPayment.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class ApiMemberDepositPayment
-{
-    private const TIMEOUT_GET  = 20;
-    private const TIMEOUT_POST = 45;
+declare(strict_types=1);
 
-    /**
-     * GET — kullanım bilgisi / zarf (hint, create_deposit şeması, ilgili URL'ler).
-     *
-     * @return array<string, mixed>|null
-     */
-    public static function get(string $bearerJwt): ?array
-    {
-        return ApiMemberApi::relayGetWithMemberJwt(
-            MemberApiPaths::DEPOSIT_PAYMENT,
-            $bearerJwt,
-            [],
-            self::TIMEOUT_GET
-        );
-    }
-
-    /**
-     * POST — tutar + payment_method_id veya method (+ provider).
-     *
-     * @param array<string, mixed> $body
-     * @return array<string, mixed>|null
-     */
-    public static function create(string $bearerJwt, array $body): ?array
-    {
-        return ApiMemberApi::relayPostWithMemberJwt(
-            MemberApiPaths::DEPOSIT_PAYMENT,
-            $bearerJwt,
-            $body,
-            self::TIMEOUT_POST
-        );
+$__sharedRoot = null;
+foreach ([dirname(__DIR__, 2) . '/shared', dirname(__DIR__) . '/shared'] as $__dir) {
+    if (is_file($__dir . '/runtime.php')) {
+        $__sharedRoot = $__dir;
+        break;
     }
 }
+if ($__sharedRoot === null) {
+    throw new RuntimeException('shared/ not found for api/MemberDepositPayment.php (deploy shared/ next to admin or at monorepo root).');
+}
+require_once $__sharedRoot . '/runtime.php';
+require_once $__sharedRoot . '/api/MemberDepositPayment.php';

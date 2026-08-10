@@ -1,34 +1,11 @@
 <?php
 
-require_once __DIR__ . '/BackendApiClient.php';
-require_once __DIR__ . '/MemberLoginService.php';
-
 /**
- * Üye API: POST /register.php (JSON envelope, api.md).
+ * Thin loader — canonical implementation lives in shared/services/MemberRegisterService.php
+ * Do not duplicate logic here; edit the shared file instead.
  */
-final class MemberRegisterService
-{
-    /**
-     * @param array<string, mixed> $body
-     * @return array<string, mixed>|null
-     */
-    public static function register(array $body): ?array
-    {
-        return BackendApiClient::request('POST', BackendApiClient::SVC_MAIN, '/register.php', [], $body);
-    }
+declare(strict_types=1);
 
-    public static function succeeded(?array $res): bool
-    {
-        return MemberLoginService::envelopeSucceeded($res, 201);
-    }
 
-    public static function applySession(array $res, string $usernameFallback): void
-    {
-        MemberLoginService::applySession($res, $usernameFallback);
-    }
-
-    public static function failureMessage(?array $res): string
-    {
-        return MemberLoginService::envelopeMessageOr($res, 'Kayıt başarısız.');
-    }
-}
+require_once dirname(__DIR__) . '/shared/runtime.php';
+require_once dirname(__DIR__) . '/shared/services/MemberRegisterService.php';
