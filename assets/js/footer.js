@@ -1274,7 +1274,10 @@
         var header = document.querySelector("header.headBar");
         if (!header) return;
         var menu = header.querySelector(".mainMenu");
-        var bottom = menu ? menu.getBoundingClientRect().bottom : header.getBoundingClientRect().bottom;
+        var headerBottom = header.getBoundingClientRect().bottom;
+        var menuBottom = menu ? menu.getBoundingClientRect().bottom : 0;
+        /* Prefer the lower edge so menu is never clipped under content/sidebar. */
+        var bottom = Math.max(headerBottom, menuBottom);
         if (!(bottom > 0)) return;
         document.documentElement.style.setProperty("--header-sticky-top", Math.ceil(bottom) + "px");
     }

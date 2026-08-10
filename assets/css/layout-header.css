@@ -5,7 +5,8 @@
   --header-control-h: 40px;
   --header-item-padding: 0.5rem;
   --header-separator-gap: 0.5rem;
-  --header-sticky-top: 135px;
+  /* headBar + mainMenu (synced by footer.js; keep CSS fallback tight) */
+  --header-sticky-top: 130px;
   --header-divider-bg: #290A72;
   --header-dropdown-bg: #1e1e1e;
   --header-dropdown-item-bg: #333333;
@@ -165,7 +166,7 @@
 .headBar > .container-fluid { padding: 0 15px; }
 .headBar > .container-fluid > .row { min-height: var(--header-row-h); height: var(--header-row-h); align-items: center; flex-wrap: nowrap; }
 .headBar > .container-fluid > .row > [class*="col-"]:last-child { display: flex; justify-content: flex-end; align-items: center; }
-.mainContentWrap { padding-top: var(--header-sticky-top, 140px); }
+.mainContentWrap { padding-top: var(--header-sticky-top, 130px); }
 .mainContentWrap .home-hero-slider,
 .mainContentWrap .hero-slider-stage.slider-boxed { position: relative; z-index: 1; margin-top: 0; }
 .mainContentWrap .hero-slider-stage.slider-full-sized { position: relative; margin-top: 0; z-index: 0; }
@@ -472,7 +473,7 @@
 .settingBar .colorCol span + span { left: -12px; z-index: 0; }
 .settingBar .active .crBox1, .settingBar .active .crBox2 { border: 2px solid #fff; }
 
-.mainMenu { width: 100%; background: linear-gradient(89deg, rgba(102, 23, 96, 0.45) 0%, rgba(0, 11, 36, 0.6) 50%, rgba(14, 0, 90, 0.45) 100%); margin-top: 4px; min-height: 52px; border-radius: 4px; border: 1px solid rgba(133, 15, 131, 0.2); }
+.mainMenu { width: 100%; background: linear-gradient(89deg, rgba(102, 23, 96, 0.45) 0%, rgba(0, 11, 36, 0.6) 50%, rgba(14, 0, 90, 0.45) 100%); margin-top: 0; min-height: 52px; border-radius: 0; border: 0; border-top: 1px solid rgba(133, 15, 131, 0.2); }
 .mainMenu ul { display: flex; align-items: stretch; justify-content: space-between; overflow-x: auto; overflow-y: visible; white-space: nowrap; flex-wrap: nowrap; width: 100%; min-height: 52px; }
 .mainMenu ul li { position: relative; flex: 1 1 auto; display: flex; align-items: stretch; }
 .mainMenu ul li a {
@@ -1849,15 +1850,15 @@ body.mobile-site .favorites-game-row__thumb img {
   transition: width .3s;
   -webkit-box-orient: vertical;
   border-right: 1px solid rgba(218,209,177,0.1);
-  height: calc(100dvh - 92px);
+  height: calc(100dvh - var(--header-sticky-top, 130px));
   background: var(--body-bg);
   flex-shrink: 0;
   overflow-x: auto;
   flex-direction: column;
-  padding: 25px 10px 70px;
+  padding: 12px 10px 70px;
   position: fixed;
   left: 0;
-  top: 92px;
+  top: var(--header-sticky-top, 130px);
   z-index: 7;
 }
 .sidebarMain .sideScroll { height: 100%; padding: 0 24px; width: 240px; }
@@ -3045,10 +3046,15 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
 }
 
 @media (min-width: 1024px) {
+  :root {
+    --header-row-h: 78px;
+    /* 78px headBar + 52px mainMenu (no margin gap) */
+    --header-sticky-top: 130px;
+  }
   .headBar {
-    height: 78px !important;
+    height: auto !important;
     min-height: 78px !important;
-    max-height: 78px !important;
+    max-height: none !important;
   }
   .headBar > .container-fluid > .row {
     height: 78px !important;
@@ -3101,6 +3107,10 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
     height: 100px !important;
     max-width: 340px !important;
     max-height: 100px !important;
+  }
+  .mainMenu {
+    margin-top: 0 !important;
+    border-radius: 0 !important;
   }
 }
 

@@ -5,15 +5,15 @@
     transition: width .3s;
     -webkit-box-orient: vertical;
     border-right: 1px solid rgba(218,209,177,0.1);
-    height: calc(100dvh - 92px);
+    height: calc(100dvh - var(--header-sticky-top, 130px));
     background: var(--body-bg);
     flex-shrink: 0;
     overflow-x: auto;
     flex-direction: column;
-    padding: 25px 10px 70px;
+    padding: 12px 10px 70px;
     position: fixed;
     left: 0;
-    top: 92px;
+    top: var(--header-sticky-top, 130px);
     z-index: 7;
 }
 .sidebarMain .sideScroll {
