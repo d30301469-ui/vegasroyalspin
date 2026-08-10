@@ -242,7 +242,7 @@ return [
     'auth.terms_conditions' => 'Общие условия',
     'auth.privacy_and_terms' => 'Политика конфиденциальности и условия использования',
     'auth.register_success_title' => 'Регистрация успешна',
-    'auth.register_success_msg' => 'Аккаунт создан. Вы можете войти.',
+    'auth.register_success_msg' => 'Ваша регистрация успешно создана',
     'auth.send_link' => 'ОТПРАВИТЬ ССЫЛКУ',
     'auth.forgot_link_hint' => 'Введите эл. почту. Если аккаунт существует, ссылка для сброса будет отправлена.',
     'auth.forgot_link_caps' => 'ЗАБЫЛИ ПАРОЛЬ?',

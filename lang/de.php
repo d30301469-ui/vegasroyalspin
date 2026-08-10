@@ -255,7 +255,7 @@ return [
     'auth.terms_conditions' => 'Allgemeine Geschäftsbedingungen',
     'auth.privacy_and_terms' => 'Datenschutz und Nutzungsbedingungen',
     'auth.register_success_title' => 'Registrierung erfolgreich',
-    'auth.register_success_msg' => 'Ihr Konto wurde erstellt. Sie können sich anmelden.',
+    'auth.register_success_msg' => 'Ihre Registrierung wurde erfolgreich erstellt',
     'auth.send_link' => 'LINK SENDEN',
     'auth.forgot_link_hint' => 'E-Mail eingeben. Bei bestehendem Konto wird ein Reset-Link gesendet.',
     'auth.forgot_link_caps' => 'PASSWORT VERGESSEN?',

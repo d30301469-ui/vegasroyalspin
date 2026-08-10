@@ -795,64 +795,23 @@ if (class_exists('ApiMediaUrl', false)) {
 })();
 </script>
 
-<!-- Kayıt başarılı kutusu -->
-<style>
-    #registerSuccessModal .modal-dialog {
-        max-width: 360px;
-    }
-
-    #registerSuccessModal .register-success-box {
-        background:
-            radial-gradient(120% 120% at 0% 0%, rgba(133, 15, 131, 0.2) 0%, rgba(133, 15, 131, 0) 56%),
-            radial-gradient(125% 130% at 100% 100%, rgba(54, 17, 133, 0.2) 0%, rgba(54, 17, 133, 0) 60%),
-            linear-gradient(180deg, rgba(19, 7, 38, 0.97) 0%, rgba(11, 11, 33, 0.98) 45%, rgba(7, 7, 26, 0.99) 100%) !important;
-        border: 1px solid rgba(133, 15, 131, 0.68) !important;
-        border-radius: 14px !important;
-        box-shadow: 0 0 0 1px rgba(133, 15, 131, 0.24), 0 22px 56px rgba(0, 0, 0, 0.68), 0 0 24px rgba(133, 15, 131, 0.26) !important;
-    }
-
-    #registerSuccessModal .register-success-icon {
-        width: 54px;
-        height: 54px;
-        line-height: 52px;
-        font-size: 28px;
-        color: #67f0ae;
-        border: 1px solid rgba(50, 210, 132, 0.64);
-        background: radial-gradient(circle at 28% 24%, rgba(76, 255, 174, 0.24), rgba(31, 177, 108, 0.14));
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 8px 18px rgba(18, 102, 62, 0.28);
-    }
-
-    #registerSuccessModal .register-success-title {
-        color: #f8f4ff;
-        text-transform: uppercase;
-        letter-spacing: 0.02em;
-    }
-
-    #registerSuccessModal .register-success-text {
-        color: rgba(232, 221, 255, 0.84);
-    }
-
-    @media (max-width: 480px) {
-        #registerSuccessModal .modal-dialog {
-            max-width: calc(100vw - 22px);
-            margin: 0 auto;
-        }
-
-        #registerSuccessModal .register-success-box {
-            border-radius: 12px !important;
-        }
-    }
-</style>
-<div class="modal fade" id="registerSuccessModal" tabindex="-1" aria-hidden="true" data-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width:360px;">
-        <div class="modal-content register-success-box" style="background:radial-gradient(120% 120% at 0% 0%, rgba(133,15,131,.2) 0%, rgba(133,15,131,0) 56%), radial-gradient(125% 130% at 100% 100%, rgba(54,17,133,.2) 0%, rgba(54,17,133,0) 60%), linear-gradient(180deg, rgba(19,7,38,.97) 0%, rgba(11,11,33,.98) 45%, rgba(7,7,26,.99) 100%); border:1px solid rgba(133,15,131,.68); border-radius:14px; box-shadow:0 0 0 1px rgba(133,15,131,.24), 0 22px 56px rgba(0,0,0,.68), 0 0 24px rgba(133,15,131,.26);">
-            <div class="register-success-body" style="padding:24px 20px 22px; text-align:center;">
-                <div class="register-success-icon" style="width:54px; height:54px; margin:0 auto 12px; border-radius:50%; line-height:52px; font-size:28px; font-weight:700; color:#67f0ae; border:1px solid rgba(50,210,132,.64); background:radial-gradient(circle at 28% 24%, rgba(76,255,174,.24), rgba(31,177,108,.14)); box-shadow:inset 0 1px 0 rgba(255,255,255,.22), 0 8px 18px rgba(18,102,62,.28);">✓</div>
-                <h4 class="register-success-title" style="font-size:18px; font-weight:700; color:#f8f4ff; margin-bottom:7px; text-transform:uppercase; letter-spacing:.02em;"><?= htmlspecialchars(__('auth.register_success_title'), ENT_QUOTES, 'UTF-8') ?></h4>
-                <p class="register-success-text" style="font-size:14px; color:rgba(232,221,255,.84); margin-bottom:16px; line-height:1.4;"><?= htmlspecialchars(__('auth.register_success_msg'), ENT_QUOTES, 'UTF-8') ?></p>
-                <button type="button" class="register-primary-btn register-success-ok" data-dismiss="modal" id="registerSuccessOk"><?= htmlspecialchars(__('common.ok'), ENT_QUOTES, 'UTF-8') ?></button>
-            </div>
+<!-- Kayıt başarılı — wallet picker / CM622 kart tasarımı -->
+<div class="app-feedback-dialog-overlay wallet-picker-overlay register-success-overlay" id="registerSuccessOverlay" aria-hidden="true"></div>
+<div class="app-feedback-dialog app-feedback-dialog--cm622 wallet-picker-dialog register-success-dialog"
+     id="registerSuccessModal"
+     role="alertdialog"
+     aria-modal="true"
+     aria-hidden="true"
+     aria-labelledby="registerSuccessTitle"
+     aria-describedby="registerSuccessMessage">
+    <div class="app-feedback-dialog__card wallet-picker-card register-success-card">
+        <button type="button" class="app-feedback-dialog__dismiss" id="registerSuccessDismiss" aria-label="<?= htmlspecialchars(__('auth.close'), ENT_QUOTES, 'UTF-8') ?>">&times;</button>
+        <div class="app-feedback-dialog__icon-wrap wallet-picker-icon register-success-icon-wrap" aria-hidden="true">
+            <span class="register-success-check">✓</span>
         </div>
+        <h2 class="app-feedback-dialog__title" id="registerSuccessTitle"><?= htmlspecialchars(__('auth.register_success_title'), ENT_QUOTES, 'UTF-8') ?></h2>
+        <p class="app-feedback-dialog__message register-success-message" id="registerSuccessMessage"><?= htmlspecialchars(__('auth.register_success_msg'), ENT_QUOTES, 'UTF-8') ?></p>
+        <button type="button" class="app-feedback-dialog__primary wallet-picker-btn" id="registerSuccessOk"><?= htmlspecialchars(__('common.ok'), ENT_QUOTES, 'UTF-8') ?></button>
     </div>
 </div>
 

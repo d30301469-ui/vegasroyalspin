@@ -228,7 +228,7 @@ final class ApiHomepageSections
                 'type' => 'banner',
                 'surface' => 'all',
                 'payload' => [
-                    'image_url' => 'assets/images/androiduygulamaindir.svg',
+                    'image_url' => 'assets/images/artikcekimlerdelimitleretakilmayok.webp',
                     'alt' => 'Çekimlerinizde limitlere takılmak yok',
                     'href' => '',
                     'onclick' => '',
@@ -966,9 +966,14 @@ final class ApiHomepageSections
     private static function normalizeBannerPayload(array $payload): array
     {
         $image = trim((string) ($payload['image_url'] ?? ''));
-        $fallback = 'assets/images/androiduygulamaindir.svg';
-        if ($image === '' || self::isMissingLocalAsset($image)) {
+        $fallback = 'assets/images/artikcekimlerdelimitleretakilmayok.webp';
+        // Eski Android PWA promo SVG'si çekim banner'ı olarak kullanılmıştı; doğru kampanya görseline yönlendir.
+        $relative = ltrim(str_replace('\\', '/', $image), '/');
+        if ($relative !== '' && str_ends_with(strtolower($relative), 'androiduygulamaindir.svg')) {
             $image = $fallback;
+        }
+        if ($image === '' || self::isMissingLocalAsset($image)) {
+            $image = self::isMissingLocalAsset($fallback) ? '' : $fallback;
         }
 
         return [

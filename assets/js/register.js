@@ -1023,12 +1023,57 @@
         var form = document.getElementById('modalRegisterForm');
         var registerModal = document.getElementById('registerModal');
         var successModal = document.getElementById('registerSuccessModal');
+        var successOverlay = document.getElementById('registerSuccessOverlay');
         var submitBtn = form ? form.querySelector('#modalRegisterSubmit') : null;
         if (!form || !registerModal) return;
         var alertContainer = form.querySelector('.register-submit-alert');
 
         function isMobileSite() {
             return !!(document.body && document.body.classList.contains('mobile-site'));
+        }
+
+        function onRegisterSuccessKeydown(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                hideRegisterSuccessDialog(true);
+            }
+        }
+
+        function showRegisterSuccessDialog() {
+            if (!successModal) {
+                if (typeof window.location !== 'undefined' && window.location.reload) {
+                    window.location.reload();
+                }
+                return;
+            }
+            if (successOverlay) {
+                successOverlay.classList.add('is-open');
+                successOverlay.setAttribute('aria-hidden', 'false');
+            }
+            successModal.classList.add('is-open');
+            successModal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            document.addEventListener('keydown', onRegisterSuccessKeydown);
+            var okBtn = document.getElementById('registerSuccessOk');
+            if (okBtn && typeof okBtn.focus === 'function') {
+                try { okBtn.focus(); } catch (eFocus) { /* ignore */ }
+            }
+        }
+
+        function hideRegisterSuccessDialog(reloadAfter) {
+            document.removeEventListener('keydown', onRegisterSuccessKeydown);
+            if (successOverlay) {
+                successOverlay.classList.remove('is-open');
+                successOverlay.setAttribute('aria-hidden', 'true');
+            }
+            if (successModal) {
+                successModal.classList.remove('is-open');
+                successModal.setAttribute('aria-hidden', 'true');
+            }
+            document.body.style.overflow = '';
+            if (reloadAfter && typeof window.location !== 'undefined' && window.location.reload) {
+                window.location.reload();
+            }
         }
 
         function ensureAlertContainer() {
@@ -1196,11 +1241,7 @@
                         hideRegisterError();
                         notify('success', data.message || (window.__ ? window.__('auth.register_success', 'Kayıt başarılı.') : 'Kayıt başarılı.'), (window.__ ? window.__('auth.register_title', 'Kayıt') : 'Kayıt'));
                         hideModalByElement(registerModal);
-                        if (successModal) {
-                            showModalByElement(successModal);
-                        } else if (typeof window.location !== 'undefined' && window.location.reload) {
-                            window.location.reload();
-                        }
+                        showRegisterSuccessDialog();
                         return;
                     }
                     var msg = data.message || 'Kayıt başarısız.';
@@ -1231,13 +1272,18 @@
         });
 
         var successOk = document.getElementById('registerSuccessOk');
-        if (successOk && successModal) {
-            successOk.addEventListener('click', function () {
-                hideModalByElement(successModal);
-                if (typeof window.location !== 'undefined' && window.location.reload) {
-                    window.location.reload();
-                }
-            });
+        var successDismiss = document.getElementById('registerSuccessDismiss');
+        function onSuccessClose() {
+            hideRegisterSuccessDialog(true);
+        }
+        if (successOk) {
+            successOk.addEventListener('click', onSuccessClose);
+        }
+        if (successDismiss) {
+            successDismiss.addEventListener('click', onSuccessClose);
+        }
+        if (successOverlay) {
+            successOverlay.addEventListener('click', onSuccessClose);
         }
     }
 
