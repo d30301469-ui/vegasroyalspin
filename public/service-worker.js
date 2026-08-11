@@ -1,6 +1,6 @@
 /* vegasroyalspin PWA service worker */
 'use strict';
-const SW_VERSION = 'v29';
+const SW_VERSION = 'v30';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
