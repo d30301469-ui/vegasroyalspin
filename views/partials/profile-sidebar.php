@@ -98,7 +98,6 @@ $mq = !empty($profile_modal) ? '?modal=1' : '';
         <div class="u-i-p-a-content-bc">
           <span class="u-i-p-a-title-bc ellipsis"><?= htmlspecialchars(__('profile.total_bonus'), ENT_QUOTES, 'UTF-8') ?></span>
           <span class="u-i-p-a-amount-bc" data-cm622-balance="bonus">0 ₺</span>
-          <div class="bonus-info-section"><div><span class="ellipsis"><?= htmlspecialchars(__('profile.total_bonus'), ENT_QUOTES, 'UTF-8') ?></span><b data-cm622-balance="bonus">0.00 ₺</b></div></div>
         </div>
       </div>
     </div>

@@ -30,6 +30,11 @@ $cm622ProfileOriginalCompleteCssVer = (string)(
         ? (filemtime($assetCssDir . '/profile-cm622-original-complete.css') . '-' . filesize($assetCssDir . '/profile-cm622-original-complete.css'))
         : $assetVer
 );
+$cm622ProfileOriginalPanesCssVer = (string)(
+    file_exists($assetCssDir . '/profile-cm622-original-panes.css')
+        ? (filemtime($assetCssDir . '/profile-cm622-original-panes.css') . '-' . filesize($assetCssDir . '/profile-cm622-original-panes.css'))
+        : $assetVer
+);
 $siteComponentsCssVer = (string)(
     file_exists($assetCssDir . '/site-components.css')
         ? (filemtime($assetCssDir . '/site-components.css') . '-' . filesize($assetCssDir . '/site-components.css'))
@@ -54,6 +59,7 @@ $profileJsVer = (string)((file_exists($assetJsDir . '/profile.js') ? filemtime($
   <link href="/assets/css/profile-cm622-original-deposit.css?v=<?= htmlspecialchars($cm622ProfileOriginalDepositCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-original-filters-tables.css?v=<?= htmlspecialchars($cm622ProfileOriginalFiltersCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-original-complete.css?v=<?= htmlspecialchars($cm622ProfileOriginalCompleteCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/profile-cm622-original-panes.css?v=<?= htmlspecialchars($cm622ProfileOriginalPanesCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-sidebar.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-responsive.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
