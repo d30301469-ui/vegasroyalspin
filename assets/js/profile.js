@@ -3513,7 +3513,7 @@
             (idAttr ? ' data-dw-api-id="' + escapeHtml(idAttr) + '"' : '') +
             ' data-dw-processing="' + escapeHtml(row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlik') + '">' +
             '<div class="nav-ico-w-row-bc">' +
-            (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(label) + '</span>') +
+            (logo ? '<img alt="' + escapeHtml(label) + '" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(label) + '</span>') +
             '</div></div>';
     }
 
@@ -3537,7 +3537,7 @@
             (idAttr ? ' data-dw-api-id="' + escapeHtml(idAttr) + '"' : '') +
             ' data-dw-processing="' + escapeHtml(row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlik') + '">' +
             '<div class="nav-ico-w-row-bc">' +
-            (logo ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(label) + '</span>') +
+            (logo ? '<img alt="' + escapeHtml(label) + '" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(label) + '</span>') +
             '</div></div>';
     }
 

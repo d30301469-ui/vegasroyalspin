@@ -27,6 +27,31 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
         <div class="overlay-header"><?= $is_bilgi_page ? 'BİLGİ' : 'PARA YATIR' ?></div>
 
 <div class="dep-w-info-bc" id="depositSection" data-scroll-lock-scrollable<?= $is_bilgi_page ? ' hidden' : '' ?>>
+    <?php
+    $depositSliderSrc = '/assets/images/banner-yok-limit.webp';
+    $depositSliderLocal = BASE_PATH . $depositSliderSrc;
+    if (!is_file($depositSliderLocal)) {
+        $depositSliderSrc = '/assets/images/favicons/android-chrome-512x512.png';
+    }
+    ?>
+    <div class="slider-bc">
+        <div class="carouselWrapper carouselCountEnable carouselArrowsEnabled">
+            <div class="swiper swiper-initialized swiper-horizontal swiper-backface-hidden" dir="ltr">
+                <div class="swiper-wrapper">
+                    <div class="swiper-slide swiper-slide-active swiper-slide-next" data-swiper-slide-index="0">
+                        <div class="sdr-item-holder-bc">
+                            <a class="sdr-item-bc" aria-label="YATIRIM">
+                                <img alt="YATIRIM" loading="eager" decoding="async" src="<?= htmlspecialchars($depositSliderSrc, ENT_QUOTES, 'UTF-8') ?>" fetchpriority="high" class="sdr-image-bc" title="YATIRIM">
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="swiper-button-prev swiper-button-lock"></div>
+                <div class="swiper-button-next swiper-button-lock"></div>
+                <div class="swiper-pagination swiper-pagination-fraction swiper-pagination-horizontal swiper-pagination-lock"><span class="swiper-pagination-current">1</span> / <span class="swiper-pagination-total">1</span></div>
+            </div>
+        </div>
+    </div>
     <div tabindex="0" class="horizontal-sl-list horizontal-items-expanded" role="tablist" aria-label="Ödeme kategorileri">
         <div class="horizontal-sl-wheel" style="transform: translateX(0px);">
             <div data-id="-1" title="TÜMÜ" data-badge="" class="horizontal-sl-item-bc accordion-button all active deposit-tab" data-category="all" role="tab" aria-selected="true"><i class="horizontal-sl-icon-bc bc-i-default-icon bc-i-all"></i><p class="horizontal-sl-title-bc">TÜMÜ</p></div>

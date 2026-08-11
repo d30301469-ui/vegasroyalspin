@@ -207,46 +207,7 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .dropdownI
   display: none !important;
 }
 
-/* Kill leftover purple glow / button-card look overrides */
-#profileModal #depositGrid .m-nav-items-list-item-bc.deposit-card,
-#profileModal #withdrawGrid .m-nav-items-list-item-bc.deposit-card,
-#profileModal #depositGrid .deposit-card,
-#profileModal #withdrawGrid .deposit-card {
-  box-shadow: none !important;
-  justify-content: center !important;
-  min-height: 56px !important;
-  padding: 0 10px !important;
-  overflow: hidden !important;
-  border-radius: var(--border-radius) !important;
-}
-#profileModal #depositGrid .m-nav-items-list-item-bc.deposit-card.is-selected,
-#profileModal #depositGrid .m-nav-items-list-item-bc.deposit-card.active,
-#profileModal #withdrawGrid .m-nav-items-list-item-bc.deposit-card.is-selected,
-#profileModal #withdrawGrid .m-nav-items-list-item-bc.deposit-card.active {
-  border: 1px solid rgba(var(--header-sc), .2) !important;
-  background: rgba(var(--header-sc), .25) !important;
-  box-shadow: none !important;
-}
-#profileModal #depositGrid .payment-logo,
-#profileModal #withdrawGrid .payment-logo,
-#profileModal #depositGrid .deposit-card img,
-#profileModal #withdrawGrid .deposit-card img {
-  width: auto !important;
-  max-width: 90px !important;
-  max-height: 40px !important;
-  height: auto !important;
-  margin: 0 auto !important;
-  border-radius: 0 !important;
-  object-fit: contain !important;
-  background: transparent !important;
-  transform: none !important;
-}
-#profileModal #depositGrid .deposit-card-name,
-#profileModal #withdrawGrid .deposit-card-name,
-#profileModal #depositGrid .deposit-card-arrow,
-#profileModal #withdrawGrid .deposit-card-arrow {
-  display: none !important;
-}
+/* Payment tiles: original CM625 look lives in profile-cm622-original-deposit.css */
 #profileModal .withdraw-balance-line {
   margin-top: 8px;
   color: rgba(var(--b-sc), .75);
@@ -560,12 +521,22 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerM
   flex: 1 1 auto !important;
   min-height: 0 !important;
 }
-/* Fake promo slider used to expand to full pane height via .sdr-image-bc{height:100%} */
+/* Deposit promo slider — match original CM625 structure (do not hide) */
 #profileModal .dep-w-info-bc > .slider-bc {
-  display: none !important;
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0 0 8px;
+}
+#profileModal .dep-w-info-bc > .slider-bc .sdr-image-bc {
+  width: 100%;
+  height: auto !important;
+  max-height: 160px;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--border-radius, 4px);
 }
 #profileModal .dep-w-info-bc > .horizontal-sl-list {
-  margin-top: 15px !important;
+  margin-top: 8px !important;
 }
 #profileModal #profilePlayerMain > .my-profile-info-scroll {
   flex: 1 1 auto !important;
@@ -698,11 +669,6 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerM
 .u-i-profile-page-container a:hover,
 .u-i-profile-page-container button:hover {
   text-decoration: none !important;
-}
-#profileModal .nav-ico-w-row-bc,
-#profileModal .m-nav-items-list-item-bc .nav-ico-w-row-bc {
-  box-shadow: none !important;
-  filter: none !important;
 }
 #profileModal .form-control-bc.focused .form-control-input-stroke-bc:after,
 #profileModal .form-control-bc.valid .form-control-input-stroke-bc:after {
