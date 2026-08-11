@@ -1,14 +1,4 @@
-@font-face {
-  font-family: BetConstruct-Icons;
-  src: url("/assets/BetConstruct-Icons.CPklzI2k.eot?zgiqb0");
-  src: url("/assets/BetConstruct-Icons.CPklzI2k.eot?zgiqb0#iefix") format("embedded-opentype"),
-       url("/assets/BetConstruct-Icons.De1S5cVi.woff?zgiqb0") format("woff"),
-       url("/assets/BetConstruct-Icons.FWb_MWvm.woff2?zgiqb0") format("woff2"),
-       url("/assets/BetConstruct-Icons.BsGkJI3w.svg?zgiqb0#BetConstruct-Icons") format("svg");
-  font-weight: 400;
-  font-style: normal;
-  font-display: block;
-}
+/* BetConstruct @font-face: fonts-critical.css only */
 
 [class^="bc-i-"],
 [class*=" bc-i-"] {

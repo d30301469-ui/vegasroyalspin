@@ -4,39 +4,16 @@
  * Also lock text to system Arial so late Rubik/CM622 cannot FOUC labels.
  */
 
-/* Re-assert icon font after CM622 (which ships font-display:block). */
-@font-face {
-  font-family: BetConstruct-Icons;
-  src: url("/assets/BetConstruct-Icons.CPdFP1TD.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: optional;
-}
-
 html body .slot-page-root--cm622,
-html body .bgaming-page-root--cm622 {
+html body .bgaming-page-root--cm622,
+html body .slot-page-root--cm622 .providers-drawer-wrapper {
   font-family: Arial, Helvetica, sans-serif !important;
   --font-family: Arial, Helvetica, sans-serif !important;
 }
 
-html body .slot-page-root--cm622 .sectionTitleText,
-html body .slot-page-root--cm622 .sectionTitleTextHeading,
-html body .slot-page-root--cm622 .typography-heading,
-html body .slot-page-root--cm622 .ds-label,
-html body .slot-page-root--cm622 .ds-chip,
-html body .slot-page-root--cm622 .link__label,
-html body .slot-page-root--cm622 .provider-list-row,
-html body .slot-page-root--cm622 .casinoGameItemLabelBc,
-html body .slot-page-root--cm622 .casinoGameItemProviderBc,
-html body .bgaming-page-root--cm622 .sectionTitleText,
-html body .bgaming-page-root--cm622 .sectionTitleTextHeading,
-html body .bgaming-page-root--cm622 .typography-heading,
-html body .bgaming-page-root--cm622 .ds-label,
-html body .bgaming-page-root--cm622 .ds-chip,
-html body .bgaming-page-root--cm622 .link__label,
-html body .bgaming-page-root--cm622 .provider-list-row,
-html body .bgaming-page-root--cm622 .casinoGameItemLabelBc,
-html body .bgaming-page-root--cm622 .casinoGameItemProviderBc {
+/* Beat CM622 Rubik !important text rules without touching icon glyphs */
+html body .slot-page-root--cm622 *:not([class^="bc-i-"]):not([class*=" bc-i-"]),
+html body .bgaming-page-root--cm622 *:not([class^="bc-i-"]):not([class*=" bc-i-"]) {
   font-family: Arial, Helvetica, sans-serif !important;
 }
 

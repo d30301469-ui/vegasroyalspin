@@ -2,14 +2,7 @@
 
 @import url("/assets/css/layout-footer-icons.css");
 
-@font-face {
-  font-family: BetConstruct-Icons;
-  src: url("/assets/BetConstruct-Icons.CPdFP1TD.woff2") format("woff2"),
-       url("/assets/fonts/BetConstruct-Icons.woff") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: optional;
-}
+/* BetConstruct Icons — @font-face yalnızca assets/css/fonts-critical.css */
 
 [class^="bc-i-"],
 [class*=" bc-i-"] {

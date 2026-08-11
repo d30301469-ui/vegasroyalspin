@@ -12,15 +12,7 @@
   --header-dropdown-item-bg: #333333;
 }
 
-/* BetConstruct Icons — tek woff2; optional = FOIT yok (görünmez→görünür flash yok) */
-@font-face {
-  font-family: BetConstruct-Icons;
-  src: url("/assets/BetConstruct-Icons.CPdFP1TD.woff2") format("woff2"),
-       url("../fonts/BetConstruct-Icons.woff") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: optional;
-}
+/* BetConstruct Icons — @font-face yalnızca assets/css/fonts-critical.css */
 [class^="bc-i-"],
 [class*=" bc-i-"] {
   font-family: BetConstruct-Icons !important;

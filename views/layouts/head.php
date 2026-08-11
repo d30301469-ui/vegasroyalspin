@@ -43,6 +43,7 @@ $registerModalCssVer = (string) (file_exists($assetCssDir . '/auth-register-moda
 $loginModalCssVer = (string) (file_exists($assetCssDir . '/auth-login-modal.css') ? filemtime($assetCssDir . '/auth-login-modal.css') : $assetVer);
 $authSlidersCssVer = (string) (file_exists($assetCssDir . '/auth-sliders.css') ? filemtime($assetCssDir . '/auth-sliders.css') : $assetVer);
 $footerBcCssVer = (string) (file_exists($assetCssDir . '/layout-footer.css') ? filemtime($assetCssDir . '/layout-footer.css') : $assetVer);
+$sportsIconCssVer = (string) (file_exists($assetCssDir . '/sports-icon.css') ? filemtime($assetCssDir . '/sports-icon.css') : $assetVer);
 $homeCssVer = (string) (file_exists($assetCssDir . '/home.css') ? filemtime($assetCssDir . '/home.css') : $assetVer);
 $sliderCssPath  = BASE_PATH . '/assets/css/home-slider.css';
 $sliderJsPath   = BASE_PATH . '/assets/js/slider.js';
@@ -132,7 +133,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
 
-  <link rel="stylesheet" href="/assets/css/sports-icon.css">
+  <link rel="stylesheet" href="/assets/css/sports-icon.css?v=<?= htmlspecialchars($sportsIconCssVer, ENT_QUOTES, 'UTF-8') ?>">
   <!-- Yalnızca Casino Royal'de kullanılan font: BetConstruct-Icons (metin için sistem fontu) -->
   <link href="/assets/css/site-global.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-header.css?v=<?= htmlspecialchars($headerCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
