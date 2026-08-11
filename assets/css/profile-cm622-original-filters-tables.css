@@ -1,0 +1,432 @@
+/* Extracted from casinomilyon625 filter/table/datepicker/bet-history chunks + table aliases */
+#profileModal .u-i-common-content-textarea+.u-i-p-c-footer-bc{margin-top:10px}
+#profileModal .componentFilterWrapper-bc{width:100%;position:relative;margin-bottom:10px;z-index:10}
+#profileModal .componentFilterWrapper-bc:only-child{margin-bottom:0}
+#profileModal .componentFilterLabel-bc{width:100%;display:flex;align-items:center;height:44px;padding-inline-start:10px;padding-inline-end:11px;font-size:12px;line-height:14px;color:rgba(var(--b-sc),1);background:rgba(var(--b-sc),.15);cursor:pointer;-webkit-tap-highlight-color:transparent;position:relative;border-radius:var(--border-radius)}
+#profileModal .componentFilterLabel-bc.active{-webkit-tap-highlight-color:transparent;border-radius:var(--border-radius) var(--border-radius) 0 0}
+#profileModal .componentFilterLabel-bc.active:before{content:"";position:absolute;bottom:0;left:10px;width:calc(100% - 21px);height:1px;background:rgba(var(--b),1)}
+#profileModal .componentFilterLabel-bc.active+.componentFilterBody-bc{max-height:1000px;overflow:visible}
+#profileModal .componentFilterLabel-bc.active .componentFilterChevron-bc{transform:rotateX(180deg)}
+#profileModal .componentFilterLabel-filter-bc{flex:auto;overflow:hidden}
+#profileModal .componentFilterLabel-filter-description{color:rgba(var(--b-sc),.6);margin-top:1px}
+#profileModal .componentFilterLabel-filter-i-bc{margin-inline-end:10px;position:relative;flex-shrink:0;font-size:16px}
+#profileModal .componentFilterChevron-bc{font-size:11px;flex-shrink:0;margin-inline-start:4px}
+#profileModal .componentFilterElsWrapper-bc{width:100%}
+#profileModal .componentFilterBody-bc{position:relative;width:100%;z-index:1}
+html.is-mobile #profileModal .componentFilterBody-bc{max-height:0;overflow:hidden}
+#profileModal .componentFilterBody-bc .u-i-p-control-item-holder-bc{width:100%;padding:0}
+html.is-mobile #profileModal .componentFilterBody-bc .u-i-p-control-item-holder-bc.halfPartFilterSection{width:calc(50% - 5px)}
+#profileModal .filter-form-w-bc{padding:10px;background:rgba(var(--b-sc),.15);display:flex;justify-content:space-between}
+html.is-web #profileModal .filter-form-w-bc{flex-direction:column;border-radius:var(--border-radius)}
+html.is-mobile #profileModal .filter-form-w-bc{flex-wrap:wrap;border-radius:0 0 var(--border-radius) var(--border-radius)}
+html.is-web #profileModal .filter-form-w-bc .u-i-p-control-item-holder-bc{margin-bottom:0}
+html.is-web #profileModal .filter-form-w-bc .u-i-p-control-item-holder-bc+.u-i-p-control-item-holder-bc{margin-inline-start:5px}
+html.is-web #profileModal .componentFilterBody-content{display:flex;align-items:center}
+#profileModal .popup-holder-bc.windowed.info .u-i-p-c-footer-bc{margin-top:30px}
+#profileModal .forcePasswordPopup.windowed.info .u-i-p-c-footer-bc{margin-top:20px}
+#profileModal .bet-history-t-b-row-hk-bc .bet-history-status{display:flex;align-items:center;justify-content:flex-end;font-size:12px;text-transform:uppercase;text-align:end}
+#profileModal .betstatus-content .bet-history-t-b-row-hk-bc .bet-history-bonus-icon.bc-i-bonus+i{margin-inline-start:0}
+#profileModal .u-i-e-p-p-content-bc>form+.componentFilterWrapper-bc{margin-top:20px}
+#profileModal .stake-earn-content .historyList-table-details{width:100%}
+#profileModal .u-i-page-content .cashback-history-table{margin-top:-2px}
+#profileModal .u-i-page-content .u-i-page-table{will-change:scroll-position;overflow-x:auto;overflow-y:auto}
+html.is-mobile #profileModal .u-i-page-content .u-i-page-table{scrollbar-width:none;-webkit-overflow-scrolling:touch}
+html.is-mobile #profileModal .u-i-page-content .u-i-page-table::-webkit-scrollbar{display:none}
+#profileModal .u-i-page-content .cashback-table-header p{display:flex;align-items:center;justify-content:center}
+#profileModal .u-i-page-content .cashback-table-header-text{font-size:14px;margin-inline-end:6px}
+#profileModal .u-i-page-content .cashback-table-header-text:active{color:rgba(var(--b-sc),.9)}
+html.is-web #profileModal .u-i-page-content .cashback-table-header-text{cursor:pointer}
+#profileModal .profileDepositWrapper .u-i-p-c-footer-bc{margin-top:4px}
+#profileModal .userProfileSection-0>div>div:not(.react-datepicker__tab-loop){width:100%}
+#profileModal [dir=rtl] .userProfileSection-0 .react-datepicker__tab-loop .react-datepicker-popper{transform:translateY(52px)!important}
+#profileModal [dir=ltr] .userProfileSection-0 .react-datepicker__tab-loop .react-datepicker__triangle{left:auto!important;right:25px!important}
+#profileModal [dir=rtl] .userProfileSection-0 .react-datepicker__tab-loop .react-datepicker__triangle{left:25px!important}
+#profileModal .u-i-edit-verify-account-page-bc .historyList-table-details{height:auto}
+#profileModal .verify-form .u-i-p-c-footer-bc-verify{margin-inline-start:20px;min-width:100px}
+#profileModal .u-i-p-c-footer-bc{margin-top:20px}
+#profileModal .bonus-request .u-i-p-c-footer-bc{width:100%;display:flex;justify-content:flex-end;order:4}
+#profileModal .bonus-request .u-i-p-c-footer-bc button{width:auto;min-width:195px}
+#profileModal [dir=rtl] .bonus-request .react-datepicker-popper[data-placement^=bottom]{transform:none!important;padding-top:62px}
+#profileModal .bonus-request .react-datepicker-popper[data-placement^=bottom] .react-datepicker .react-datepicker__triangle{transform:none!important}
+#profileModal [dir=ltr] .bonus-request .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle,#profileModal [dir=ltr] .bonus-request .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle{left:auto!important;right:24px}
+#profileModal [dir=rtl] .bonus-request .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle,#profileModal [dir=rtl] .bonus-request .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle{left:24px!important}
+#profileModal .limits-history .historyList-tbody>div:nth-child(4n-1) .historyListEl-list-item{background:rgba(var(--b-sc),.15)}
+#profileModal .limits-history .historyList-table-details .historyList-thead .historyListEl-list-item:last-child,#profileModal .limits-history .historyList-table-details .historyList-tbody .historyListEl-list-item:last-child{flex-shrink:0;width:42px}
+#profileModal .limits-history .limits-filter-bc+.historyList-table-details>.historyList-tbody>.historyListEl .historyListEl-list-item:last-child{text-align:center;border-inline-start:1px solid rgba(var(--b),1);cursor:pointer}
+#profileModal .exchangeShop-open-item .historyList-table-details{padding:10px;background:rgba(var(--b-sc),.05);border-bottom-left-radius:var(--border-radius);border-bottom-right-radius:var(--border-radius)}
+#profileModal .bet-history-t-b-row-hk-bc{position:relative;display:flex;align-items:center}
+#profileModal .bet-history-t-b-r-cell-hk-bc{display:flex;align-items:center;overflow:hidden}
+#profileModal .betHistoryListEl-list-item-actions .bet-history-social{margin-inline-start:10px;gap:10px}
+#profileModal .betHistoryListEl-list-item-actions .bet-history-social i{margin-inline-start:0}
+#profileModal .betHistoryBBEventsContainer .historyList-thead{background:none;box-shadow:none}
+#profileModal .betHistoryBBEventsContainer .historyList-thead .historyListEl-list-item{background:none}
+#profileModal .betHistoryListEl{display:flex;width:100%;border-radius:var(--border-radius);overflow:hidden;border-bottom:1px solid rgba(var(--b),1)}
+#profileModal .betHistoryListEl-list-item{display:flex;flex-direction:column;justify-content:center;font-size:12px;padding:8px;color:rgba(var(--b-sc),.65);white-space:break-spaces}
+#profileModal .betHistoryListEl-list-item .bet-history-possible-win{margin-top:2px}
+#profileModal .betHistoryListEl-list-item:first-child{width:22%}
+@media only screen and (max-width: 1366px){#profileModal .betHistoryListEl-list-item:first-child{width:26%}}
+#profileModal .betHistoryListEl-list-item:nth-child(2){width:13%}
+#profileModal .betHistoryListEl-list-item:nth-child(3){width:9%}
+#profileModal .betHistoryListEl-list-item:nth-child(4):not(:last-child){width:10%}
+#profileModal .betHistoryListEl-list-item:nth-child(5):not(:last-child){width:14%}
+@media only screen and (max-width: 1366px){#profileModal .betHistoryListEl-list-item:nth-child(5):not(:last-child){width:12%}}
+#profileModal .betHistoryListEl-list-item:nth-child(5):nth-last-child(2){width:42%}
+@media only screen and (max-width: 1366px){#profileModal .betHistoryListEl-list-item:nth-child(5):nth-last-child(2){width:36%}}
+#profileModal .betHistoryListEl-list-item:nth-child(6):not(:last-child){width:28%;position:relative}
+@media only screen and (max-width: 1366px){#profileModal .betHistoryListEl-list-item:nth-child(6):not(:last-child){width:24%}}
+#profileModal .betHistoryListEl-list-item:last-child{width:4%;text-align:center;cursor:pointer}
+@media only screen and (max-width: 1366px){#profileModal .betHistoryListEl-list-item:last-child{width:6%}}
+#profileModal .betHistoryList-thead{display:flex;flex-shrink:0;background:rgba(var(--b),1);box-shadow:0 2px rgba(var(--b),1);margin-bottom:2px;z-index:9}
+#profileModal .betHistoryList-thead .betHistoryListEl-list-item{color:rgba(var(--b-sc),.8);background:rgba(var(--b-sc),.15);border:none;text-transform:capitalize}
+#profileModal .betHistoryList-tbody .betHistoryListEl-list-item{background:rgba(var(--b-sc),.1)}
+#profileModal .betHistoryList-tbody .betHistoryListEl-list-item:nth-child(4),#profileModal .betHistoryList-tbody .betHistoryListEl-list-item:nth-child(5),#profileModal .betHistoryList-tbody .betHistoryListEl-list-item:nth-child(6){text-align:center}
+#profileModal .betHistoryList-tbody .betHistoryListEl-list-item+.betHistoryListEl-list-item{border-inline-start:1px solid rgba(var(--b),1)}
+@media screen and (max-width: 1366px){#profileModal .betHistoryList-tbody .bet-history-t-b-row-hk-bc{flex-wrap:wrap;padding-inline-start:0}}
+#profileModal .betHistoryList-tbody .bet-history-t-b-row-hk-bc i{font-size:16px;transition:color var(--default-transition-duration) ease;cursor:pointer}
+#profileModal .betHistoryList-tbody .bet-history-t-b-row-hk-bc i:hover{color:rgba(var(--b-sc),1)}
+#profileModal .betHistoryList-tbody .bet-history-t-b-row-hk-bc i.bc-i-bonus{color:rgba(var(--hero),1)}
+#profileModal .betHistoryList-tbody .bet-history-t-b-row-hk-bc:not(.bet-history-actions){width:100%}
+#profileModal .betHistoryList-tbody .bet-history-t-b-row-hk-bc.bet-history-actions{align-items:center}
+#profileModal .betHistoryList-tbody .bet-history-t-b-row-hk-bc.bet-history-actions i+i{margin-inline-start:10px}
+#profileModal .betHistoryList-tbody .betHistoryListEl-list-item-actions{flex-direction:column}
+#profileModal .betHistoryList-tbody .bet-history-actions+.bc-loader{margin-inline-start:0;margin-top:10px}
+#profileModal .betHistoryList-tbody .bet-history-possible-win-block,#profileModal .betHistoryList-tbody .bet-history-stake-odds{flex-direction:column;justify-content:center;align-items:center}
+#profileModal .betHistoryList-tbody .bet-history-possible-win-block+.bet-history-possible-win-block{margin-top:5px}
+#profileModal .betHistoryList-tbody .bet-history-freebet{justify-content:center}
+#profileModal .betHistoryList-tbody .bet-history-actions:not(:empty)+.bet-history-social{margin-top:10px}
+#profileModal .betHistoryList-tbody .bet-history-social{width:100%;margin-inline-start:0}
+#profileModal .betHistoryList-tbody .bet-history-social .social-icon{width:20px;height:20px;font-size:11px}
+#profileModal .betHistoryList-tbody i.bet-history-info-icon{width:25px;height:25px;margin-inline-start:6px;color:rgba(var(--b-sc),.6);font-size:15px}
+@media screen and (max-width: 1366px){#profileModal .betHistoryList-tbody i.bet-history-info-icon{margin-inline-end:0}}
+#profileModal .betHistoryList-tbody .bet-history-cashout{flex:auto;display:flex;align-items:center;overflow:hidden}
+#profileModal .betHistoryList-tbody .bet-history-cashout:not(:only-child){padding-inline-end:10px;margin-inline-end:10px;border-inline-end:1px solid rgba(var(--b-sc),.1)}
+@media screen and (max-width: 1366px){#profileModal .betHistoryList-tbody .bet-history-cashout:not(:only-child){border-inline-end:none;padding-inline-end:0;margin-inline-end:0}}
+@media screen and (max-width: 1366px){#profileModal .betHistoryList-tbody .bet-history-cashout{justify-content:center;width:100%;margin-bottom:10px}}
+#profileModal .betHistoryList-tbody .bet-history-cashout-btn{padding:0 5px}
+@media screen and (max-width: 1366px){#profileModal .betHistoryList-tbody .bet-history-cashout-btn{font-size:10px}#profileModal .betHistoryList-tbody .bet-history-cashout-btn:only-child{width:100%;margin-inline-end:0}}
+#profileModal .betHistoryList-tbody .bet-history-cashout-btn-money{flex-shrink:0;margin-inline-start:5px}
+#profileModal .betHistoryList-tbody .bet-history-actions .bet-history-main-actions:only-child{width:100%;text-align:end}
+#profileModal .betHistoryListEl-types{display:flex;align-items:center}
+#profileModal .betHistoryListEl-list-item-actions{width:100%;display:flex}
+#profileModal .betHistoryListEl-list-item-actions .bet-history-social{flex-wrap:wrap}
+#profileModal .betHistoryListElId{display:flex;align-items:center}
+#profileModal .betHistoryListElId>i{flex-shrink:0;font-size:18px;color:rgba(var(--b-sc),.6);margin-inline-end:10px}
+#profileModal .bethistoryListEl-item-status{display:flex;align-items:center}
+#profileModal .bethistoryListEl-item-status:hover .bet-draw-icon{transform:scale(1.1)}
+#profileModal .bethistoryListEl-status .betHistoryListEl-info{font-size:12px;line-height:14px;overflow:hidden}
+#profileModal .bethistoryListEl-status .betHistoryListEl-info>p{display:flex;align-items:center}
+#profileModal .open-bets-page .betHistoryListEl-list-item:nth-child(2){padding:6px}
+#profileModal .open-bets-page .betHistoryListEl-list-item:nth-child(2) .bet-history-bonus-bet-icons{justify-content:center}
+#profileModal .open-bets-page .betHistoryListEl-list-item:nth-child(2) .bet-history-info-title-block span{max-width:100%}
+#profileModal .open-bets-page .betHistoryListEl-list-item:nth-child(2) .bet-history-info-title-block{align-items:center}
+#profileModal .open-bets-page .betHistoryListEl-list-item:nth-child(2) .bet-history-info-block{max-width:100%}
+#profileModal .open-bets-page .betHistoryListEl-list-item:nth-child(2) .betHistoryListEl-types{flex-direction:column;gap:6px}
+#profileModal .dataListEl-open .bet-history-t-holder-hk-bc{display:flex;position:relative}
+#profileModal .dataListEl-open .bet-history-t-holder-hk-bc:not(:last-child){padding:10px}
+#profileModal .dataListEl-open .bet-history-t-holder-hk-bc+.bet-history-t-holder-hk-bc:not(:last-child):after{content:"";background:rgba(var(--b-sc),.05);width:calc(100% - 20px);height:1px;position:absolute;left:0;right:0;top:0;margin:auto}
+#profileModal .details-table-thead{display:flex;background:rgba(var(--b-sc),.1);color:rgba(var(--b-sc),.8);border-radius:4px;padding:8px 10px;margin-bottom:2px}
+#profileModal .details-table-thead>div{display:flex;width:100%;word-break:break-word}
+#profileModal .details-table-tbody-info{display:flex;color:rgba(var(--b-sc),.6);background:rgba(var(--b-sc),.05);border-radius:4px;padding:8px 10px}
+#profileModal .details-table-tbody-info>div{display:flex;width:100%}
+#profileModal .details-table-tbody-info{margin-top:1px}
+#profileModal .details-table-result{display:flex;margin-top:5px}
+#profileModal .details-table-result .bet-history-stake-odds{overflow:hidden}
+#profileModal .details-table-result>div{flex-direction:row;width:100%;color:rgba(var(--b-sc),.6)}
+#profileModal .details-table-result .bet-history-possible-win{margin:0 5px;flex-shrink:0}
+#profileModal .open-bets .bet-history-t-b-row-hk-bc>i,#profileModal .betstatus-content .bet-history-t-b-row-hk-bc>i{cursor:pointer}
+#profileModal .open-bets .bet-history-t-b-row-hk-bc>i+i,#profileModal .betstatus-content .bet-history-t-b-row-hk-bc>i+i{transition:color var(--default-transition-duration) ease;margin-inline-start:12px}
+#profileModal .open-bets .bet-history-t-b-row-hk-bc>i:hover,#profileModal .betstatus-content .bet-history-t-b-row-hk-bc>i:hover{color:rgba(var(--b-sc),1)}
+#profileModal .open-bets .bet-history-t-b-r-cell-hk-bc:nth-child(2),#profileModal .betstatus-content .bet-history-t-b-r-cell-hk-bc:nth-child(2){flex:auto;overflow:hidden;margin-inline-start:10px}
+#profileModal .open-bets .bet-history-t-holder-hk-bc,#profileModal .betstatus-content .bet-history-t-holder-hk-bc{padding:10px;border-radius:var(--border-radius);background:rgba(var(--b-sc),.1);margin-bottom:10px}
+#profileModal .open-bets .bet-history-t-holder-hk-bc>div+div,#profileModal .betstatus-content .bet-history-t-holder-hk-bc>div+div{margin-top:10px;padding-top:10px;border-top:1px solid rgba(var(--b-sc),.1)}
+#profileModal .open-bets .bet-history-t-holder-hk-bc .competition-wrapper-bc,#profileModal .betstatus-content .bet-history-t-holder-hk-bc .competition-wrapper-bc{box-shadow:none}
+#profileModal .open-bets .bet-history-t-holder-hk-bc .competition-header-bc,#profileModal .betstatus-content .bet-history-t-holder-hk-bc .competition-header-bc{border-radius:var(--border-radius) var(--border-radius) 0 0}
+#profileModal .open-bets .bet-history-t-holder-hk-bc .competition-header-bc:only-child,#profileModal .betstatus-content .bet-history-t-holder-hk-bc .competition-header-bc:only-child{border-radius:var(--border-radius)}
+#profileModal .open-bets .bet-history-t-holder-hk-bc .competition-header-bc+.bet-history-t-holder-hk-bc,#profileModal .betstatus-content .bet-history-t-holder-hk-bc .competition-header-bc+.bet-history-t-holder-hk-bc{border-radius:0 0 var(--border-radius) var(--border-radius)}
+#profileModal .userProfits-container .betHistoryListEl-list-item{text-align:center}
+#profileModal .userProfits-container .betHistoryListEl-list-item:nth-child(2){width:24%}
+#profileModal .userProfits-container .betHistoryListEl-list-item:last-child{width:22%}
+@media only screen and (max-width: 1366px){#profileModal .userProfits-container .betHistoryListEl-list-item:last-child{width:18%}}
+#profileModal .userProfits-container .casinoProfits-table .betHistoryListEl-list-item:nth-child(3){width:22%}
+#profileModal .bet-share-popup .betHistoryList-tbody .betHistoryListEl-list-item:last-child,#profileModal .bet-share-popup .betHistoryList-tbody .betHistoryListEl-list-item:nth-last-child(2){display:none}
+#profileModal .bet-share-popup .betHistoryListEl-list-item:first-child{width:30%}
+#profileModal .bet-share-popup .betHistoryListEl-list-item:nth-child(2){width:20%}
+#profileModal .bet-share-popup .betHistoryListEl-list-item:nth-child(4){width:15%}
+#profileModal .bet-share-popup .betHistoryListEl-list-item:nth-child(5){width:25%}
+#profileModal .historyList-table-details{height:100%;will-change:scroll-position;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#profileModal .historyList-thead{display:flex;position:sticky;top:0;background:rgba(var(--b),1);box-shadow:0 2px rgba(var(--b),1);margin-bottom:2px;z-index:9;text-transform:capitalize}
+#profileModal .historyList-thead .historyListEl-list-item{color:rgba(var(--b-sc),.8);background:rgba(var(--b-sc),.1)}
+#profileModal .historyList-tbody>.historyListEl .historyListEl-list-item{flex-direction:column;justify-content:center;background:rgba(var(--b-sc),.1)}
+#profileModal .historyList-tbody>.historyListEl+.historyListEl{margin-top:1px}
+#profileModal .historyList-tbody .historyListEl-list-item{color:rgba(var(--b-sc),1)}
+#profileModal .withdrawLayout .historyList-table-details{overflow-x:auto}
+#profileModal .withdrawLayout .historyList-thead,#profileModal .withdrawLayout .historyList-tbody{min-width:910px}
+#profileModal .react-datepicker-wrapper,#profileModal .react-datepicker__input-container{display:block;width:100%}
+#profileModal .react-datepicker__input-container .form-control-input-bc:read-only{color:rgba(var(--b-sc),.9);background:rgba(var(--b-sc),.15)}
+#profileModal .react-datepicker__input-container .form-control-input-bc:read-only~.form-control-title-bc{color:rgba(var(--b-sc),.4)}
+#profileModal .react-datepicker__input-container .form-control-input-bc:read-only::placeholder{color:rgba(var(--b-sc),.9)}
+#profileModal .react-datepicker__current-month.react-datepicker__current-month--hasYearDropdown.react-datepicker__current-month--hasMonthDropdown{display:none}
+#profileModal .react-datepicker__tab-loop .react-datepicker{background:rgba(var(--b),1);border-color:rgba(var(--b-sc),.3);border-radius:var(--border-radius)}
+#profileModal .react-datepicker__tab-loop .react-datepicker-popper{z-index:2}
+#profileModal .react-datepicker__tab-loop .react-datepicker__header{background:rgba(var(--b-sc),.1);border-bottom-color:rgba(var(--b-sc),.1);border-top-left-radius:var(--border-radius);border-top-right-radius:var(--border-radius)}
+#profileModal .react-datepicker__tab-loop select{height:28px;padding:0 4px;color:rgba(var(--b-sc),.7);background:rgba(var(--b-sc),.15);border:none;border-radius:var(--border-radius)}
+#profileModal .react-datepicker__tab-loop .react-datepicker__navigation{top:6px}
+#profileModal .react-datepicker__tab-loop .react-datepicker__month-read-view--down-arrow,#profileModal .react-datepicker__tab-loop .react-datepicker__month-year-read-view--down-arrow,#profileModal .react-datepicker__tab-loop .react-datepicker__navigation-icon:before,#profileModal .react-datepicker__tab-loop .react-datepicker__year-read-view--down-arrow{border-color:rgba(var(--b-sc),.3)}
+#profileModal .react-datepicker__tab-loop .react-datepicker__navigation--next{border-left-color:rgba(var(--b-sc),.3)}
+#profileModal .react-datepicker__tab-loop .react-datepicker__day-name,#profileModal .react-datepicker__tab-loop .react-datepicker__day,#profileModal .react-datepicker__tab-loop .react-datepicker__time-name{color:rgba(var(--b-sc),1)}
+#profileModal .react-datepicker__tab-loop .react-datepicker__day--disabled,#profileModal .react-datepicker__tab-loop .react-datepicker__month-text--disabled,#profileModal .react-datepicker__tab-loop .react-datepicker__quarter-text--disabled,#profileModal .react-datepicker__tab-loop .react-datepicker__year-text--disabled{color:rgba(var(--b-sc),.4)}
+#profileModal .react-datepicker__tab-loop .react-datepicker__day--selected,#profileModal .react-datepicker__tab-loop .react-datepicker__day--in-selecting-range,#profileModal .react-datepicker__tab-loop .react-datepicker__day--in-range,#profileModal .react-datepicker__tab-loop .react-datepicker__month-text--selected,#profileModal .react-datepicker__tab-loop .react-datepicker__month-text--in-selecting-range,#profileModal .react-datepicker__tab-loop .react-datepicker__month-text--in-range,#profileModal .react-datepicker__tab-loop .react-datepicker__quarter-text--selected,#profileModal .react-datepicker__tab-loop .react-datepicker__quarter-text--in-selecting-range,#profileModal .react-datepicker__tab-loop .react-datepicker__quarter-text--in-range,#profileModal .react-datepicker__tab-loop .react-datepicker__year-text--selected,#profileModal .react-datepicker__tab-loop .react-datepicker__year-text--in-selecting-range,#profileModal .react-datepicker__tab-loop .react-datepicker__year-text--in-range,#profileModal .react-datepicker__tab-loop .react-datepicker__day--keyboard-selected,#profileModal .react-datepicker__tab-loop .react-datepicker__month-text--keyboard-selected,#profileModal .react-datepicker__tab-loop .react-datepicker__quarter-text--keyboard-selected,#profileModal .react-datepicker__tab-loop .react-datepicker__year-text--keyboard-selected{color:rgba(var(--hero-sc),1);background:rgba(var(--hero),1)}
+#profileModal .react-datepicker__tab-loop .react-datepicker__day:hover{color:rgba(var(--hero-sc),1)}
+#profileModal .react-datepicker__tab-loop .react-datepicker__day--selected:hover{color:rgba(var(--hero-sc),1);background:rgba(var(--hero),1)}
+html.is-web #profileModal .react-datepicker .react-datepicker__day:hover,html.is-web #profileModal .react-datepicker .react-datepicker__month-text:hover,html.is-web #profileModal .react-datepicker .react-datepicker__quarter-text:hover,html.is-web #profileModal .react-datepicker .react-datepicker__year-text:hover{background-color:rgba(var(--b-sc),.5)}
+html.is-web #profileModal .react-datepicker__day--keyboard-selected.react-datepicker__day--today:hover,html.is-web #profileModal .react-datepicker__month-text--keyboard-selected:hover,html.is-web #profileModal .react-datepicker__quarter-text--keyboard-selected:hover,html.is-web #profileModal .react-datepicker__year-text--keyboard-selected:hover{color:rgba(var(--hero-sc),1);background-color:rgba(var(--hero),1)}
+#profileModal [dir=rtl] .react-datepicker-popper[data-placement=bottom-end] .react-datepicker__triangle,#profileModal [dir=rtl] .react-datepicker-popper[data-placement=top-end] .react-datepicker__triangle{left:50px;right:auto}
+#profileModal .react-datepicker-web{display:flex;align-items:center}
+#profileModal .react-datepicker-web .multi-select-label-bc{padding:8px}
+#profileModal .react-datepicker-web>i{flex-shrink:0;width:28px;height:28px;text-align:center;color:rgba(var(--b-sc),.3);line-height:28px;cursor:pointer}
+#profileModal [dir=rtl] .react-datepicker-web>i.bc-i-small-arrow-left,#profileModal [dir=rtl] .react-datepicker-web>i.bc-i-small-arrow-right{transform:rotate(180deg)}
+#profileModal .react-datepicker-web .form-control-bc+.form-control-bc{margin-inline-start:4px}
+#profileModal .react-datepicker-months{width:109px}
+#profileModal .react-datepicker__week .react-datepicker__day--outside-month{opacity:0;pointer-events:none}
+#profileModal .e-sports .react-datepicker-popper[data-placement=bottom-end] .react-datepicker__triangle,#profileModal .e-sports .react-datepicker-popper[data-placement=top-end] .react-datepicker__triangle,#profileModal .messageBoxWrapper-bc .react-datepicker-popper[data-placement=bottom-end] .react-datepicker__triangle,#profileModal .messageBoxWrapper-bc .react-datepicker-popper[data-placement=top-end] .react-datepicker__triangle{transform:none!important;left:auto!important}
+#profileModal [dir=ltr] .e-sports .react-datepicker-popper[data-placement=bottom-end] .react-datepicker__triangle,#profileModal [dir=ltr] .e-sports .react-datepicker-popper[data-placement=top-end] .react-datepicker__triangle,#profileModal [dir=ltr] .messageBoxWrapper-bc .react-datepicker-popper[data-placement=bottom-end] .react-datepicker__triangle,#profileModal [dir=ltr] .messageBoxWrapper-bc .react-datepicker-popper[data-placement=top-end] .react-datepicker__triangle{right:24px!important}
+#profileModal [dir=rtl] .e-sports .react-datepicker-popper[data-placement=bottom-end] .react-datepicker__triangle,#profileModal [dir=rtl] .e-sports .react-datepicker-popper[data-placement=top-end] .react-datepicker__triangle,#profileModal [dir=rtl] .messageBoxWrapper-bc .react-datepicker-popper[data-placement=bottom-end] .react-datepicker__triangle,#profileModal [dir=rtl] .messageBoxWrapper-bc .react-datepicker-popper[data-placement=top-end] .react-datepicker__triangle{left:24px!important}
+#profileModal .react-datepicker__day-names .react-datepicker__day-name,#profileModal .react-datepicker__day-names .react-datepicker__day,#profileModal .react-datepicker__day-names .react-datepicker__time-name,#profileModal .react-datepicker__week .react-datepicker__day-name,#profileModal .react-datepicker__week .react-datepicker__day,#profileModal .react-datepicker__week .react-datepicker__time-name{width:1.63rem;line-height:1.63rem}
+html.is-web #profileModal .react-datepicker__month{padding-bottom:32px}
+html.is-mobile #profileModal .react-datepicker__month{padding-bottom:28px}
+#profileModal .react-datepicker__year-read-view--down-arrow,#profileModal .react-datepicker__month-read-view--down-arrow,#profileModal .react-datepicker__month-year-read-view--down-arrow,#profileModal .react-datepicker__navigation-icon:before{border-color:#ccc;border-style:solid;border-width:3px 3px 0 0;content:"";display:block;height:9px;position:absolute;top:6px;width:9px}
+#profileModal .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle,#profileModal .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle{margin-left:-4px;position:absolute;width:0}
+#profileModal .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:before,#profileModal .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:before,#profileModal .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:after,#profileModal .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:after{box-sizing:content-box;position:absolute;border:8px solid transparent;height:0;width:1px;content:"";z-index:-1;border-width:8px;left:-8px}
+#profileModal .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:before,#profileModal .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:before{border-bottom-color:#aeaeae}
+#profileModal .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle{top:0;margin-top:-8px}
+#profileModal .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:before,#profileModal .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:after{border-top:none;border-bottom-color:#f0f0f0}
+#profileModal .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:after{top:0}
+#profileModal .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:before{top:-1px;border-bottom-color:#aeaeae}
+#profileModal .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle{bottom:0;margin-bottom:-8px}
+#profileModal .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:before,#profileModal .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:after{border-bottom:none;border-top-color:#fff}
+#profileModal .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:after{bottom:0}
+#profileModal .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:before{bottom:-1px;border-top-color:#aeaeae}
+#profileModal .react-datepicker-wrapper{display:inline-block;padding:0;border:0;width:100%}
+#profileModal .react-datepicker{font-family:Helvetica Neue,helvetica,arial,sans-serif;font-size:.8rem;background-color:#fff;color:#000;border:1px solid #aeaeae;border-radius:.3rem;display:inline-block;position:relative}
+#profileModal .react-datepicker--time-only .react-datepicker__triangle{left:35px}
+#profileModal .react-datepicker--time-only .react-datepicker__time-container{border-left:0}
+#profileModal .react-datepicker--time-only .react-datepicker__time,#profileModal .react-datepicker--time-only .react-datepicker__time-box{border-bottom-left-radius:.3rem;border-bottom-right-radius:.3rem}
+#profileModal .react-datepicker__triangle{position:absolute;left:50px}
+#profileModal .react-datepicker-popper{z-index:1}
+#profileModal .react-datepicker-popper[data-placement^=bottom]{padding-top:10px}
+#profileModal .react-datepicker-popper[data-placement=bottom-end] .react-datepicker__triangle,#profileModal .react-datepicker-popper[data-placement=top-end] .react-datepicker__triangle{left:auto;right:50px}
+#profileModal .react-datepicker-popper[data-placement^=top]{padding-bottom:10px}
+#profileModal .react-datepicker-popper[data-placement^=right]{padding-left:8px}
+#profileModal .react-datepicker-popper[data-placement^=right] .react-datepicker__triangle{left:auto;right:42px}
+#profileModal .react-datepicker-popper[data-placement^=left]{padding-right:8px}
+#profileModal .react-datepicker-popper[data-placement^=left] .react-datepicker__triangle{left:42px;right:auto}
+#profileModal .react-datepicker__header{text-align:center;background-color:#f0f0f0;border-bottom:1px solid #aeaeae;border-top-left-radius:.3rem;padding:8px 0;position:relative}
+#profileModal .react-datepicker__header--time{padding-bottom:8px;padding-left:5px;padding-right:5px}
+#profileModal .react-datepicker__header--time:not(.react-datepicker__header--time--only){border-top-left-radius:0}
+#profileModal .react-datepicker__header:not(.react-datepicker__header--has-time-select){border-top-right-radius:.3rem}
+#profileModal .react-datepicker__year-dropdown-container--select,#profileModal .react-datepicker__month-dropdown-container--select,#profileModal .react-datepicker__month-year-dropdown-container--select,#profileModal .react-datepicker__year-dropdown-container--scroll,#profileModal .react-datepicker__month-dropdown-container--scroll,#profileModal .react-datepicker__month-year-dropdown-container--scroll{display:inline-block;margin:0 2px}
+#profileModal .react-datepicker__current-month,#profileModal .react-datepicker-time__header,#profileModal .react-datepicker-year-header{margin-top:0;color:#000;font-weight:700;font-size:.944rem}
+#profileModal .react-datepicker-time__header{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+#profileModal .react-datepicker__navigation{align-items:center;background:none;display:flex;justify-content:center;text-align:center;cursor:pointer;position:absolute;top:2px;padding:0;border:none;z-index:1;height:32px;width:32px;text-indent:-999em;overflow:hidden}
+#profileModal .react-datepicker__navigation--previous{left:2px}
+#profileModal .react-datepicker__navigation--next{right:2px}
+#profileModal .react-datepicker__navigation--next--with-time:not(.react-datepicker__navigation--next--with-today-button){right:85px}
+#profileModal .react-datepicker__navigation--years{position:relative;top:0;display:block;margin-left:auto;margin-right:auto}
+#profileModal .react-datepicker__navigation--years-previous{top:4px}
+#profileModal .react-datepicker__navigation--years-upcoming{top:-4px}
+#profileModal .react-datepicker__navigation:hover *:before{border-color:#a6a6a6}
+#profileModal .react-datepicker__navigation-icon{position:relative;top:-1px;font-size:20px;width:0}
+#profileModal .react-datepicker__navigation-icon--next{left:-2px}
+#profileModal .react-datepicker__navigation-icon--next:before{transform:rotate(45deg);left:-7px}
+#profileModal .react-datepicker__navigation-icon--previous{right:-2px}
+#profileModal .react-datepicker__navigation-icon--previous:before{transform:rotate(225deg);right:-7px}
+#profileModal .react-datepicker__month-container{float:left}
+#profileModal .react-datepicker__year{margin:.4rem;text-align:center}
+#profileModal .react-datepicker__year-wrapper{display:flex;flex-wrap:wrap;max-width:180px}
+#profileModal .react-datepicker__year .react-datepicker__year-text{display:inline-block;width:4rem;margin:2px}
+#profileModal .react-datepicker__month{margin:.4rem;text-align:center}
+#profileModal .react-datepicker__month .react-datepicker__month-text,#profileModal .react-datepicker__month .react-datepicker__quarter-text{display:inline-block;width:4rem;margin:2px}
+#profileModal .react-datepicker__input-time-container{clear:both;width:100%;float:left;margin:5px 0 10px 15px;text-align:left}
+#profileModal .react-datepicker__input-time-container .react-datepicker-time__caption,#profileModal .react-datepicker__input-time-container .react-datepicker-time__input-container{display:inline-block}
+#profileModal .react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input{display:inline-block;margin-left:10px}
+#profileModal .react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input{width:auto}
+#profileModal .react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]::-webkit-inner-spin-button,#profileModal .react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+#profileModal .react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]{-moz-appearance:textfield}
+#profileModal .react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__delimiter{margin-left:5px;display:inline-block}
+#profileModal .react-datepicker__time-container{float:right;border-left:1px solid #aeaeae;width:85px}
+#profileModal .react-datepicker__time-container--with-today-button{display:inline;border:1px solid #aeaeae;border-radius:.3rem;position:absolute;right:-72px;top:0}
+#profileModal .react-datepicker__time-container .react-datepicker__time{position:relative;background:#fff;border-bottom-right-radius:.3rem}
+#profileModal .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box{width:85px;overflow-x:hidden;margin:0 auto;text-align:center;border-bottom-right-radius:.3rem}
+#profileModal .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list{list-style:none;margin:0;height:calc(195px + .85rem);overflow-y:scroll;padding-right:0;padding-left:0;width:100%;box-sizing:content-box}
+#profileModal .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item{height:30px;padding:5px 10px;white-space:nowrap}
+#profileModal .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover{cursor:pointer;background-color:#f0f0f0}
+#profileModal .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected{background-color:#216ba5;color:#fff;font-weight:700}
+#profileModal .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected:hover{background-color:#216ba5}
+#profileModal .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--disabled{color:#ccc}
+#profileModal .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--disabled:hover{cursor:default;background-color:transparent}
+#profileModal .react-datepicker__week-number{color:#ccc;display:inline-block;width:1.7rem;line-height:1.7rem;text-align:center;margin:.166rem}
+#profileModal .react-datepicker__week-number.react-datepicker__week-number--clickable{cursor:pointer}
+#profileModal .react-datepicker__week-number.react-datepicker__week-number--clickable:hover{border-radius:.3rem;background-color:#f0f0f0}
+#profileModal .react-datepicker__day-names,#profileModal .react-datepicker__week{white-space:nowrap}
+#profileModal .react-datepicker__day-names{margin-bottom:-8px}
+#profileModal .react-datepicker__day-name,#profileModal .react-datepicker__day,#profileModal .react-datepicker__time-name{color:#000;display:inline-block;width:1.7rem;line-height:1.7rem;text-align:center;margin:.166rem}
+#profileModal .react-datepicker__month--selected,#profileModal .react-datepicker__month--in-selecting-range,#profileModal .react-datepicker__month--in-range,#profileModal .react-datepicker__quarter--selected,#profileModal .react-datepicker__quarter--in-selecting-range,#profileModal .react-datepicker__quarter--in-range{border-radius:.3rem;background-color:#216ba5;color:#fff}
+#profileModal .react-datepicker__month--selected:hover,#profileModal .react-datepicker__month--in-selecting-range:hover,#profileModal .react-datepicker__month--in-range:hover,#profileModal .react-datepicker__quarter--selected:hover,#profileModal .react-datepicker__quarter--in-selecting-range:hover,#profileModal .react-datepicker__quarter--in-range:hover{background-color:#1d5d90}
+#profileModal .react-datepicker__month--disabled,#profileModal .react-datepicker__quarter--disabled{color:#ccc;pointer-events:none}
+#profileModal .react-datepicker__month--disabled:hover,#profileModal .react-datepicker__quarter--disabled:hover{cursor:default;background-color:transparent}
+#profileModal .react-datepicker__day,#profileModal .react-datepicker__month-text,#profileModal .react-datepicker__quarter-text,#profileModal .react-datepicker__year-text{cursor:pointer}
+#profileModal .react-datepicker__day:hover,#profileModal .react-datepicker__month-text:hover,#profileModal .react-datepicker__quarter-text:hover,#profileModal .react-datepicker__year-text:hover{border-radius:.3rem;background-color:#f0f0f0}
+#profileModal .react-datepicker__day--today,#profileModal .react-datepicker__month-text--today,#profileModal .react-datepicker__quarter-text--today,#profileModal .react-datepicker__year-text--today{font-weight:700}
+#profileModal .react-datepicker__day--highlighted,#profileModal .react-datepicker__month-text--highlighted,#profileModal .react-datepicker__quarter-text--highlighted,#profileModal .react-datepicker__year-text--highlighted{border-radius:.3rem;background-color:#3dcc4a;color:#fff}
+#profileModal .react-datepicker__day--highlighted:hover,#profileModal .react-datepicker__month-text--highlighted:hover,#profileModal .react-datepicker__quarter-text--highlighted:hover,#profileModal .react-datepicker__year-text--highlighted:hover{background-color:#32be3f}
+#profileModal .react-datepicker__day--highlighted-custom-1,#profileModal .react-datepicker__month-text--highlighted-custom-1,#profileModal .react-datepicker__quarter-text--highlighted-custom-1,#profileModal .react-datepicker__year-text--highlighted-custom-1{color:#f0f}
+#profileModal .react-datepicker__day--highlighted-custom-2,#profileModal .react-datepicker__month-text--highlighted-custom-2,#profileModal .react-datepicker__quarter-text--highlighted-custom-2,#profileModal .react-datepicker__year-text--highlighted-custom-2{color:green}
+#profileModal .react-datepicker__day--selected,#profileModal .react-datepicker__day--in-selecting-range,#profileModal .react-datepicker__day--in-range,#profileModal .react-datepicker__month-text--selected,#profileModal .react-datepicker__month-text--in-selecting-range,#profileModal .react-datepicker__month-text--in-range,#profileModal .react-datepicker__quarter-text--selected,#profileModal .react-datepicker__quarter-text--in-selecting-range,#profileModal .react-datepicker__quarter-text--in-range,#profileModal .react-datepicker__year-text--selected,#profileModal .react-datepicker__year-text--in-selecting-range,#profileModal .react-datepicker__year-text--in-range{border-radius:.3rem;background-color:#216ba5;color:#fff}
+#profileModal .react-datepicker__day--selected:hover,#profileModal .react-datepicker__day--in-selecting-range:hover,#profileModal .react-datepicker__day--in-range:hover,#profileModal .react-datepicker__month-text--selected:hover,#profileModal .react-datepicker__month-text--in-selecting-range:hover,#profileModal .react-datepicker__month-text--in-range:hover,#profileModal .react-datepicker__quarter-text--selected:hover,#profileModal .react-datepicker__quarter-text--in-selecting-range:hover,#profileModal .react-datepicker__quarter-text--in-range:hover,#profileModal .react-datepicker__year-text--selected:hover,#profileModal .react-datepicker__year-text--in-selecting-range:hover,#profileModal .react-datepicker__year-text--in-range:hover{background-color:#1d5d90}
+#profileModal .react-datepicker__day--keyboard-selected,#profileModal .react-datepicker__month-text--keyboard-selected,#profileModal .react-datepicker__quarter-text--keyboard-selected,#profileModal .react-datepicker__year-text--keyboard-selected{border-radius:.3rem;background-color:#2579ba;color:#fff}
+#profileModal .react-datepicker__day--keyboard-selected:hover,#profileModal .react-datepicker__month-text--keyboard-selected:hover,#profileModal .react-datepicker__quarter-text--keyboard-selected:hover,#profileModal .react-datepicker__year-text--keyboard-selected:hover{background-color:#1d5d90}
+#profileModal .react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range,#profileModal .react-datepicker__month-text--in-range,#profileModal .react-datepicker__quarter-text--in-range,#profileModal .react-datepicker__year-text--in-range),#profileModal .react-datepicker__month-text--in-selecting-range:not(.react-datepicker__day--in-range,#profileModal .react-datepicker__month-text--in-range,#profileModal .react-datepicker__quarter-text--in-range,#profileModal .react-datepicker__year-text--in-range),#profileModal .react-datepicker__quarter-text--in-selecting-range:not(.react-datepicker__day--in-range,#profileModal .react-datepicker__month-text--in-range,#profileModal .react-datepicker__quarter-text--in-range,#profileModal .react-datepicker__year-text--in-range),#profileModal .react-datepicker__year-text--in-selecting-range:not(.react-datepicker__day--in-range,#profileModal .react-datepicker__month-text--in-range,#profileModal .react-datepicker__quarter-text--in-range,#profileModal .react-datepicker__year-text--in-range){background-color:#216ba580}
+#profileModal .react-datepicker__month--selecting-range .react-datepicker__day--in-range:not(.react-datepicker__day--in-selecting-range,#profileModal .react-datepicker__month-text--in-selecting-range,#profileModal .react-datepicker__quarter-text--in-selecting-range,#profileModal .react-datepicker__year-text--in-selecting-range),#profileModal .react-datepicker__month--selecting-range .react-datepicker__month-text--in-range:not(.react-datepicker__day--in-selecting-range,#profileModal .react-datepicker__month-text--in-selecting-range,#profileModal .react-datepicker__quarter-text--in-selecting-range,#profileModal .react-datepicker__year-text--in-selecting-range),#profileModal .react-datepicker__month--selecting-range .react-datepicker__quarter-text--in-range:not(.react-datepicker__day--in-selecting-range,#profileModal .react-datepicker__month-text--in-selecting-range,#profileModal .react-datepicker__quarter-text--in-selecting-range,#profileModal .react-datepicker__year-text--in-selecting-range),#profileModal .react-datepicker__month--selecting-range .react-datepicker__year-text--in-range:not(.react-datepicker__day--in-selecting-range,#profileModal .react-datepicker__month-text--in-selecting-range,#profileModal .react-datepicker__quarter-text--in-selecting-range,#profileModal .react-datepicker__year-text--in-selecting-range){background-color:#f0f0f0;color:#000}
+#profileModal .react-datepicker__day--disabled,#profileModal .react-datepicker__month-text--disabled,#profileModal .react-datepicker__quarter-text--disabled,#profileModal .react-datepicker__year-text--disabled{cursor:default;color:#ccc}
+#profileModal .react-datepicker__day--disabled:hover,#profileModal .react-datepicker__month-text--disabled:hover,#profileModal .react-datepicker__quarter-text--disabled:hover,#profileModal .react-datepicker__year-text--disabled:hover{background-color:transparent}
+#profileModal .react-datepicker__month-text.react-datepicker__month--selected:hover,#profileModal .react-datepicker__month-text.react-datepicker__month--in-range:hover,#profileModal .react-datepicker__month-text.react-datepicker__quarter--selected:hover,#profileModal .react-datepicker__month-text.react-datepicker__quarter--in-range:hover,#profileModal .react-datepicker__quarter-text.react-datepicker__month--selected:hover,#profileModal .react-datepicker__quarter-text.react-datepicker__month--in-range:hover,#profileModal .react-datepicker__quarter-text.react-datepicker__quarter--selected:hover,#profileModal .react-datepicker__quarter-text.react-datepicker__quarter--in-range:hover{background-color:#216ba5}
+#profileModal .react-datepicker__month-text:hover,#profileModal .react-datepicker__quarter-text:hover{background-color:#f0f0f0}
+#profileModal .react-datepicker__input-container{position:relative;display:inline-block;width:100%}
+#profileModal .react-datepicker__year-read-view,#profileModal .react-datepicker__month-read-view,#profileModal .react-datepicker__month-year-read-view{border:1px solid transparent;border-radius:.3rem;position:relative}
+#profileModal .react-datepicker__year-read-view:hover,#profileModal .react-datepicker__month-read-view:hover,#profileModal .react-datepicker__month-year-read-view:hover{cursor:pointer}
+#profileModal .react-datepicker__year-read-view:hover .react-datepicker__year-read-view--down-arrow,#profileModal .react-datepicker__year-read-view:hover .react-datepicker__month-read-view--down-arrow,#profileModal .react-datepicker__month-read-view:hover .react-datepicker__year-read-view--down-arrow,#profileModal .react-datepicker__month-read-view:hover .react-datepicker__month-read-view--down-arrow,#profileModal .react-datepicker__month-year-read-view:hover .react-datepicker__year-read-view--down-arrow,#profileModal .react-datepicker__month-year-read-view:hover .react-datepicker__month-read-view--down-arrow{border-top-color:#b3b3b3}
+#profileModal .react-datepicker__year-read-view--down-arrow,#profileModal .react-datepicker__month-read-view--down-arrow,#profileModal .react-datepicker__month-year-read-view--down-arrow{transform:rotate(135deg);right:-16px;top:0}
+#profileModal .react-datepicker__year-dropdown,#profileModal .react-datepicker__month-dropdown,#profileModal .react-datepicker__month-year-dropdown{background-color:#f0f0f0;position:absolute;width:50%;left:25%;top:30px;z-index:1;text-align:center;border-radius:.3rem;border:1px solid #aeaeae}
+#profileModal .react-datepicker__year-dropdown:hover,#profileModal .react-datepicker__month-dropdown:hover,#profileModal .react-datepicker__month-year-dropdown:hover{cursor:pointer}
+#profileModal .react-datepicker__year-dropdown--scrollable,#profileModal .react-datepicker__month-dropdown--scrollable,#profileModal .react-datepicker__month-year-dropdown--scrollable{height:150px;overflow-y:scroll}
+#profileModal .react-datepicker__year-option,#profileModal .react-datepicker__month-option,#profileModal .react-datepicker__month-year-option{line-height:20px;width:100%;display:block;margin-left:auto;margin-right:auto}
+#profileModal .react-datepicker__year-option:first-of-type,#profileModal .react-datepicker__month-option:first-of-type,#profileModal .react-datepicker__month-year-option:first-of-type{border-top-left-radius:.3rem;border-top-right-radius:.3rem}
+#profileModal .react-datepicker__year-option:last-of-type,#profileModal .react-datepicker__month-option:last-of-type,#profileModal .react-datepicker__month-year-option:last-of-type{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;border-bottom-left-radius:.3rem;border-bottom-right-radius:.3rem}
+#profileModal .react-datepicker__year-option:hover,#profileModal .react-datepicker__month-option:hover,#profileModal .react-datepicker__month-year-option:hover{background-color:#ccc}
+#profileModal .react-datepicker__year-option:hover .react-datepicker__navigation--years-upcoming,#profileModal .react-datepicker__month-option:hover .react-datepicker__navigation--years-upcoming,#profileModal .react-datepicker__month-year-option:hover .react-datepicker__navigation--years-upcoming{border-bottom-color:#b3b3b3}
+#profileModal .react-datepicker__year-option:hover .react-datepicker__navigation--years-previous,#profileModal .react-datepicker__month-option:hover .react-datepicker__navigation--years-previous,#profileModal .react-datepicker__month-year-option:hover .react-datepicker__navigation--years-previous{border-top-color:#b3b3b3}
+#profileModal .react-datepicker__year-option--selected,#profileModal .react-datepicker__month-option--selected,#profileModal .react-datepicker__month-year-option--selected{position:absolute;left:15px}
+#profileModal .react-datepicker__close-icon{cursor:pointer;background-color:transparent;border:0;outline:0;padding:0 6px 0 0;position:absolute;top:0;right:0;height:100%;display:table-cell;vertical-align:middle}
+#profileModal .react-datepicker__close-icon:after{cursor:pointer;background-color:#216ba5;color:#fff;border-radius:50%;height:16px;width:16px;padding:2px;font-size:12px;line-height:1;text-align:center;display:table-cell;vertical-align:middle;content:"×"}
+#profileModal .react-datepicker__today-button{background:#f0f0f0;border-top:1px solid #aeaeae;cursor:pointer;text-align:center;font-weight:700;padding:5px 0;clear:left}
+#profileModal .react-datepicker__portal{position:fixed;width:100vw;height:100vh;background-color:#000c;left:0;top:0;justify-content:center;align-items:center;display:flex;z-index:2147483647}
+#profileModal .react-datepicker__portal .react-datepicker__day-name,#profileModal .react-datepicker__portal .react-datepicker__day,#profileModal .react-datepicker__portal .react-datepicker__time-name{width:3rem;line-height:3rem}
+@media (max-width: 400px),(max-height: 550px){#profileModal .react-datepicker__portal .react-datepicker__day-name,#profileModal .react-datepicker__portal .react-datepicker__day,#profileModal .react-datepicker__portal .react-datepicker__time-name{width:2rem;line-height:2rem}}
+#profileModal .react-datepicker__portal .react-datepicker__current-month,#profileModal .react-datepicker__portal .react-datepicker-time__header{font-size:1.44rem}
+
+/* === Map our history tables onto CM622 table chrome === */
+html.is-web #profileModal .bet-history-table,
+html.is-web #profileModal .tx-history-table,
+html.is-web #profileModal .bonus-history-table,
+html.is-web #profileModal .bonus-claims-table,
+html.is-web #profilePlayerMain .bet-history-table,
+html.is-web #profilePlayerMain .tx-history-table,
+html.is-web #profilePlayerMain .bonus-history-table,
+html.is-web #profilePlayerMain .bonus-claims-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: rgba(var(--b-sc), .9);
+  font-size: 12px;
+}
+html.is-web #profileModal .bet-history-table thead th,
+html.is-web #profileModal .tx-history-table thead th,
+html.is-web #profileModal .bonus-history-table thead th,
+html.is-web #profileModal .bonus-claims-table thead th,
+html.is-web #profilePlayerMain .bet-history-table thead th,
+html.is-web #profilePlayerMain .tx-history-table thead th,
+html.is-web #profilePlayerMain .bonus-history-table thead th,
+html.is-web #profilePlayerMain .bonus-claims-table thead th {
+  text-align: start;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: rgba(var(--b-sc), .55);
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(var(--b-sc), .12);
+  background: rgba(var(--b-sc), .06);
+  white-space: nowrap;
+}
+html.is-web #profileModal .bet-history-table tbody td,
+html.is-web #profileModal .tx-history-table tbody td,
+html.is-web #profileModal .bonus-history-table tbody td,
+html.is-web #profileModal .bonus-claims-table tbody td,
+html.is-web #profilePlayerMain .bet-history-table tbody td,
+html.is-web #profilePlayerMain .tx-history-table tbody td,
+html.is-web #profilePlayerMain .bonus-history-table tbody td,
+html.is-web #profilePlayerMain .bonus-claims-table tbody td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(var(--b-sc), .08);
+  vertical-align: middle;
+  color: rgba(var(--b-sc), .88);
+}
+html.is-web #profileModal .bet-history-table tbody tr:hover,
+html.is-web #profileModal .tx-history-table tbody tr:hover,
+html.is-web #profileModal .bonus-history-table tbody tr:hover,
+html.is-web #profileModal .bonus-claims-table tbody tr:hover,
+html.is-web #profilePlayerMain .bet-history-table tbody tr:hover,
+html.is-web #profilePlayerMain .tx-history-table tbody tr:hover,
+html.is-web #profilePlayerMain .bonus-history-table tbody tr:hover,
+html.is-web #profilePlayerMain .bonus-claims-table tbody tr:hover {
+  background: rgba(var(--b-sc), .06);
+}
+html.is-web #profileModal .table-responsive,
+html.is-web #profileModal .tx-history-table-wrap,
+html.is-web #profilePlayerMain .table-responsive,
+html.is-web #profilePlayerMain .tx-history-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--border-radius, 4px);
+  background: rgba(var(--b-sc), .04);
+}
+html.is-web #profileModal .bet-history-empty,
+html.is-web #profileModal .tx-history-empty,
+html.is-web #profilePlayerMain .bet-history-empty,
+html.is-web #profilePlayerMain .tx-history-empty {
+  margin: 24px 0;
+  text-align: center;
+  color: rgba(var(--b-sc), .55);
+  font-size: 13px;
+}
+
+/* Restore original desktop filter row layout (overrides custom wrap hacks) */
+html.is-web #profileModal .componentFilterLabel-bc,
+html.is-web #profilePlayerMain .componentFilterLabel-bc {
+  display: flex !important;
+  position: relative;
+  background: rgba(var(--b-sc), .15);
+  border-radius: var(--border-radius, 4px) var(--border-radius, 4px) 0 0;
+}
+html.is-web #profileModal .filter-form-w-bc,
+html.is-web #profilePlayerMain .filter-form-w-bc {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 5px !important;
+  padding: 10px !important;
+  margin: 0 !important;
+  background: rgba(var(--b-sc), .15) !important;
+  border: 0 !important;
+  border-radius: 0 0 var(--border-radius, 4px) var(--border-radius, 4px) !important;
+  box-shadow: none !important;
+}
+html.is-web #profileModal .componentFilterLabel-bc:not(.active) + .componentFilterBody-bc .filter-form-w-bc,
+html.is-web #profilePlayerMain .componentFilterLabel-bc:not(.active) + .componentFilterBody-bc .filter-form-w-bc {
+  border-radius: var(--border-radius, 4px) !important;
+}
+html.is-web #profileModal .filter-form-w-bc > .u-i-p-control-item-holder-bc,
+html.is-web #profilePlayerMain .filter-form-w-bc > .u-i-p-control-item-holder-bc {
+  flex: 1 1 150px;
+  min-width: 140px;
+  max-width: 260px;
+  margin: 0 !important;
+  width: auto !important;
+}
+html.is-web #profileModal .filter-form-w-bc > .u-i-p-c-footer-bc,
+html.is-web #profilePlayerMain .filter-form-w-bc > .u-i-p-c-footer-bc {
+  flex: 0 0 auto;
+  margin: 0 0 0 auto !important;
+  padding: 0 !important;
+}

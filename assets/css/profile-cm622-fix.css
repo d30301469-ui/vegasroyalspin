@@ -974,8 +974,8 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .multi-sel
 }
 
 /*
- * Desktop CM622 history filters — original componentFilter / filter-form-w-bc.
- * Neutralizes leftover Vegas bhf/tx purple chrome inside the profile modal.
+ * Desktop CM622 history filters — keep shell; visual chrome comes from
+ * profile-cm622-original-filters-tables.css (casinomilyon625 extract).
  */
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter {
@@ -984,10 +984,6 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-pro
   margin: 0 0 10px;
   z-index: 10;
 }
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .componentFilterLabel-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .componentFilterLabel-bc {
-  display: none;
-}
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .componentFilterBody-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .componentFilterBody-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .componentFilterElsWrapper-bc,
@@ -995,28 +991,7 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-pro
   display: block;
   width: 100%;
 }
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .filter-form-w-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .filter-form-w-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bet-history-filters.filter-form-w-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .bet-history-filters.filter-form-w-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .tx-history-filters .filter-form-w-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .tx-history-filters .filter-form-w-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .bonus-history-filters .filter-form-w-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .bonus-history-filters .filter-form-w-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .casino-history-filters .filter-form-w-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .casino-history-filters .filter-form-w-bc {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  gap: 10px !important;
-  padding: 10px !important;
-  margin: 0 !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 0 !important;
-  border-radius: var(--border-radius, 4px) !important;
-  overflow: visible !important;
-  box-shadow: none !important;
-}
+/* Do NOT hide .componentFilterLabel-bc — original shows FİLTRE header */
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-control-item-holder-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-control-item-holder-bc {
   position: relative;
