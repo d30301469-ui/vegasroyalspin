@@ -1,6 +1,6 @@
 /* vegasroyalspin PWA service worker */
 'use strict';
-const SW_VERSION = 'v26-slot-flicker-fix';
+const SW_VERSION = 'v27-lobby-stable-paint';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -71,6 +71,7 @@ function isAuthAppAsset(requestUrl) {
     requestUrl.pathname.startsWith('/assets/js/favorites-drawer') ||
     requestUrl.pathname.startsWith('/assets/js/mobile_bottom') ||
     requestUrl.pathname.startsWith('/assets/js/slot') ||
+    requestUrl.pathname.startsWith('/assets/js/bgaming') ||
     requestUrl.pathname.startsWith('/assets/js/play-page') ||
     requestUrl.pathname.startsWith('/mobile/assets/js/mobile-header') ||
     requestUrl.pathname.startsWith('/mobile/assets/js/profile-panel') ||
@@ -82,7 +83,11 @@ function isAuthAppAsset(requestUrl) {
     requestUrl.pathname.startsWith('/assets/css/register') ||
     requestUrl.pathname.startsWith('/assets/css/mobile-bottom') ||
     requestUrl.pathname.startsWith('/assets/css/mobile_bottom') ||
-    requestUrl.pathname.startsWith('/assets/css/auth-modals')
+    requestUrl.pathname.startsWith('/assets/css/auth-modals') ||
+    requestUrl.pathname.startsWith('/assets/css/casino-slots-cm622') ||
+    requestUrl.pathname.startsWith('/assets/css/casino-live-cm622') ||
+    requestUrl.pathname.startsWith('/assets/css/casino-lobby-stable') ||
+    requestUrl.pathname.startsWith('/assets/css/casino-bgaming-motion')
   );
 }
 

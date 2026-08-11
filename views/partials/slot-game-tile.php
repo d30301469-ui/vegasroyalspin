@@ -48,7 +48,8 @@ $providerName = (string) ($game['provider'] ?? $game['provider_name'] ?? '');
      onclick="<?= htmlspecialchars($runtimePlayIntentJs, ENT_QUOTES, 'UTF-8') ?>">
     <div class="casinoGameItem ">
         <img alt="<?= htmlspecialchars($gameName, ENT_QUOTES, 'UTF-8') ?>"
-             loading="lazy"
+             loading="<?= !empty($slotTileEager) ? 'eager' : 'lazy' ?>"
+             <?= !empty($slotTileEager) ? 'fetchpriority="high"' : '' ?>
              decoding="async"
              referrerpolicy="no-referrer"
              src="<?= htmlspecialchars($coverUrl, ENT_QUOTES, 'UTF-8') ?>"

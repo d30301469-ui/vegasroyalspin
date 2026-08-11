@@ -108,11 +108,19 @@ $slotTileImageOnly = true;
                 <div class="carouselWrapper carousel" data-lobby-carousel-el="lobby-casino-games">
                     <div class="swiper lobby-games-swiper">
                         <div class="swiper-wrapper">
-                            <?php foreach ($lobbyGames as $game): ?>
+                            <?php
+                            $lobbyTileIndex = 0;
+                            foreach ($lobbyGames as $game):
+                                $slotTileEager = ($lobbyTileIndex < 8);
+                            ?>
                             <div class="swiper-slide">
                                 <?php include VIEW_PATH . '/partials/slot-game-tile.php'; ?>
                             </div>
-                            <?php endforeach; ?>
+                            <?php
+                                $lobbyTileIndex++;
+                            endforeach;
+                            unset($slotTileEager);
+                            ?>
                         </div>
                     </div>
                 </div>

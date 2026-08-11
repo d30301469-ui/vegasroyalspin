@@ -119,7 +119,7 @@ $sliders             = array_values(array_filter($sliders, 'slider_item_has_medi
 <?php $totalSlides = count($sliders); ?>
 <?php if ($sliderFullSized): ?><div class="hm-row-bc hm-row-slider-bc"><?php endif; ?>
 <div class="hero-slider-stage<?= $sliderFullSized ? ' slider-full-sized' : ' slider-boxed' ?>">
-<div class="home-hero-slider slider-bc">
+<div class="home-hero-slider slider-bc is-ready">
     <div class="carousel carouselCountEnable carouselArrowsEnabled carouselWrapper">
         <div class="home-hero-slider-inner slides-holder">
             <div class="slides">

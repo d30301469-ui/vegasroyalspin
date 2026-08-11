@@ -1631,21 +1631,29 @@
             });
             applyCategoryRailOffset(0, { instant: true });
             catScrollInner.classList.remove('is-dragging');
+            catScrollInner.setAttribute('data-rail-ready', '1');
         } else {
             catScrollInner.style.transform = 'none';
             updateCategoryArrowState();
+            if (catScrollInner) catScrollInner.setAttribute('data-rail-ready', '1');
         }
     }
 
     /* Aktif kategori sekmesini görünür yap (scroll alanında ortalanmış) */
     function scrollActiveCategoryIntoView() {
         if (!catScrollViewport || !catScrollInner) return;
+        if (LOBBY_MODE) {
+            var lobbyChip = catScrollViewport.querySelector('.ds-chip--selected, .cat-tab.active');
+            if (lobbyChip && categoryRailOffset.max <= 0) {
+                return;
+            }
+        }
         var activeTab = catScrollViewport.querySelector('.cat-tab.active, .ds-chip--selected');
         if (!activeTab) return;
         requestAnimationFrame(function() {
             if (isMobileCategoryRail || !categoryRailUsesArrows) {
                 try {
-                    activeTab.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+                    activeTab.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' });
                 } catch (err) {
                     activeTab.scrollIntoView(false);
                 }
@@ -1657,7 +1665,7 @@
             var tabRect = activeTab.getBoundingClientRect();
             var tabCenterInContent = (tabRect.left - railRect.left) + categoryRailOffset.value + (tabRect.width / 2);
             var next = tabCenterInContent - (catScrollViewport.clientWidth / 2);
-            applyCategoryRailOffset(next);
+            applyCategoryRailOffset(next, { instant: true });
         });
     }
 
