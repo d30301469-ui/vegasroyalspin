@@ -889,13 +889,6 @@ window.SLOT_CONFIG = {
 <?php if (!defined('SURFACE') || SURFACE !== 'mobile'): ?>
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
 <?php endif; ?>
-<?php if ($slotDesktopLobby):
-    $bcCm622CssName = $slotPageIsLive ? 'casino-live-cm622.css' : 'casino-slots-cm622.css';
-    $bcCm622CssPath = BASE_PATH . '/assets/css/' . $bcCm622CssName;
-    $bcCm622CssVer = (string) (is_file($bcCm622CssPath) ? filemtime($bcCm622CssPath) : time());
-?>
-<link href="/assets/css/<?= htmlspecialchars($bcCm622CssName, ENT_QUOTES, 'UTF-8') ?>?v=<?= htmlspecialchars($bcCm622CssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-<?php endif; ?>
 <?php if (!$slotDesktopLobby): ?>
 <script src="/assets/js/jackpot.js"></script>
 <script src="/assets/js/winners.js?v=<?= htmlspecialchars($slotJsVer, ENT_QUOTES, 'UTF-8') ?>"></script>

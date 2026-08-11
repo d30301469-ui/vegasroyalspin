@@ -126,8 +126,14 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <?php elseif ($requestPath === '/slot' || $requestPath === '/bgaming' || $requestPath === '/sanal-sporlar' || $scriptName === 'slot.php' || $scriptName === 'bgaming.php' || $scriptName === 'sanal-sporlar.php'):
       $bcCm622SlotsCssPath = $assetCssDir . '/casino-slots-cm622.css';
       $bcCm622SlotsCssVer = (string) (file_exists($bcCm622SlotsCssPath) ? filemtime($bcCm622SlotsCssPath) : $assetVer);
+      $isBgamingHead = ($requestPath === '/bgaming' || $scriptName === 'bgaming.php');
+      $bgamingMotionCssPath = $assetCssDir . '/casino-bgaming-motion.css';
+      $bgamingMotionCssVer = (string) (file_exists($bgamingMotionCssPath) ? filemtime($bgamingMotionCssPath) : $assetVer);
   ?>
   <link href="/assets/css/casino-slots-cm622.css?v=<?= htmlspecialchars($bcCm622SlotsCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <?php if ($isBgamingHead): ?>
+  <link href="/assets/css/casino-bgaming-motion.css?v=<?= htmlspecialchars($bgamingMotionCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <?php endif; ?>
   <link href="/assets/css/home-jackpot.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/home-winners.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>

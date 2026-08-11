@@ -2119,6 +2119,19 @@
         }
     }
 
+    function hasServerRenderedGames() {
+        if (!gameGrid) return false;
+        return !!gameGrid.querySelector('.casinoGameItemContent, .casinoGameItem');
+    }
+
+    function maybeLoadSlotsOnBoot() {
+        // Keep SSR tiles on first paint. Refetch only when the grid is empty
+        // (filters still call loadSlots after user interaction).
+        if (API_ADAPTER === 'member_api_games' && gameGrid && !LOBBY_MODE && !hasServerRenderedGames()) {
+            loadSlots(false);
+        }
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
             setActiveCategoryTab();
@@ -2129,9 +2142,7 @@
             if (state.providers.length > 0 || /providers(%5B%5D|\[\]|=)/i.test(window.location.search)) {
                 updateUrl();
             }
-            if (API_ADAPTER === 'member_api_games' && gameGrid && !LOBBY_MODE) {
-                loadSlots(false);
-            }
+            maybeLoadSlotsOnBoot();
         });
     } else {
         setActiveCategoryTab();
@@ -2141,8 +2152,6 @@
         if (state.providers.length > 0 || /providers(%5B%5D|\[\]|=)/i.test(window.location.search)) {
             updateUrl();
         }
-        if (API_ADAPTER === 'member_api_games' && gameGrid && !LOBBY_MODE) {
-            loadSlots(false);
-        }
+        maybeLoadSlotsOnBoot();
     }
 })();

@@ -410,6 +410,9 @@
     });
   }
 
-  renderSkeleton();
+  // Keep SSR winners content if present; only skeleton when the list is empty.
+  if (!listEl.querySelector('.winners-list-item, .winners-row, [data-winner-id]')) {
+    renderSkeleton();
+  }
   load(initialTab, initialTab === 'recent' ? 'day' : initialPeriod);
 })();

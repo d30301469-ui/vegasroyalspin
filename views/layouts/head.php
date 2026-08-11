@@ -224,9 +224,8 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.min.css">
   <?php
-    // CM622: load in head for first paint; body also re-injects last so
-    // footer/vendor CSS cannot override casino rules.
-    if ($requestPath === '/slot'):
+  // CM622 casino skins load once in <head> for first paint (no body re-inject).
+  if ($requestPath === '/slot'):
       $bcCm622SlotsCssPath = $assetCssDir . '/casino-slots-cm622.css';
       $bcCm622SlotsCssVer = (string) (file_exists($bcCm622SlotsCssPath) ? filemtime($bcCm622SlotsCssPath) : $assetVer);
   ?>
@@ -238,11 +237,14 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
     if ($requestPath === '/bgaming'):
       $bcCm622BgamingCssPath = $assetCssDir . '/casino-slots-cm622.css';
       $bcCm622BgamingCssVer = (string) (file_exists($bcCm622BgamingCssPath) ? filemtime($bcCm622BgamingCssPath) : $assetVer);
+      $bgamingMotionCssPath = $assetCssDir . '/casino-bgaming-motion.css';
+      $bgamingMotionCssVer = (string) (file_exists($bgamingMotionCssPath) ? filemtime($bgamingMotionCssPath) : $assetVer);
   ?>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="/assets/css/casino-slots-cm622.css?v=<?= htmlspecialchars($bcCm622BgamingCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/casino-bgaming-motion.css?v=<?= htmlspecialchars($bgamingMotionCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>
 
   <meta name="description" content="<?= htmlspecialchars($headDescription, ENT_QUOTES, 'UTF-8') ?>">
