@@ -7,5 +7,6 @@
   src: url("/assets/BetConstruct-Icons.CPdFP1TD.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
-  font-display: optional;
+  /* swap: icons must appear in late-opened profile modal (optional hid glyphs) */
+  font-display: swap;
 }

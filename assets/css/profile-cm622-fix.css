@@ -49,6 +49,7 @@ body.profile-modal-body .centerWrap.porfileWrap {
 }
 
 /* CM622 tokens stay on profile surfaces only — never html/body (auth/header leak). */
+html.is-web:not(.is-mobile) #profileModal,
 html.is-web:not(.is-mobile) #profileModal.user-profile-container,
 html.is-web:not(.is-mobile) #profileModal.is-web,
 html.is-web:not(.is-mobile) .u-i-profile-page-container,
@@ -70,6 +71,116 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
   --default-transition-delay: .15s;
   --slow-transition-duration: .3s;
   --padding-page-aside: 10px;
+}
+
+/*
+ * site-global.css ships generic .form-control-* (bordered auth look).
+ * That leaks into the desktop profile modal and erases CM622 field chrome.
+ * Re-assert original CM622 inputs for every profile modal form.
+ */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-label-bc.inputs,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-label-bc.inputs {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 52px !important;
+  cursor: text;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-input-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-select-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-textarea-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-input-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-select-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-textarea-bc {
+  display: block !important;
+  width: 100% !important;
+  min-height: 52px !important;
+  height: 52px !important;
+  box-sizing: border-box !important;
+  padding: 20px 15px 4px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: var(--border-radius, 4px) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(var(--b-sc), 0.15) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  color: rgba(var(--b-sc), 0.9) !important;
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+  caret-color: rgba(255, 255, 255, 0.9);
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  transition: background var(--default-transition-duration, 0.2s);
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-input-bc:focus,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-select-bc:focus,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-textarea-bc:focus,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-input-bc:focus,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-select-bc:focus,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-textarea-bc:focus {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(var(--b-sc), 0.18) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-input-bc:read-only,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-input-bc:read-only {
+  color: rgba(255, 255, 255, 0.6) !important;
+  color: rgba(var(--b-sc), 0.6) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  background: rgba(var(--b-sc), 0.05) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-title-bc {
+  position: absolute !important;
+  left: 15px !important;
+  right: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: calc(100% - 48px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 14px !important;
+  line-height: 14px !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  color: rgba(var(--b-sc), 0.45) !important;
+  pointer-events: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  z-index: 3 !important;
+  transition: top 0.15s ease, font-size 0.15s ease, line-height 0.15s ease, color 0.15s ease, transform 0.15s ease !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-bc.focused .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-bc.filled .form-control-title-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-bc.focused .form-control-title-bc {
+  top: 9px !important;
+  transform: none !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  color: rgba(var(--b-sc), 0.55) !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-input-stroke-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-input-stroke-bc {
+  display: none !important;
+}
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-icon-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .dropdownIcon-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-icon-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .dropdownIcon-bc {
+  font-family: BetConstruct-Icons !important;
+  speak: never;
+  font-style: normal !important;
+  font-weight: 400 !important;
+  -webkit-font-smoothing: antialiased;
 }
 
 #profileModal.popup-holder-bc.windowed.user-profile-container.is-open {
