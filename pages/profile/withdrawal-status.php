@@ -49,7 +49,7 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
 <?php endif; ?>
     <?php include __DIR__ . '/../../views/partials/profile-sidebar.php'; ?>
 
-    <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content withdrawal-status-main">
+    <main id="profilePlayerMain" name="profilePlayerMain" class="profile-main-content withdrawLayout">
         <?php
         $profile_content_title = 'PARA ÇEKME DURUMU';
         $profile_content_page_class = 'personal-details-page--withdrawal-status';
@@ -57,46 +57,52 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
         include __DIR__ . '/../../views/partials/profile-content-shell-open.php';
         ?>
 
-            <div class="withdrawal-status-table-bar">
-                <span class="wsc th">Tarih Ve İD</span>
-                <span class="wsc th">Ödeme Tarihi</span>
-                <span class="wsc th">Sistem</span>
-                <span class="wsc th">Kupon Kodu</span>
-                <span class="wsc th">Tutar</span>
-                <span class="wsc th">Durum</span>
-                <span class="wsc th">İptal</span>
-            </div>
-
-            <div class="withdrawal-status-body">
-                <?php if (empty($withdrawals)): ?>
-                <p class="withdrawal-status-empty">Para Çekme Bilgisi Yok</p>
-                <?php else: ?>
-                <table class="withdrawal-status-table">
-                    <tbody>
+            <div class="u-i-page-content">
+                <div class="u-i-page-table historyList-table-details">
+                    <?php if (empty($withdrawals)): ?>
+                    <p class="empty-b-text-v-bc" role="status">Para Çekme Bilgisi Yok</p>
+                    <?php else: ?>
+                    <div class="historyList-thead" role="row">
+                        <div class="historyListEl-list-item">Tarih Ve İD</div>
+                        <div class="historyListEl-list-item">Ödeme Tarihi</div>
+                        <div class="historyListEl-list-item">Sistem</div>
+                        <div class="historyListEl-list-item">Kupon Kodu</div>
+                        <div class="historyListEl-list-item">Tutar</div>
+                        <div class="historyListEl-list-item">Durum</div>
+                        <div class="historyListEl-list-item">İptal</div>
+                    </div>
+                    <div class="historyList-tbody">
                         <?php foreach ($withdrawals as $w): ?>
-                        <tr>
-                            <td data-label="Tarih Ve İD"><?= date('d.m.Y H:i', strtotime($w['created_at'])) ?> #<?= (int)$w['id'] ?></td>
-                            <td data-label="Ödeme Tarihi">—</td>
-                            <td data-label="Sistem"><?= htmlspecialchars($w['provider'] ?? $w['method'] ?? '—') ?></td>
-                            <td data-label="Kupon Kodu"><?= htmlspecialchars($w['trx'] ?? '—') ?></td>
-                            <td data-label="Tutar"><?= number_format((float)$w['amount'], 2, ',', '.') ?> ₺</td>
-                            <td data-label="Durum"><span class="wst-badge wst-<?= htmlspecialchars($w['status'] ?? '') ?>"><?= statusText($w['status'] ?? '') ?></span></td>
-                            <td data-label="İptal">
-                                <?php if (($w['status'] ?? '') === 'pending'): ?>
-                                <button type="button" class="wst-cancel" data-id="<?= (int)$w['id'] ?>" aria-label="İptal">İptal</button>
+                        <?php
+                        $status = (string) ($w['status'] ?? '');
+                        $statusClass = preg_replace('/[^a-z0-9_-]+/i', '', strtolower($status)) ?: 'unknown';
+                        ?>
+                        <div class="historyListEl" role="row">
+                            <div class="historyListEl-list-item"><?= date('d.m.Y H:i', strtotime($w['created_at'])) ?> #<?= (int) $w['id'] ?></div>
+                            <div class="historyListEl-list-item">—</div>
+                            <div class="historyListEl-list-item"><?= htmlspecialchars($w['provider'] ?? $w['method'] ?? '—') ?></div>
+                            <div class="historyListEl-list-item"><?= htmlspecialchars($w['trx'] ?? '—') ?></div>
+                            <div class="historyListEl-list-item"><?= number_format((float) $w['amount'], 2, ',', '.') ?> ₺</div>
+                            <div class="historyListEl-list-item">
+                                <span class="wst-badge wst-<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(statusText($status), ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                            <div class="historyListEl-list-item">
+                                <?php if ($status === 'pending'): ?>
+                                <button type="button" class="btn a-color wst-cancel" data-id="<?= (int) $w['id'] ?>" aria-label="İptal"><span>İptal</span></button>
                                 <?php else: ?>
                                 —
                                 <?php endif; ?>
-                            </td>
-                        </tr>
+                            </div>
+                        </div>
                         <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
             </div>
 <?php include __DIR__ . '/../../views/partials/profile-content-shell-close.php'; ?>
     </main>
 <?php if (!$profile_modal): ?>
 </div>
+
 <?php include __DIR__ . '/../../views/partials/footer.php'; ?>
 <?php endif; ?>

@@ -351,7 +351,7 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #bilgiModal[hid
   z-index: 10050;
 }
 
-/* Bilgi mode: hide deposit/withdraw UI; show limits info only (desktop modal only) */
+/* Bilgi mode: hide deposit/withdraw UI; show CM625 PaymentMethodsInfo panel */
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active #depositSection,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active #withdrawSection {
   display: none !important;
@@ -362,52 +362,20 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerM
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
+  height: calc(100% - 0px);
+  overflow: hidden;
   background: transparent !important;
   border: 0 !important;
   border-radius: 0 !important;
-  overflow: hidden;
+  padding: 15px 0 !important;
 }
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tabs {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tab {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.45) !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tab.active {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #fff !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-list-wrap {
-  background: transparent !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tile {
-  padding: 0 !important;
-  gap: 0 !important;
-  min-height: 96px !important;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.08) !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tile img,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tile .bilgi-tile-logo {
-  width: 100% !important;
-  height: 70px !important;
-  max-width: none !important;
-  max-height: none !important;
-  padding: 10px !important;
-  margin: 0 !important;
-  object-fit: contain !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active .bilgi-tile-label {
-  width: 100%;
-  padding: 6px 4px 8px !important;
-  font-size: 0.62rem !important;
-  background: rgba(0, 0, 0, 0.2);
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerMain.is-bilgi-active #bilgiModal .description-container-bc {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 15px;
 }
 
 /* Right pane: fill height, scroll children — not the broken height:100% slider */

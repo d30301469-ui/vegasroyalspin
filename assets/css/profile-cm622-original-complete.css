@@ -2732,3 +2732,152 @@ html.is-web #profilePlayerMain .freespin-launch-btn {
   font-weight: 700 !important;
   text-decoration: none !important;
 }
+
+/* Bilgi tabs + empty state (from CM625 index.css) */
+#profileModal .main-tabs-bc,
+#profileModal .second-tabs-bc,
+#profilePlayerMain .main-tabs-bc,
+#profilePlayerMain .second-tabs-bc {
+  display: flex;
+  width: 100%;
+  flex-shrink: 0;
+}
+#profileModal .second-tabs-bc,
+#profilePlayerMain .second-tabs-bc {
+  height: 34px;
+}
+#profileModal .tab-bc,
+#profilePlayerMain .tab-bc {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 0 5px;
+  color: rgba(var(--b-sc), .5);
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--default-transition-duration), color var(--default-transition-duration);
+  -webkit-tap-highlight-color: transparent;
+}
+#profileModal .second-tabs-bc .tab-bc,
+#profilePlayerMain .second-tabs-bc .tab-bc {
+  background: rgba(var(--b-sc), .1);
+  font-size: 12px;
+}
+#profileModal .second-tabs-bc .tab-bc:hover,
+#profileModal .second-tabs-bc .tab-bc.active,
+#profilePlayerMain .second-tabs-bc .tab-bc:hover,
+#profilePlayerMain .second-tabs-bc .tab-bc.active {
+  background: rgba(var(--b-sc), .2);
+  color: rgba(var(--b-sc), 1);
+}
+[dir=ltr] #profileModal .second-tabs-bc .tab-bc:not(.pb-actions-tab):first-child,
+[dir=ltr] #profilePlayerMain .second-tabs-bc .tab-bc:not(.pb-actions-tab):first-child {
+  border-top-left-radius: var(--border-radius);
+  border-bottom-left-radius: var(--border-radius);
+}
+[dir=ltr] #profileModal .second-tabs-bc .tab-bc:not(.pb-actions-tab):last-child,
+[dir=ltr] #profilePlayerMain .second-tabs-bc .tab-bc:not(.pb-actions-tab):last-child {
+  border-top-right-radius: var(--border-radius);
+  border-bottom-right-radius: var(--border-radius);
+}
+#profileModal .second-tabs-bc .tab-bc:not(.pb-actions-tab) + .tab-bc,
+#profilePlayerMain .second-tabs-bc .tab-bc:not(.pb-actions-tab) + .tab-bc {
+  margin-inline-start: 1px;
+}
+#profileModal .selected-underline,
+#profilePlayerMain .selected-underline {
+  position: relative;
+}
+#profileModal .selected-underline:before,
+#profilePlayerMain .selected-underline:before {
+  content: "";
+  display: block;
+  width: 0;
+  height: 1px;
+  background: rgba(var(--hero), 1);
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transition: width .24s, left .24s;
+}
+#profileModal .selected-underline.active:before,
+#profilePlayerMain .selected-underline.active:before {
+  left: 0;
+  width: 100%;
+}
+#profileModal .empty-b-text-v-bc,
+#profilePlayerMain .empty-b-text-v-bc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 5vh 10px;
+  color: rgba(var(--b-sc), .7);
+  text-align: center;
+  font-size: 13px;
+  line-height: 16px;
+  margin: 0;
+}
+
+/* Withdrawal status list (historyList + status chips) */
+html.is-web #profileModal .withdrawLayout .historyList-thead,
+html.is-web #profileModal .withdrawLayout .historyList-tbody > .historyListEl,
+html.is-web #profilePlayerMain .withdrawLayout .historyList-thead,
+html.is-web #profilePlayerMain .withdrawLayout .historyList-tbody > .historyListEl {
+  display: flex;
+  width: 100%;
+}
+html.is-web #profileModal .withdrawLayout .historyListEl-list-item,
+html.is-web #profilePlayerMain .withdrawLayout .historyListEl-list-item {
+  flex: 1 1 0;
+  min-width: 100px;
+}
+html.is-web #profileModal .withdrawLayout .historyListEl-list-item:last-child,
+html.is-web #profilePlayerMain .withdrawLayout .historyListEl-list-item:last-child {
+  min-width: 120px;
+  flex: 0 0 120px;
+  align-items: center;
+}
+html.is-web #profileModal .withdrawLayout .wst-badge,
+html.is-web #profilePlayerMain .withdrawLayout .wst-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--border-radius, 4px);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(var(--b-sc), .12);
+  color: rgba(var(--b-sc), .9);
+}
+html.is-web #profileModal .withdrawLayout .wst-pending,
+html.is-web #profileModal .withdrawLayout .wst-processing,
+html.is-web #profilePlayerMain .withdrawLayout .wst-pending,
+html.is-web #profilePlayerMain .withdrawLayout .wst-processing {
+  background: rgba(255, 193, 7, .2);
+  color: #ffc107;
+}
+html.is-web #profileModal .withdrawLayout .wst-approved,
+html.is-web #profileModal .withdrawLayout .wst-confirmed,
+html.is-web #profileModal .withdrawLayout .wst-completed,
+html.is-web #profilePlayerMain .withdrawLayout .wst-approved,
+html.is-web #profilePlayerMain .withdrawLayout .wst-confirmed,
+html.is-web #profilePlayerMain .withdrawLayout .wst-completed {
+  background: rgba(76, 175, 80, .22);
+  color: #81c784;
+}
+html.is-web #profileModal .withdrawLayout .wst-rejected,
+html.is-web #profileModal .withdrawLayout .wst-cancelled,
+html.is-web #profilePlayerMain .withdrawLayout .wst-rejected,
+html.is-web #profilePlayerMain .withdrawLayout .wst-cancelled {
+  background: rgba(244, 67, 54, .2);
+  color: #ef9a9a;
+}
+html.is-web #profileModal .withdrawLayout .wst-cancel.btn,
+html.is-web #profilePlayerMain .withdrawLayout .wst-cancel.btn {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 11px;
+  width: auto;
+}

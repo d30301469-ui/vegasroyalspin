@@ -389,7 +389,7 @@ html.is-web #profilePlayerMain .tx-history-empty {
   font-size: 13px;
 }
 
-/* Restore original desktop filter row layout (overrides custom wrap hacks) */
+/* Original desktop filter: column form + horizontal body content (do not force row on form) */
 html.is-web #profileModal .componentFilterLabel-bc,
 html.is-web #profilePlayerMain .componentFilterLabel-bc {
   display: flex !important;
@@ -400,11 +400,11 @@ html.is-web #profilePlayerMain .componentFilterLabel-bc {
 html.is-web #profileModal .filter-form-w-bc,
 html.is-web #profilePlayerMain .filter-form-w-bc {
   display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
   justify-content: flex-start !important;
-  gap: 5px !important;
+  gap: 0 !important;
   padding: 10px !important;
   margin: 0 !important;
   background: rgba(var(--b-sc), .15) !important;
@@ -416,8 +416,17 @@ html.is-web #profileModal .componentFilterLabel-bc:not(.active) + .componentFilt
 html.is-web #profilePlayerMain .componentFilterLabel-bc:not(.active) + .componentFilterBody-bc .filter-form-w-bc {
   border-radius: var(--border-radius, 4px) !important;
 }
-html.is-web #profileModal .filter-form-w-bc > .u-i-p-control-item-holder-bc,
-html.is-web #profilePlayerMain .filter-form-w-bc > .u-i-p-control-item-holder-bc {
+html.is-web #profileModal .componentFilterBody-content,
+html.is-web #profilePlayerMain .componentFilterBody-content {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 5px !important;
+  width: 100% !important;
+}
+html.is-web #profileModal .componentFilterBody-content > .u-i-p-control-item-holder-bc,
+html.is-web #profilePlayerMain .componentFilterBody-content > .u-i-p-control-item-holder-bc {
   flex: 1 1 150px;
   min-width: 140px;
   max-width: 260px;
@@ -427,6 +436,9 @@ html.is-web #profilePlayerMain .filter-form-w-bc > .u-i-p-control-item-holder-bc
 html.is-web #profileModal .filter-form-w-bc > .u-i-p-c-footer-bc,
 html.is-web #profilePlayerMain .filter-form-w-bc > .u-i-p-c-footer-bc {
   flex: 0 0 auto;
-  margin: 0 0 0 auto !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  width: 100% !important;
+  margin: 10px 0 0 !important;
   padding: 0 !important;
 }

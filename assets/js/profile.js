@@ -3567,35 +3567,37 @@
     }
 
     function buildProfileBilgiRowHtml(row) {
+        var methodId = String((row && (row.method_id || row.id || row.name)) || 'method').replace(/[^A-Za-z0-9_-]+/g, '');
         var logo = row.logo_url && String(row.logo_url).trim() !== ''
             ? row.logo_url
             : profileDwFallbackLogoUrl(row.method_id, (row.provider && row.provider.code) || '');
-        var name = row.name ? String(row.name) : String(row.method_id || '');
+        var name = row.name ? String(row.name) : String(row.method_id || 'Ödeme');
         var minA = row.min_amount != null && !isNaN(Number(row.min_amount)) ? amountFormatter.format(Number(row.min_amount)) + ' ₺' : '—';
         var maxA = row.max_amount != null && !isNaN(Number(row.max_amount)) ? amountFormatter.format(Number(row.max_amount)) + ' ₺' : '—';
-        var processing = row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlik';
-        return '<div class="bilgi-row" role="row">' +
-            '<div class="bilgi-tile" role="cell">' +
-            '<img class="bilgi-tile-logo" src="' + escapeHtml(logo) + '" alt="" loading="lazy">' +
-            '<span class="bilgi-tile-label">' + escapeHtml(dwBilgiTileFromApiMethod(row)) + '</span>' +
-            '</div>' +
-            '<div class="bilgi-cell-stack" role="cell"><span class="bilgi-cell-lbl">Ödeme Yöntemi</span><span class="bilgi-cell-val">' + escapeHtml(name) + '</span></div>' +
-            '<div class="bilgi-cell-stack" role="cell"><span class="bilgi-cell-lbl">Ücret</span><span class="bilgi-cell-val bilgi-cell-val--muted">Ücretsiz</span></div>' +
-            '<div class="bilgi-cell-stack" role="cell"><span class="bilgi-cell-lbl">İşlem Süresi</span><span class="bilgi-cell-val bilgi-cell-val--muted">' + escapeHtml(processing) + '</span></div>' +
-            '<div class="bilgi-cell-stack" role="cell"><span class="bilgi-cell-lbl">Min.</span><span class="bilgi-cell-val">' + escapeHtml(minA) + '</span></div>' +
-            '<div class="bilgi-cell-stack" role="cell"><span class="bilgi-cell-lbl">Maks.</span><span class="bilgi-cell-val">' + escapeHtml(maxA) + '</span></div>' +
-            '</div>';
+        var processing = row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlık';
+        var logoHtml = logo
+            ? '<img alt="" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '">'
+            : '<span class="payment-logo payment-logo--text">' + escapeHtml(name) + '</span>';
+        return '<div class="description-c-row-bc ' + escapeHtml(methodId || 'method') + '">' +
+            '<div class="description-c-row-column-bc pay-logo">' + logoHtml + '</div>' +
+            '<div class="description-c-row-column-bc texts">' +
+            '<div class="description-c-row-c-title-bc description_payment-title">' +
+            '<div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="ödeme yöntemi">ödeme yöntemi</span><span class="description-value ellipsis" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</span></div>' +
+            '<div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Ücret">Ücret</span><span class="description-value ellipsis" title="Ücretsiz">Ücretsiz</span></div>' +
+            '<div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="işlem süresi">işlem süresi</span><span class="description-value ellipsis" title="' + escapeHtml(processing) + '">' + escapeHtml(processing) + '</span></div>' +
+            '<div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Min.">Min.</span><span class="description-value ellipsis" title="' + escapeHtml(minA) + '">' + escapeHtml(minA) + '</span></div>' +
+            '<div class="description-c-r-c-t-column-bc"><span class="description-title ellipsis" title="Maks.">Maks.</span><span class="description-value ellipsis" title="' + escapeHtml(maxA) + '">' + escapeHtml(maxA) + '</span></div>' +
+            '</div></div></div>';
     }
 
     function renderProfileBilgiMethods(kind, list) {
-        var marker = document.querySelector('[data-bilgi-method-list="' + kind + '"]');
-        var table = marker ? marker.closest('.bilgi-table') : null;
-        if (!table) return;
+        var listEl = document.querySelector('[data-bilgi-method-list="' + kind + '"]');
+        if (!listEl) return;
         if (!list || !list.length) {
-            table.innerHTML = '<p class="dw-methods-empty" data-bilgi-method-list="' + kind + '" role="status">Listelenecek yöntem bulunmuyor.</p>';
+            listEl.innerHTML = '<p class="dw-methods-empty empty-b-text-v-bc" role="status">Listelenecek yöntem bulunmuyor.</p>';
             return;
         }
-        table.innerHTML = list.map(buildProfileBilgiRowHtml).join('');
+        listEl.innerHTML = list.map(buildProfileBilgiRowHtml).join('');
     }
 
     function normDwLabel(s) {
@@ -4211,20 +4213,22 @@
     function applyBilgiSubTab(preferWithdraw) {
         var panel = document.getElementById('bilgiModal');
         if (!panel) return;
-        var tabs = panel.querySelectorAll('.bilgi-tab');
-        if (!tabs.length) return;
         var wantW = !!preferWithdraw;
-        tabs.forEach(function(tab) {
+        panel.querySelectorAll('[data-bilgi-tab]').forEach(function(tab) {
             var isW = tab.getAttribute('data-bilgi-tab') === 'withdraw';
             var on = wantW ? isW : !isW;
             tab.classList.toggle('active', on);
             tab.setAttribute('aria-selected', on ? 'true' : 'false');
         });
-        panel.querySelectorAll('.bilgi-list').forEach(function(list) {
-            list.classList.remove('bilgi-list-active');
+        panel.querySelectorAll('[data-bilgi-method-list]').forEach(function(list) {
+            var isW = list.getAttribute('data-bilgi-method-list') === 'withdraw';
+            var on = wantW ? isW : !isW;
+            if (on) {
+                list.removeAttribute('hidden');
+            } else {
+                list.setAttribute('hidden', '');
+            }
         });
-        var listEl = document.getElementById(wantW ? 'bilgiListWithdraw' : 'bilgiListDeposit');
-        if (listEl) listEl.classList.add('bilgi-list-active');
     }
 
     function bindCm622FormControls(root) {
@@ -4491,12 +4495,17 @@
                 }
             });
         }
-        document.querySelectorAll('.bilgi-tab').forEach(function(tab) {
+        document.querySelectorAll('[data-bilgi-tab]').forEach(function(tab) {
             if (tab.getAttribute('data-dw-tab-bound') === '1') return;
             tab.setAttribute('data-dw-tab-bound', '1');
             tab.addEventListener('click', function() {
                 var t = this.getAttribute('data-bilgi-tab');
                 applyBilgiSubTab(t === 'withdraw');
+            });
+            tab.addEventListener('keydown', function(e) {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                applyBilgiSubTab(this.getAttribute('data-bilgi-tab') === 'withdraw');
             });
         });
         document.querySelectorAll('.deposit-tab').forEach(function(tab) {
