@@ -437,23 +437,27 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerM
 #profileModal #profilePlayerMain > .dep-w-info-bc {
   flex: 1 1 auto !important;
   min-height: 0 !important;
+  justify-content: flex-start !important;
 }
 /* Deposit promo slider — match original CM625 structure (do not hide) */
 #profileModal .dep-w-info-bc > .slider-bc {
-  flex: 0 0 auto;
+  flex: 0 0 auto !important;
   width: 100%;
-  margin: 0 0 8px;
+  margin: 15px 0 0;
 }
 #profileModal .dep-w-info-bc > .slider-bc .sdr-image-bc {
   width: 100%;
   height: auto !important;
-  max-height: 160px;
+  max-height: 140px;
   object-fit: cover;
   display: block;
   border-radius: var(--border-radius, 4px);
 }
-#profileModal .dep-w-info-bc > .horizontal-sl-list {
-  margin-top: 8px !important;
+#profileModal .dep-w-info-bc > .horizontal-sl-list,
+#profileModal .dep-w-info-bc > .m-block-nav-items-bc,
+#profileModal .dep-w-info-bc > .payment-details-scrollable-container {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
 }
 #profileModal #profilePlayerMain > .my-profile-info-scroll {
   flex: 1 1 auto !important;

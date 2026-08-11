@@ -2073,35 +2073,53 @@ html.is-web #profileModal .user-profile-nav-item.active {
   background: transparent !important;
 }
 
-/* === Deposit / withdraw: force original CM625 layout visible === */
+/* === Deposit / withdraw: original CM625 — pack content, no empty stretch === */
+html.is-web #profileModal .dep-w-info-bc {
+  justify-content: flex-start !important;
+  align-content: flex-start !important;
+  height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+html.is-web #profileModal .dep-w-info-bc > .slider-bc {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  margin: 15px 0 0 !important;
+}
 html.is-web #profileModal .dep-w-info-bc > .horizontal-sl-list {
   display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
-  flex-shrink: 0 !important;
+  flex: 0 0 auto !important;
   width: 100% !important;
   margin-top: 15px !important;
-  min-height: 40px !important;
+  min-height: 0 !important;
+  height: auto !important;
 }
 html.is-web #profileModal .dep-w-info-bc > .m-block-nav-items-bc {
   display: grid !important;
   visibility: visible !important;
   opacity: 1 !important;
-  flex-shrink: 0 !important;
+  flex: 0 0 auto !important;
   width: 100% !important;
   grid-template-columns: repeat(auto-fill, minmax(107px, 1fr)) !important;
   grid-gap: 10px !important;
-  padding: 15px 0 25px !important;
-  min-height: 63px !important;
+  padding: 15px 0 20px !important;
+  min-height: 0 !important;
+  height: auto !important;
   overflow: visible !important;
 }
+/* Do NOT flex-grow — that created the empty dark void under the banner */
 html.is-web #profileModal .dep-w-info-bc > .payment-details-scrollable-container {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
   width: 100% !important;
-  flex: 1 1 auto !important;
-  min-height: 140px !important;
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 html.is-web #profileModal .dep-w-info-bc .horizontal-items-expanded .horizontal-sl-item-bc,
 html.is-web #profileModal .dep-w-info-bc .horizontal-sl-item-bc.accordion-button {
@@ -2118,6 +2136,13 @@ html.is-web #profileModal .dep-w-info-bc .horizontal-sl-item-bc.accordion-button
   background: #2d0143 !important;
   color: rgba(255, 255, 255, 0.85) !important;
   align-items: center !important;
+}
+html.is-web #profileModal .dep-w-info-bc .horizontal-sl-wheel {
+  display: flex !important;
+  visibility: visible !important;
+  flex-wrap: wrap !important;
+  width: 100% !important;
+  transform: none !important;
 }
 html.is-web #profileModal .dep-w-info-bc .horizontal-sl-item-bc.active {
   background: #2d0143 !important;
@@ -2196,4 +2221,34 @@ html.is-web #profileModal .dw-methods-empty {
   color: rgba(var(--b-sc), 0.75) !important;
   font-size: 13px !important;
   text-align: center !important;
+}
+
+/* Security pages (freeze / password) — CM622 field + CTA */
+html.is-web #profileModal .profile-security-single {
+  padding: 0 !important;
+  max-width: 560px;
+}
+html.is-web #profileModal .profile-security-single .u-i-common-content-textarea,
+html.is-web #profileModal .profile-security-single .freeze-text {
+  margin: 0 0 16px !important;
+  color: rgba(var(--b-sc), 0.85) !important;
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+html.is-web #profileModal .profile-security-single .u-i-p-control-item-holder-bc {
+  margin-bottom: 10px !important;
+}
+html.is-web #profileModal .profile-security-single .u-i-p-c-footer-bc {
+  margin-top: 20px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+}
+html.is-web #profileModal .profile-security-single .u-i-p-c-footer-bc .btn.a-color {
+  width: 100% !important;
+  min-height: 36px !important;
+  border-radius: var(--border-radius, 4px) !important;
+  background: rgba(var(--oc-1), 1) !important;
+  color: rgba(var(--oc-1-sc), 1) !important;
+  box-shadow: none !important;
+  background-image: none !important;
 }

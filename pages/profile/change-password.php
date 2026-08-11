@@ -40,18 +40,37 @@ include __DIR__ . '/../../views/partials/profile-page-frame-open.php';
         include __DIR__ . '/../../views/partials/profile-content-shell-open.php';
         ?>
             <div class="profile-security-single profile-security-single--password" id="sifre">
-                <form id="changePasswordForm" class="password-change-form">
-                    <div class="password-change-field">
-                        <input type="password" class="password-change-input" id="oldPwd" required placeholder="Geçerli Şifre *" autocomplete="current-password">
-                    </div>
-                    <div class="password-change-field">
-                        <input type="password" class="password-change-input" id="newPwd" required placeholder="Yeni Şifre *" autocomplete="new-password">
-                    </div>
-                    <div class="password-change-field">
-                        <input type="password" class="password-change-input" id="confirmPass" required placeholder="Yeni şifreyi onayla *" autocomplete="new-password">
-                    </div>
-                    <div class="password-change-footer">
-                        <button type="button" id="changePwdBtn" class="password-change-btn">ŞİFRE DEĞİŞTİR</button>
+                <form id="changePasswordForm" class="user-profile password-change-form">
+                    <?php
+                    $fc_id = 'oldPwd';
+                    $fc_name = 'old_password';
+                    $fc_title = 'Geçerli Şifre *';
+                    $fc_type = 'password';
+                    $fc_autocomplete = 'current-password';
+                    $fc_required = true;
+                    $fc_attrs = 'placeholder=""';
+                    include __DIR__ . '/../../views/partials/cm622-form-control-text.php';
+
+                    $fc_id = 'newPwd';
+                    $fc_name = 'new_password';
+                    $fc_title = 'Yeni Şifre *';
+                    $fc_type = 'password';
+                    $fc_autocomplete = 'new-password';
+                    $fc_required = true;
+                    $fc_attrs = 'placeholder=""';
+                    include __DIR__ . '/../../views/partials/cm622-form-control-text.php';
+
+                    $fc_id = 'confirmPass';
+                    $fc_name = 'confirm_password';
+                    $fc_title = 'Yeni şifreyi onayla *';
+                    $fc_type = 'password';
+                    $fc_autocomplete = 'new-password';
+                    $fc_required = true;
+                    $fc_attrs = 'placeholder=""';
+                    include __DIR__ . '/../../views/partials/cm622-form-control-text.php';
+                    ?>
+                    <div class="u-i-p-c-footer-bc password-change-footer">
+                        <button type="button" id="changePwdBtn" class="btn a-color" title="ŞİFRE DEĞİŞTİR"><span>ŞİFRE DEĞİŞTİR</span></button>
                     </div>
                 </form>
             </div>

@@ -39,17 +39,20 @@ include __DIR__ . '/../../views/partials/profile-page-frame-open.php';
         include __DIR__ . '/../../views/partials/profile-content-shell-open.php';
         ?>
             <div class="profile-security-single profile-security-single--freeze" id="hesabi-dondur">
-                <p class="freeze-text">Hesabınızı dondurduğunuzda oturumunuz sonlanır ve mevcut giriş anahtarınız geçersiz olur. Tekrar siteyi kullanmak için hesap dondurmayı kaldırmanız (account unfreeze) gerekir.</p>
-                <p class="personal-details-hint freeze-hint">Onaylamak için hesap şifrenizi girin.</p>
-                <form id="freezeForm" class="freeze-form" action="#" autocomplete="off">
-                    <div class="field-row full">
-                        <label class="field-label" for="freeze_password">Hesap şifresi <span class="required">*</span></label>
-                        <div class="field-input-wrap">
-                            <input type="password" id="freeze_password" name="password" class="field-input" autocomplete="current-password" required placeholder="••••••••">
-                        </div>
-                    </div>
-                    <div class="freeze-footer">
-                        <button type="button" id="freezeSaveBtn" class="freeze-btn">HESABI DONDUR</button>
+                <p class="u-i-common-content-textarea freeze-text">Hesabınızı dondurduğunuzda oturumunuz sonlanır ve mevcut giriş anahtarınız geçersiz olur. Tekrar siteyi kullanmak için hesap dondurmayı kaldırmanız (account unfreeze) gerekir. Onaylamak için hesap şifrenizi girin.</p>
+                <form id="freezeForm" class="user-profile freeze-form" action="#" autocomplete="off">
+                    <?php
+                    $fc_id = 'freeze_password';
+                    $fc_name = 'password';
+                    $fc_title = 'Hesap şifresi *';
+                    $fc_type = 'password';
+                    $fc_autocomplete = 'current-password';
+                    $fc_required = true;
+                    $fc_attrs = 'placeholder=""';
+                    include __DIR__ . '/../../views/partials/cm622-form-control-text.php';
+                    ?>
+                    <div class="u-i-p-c-footer-bc freeze-footer">
+                        <button type="button" id="freezeSaveBtn" class="btn a-color" title="HESABI DONDUR"><span>HESABI DONDUR</span></button>
                     </div>
                 </form>
             </div>
