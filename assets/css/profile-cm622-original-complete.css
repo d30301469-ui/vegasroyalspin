@@ -2037,3 +2037,163 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .u-i-page-
   width: 100%;
   overflow: auto;
 }
+
+/* === Kill site-global .active { background:#9e13a0 } leak inside profile modal === */
+html.is-web #profileModal .user-profile-nav.active,
+html.is-web #profileModal .user-profile-nav-item.active,
+html.is-web #profileModal .user-profile-nav-header.active,
+html.is-web #profileModal .bilgi-tab.active,
+html.is-web #profileModal .deposit-card.active,
+html.is-web #profileModal .m-nav-items-list-item-bc.active {
+  background: transparent !important;
+  background-image: none !important;
+}
+html.is-web #profileModal .user-profile-nav-header,
+html.is-web #profileModal .userLogoutBtn {
+  background: rgba(var(--b-sc), 0.05) !important;
+  color: rgba(var(--b-sc), 0.8) !important;
+}
+html.is-web #profileModal .user-profile-nav-header:hover,
+html.is-web #profileModal .userLogoutBtn:hover {
+  background: rgba(var(--b-sc), 0.15) !important;
+  color: rgba(var(--b-sc), 1) !important;
+}
+html.is-web #profileModal .user-profile-nav.active .user-profile-nav-list {
+  opacity: 1 !important;
+  background: rgba(var(--b-sc), 0.1) !important;
+  border-top: 1px solid rgba(var(--b-sc), 0.1) !important;
+}
+html.is-web #profileModal .user-profile-nav-item {
+  color: rgba(var(--b-sc), 0.6) !important;
+  background: transparent !important;
+}
+html.is-web #profileModal .user-profile-nav-item:hover,
+html.is-web #profileModal .user-profile-nav-item.active {
+  color: rgba(var(--b-sc), 1) !important;
+  background: transparent !important;
+}
+
+/* === Deposit / withdraw: force original CM625 layout visible === */
+html.is-web #profileModal .dep-w-info-bc > .horizontal-sl-list {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex-shrink: 0 !important;
+  width: 100% !important;
+  margin-top: 15px !important;
+  min-height: 40px !important;
+}
+html.is-web #profileModal .dep-w-info-bc > .m-block-nav-items-bc {
+  display: grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex-shrink: 0 !important;
+  width: 100% !important;
+  grid-template-columns: repeat(auto-fill, minmax(107px, 1fr)) !important;
+  grid-gap: 10px !important;
+  padding: 15px 0 25px !important;
+  min-height: 63px !important;
+  overflow: visible !important;
+}
+html.is-web #profileModal .dep-w-info-bc > .payment-details-scrollable-container {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  min-height: 140px !important;
+}
+html.is-web #profileModal .dep-w-info-bc .horizontal-items-expanded .horizontal-sl-item-bc,
+html.is-web #profileModal .dep-w-info-bc .horizontal-sl-item-bc.accordion-button {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: 30px !important;
+  min-width: 80px !important;
+  margin: 5px 0 10px 5px !important;
+  padding: 0 10px !important;
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 7px 2px #850f83 !important;
+  background: #2d0143 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  align-items: center !important;
+}
+html.is-web #profileModal .dep-w-info-bc .horizontal-sl-item-bc.active {
+  background: #2d0143 !important;
+  color: #fff !important;
+  box-shadow: 0 0 7px 2px #850f83 !important;
+}
+html.is-web #profileModal .dep-w-info-bc .horizontal-sl-item-bc.accordion-button p,
+html.is-web #profileModal .dep-w-info-bc .horizontal-sl-title-bc {
+  display: block !important;
+  font-size: 11px !important;
+  color: inherit !important;
+  margin: 0 !important;
+}
+html.is-web #profileModal .dep-w-info-bc .m-nav-items-list-item-bc,
+html.is-web #profileModal .dep-w-info-bc .deposit-card {
+  display: flex !important;
+  flex-direction: column !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  min-height: 63px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--border-radius, 4px) !important;
+  cursor: pointer;
+}
+html.is-web #profileModal .dep-w-info-bc .nav-ico-w-row-bc {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  box-shadow: inset 0 1px 20px 5px #49006f !important;
+  border-radius: var(--border-radius, 4px);
+}
+html.is-web #profileModal .dep-w-info-bc .payment-logo {
+  width: 118px !important;
+  max-width: 100% !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+html.is-web #profileModal .dep-w-info-bc .m-nav-list-item-title-bc {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  padding: 2px 4px 6px !important;
+  font-size: 11px !important;
+  line-height: 13px !important;
+  color: rgba(var(--b-sc), 0.85) !important;
+  word-break: break-word;
+}
+html.is-web #profileModal .dep-w-info-bc .payment-info-bc {
+  display: block !important;
+  visibility: visible !important;
+  margin-top: 5px !important;
+  padding: 10px !important;
+  background: rgba(var(--b-sc), 0.05) !important;
+  border-radius: var(--border-radius) !important;
+}
+html.is-web #profileModal .dep-w-info-bc .withdraw-form-l-bc,
+html.is-web #profileModal .dep-w-info-bc #depositInlineQuickForm {
+  display: block !important;
+  visibility: visible !important;
+  max-width: 560px !important;
+  width: 100% !important;
+}
+html.is-web #profileModal .dw-methods-empty {
+  display: block !important;
+  visibility: visible !important;
+  grid-column: 1 / -1;
+  padding: 16px 8px !important;
+  color: rgba(var(--b-sc), 0.75) !important;
+  font-size: 13px !important;
+  text-align: center !important;
+}

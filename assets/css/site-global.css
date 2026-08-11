@@ -126,7 +126,20 @@ body {
 .btn-primary { background: var(--primary) !important; border-color: var(--primary) !important; color: var(--btntText); box-shadow: none !important; }
 .btn-outline-primary { border-color: var(--primary) !important; color: var(--white-color); }
 .btn-outline-primary:hover { background: var(--primary) !important; }
-.active { background: var(--hover-color); }
+/* site menus only — do NOT paint every .active (breaks CM622 profile accordion) */
+.mainMenu .active,
+.sideSports .active,
+.filterRow ul li.active,
+.eventTabs .nav-pills .nav-link.active,
+.slipTabs .nav-pills .nav-link.active,
+.tabsRow .active,
+.event-TabRow .active,
+.filterTab ul li a.active,
+.kycTabs .active,
+.cryptoCoinList a.active,
+.amoutvalue .active {
+    background: var(--hover-color);
+}
 .form-group { position: relative; }
 .badge { padding: .25em .4em .10em; line-height: 14px; }
 .backBtn {

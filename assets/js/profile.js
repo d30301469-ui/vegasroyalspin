@@ -3514,7 +3514,9 @@
             ' data-dw-processing="' + escapeHtml(row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlik') + '">' +
             '<div class="nav-ico-w-row-bc">' +
             (logo ? '<img alt="' + escapeHtml(label) + '" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(label) + '</span>') +
-            '</div></div>';
+            '</div>' +
+            '<div class="m-nav-list-item-title-bc"><span class="ellipsis" title="' + escapeHtml(label) + '">' + escapeHtml(label) + '</span></div>' +
+            '</div>';
     }
 
     function buildProfileWithdrawCardHtml(row, idx) {
@@ -3538,7 +3540,9 @@
             ' data-dw-processing="' + escapeHtml(row.processing_time != null && String(row.processing_time).trim() !== '' ? String(row.processing_time) : 'Anlik') + '">' +
             '<div class="nav-ico-w-row-bc">' +
             (logo ? '<img alt="' + escapeHtml(label) + '" loading="lazy" decoding="async" src="' + escapeHtml(logo) + '" class="payment-logo">' : '<span class="payment-logo payment-logo--text">' + escapeHtml(label) + '</span>') +
-            '</div></div>';
+            '</div>' +
+            '<div class="m-nav-list-item-title-bc"><span class="ellipsis" title="' + escapeHtml(label) + '">' + escapeHtml(label) + '</span></div>' +
+            '</div>';
     }
 
     function dwBilgiTileFromApiMethod(row) {
@@ -3693,10 +3697,26 @@
                 var ok = applyProfilePaymentMethodsEnvelope(env);
                 if (ok) {
                     window.__PROFILE_PAYMENT_METHODS_ENVELOPE__ = env;
+                } else {
+                    markProfilePaymentMethodsUnavailable();
                 }
                 return ok;
             })
-            .catch(function() { return false; });
+            .catch(function() {
+                markProfilePaymentMethodsUnavailable();
+                return false;
+            });
+    }
+
+    function markProfilePaymentMethodsUnavailable() {
+        var msg = 'Ödeme yöntemleri yüklenemedi. Lütfen sayfayı yenileyin.';
+        [['depositGrid', 'Şu an para yatırma için listelenen yöntem bulunmuyor.'],
+         ['withdrawGrid', 'Şu an para çekme için listelenen yöntem bulunmuyor.']].forEach(function(pair) {
+            var grid = document.getElementById(pair[0]);
+            if (!grid) return;
+            if (grid.querySelector('.deposit-card[data-dw-method]')) return;
+            grid.innerHTML = '<p class="dw-methods-empty" role="status">' + (pair[1] || msg) + '</p>';
+        });
     }
 
     function getWithdrawCryptoNetworkId(displayName) {
