@@ -74,103 +74,20 @@ html.is-web:not(.is-mobile) [data-cm622-profile-sidebar] {
 }
 
 /*
- * site-global.css ships generic .form-control-* (bordered auth look).
- * That leaks into the desktop profile modal and erases CM622 field chrome.
- * Re-assert original CM622 inputs for every profile modal form.
+ * site-global.css ships bordered auth .form-control-*.
+ * Only neutralize leaks — visual chrome comes from original CM625 CSS (loaded last).
  */
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-label-bc.inputs,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-label-bc.inputs {
-  display: block !important;
-  position: relative !important;
-  width: 100% !important;
-  height: 52px !important;
-  cursor: text;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-input-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-select-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-textarea-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-input-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-select-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-textarea-bc {
-  display: block !important;
-  width: 100% !important;
-  min-height: 52px !important;
-  height: 52px !important;
-  box-sizing: border-box !important;
-  padding: 20px 15px 4px !important;
-  margin: 0 !important;
   border: 0 !important;
-  border-radius: var(--border-radius, 4px) !important;
-  outline: none !important;
   box-shadow: none !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-  background: rgba(var(--b-sc), 0.15) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  color: rgba(var(--b-sc), 0.9) !important;
-  font-size: 14px !important;
-  line-height: 1.25 !important;
-  caret-color: rgba(255, 255, 255, 0.9);
+  outline: none !important;
   -webkit-appearance: none !important;
   appearance: none !important;
-  transition: background var(--default-transition-duration, 0.2s);
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-input-bc:focus,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-select-bc:focus,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-textarea-bc:focus,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-input-bc:focus,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-select-bc:focus,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-textarea-bc:focus {
-  border: 0 !important;
-  box-shadow: none !important;
-  background: rgba(255, 255, 255, 0.18) !important;
-  background: rgba(var(--b-sc), 0.18) !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-input-bc:read-only,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-input-bc:read-only {
-  color: rgba(255, 255, 255, 0.6) !important;
-  color: rgba(var(--b-sc), 0.6) !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-  background: rgba(var(--b-sc), 0.05) !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-title-bc {
-  position: absolute !important;
-  left: 15px !important;
-  right: auto !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  width: calc(100% - 48px) !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  font-size: 14px !important;
-  line-height: 14px !important;
-  font-weight: 400 !important;
-  color: rgba(255, 255, 255, 0.45) !important;
-  color: rgba(var(--b-sc), 0.45) !important;
-  pointer-events: none !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  z-index: 3 !important;
-  transition: top 0.15s ease, font-size 0.15s ease, line-height 0.15s ease, color 0.15s ease, transform 0.15s ease !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-bc.filled .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-bc.focused .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-bc.filled .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-bc.focused .form-control-title-bc {
-  top: 9px !important;
-  transform: none !important;
-  font-size: 11px !important;
-  line-height: 14px !important;
-  color: rgba(255, 255, 255, 0.55) !important;
-  color: rgba(var(--b-sc), 0.55) !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-input-stroke-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-input-stroke-bc {
-  display: none !important;
 }
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-icon-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .dropdownIcon-bc,
@@ -563,113 +480,14 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerM
   max-width: 100%;
 }
 
-/*
- * Sidebar accordion — CM622 original surfaces (hardcoded white alphas).
- * Do NOT use --hero/--oc-1 here: those are brand magenta and must stay
- * accents only (active cursor border / primary buttons).
- */
-#profileModal .u-i-profile-page-bc .user-profile-nav,
-.u-i-profile-page-container .user-profile-nav,
-[data-cm622-profile-sidebar] .user-profile-nav {
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-#profileModal .u-i-profile-page-bc .user-profile-nav-header,
-#profileModal .u-i-profile-page-bc .userLogoutBtn,
-.u-i-profile-page-container .user-profile-nav-header,
-.u-i-profile-page-container .userLogoutBtn,
-[data-cm622-profile-sidebar] .user-profile-nav-header,
-[data-cm622-profile-sidebar] .userLogoutBtn {
-  background: rgba(255, 255, 255, 0.05) !important;
-  background-color: rgba(255, 255, 255, 0.05) !important;
-  background-image: none !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  box-shadow: none !important;
-  filter: none !important;
-  transform: none !important;
-}
-#profileModal .u-i-profile-page-bc .user-profile-nav-header:hover,
-#profileModal .u-i-profile-page-bc .userLogoutBtn:hover,
-#profileModal .u-i-profile-page-bc .userLogoutBtn:focus,
-.u-i-profile-page-container .user-profile-nav-header:hover,
-.u-i-profile-page-container .userLogoutBtn:hover,
-.u-i-profile-page-container .userLogoutBtn:focus,
-[data-cm622-profile-sidebar] .user-profile-nav-header:hover,
-[data-cm622-profile-sidebar] .userLogoutBtn:hover,
-[data-cm622-profile-sidebar] .userLogoutBtn:focus {
-  background: rgba(255, 255, 255, 0.15) !important;
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  background-image: none !important;
-  color: rgba(255, 255, 255, 1) !important;
-  box-shadow: none !important;
-  filter: none !important;
-  transform: none !important;
-  outline: none !important;
-}
-#profileModal .u-i-profile-page-bc .user-profile-nav-list,
-.u-i-profile-page-container .user-profile-nav-list,
-[data-cm622-profile-sidebar] .user-profile-nav-list {
-  background: rgba(255, 255, 255, 0.10) !important;
-  background-color: rgba(255, 255, 255, 0.10) !important;
-  background-image: none !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-#profileModal .u-i-profile-page-bc .user-profile-nav-item,
-#profileModal .u-i-profile-page-bc .user-profile-nav-item:visited,
-.u-i-profile-page-container .user-profile-nav-item,
-.u-i-profile-page-container .user-profile-nav-item:visited,
-[data-cm622-profile-sidebar] .user-profile-nav-item,
-[data-cm622-profile-sidebar] .user-profile-nav-item:visited {
-  background: transparent !important;
-  box-shadow: none !important;
-  filter: none !important;
-  transform: none !important;
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-#profileModal .u-i-profile-page-bc .user-profile-nav-item:hover,
-#profileModal .u-i-profile-page-bc .user-profile-nav-item:focus,
-#profileModal .u-i-profile-page-bc .user-profile-nav-item.active,
-.u-i-profile-page-container .user-profile-nav-item:hover,
-.u-i-profile-page-container .user-profile-nav-item:focus,
-.u-i-profile-page-container .user-profile-nav-item.active,
-[data-cm622-profile-sidebar] .user-profile-nav-item:hover,
-[data-cm622-profile-sidebar] .user-profile-nav-item:focus,
-[data-cm622-profile-sidebar] .user-profile-nav-item.active {
-  background: transparent !important;
-  box-shadow: none !important;
-  filter: none !important;
-  transform: none !important;
-  color: rgba(255, 255, 255, 1) !important;
-  outline: none !important;
-}
-/* CM622 active cursor: navy wash + thin brand accent bar */
-#profileModal .u-i-profile-page-bc .user-profile-nav-item-cursor.user-profile-cursor-visible:after,
-.u-i-profile-page-container .user-profile-nav-item-cursor.user-profile-cursor-visible:after,
-[data-cm622-profile-sidebar] .user-profile-nav-item-cursor.user-profile-cursor-visible:after {
-  background-image: linear-gradient(to right, rgba(0, 11, 36, 0.3), rgba(0, 11, 36, 0.1)) !important;
-  border-inline-start: 2px solid rgb(133, 15, 131) !important;
-  box-shadow: none !important;
-}
-#profileModal .u-i-profile-page-bc .u-i-p-a-deposit-bc:hover,
-#profileModal .u-i-profile-page-bc .u-i-p-a-withdraw-bc:hover,
-.u-i-profile-page-container .u-i-p-a-deposit-bc:hover,
-.u-i-profile-page-container .u-i-p-a-withdraw-bc:hover {
-  background: #ffffff26 !important;
-  box-shadow: none !important;
-  filter: none !important;
-  transform: none !important;
-}
+/* Sidebar colors/surfaces: original UserProfile CSS (profile-cm622-original-complete.css) */
 #profileModal .u-i-profile-page-bc a:hover,
 #profileModal .u-i-profile-page-bc button:hover,
 .u-i-profile-page-container a:hover,
 .u-i-profile-page-container button:hover {
   text-decoration: none !important;
 }
+
 #profileModal .form-control-bc.focused .form-control-input-stroke-bc:after,
 #profileModal .form-control-bc.valid .form-control-input-stroke-bc:after {
   background: rgba(var(--b-sc), .55) !important;
@@ -1002,93 +820,55 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-pro
   overflow: visible;
   align-self: center;
 }
-/* Text / search fields — same 52px floating-label shell as selects */
+/* Filter field chrome: defer to original CM625 form-control styles */
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-control-item-holder-bc > .form-control-bc.default,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-control-item-holder-bc > .form-control-bc.default {
   position: relative !important;
   width: 100% !important;
 }
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-control-item-holder-bc > .form-control-bc.default > .form-control-label-bc.inputs,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-control-item-holder-bc > .form-control-bc.default > .form-control-label-bc.inputs {
-  position: relative !important;
-  display: block !important;
-  height: 52px !important;
-  min-height: 52px !important;
-  overflow: visible !important;
-  border-radius: var(--border-radius, 4px) !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-}
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .form-control-input-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .form-control-input-bc {
-  width: 100% !important;
-  height: 100% !important;
-  box-sizing: border-box !important;
-  padding: 22px 34px 8px 15px !important;
-  margin: 0 !important;
   border: 0 !important;
+  box-shadow: none !important;
   outline: none !important;
-  border-radius: var(--border-radius, 4px) !important;
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.92) !important;
-  font-size: 14px !important;
-  line-height: 1.2 !important;
 }
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .form-control-title-bc {
-  position: absolute !important;
-  left: 0 !important;
-  top: 16px !important;
-  width: calc(100% - 48px) !important;
-  padding: 0 0 0 15px !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-  font-size: 14px !important;
-  line-height: 16px !important;
-  font-weight: 400 !important;
-  color: rgba(255, 255, 255, 0.45) !important;
-  pointer-events: none !important;
-  z-index: 2 !important;
-  transition: top 0.15s ease, font-size 0.15s ease, line-height 0.15s ease, color 0.15s ease !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .form-control-bc.filled .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .form-control-bc.focused .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .form-control-bc.filled .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .form-control-bc.focused .form-control-title-bc {
-  top: 8px !important;
-  font-size: 11px !important;
-  line-height: 14px !important;
-  color: rgba(255, 255, 255, 0.55) !important;
-}
-/* Kill chunk CSS that pulls filled labels above the field (top:-2px) */
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-bc.filled .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .form-control-bc.focused .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-bc.filled .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .form-control-bc.focused .form-control-title-bc {
-  top: 8px !important;
-  font-size: 11px !important;
-  line-height: 14px !important;
+
+/* Original web filter: fields row (componentFilterBody-content), footer below */
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .componentFilterBody-content,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .componentFilterBody-content {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
 }
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-c-footer-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-c-footer-bc {
   flex: 0 0 auto;
-  margin: 0 0 0 auto !important;
+  width: 100% !important;
+  margin: 20px 0 0 !important;
   padding: 0 !important;
-  align-self: center;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-self: stretch;
 }
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .u-i-p-c-footer-bc .btn.a-color,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .u-i-p-c-footer-bc .btn.a-color {
   min-width: 96px;
   width: auto !important;
   max-width: none !important;
-  height: 52px !important;
+  height: 36px !important;
   padding: 0 18px;
   margin: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   box-sizing: border-box !important;
+  border-radius: var(--border-radius, 4px) !important;
+  box-shadow: none !important;
+  background: rgba(var(--oc-1), 1) !important;
+  background-image: none !important;
+  color: rgba(var(--oc-1-sc), 1) !important;
 }
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal .cm622-profile-filter .sport-search-icon,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .cm622-profile-filter .sport-search-icon {
@@ -1266,42 +1046,16 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalD
   margin: 0 !important;
   flex: none !important;
 }
+/* Personal details field paint: original CM625 form-control (complete CSS) */
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-input-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-input-bc {
-  display: block !important;
-  width: 100% !important;
-  min-height: 52px !important;
-  height: 52px !important;
-  box-sizing: border-box !important;
-  padding: 20px 15px 4px !important;
-  line-height: 1.25 !important;
-  background: rgba(var(--b-sc), 0.15) !important;
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-input-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-select-bc,
+html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-select-bc {
   border: 0 !important;
-  border-radius: var(--border-radius, 4px) !important;
-  color: rgba(var(--b-sc), 0.9) !important;
-  font-size: 14px !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-input-bc:read-only,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-input-bc:read-only {
-  color: rgba(var(--b-sc), 0.6) !important;
-  background: rgba(var(--b-sc), 0.05) !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-title-bc {
-  left: 15px !important;
-  right: auto !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  font-size: 14px !important;
-  line-height: 14px !important;
-  text-align: left !important;
-  pointer-events: none;
-  z-index: 3 !important;
-}
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-bc.filled .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .form-control-bc.focused .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-bc.filled .form-control-title-bc,
-html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .form-control-bc.focused .form-control-title-bc,
+
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .multi-select-bc[data-cm622-ms] .form-control-bc.filled .form-control-title-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #personalDetailsForm .multi-select-bc[data-cm622-ms] .form-control-bc.focused .form-control-title-bc,
 html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalDetailsForm .multi-select-bc[data-cm622-ms] .form-control-bc.filled .form-control-title-bc,
@@ -1718,10 +1472,11 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain #personalD
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 26px !important;
-  box-shadow: 0 2px 10px #fb275cb3 !important;
-  background: linear-gradient(329.84deg, #d80d83f2 27.27%, #f037a2f2 66.3%, #d80d83f2 110.73%) !important;
-  color: #fff !important;
+  border-radius: var(--border-radius, 4px) !important;
+  box-shadow: none !important;
+  background: rgba(var(--oc-1), 1) !important;
+  background-image: none !important;
+  color: rgba(var(--oc-1-sc), 1) !important;
   text-transform: uppercase;
   font-size: 12px;
   font-weight: 500;

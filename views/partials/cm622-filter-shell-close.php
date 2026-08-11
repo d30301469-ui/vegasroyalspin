@@ -8,6 +8,7 @@ $cm622_filter_submit_id = (string) ($cm622_filter_submit_id ?? '');
 $cm622_filter_submit_type = (string) ($cm622_filter_submit_type ?? 'submit');
 $cm622_filter_tag = !empty($cm622_filter_no_form) ? 'div' : 'form';
 ?>
+        </div>
         <div class="u-i-p-c-footer-bc">
           <button
             class="btn a-color"

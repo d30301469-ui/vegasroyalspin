@@ -73,10 +73,10 @@ $profile_close_href_full = '/profile/details';
 
             <div id="bonusClaimsStatus" class="bonus-claims-status" role="status" aria-live="polite"></div>
 
-            <div class="bonus-history-content bonus-claims-content">
+            <div class="bonus-history-content bonus-claims-content u-i-page-content">
                 <div id="bonusClaimsLoading" class="bonus-claims-loading is-hidden" hidden>Yükleniyor…</div>
                 <p id="bonusClaimsEmpty" class="bonus-history-empty bonus-claims-empty is-hidden" hidden>Henüz bonus talebi bulunmuyor.</p>
-                <div class="table-responsive bonus-claims-table-wrap is-hidden" id="bonusClaimsTableWrap" hidden>
+                <div class="table-responsive bonus-claims-table-wrap u-i-page-table is-hidden" id="bonusClaimsTableWrap" hidden>
                     <table class="bonus-history-table bonus-claims-table">
                         <thead>
                             <tr>

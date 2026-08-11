@@ -104,12 +104,12 @@ window.__WITHDRAW_HISTORY_ENDPOINT__ = '/api/v2/withdraw-history';
                 ?>
             </div>
 
-            <div class="tx-history-content">
+            <div class="tx-history-content u-i-page-content">
                 <div id="txHistoryEmpty" class="tx-history-empty" style="display: none;">
                     Kayıt bulunamadı
                 </div>
                 <div id="txHistoryError" class="tx-history-empty tx-history-cell-err" style="display: none;"></div>
-                <div id="txHistoryTableWrap" class="tx-history-table-wrap">
+                <div id="txHistoryTableWrap" class="tx-history-table-wrap u-i-page-table">
                     <table class="tx-history-table" id="transactionTable">
                         <thead>
                             <tr>

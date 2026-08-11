@@ -113,7 +113,7 @@ $filterLabels = [
                 ?>
             </div>
             <p class="bet-history-empty" data-casino-history-empty hidden>Gösterilecek oyun geçmişi yok</p>
-            <div class="table-responsive" data-casino-history-table-wrap>
+            <div class="table-responsive u-i-page-table" data-casino-history-table-wrap>
                 <table class="bet-history-table" id="casinoGameHistoryTable">
                     <thead>
                         <tr>

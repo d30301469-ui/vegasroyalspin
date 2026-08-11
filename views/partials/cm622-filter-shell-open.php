@@ -26,3 +26,4 @@ $cm622_filter_tag = !empty($cm622_filter_no_form) ? 'div' : 'form';
         action="<?= htmlspecialchars($cm622_filter_action, ENT_QUOTES, 'UTF-8') ?>"
         <?php endif; ?>
       >
+        <div class="componentFilterBody-content">

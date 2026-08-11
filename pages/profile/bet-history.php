@@ -543,11 +543,11 @@ $profile_modal = !empty($_GET['modal']) && $_GET['modal'] === '1';
             include __DIR__ . '/../../views/partials/cm622-filter-shell-close.php';
             ?>
 
-            <div class="bet-history-content">
+            <div class="bet-history-content u-i-page-content">
                 <?php if (empty($transactions)): ?>
                 <p class="bet-history-empty">Gösterilecek bir şey yok</p>
                 <?php else: ?>
-                <div class="table-responsive">
+                <div class="table-responsive u-i-page-table">
                 <table class="bet-history-table" id="betHistoryTable">    
                     <thead>    
                         <tr>    

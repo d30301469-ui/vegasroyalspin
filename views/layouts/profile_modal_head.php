@@ -15,6 +15,21 @@ $cm622ProfileFixCssVer = (string)(
         ? (filemtime($assetCssDir . '/profile-cm622-fix.css') . '-' . filesize($assetCssDir . '/profile-cm622-fix.css'))
         : $assetVer
 );
+$cm622ProfileOriginalDepositCssVer = (string)(
+    file_exists($assetCssDir . '/profile-cm622-original-deposit.css')
+        ? (filemtime($assetCssDir . '/profile-cm622-original-deposit.css') . '-' . filesize($assetCssDir . '/profile-cm622-original-deposit.css'))
+        : $assetVer
+);
+$cm622ProfileOriginalFiltersCssVer = (string)(
+    file_exists($assetCssDir . '/profile-cm622-original-filters-tables.css')
+        ? (filemtime($assetCssDir . '/profile-cm622-original-filters-tables.css') . '-' . filesize($assetCssDir . '/profile-cm622-original-filters-tables.css'))
+        : $assetVer
+);
+$cm622ProfileOriginalCompleteCssVer = (string)(
+    file_exists($assetCssDir . '/profile-cm622-original-complete.css')
+        ? (filemtime($assetCssDir . '/profile-cm622-original-complete.css') . '-' . filesize($assetCssDir . '/profile-cm622-original-complete.css'))
+        : $assetVer
+);
 $siteComponentsCssVer = (string)(
     file_exists($assetCssDir . '/site-components.css')
         ? (filemtime($assetCssDir . '/site-components.css') . '-' . filesize($assetCssDir . '/site-components.css'))
@@ -36,6 +51,9 @@ $profileJsVer = (string)((file_exists($assetJsDir . '/profile.js') ? filemtime($
   <link href="/assets/css/site-components.css?v=<?= htmlspecialchars($siteComponentsCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622.css?v=<?= htmlspecialchars($cm622ProfileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-fix.css?v=<?= htmlspecialchars($cm622ProfileFixCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/profile-cm622-original-deposit.css?v=<?= htmlspecialchars($cm622ProfileOriginalDepositCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/profile-cm622-original-filters-tables.css?v=<?= htmlspecialchars($cm622ProfileOriginalFiltersCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/profile-cm622-original-complete.css?v=<?= htmlspecialchars($cm622ProfileOriginalCompleteCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-sidebar.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-responsive.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

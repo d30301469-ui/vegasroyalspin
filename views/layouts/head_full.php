@@ -33,6 +33,11 @@ $cm622ProfileOriginalFiltersCssVer = (string) (
         ? (filemtime($assetCssDir . '/profile-cm622-original-filters-tables.css') . '-' . filesize($assetCssDir . '/profile-cm622-original-filters-tables.css'))
         : $assetVer
 );
+$cm622ProfileOriginalCompleteCssVer = (string) (
+    file_exists($assetCssDir . '/profile-cm622-original-complete.css')
+        ? (filemtime($assetCssDir . '/profile-cm622-original-complete.css') . '-' . filesize($assetCssDir . '/profile-cm622-original-complete.css'))
+        : $assetVer
+);
 $siteComponentsCssVer = (string) (
     file_exists($assetCssDir . '/site-components.css')
         ? (filemtime($assetCssDir . '/site-components.css') . '-' . filesize($assetCssDir . '/site-components.css'))
@@ -120,6 +125,7 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/profile-cm622-fix.css?v=<?= htmlspecialchars($cm622ProfileFixCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-original-deposit.css?v=<?= htmlspecialchars($cm622ProfileOriginalDepositCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-original-filters-tables.css?v=<?= htmlspecialchars($cm622ProfileOriginalFiltersCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <link href="/assets/css/profile-cm622-original-complete.css?v=<?= htmlspecialchars($cm622ProfileOriginalCompleteCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-modal.css?v=<?= htmlspecialchars($modalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-responsive.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-footer.css?v=<?= htmlspecialchars($footerBcCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
