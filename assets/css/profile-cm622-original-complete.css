@@ -2252,3 +2252,483 @@ html.is-web #profileModal .profile-security-single .u-i-p-c-footer-bc .btn.a-col
   box-shadow: none !important;
   background-image: none !important;
 }
+
+/* Bonus areas (spor / casino / history / freespin) — restored after profile.css removal */
+html.is-web #profileModal .personal-details-page--bonus-unified,
+html.is-web #profilePlayerMain .personal-details-page--bonus-unified {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+html.is-web #profileModal .bonus-unified-card,
+html.is-web #profilePlayerMain .bonus-unified-card {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+  flex: 0 0 auto !important;
+}
+html.is-web #profileModal .bonus-spor-content,
+html.is-web #profileModal .bonus-casino-content,
+html.is-web #profilePlayerMain .bonus-spor-content,
+html.is-web #profilePlayerMain .bonus-casino-content {
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: 4px 0 12px !important;
+}
+html.is-web #profileModal .profile-bonus-claim-panel,
+html.is-web #profilePlayerMain .profile-bonus-claim-panel {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+html.is-web #profileModal .profile-bonus-claim-warning,
+html.is-web #profilePlayerMain .profile-bonus-claim-warning {
+  margin: 0 !important;
+  padding: 10px 12px !important;
+  border-radius: var(--border-radius, 4px) !important;
+  border: 1px solid rgba(255, 120, 120, 0.4) !important;
+  background: rgba(255, 120, 120, 0.12) !important;
+  color: #ffd2d2 !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+html.is-web #profileModal .profile-bonus-claim-grid,
+html.is-web #profilePlayerMain .profile-bonus-claim-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+@media (min-width: 1200px) {
+  html.is-web #profileModal .profile-bonus-claim-grid,
+  html.is-web #profilePlayerMain .profile-bonus-claim-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 900px) {
+  html.is-web #profileModal .profile-bonus-claim-grid,
+  html.is-web #profilePlayerMain .profile-bonus-claim-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+html.is-web #profileModal .profile-bonus-claim-card,
+html.is-web #profilePlayerMain .profile-bonus-claim-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  padding: 12px !important;
+  border: 1px solid rgba(var(--b-sc), 0.08) !important;
+  border-radius: var(--border-radius, 4px) !important;
+  background: rgba(var(--b-sc), 0.05) !important;
+  color: rgba(var(--b-sc), 1) !important;
+}
+html.is-web #profileModal .profile-bonus-claim-image,
+html.is-web #profilePlayerMain .profile-bonus-claim-image {
+  width: 100% !important;
+  aspect-ratio: 57 / 40 !important;
+  object-fit: cover !important;
+  border-radius: var(--border-radius, 4px) !important;
+  background: rgba(var(--b-sc), 0.06) !important;
+}
+html.is-web #profileModal .profile-bonus-claim-title,
+html.is-web #profilePlayerMain .profile-bonus-claim-title {
+  margin: 0 !important;
+  color: rgba(var(--b-sc), 1) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+html.is-web #profileModal .profile-bonus-claim-desc,
+html.is-web #profilePlayerMain .profile-bonus-claim-desc {
+  margin: 0 !important;
+  flex: 1 1 auto !important;
+  color: rgba(var(--b-sc), 0.7) !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+html.is-web #profileModal .profile-bonus-claim-btn,
+html.is-web #profilePlayerMain .profile-bonus-claim-btn {
+  align-self: stretch !important;
+  width: 100% !important;
+  min-height: 36px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: var(--border-radius, 4px) !important;
+  padding: 0 14px !important;
+  background: rgba(var(--oc-1), 1) !important;
+  color: rgba(var(--oc-1-sc), 1) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+html.is-web #profileModal .profile-bonus-claim-btn:hover,
+html.is-web #profilePlayerMain .profile-bonus-claim-btn:hover {
+  background: rgba(var(--oc-1-hover), 1) !important;
+}
+html.is-web #profileModal .profile-bonus-claim-btn:disabled,
+html.is-web #profilePlayerMain .profile-bonus-claim-btn:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
+html.is-web #profileModal .profile-bonus-claim-status,
+html.is-web #profileModal .profile-active-bonus-loading,
+html.is-web #profileModal .profile-active-bonus-empty,
+html.is-web #profileModal .profile-active-bonus-error,
+html.is-web #profilePlayerMain .profile-bonus-claim-status,
+html.is-web #profilePlayerMain .profile-active-bonus-loading,
+html.is-web #profilePlayerMain .profile-active-bonus-empty,
+html.is-web #profilePlayerMain .profile-active-bonus-error {
+  margin: 0 !important;
+  color: rgba(var(--b-sc), 0.72) !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+html.is-web #profileModal .profile-bonus-claim-status.is-success,
+html.is-web #profilePlayerMain .profile-bonus-claim-status.is-success {
+  color: #8af1b5 !important;
+}
+html.is-web #profileModal .profile-bonus-claim-status.is-error,
+html.is-web #profileModal .profile-active-bonus-error,
+html.is-web #profilePlayerMain .profile-bonus-claim-status.is-error,
+html.is-web #profilePlayerMain .profile-active-bonus-error {
+  color: #ffb5b5 !important;
+}
+html.is-web #profileModal .profile-active-bonus-card,
+html.is-web #profilePlayerMain .profile-active-bonus-card {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 0 4px !important;
+  padding: 14px !important;
+  border: 1px solid rgba(var(--b-sc), 0.1) !important;
+  border-radius: var(--border-radius, 4px) !important;
+  background: rgba(var(--b-sc), 0.06) !important;
+  color: rgba(var(--b-sc), 1) !important;
+  text-align: left !important;
+}
+html.is-web #profileModal .profile-active-bonus-title,
+html.is-web #profilePlayerMain .profile-active-bonus-title {
+  margin: 0 0 6px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: rgba(var(--b-sc), 1) !important;
+}
+html.is-web #profileModal .profile-active-bonus-sub,
+html.is-web #profilePlayerMain .profile-active-bonus-sub {
+  margin: 0 0 12px !important;
+  font-size: 13px !important;
+  color: rgba(var(--b-sc), 0.7) !important;
+}
+html.is-web #profileModal .profile-active-bonus-dl,
+html.is-web #profilePlayerMain .profile-active-bonus-dl {
+  margin: 0 0 12px !important;
+  display: grid !important;
+  grid-template-columns: minmax(7rem, 40%) 1fr !important;
+  gap: 6px 12px !important;
+  font-size: 13px !important;
+}
+html.is-web #profileModal .profile-active-bonus-dl dt,
+html.is-web #profilePlayerMain .profile-active-bonus-dl dt {
+  margin: 0 !important;
+  color: rgba(var(--b-sc), 0.55) !important;
+  font-weight: 600 !important;
+}
+html.is-web #profileModal .profile-active-bonus-dl dd,
+html.is-web #profilePlayerMain .profile-active-bonus-dl dd {
+  margin: 0 !important;
+  color: rgba(var(--b-sc), 1) !important;
+}
+html.is-web #profileModal .profile-active-bonus-progress,
+html.is-web #profilePlayerMain .profile-active-bonus-progress {
+  height: 8px !important;
+  border-radius: 6px !important;
+  background: rgba(var(--b-sc), 0.12) !important;
+  overflow: hidden !important;
+  margin-bottom: 6px !important;
+}
+html.is-web #profileModal .profile-active-bonus-progress-bar,
+html.is-web #profilePlayerMain .profile-active-bonus-progress-bar {
+  height: 100% !important;
+  border-radius: 6px !important;
+  background: rgba(var(--oc-1), 1) !important;
+}
+html.is-web #profileModal .profile-active-bonus-pct,
+html.is-web #profilePlayerMain .profile-active-bonus-pct {
+  margin: 0 0 10px !important;
+  font-size: 12px !important;
+  color: rgba(var(--b-sc), 0.65) !important;
+}
+html.is-web #profileModal .profile-active-bonus-meta,
+html.is-web #profilePlayerMain .profile-active-bonus-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+}
+html.is-web #profileModal .profile-active-bonus-badge,
+html.is-web #profileModal .profile-active-bonus-cat,
+html.is-web #profilePlayerMain .profile-active-bonus-badge,
+html.is-web #profilePlayerMain .profile-active-bonus-cat {
+  display: inline-block !important;
+  padding: 3px 8px !important;
+  border-radius: var(--border-radius, 4px) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  background: rgba(var(--oc-1), 0.28) !important;
+  border: 1px solid rgba(var(--b-sc), 0.12) !important;
+  color: rgba(var(--b-sc), 0.92) !important;
+}
+html.is-web #profileModal .profile-active-bonus-cat,
+html.is-web #profilePlayerMain .profile-active-bonus-cat {
+  background: rgba(var(--b-sc), 0.08) !important;
+  font-weight: 600 !important;
+}
+html.is-web #profileModal .profile-active-bonus-dates,
+html.is-web #profilePlayerMain .profile-active-bonus-dates {
+  margin: 0 !important;
+  font-size: 12px !important;
+  color: rgba(var(--b-sc), 0.55) !important;
+  line-height: 1.45 !important;
+}
+html.is-web #profileModal .bonus-claims-lead,
+html.is-web #profilePlayerMain .bonus-claims-lead {
+  margin: 0 0 10px !important;
+  padding: 0 !important;
+  color: rgba(var(--b-sc), 0.75) !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+html.is-web #profileModal .bonus-claims-status,
+html.is-web #profilePlayerMain .bonus-claims-status {
+  min-height: 18px !important;
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+  color: rgba(var(--b-sc), 0.7) !important;
+  font-size: 13px !important;
+}
+html.is-web #profileModal .bonus-claims-status:empty,
+html.is-web #profilePlayerMain .bonus-claims-status:empty {
+  display: none !important;
+}
+html.is-web #profileModal .bonus-claims-loading,
+html.is-web #profilePlayerMain .bonus-claims-loading {
+  text-align: center !important;
+  padding: 24px 8px !important;
+  color: rgba(var(--b-sc), 0.7) !important;
+}
+html.is-web #profileModal .bonus-claims-loading.is-hidden,
+html.is-web #profileModal .bonus-claims-empty.is-hidden,
+html.is-web #profileModal .bonus-claims-table-wrap.is-hidden,
+html.is-web #profilePlayerMain .bonus-claims-loading.is-hidden,
+html.is-web #profilePlayerMain .bonus-claims-empty.is-hidden,
+html.is-web #profilePlayerMain .bonus-claims-table-wrap.is-hidden {
+  display: none !important;
+}
+html.is-web #profileModal .bonus-history-empty,
+html.is-web #profileModal .bonus-claims-empty,
+html.is-web #profilePlayerMain .bonus-history-empty,
+html.is-web #profilePlayerMain .bonus-claims-empty {
+  margin: 0 !important;
+  color: rgba(var(--b-sc), 0.7) !important;
+  font-size: 13px !important;
+}
+html.is-web #profileModal .bonus-claims-table .bcm-status,
+html.is-web #profilePlayerMain .bonus-claims-table .bcm-status {
+  display: inline-block !important;
+  padding: 2px 8px !important;
+  border-radius: var(--border-radius, 4px) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+html.is-web #profileModal .bonus-claims-table .bcm-status--pending,
+html.is-web #profilePlayerMain .bonus-claims-table .bcm-status--pending {
+  background: rgba(255, 193, 7, 0.2) !important;
+  color: #ffc107 !important;
+}
+html.is-web #profileModal .bonus-claims-table .bcm-status--approved,
+html.is-web #profilePlayerMain .bonus-claims-table .bcm-status--approved {
+  background: rgba(76, 175, 80, 0.22) !important;
+  color: #81c784 !important;
+}
+html.is-web #profileModal .bonus-claims-table .bcm-status--rejected,
+html.is-web #profilePlayerMain .bonus-claims-table .bcm-status--rejected {
+  background: rgba(244, 67, 54, 0.2) !important;
+  color: #ef9a9a !important;
+}
+html.is-web #profileModal .freespin-tabs,
+html.is-web #profilePlayerMain .freespin-tabs {
+  display: flex !important;
+  gap: 0 !important;
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+html.is-web #profileModal .freespin-tab,
+html.is-web #profilePlayerMain .freespin-tab {
+  flex: 1 !important;
+  padding: 10px 12px !important;
+  text-align: center !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  color: rgba(var(--b-sc), 0.75) !important;
+  text-transform: uppercase !important;
+  text-decoration: none !important;
+  border-radius: var(--border-radius, 4px) !important;
+  background: rgba(var(--b-sc), 0.05) !important;
+}
+html.is-web #profileModal .freespin-tab:hover,
+html.is-web #profilePlayerMain .freespin-tab:hover {
+  color: rgba(var(--b-sc), 1) !important;
+  background: rgba(var(--b-sc), 0.1) !important;
+}
+html.is-web #profileModal .freespin-tab.active,
+html.is-web #profilePlayerMain .freespin-tab.active {
+  color: rgba(var(--oc-1-sc), 1) !important;
+  background: rgba(var(--oc-1), 1) !important;
+}
+html.is-web #profileModal .freespin-content,
+html.is-web #profilePlayerMain .freespin-content {
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 0 !important;
+}
+html.is-web #profileModal .freespin-empty,
+html.is-web #profilePlayerMain .freespin-empty {
+  margin: 0 !important;
+  color: rgba(var(--b-sc), 0.7) !important;
+  font-size: 13px !important;
+  text-align: center !important;
+}
+html.is-web #profileModal .freespin-list,
+html.is-web #profilePlayerMain .freespin-list {
+  display: grid !important;
+  gap: 12px !important;
+  width: 100% !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+}
+html.is-web #profileModal .freespin-item,
+html.is-web #profilePlayerMain .freespin-item {
+  display: grid !important;
+  grid-template-columns: 72px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  padding: 12px !important;
+  border: 1px solid rgba(var(--b-sc), 0.08) !important;
+  border-radius: var(--border-radius, 4px) !important;
+  background: rgba(var(--b-sc), 0.05) !important;
+  color: rgba(var(--b-sc), 1) !important;
+}
+html.is-web #profileModal .freespin-item-game,
+html.is-web #profilePlayerMain .freespin-item-game {
+  aspect-ratio: 1 / 1 !important;
+  border-radius: var(--border-radius, 4px) !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(var(--b-sc), 0.08) !important;
+  background: rgba(5, 10, 28, 0.75) !important;
+}
+html.is-web #profileModal .freespin-item-game img,
+html.is-web #profilePlayerMain .freespin-item-game img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+html.is-web #profileModal .freespin-item-col,
+html.is-web #profilePlayerMain .freespin-item-col {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+html.is-web #profileModal .freespin-spins,
+html.is-web #profilePlayerMain .freespin-spins {
+  grid-column: 2 !important;
+}
+html.is-web #profileModal .freespin-status-col,
+html.is-web #profilePlayerMain .freespin-status-col {
+  grid-column: 1 / -1 !important;
+  margin-top: 2px !important;
+  padding-top: 10px !important;
+  border-top: 1px dashed rgba(var(--b-sc), 0.14) !important;
+}
+html.is-web #profileModal .freespin-item strong,
+html.is-web #profileModal .freespin-item b,
+html.is-web #profilePlayerMain .freespin-item strong,
+html.is-web #profilePlayerMain .freespin-item b {
+  display: block !important;
+  font-size: 14px !important;
+}
+html.is-web #profileModal .freespin-item span,
+html.is-web #profileModal .freespin-item small,
+html.is-web #profilePlayerMain .freespin-item span,
+html.is-web #profilePlayerMain .freespin-item small {
+  color: rgba(var(--b-sc), 0.68) !important;
+  display: block !important;
+  font-size: 12px !important;
+}
+html.is-web #profileModal .freespin-status,
+html.is-web #profilePlayerMain .freespin-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+html.is-web #profileModal .freespin-status--active,
+html.is-web #profileModal .freespin-status--new,
+html.is-web #profilePlayerMain .freespin-status--active,
+html.is-web #profilePlayerMain .freespin-status--new {
+  background: rgba(43, 195, 92, 0.18) !important;
+  border: 1px solid rgba(43, 195, 92, 0.35) !important;
+  color: #9df0b9 !important;
+}
+html.is-web #profileModal .freespin-status--played,
+html.is-web #profilePlayerMain .freespin-status--played {
+  background: rgba(36, 145, 255, 0.18) !important;
+  border: 1px solid rgba(36, 145, 255, 0.35) !important;
+  color: #9ec9ff !important;
+}
+html.is-web #profileModal .freespin-status--expired,
+html.is-web #profileModal .freespin-status--canceled,
+html.is-web #profilePlayerMain .freespin-status--expired,
+html.is-web #profilePlayerMain .freespin-status--canceled {
+  background: rgba(255, 114, 114, 0.15) !important;
+  border: 1px solid rgba(255, 114, 114, 0.35) !important;
+  color: #ffb5b5 !important;
+}
+html.is-web #profileModal .freespin-launch-btn,
+html.is-web #profilePlayerMain .freespin-launch-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: fit-content !important;
+  margin-top: 8px !important;
+  min-height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: var(--border-radius, 4px) !important;
+  background: rgba(var(--oc-1), 1) !important;
+  color: rgba(var(--oc-1-sc), 1) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}

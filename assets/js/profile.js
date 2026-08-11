@@ -450,6 +450,17 @@
             var card = document.createElement('article');
             card.className = 'profile-bonus-claim-card';
 
+            var imageUrl = String(promo.image_url || promo.imageUrl || promo.image || '').trim();
+            if (imageUrl) {
+                var img = document.createElement('img');
+                img.className = 'profile-bonus-claim-image';
+                img.src = imageUrl;
+                img.alt = '';
+                img.loading = 'lazy';
+                img.decoding = 'async';
+                card.appendChild(img);
+            }
+
             var title = document.createElement('h3');
             title.className = 'profile-bonus-claim-title';
             title.textContent = String(promo.title || 'Bonus').trim() || 'Bonus';
@@ -467,7 +478,7 @@
 
             var action = document.createElement('button');
             action.type = 'button';
-            action.className = 'profile-bonus-claim-btn';
+            action.className = 'btn a-color profile-bonus-claim-btn';
             action.textContent = 'Talep Et';
             action.disabled = requiresDeposit && !hasConfirmedDeposit;
             if (action.disabled) {
