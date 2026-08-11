@@ -1,6 +1,6 @@
 /* vegasroyalspin PWA service worker */
 'use strict';
-const SW_VERSION = 'v27-lobby-stable-paint';
+const SW_VERSION = 'v28-font-fouc-fix';
 const STATIC_CACHE = `vrs-static-${SW_VERSION}`;
 
 const PRE_CACHE_URLS = [
@@ -87,7 +87,10 @@ function isAuthAppAsset(requestUrl) {
     requestUrl.pathname.startsWith('/assets/css/casino-slots-cm622') ||
     requestUrl.pathname.startsWith('/assets/css/casino-live-cm622') ||
     requestUrl.pathname.startsWith('/assets/css/casino-lobby-stable') ||
-    requestUrl.pathname.startsWith('/assets/css/casino-bgaming-motion')
+    requestUrl.pathname.startsWith('/assets/css/casino-bgaming-motion') ||
+    requestUrl.pathname.startsWith('/assets/css/fonts-critical') ||
+    requestUrl.pathname.startsWith('/assets/css/layout-header') ||
+    requestUrl.pathname.startsWith('/assets/css/layout-footer')
   );
 }
 

@@ -11,10 +11,9 @@ if (function_exists('isMobile') && isMobile() && defined('MOBILE_PATH')) {
     }
 }
 ?>
-<!-- Toastr (global bildirimler) -->
+<!-- Toastr (global bildirimler) — toastify CSS zaten head'de -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 <script src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>
 
 <div class="mainContentWrap">

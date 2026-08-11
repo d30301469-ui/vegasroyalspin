@@ -12,16 +12,14 @@
   --header-dropdown-item-bg: #333333;
 }
 
-/* BetConstruct Icons — woff2 kaldırıldı (bozuk dosya tüm ikonları gizliyordu) */
+/* BetConstruct Icons — tek woff2; optional = FOIT yok (görünmez→görünür flash yok) */
 @font-face {
   font-family: BetConstruct-Icons;
-  src: url("../fonts/BetConstruct-Icons.woff") format("woff"),
-       url("../fonts/BetConstruct-Icons.ttf") format("truetype"),
-       url("../fonts/BetConstruct-Icons.eot?#iefix") format("embedded-opentype"),
-       url("../fonts/BetConstruct-Icons.svg#BetConstruct-Icons") format("svg");
+  src: url("/assets/BetConstruct-Icons.CPdFP1TD.woff2") format("woff2"),
+       url("../fonts/BetConstruct-Icons.woff") format("woff");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: optional;
 }
 [class^="bc-i-"],
 [class*=" bc-i-"] {

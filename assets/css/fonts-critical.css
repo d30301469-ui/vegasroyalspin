@@ -1,0 +1,11 @@
+/**
+ * Early canonical icon font — one source, no FOIT.
+ * Loaded before layout-header / CM622 so glyphs stay stable on first paint.
+ */
+@font-face {
+  font-family: BetConstruct-Icons;
+  src: url("/assets/BetConstruct-Icons.CPdFP1TD.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: optional;
+}

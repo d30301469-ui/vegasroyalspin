@@ -4,12 +4,11 @@
 
 @font-face {
   font-family: BetConstruct-Icons;
-  src: url("/assets/fonts/BetConstruct-Icons.woff") format("woff"),
-       url("/assets/fonts/BetConstruct-Icons.ttf") format("truetype"),
-       url("/assets/fonts/BetConstruct-Icons.svg#BetConstruct-Icons") format("svg");
+  src: url("/assets/BetConstruct-Icons.CPdFP1TD.woff2") format("woff2"),
+       url("/assets/fonts/BetConstruct-Icons.woff") format("woff");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: optional;
 }
 
 [class^="bc-i-"],

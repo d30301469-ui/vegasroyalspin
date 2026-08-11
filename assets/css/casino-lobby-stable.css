@@ -1,7 +1,45 @@
 /**
  * Desktop lobby: clip carousels before Swiper JS runs so SSR rows
  * do not expand the page and then collapse (visible flicker).
+ * Also lock text to system Arial so late Rubik/CM622 cannot FOUC labels.
  */
+
+/* Re-assert icon font after CM622 (which ships font-display:block). */
+@font-face {
+  font-family: BetConstruct-Icons;
+  src: url("/assets/BetConstruct-Icons.CPdFP1TD.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: optional;
+}
+
+html body .slot-page-root--cm622,
+html body .bgaming-page-root--cm622 {
+  font-family: Arial, Helvetica, sans-serif !important;
+  --font-family: Arial, Helvetica, sans-serif !important;
+}
+
+html body .slot-page-root--cm622 .sectionTitleText,
+html body .slot-page-root--cm622 .sectionTitleTextHeading,
+html body .slot-page-root--cm622 .typography-heading,
+html body .slot-page-root--cm622 .ds-label,
+html body .slot-page-root--cm622 .ds-chip,
+html body .slot-page-root--cm622 .link__label,
+html body .slot-page-root--cm622 .provider-list-row,
+html body .slot-page-root--cm622 .casinoGameItemLabelBc,
+html body .slot-page-root--cm622 .casinoGameItemProviderBc,
+html body .bgaming-page-root--cm622 .sectionTitleText,
+html body .bgaming-page-root--cm622 .sectionTitleTextHeading,
+html body .bgaming-page-root--cm622 .typography-heading,
+html body .bgaming-page-root--cm622 .ds-label,
+html body .bgaming-page-root--cm622 .ds-chip,
+html body .bgaming-page-root--cm622 .link__label,
+html body .bgaming-page-root--cm622 .provider-list-row,
+html body .bgaming-page-root--cm622 .casinoGameItemLabelBc,
+html body .bgaming-page-root--cm622 .casinoGameItemProviderBc {
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
 .slot-page-root--cm622 .casino-container--desktop-lobby .carouselWrapper,
 .slot-page-root--cm622 .carouselWrapper[data-lobby-carousel-el],
 .bgaming-page-root--cm622 .casino-container--desktop-lobby .carouselWrapper,

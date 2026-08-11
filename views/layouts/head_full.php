@@ -94,6 +94,8 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link rel="preload" href="/assets/css/promotions.css?v=<?= htmlspecialchars($promoVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
   <link rel="preload" href="/assets/css/promotions-bonus-modal.css?v=<?= htmlspecialchars($bonusModalVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
   <?php endif; ?>
+  <link rel="preload" href="/assets/BetConstruct-Icons.CPdFP1TD.woff2" as="font" type="font/woff2" crossorigin>
+  <link href="/assets/css/fonts-critical.css?v=<?= htmlspecialchars((string) (file_exists($assetCssDir . '/fonts-critical.css') ? filemtime($assetCssDir . '/fonts-critical.css') : $assetVer), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-bootstrap-utils.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast/dist/css/iziToast.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">

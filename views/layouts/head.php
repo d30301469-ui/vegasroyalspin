@@ -125,6 +125,8 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link rel="preload" href="/assets/css/promotions.css?v=<?= htmlspecialchars($promoVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
   <link rel="preload" href="/assets/css/promotions-bonus-modal.css?v=<?= htmlspecialchars($bonusModalVer, ENT_QUOTES, 'UTF-8') ?>" as="style">
   <?php endif; ?>
+  <link rel="preload" href="/assets/BetConstruct-Icons.CPdFP1TD.woff2" as="font" type="font/woff2" crossorigin>
+  <link href="/assets/css/fonts-critical.css?v=<?= htmlspecialchars((string) (file_exists($assetCssDir . '/fonts-critical.css') ? filemtime($assetCssDir . '/fonts-critical.css') : $assetVer), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-bootstrap-utils.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast/dist/css/iziToast.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
@@ -190,9 +192,6 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
     <link href="/assets/css/home-slider.css?v=<?= htmlspecialchars($sliderAssetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
     <script defer src="/assets/js/slider.js?v=<?= htmlspecialchars($sliderAssetVer, ENT_QUOTES, 'UTF-8') ?>"></script>
     <?php if (!defined('SLIDER_ASSETS_IN_HEAD')) { define('SLIDER_ASSETS_IN_HEAD', true); } ?>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=optional" rel="stylesheet">
     <link href="/assets/css/casino-live-cm622.css?v=<?= htmlspecialchars($bcCm622LiveCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
     <link href="/assets/css/casino-lobby-stable.css?v=<?= htmlspecialchars((string) (file_exists($assetCssDir . '/casino-lobby-stable.css') ? filemtime($assetCssDir . '/casino-lobby-stable.css') : $assetVer), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif;
@@ -230,9 +229,6 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
       $bcCm622SlotsCssPath = $assetCssDir . '/casino-slots-cm622.css';
       $bcCm622SlotsCssVer = (string) (file_exists($bcCm622SlotsCssPath) ? filemtime($bcCm622SlotsCssPath) : $assetVer);
   ?>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=optional" rel="stylesheet">
   <link href="/assets/css/casino-slots-cm622.css?v=<?= htmlspecialchars($bcCm622SlotsCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/casino-lobby-stable.css?v=<?= htmlspecialchars((string) (file_exists($assetCssDir . '/casino-lobby-stable.css') ? filemtime($assetCssDir . '/casino-lobby-stable.css') : $assetVer), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif;
@@ -243,9 +239,6 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
       $bgamingMotionCssVer = (string) (file_exists($bgamingMotionCssPath) ? filemtime($bgamingMotionCssPath) : $assetVer);
       $lobbyStableCssVer = (string) (file_exists($assetCssDir . '/casino-lobby-stable.css') ? filemtime($assetCssDir . '/casino-lobby-stable.css') : $assetVer);
   ?>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=optional" rel="stylesheet">
   <link href="/assets/css/casino-slots-cm622.css?v=<?= htmlspecialchars($bcCm622BgamingCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/casino-bgaming-motion.css?v=<?= htmlspecialchars($bgamingMotionCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/casino-lobby-stable.css?v=<?= htmlspecialchars($lobbyStableCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
