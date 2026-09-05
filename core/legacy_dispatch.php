@@ -99,6 +99,7 @@ $routes = [
     '/register'              => ['AuthController',   'register'],
     '/kayit'                 => ['AuthController',   'register'],
     '/reset-password'        => ['AuthController',   'resetPasswordPage'],
+    '/unsubscribe'           => ['AuthController',   'unsubscribe'],
     '/logout'                => ['AuthController',   'logout'],
     '/payment/megapayz'      => ['PaymentController', 'megapayzDeposit'],
     '/api'                   => ['ApiCallbackController', 'index'],

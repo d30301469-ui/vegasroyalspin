@@ -17,8 +17,8 @@ if (
     && (
         (bool) preg_match('#/(?:gscw|gsc_wallet|gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet)(?:\.php)?(?:/|$)#i', '/' . $__gscWalletUri)
         || (bool) preg_match('#^(?:gscw|gsc_wallet|gsc-plus-wallet|gsc_plus_wallet|gamingsoft-wallet|gamingsoft_wallet)(?:\.php)?(?:/|$)#i', $__gscWalletRoute)
-        || (bool) preg_match('#/(?:bgaming-wallet|bgaming(?:-wallet)?|megapayz-callback|casino-callback|sportsbook-wallet|casino-aggregator-wallet|telegram/webhook)(?:\.php)?(?:/|$)#i', '/' . $__gscWalletUri)
-        || (bool) preg_match('#^(?:bgaming-wallet|bgaming(?:-wallet)?|megapayz-callback|casino-callback|sportsbook-wallet|casino-aggregator-wallet|telegram/webhook)(?:\.php)?(?:/|$)#i', $__gscWalletRoute)
+        || (bool) preg_match('#/(?:bgaming-wallet|bgaming(?:-wallet)?|megapayz-callback|casino-callback|sportsbook-wallet|sportsbook-distro-hook|casino-aggregator-wallet|telegram/webhook)(?:\.php)?(?:/|$)#i', '/' . $__gscWalletUri)
+        || (bool) preg_match('#^(?:bgaming-wallet|bgaming(?:-wallet)?|megapayz-callback|casino-callback|sportsbook-wallet|sportsbook-distro-hook|casino-aggregator-wallet|telegram/webhook)(?:\.php)?(?:/|$)#i', $__gscWalletRoute)
     )
 ) {
     define('APP_API_NO_SESSION', true);
@@ -270,6 +270,11 @@ if ($normalizedRoute === 'internal/reset-pending-transactions') {
 // Handle them here before member/admin route module dispatch to avoid 404.
 if ($method === 'POST' && in_array($route, ['sportsbook-wallet', 'sportsbook_wallet', 'sportsbook-wallet.php', 'sportsbook_callback', 'sportsbook-callback'], true)) {
     require __DIR__ . '/sportsbook_callback.php';
+    exit;
+}
+
+if ($method === 'POST' && in_array($route, ['sportsbook-distro-hook', 'sportsbook_distro_hook', 'sportsbook-distro-hook.php', 'sportsbook-distro', 'sportsbook_distro'], true)) {
+    require __DIR__ . '/sportsbook_distro_hook.php';
     exit;
 }
 

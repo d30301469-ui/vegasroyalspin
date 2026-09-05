@@ -185,7 +185,7 @@
                     });
                 }
             } catch (err) {
-                if (typeof console !== 'undefined') console.warn('Reset request form init:', err);
+                if (typeof console !== 'undefined' && window.__MEMBER_API_CONSOLE__ === true) console.warn('Reset request form init:', err);
             }
 
             function setRequestLoading(loading) {
@@ -276,7 +276,7 @@
                 });
             }
         } catch (err) {
-            if (typeof console !== 'undefined') console.warn('Reset password form init:', err);
+            if (typeof console !== 'undefined' && window.__MEMBER_API_CONSOLE__ === true) console.warn('Reset password form init:', err);
         }
 
         function setLoading(loading) {

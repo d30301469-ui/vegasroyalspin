@@ -1,17 +1,20 @@
 /**
- * Üye API tanı konsolu — tüm /api/v2 yanıtları ve bootstrap state console'da.
+ * Üye API tanı konsolu — varsayılan KAPALI.
+ * Açmak: ?debug=1  veya  localStorage.setItem('app_member_debug','1')
  * Kapatmak: localStorage.removeItem('app_member_debug')
  */
 (function (w) {
     'use strict';
 
+    var noopConsole = {
+        enabled: function () { return false; },
+        snapshot: function () { return {}; },
+        dump: function () {},
+        fetchAll: function () { return Promise.resolve([]); },
+        fetchBalance: function () { return Promise.resolve({}); }
+    };
+
     function consoleEnabled() {
-        if (w.__MEMBER_API_CONSOLE__ === false) {
-            return false;
-        }
-        if (w.__MEMBER_API_CONSOLE__ === true) {
-            return true;
-        }
         try {
             if (w.localStorage.getItem('app_member_debug') === '1') {
                 return true;
@@ -107,6 +110,12 @@
         });
     }
 
+    w.MetropolMemberConsole = noopConsole;
+
+    if (!consoleEnabled()) {
+        return;
+    }
+
     w.MetropolMemberConsole = {
         enabled: consoleEnabled,
         snapshot: snapshot,
@@ -138,10 +147,6 @@
             return fetchMember('/api/v2/balance');
         }
     };
-
-    if (!consoleEnabled()) {
-        return;
-    }
 
     log('[Metropol] member-api-console active');
     log('[Metropol] bootstrap', w.__MEMBER_BOOTSTRAP_STATE__ || snapshot());

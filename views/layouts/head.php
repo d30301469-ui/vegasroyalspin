@@ -74,6 +74,7 @@ $sliderAssetVer = (string) max(
 
 $requestPathRaw = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $requestPath    = $requestPathRaw === '/' ? '/' : rtrim($requestPathRaw, '/');
+$isSportbookPage = in_array($requestPath, ['/sportbook', '/sportsbook'], true);
 $scriptName     = basename($_SERVER['SCRIPT_NAME'] ?? '');
 
 $isPromosyonlar = ($requestPath === '/promosyonlar' || $scriptName === 'promosyonlar.php');
@@ -159,12 +160,18 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/layout-header.css?v=<?= htmlspecialchars($headerCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-sidebar.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-components.css?v=<?= htmlspecialchars($siteComponentsCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <?php
+  $headProfileRoute = str_starts_with($requestPath, '/profile');
+  $headLoggedIn = !empty($loggedIn);
+  if ($headProfileRoute || $headLoggedIn):
+  ?>
   <link href="/assets/css/profile-cm622.css?v=<?= htmlspecialchars($cm622ProfileCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-fix.css?v=<?= htmlspecialchars($cm622ProfileFixCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-original-deposit.css?v=<?= htmlspecialchars($cm622ProfileOriginalDepositCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-original-filters-tables.css?v=<?= htmlspecialchars($cm622ProfileOriginalFiltersCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-original-complete.css?v=<?= htmlspecialchars($cm622ProfileOriginalCompleteCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/profile-cm622-original-panes.css?v=<?= htmlspecialchars($cm622ProfileOriginalPanesCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+  <?php endif; ?>
   <link href="/assets/css/site-modal.css?v=<?= htmlspecialchars($modalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/site-responsive.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/layout-footer.css?v=<?= htmlspecialchars($footerBcCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
@@ -174,7 +181,6 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/auth-register-modal.css?v=<?= htmlspecialchars($registerModalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/auth-login-modal.css?v=<?= htmlspecialchars($loginModalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/auth-sliders.css?v=<?= htmlspecialchars($authSlidersCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-  <link href="/assets/css/vendor-daterangepicker.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
     <style>
       body.mobile-site .hdr-smart-panel-fixed {
         left: auto !important;
@@ -246,8 +252,6 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
     <link href="/assets/css/promotions.css?v=<?= htmlspecialchars($promoVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
     <link href="/assets/css/promotions-bonus-modal.css?v=<?= htmlspecialchars($bonusModalVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.min.css">
   <?php
   // CM622 casino skins load once in <head> for first paint (no body re-inject).
   if ($requestPath === '/slot'):
@@ -286,23 +290,19 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
       : "connect-src 'self' wss://*.sptpub.com https://*.sptpub.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://*.livechatinc.com wss://*.livechatinc.com https://*.livechat.com wss://*.livechat.com https://*.livechat-static.com https://admin.vegasroyalspin.com https://challenges.cloudflare.com";
   ?>
   <meta http-equiv="Content-Security-Policy" content="<?= htmlspecialchars($cspConnectSrc, ENT_QUOTES, 'UTF-8') ?>">
-    <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
 
   <?php if (!(defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOOK_LIGHTWEIGHT_LAYOUT)): ?>
+  <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
     <script defer src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script defer src="/assets/js/modal-polyfill.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.js"referrerpolicy="no-referrer"></script>
-    <script defer type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script defer type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <?php if ($isSportbookPage): ?>
     <script defer type="text/javascript" id="sportbook" src="https://iceexchange.sptpub.com/bt-renderer.min.js"></script>
-
-    
-
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <?php endif; ?>
 
   <script type="text/javascript">
     function loadHTMLVideo(sname) {

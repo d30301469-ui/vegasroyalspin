@@ -93,11 +93,7 @@ final class ApiFooter
                 ],
             ],
             'payments' => [],
-            'licence_rows' => [
-                [
-                    ['type' => 'text', 'html' => '<p>' . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . ' — lisans ve iletişim bilgileri admin panelden yönetilir.</p>'],
-                ],
-            ],
+            'licence_rows' => self::defaultLicenceRows($siteName),
             'flag_image' => '/assets/images/footer/flag-tr.png',
             'copyright_since' => (int) date('Y'),
             'site_name' => $siteName,
@@ -210,5 +206,32 @@ final class ApiFooter
         }
 
         return $normalized;
+    }
+
+    /** @return list<list<array<string, string>>> */
+    private static function defaultLicenceRows(string $siteName): array
+    {
+        foreach ([shared_project_root(), dirname(__DIR__, 2)] as $root) {
+            $manifestPath = rtrim($root, '/\\') . '/assets/images/footer/manifest.json';
+            if (!is_readable($manifestPath)) {
+                continue;
+            }
+            $raw = file_get_contents($manifestPath);
+            if (!is_string($raw)) {
+                continue;
+            }
+            $manifest = json_decode($raw, true);
+            if (!is_array($manifest['licence_rows'] ?? null) || $manifest['licence_rows'] === []) {
+                continue;
+            }
+
+            return $manifest['licence_rows'];
+        }
+
+        return [
+            [
+                ['type' => 'text', 'html' => '<p>' . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . ' — lisans ve iletişim bilgileri admin panelden yönetilir.</p>'],
+            ],
+        ];
     }
 }

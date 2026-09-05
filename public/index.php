@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * Alternate front controller when DocumentRoot = public/
+ * Production docroot should be site root (index.php), not public/ — see root index.php.
+ */
+
 $root = dirname(__DIR__);
 
 $requestPath = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);

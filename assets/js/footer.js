@@ -282,7 +282,9 @@
 
     function bonusKoduKullan() {
         if (typeof Swal === "undefined") {
-            console.error("SweetAlert2 (Swal) yüklü değil.");
+            if (window.__MEMBER_API_CONSOLE__ === true) {
+                console.error("SweetAlert2 (Swal) yüklü değil.");
+            }
             return;
         }
 
@@ -319,7 +321,9 @@
                 .catch(function (error) {
                     if (window.MaltabetToast) MaltabetToast.error((window.__ ? window.__('promo.error_retry', 'Hata oluştu, lütfen tekrar deneyin.') : 'Hata oluştu, lütfen tekrar deneyin.'), (window.__ ? window.__('common.error', 'Hata') : 'Hata'));
                     else alert((window.__ ? window.__('promo.error_retry', 'Hata oluştu, lütfen tekrar deneyin.') : 'Hata oluştu, lütfen tekrar deneyin.'));
-                    console.error("Error:", error);
+                    if (window.__MEMBER_API_CONSOLE__ === true) {
+                        console.error("Error:", error);
+                    }
                 });
         });
     }

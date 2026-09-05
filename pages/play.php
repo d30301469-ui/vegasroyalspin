@@ -101,22 +101,27 @@ if ($playCanonicalHome !== '') {
 $playPayload['platform'] = $playUaIsMobile ? 'MOBILE' : 'WEB';
 // Casino Aggregator GetGameUrl expects channel=desktop|mobile.
 $playPayload['channel'] = $playUaIsMobile ? 'mobile' : 'desktop';
+$playGameIdLower = strtolower($playGameId);
+$playIsAggregator = str_starts_with($playGameIdLower, 'aggregator:');
+$playIsMobileClient = $playUaIsMobile || (function_exists('isMobile') && isMobile());
+// Mobile (UA or SURFACE): always top-level provider open — iframe shell's purple
+// chrome / tap highlight was flashing behind or around in-game controls.
 $playPayload['open_mode'] = $playRequestedOpenMode !== ''
   ? $playRequestedOpenMode
-  : ((function_exists('isMobile') && isMobile()) ? 'redirect' : 'iframe');
+  : ($playIsMobileClient ? 'redirect' : 'iframe');
 // GSC+/Pragmatic (efinity) sessions are IP-bound and one-shot; iframe / third-party
 // cookie contexts show "It seems you are not logged in." — always top-level navigate.
 // BGaming stays iframe on desktop (provider sends X-Frame-Options: ALLOWALL) so the
 // play chrome (balance / fullscreen / close) remains; mobile still uses redirect above.
-$playGameIdLower = strtolower($playGameId);
-$playIsAggregator = str_starts_with($playGameIdLower, 'aggregator:');
-$playIsMobileClient = $playUaIsMobile || (function_exists('isMobile') && isMobile());
 if (str_starts_with($playGameIdLower, 'gsc:')) {
     $playPayload['open_mode'] = 'redirect';
 }
 // Casino Aggregator: desktop → /play iframe, mobile → top-level (normal) open.
 if ($playIsAggregator && $playRequestedOpenMode === '') {
     $playPayload['open_mode'] = $playIsMobileClient ? 'redirect' : 'iframe';
+}
+if ($playIsMobileClient) {
+    $playPayload['open_mode'] = 'redirect';
 }
 if ($playMode === 'real' && $playWallet !== '') {
     $playPayload['wallet'] = $playWallet;
@@ -163,7 +168,7 @@ if ($playBypassShell) {
   <title><?= htmlspecialchars($playTitle, ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="icon" type="image/svg+xml" href="/assets/images/favicons/favicon.svg">
   <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0f0522; color: #fff; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0f0522; color: #fff; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
     .play-redirecting { min-height: 100%; display: grid; place-items: center; }
     .play-redirecting img { width: 56px; height: 56px; display: block; }
   </style>
@@ -231,7 +236,9 @@ if ($playBypassShell) {
   -moz-osx-font-smoothing: grayscale;
 }
 .bc-i-wallet::before { content: "\e918"; }
-.play-shell-body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--play-body-bg); color: #e8eaed; }
+.play-shell-body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--play-body-bg); color: #e8eaed; -webkit-tap-highlight-color: transparent; }
+.play-shell-body a,
+.play-shell-body button { -webkit-tap-highlight-color: transparent; }
 .play-topbar {
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0; min-height: calc(var(--play-logo-height) + 16px); padding: 0 12px 0 14px;

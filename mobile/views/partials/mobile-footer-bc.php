@@ -152,7 +152,17 @@ $footerCurrentFlag = $footerLangFlagMap[$activeLang] ?? '/assets/images/flag/tr.
           }
           $itemType = (string) ($item['type'] ?? '');
           ?>
-          <?php if ($itemType === 'iframe'): ?>
+          <?php if ($itemType === 'licence_seal'): ?>
+            <a class="mobile-footer-bc__partner mobile-footer-bc__partner--licence"
+               href="<?= htmlspecialchars((string) ($item['href'] ?? '/cert.gcb.cw/'), ENT_QUOTES, 'UTF-8') ?>"
+               target="_blank"
+               rel="noopener noreferrer"
+               title="Lisans doğrulama">
+              <img src="<?= htmlspecialchars((string) ($item['src'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                   alt="<?= htmlspecialchars((string) ($item['alt'] ?? 'GCB Digital Seal'), ENT_QUOTES, 'UTF-8') ?>"
+                   loading="lazy">
+            </a>
+          <?php elseif ($itemType === 'iframe'): ?>
             <span class="mobile-footer-bc__partner mobile-footer-bc__partner--iframe">
               <iframe src="<?= htmlspecialchars((string) ($item['src'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                       title="Lisans doğrulama"

@@ -143,20 +143,35 @@ if (!function_exists('build_public_origin_url')) {
 }
 
 if (!function_exists('cloudflare_client_ip')) {
+    /**
+     * Gerçek ziyaretçi IP (Cloudflare / reverse proxy / loopback origin).
+     * Loopback REMOTE_ADDR (127.0.0.1) ancak proxy header yoksa kullanılır —
+     * FRONTEND_API_ONLY → 127.0.0.1 + CF-Connecting-IP senaryosunda edge IP yazılmaz.
+     */
     function cloudflare_client_ip(): string
     {
         $candidates = [
             (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''),
             (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''),
+            (string) ($_SERVER['HTTP_X_REAL_IP'] ?? ''),
             (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
         ];
+        $loopbackFallback = '';
         foreach ($candidates as $candidate) {
             $candidate = trim(explode(',', $candidate)[0] ?? '');
-            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP)) {
-                return $candidate;
+            if ($candidate === '' || filter_var($candidate, FILTER_VALIDATE_IP) === false) {
+                continue;
             }
+            if (in_array($candidate, ['127.0.0.1', '::1'], true)) {
+                if ($loopbackFallback === '') {
+                    $loopbackFallback = $candidate;
+                }
+                continue;
+            }
+
+            return $candidate;
         }
 
-        return '';
+        return $loopbackFallback;
     }
 }

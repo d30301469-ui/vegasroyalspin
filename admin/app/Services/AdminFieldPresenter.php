@@ -51,6 +51,18 @@ final class AdminFieldPresenter
             };
         }
 
+        if ($column === 'status' && $moduleKey === 'active-bonuses') {
+            $status = strtolower(trim((string) $value));
+
+            return match ($status) {
+                'active' => 'Aktif',
+                'completed' => 'Tamamlandı',
+                'expired' => 'Sonlandı',
+                'cancelled', 'canceled' => 'İptal',
+                default => $status !== '' ? $status : '-',
+            };
+        }
+
         return AdminDataRedactor::format($column, $value, $limit);
     }
 

@@ -272,11 +272,23 @@ final class AdminCommunicationController extends AdminController
     /** Mail sablonundaki logo/CTA linkleri icin frontend site adresini cozer. */
     private function frontendSiteUrl(): string
     {
-        if (function_exists('deploy_domain')) {
-            $url = trim((string) deploy_domain('frontend_url'));
-            if ($url !== '') {
-                return rtrim($url, '/');
+        if (!function_exists('mail_public_base_url')) {
+            $mailer = ADMIN_APP_PATH . '/Services/Mailer.php';
+            if (is_file($mailer)) {
+                require_once $mailer;
             }
+        }
+        if (function_exists('mail_public_base_url')) {
+            $from = '';
+            try {
+                $settings = $this->mailSettingsRow();
+                $from = trim((string) ($settings['from_email'] ?? $settings['mail_from_address'] ?? ''));
+                if ($from === '') {
+                    $from = trim((string) ($settings['smtp_user'] ?? ''));
+                }
+            } catch (Throwable) {
+            }
+            return mail_public_base_url($from !== '' ? $from : null);
         }
         $env = trim((string) (getenv('FRONTEND_URL') ?: getenv('SITE_URL') ?: ''));
         return $env !== '' ? rtrim($env, '/') : 'https://vegasroyalspin.com';
@@ -670,8 +682,14 @@ final class AdminCommunicationController extends AdminController
         $adminId = (int) ($adminUser['id'] ?? 0);
         $sentCount = 0;
         $failedCount = 0;
+        $skippedCount = 0;
         $lastError = '';
         $failedSamples = [];
+        $isBulk = $mode === 'bulk';
+        $pdo = AdminDatabase::pdo();
+        if ($enabled) {
+            mail_ensure_unsubscribe_table($pdo);
+        }
 
         foreach ($recipients as $recipient) {
             $email = (string) ($recipient['email'] ?? '');
@@ -682,6 +700,26 @@ final class AdminCommunicationController extends AdminController
                 continue;
             }
 
+            if ($enabled && mail_is_unsubscribed($pdo, $email)) {
+                $skippedCount++;
+                try {
+                    $stmt = $pdo->prepare(
+                        'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
+                         VALUES (:admin_id, :to_email, :subject, :body_preview, :status, NOW())'
+                    );
+                    $logTo = $fullName !== '' ? ($fullName . ' <' . $email . '>') : $email;
+                    $stmt->execute([
+                        'admin_id' => $adminId,
+                        'to_email' => substr($logTo, 0, 190),
+                        'subject' => $subject,
+                        'body_preview' => '[skipped] unsubscribed',
+                        'status' => 'skipped_unsubscribed',
+                    ]);
+                } catch (Throwable) {
+                }
+                continue;
+            }
+
             $personalizedBody = $body !== ''
                 ? $this->personalizeMailBody($body, $firstName, $lastName, $fullName)
                 : '';
@@ -689,11 +727,15 @@ final class AdminCommunicationController extends AdminController
             $ok = false;
             $error = '';
             $htmlBody = '';
+            $unsubscribeUrl = $enabled ? mail_unsubscribe_url($email, $from) : '';
             if (!$enabled) {
                 $error = 'mail_disabled';
             } else {
                 $templateOptions = $templateOptionsBase;
                 $templateOptions['member_name'] = $fullName !== '' ? $fullName : 'Üye';
+                if ($unsubscribeUrl !== '') {
+                    $templateOptions['unsubscribe_url'] = $unsubscribeUrl;
+                }
                 $bodyHtmlBlock = $personalizedBody !== ''
                     ? '<p style="margin:0;">' . nl2br(htmlspecialchars($personalizedBody, ENT_QUOTES, 'UTF-8')) . '</p>'
                     : '';
@@ -731,6 +773,9 @@ final class AdminCommunicationController extends AdminController
             if ($plainBody === '') {
                 $plainBody = $subject;
             }
+            if ($unsubscribeUrl !== '' && stripos($plainBody, $unsubscribeUrl) === false) {
+                $plainBody .= "\n\nAbonelikten çıkmak için: " . $unsubscribeUrl;
+            }
 
             $this->writeMemberInboxMessage($email, $subject, $plainBody);
 
@@ -743,7 +788,12 @@ final class AdminCommunicationController extends AdminController
                     $plainBody,
                     $error,
                     $htmlBody,
-                    $fullName
+                    $fullName,
+                    [
+                        'marketing' => true,
+                        'bulk' => $isBulk,
+                        'list_unsubscribe_url' => $unsubscribeUrl,
+                    ]
                 );
             }
 
@@ -759,7 +809,7 @@ final class AdminCommunicationController extends AdminController
             }
 
             try {
-                $stmt = AdminDatabase::pdo()->prepare(
+                $stmt = $pdo->prepare(
                     'INSERT INTO mail_outbound_log (admin_id, to_email, subject, body_preview, status, created_at)
                      VALUES (:admin_id, :to_email, :subject, :body_preview, :status, NOW())'
                 );
@@ -774,15 +824,24 @@ final class AdminCommunicationController extends AdminController
                 ]);
             } catch (Throwable) {
             }
+
+            // Toplu gönderimde hız sınırla (spam skorunu ve SMTP deferral'ı azaltır).
+            if ($isBulk && $enabled) {
+                usleep(250000);
+            }
         }
 
         if (count($recipients) === 1) {
             $_SESSION['admin_flash'] = $sentCount === 1
                 ? 'Mesaj gönderildi.'
-                : ('Mesaj gönderilemedi: ' . ($lastError !== '' ? $lastError : 'mail gönderimi pasif') . $this->mailErrorHint($lastError));
+                : ($skippedCount === 1
+                    ? 'Mesaj gönderilmedi: alıcı abonelikten çıkmış.'
+                    : ('Mesaj gönderilemedi: ' . ($lastError !== '' ? $lastError : 'mail gönderimi pasif') . $this->mailErrorHint($lastError)));
         } else {
             $lines = [
-                'Toplu gönderim özeti: ' . $sentCount . ' başarılı, ' . $failedCount . ' hatalı (toplam ' . count($recipients) . ').',
+                'Toplu gönderim özeti: ' . $sentCount . ' başarılı, ' . $failedCount . ' hatalı'
+                    . ($skippedCount > 0 ? (', ' . $skippedCount . ' abonelikten çıkmış atlandı') : '')
+                    . ' (toplam ' . count($recipients) . ').',
             ];
             if ($failedSamples !== []) {
                 $lines[] = 'Örnek hatalar: ' . implode('; ', $failedSamples);
@@ -836,12 +895,22 @@ final class AdminCommunicationController extends AdminController
     private function memberRecipients(): array
     {
         try {
-            $stmt = AdminDatabase::pdo()->query(
-                'SELECT email, name, surname FROM users
+            $pdo = AdminDatabase::pdo();
+            $sqlWithUnsub = 'SELECT u.email, u.name, u.surname FROM users u
+                 LEFT JOIN mail_unsubscribed m ON m.email = LOWER(TRIM(u.email))
+                 WHERE u.email IS NOT NULL AND TRIM(u.email) <> \'\'
+                   AND m.email IS NULL
+                 ORDER BY u.id ASC
+                 LIMIT 5000';
+            $sqlPlain = 'SELECT email, name, surname FROM users
                  WHERE email IS NOT NULL AND TRIM(email) <> \'\'
                  ORDER BY id ASC
-                 LIMIT 5000'
-            );
+                 LIMIT 5000';
+            try {
+                $stmt = $pdo->query($sqlWithUnsub);
+            } catch (Throwable) {
+                $stmt = $pdo->query($sqlPlain);
+            }
             $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
             if (!is_array($rows)) {
                 return [];
@@ -1184,9 +1253,15 @@ final class AdminCommunicationController extends AdminController
 
         if ($type === 'welcome') {
             $options['template_html'] = trim((string) ($settings['welcome_template_html'] ?? ''));
-            $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
-                . '<strong style="color:#ffffff;">' . $safeCompany . '</strong> ailesine hoş geldiniz. '
-                . 'Hesabınız başarıyla oluşturuldu; oyunları ve güncel kampanyaları keşfetmeye başlayabilirsiniz.'
+            $safeMember = htmlspecialchars((string) ($options['member_name'] ?? 'Örnek Üye'), ENT_QUOTES, 'UTF-8');
+            $bodyHtml = '<p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . 'Merhaba <strong style="color:#ffffff;">' . $safeMember . '</strong>,'
+                . '</p>'
+                . '<p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . 'Kayıt işleminiz başarılı bir şekilde oluşturulmuştur.'
+                . '</p>'
+                . '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . 'Hesabınız başarılı bir şekilde oluşturulmuştur.'
                 . '</p>'
                 . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
                 . 'Güvenliğiniz için şifrenizi kimseyle paylaşmayın.'
@@ -1194,8 +1269,8 @@ final class AdminCommunicationController extends AdminController
 
             return mail_render_template(
                 $siteUrl,
-                $companyName . ' üyeliğiniz başarıyla oluşturuldu',
-                'Aramıza Hoş Geldiniz!',
+                'Kayıt işleminiz başarılı bir şekilde oluşturulmuştur',
+                'Kayıt Başarılı',
                 $bodyHtml,
                 'Siteye Git',
                 $siteUrl !== '' ? $siteUrl : '#',

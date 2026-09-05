@@ -6,7 +6,7 @@ require_once __DIR__ . '/BackendApiClient.php';
 
 final class MemberViewDataService
 {
-    public static function balanceForSession(): float
+    public static function balanceForSession(int $timeoutSeconds = 15): float
     {
         $userId = (int) ($_SESSION['user_id'] ?? 0);
         if ($userId <= 0 || empty($_SESSION['loggedin'])) {
@@ -14,7 +14,7 @@ final class MemberViewDataService
         }
 
         if (function_exists('frontend_database_allowed') && !frontend_database_allowed()) {
-            $data = self::fetchViaApi('GET', 'balance.php');
+            $data = self::fetchViaApi('GET', 'balance.php', $timeoutSeconds);
             $balanceField = $data['balance'] ?? null;
             if (is_array($balanceField)) {
                 $balance = $balanceField['balance'] ?? $balanceField['total_balance'] ?? null;
@@ -72,7 +72,7 @@ final class MemberViewDataService
     /**
      * @return array<string, mixed>
      */
-    private static function fetchViaApi(string $method, string $path): array
+    private static function fetchViaApi(string $method, string $path, int $timeout = 15): array
     {
         require_once __DIR__ . '/ProfileApiHelper.php';
         $jwt = ProfileApiHelper::resolveMemberJwt();
@@ -85,7 +85,10 @@ final class MemberViewDataService
                 $method,
                 BackendApiClient::SVC_MAIN,
                 $path,
-                $jwt
+                $jwt,
+                [],
+                null,
+                max(1, $timeout)
             );
         } catch (Throwable) {
             return [];

@@ -592,7 +592,9 @@
                 });
             }
         } catch (err) {
-            if (typeof console !== 'undefined') console.warn('Login form init:', err);
+            if (typeof console !== 'undefined') {
+                if (window.__MEMBER_API_CONSOLE__ === true) console.warn('Login form init:', err);
+            }
         }
     }
 
@@ -779,7 +781,7 @@
                 });
             }
         } catch (err) {
-            if (typeof console !== 'undefined') console.warn('Forgot password form init:', err);
+            if (typeof console !== 'undefined' && window.__MEMBER_API_CONSOLE__ === true) console.warn('Forgot password form init:', err);
         }
 
         var alertEl = inLoginScope(scope, 'forgotPasswordAjaxAlert');

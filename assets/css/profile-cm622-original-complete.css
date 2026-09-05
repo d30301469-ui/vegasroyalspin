@@ -2084,7 +2084,25 @@ html.is-web #profileModal .dep-w-info-bc {
 html.is-web #profileModal .dep-w-info-bc > .slider-bc {
   flex: 0 0 auto !important;
   width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
   margin: 15px 0 0 !important;
+}
+html.is-web #profileModal .dep-w-info-bc > .slider-bc .carouselWrapper,
+html.is-web #profileModal .dep-w-info-bc > .slider-bc .swiper,
+html.is-web #profileModal .dep-w-info-bc > .slider-bc .swiper-wrapper,
+html.is-web #profileModal .dep-w-info-bc > .slider-bc .swiper-slide,
+html.is-web #profileModal .dep-w-info-bc > .slider-bc .sdr-item-holder-bc,
+html.is-web #profileModal .dep-w-info-bc > .slider-bc .sdr-item-bc {
+  height: auto !important;
+  min-height: 0 !important;
+}
+html.is-web #profileModal .dep-w-info-bc > .slider-bc .sdr-image-bc {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 140px !important;
+  object-fit: cover !important;
+  display: block !important;
 }
 html.is-web #profileModal .dep-w-info-bc > .horizontal-sl-list {
   display: flex !important;

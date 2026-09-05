@@ -380,8 +380,8 @@ if (!function_exists('admin_member_send_registration_success_mail')) {
         $subject = $companyName . ' — Kayıt Başarılı';
         $siteUrl = admin_member_reset_base_url();
         $messageText = 'Merhaba ' . $memberName . ",\n\n"
-            . $companyName . " ailesine hoş geldiniz. Hesabınız başarıyla oluşturuldu.\n"
-            . "Artık hesabınıza giriş yaparak oyunları ve kampanyaları keşfedebilirsiniz.\n\n"
+            . "Kayıt işleminiz başarılı bir şekilde oluşturulmuştur.\n"
+            . "Hesabınız başarılı bir şekilde oluşturulmuştur.\n\n"
             . ($siteUrl !== '' ? "Siteye git: " . $siteUrl . "\n\n" : '')
             . "Güvenliğiniz için şifrenizi kimseyle paylaşmayın.\n\n"
             . $companyName . ' Ekibi';
@@ -397,18 +397,23 @@ if (!function_exists('admin_member_send_registration_success_mail')) {
                 $domain = (string) (parse_url($siteUrl, PHP_URL_HOST) ?: 'vegasroyalspin.com');
                 $supportEmail = 'support@' . $domain;
             }
-            $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
-            $bodyHtml = '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
-                . '<strong style="color:#ffffff;">' . $safeCompany . '</strong> ailesine hoş geldiniz. '
-                . 'Hesabınız başarıyla oluşturuldu; oyunları ve güncel kampanyaları keşfetmeye başlayabilirsiniz.'
+            $safeMember = htmlspecialchars($memberName, ENT_QUOTES, 'UTF-8');
+            $bodyHtml = '<p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . 'Merhaba <strong style="color:#ffffff;">' . $safeMember . '</strong>,'
+                . '</p>'
+                . '<p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . 'Kayıt işleminiz başarılı bir şekilde oluşturulmuştur.'
+                . '</p>'
+                . '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#dcccf3;">'
+                . 'Hesabınız başarılı bir şekilde oluşturulmuştur.'
                 . '</p>'
                 . '<p style="margin:0;font-size:13px;line-height:1.7;color:#b9a3d6;">'
                 . 'Güvenliğiniz için şifrenizi kimseyle paylaşmayın.'
                 . '</p>';
             $htmlBody = mail_render_template(
                 $siteUrl,
-                $companyName . ' üyeliğiniz başarıyla oluşturuldu',
-                'Aramıza Hoş Geldiniz!',
+                'Kayıt işleminiz başarılı bir şekilde oluşturulmuştur',
+                'Kayıt Başarılı',
                 $bodyHtml,
                 'Siteye Git',
                 $siteUrl,
@@ -434,6 +439,9 @@ if (!function_exists('admin_member_ensure_user_table_columns')) {
      */
     function admin_member_ensure_user_table_columns(PDO $pdo): void
     {
+        if (function_exists('frontend_runtime_migrations_allowed') && !frontend_runtime_migrations_allowed()) {
+            return;
+        }
         static $ensured = false;
         if ($ensured) {
             return;
@@ -513,8 +521,17 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
         $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Kullanıcı adı/e-posta ve şifre zorunludur.']);
     }
     $pdo = AdminDatabase::pdo();
-    // Auto-migrate: ensure all required columns exist before query
-    admin_member_ensure_user_table_columns($pdo);
+    require_once __DIR__ . '/../includes/member_login_rate_limit.php';
+    $rateLimit = memberLoginRateLimitCheck($pdo, $login);
+    if (empty($rateLimit['allowed'])) {
+        $memberEnvelope(429, [
+            'success' => false,
+            'code' => 429,
+            'message' => (string) ($rateLimit['message'] ?? 'Çok fazla deneme.'),
+            'data' => ['retryAfterSec' => (int) ($rateLimit['retryAfterSec'] ?? 0)],
+        ]);
+    }
+    // Schema migrations should run via admin/database/migrations — not on every login.
     try {
         $stmt = $pdo->prepare('SELECT id, username, email, password, name, surname, banned FROM users WHERE username = :username OR email = :email LIMIT 1');
         $stmt->execute(['username' => $login, 'email' => $login]);
@@ -539,6 +556,7 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
         }
     }
     if (!is_array($user)) {
+        memberLoginRateLimitRecordFailure($pdo, $login);
         $memberEnvelope(401, ['success' => false, 'code' => 401, 'message' => 'Kullanıcı adı veya şifre hatalı.']);
     }
     if (!empty($user['banned'])) {
@@ -546,8 +564,22 @@ if ($method === 'POST' && ($route === 'login.php' || $route === 'auth/login')) {
     }
     $hash = (string) ($user['password'] ?? '');
     if (!$memberPasswordMatches($password, $hash)) {
+        memberLoginRateLimitRecordFailure($pdo, $login);
         $memberEnvelope(401, ['success' => false, 'code' => 401, 'message' => 'Kullanıcı adı veya şifre hatalı.']);
     }
+    if ($memberPasswordNeedsUpgrade($hash)
+        && function_exists('frontend_app_is_production')
+        && frontend_app_is_production()
+        && !(function_exists('frontend_legacy_password_login_allowed') && frontend_legacy_password_login_allowed())) {
+        memberLoginRateLimitRecordFailure($pdo, $login);
+        $memberEnvelope(403, [
+            'success' => false,
+            'code' => 403,
+            'error' => 'PASSWORD_UPGRADE_REQUIRED',
+            'message' => 'Güvenlik güncellemesi nedeniyle şifrenizi sıfırlamanız gerekiyor. "Şifremi unuttum" bağlantısını kullanın.',
+        ]);
+    }
+    memberLoginRateLimitClearSuccess($pdo, $login);
     if ($memberPasswordNeedsUpgrade($hash)) {
         try {
             $pdo->prepare('UPDATE users SET password = :password, password_changed_at = NOW() WHERE id = :id')
@@ -663,15 +695,9 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
     $tc = preg_replace('/\D+/', '', (string) ($input['tc'] ?? $input['tcKimlik'] ?? $input['identity_number'] ?? ''));
     $address = trim((string) ($input['address'] ?? ''));
     $bonusCode = trim((string) ($input['bonus_code'] ?? $input['bonusCode'] ?? ''));
-    $inboundReferral = trim((string) (
-        $input['referral_code']
-        ?? $input['referralCode']
-        ?? $input['ref']
-        ?? $_GET['ref']
-        ?? $_SERVER['HTTP_X_REFERRAL_CODE']
-        ?? $_SESSION['referral_code']
-        ?? ''
-    ));
+    // Boş referral_code anahtarı ?? zincirini kırıyordu; promo alanındaki ortak kodu da kabul et.
+    admin_require_project_file('services/AffiliateService.php');
+    $inboundReferral = AffiliateService::pickInboundCode(is_array($input) ? $input : [], $bonusCode);
 
     $errors = [];
     if ($username === '') {
@@ -794,6 +820,22 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
         $clientIp = trim(explode(',', $clientIp, 2)[0]);
     }
 
+    // JWT tablosunu transaction dışında hazırla (DDL implicit commit riski).
+    try {
+        $memberJwtEnsureTable($pdo);
+    } catch (Throwable $jwtTableError) {
+        error_log('[member_auth/register] JWT table ensure failed: ' . $jwtTableError->getMessage());
+        $memberEnvelope(503, [
+            'success' => false,
+            'code' => 503,
+            'message' => 'Oturum servisi hazır değil. Backend kurulumunu tamamlayın (member_jwt_tokens tablosu).',
+            'hint' => 'https://admin.vegasroyalspin.com/install — migration çalıştırın',
+        ]);
+    }
+
+    $userId = 0;
+    $resolvedAffiliate = null;
+
     try {
         $pdo->beginTransaction();
         $insert = $pdo->prepare(
@@ -821,8 +863,7 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
         $userId = (int) $pdo->lastInsertId();
 
         try {
-            admin_require_project_file('services/AffiliateService.php');
-            AffiliateService::attributeRegistration(
+            $resolvedAffiliate = AffiliateService::attributeRegistration(
                 $pdo,
                 $userId,
                 $inboundReferral,
@@ -875,7 +916,9 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
                 'hint' => 'https://admin.vegasroyalspin.com/install — migration çalıştırın',
             ]);
         }
-        $pdo->commit();
+        if ($pdo->inTransaction()) {
+            $pdo->commit();
+        }
     } catch (Throwable $registerError) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
@@ -886,6 +929,21 @@ if ($method === 'POST' && ($route === 'register.php' || $route === 'auth/registe
             'code' => 500,
             'message' => 'Kayıt tamamlanamadı. Lütfen tekrar deneyin.',
         ]);
+    }
+
+    // Hoş geldin freespin kayıt TX dışında (DDL/provider riski rollback üretmesin).
+    // Önce attribution sonucu, yoksa DB'deki referred_by_affiliate_id üzerinden dene.
+    if (!empty($userId)) {
+        try {
+            admin_require_project_file('services/AffiliateWelcomeFreespinService.php');
+            if (is_array($resolvedAffiliate ?? null)) {
+                AffiliateWelcomeFreespinService::maybeGrantAfterAttribution($pdo, (int) $userId, $resolvedAffiliate);
+            } else {
+                AffiliateWelcomeFreespinService::maybeGrantForUserId($pdo, (int) $userId);
+            }
+        } catch (Throwable $welcomeFsError) {
+            error_log('[member_auth/register] Affiliate welcome freespin failed: ' . $welcomeFsError->getMessage());
+        }
     }
 
     try {

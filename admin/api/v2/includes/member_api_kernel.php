@@ -435,20 +435,10 @@ $memberIsPlaceholderSecret = static function (string $value): bool {
     return false;
 };
 
-$memberFrontendTrustUserId = static function (string $scope = 'member-proxy') use ($memberIsPlaceholderSecret): int {
-    // Rotasyon güvenliği: önce özel FRONTEND_MEMBER_TRUST_SECRET, geçiş
-    // dönemi için eski CMS purge secret'ı da aday olarak denenir.
-    $secretCandidates = [];
-    foreach ([
-        trim((string) (getenv('FRONTEND_MEMBER_TRUST_SECRET') ?: '')),
-        trim((string) (getenv('FRONTEND_CMS_PURGE_SECRET') ?: '')),
-        defined('FRONTEND_CMS_PURGE_SECRET') ? trim((string) FRONTEND_CMS_PURGE_SECRET) : '',
-    ] as $candidate) {
-        if ($candidate !== '' && !$memberIsPlaceholderSecret($candidate) && !in_array($candidate, $secretCandidates, true)) {
-            $secretCandidates[] = $candidate;
-        }
-    }
-    if ($secretCandidates === []) {
+require_once __DIR__ . '/member_frontend_trust.php';
+
+$memberFrontendTrustUserId = static function (string $scope = 'member-proxy'): int {
+    if (!memberFrontendTrustIpAllowed()) {
         return 0;
     }
     $userId = (int) ($_SERVER['HTTP_X_MEMBER_PROXY_USER_ID'] ?? 0);
@@ -456,10 +446,8 @@ $memberFrontendTrustUserId = static function (string $scope = 'member-proxy') us
     if ($userId <= 0 || $trust === '') {
         return 0;
     }
-    foreach ($secretCandidates as $candidate) {
-        if (hash_equals(hash_hmac('sha256', $scope . ':' . $userId, $candidate), $trust)) {
-            return $userId;
-        }
+    if (memberFrontendTrustVerify($userId, $trust, $scope)) {
+        return $userId;
     }
 
     return 0;
@@ -483,6 +471,11 @@ $memberJwtExtractBearer = static function (): string {
     }
     if (!empty($_SESSION['member_jwt'])) {
         return (string) $_SESSION['member_jwt'];
+    }
+    $restoreCookie = trim((string) (getenv('FRONTEND_MEMBER_RESTORE_COOKIE') ?: 'app_member_restore'));
+    $cookieJwt = trim((string) ($_COOKIE[$restoreCookie] ?? $_COOKIE['app_member_restore'] ?? ''));
+    if ($cookieJwt !== '') {
+        return $cookieJwt;
     }
     return '';
 };
@@ -860,11 +853,16 @@ $memberIsPublicDemoGameLaunch = static function (string $route) use ($payload): 
 // Oyun launch / ödeme vb. JWT veya X-Frontend-Trust ile korunur — boş $_SESSION['csrf_token'] 403 üretmesin.
 $memberApiUsesSessionCsrf = !(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION);
 
+$memberRequestHasFrontendTrust = static function () use ($memberFrontendTrustUserId): bool {
+    return $memberFrontendTrustUserId('member-proxy') > 0;
+};
+
 if ($memberApiUsesSessionCsrf
     && in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)
     && $memberRouteRequiresCsrf($route)
     && !preg_match('#^(?:gsc[-_]plus[-_]wallet|gamingsoft[-_]wallet)#i', $route)
     && !$memberJwtHasBearerHeader()
+    && !$memberRequestHasFrontendTrust()
     && !$memberIsPublicDemoGameLaunch($route)
 ) {
     $csrf = (string) (

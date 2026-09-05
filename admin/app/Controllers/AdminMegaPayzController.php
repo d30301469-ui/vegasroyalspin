@@ -142,15 +142,53 @@ final class AdminMegaPayzController extends AdminController
         $admin = AdminAuth::userName();
         $result = MegaPayzService::approveWithdraw(AdminDatabase::pdo(), $id, $admin);
         if (!empty($result['success'])) {
-            AdminAuditService::write(AdminDatabase::pdo(), 'withdraw_approve', 'megapayz_transaction', $id, 'Çekim onaylandı');
+            $auditAction = !empty($result['risk_hold']) ? 'withdraw_risk_hold' : 'withdraw_approve';
+            $auditNote = !empty($result['risk_hold'])
+                ? 'Çekim risk tutmasına alındı (finans’a iletilmedi)'
+                : 'Çekim onaylandı';
+            AdminAuditService::write(AdminDatabase::pdo(), $auditAction, 'megapayz_transaction', $id, $auditNote);
         }
-        $this->flashResult($result, 'Çekim onayı tamamlandı.');
+        $this->flashResult($result, !empty($result['risk_hold'])
+            ? 'Çekim risk birimine alındı; finans birimine iletilmedi.'
+            : 'Çekim onayı tamamlandı.');
+        $this->redirect(AdminAuth::url('/module?key=withdrawals'));
+    }
+
+    public function releaseRiskHoldWithdraw(): void
+    {
+        if (!AdminAuth::canReleaseRiskHoldWithdraw()) {
+            $this->flash('Risk çekim onayı yalnızca yetkili süper admin tarafından verilebilir.');
+            $this->redirect(AdminAuth::url('/module?key=withdrawals'));
+        }
+        $this->ensurePost();
+        $id = max(0, (int) ($_POST['id'] ?? 0));
+        $admin = AdminAuth::user();
+        $result = MegaPayzService::releaseRiskHoldWithdraw(
+            AdminDatabase::pdo(),
+            $id,
+            (string) ($admin['username'] ?? 'Admin'),
+            (string) ($admin['email'] ?? ''),
+            AdminAuth::isSuperAdmin()
+        );
+        if (!empty($result['success'])) {
+            AdminAuditService::write(
+                AdminDatabase::pdo(),
+                'withdraw_risk_release',
+                'megapayz_transaction',
+                $id,
+                'Risk tutması kaldırıldı; MegaPayz’e iletildi'
+            );
+        }
+        $this->flashResult($result, 'Risk tutması serbest bırakıldı; çekim finans birimine iletildi.');
         $this->redirect(AdminAuth::url('/module?key=withdrawals'));
     }
 
     public function rejectWithdraw(): void
     {
-        $this->requirePermission('withdrawals');
+        if (!AdminAuth::can('withdrawals') && !AdminAuth::can('compliance-risk')) {
+            $this->flash('Bu işlem için yetkiniz yok.');
+            $this->redirect(AdminAuth::url('/module?key=withdrawals'));
+        }
         $this->ensurePost();
         $id = max(0, (int) ($_POST['id'] ?? 0));
         $reason = trim((string) ($_POST['reason'] ?? ''));

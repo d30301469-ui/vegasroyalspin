@@ -47,17 +47,15 @@ $headerLoyaltyBadge = [
     'redeemable_points' => 0,
     'progress_percent' => 0,
 ];
-if ($loggedIn) {
-    // SSR balance + loyalty backend'e 2 seri HTTP atıyordu. İlk paint dışında bu
-    // değerleri client-side poll (5sn) zaten güncelliyor; bu yüzden kısa ömürlü
-    // (8sn) session cache ile hızlı sayfa geçişlerinde tekrar eden çağrıları
-    // engelliyoruz.
+if ($loggedIn && !(defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOOK_LIGHTWEIGHT_LAYOUT)) {
+    // SSR balance + loyalty backend'e 2 seri HTTP atıyordu (15s timeout x2 → 30s+).
+    // Client poll zaten güncelliyor; header için kısa timeout + 60sn session cache.
     $headerMemberUid = (int) ($_SESSION['user_id'] ?? 0);
     $headerMemberNow = time();
     $headerMemberCache = $_SESSION['__header_member_cache'] ?? null;
     $headerMemberCacheValid = is_array($headerMemberCache)
         && (int) ($headerMemberCache['uid'] ?? 0) === $headerMemberUid
-        && ($headerMemberNow - (int) ($headerMemberCache['ts'] ?? 0)) < 8;
+        && ($headerMemberNow - (int) ($headerMemberCache['ts'] ?? 0)) < 60;
 
     if ($headerMemberCacheValid) {
         $headerInitialBalance = (float) ($headerMemberCache['balance'] ?? 0.0);
@@ -65,15 +63,37 @@ if ($loggedIn) {
             $headerLoyaltyBadge = $headerMemberCache['badge'];
         }
     } else {
+        $prevBadge = is_array($headerMemberCache['badge'] ?? null) ? $headerMemberCache['badge'] : $headerLoyaltyBadge;
+        $prevBalance = is_numeric($headerMemberCache['balance'] ?? null)
+            ? (float) $headerMemberCache['balance']
+            : 0.0;
+
         if (!class_exists('MemberViewDataService', false)) {
             require_once BASE_PATH . '/services/MemberViewDataService.php';
         }
-        $headerInitialBalance = MemberViewDataService::balanceForSession();
+        // Hard cap so a hung admin API cannot exhaust php-fpm workers.
+        $headerInitialBalance = MemberViewDataService::balanceForSession(2);
+        if ($headerInitialBalance <= 0.0 && $prevBalance > 0.0) {
+            $headerInitialBalance = $prevBalance;
+        }
+
         if (!class_exists('ApiLoyalty', false)) {
             require_once BASE_PATH . '/api/bootstrap.php';
         }
         if (class_exists('ApiLoyalty')) {
-            $headerLoyaltyBadge = ApiLoyalty::publicBadgeForUser($headerMemberUid);
+            $headerLoyaltyBadge = ApiLoyalty::publicBadgeForUser($headerMemberUid, 2);
+            // Keep last known badge if API timed out and returned Bronze default.
+            if (
+                (string) ($headerLoyaltyBadge['code'] ?? '') === 'bronze'
+                && (int) ($headerLoyaltyBadge['points'] ?? 0) === 0
+                && (string) ($prevBadge['code'] ?? '') !== ''
+                && (
+                    (string) ($prevBadge['code'] ?? '') !== 'bronze'
+                    || (int) ($prevBadge['points'] ?? 0) > 0
+                )
+            ) {
+                $headerLoyaltyBadge = $prevBadge;
+            }
         }
         $_SESSION['__header_member_cache'] = [
             'uid' => $headerMemberUid,

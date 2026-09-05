@@ -314,47 +314,91 @@ final class AdminUserController extends AdminController
         $userId = max(0, (int) ($_POST['user_id'] ?? 0));
         $user = $this->user($userId);
         if ($user === null) {
-            $this->flash('Kullanıcı bulunamadı.');
-            $this->redirect(AdminAuth::url('/module?key=users'));
+            $this->failUserUpdate('Kullanıcı bulunamadı.', AdminAuth::url('/module?key=users'));
         }
+
+        $phoneDigits = preg_replace('/\D+/', '', trim((string) ($_POST['phone'] ?? '')));
+        $dobRaw = trim((string) ($_POST['dob'] ?? ''));
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $dobRaw, $dobMatch) === 1) {
+            $dobRaw = (string) $dobMatch[1];
+        }
+
+        $genderRaw = trim((string) ($_POST['gender'] ?? ''));
+        $genderLower = function_exists('mb_strtolower')
+            ? mb_strtolower($genderRaw, 'UTF-8')
+            : strtolower($genderRaw);
+        $genderMap = [
+            'male' => 'Erkek',
+            'm' => 'Erkek',
+            'erkek' => 'Erkek',
+            'female' => 'Kadın',
+            'f' => 'Kadın',
+            'kadin' => 'Kadın',
+            'kadın' => 'Kadın',
+            'other' => 'Diğer',
+            'o' => 'Diğer',
+            'diger' => 'Diğer',
+            'diğer' => 'Diğer',
+        ];
+        if (isset($genderMap[$genderLower])) {
+            $genderRaw = $genderMap[$genderLower];
+        }
+
+        $countryRaw = trim((string) ($_POST['country'] ?? 'TR'));
+        $countryUpper = function_exists('mb_strtoupper')
+            ? mb_strtoupper($countryRaw, 'UTF-8')
+            : strtoupper($countryRaw);
+        $countryLower = function_exists('mb_strtolower')
+            ? mb_strtolower($countryRaw, 'UTF-8')
+            : strtolower($countryRaw);
+        if ($countryRaw === ''
+            || in_array($countryUpper, ['TR', 'TUR', 'TURKEY'], true)
+            || in_array($countryLower, ['türkiye', 'turkiye'], true)
+        ) {
+            $countryRaw = 'TR';
+        } elseif (strlen($countryUpper) === 2) {
+            $countryRaw = $countryUpper;
+        } else {
+            // users.country is often VARCHAR(8); keep ISO-like codes only.
+            $countryRaw = 'TR';
+        }
+
+        $identityNumber = trim((string) ($_POST['identity_number'] ?? ''));
+        $address = trim((string) ($_POST['address'] ?? ''));
+        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
 
         $data = [
             'name' => trim((string) ($_POST['name'] ?? '')),
             'surname' => trim((string) ($_POST['surname'] ?? '')),
             'username' => trim((string) ($_POST['username'] ?? '')),
-            'email' => trim((string) ($_POST['email'] ?? '')),
-            'identity_number' => trim((string) ($_POST['identity_number'] ?? '')),
-            'gender' => trim((string) ($_POST['gender'] ?? '')),
-            'dob' => trim((string) ($_POST['dob'] ?? '')),
-            'phone' => preg_replace('/\D+/', '', trim((string) ($_POST['phone'] ?? ''))),
+            'email' => $email,
+            'identity_number' => $identityNumber !== '' ? $identityNumber : null,
+            'gender' => $genderRaw,
+            'dob' => $dobRaw,
+            'phone' => is_string($phoneDigits) ? $phoneDigits : '',
             'city' => trim((string) ($_POST['city'] ?? '')),
-            'country' => strtoupper(trim((string) ($_POST['country'] ?? 'TR'))),
+            'country' => $countryRaw,
             'is_verified' => isset($_POST['is_verified']) ? 1 : 0,
             'banned' => isset($_POST['banned']) ? 1 : 0,
             'is_test' => isset($_POST['is_test']) ? 1 : 0,
-            'address' => trim((string) ($_POST['address'] ?? '')),
+            'address' => $address !== '' ? $address : null,
         ];
-
-        if ($data['country'] === '') {
-            $data['country'] = 'TR';
-        }
 
         $error = $this->validateUserData($userId, $data);
         if ($error !== '') {
-            $this->flash($error);
-            $this->redirect(AdminAuth::url('/user/edit?id=' . rawurlencode((string) $userId)));
+            $this->failUserUpdate($error, AdminAuth::url('/user/edit?id=' . rawurlencode((string) $userId)));
         }
 
         $password = trim((string) ($_POST['password'] ?? ''));
         $passwordConfirmation = trim((string) ($_POST['password_confirmation'] ?? ''));
-        if ($password !== '' || $passwordConfirmation !== '') {
+        // Only change password when both fields are filled. Browser autofill often
+        // fills one field and previously aborted the entire profile update.
+        if ($password !== '' && $passwordConfirmation !== '') {
             if (strlen($password) < 6) {
-                $this->flash('Şifre en az 6 karakter olmalıdır.');
-                $this->redirect(AdminAuth::url('/user/edit?id=' . rawurlencode((string) $userId)));
+                $this->failUserUpdate('Şifre en az 6 karakter olmalıdır.', AdminAuth::url('/user/edit?id=' . rawurlencode((string) $userId)));
             }
             if ($password !== $passwordConfirmation) {
-                $this->flash('Şifre tekrarı eşleşmiyor.');
-                $this->redirect(AdminAuth::url('/user/edit?id=' . rawurlencode((string) $userId)));
+                $this->failUserUpdate('Şifre tekrarı eşleşmiyor.', AdminAuth::url('/user/edit?id=' . rawurlencode((string) $userId)));
             }
             $data['password'] = password_hash($password, PASSWORD_DEFAULT);
             $data['password_changed_at'] = date('Y-m-d H:i:s');
@@ -373,13 +417,65 @@ final class AdminUserController extends AdminController
                 $this->revokeMemberSessions($userId);
             }
             $this->insertUserUpdateLog($user, $data);
-            $this->flash('Kullanıcı bilgileri güncellendi.');
         } catch (Throwable $exception) {
-            $this->flash('Kullanıcı güncellenemedi: ' . $exception->getMessage());
-            $this->redirect(AdminAuth::url('/user/edit?id=' . rawurlencode((string) $userId)));
+            error_log('[AdminUserController::update] ' . $exception->getMessage());
+            $this->failUserUpdate(
+                'Kullanıcı güncellenemedi: ' . $exception->getMessage(),
+                AdminAuth::url('/user/edit?id=' . rawurlencode((string) $userId))
+            );
         }
 
-        $this->redirect(AdminAuth::url('/user?id=' . rawurlencode((string) $userId)));
+        $redirect = AdminAuth::url('/user?id=' . rawurlencode((string) $userId));
+        $this->completeUserUpdate('Kullanıcı bilgileri güncellendi.', $redirect);
+    }
+
+    /**
+     * @param never-return
+     */
+    private function failUserUpdate(string $message, string $redirectUrl): never
+    {
+        if ($this->wantsJsonResponse()) {
+            http_response_code(422);
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode([
+                'success' => false,
+                'message' => $message,
+                'redirect' => $redirectUrl,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $this->flash($message);
+        $this->redirect($redirectUrl);
+    }
+
+    private function completeUserUpdate(string $message, string $redirectUrl): never
+    {
+        if ($this->wantsJsonResponse()) {
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode([
+                'success' => true,
+                'message' => $message,
+                'redirect' => $redirectUrl,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $this->flash($message);
+        $this->redirect($redirectUrl);
+    }
+
+    private function wantsJsonResponse(): bool
+    {
+        if ((string) ($_POST['ajax'] ?? '') === '1') {
+            return true;
+        }
+        $accept = strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? ''));
+        if (str_contains($accept, 'application/json')) {
+            return true;
+        }
+
+        return strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
     }
 
     public function ban(): void
@@ -1336,6 +1432,15 @@ final class AdminUserController extends AdminController
     private function ensurePost(): void
     {
         if (!AdminRequest::isPost() || !AdminAuth::verifyCsrf($_POST['_token'] ?? null)) {
+            if ($this->wantsJsonResponse()) {
+                http_response_code(419);
+                header('Content-Type: application/json; charset=UTF-8');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Oturum doğrulaması başarısız. Sayfayı yenileyip tekrar deneyin.',
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
             http_response_code(419);
             echo 'Oturum doğrulaması başarısız.';
             exit;

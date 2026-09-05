@@ -403,6 +403,47 @@ if (!function_exists('frontend_assert_production_disabled_flag')) {
     }
 }
 
+if (!function_exists('frontend_runtime_migrations_allowed')) {
+    /** Production always false unless explicitly overridden (discouraged). */
+    function frontend_runtime_migrations_allowed(): bool
+    {
+        if (frontend_app_is_production()) {
+            $override = strtolower(trim((string) (getenv('ALLOW_RUNTIME_MIGRATIONS') ?: '')));
+
+            return in_array($override, ['1', 'true', 'yes', 'on'], true);
+        }
+
+        $override = strtolower(trim((string) (getenv('ALLOW_RUNTIME_MIGRATIONS') ?: '')));
+        if ($override !== '') {
+            return !in_array($override, ['0', 'false', 'no', 'off'], true);
+        }
+
+        return true;
+    }
+}
+
+if (!function_exists('frontend_legacy_password_login_allowed')) {
+    function frontend_legacy_password_login_allowed(): bool
+    {
+        $flag = strtolower(trim((string) (getenv('LEGACY_PASSWORD_LOGIN') ?: '')));
+
+        return in_array($flag, ['1', 'true', 'yes', 'on'], true);
+    }
+}
+
+if (!function_exists('frontend_assert_production_non_empty')) {
+    function frontend_assert_production_non_empty(string $key): void
+    {
+        if (!frontend_app_is_production()) {
+            return;
+        }
+
+        if (trim(frontend_env_string($key)) === '') {
+            throw new RuntimeException(sprintf('Production requires %s to be set.', $key));
+        }
+    }
+}
+
 if (!function_exists('frontend_uri_is_backend_only')) {
     /**
      * Provider callbacks, wallet webhooks and admin sync routes must never run on the frontend host.

@@ -35,6 +35,42 @@ final class MemberJwtVerify
         return hash_equals($expected, $rawSignature);
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
+    public static function payloadIfValid(string $jwt): ?array
+    {
+        if (!self::signatureValid($jwt)) {
+            return null;
+        }
+        $parts = explode('.', $jwt);
+        if (count($parts) !== 3) {
+            return null;
+        }
+        $payloadJson = self::b64Dec($parts[1]);
+        if (!is_string($payloadJson)) {
+            return null;
+        }
+        $payload = json_decode($payloadJson, true);
+        if (!is_array($payload)) {
+            return null;
+        }
+        $exp = (int) ($payload['exp'] ?? 0);
+        $uid = (int) ($payload['uid'] ?? $payload['sub'] ?? 0);
+        if ($uid <= 0 || ($exp > 0 && $exp < time())) {
+            return null;
+        }
+
+        return $payload;
+    }
+
+    public static function userIdFromJwt(string $jwt): int
+    {
+        $payload = self::payloadIfValid($jwt);
+
+        return is_array($payload) ? (int) ($payload['uid'] ?? $payload['sub'] ?? 0) : 0;
+    }
+
     private static function secret(): string
     {
         if (defined('MEMBER_JWT_SECRET') && trim((string) MEMBER_JWT_SECRET) !== '') {

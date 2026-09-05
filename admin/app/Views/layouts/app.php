@@ -388,18 +388,24 @@ $adminStyleVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/style.css') ?: tim
             overflow: hidden;
         }
         .sidebar-footer .dd-wrap {
+            position: relative;
             width: 100%;
         }
         .sidebar-footer .workspace {
             width: 100%;
         }
-        .sidebar-footer .dd-menu {
-            bottom: calc(100% + 10px);
+        /* Sidebar ~248px; global .dd-menu min-width:340px menuyu ana alana tasiyor. */
+        .sidebar-footer .dd-menu,
+        .sidebar-footer .dd-menu.dd-profile {
+            bottom: calc(100% + 8px);
+            box-sizing: border-box;
             left: 0;
-            min-width: 216px;
-            right: auto;
+            max-width: 100%;
+            min-width: 0;
+            right: 0;
             top: auto;
             width: 100%;
+            z-index: 60;
         }
         body.has-drawer-open {
             overflow: hidden;
@@ -606,9 +612,22 @@ $adminStyleVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/style.css') ?: tim
         .sidebar-footer {
             border-top: 0;
             display: grid;
+            flex-shrink: 0;
             gap: 8px;
-            margin-top: 0;
+            margin-top: auto;
+            overflow: visible;
             padding-top: 6px;
+            position: relative;
+            z-index: 40;
+        }
+        .d-sidebar {
+            overflow: hidden;
+        }
+        .sidebar-nav {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
         .sidebar-footer .workspace {
             background: var(--admin-sidebar-workspace-bg);
@@ -643,6 +662,8 @@ $adminStyleVersion = (string) (@filemtime(ADMIN_BASE_PATH . '/style.css') ?: tim
             border-color: rgba(255,255,255,.08);
             box-shadow: 0 18px 42px -18px rgba(0,0,0,.72);
             color: #f7f7f8;
+            min-width: 0;
+            width: 100%;
         }
         .dd-profile-head {
             align-items: center;

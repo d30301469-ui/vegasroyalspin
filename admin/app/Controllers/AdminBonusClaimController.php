@@ -15,6 +15,11 @@ final class AdminBonusClaimController extends AdminController
         $this->requirePermission('bonus-claims');
         $this->ensurePost();
 
+        $helpers = __DIR__ . '/../../api/v2/includes/member_bonus_helpers.php';
+        if (is_readable($helpers)) {
+            require_once $helpers;
+        }
+
         $id = max(0, (int) ($_POST['id'] ?? 0));
         if ($id <= 0) {
             $this->flash('Geçersiz bonus talep ID.');
@@ -52,14 +57,33 @@ final class AdminBonusClaimController extends AdminController
             if ($bonusAmount <= 0) {
                 throw new RuntimeException('Talep tutarı geçersiz.');
             }
+
+            $promotionId = (int) ($request['promotion_id'] ?? 0);
+            if ($promotionId > 0 && function_exists('memberCheckPromotionClaimLimitV2')) {
+                $claimLimit = memberCheckPromotionClaimLimitV2($pdo, $userId, $promotionId);
+                if (empty($claimLimit['canClaim'])) {
+                    throw new RuntimeException((string) ($claimLimit['message'] ?? 'Kullanıcının bu promosyondan talep hakkı kalmamış.'));
+                }
+            }
+
             $wageringMult = max(1.0, (float) ($request['wagering_multiplier'] ?? 1));
             $wageringTarget = $bonusAmount * $wageringMult;
             $deadline = date('Y-m-d H:i:s', strtotime('+30 days'));
-            $promotionId = (int) ($request['promotion_id'] ?? 0);
             $bonusName = (string) ($request['bonus_name'] ?? 'Bonus');
             $category = (string) ($request['category'] ?? '');
             if ($category === '') {
                 $category = (string) ($request['promotion_type'] ?? 'manual');
+            }
+
+            $wageringPath = dirname(__DIR__, 2) . '/shared/services/WageringService.php';
+            if (!is_readable($wageringPath)) {
+                $wageringPath = dirname(__DIR__, 3) . '/shared/services/WageringService.php';
+            }
+            if (!class_exists('WageringService', false) && is_readable($wageringPath)) {
+                require_once $wageringPath;
+            }
+            if (class_exists('WageringService', false)) {
+                WageringService::supersedeActiveBonuses($pdo, $userId);
             }
 
             $pdo->prepare(

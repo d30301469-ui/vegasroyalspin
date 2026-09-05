@@ -28,6 +28,40 @@ final class AffiliateService
         return preg_match('/^[A-Za-z0-9_-]+$/', $code) === 1 ? $code : '';
     }
 
+    /**
+     * Kayıt gövdesi / cookie / session / promo alanından inbound ortak kodunu seçer.
+     * Boş string ?? ile yutulmasın diye sırayla doldurur; partner kodu promo alanındaysa onu da kabul eder.
+     *
+     * @param array<string, mixed> $input
+     */
+    public static function pickInboundCode(array $input, string $bonusCode = ''): string
+    {
+        $candidates = [
+            $input['referral_code'] ?? null,
+            $input['referralCode'] ?? null,
+            $input['ref'] ?? null,
+            $_GET['ref'] ?? null,
+            $_SERVER['HTTP_X_REFERRAL_CODE'] ?? null,
+            $_COOKIE['vrs_ref'] ?? null,
+            (session_status() === PHP_SESSION_ACTIVE ? ($_SESSION['referral_code'] ?? null) : null),
+            $bonusCode !== '' ? $bonusCode : null,
+            $input['bonus_code'] ?? null,
+            $input['bonusCode'] ?? null,
+        ];
+
+        foreach ($candidates as $raw) {
+            if ($raw === null) {
+                continue;
+            }
+            $code = self::normalizeCode((string) $raw);
+            if ($code !== '') {
+                return $code;
+            }
+        }
+
+        return '';
+    }
+
     public static function tableExists(PDO $pdo, string $table): bool
     {
         if (isset(self::$tableCache[$table])) {
@@ -65,7 +99,7 @@ final class AffiliateService
                 $stmt = $pdo->prepare(
                     'SELECT id, referral_code, status
                      FROM affiliates
-                     WHERE referral_code = :code AND status = \'active\'
+                     WHERE UPPER(referral_code) = UPPER(:code) AND status = \'active\'
                      LIMIT 1'
                 );
                 $stmt->execute(['code' => $code]);
@@ -84,7 +118,7 @@ final class AffiliateService
         }
 
         try {
-            $stmt = $pdo->prepare('SELECT id, referral_code FROM users WHERE referral_code = :code LIMIT 1');
+            $stmt = $pdo->prepare('SELECT id, referral_code FROM users WHERE UPPER(referral_code) = UPPER(:code) LIMIT 1');
             $stmt->execute(['code' => $code]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (is_array($row)) {
@@ -158,19 +192,18 @@ final class AffiliateService
         }
 
         try {
+            $days = max(1, (int) self::CLICK_ATTRIBUTION_DAYS);
             $stmt = $pdo->prepare(
-                'SELECT c.referral_code
+                "SELECT c.referral_code
                  FROM affiliate_clicks c
-                 INNER JOIN affiliates a ON a.id = c.affiliate_id AND a.status = "active"
+                 INNER JOIN affiliates a ON a.id = c.affiliate_id AND a.status = 'active'
                  WHERE c.ip_address = :ip
                    AND c.converted = 0
-                   AND c.created_at >= DATE_SUB(NOW(), INTERVAL :days DAY)
+                   AND c.created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY)
                  ORDER BY c.created_at DESC
-                 LIMIT 1'
+                 LIMIT 1"
             );
-            $stmt->bindValue('ip', $ip);
-            $stmt->bindValue('days', self::CLICK_ATTRIBUTION_DAYS, PDO::PARAM_INT);
-            $stmt->execute();
+            $stmt->execute(['ip' => $ip]);
             $code = (string) $stmt->fetchColumn();
         } catch (Throwable) {
             return null;
@@ -180,7 +213,14 @@ final class AffiliateService
     }
 
     /**
-     * Yeni kaydı referans sahibine bağlar. Kod boşsa IP üzerinden çözmeyi dener.
+     * Yeni kaydı referans sahibine bağlar.
+     *
+     * Öncelik (yanlış ortak yazılmasını engellemek için):
+     *  1) Açık inbound kod (link/cookie/promo) → sadece bu kod çözülür
+     *  2) Kod boşsa satırdaki referred_by_affiliate_id (local INSERT yolu)
+     *  3) Kod tamamen boşsa IP tıklama yedeği
+     *
+     * Açık kod verilip çözülemezse IP'ye düşülmez; yanlış pre-insert id temizlenir.
      *
      * @return array{type: string, affiliate_id: int, user_id: int, referral_code: string, status: string}|null
      */
@@ -190,10 +230,32 @@ final class AffiliateService
             return null;
         }
 
-        $resolved = self::resolveCode($pdo, $code);
-        if ($resolved === null && $ip !== '') {
+        $code = self::normalizeCode($code);
+        $existingAffiliateId = self::existingAffiliateId($pdo, $userId);
+
+        $resolved = null;
+        if ($code !== '') {
+            $resolved = self::resolveCode($pdo, $code);
+            // Açık kod geldi ama aktif ortak/üye değil: IP tahmini yok.
+            // Local INSERT ile yanlış yazılmış id varsa temizle (yanlış ortak kalmasın).
+            if ($resolved === null) {
+                if ($existingAffiliateId > 0) {
+                    try {
+                        $pdo->prepare('UPDATE users SET referred_by_affiliate_id = NULL WHERE id = :id AND referred_by_affiliate_id = :aid')
+                            ->execute(['id' => $userId, 'aid' => $existingAffiliateId]);
+                    } catch (Throwable) {
+                    }
+                }
+
+                return null;
+            }
+        } elseif ($existingAffiliateId > 0) {
+            // Kod yok; satırda zaten doğru yazılmış ortak (local INSERT) → komisyon/tıklama için kullan.
+            $resolved = self::resolveAffiliateById($pdo, $existingAffiliateId);
+        } elseif ($ip !== '') {
             $resolved = self::resolveByIp($pdo, $ip);
         }
+
         if ($resolved === null || ($resolved['type'] === 'user' && $resolved['user_id'] === $userId)) {
             return null;
         }
@@ -220,6 +282,50 @@ final class AffiliateService
         return $resolved;
     }
 
+    private static function existingAffiliateId(PDO $pdo, int $userId): int
+    {
+        try {
+            $stmt = $pdo->prepare('SELECT referred_by_affiliate_id FROM users WHERE id = :id LIMIT 1');
+            $stmt->execute(['id' => $userId]);
+            return max(0, (int) $stmt->fetchColumn());
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+
+    /**
+     * @return array{type: string, affiliate_id: int, user_id: int, referral_code: string, status: string}|null
+     */
+    private static function resolveAffiliateById(PDO $pdo, int $affiliateId): ?array
+    {
+        if ($affiliateId <= 0 || !self::tableExists($pdo, 'affiliates')) {
+            return null;
+        }
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT id, referral_code, status
+                 FROM affiliates
+                 WHERE id = :id AND status = 'active'
+                 LIMIT 1"
+            );
+            $stmt->execute(['id' => $affiliateId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($row)) {
+                return null;
+            }
+
+            return [
+                'type' => 'affiliate',
+                'affiliate_id' => (int) $row['id'],
+                'user_id' => 0,
+                'referral_code' => (string) $row['referral_code'],
+                'status' => (string) ($row['status'] ?? 'active'),
+            ];
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     private static function markClickConverted(PDO $pdo, int $affiliateId, int $userId, string $ip): void
     {
         if (!self::tableExists($pdo, 'affiliate_clicks')) {
@@ -227,16 +333,26 @@ final class AffiliateService
         }
 
         try {
-            $sql = 'UPDATE affiliate_clicks
-                    SET converted = 1, converted_user_id = :user_id
-                    WHERE affiliate_id = :affiliate_id AND converted = 0';
             $params = ['user_id' => $userId, 'affiliate_id' => $affiliateId];
             if ($ip !== '' && $ip !== '0.0.0.0') {
-                $sql .= ' AND ip_address = :ip';
+                $sql = 'UPDATE affiliate_clicks
+                        SET converted = 1, converted_user_id = :user_id
+                        WHERE affiliate_id = :affiliate_id AND converted = 0 AND ip_address = :ip
+                        ORDER BY created_at DESC LIMIT 1';
                 $params['ip'] = $ip;
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+                if ($stmt->rowCount() > 0) {
+                    return;
+                }
             }
-            $sql .= ' ORDER BY created_at DESC LIMIT 1';
-            $pdo->prepare($sql)->execute($params);
+            // Mobil/ağ değişiminde tıklama IP'si kayıt IP'sinden farklı olabilir.
+            $pdo->prepare(
+                'UPDATE affiliate_clicks
+                 SET converted = 1, converted_user_id = :user_id
+                 WHERE affiliate_id = :affiliate_id AND converted = 0
+                 ORDER BY created_at DESC LIMIT 1'
+            )->execute(['user_id' => $userId, 'affiliate_id' => $affiliateId]);
         } catch (Throwable $e) {
             error_log('[AffiliateService::markClickConverted] ' . $e->getMessage());
         }
@@ -266,5 +382,152 @@ final class AffiliateService
         }
 
         return 'desktop';
+    }
+
+    /**
+     * Güncel bakiyeyi onaylı komisyonlar ile bekleyen ödeme taleplerine göre yeniden hesaplar.
+     *
+     * Çekim talebi oluşturulurken tutar balance'dan düşülür; tamamlanan ödemeler balance'ı tekrar
+     * düşürmez. Eski kayıtlarda ödeme tamamlandığı halde komisyon "paid" işaretlendiğinde
+     * total_earned - total_paid ile görünen hayalet bakiye oluşabilir — bu metot düzeltir.
+     */
+    public static function reconcileBalance(PDO $pdo, int $affiliateId): float
+    {
+        if ($affiliateId <= 0 || !self::tableExists($pdo, 'affiliates')) {
+            return 0.0;
+        }
+
+        $approved = 0.0;
+        $locked = 0.0;
+
+        if (self::tableExists($pdo, 'affiliate_commissions')) {
+            $stmt = $pdo->prepare(
+                "SELECT COALESCE(SUM(amount), 0)
+                 FROM affiliate_commissions
+                 WHERE affiliate_id = :id AND status = 'approved'"
+            );
+            $stmt->execute(['id' => $affiliateId]);
+            $approved = (float) $stmt->fetchColumn();
+        }
+
+        if (self::tableExists($pdo, 'affiliate_payouts')) {
+            $stmt = $pdo->prepare(
+                "SELECT COALESCE(SUM(amount), 0)
+                 FROM affiliate_payouts
+                 WHERE affiliate_id = :id AND status IN ('pending', 'approved', 'processing')"
+            );
+            $stmt->execute(['id' => $affiliateId]);
+            $locked = (float) $stmt->fetchColumn();
+        }
+
+        $balance = max(0.0, round($approved - $locked, 2));
+
+        $pdo->prepare(
+            'UPDATE affiliates SET balance = :balance, updated_at = NOW() WHERE id = :id'
+        )->execute([
+            'balance' => number_format($balance, 2, '.', ''),
+            'id' => $affiliateId,
+        ]);
+
+        return $balance;
+    }
+
+    /**
+     * Aynı dönem için birden fazla RevShare satırı varsa fazlalıkları iptal eder.
+     * Öncelik: paid > approved (en düşük id).
+     *
+     * @return list<string>
+     */
+    public static function cancelDuplicateRevshareCommissions(PDO $pdo, ?int $onlyAffiliateId = null): array
+    {
+        if (!self::tableExists($pdo, 'affiliate_commissions')) {
+            return [];
+        }
+
+        $sql = "SELECT affiliate_id, period_start, period_end, COUNT(*) AS cnt
+                FROM affiliate_commissions
+                WHERE commission_type = 'revshare'
+                  AND source = 'game_bet'
+                  AND status <> 'cancelled'
+                GROUP BY affiliate_id, period_start, period_end
+                HAVING cnt > 1";
+        if ($onlyAffiliateId !== null && $onlyAffiliateId > 0) {
+            $sql = "SELECT affiliate_id, period_start, period_end, COUNT(*) AS cnt
+                    FROM affiliate_commissions
+                    WHERE affiliate_id = " . (int) $onlyAffiliateId . "
+                      AND commission_type = 'revshare'
+                      AND source = 'game_bet'
+                      AND status <> 'cancelled'
+                    GROUP BY affiliate_id, period_start, period_end
+                    HAVING cnt > 1";
+        }
+
+        $messages = [];
+        $groups = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        foreach ($groups as $group) {
+            $affId = (int) ($group['affiliate_id'] ?? 0);
+            $ps = (string) ($group['period_start'] ?? '');
+            $pe = (string) ($group['period_end'] ?? '');
+            if ($affId <= 0 || $ps === '' || $pe === '') {
+                continue;
+            }
+
+            $stmt = $pdo->prepare(
+                "SELECT id, amount, status
+                 FROM affiliate_commissions
+                 WHERE affiliate_id = :aid
+                   AND period_start = :ps
+                   AND period_end = :pe
+                   AND commission_type = 'revshare'
+                   AND source = 'game_bet'
+                   AND status <> 'cancelled'
+                 ORDER BY CASE status WHEN 'paid' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END, id ASC"
+            );
+            $stmt->execute(['aid' => $affId, 'ps' => $ps, 'pe' => $pe]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            if (count($rows) < 2) {
+                continue;
+            }
+
+            array_shift($rows);
+            foreach ($rows as $row) {
+                $id = (int) ($row['id'] ?? 0);
+                $amount = (float) ($row['amount'] ?? 0);
+                if ($id <= 0) {
+                    continue;
+                }
+                $pdo->beginTransaction();
+                try {
+                    if ($amount > 0 && ($row['status'] ?? '') === 'approved') {
+                        $pdo->prepare(
+                            'UPDATE affiliates
+                             SET balance = GREATEST(0, balance - :amount),
+                                 total_earned = GREATEST(0, total_earned - :amount2)
+                             WHERE id = :id'
+                        )->execute([
+                            'amount' => number_format($amount, 2, '.', ''),
+                            'amount2' => number_format($amount, 2, '.', ''),
+                            'id' => $affId,
+                        ]);
+                    }
+                    $pdo->prepare(
+                        "UPDATE affiliate_commissions
+                         SET status = 'cancelled',
+                             description = CONCAT(description, ' [duplicate period cleanup]')
+                         WHERE id = :id"
+                    )->execute(['id' => $id]);
+                    $pdo->commit();
+                    $messages[] = "affiliate={$affId} cancelled duplicate commission #{$id} ({$ps}→{$pe})";
+                } catch (Throwable $e) {
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+                    $messages[] = "affiliate={$affId} duplicate cleanup failed #{$id}: " . $e->getMessage();
+                }
+            }
+            self::reconcileBalance($pdo, $affId);
+        }
+
+        return $messages;
     }
 }

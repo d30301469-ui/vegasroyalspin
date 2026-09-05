@@ -435,7 +435,15 @@ final class MegaPayzService
                         return [
                             'success' => false,
                             'code' => 422,
-                            'message' => 'Çekim için çevrim şartı henüz tamamlanmadı.',
+                            'message' => 'Çekim için ana bakiye çevrim şartı henüz tamamlanmadı.',
+                        ];
+                    }
+                    $bonusBlock = WageringService::activeBonusWithdrawMessage($pdo, (int) ($user['id'] ?? 0));
+                    if ($bonusBlock !== null) {
+                        return [
+                            'success' => false,
+                            'code' => 422,
+                            'message' => $bonusBlock,
                         ];
                     }
                 }
@@ -454,6 +462,9 @@ final class MegaPayzService
         unset($payload['method']);
         $payload['input_fields'] = $fields;
 
+        $userId = (int) ($user['id'] ?? 0);
+        $risk = ['hold' => false, 'reason' => '', 'message' => ''];
+
         try {
             $pdo->beginTransaction();
             $stmt = $pdo->prepare('SELECT balance FROM users WHERE id = :id FOR UPDATE');
@@ -464,8 +475,17 @@ final class MegaPayzService
                 return ['success' => false, 'code' => 422, 'message' => 'Yetersiz bakiye.'];
             }
             $pdo->prepare('UPDATE users SET balance = balance - :amount WHERE id = :id')
-                ->execute(['amount' => number_format($amount, 2, '.', ''), 'id' => (int) ($user['id'] ?? 0)]);
-            self::insertTransaction($pdo, 'withdraw', $user, $method, $trx, $amount, $fields, $payload);
+                ->execute(['amount' => number_format($amount, 2, '.', ''), 'id' => $userId]);
+            $risk = self::evaluateWithdrawRiskHold($pdo, $userId, $amount, null);
+            $initialStatus = $risk['hold'] ? 'risk_hold' : 'pending';
+            self::insertTransaction($pdo, 'withdraw', $user, $method, $trx, $amount, $fields, $payload, $initialStatus);
+            if ($risk['hold']) {
+                $holdNote = $risk['message'];
+                $pdo->prepare(
+                    'UPDATE megapayz_transactions SET failure_message = :message WHERE trx = :trx'
+                )->execute(['message' => $holdNote, 'trx' => $trx]);
+                self::cascadePendingWithdrawsToRiskHold($pdo, $userId, 'Ardışık çekim risk tutması (yeni talep).', null);
+            }
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -473,6 +493,8 @@ final class MegaPayzService
             }
             return ['success' => false, 'code' => 500, 'message' => 'Çekim kaydı oluşturulamadı.'];
         }
+
+        self::mirrorSportsbookWallet($pdo, (int) ($user['id'] ?? 0));
 
         try {
             $monitorPath = dirname(__DIR__) . '/services/ComplianceMonitorService.php';
@@ -491,11 +513,15 @@ final class MegaPayzService
         } catch (Throwable) {
         }
 
+        $riskHeld = !empty($risk['hold']);
+        $memberMsg = $riskHeld
+            ? self::formatMoney($amount) . ' tutarındaki çekim talebiniz alındı. İnceleme sonrası sonuçlanacaktır.'
+            : self::formatMoney($amount) . ' tutarındaki çekim talebiniz alındı. Admin onayı bekleniyor.';
         self::notifyMember(
             $pdo,
             (int) ($user['id'] ?? 0),
             'Çekim talebi alındı',
-            self::formatMoney($amount) . ' tutarındaki çekim talebiniz alındı. Admin onayı bekleniyor.',
+            $memberMsg,
             'info',
             '/profile/deposit-withdraw-history'
         );
@@ -503,14 +529,19 @@ final class MegaPayzService
         return [
             'success' => true,
             'code' => 200,
-            'message' => 'Çekim talebiniz alındı, admin onayı bekliyor.',
+            'message' => $riskHeld
+                ? 'Çekim talebiniz alındı, inceleme bekliyor.'
+                : 'Çekim talebiniz alındı, admin onayı bekliyor.',
             'data' => [
                 'trx' => $trx,
                 'reference_code' => $trx,
                 'method' => $method,
                 'provider' => 'megapayz',
                 'requires_admin_approval' => true,
-                'message' => 'Çekim talebiniz alındı, admin onayı bekliyor.',
+                'risk_hold' => $riskHeld,
+                'message' => $riskHeld
+                    ? 'Çekim talebiniz alındı, inceleme bekliyor.'
+                    : 'Çekim talebiniz alındı, admin onayı bekliyor.',
             ],
         ];
     }
@@ -730,14 +761,242 @@ final class MegaPayzService
         return ['success' => false, 'message' => $message];
     }
 
+    /**
+     * Risk birimi tutma eşiği (TRY). Bu tutarın üzerindeki çekimler finans/MegaPayz'e
+     * iletilmez; status=risk_hold kalır ta ki risk birimi serbest bırakana kadar.
+     */
+    public static function riskWithdrawHoldThreshold(): float
+    {
+        $raw = '';
+        if (function_exists('getenv')) {
+            $raw = trim((string) (getenv('RISK_WITHDRAW_HOLD_THRESHOLD') ?: ''));
+        }
+        if ($raw === '' && isset($_ENV['RISK_WITHDRAW_HOLD_THRESHOLD'])) {
+            $raw = trim((string) $_ENV['RISK_WITHDRAW_HOLD_THRESHOLD']);
+        }
+        if ($raw === '' && isset($_SERVER['RISK_WITHDRAW_HOLD_THRESHOLD'])) {
+            $raw = trim((string) $_SERVER['RISK_WITHDRAW_HOLD_THRESHOLD']);
+        }
+        if ($raw === '') {
+            $raw = '10000';
+        }
+        $value = (float) str_replace(',', '.', $raw);
+
+        return $value > 0 ? $value : 10000.0;
+    }
+
+    public static function riskWithdrawSerialWindowHours(): int
+    {
+        $raw = '';
+        if (function_exists('getenv')) {
+            $raw = trim((string) (getenv('RISK_WITHDRAW_SERIAL_HOURS') ?: ''));
+        }
+        if ($raw === '' && isset($_ENV['RISK_WITHDRAW_SERIAL_HOURS'])) {
+            $raw = trim((string) $_ENV['RISK_WITHDRAW_SERIAL_HOURS']);
+        }
+        if ($raw === '') {
+            $raw = '72';
+        }
+        $hours = (int) $raw;
+
+        return $hours > 0 ? $hours : 72;
+    }
+
+    public static function riskWithdrawReleaseEmail(): string
+    {
+        $raw = '';
+        if (function_exists('getenv')) {
+            $raw = trim((string) (getenv('RISK_WITHDRAW_RELEASE_EMAIL') ?: ''));
+        }
+        if ($raw === '' && isset($_ENV['RISK_WITHDRAW_RELEASE_EMAIL'])) {
+            $raw = trim((string) $_ENV['RISK_WITHDRAW_RELEASE_EMAIL']);
+        }
+        if ($raw === '') {
+            $raw = 'zonelix@proton.me';
+        }
+
+        return strtolower($raw);
+    }
+
+    public static function isAuthorizedRiskRelease(string $adminEmail, bool $adminIsSuperAdmin): bool
+    {
+        if (!$adminIsSuperAdmin) {
+            return false;
+        }
+        $email = strtolower(trim($adminEmail));
+        $allowed = self::riskWithdrawReleaseEmail();
+
+        return $email !== '' && $allowed !== '' && $email === $allowed;
+    }
+
+    /** @return list<string> */
+    private static function riskWithdrawOpenStatuses(): array
+    {
+        return ['pending', 'risk_hold', 'processing', 'approved'];
+    }
+
+    /**
+     * @return array{count:int,total:float}
+     */
+    private static function openWithdrawStats(PDO $pdo, int $userId, ?int $excludeTxId = null): array
+    {
+        if ($userId <= 0) {
+            return ['count' => 0, 'total' => 0.0];
+        }
+        $statuses = self::riskWithdrawOpenStatuses();
+        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+        $sql = "SELECT COUNT(*) AS cnt, COALESCE(SUM(amount), 0) AS total
+                FROM megapayz_transactions
+                WHERE type = 'withdraw' AND user_id = ?
+                  AND status IN ($placeholders)";
+        $params = array_merge([$userId], $statuses);
+        if ($excludeTxId !== null && $excludeTxId > 0) {
+            $sql .= ' AND id != ?';
+            $params[] = $excludeTxId;
+        }
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return [
+            'count' => (int) ($row['cnt'] ?? 0),
+            'total' => (float) ($row['total'] ?? 0),
+        ];
+    }
+
+    /**
+     * Ardışık / parçalı çekim risk değerlendirmesi.
+     *
+     * @return array{hold:bool,reason:string,message:string}
+     */
+    public static function evaluateWithdrawRiskHold(PDO $pdo, int $userId, float $amount, ?int $excludeTxId = null): array
+    {
+        $threshold = self::riskWithdrawHoldThreshold();
+        $money = static fn (float $v): string => self::formatMoney($v);
+
+        if ($amount > $threshold) {
+            return [
+                'hold' => true,
+                'reason' => 'over_threshold',
+                'message' => sprintf(
+                    'Tek çekim tutarı %s TRY eşiğini aşıyor (%s). Finans birimine iletilmez.',
+                    $money($threshold),
+                    $money($amount)
+                ),
+            ];
+        }
+
+        $open = self::openWithdrawStats($pdo, $userId, $excludeTxId);
+        $cumulative = $open['total'] + $amount;
+        $serialCount = $open['count'] + 1;
+
+        if ($open['count'] >= 1 && $cumulative >= $threshold) {
+            return [
+                'hold' => true,
+                'reason' => 'serial_cumulative',
+                'message' => sprintf(
+                    'Ardışık çekim: açık toplam %s + yeni %s = %s TRY (eşik %s). Tümü risk tutmasına alınır.',
+                    $money($open['total']),
+                    $money($amount),
+                    $money($cumulative),
+                    $money($threshold)
+                ),
+            ];
+        }
+
+        if ($open['count'] >= 2) {
+            return [
+                'hold' => true,
+                'reason' => 'multiple_open',
+                'message' => sprintf(
+                    'Üyenin %d adet açık çekimi var (toplam %s TRY). Ardışık çekim risk tutması.',
+                    $open['count'],
+                    $money($open['total'])
+                ),
+            ];
+        }
+
+        $hours = self::riskWithdrawSerialWindowHours();
+        $windowStatuses = array_merge(self::riskWithdrawOpenStatuses(), ['confirmed', 'success', 'completed']);
+        $placeholders = implode(',', array_fill(0, count($windowStatuses), '?'));
+        $windowSql = "SELECT COUNT(*) AS cnt, COALESCE(SUM(amount), 0) AS total
+                      FROM megapayz_transactions
+                      WHERE type = 'withdraw' AND user_id = ?
+                        AND status IN ($placeholders)
+                        AND created_at >= DATE_SUB(NOW(), INTERVAL ? HOUR)";
+        $windowParams = array_merge([$userId], $windowStatuses, [$hours]);
+        if ($excludeTxId !== null && $excludeTxId > 0) {
+            $windowSql .= ' AND id != ?';
+            $windowParams[] = $excludeTxId;
+        }
+        $wStmt = $pdo->prepare($windowSql);
+        $wStmt->execute($windowParams);
+        $window = $wStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $windowCount = (int) ($window['cnt'] ?? 0);
+        $windowTotal = (float) ($window['total'] ?? 0);
+        $windowWithNew = $windowTotal + $amount;
+
+        if ($windowCount >= 1 && $windowWithNew >= $threshold) {
+            return [
+                'hold' => true,
+                'reason' => 'serial_window',
+                'message' => sprintf(
+                    'Son %d saatte ardışık çekim toplamı %s TRY (eşik %s).',
+                    $hours,
+                    $money($windowWithNew),
+                    $money($threshold)
+                ),
+            ];
+        }
+
+        return ['hold' => false, 'reason' => '', 'message' => ''];
+    }
+
+    public static function requiresRiskHold(float $amount): bool
+    {
+        return $amount > self::riskWithdrawHoldThreshold();
+    }
+
+    /**
+     * Bekleyen kardeş çekimleri risk_hold'a çeker (5000+5000 gibi ardışık senaryo).
+     */
+    private static function cascadePendingWithdrawsToRiskHold(PDO $pdo, int $userId, string $note, ?int $exceptTxId = null): int
+    {
+        if ($userId <= 0) {
+            return 0;
+        }
+        $sql = "UPDATE megapayz_transactions
+                SET status = 'risk_hold',
+                    failure_message = CONCAT(
+                        IFNULL(failure_message, ''),
+                        IF(IFNULL(failure_message, '') = '', '', '\n'),
+                        :note
+                    ),
+                    updated_at = NOW()
+                WHERE type = 'withdraw' AND user_id = :uid AND status = 'pending'";
+        $params = ['note' => $note, 'uid' => $userId];
+        if ($exceptTxId !== null && $exceptTxId > 0) {
+            $sql .= ' AND id != :except_id';
+            $params['except_id'] = $exceptTxId;
+        }
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->rowCount();
+    }
+
+    private static function markWithdrawRiskHold(PDO $pdo, int $transactionId, string $note): void
+    {
+        $pdo->prepare(
+            "UPDATE megapayz_transactions
+             SET status = 'risk_hold', failure_message = :message, updated_at = NOW()
+             WHERE id = :id"
+        )->execute(['message' => $note, 'id' => $transactionId]);
+    }
+
     public static function approveWithdraw(PDO $pdo, int $transactionId, string $adminUsername = ''): array
     {
         self::bootstrap($pdo);
-        try {
-            $cfg = self::config($pdo);
-        } catch (Throwable) {
-            return ['success' => false, 'message' => 'MegaPayz yapılandırması eksik.'];
-        }
         try {
             $pdo->beginTransaction();
             $stmt = $pdo->prepare("SELECT * FROM megapayz_transactions WHERE id = :id AND type = 'withdraw' FOR UPDATE");
@@ -747,10 +1006,40 @@ final class MegaPayzService
                 $pdo->rollBack();
                 return ['success' => false, 'message' => 'Çekim kaydı bulunamadı.'];
             }
-            if ((string) ($tx['status'] ?? '') !== 'pending') {
+            $status = strtolower((string) ($tx['status'] ?? ''));
+            if ($status === 'risk_hold') {
+                $pdo->rollBack();
+                return [
+                    'success' => false,
+                    'message' => 'Bu çekim risk tutmasında. Finans birimine iletilemez; risk birimi serbest bırakmalı.',
+                    'risk_hold' => true,
+                ];
+            }
+            if ($status !== 'pending') {
                 $pdo->rollBack();
                 return ['success' => false, 'message' => 'Sadece bekleyen çekimler onaylanabilir.'];
             }
+
+            $amount = (float) ($tx['amount'] ?? 0);
+            $userId = (int) ($tx['user_id'] ?? 0);
+            $risk = self::evaluateWithdrawRiskHold($pdo, $userId, $amount, $transactionId);
+            if ($risk['hold']) {
+                $holdNote = $risk['message'];
+                if ($adminUsername !== '') {
+                    $holdNote .= ' Admin: ' . $adminUsername;
+                }
+                self::markWithdrawRiskHold($pdo, $transactionId, $holdNote);
+                self::cascadePendingWithdrawsToRiskHold($pdo, $userId, 'Ardışık çekim risk tutması (admin onayı).', $transactionId);
+                $pdo->commit();
+
+                return [
+                    'success' => true,
+                    'message' => 'Çekim risk birimine alındı; finans birimine iletilmedi.',
+                    'risk_hold' => true,
+                    'forwarded_to_finance' => false,
+                ];
+            }
+
             $pdo->prepare("UPDATE megapayz_transactions SET status = 'processing', updated_at = NOW() WHERE id = :id")
                 ->execute(['id' => $transactionId]);
             $pdo->commit();
@@ -759,6 +1048,79 @@ final class MegaPayzService
                 $pdo->rollBack();
             }
             return ['success' => false, 'message' => 'Çekim onaya alınamadı.'];
+        }
+
+        return self::forwardWithdrawToMegaPayz($pdo, $tx, $transactionId, $adminUsername, 'pending');
+    }
+
+    /**
+     * Risk birimi: risk_hold çekimini finans/MegaPayz’e iletir (yalnızca yetkili süper admin).
+     */
+    public static function releaseRiskHoldWithdraw(
+        PDO $pdo,
+        int $transactionId,
+        string $adminUsername = '',
+        string $adminEmail = '',
+        bool $adminIsSuperAdmin = false
+    ): array {
+        if (!self::isAuthorizedRiskRelease($adminEmail, $adminIsSuperAdmin)) {
+            return [
+                'success' => false,
+                'message' => 'Risk çekim onayı yalnızca yetkili süper admin (' . self::riskWithdrawReleaseEmail() . ') tarafından verilebilir.',
+            ];
+        }
+
+        self::bootstrap($pdo);
+        try {
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare("SELECT * FROM megapayz_transactions WHERE id = :id AND type = 'withdraw' FOR UPDATE");
+            $stmt->execute(['id' => $transactionId]);
+            $tx = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($tx)) {
+                $pdo->rollBack();
+                return ['success' => false, 'message' => 'Çekim kaydı bulunamadı.'];
+            }
+            if (strtolower((string) ($tx['status'] ?? '')) !== 'risk_hold') {
+                $pdo->rollBack();
+                return ['success' => false, 'message' => 'Sadece risk tutmasındaki çekimler serbest bırakılabilir.'];
+            }
+            $pdo->prepare("UPDATE megapayz_transactions SET status = 'processing', updated_at = NOW() WHERE id = :id")
+                ->execute(['id' => $transactionId]);
+            $pdo->commit();
+        } catch (Throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'message' => 'Risk tutması serbest bırakılamadı.'];
+        }
+
+        $note = 'Risk serbest bırakma' . ($adminUsername !== '' ? ' — ' . $adminUsername : '');
+        return self::forwardWithdrawToMegaPayz($pdo, $tx, $transactionId, $note, 'risk_hold');
+    }
+
+    /**
+     * @param array<string, mixed> $tx
+     * @return array{success: bool, message: string, risk_hold?: bool, forwarded_to_finance?: bool}
+     */
+    private static function forwardWithdrawToMegaPayz(
+        PDO $pdo,
+        array $tx,
+        int $transactionId,
+        string $adminUsername,
+        string $revertStatus
+    ): array {
+        try {
+            $cfg = self::config($pdo);
+        } catch (Throwable) {
+            $pdo->prepare(
+                "UPDATE megapayz_transactions SET status = :status, failure_message = :message, updated_at = NOW() WHERE id = :id AND status = 'processing'"
+            )->execute([
+                'status' => $revertStatus,
+                'message' => 'MegaPayz yapılandırması eksik.',
+                'id' => $transactionId,
+            ]);
+
+            return ['success' => false, 'message' => 'MegaPayz yapılandırması eksik.'];
         }
 
         $inputFields = json_decode((string) ($tx['input_fields'] ?? '{}'), true);
@@ -783,15 +1145,26 @@ final class MegaPayzService
                  WHERE id = :id AND status = 'processing'"
             )->execute(['id' => $transactionId]);
 
-            return ['success' => true, 'message' => 'Çekim MegaPayz API’ye iletildi. Callback bekleniyor.'];
+            return [
+                'success' => true,
+                'message' => 'Çekim MegaPayz API’ye iletildi. Callback bekleniyor.',
+                'forwarded_to_finance' => true,
+            ];
         }
 
         $message = (string) ($res['message'] ?? 'MegaPayz çekim onayı başarısız.');
         if ($adminUsername !== '') {
             $message .= ' Admin: ' . $adminUsername;
         }
-        $pdo->prepare("UPDATE megapayz_transactions SET status = 'pending', failure_message = :message, updated_at = NOW() WHERE id = :id AND status = 'processing'")
-            ->execute(['message' => $message, 'id' => $transactionId]);
+        $pdo->prepare(
+            "UPDATE megapayz_transactions
+             SET status = :status, failure_message = :message, updated_at = NOW()
+             WHERE id = :id AND status = 'processing'"
+        )->execute([
+            'status' => in_array($revertStatus, ['pending', 'risk_hold'], true) ? $revertStatus : 'pending',
+            'message' => $message,
+            'id' => $transactionId,
+        ]);
 
         return ['success' => false, 'message' => $message];
     }
@@ -809,7 +1182,7 @@ final class MegaPayzService
                 return ['success' => false, 'message' => 'Çekim kaydı bulunamadı.'];
             }
             $status = strtolower((string) ($tx['status'] ?? ''));
-            if ($status !== 'pending') {
+            if (!in_array($status, ['pending', 'risk_hold'], true)) {
                 $pdo->rollBack();
                 return ['success' => false, 'message' => 'Bu çekim artık reddedilemez.'];
             }
@@ -827,6 +1200,8 @@ final class MegaPayzService
                 'id' => $transactionId,
             ]);
             $pdo->commit();
+
+            self::mirrorSportsbookWallet($pdo, (int) ($tx['user_id'] ?? 0));
 
             $rejectReason = $reason !== '' ? $reason : 'Admin tarafından reddedildi.';
             self::notifyPaymentStatus(
@@ -988,6 +1363,10 @@ final class MegaPayzService
                 $pdo->rollBack();
             }
             return ['status' => false, 'code' => 99999, 'message' => 'Callback could not be processed'];
+        }
+
+        if ($userId > 0) {
+            self::mirrorSportsbookWallet($pdo, $userId);
         }
 
         if ($affiliatePayoutId <= 0 && $type === 'deposit' && $status === 'confirmed') {
@@ -1261,18 +1640,13 @@ final class MegaPayzService
                 'affiliate_id' => (int) ($payout['affiliate_id'] ?? 0),
                 'requested_at' => (string) ($payout['requested_at'] ?? date('Y-m-d H:i:s')),
             ]);
+            if (class_exists('AffiliateService', false) || self::loadAffiliateService()) {
+                AffiliateService::reconcileBalance($pdo, (int) ($payout['affiliate_id'] ?? 0));
+            }
             return;
         }
 
         // rejected / failed
-        if (in_array($current, ['pending', 'approved', 'processing'], true)) {
-            $pdo->prepare(
-                'UPDATE affiliates SET balance = balance + :amount WHERE id = :affiliate_id'
-            )->execute([
-                'amount' => (float) ($payout['amount'] ?? 0),
-                'affiliate_id' => (int) ($payout['affiliate_id'] ?? 0),
-            ]);
-        }
         $note = 'MegaPayz callback: ödeme reddedildi/başarısız';
         if ($providerMessage !== '') {
             $note .= ' — ' . mb_substr($providerMessage, 0, 300);
@@ -1290,6 +1664,37 @@ final class MegaPayzService
             'note' => $note,
             'id' => $payoutId,
         ]);
+        if (in_array($current, ['pending', 'approved', 'processing'], true)) {
+            if (class_exists('AffiliateService', false) || self::loadAffiliateService()) {
+                AffiliateService::reconcileBalance($pdo, (int) ($payout['affiliate_id'] ?? 0));
+            } else {
+                $pdo->prepare(
+                    'UPDATE affiliates SET balance = balance + :amount WHERE id = :affiliate_id'
+                )->execute([
+                    'amount' => (float) ($payout['amount'] ?? 0),
+                    'affiliate_id' => (int) ($payout['affiliate_id'] ?? 0),
+                ]);
+            }
+        }
+    }
+
+    private static function loadAffiliateService(): bool
+    {
+        if (class_exists('AffiliateService', false)) {
+            return true;
+        }
+        foreach ([
+            dirname(__DIR__) . '/services/AffiliateService.php',
+            dirname(__DIR__, 2) . '/services/AffiliateService.php',
+            dirname(__DIR__, 2) . '/admin/services/AffiliateService.php',
+        ] as $path) {
+            if (is_file($path)) {
+                require_once $path;
+                return class_exists('AffiliateService', false);
+            }
+        }
+
+        return false;
     }
 
     private static function columnExists(PDO $pdo, string $table, string $column): bool
@@ -1512,8 +1917,21 @@ final class MegaPayzService
         return $decoded;
     }
 
-    private static function insertTransaction(PDO $pdo, string $type, array $user, string $method, string $trx, float $amount, array $inputFields, array $requestPayload): void
-    {
+    private static function insertTransaction(
+        PDO $pdo,
+        string $type,
+        array $user,
+        string $method,
+        string $trx,
+        float $amount,
+        array $inputFields,
+        array $requestPayload,
+        string $status = 'pending'
+    ): void {
+        $status = strtolower(trim($status));
+        if ($status === '') {
+            $status = 'pending';
+        }
         $stmt = $pdo->prepare(
             'INSERT INTO megapayz_transactions
                 (type, user_id, username, fullname, method, trx, amount, currency, status, input_fields, request_payload)
@@ -1529,7 +1947,7 @@ final class MegaPayzService
             'trx' => $trx,
             'amount' => number_format($amount, 2, '.', ''),
             'currency' => 'TRY',
-            'status' => 'pending',
+            'status' => $status,
             'input_fields' => $inputFields !== [] ? json_encode($inputFields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
             'request_payload' => json_encode(self::redactCallbackPayload($requestPayload), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ]);
@@ -1684,6 +2102,7 @@ final class MegaPayzService
                 ->execute(['amount' => number_format($amount, 2, '.', ''), 'id' => $userId]);
             self::markTransactionFailed($pdo, $trx, $message);
             $pdo->commit();
+            self::mirrorSportsbookWallet($pdo, $userId);
         } catch (Throwable) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -1717,6 +2136,23 @@ final class MegaPayzService
         }
 
         return $payload;
+    }
+
+    private static function mirrorSportsbookWallet(PDO $pdo, int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+        try {
+            $path = dirname(__DIR__) . '/services/SportsbookService.php';
+            if (!class_exists('SportsbookService', false) && is_readable($path)) {
+                require_once $path;
+            }
+            if (class_exists('SportsbookService', false)) {
+                SportsbookService::mirrorWallet($pdo, $userId);
+            }
+        } catch (Throwable) {
+        }
     }
 
     private static function markCallbackProcessed(PDO $pdo, int $callbackId, string $message): void

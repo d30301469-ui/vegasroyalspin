@@ -18,6 +18,12 @@ $memberJwtBootstrap = $hasJwtPhp ? trim((string) $_SESSION['member_jwt']) : '';
 $memberBootstrapState = [
     'logged_in' => $loggedInPhp,
     'has_session_jwt' => $hasJwtPhp,
+    'has_restore_cookie' => (function (): bool {
+        $name = function_exists('frontend_member_restore_cookie_name')
+            ? frontend_member_restore_cookie_name()
+            : 'app_member_restore';
+        return trim((string) ($_COOKIE[$name] ?? $_COOKIE['app_member_restore'] ?? '')) !== '';
+    })(),
     'user_id' => (int) ($_SESSION['user_id'] ?? 0),
     'username' => (string) ($_SESSION['username'] ?? ''),
     'direct_member_api' => !empty($memberApiLayout['__FRONTEND_DIRECT_MEMBER_API__']),
@@ -26,9 +32,11 @@ $memberBootstrapState = [
         ? deploy_session_cookie_domain_for_host((string) ($_SERVER['HTTP_HOST'] ?? ''))
         : '',
 ];
+// API konsolu yalnızca açık debug isteğinde — production’da asla varsayılan açık olmasın.
+$memberApiConsole = isset($_GET['debug']) && (string) $_GET['debug'] === '1';
 ?>
 <script>
-    window.__MEMBER_API_CONSOLE__ = true;
+    window.__MEMBER_API_CONSOLE__ = false;
     window.__MEMBER_BOOTSTRAP_STATE__ = <?php echo json_encode($memberBootstrapState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     window.__APP_BASE_PATH__ = <?php echo json_encode(defined('SITE_URL') ? rtrim((string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?: ''), '/') : ''); ?>;
     window.__USER_LOGGED_IN__ = <?php echo json_encode($loggedInPhp); ?>;

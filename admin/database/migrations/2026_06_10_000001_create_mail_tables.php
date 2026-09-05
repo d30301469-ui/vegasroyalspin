@@ -109,4 +109,15 @@ return static function (PDO $pdo): void {
     } catch (Throwable) {
         // Best-effort schema reconciliation.
     }
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS mail_unsubscribed (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            email VARCHAR(190) NOT NULL,
+            source VARCHAR(40) NOT NULL DEFAULT 'link',
+            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_mail_unsubscribed_email (email)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
 };

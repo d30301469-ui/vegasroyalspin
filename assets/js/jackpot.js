@@ -70,7 +70,7 @@
     // increment > 0 olmasa bile interval başlat (sayaç her zaman çalışır)
     setInterval(tick, 1000);
   } catch (err) {
-    if (console && console.warn) console.warn('Jackpot counter error', err);
+    /* jackpot sayaç opsiyonel */
   }
   }
 

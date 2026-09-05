@@ -89,13 +89,43 @@ final class AdminAffiliateController extends AdminController
             $this->redirect(AdminAuth::url('/affiliates'));
         }
 
-        // Referred users
+        // Referred users — tam liste (sayfalama; LIMIT 50 kesilmesin)
+        $usersPage = max(1, (int) ($_GET['users_page'] ?? 1));
+        $usersPerPage = (int) ($_GET['users_per_page'] ?? 100);
+        if (!in_array($usersPerPage, [50, 100, 200, 500], true)) {
+            $usersPerPage = 100;
+        }
+        $referredTotalCount = 0;
+        try {
+            $cntStmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE referred_by_affiliate_id = :id');
+            $cntStmt->execute(['id' => $id]);
+            $referredTotalCount = (int) $cntStmt->fetchColumn();
+        } catch (Throwable) {
+            $referredTotalCount = 0;
+        }
+        $usersTotalPages = max(1, (int) ceil($referredTotalCount / max(1, $usersPerPage)));
+        if ($referredTotalCount === 0) {
+            $usersTotalPages = 1;
+            $usersPage = 1;
+        } elseif ($usersPage > $usersTotalPages) {
+            $usersPage = $usersTotalPages;
+        }
+        $usersOffset = ($usersPage - 1) * $usersPerPage;
         $stmt = $pdo->prepare(
             "SELECT id, username, email, name, surname, balance, created_at, last_login_at
-             FROM users WHERE referred_by_affiliate_id = :id ORDER BY created_at DESC LIMIT 50"
+             FROM users
+             WHERE referred_by_affiliate_id = :id
+             ORDER BY created_at DESC
+             LIMIT {$usersPerPage} OFFSET {$usersOffset}"
         );
         $stmt->execute(['id' => $id]);
         $referredUsers = $stmt->fetchAll();
+        $referredUsersMeta = [
+            'page' => $usersPage,
+            'per_page' => $usersPerPage,
+            'total' => $referredTotalCount,
+            'pages' => $usersTotalPages,
+        ];
 
         // Commission summary — exclude cancelled/void so charts match real earnings
         $stmt = $pdo->prepare(
@@ -290,6 +320,7 @@ final class AdminAffiliateController extends AdminController
             'affiliate' => $affiliate,
             'plans' => $plans,
             'referredUsers' => $referredUsers,
+            'referredUsersMeta' => $referredUsersMeta,
             'commissionSummary' => $commissionSummary,
             'recentCommissions' => $recentCommissions,
             'payouts' => $payouts,
@@ -684,7 +715,7 @@ final class AdminAffiliateController extends AdminController
                 'id' => $id,
             ]);
 
-            // If completed, update affiliate balance
+            // If completed, update affiliate totals and mark covered commissions paid
             if ($newStatus === 'completed' && $previousStatus !== 'completed') {
                 $stmt = $pdo->prepare(
                     "UPDATE affiliates SET total_paid = total_paid + :amount WHERE id = :affiliate_id"
@@ -699,13 +730,8 @@ final class AdminAffiliateController extends AdminController
                 $stmt->execute(['affiliate_id' => $payout['affiliate_id'], 'requested_at' => $payout['requested_at']]);
             }
 
-            // If rejected or cancelled, restore balance when still unpaid
-            if (in_array($newStatus, ['rejected', 'cancelled'], true)
-                && in_array($previousStatus, ['pending', 'approved', 'processing'], true)) {
-                $stmt = $pdo->prepare(
-                    "UPDATE affiliates SET balance = balance + :amount WHERE id = :affiliate_id"
-                );
-                $stmt->execute(['amount' => $payout['amount'], 'affiliate_id' => $payout['affiliate_id']]);
+            if (class_exists('AffiliateService')) {
+                AffiliateService::reconcileBalance($pdo, (int) $payout['affiliate_id']);
             }
 
             $pdo->commit();
@@ -832,6 +858,9 @@ final class AdminAffiliateController extends AdminController
             ]);
 
             $pdo->commit();
+            if (class_exists('AffiliateService', false)) {
+                AffiliateService::reconcileBalance($pdo, $affiliateId);
+            }
             $_SESSION['admin_flash'] = number_format($amount, 2, ',', '.') . ' ₺ komisyon eklendi.';
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -1161,8 +1190,12 @@ final class AdminAffiliateController extends AdminController
             AffiliateCommissionEngine::ensureSchema($pdo);
             AffiliateCommissionEngine::assignDefaultPlanIfMissing($pdo, $id);
             $result = AffiliateCommissionEngine::processPeriod($pdo, $dateFrom, $dateTo, $id, true);
+            if (class_exists('AffiliateService', false)) {
+                AffiliateService::cancelDuplicateRevshareCommissions($pdo, $id);
+                AffiliateService::reconcileBalance($pdo, $id);
+            }
             $_SESSION['admin_flash'] = sprintf(
-                'Komisyon yeniden hesaplandı (%s → %s): %d kayıt, %s ₺',
+                'Komisyon yeniden hesaplandı (%s → %s): %d kayıt, %s ₺. Ödenmiş dönemler korunur.',
                 $dateFrom,
                 $dateTo,
                 (int) ($result['processed'] ?? 0),

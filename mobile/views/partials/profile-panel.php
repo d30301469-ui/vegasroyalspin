@@ -273,7 +273,7 @@ $_SESSION['csrf_token'] = $_SESSION[$panelCsrfKey];
           <a class="hdr-navigation-link-bc" href="/?profile=open&amp;account=profile&amp;page=timeout-limits" data-mprofile-tab="timeout-limits"><span class="nav-menu-title"><?= htmlspecialchars(__('profile.freeze'), ENT_QUOTES, 'UTF-8') ?><i class="count-blink-even" data-badge=""></i></span></a>
         </div></div>
         <div class="u-i-e-p-p-content-bc u-i-common-content user-profile" data-mprofile-section="details" data-scroll-lock-scrollable>
-          <form onsubmit="return false;">
+          <form id="mprofileDetailsForm" autocomplete="off" onsubmit="return false;">
             <div class="userProfile-content" data-scroll-lock-scrollable>
               <div class="userProfileWrapper-bc userProfileSection-0">
                 <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default valid filled"><label class="form-control-label-bc inputs"><input type="text" class="form-control-input-bc" name="username" readonly step="0" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('auth.username_required'), ENT_QUOTES, 'UTF-8') ?></span></label></div></div>
@@ -288,10 +288,11 @@ $_SESSION['csrf_token'] = $_SESSION[$panelCsrfKey];
               <div class="userProfileWrapper-bc userProfileSection-1">
                 <div class="u-i-p-control-item-holder-bc"><hr class="passwordAboveSeparator"></div>
                 <div class="u-i-p-control-item-holder-bc"><div class="entrance-f-item-bc"><div class="entrance-f-error-message-bc">Değişiklikleri kaydetmek için şifrenizi girin.</div></div></div>
-                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default has-icon"><label class="form-control-label-bc inputs"><input type="password" class="form-control-input-bc" name="password" step="1" value=""><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('profile.current_password'), ENT_QUOTES, 'UTF-8') ?></span></label></div></div>
+                <div class="u-i-p-control-item-holder-bc"><div class="form-control-bc default has-icon"><label class="form-control-label-bc inputs"><input type="password" class="form-control-input-bc" name="password" id="mprofileDetailsPassword" step="1" value="" autocomplete="current-password"><i class="form-control-input-stroke-bc" aria-hidden="true"></i><span class="form-control-title-bc ellipsis"><?= htmlspecialchars(__('profile.current_password'), ENT_QUOTES, 'UTF-8') ?></span></label></div></div>
+                <div class="mprofile-form-message" data-mprofile-details-message role="status" aria-live="polite"></div>
               </div>
             </div>
-            <div class="u-i-p-c-footer-bc"><button class="btn a-color right-aligned" type="submit" title="DEĞİŞİKLİKLERİ KAYDET" disabled><span>DEĞİŞİKLİKLERİ KAYDET</span></button></div>
+            <div class="u-i-p-c-footer-bc"><button class="btn a-color right-aligned" type="submit" id="mprofileDetailsSaveBtn" title="DEĞİŞİKLİKLERİ KAYDET" disabled><span>DEĞİŞİKLİKLERİ KAYDET</span></button></div>
           </form>
         </div>
         <div class="u-i-e-p-p-content-bc u-i-common-content user-profile mprofile-password-section" data-mprofile-section="change-password" data-scroll-lock-scrollable hidden>

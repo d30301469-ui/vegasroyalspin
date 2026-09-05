@@ -47,6 +47,8 @@ final class AdminRoutePermission
         '/megapayz/methods' => 'payment-methods',
         '/megapayz/withdraw/approve' => 'withdrawals',
         '/megapayz/withdraw/reject' => 'withdrawals',
+        '/megapayz/withdraw/risk-release' => 'withdrawals',
+        '/megapayz/withdraw/risk-reject' => 'compliance-risk',
         '/megapayz/deposit/cancel' => 'deposits',
         '/footer' => 'footer-settings',
         '/site-settings' => 'site-settings',

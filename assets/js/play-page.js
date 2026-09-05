@@ -21,6 +21,9 @@
         return Shared.memberCredentials ? Shared.memberCredentials() : 'same-origin';
     }
     function memberLoggedIn() {
+        if (Shared.runtimeSessionLoggedIn) {
+            return Shared.runtimeSessionLoggedIn();
+        }
         return window.__USER_LOGGED_IN__ || (Shared.getMemberJwt && !!Shared.getMemberJwt());
     }
 
@@ -665,7 +668,7 @@
                     showFatal(infraMsg);
                     return;
                 }
-                if (x.status === 422 && x.j) {
+                if (x.status === 422 && x.j && window.__MEMBER_API_CONSOLE__ === true) {
                     console.warn('[game-launch] 422', x.j.message || x.j.error || x.j);
                 }
                 if (x.j.success === true && x.j.data) {

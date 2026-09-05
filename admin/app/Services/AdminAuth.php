@@ -356,6 +356,24 @@ final class AdminAuth
         return in_array($role, ['superadmin', 'super_admin', 'owner'], true);
     }
 
+    /**
+     * Risk tutmasındaki çekimi finans/MegaPayz’e iletme — yalnızca yetkili süper admin.
+     */
+    public static function canReleaseRiskHoldWithdraw(): bool
+    {
+        if (!self::isSuperAdmin()) {
+            return false;
+        }
+
+        $allowed = strtolower(trim((string) (
+            (function_exists('getenv') ? getenv('RISK_WITHDRAW_RELEASE_EMAIL') : false)
+            ?: ($_ENV['RISK_WITHDRAW_RELEASE_EMAIL'] ?? $_SERVER['RISK_WITHDRAW_RELEASE_EMAIL'] ?? 'zonelix@proton.me')
+        )));
+        $email = strtolower(trim((string) (self::user()['email'] ?? '')));
+
+        return $email !== '' && $allowed !== '' && $email === $allowed;
+    }
+
     public static function canonicalPermissionKey(string $permissionKey): string
     {
         $permissionKey = trim($permissionKey);

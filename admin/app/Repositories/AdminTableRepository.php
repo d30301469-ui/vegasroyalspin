@@ -599,32 +599,24 @@ final class AdminTableRepository
             }
         }
         if (in_array($table, ['megapayz_transactions', 'user_active_bonuses', 'bonus_claim_requests'], true)) {
-            try {
-                $stmt = AdminDatabase::pdo()->prepare(
-                    "SELECT id
-                     FROM users
-                     WHERE CONCAT(COALESCE(name, ''), ' ', COALESCE(surname, '')) LIKE :search
-                        OR name LIKE :search
-                        OR surname LIKE :search
-                     LIMIT 100"
-                );
-                $stmt->execute(['search' => '%' . $search . '%']);
-                $userIds = array_values(array_filter(
-                    array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN)),
-                    static fn (int $id): bool => $id > 0
-                ));
-                if ($userIds !== []) {
-                    $in = [];
-                    foreach ($userIds as $userId) {
-                        $param = 'search_user_' . $index++;
-                        $in[] = ':' . $param;
-                        $params[$param] = $userId;
-                    }
-                    $parts[] = $this->quoteIdentifier('user_id') . ' IN (' . implode(',', $in) . ')';
-                }
-            } catch (Throwable) {
-                // Keep the generic table search available even if the users table is missing.
-            }
+            // Üye adı / soyadı / kullanıcı adı ile eşle (LIMIT yok — aksi halde arama sessizce boş döner).
+            // PDO native prepares: aynı named param birden fazla kullanılamaz.
+            $like = '%' . $search . '%';
+            $pUser = 'search_member_' . $index++;
+            $pName = 'search_member_' . $index++;
+            $pSurname = 'search_member_' . $index++;
+            $pFull = 'search_member_' . $index++;
+            $parts[] = $this->quoteIdentifier('user_id') . ' IN (
+                SELECT u.id FROM users u
+                WHERE u.username LIKE :' . $pUser . '
+                   OR u.name LIKE :' . $pName . '
+                   OR u.surname LIKE :' . $pSurname . '
+                   OR CONCAT(COALESCE(u.name, \'\'), \' \', COALESCE(u.surname, \'\')) LIKE :' . $pFull . '
+            )';
+            $params[$pUser] = $like;
+            $params[$pName] = $like;
+            $params[$pSurname] = $like;
+            $params[$pFull] = $like;
         }
         if ($parts === []) {
             return ['', []];
@@ -668,13 +660,22 @@ final class AdminTableRepository
             $users = [];
             foreach ($stmt->fetchAll() as $user) {
                 $fullName = trim((string) ($user['name'] ?? '') . ' ' . (string) ($user['surname'] ?? ''));
-                $users[(int) ($user['id'] ?? 0)] = $fullName !== '' ? $fullName : (string) ($user['username'] ?? '');
+                $username = trim((string) ($user['username'] ?? ''));
+                $users[(int) ($user['id'] ?? 0)] = [
+                    'full_name' => $fullName !== '' ? $fullName : $username,
+                    'username' => $username,
+                ];
             }
 
             foreach ($rows as &$row) {
                 $userId = (int) ($row['user_id'] ?? 0);
-                if ($userId > 0 && isset($users[$userId]) && trim($users[$userId]) !== '') {
-                    $row['full_name'] = $users[$userId];
+                if ($userId > 0 && isset($users[$userId])) {
+                    if (trim((string) ($users[$userId]['full_name'] ?? '')) !== '') {
+                        $row['full_name'] = $users[$userId]['full_name'];
+                    }
+                    if (trim((string) ($users[$userId]['username'] ?? '')) !== '') {
+                        $row['username'] = $users[$userId]['username'];
+                    }
                 }
             }
             unset($row);

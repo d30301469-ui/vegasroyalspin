@@ -158,46 +158,45 @@ if (!function_exists('memberPromotionResolveClaimAmountV2')) {
                 break;
             }
         }
-        if ($rule === null && isset($rules[0]) && is_array($rules[0])) {
-            $rule = $rules[0];
-        }
 
-        $ruleAppliesTo = strtolower((string) ($rule['applies_to'] ?? ''));
-        $ruleType = strtolower((string) ($rule['type'] ?? ''));
-        $ruleValue = (float) ($rule['value'] ?? $rule['amount'] ?? 0);
-        $ruleMaxAmount = isset($rule['max_amount']) ? (float) $rule['max_amount'] : null;
+        if ($rule !== null) {
+            $ruleAppliesTo = strtolower((string) ($rule['applies_to'] ?? ''));
+            $ruleType = strtolower((string) ($rule['type'] ?? ''));
+            $ruleValue = (float) ($rule['value'] ?? $rule['amount'] ?? 0);
+            $ruleMaxAmount = isset($rule['max_amount']) ? (float) $rule['max_amount'] : null;
 
-        // --- bonus_rules varsa onu kullan ---
-        if ($rule !== null && $ruleValue > 0) {
-            $isRulePct = $ruleType === 'percentage';
-            $isFirstDeposit = $isFirstDepositPromo
-                || in_array($ruleAppliesTo, ['first_deposit', 'firstdeposit'], true);
+            // --- bonus_rules varsa onu kullan ---
+            if ($ruleValue > 0) {
+                $isRulePct = $ruleType === 'percentage';
+                $isFirstDeposit = $isFirstDepositPromo
+                    || in_array($ruleAppliesTo, ['first_deposit', 'firstdeposit'], true);
 
-            if ($isRulePct) {
-                $baseAmount = $isFirstDeposit
-                    ? memberFirstApprovedDepositAmountV2($pdo, $userId)
-                    : $totalDeposit;
+                if ($isRulePct) {
+                    $baseAmount = $isFirstDeposit
+                        ? memberFirstApprovedDepositAmountV2($pdo, $userId)
+                        : $totalDeposit;
 
-                if ($baseAmount > 0) {
-                    $calculated = round(($baseAmount * $ruleValue) / 100, 2);
-                    if ($ruleMaxAmount !== null && $ruleMaxAmount > 0) {
-                        $calculated = min($calculated, round($ruleMaxAmount, 2));
+                    if ($baseAmount > 0) {
+                        $calculated = round(($baseAmount * $ruleValue) / 100, 2);
+                        if ($ruleMaxAmount !== null && $ruleMaxAmount > 0) {
+                            $calculated = min($calculated, round($ruleMaxAmount, 2));
+                        }
+                        // Bonus yatırım toplamını aşamaz
+                        if ($totalDeposit > 0) {
+                            $calculated = min($calculated, $totalDeposit);
+                        }
+
+                        return $calculated;
                     }
-                    // Bonus yatırım toplamını aşamaz
+                } else {
+                    // fixed tipi kural: yatırım toplamını aşamaz
+                    $fixed = round($ruleValue, 2);
                     if ($totalDeposit > 0) {
-                        $calculated = min($calculated, $totalDeposit);
+                        $fixed = min($fixed, $totalDeposit);
                     }
 
-                    return $calculated;
+                    return $fixed;
                 }
-            } else {
-                // fixed tipi kural: yatırım toplamını aşamaz
-                $fixed = round($ruleValue, 2);
-                if ($totalDeposit > 0) {
-                    $fixed = min($fixed, $totalDeposit);
-                }
-
-                return $fixed;
             }
         }
 
@@ -362,6 +361,51 @@ if (!function_exists('memberPriorClaimCountForPromotionV2')) {
     }
 }
 
+if (!function_exists('memberUserPendingBonusClaimV2')) {
+    /**
+     * Başka promosyonda bekleyen talep var mı? (çapraz promosyon yarışını engeller)
+     *
+     * @return array{id:int,promotion_id:int,bonus_name:string}|null
+     */
+    function memberUserPendingBonusClaimV2(PDO $pdo, int $userId, ?int $exceptPromotionId = null): ?array
+    {
+        if ($userId <= 0) {
+            return null;
+        }
+        try {
+            $sql = "SELECT id, promotion_id, bonus_name FROM bonus_claim_requests
+                    WHERE user_id = :user_id AND status = 'pending'";
+            $params = ['user_id' => $userId];
+            if ($exceptPromotionId !== null && $exceptPromotionId > 0) {
+                $sql .= ' AND promotion_id <> :promotion_id';
+                $params['promotion_id'] = $exceptPromotionId;
+            }
+            $sql .= ' ORDER BY id ASC LIMIT 1';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return is_array($row) ? $row : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+}
+
+if (!function_exists('memberPendingBonusClaimBlockMessageV2')) {
+    function memberPendingBonusClaimBlockMessageV2(?array $pending): string
+    {
+        if (!is_array($pending)) {
+            return 'Bekleyen bonus talebiniz varken yeni talep oluşturamazsınız.';
+        }
+        $name = trim((string) ($pending['bonus_name'] ?? ''));
+
+        return $name !== ''
+            ? 'Bekleyen bonus talebiniz var (' . $name . '). Yeni talep oluşturamazsınız.'
+            : 'Bekleyen bonus talebiniz varken yeni talep oluşturamazsınız.';
+    }
+}
+
 if (!function_exists('memberCheckPromotionClaimLimitV2')) {
     /**
      * Kullanıcının bu promosyondan kaç kez daha faydalanabileceğini kontrol eder.
@@ -397,6 +441,17 @@ if (!function_exists('memberCheckPromotionClaimLimitV2')) {
                 'approvedClaims' => $approvedClaims,
                 'remainingRights' => 0,
                 'message' => 'Bu bonustan faydalanabilmeniz için yatırım yapmanız gerekmektedir.',
+            ];
+        }
+
+        $crossPending = memberUserPendingBonusClaimV2($pdo, $userId, $promotionId);
+        if (is_array($crossPending)) {
+            return [
+                'canClaim' => false,
+                'approvedDeposits' => $approvedDeposits,
+                'approvedClaims' => $approvedClaims,
+                'remainingRights' => 0,
+                'message' => memberPendingBonusClaimBlockMessageV2($crossPending),
             ];
         }
 
@@ -440,5 +495,90 @@ if (!function_exists('memberCheckPromotionClaimLimitV2')) {
             'remainingRights' => $remaining,
             'message' => "Bu promosyondan $remaining kez daha faydalanabilirsiniz.",
         ];
+    }
+}
+
+if (!function_exists('memberInsertBonusClaimRequestV2')) {
+    /**
+     * Bonus talebini transaction içinde oluşturur; yarış koşullarında çift pending engellenir.
+     *
+     * @return array{requestId:int,requestedAmount:float,replacedPending:bool,limit:array<string,mixed>}
+     */
+    function memberInsertBonusClaimRequestV2(PDO $pdo, int $userId, array $promotion, ?string $userMessage = null): array
+    {
+        $promotionId = (int) ($promotion['id'] ?? 0);
+        if ($promotionId <= 0) {
+            throw new InvalidArgumentException('Promosyon ID geçersiz.');
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $lock = $pdo->prepare('SELECT id FROM users WHERE id = :id LIMIT 1 FOR UPDATE');
+            $lock->execute(['id' => $userId]);
+            if (!$lock->fetchColumn()) {
+                throw new RuntimeException('Kullanıcı bulunamadı.');
+            }
+
+            $crossPending = memberUserPendingBonusClaimV2($pdo, $userId, $promotionId);
+            if (is_array($crossPending)) {
+                throw new RuntimeException(memberPendingBonusClaimBlockMessageV2($crossPending));
+            }
+
+            $claimLimit = memberCheckPromotionClaimLimitV2($pdo, $userId, $promotionId);
+            if (!$claimLimit['canClaim']) {
+                throw new RuntimeException((string) ($claimLimit['message'] ?? 'Bonus talep hakkınız bulunmuyor.'));
+            }
+
+            $replacedPending = false;
+            $existingClaim = $pdo->prepare(
+                "SELECT id FROM bonus_claim_requests
+                 WHERE user_id = :user_id AND promotion_id = :promotion_id AND status = 'pending'
+                 LIMIT 1 FOR UPDATE"
+            );
+            $existingClaim->execute(['user_id' => $userId, 'promotion_id' => $promotionId]);
+            $existingClaimRow = $existingClaim->fetch(PDO::FETCH_ASSOC);
+            if (is_array($existingClaimRow)) {
+                $pdo->prepare('DELETE FROM bonus_claim_requests WHERE id = :id')
+                    ->execute(['id' => (int) $existingClaimRow['id']]);
+                $replacedPending = true;
+            }
+
+            $requestedAmount = memberPromotionResolveClaimAmountV2($pdo, $userId, $promotion);
+            if ($requestedAmount <= 0) {
+                throw new RuntimeException('Promosyon bonus tutarı hesaplanamadı.');
+            }
+
+            $insert = $pdo->prepare(
+                "INSERT INTO bonus_claim_requests
+                (user_id, promotion_id, bonus_name, category, promotion_type, requested_amount, wagering_multiplier, user_message, status, created_at)
+                VALUES
+                (:user_id, :promotion_id, :bonus_name, :category, :promotion_type, :requested_amount, :wagering_multiplier, :user_message, 'pending', NOW())"
+            );
+            $insert->execute([
+                'user_id' => $userId,
+                'promotion_id' => $promotionId,
+                'bonus_name' => (string) ($promotion['title'] ?? ''),
+                'category' => (string) ($promotion['type'] ?? ''),
+                'promotion_type' => (string) ($promotion['bonus_type'] ?? ''),
+                'requested_amount' => number_format($requestedAmount, 2, '.', ''),
+                'wagering_multiplier' => number_format((float) ($promotion['wagering_multiplier'] ?? 1), 2, '.', ''),
+                'user_message' => $userMessage !== null && trim($userMessage) !== '' ? trim($userMessage) : null,
+            ]);
+
+            $requestId = (int) $pdo->lastInsertId();
+            $pdo->commit();
+
+            return [
+                'requestId' => $requestId,
+                'requestedAmount' => $requestedAmount,
+                'replacedPending' => $replacedPending,
+                'limit' => $claimLimit,
+            ];
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 }

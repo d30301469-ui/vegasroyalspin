@@ -293,10 +293,35 @@ final class CasinoAggregatorService
         }
 
         try {
+            self::ensureDemoWalletTable($pdo);
+        } catch (Throwable $e) {
+            error_log('Casino aggregator demo wallet schema: ' . $e->getMessage());
+        }
+
+        try {
             self::ensureSettingsTables($pdo);
         } catch (Throwable $e) {
             error_log('Casino aggregator settings schema: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Virtual balances for guest_/demo_ userCodes when the provider rejects
+     * GetGameUrl isDemo=true and falls back to seamless callbacks.
+     */
+    private static function ensureDemoWalletTable(PDO $pdo): void
+    {
+        if (self::tableExists($pdo, 'casino_aggregator_demo_wallets')) {
+            return;
+        }
+        $pdo->exec(
+            'CREATE TABLE casino_aggregator_demo_wallets (
+                user_code VARCHAR(64) NOT NULL,
+                balance DECIMAL(14,2) NOT NULL DEFAULT 10000.00,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_code)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
     }
 
     public static function createSchema(PDO $pdo): void
@@ -3721,16 +3746,34 @@ final class CasinoAggregatorService
             return ['success' => false, 'code' => 404, 'message' => 'Oyun bulunamadı veya pasif.'];
         }
 
+        $wantDemo = in_array(strtolower(trim((string) ($input['mode'] ?? ''))), ['fun', 'demo'], true)
+            || !empty($input['demo'])
+            || !empty($input['isDemo']);
         $isGuest = !is_array($user) || (int) ($user['id'] ?? 0) <= 0;
+        // Demo / anonymous: provider-native demo (isDemo=true per spec §2.1) when
+        // supported; otherwise synthetic guest_* + virtual wallet so real balances
+        // and agent credit are never touched.
+        $isDemoLaunch = $wantDemo || $isGuest;
+        $demoMemberId = max(0, (int) ($input['demo_member_id'] ?? 0));
         $userId = $isGuest ? 0 : (int) $user['id'];
         $walletMode = 'main';
-        if ($isGuest) {
+        if ($isDemoLaunch) {
             $seed = session_id();
             if ($seed === '') {
                 $seed = (string) ($_SERVER['REMOTE_ADDR'] ?? '') . '|' . (string) ($_SERVER['HTTP_USER_AGENT'] ?? '') . '|' . date('Ymd');
             }
+            $clientSeed = trim((string) ($input['demo_guest_key'] ?? $input['guest_key'] ?? ''));
+            if ($clientSeed !== '') {
+                $seed = $clientSeed;
+            } elseif ($demoMemberId > 0) {
+                $seed = 'member:' . $demoMemberId . '|' . $seed;
+            } elseif (!$isGuest && $userId > 0) {
+                // Logged-in DEMO: isolate from real wallet / numeric userCode.
+                $seed = 'member:' . $userId . '|' . $seed;
+            }
             $userCode = 'guest_' . substr(hash('sha256', $seed), 0, 24);
-            $nickname = 'guest';
+            $nickname = 'Demo';
+            $userId = 0;
         } else {
             if ((int) ($user['banned'] ?? 0) === 1) {
                 return [
@@ -3776,7 +3819,7 @@ final class CasinoAggregatorService
 
         // CreateUser is Transfer-wallet only (Operator API §2.2). Seamless must not
         // call it — it burns the 1s CreateUser throttle before GetGameUrl.
-        if (!$isGuest && strtolower(trim((string) ($cfg['api_mode'] ?? 'seamless'))) === 'transfer') {
+        if (!$isDemoLaunch && strtolower(trim((string) ($cfg['api_mode'] ?? 'seamless'))) === 'transfer') {
             try {
                 self::request($pdo, [
                     'method'    => 'CreateUser',
@@ -3784,6 +3827,14 @@ final class CasinoAggregatorService
                     'agentCode' => (string) $cfg['agent_code'],
                     'userCode'  => $userCode,
                 ]);
+            } catch (Throwable) {
+            }
+        }
+
+        if ($isDemoLaunch) {
+            try {
+                self::ensureDemoWalletTable($pdo);
+                self::ensureDemoWalletBalance($pdo, $userCode);
             } catch (Throwable) {
             }
         }
@@ -3800,8 +3851,8 @@ final class CasinoAggregatorService
             'currencyCode' => $currency,
             'language'     => $lang,
             'channel'      => $channel,
-            // Spec Bool: guests demo=true; real money must be explicit false.
-            'isDemo'       => $isGuest,
+            // Spec §2.1: isDemo Bool — provider demo must not debit agent credit.
+            'isDemo'       => $wantDemo,
         ];
         if ($parsed['game_code'] !== '') {
             $payload['gameCode'] = $parsed['game_code'];
@@ -3818,6 +3869,11 @@ final class CasinoAggregatorService
         // while the launch request is still in flight.
         $sessionId = 0;
         $lockedWallet = $walletMode === 'bonus' ? 'bonus' : 'main';
+        $sessionMeta = [
+            '_wallet'          => $lockedWallet,
+            '_demo_launch'     => $wantDemo,
+            '_demo_member_id'  => $demoMemberId > 0 ? $demoMemberId : null,
+        ];
         try {
             self::bootstrap($pdo);
             $pdo->prepare(
@@ -3834,7 +3890,7 @@ final class CasinoAggregatorService
                 ':lang'   => $lang,
                 ':chan'   => $channel,
                 ':wallet' => $lockedWallet,
-                ':req'    => json_encode($payload + ['_wallet' => $lockedWallet], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ':req'    => json_encode($payload + $sessionMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
             $sessionId = (int) $pdo->lastInsertId();
         } catch (Throwable) {
@@ -3852,7 +3908,7 @@ final class CasinoAggregatorService
                     ':cur'    => $currency,
                     ':lang'   => $lang,
                     ':chan'   => $channel,
-                    ':req'    => json_encode($payload + ['_wallet' => $lockedWallet], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    ':req'    => json_encode($payload + $sessionMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ]);
                 $sessionId = (int) $pdo->lastInsertId();
             } catch (Throwable) {
@@ -3863,6 +3919,28 @@ final class CasinoAggregatorService
             // Spec: GetGameUrl max 10/min and 6s per user — soft per-user throttle.
             self::throttleGetGameUrl($userCode);
             $response = self::request($pdo, $payload, 25);
+            $status = (int) ($response['status'] ?? -1);
+            $launchUrlProbe = trim((string) ($response['launchUrl'] ?? ''));
+            if ($wantDemo && ($status !== 0 || $launchUrlProbe === '')) {
+                // Some agents reject isDemo=true — fall back to virtual wallet path.
+                $payload['isDemo'] = false;
+                $sessionMeta['_demo_provider_flag'] = false;
+                self::throttleGetGameUrl($userCode);
+                $response = self::request($pdo, $payload, 25);
+                if ($sessionId > 0) {
+                    try {
+                        $pdo->prepare(
+                            'UPDATE casino_aggregator_sessions SET request_payload = :req WHERE id = :id LIMIT 1'
+                        )->execute([
+                            ':req' => json_encode($payload + $sessionMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                            ':id'  => $sessionId,
+                        ]);
+                    } catch (Throwable) {
+                    }
+                }
+            } elseif ($wantDemo) {
+                $sessionMeta['_demo_provider_flag'] = true;
+            }
         } catch (Throwable $e) {
             return ['success' => false, 'code' => 503, 'message' => 'Aggregator API bağlantı hatası: ' . $e->getMessage()];
         }
@@ -3899,7 +3977,7 @@ final class CasinoAggregatorService
         // Some vendor brands on this agent still return practice/demo launch URLs
         // for real-money requests (PlaynGO practice=1, Playtech real=0). Do not
         // hand those to the player as a successful real launch.
-        if (!$isGuest && self::launchUrlLooksLikeDemo($launchUrl)) {
+        if (!$isDemoLaunch && !$isGuest && self::launchUrlLooksLikeDemo($launchUrl)) {
             self::deactivateGame($pdo, $parsed['vendor_code'], $parsed['game_code']);
             return [
                 'success' => false,
@@ -4022,7 +4100,7 @@ final class CasinoAggregatorService
                 'game_url'   => $launchUrl,
                 'launch_url' => $launchUrl,
                 'open_mode'  => $requestedOpenMode,
-                'mode'       => $isGuest ? 'guest' : 'real',
+                'mode'       => $isDemoLaunch ? 'demo' : ($isGuest ? 'guest' : 'real'),
                 'home_url'   => $homeUrl,
             ],
             'game_url' => $launchUrl,
@@ -4575,7 +4653,13 @@ final class CasinoAggregatorService
 
     private static function walletGetBalance(PDO $pdo, array $payload): array
     {
-        $user = self::userByCode($pdo, (string) ($payload['userCode'] ?? ''));
+        $userCode = trim((string) ($payload['userCode'] ?? ''));
+        $demoCode = self::resolveDemoWalletUserCode($pdo, $userCode, $payload);
+        if ($demoCode !== null) {
+            return self::walletDemoGetBalance($pdo, $demoCode);
+        }
+
+        $user = self::userByCode($pdo, $userCode);
         if ($user === null) {
             return ['status' => 5, 'msg' => 'INVALID_USER'];
         }
@@ -4608,7 +4692,13 @@ final class CasinoAggregatorService
 
     private static function walletChangeBalance(PDO $pdo, array $payload): array
     {
-        $user = self::userByCode($pdo, (string) ($payload['userCode'] ?? ''));
+        $userCode = trim((string) ($payload['userCode'] ?? ''));
+        $demoCode = self::resolveDemoWalletUserCode($pdo, $userCode, $payload);
+        if ($demoCode !== null) {
+            return self::walletDemoChangeBalance($pdo, $demoCode, $payload);
+        }
+
+        $user = self::userByCode($pdo, $userCode);
         if ($user === null) {
             return ['status' => 5, 'msg' => 'INVALID_USER'];
         }
@@ -4764,6 +4854,270 @@ final class CasinoAggregatorService
         $sql .= ' WHERE wager_id = :w';
         $pdo->prepare($sql)->execute($params);
         return ['status' => 0, 'msg' => 'SUCCESS'];
+    }
+
+    private static function isVirtualDemoUserCode(string $userCode): bool
+    {
+        $userCode = trim($userCode);
+        if ($userCode === '') {
+            return false;
+        }
+        return str_starts_with($userCode, 'guest_')
+            || str_starts_with($userCode, 'demo_')
+            || str_starts_with($userCode, 'gdemo');
+    }
+
+    /** @param array<string, mixed> $sessionRow */
+    private static function sessionStoredPayloadIsDemo(array $sessionRow): bool
+    {
+        $raw = trim((string) ($sessionRow['request_payload'] ?? ''));
+        if ($raw === '') {
+            return false;
+        }
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return str_contains($raw, '"_demo_launch":true')
+                || str_contains($raw, '"isDemo":true')
+                || str_contains($raw, '"demo":true');
+        }
+
+        return !empty($decoded['_demo_launch'])
+            || !empty($decoded['isDemo'])
+            || !empty($decoded['demo']);
+    }
+
+    /**
+     * Route wallet callbacks to the virtual demo ledger when the launch was demo,
+     * including when the provider echoes a numeric userCode instead of guest_*.
+     *
+     * @param array<string, mixed>|null $payload
+     */
+    private static function resolveDemoWalletUserCode(PDO $pdo, string $userCode, ?array $payload = null): ?string
+    {
+        $userCode = trim($userCode);
+        if ($userCode === '') {
+            return null;
+        }
+        if (self::isVirtualDemoUserCode($userCode)) {
+            return $userCode;
+        }
+
+        if (ctype_digit($userCode)) {
+            $guest = self::latestDemoGuestCodeForMember($pdo, (int) $userCode, $payload);
+            if ($guest !== null) {
+                return $guest;
+            }
+        }
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT user_code, request_payload FROM casino_aggregator_sessions
+                 WHERE user_code = :code
+                   AND created_at >= DATE_SUB(NOW(), INTERVAL 4 HOUR)
+                 ORDER BY id DESC LIMIT 1'
+            );
+            $stmt->execute([':code' => $userCode]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($row) && self::sessionStoredPayloadIsDemo($row)) {
+                $stored = trim((string) ($row['user_code'] ?? ''));
+                if (self::isVirtualDemoUserCode($stored)) {
+                    return $stored;
+                }
+            }
+        } catch (Throwable) {
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed>|null $payload
+     */
+    private static function latestDemoGuestCodeForMember(PDO $pdo, int $memberId, ?array $payload = null): ?string
+    {
+        if ($memberId <= 0) {
+            return null;
+        }
+
+        $vendor = trim((string) ($payload['vendorCode'] ?? $payload['vendor_code'] ?? ''));
+        $game = trim((string) ($payload['gameCode'] ?? $payload['game_code'] ?? ''));
+
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT user_code, request_payload, vendor_code, game_code
+                 FROM casino_aggregator_sessions
+                 WHERE user_code LIKE 'guest\\_%'
+                   AND created_at >= DATE_SUB(NOW(), INTERVAL 4 HOUR)
+                   AND request_payload LIKE :member
+                 ORDER BY id DESC LIMIT 12"
+            );
+            $stmt->execute([':member' => '%"_demo_member_id":' . $memberId . '%']);
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                if (!is_array($row) || !self::sessionStoredPayloadIsDemo($row)) {
+                    continue;
+                }
+                if ($vendor !== '' && $game !== '') {
+                    $sv = trim((string) ($row['vendor_code'] ?? ''));
+                    $sg = trim((string) ($row['game_code'] ?? ''));
+                    if ($sv !== '' && $sg !== '' && ($sv !== $vendor || $sg !== $game)) {
+                        continue;
+                    }
+                }
+                $code = trim((string) ($row['user_code'] ?? ''));
+                if (self::isVirtualDemoUserCode($code)) {
+                    return $code;
+                }
+            }
+        } catch (Throwable) {
+        }
+
+        return null;
+    }
+
+    private static function demoWalletDefaultBalance(): float
+    {
+        return 10000.00;
+    }
+
+    private static function ensureDemoWalletBalance(PDO $pdo, string $userCode): float
+    {
+        self::ensureDemoWalletTable($pdo);
+        $userCode = trim($userCode);
+        $stmt = $pdo->prepare('SELECT balance FROM casino_aggregator_demo_wallets WHERE user_code = :c LIMIT 1');
+        $stmt->execute([':c' => $userCode]);
+        $existing = $stmt->fetchColumn();
+        if ($existing !== false) {
+            return self::formatWalletBalance((float) $existing);
+        }
+        $balance = self::demoWalletDefaultBalance();
+        $pdo->prepare(
+            'INSERT INTO casino_aggregator_demo_wallets (user_code, balance) VALUES (:c, :b)
+             ON DUPLICATE KEY UPDATE user_code = user_code'
+        )->execute([':c' => $userCode, ':b' => $balance]);
+        $stmt->execute([':c' => $userCode]);
+        $again = $stmt->fetchColumn();
+        return self::formatWalletBalance((float) ($again !== false ? $again : $balance));
+    }
+
+    private static function walletDemoGetBalance(PDO $pdo, string $userCode): array
+    {
+        try {
+            $balance = self::ensureDemoWalletBalance($pdo, $userCode);
+        } catch (Throwable) {
+            return ['status' => 1, 'msg' => 'INTERNAL_ERROR'];
+        }
+        return [
+            'status'    => 0,
+            'msg'       => 'SUCCESS',
+            'balance'   => $balance,
+            '__user_id' => null,
+            '__wallet'  => 'demo',
+        ];
+    }
+
+    /** @param array<string, mixed> $payload */
+    private static function walletDemoChangeBalance(PDO $pdo, string $userCode, array $payload): array
+    {
+        $txnCode = trim((string) ($payload['txnCode'] ?? ''));
+        if ($txnCode === '') {
+            return ['status' => 13, 'msg' => 'INVALID_PARAMETER'];
+        }
+
+        $existing = $pdo->prepare('SELECT after_balance FROM casino_aggregator_transactions WHERE txn_code = :c LIMIT 1');
+        $existing->execute([':c' => $txnCode]);
+        $prev = $existing->fetchColumn();
+        if ($prev !== false) {
+            return ['status' => 0, 'msg' => 'SUCCESS', 'balance' => self::formatWalletBalance((float) $prev)];
+        }
+
+        $txnType = (int) ($payload['txnType'] ?? -1);
+        $amount = round((float) ($payload['amount'] ?? 0), 2);
+        $type = match ($txnType) {
+            0 => 'bet',
+            1 => 'win',
+            2 => 'cancel',
+            default => '',
+        };
+        if ($type === '') {
+            return ['status' => 13, 'msg' => 'INVALID_PARAMETER'];
+        }
+        if ($type === 'bet' && $amount > 0) {
+            $amount = -abs($amount);
+        } elseif ($type === 'win' && $amount < 0) {
+            $amount = abs($amount);
+        } elseif ($type === 'cancel' && $amount < 0) {
+            $amount = abs($amount);
+        }
+
+        $pdo->beginTransaction();
+        try {
+            self::ensureDemoWalletTable($pdo);
+            self::ensureDemoWalletBalance($pdo, $userCode);
+            $lock = $pdo->prepare('SELECT balance FROM casino_aggregator_demo_wallets WHERE user_code = :c LIMIT 1 FOR UPDATE');
+            $lock->execute([':c' => $userCode]);
+            $before = round((float) ($lock->fetchColumn() ?: 0), 2);
+
+            $dup = $pdo->prepare('SELECT after_balance FROM casino_aggregator_transactions WHERE txn_code = :c LIMIT 1');
+            $dup->execute([':c' => $txnCode]);
+            $dupBal = $dup->fetchColumn();
+            if ($dupBal !== false) {
+                $pdo->commit();
+                return ['status' => 0, 'msg' => 'SUCCESS', 'balance' => self::formatWalletBalance((float) $dupBal)];
+            }
+
+            $after = round($before + $amount, 2);
+            if ($after < 0) {
+                $pdo->rollBack();
+                return ['status' => 8, 'msg' => 'INSUFFICIENT_MONEY', 'balance' => self::formatWalletBalance($before)];
+            }
+
+            $pdo->prepare('UPDATE casino_aggregator_demo_wallets SET balance = :b WHERE user_code = :c')
+                ->execute([':b' => $after, ':c' => $userCode]);
+
+            $pdo->prepare(
+                'INSERT INTO casino_aggregator_transactions
+                    (user_id, username, txn_code, pair_code, wager_id, round_id, vendor_code, game_code,
+                     txn_type, amount, before_balance, after_balance, currency, is_free_round, is_finished, detail, raw_payload)
+                 VALUES (0, :uname, :txn, :pair, :wager, :round, :vendor, :game, :type, :amt, :before, :after,
+                         :cur, :free, :fin, :detail, :raw)'
+            )->execute([
+                ':uname'  => $userCode,
+                ':txn'    => $txnCode,
+                ':pair'   => trim((string) ($payload['pairCode'] ?? '')) ?: null,
+                ':wager'  => trim((string) ($payload['wagerId'] ?? '')) ?: null,
+                ':round'  => trim((string) ($payload['gameRoundId'] ?? '')) ?: null,
+                ':vendor' => trim((string) ($payload['vendorCode'] ?? '')) ?: null,
+                ':game'   => trim((string) ($payload['gameCode'] ?? '')) ?: null,
+                ':type'   => $type,
+                ':amt'    => $amount,
+                ':before' => $before,
+                ':after'  => $after,
+                ':cur'    => strtoupper((string) ($payload['currencyCode'] ?? 'TRY')),
+                ':free'   => !empty($payload['isFreeRound']) ? 1 : 0,
+                ':fin'    => !empty($payload['isFinished']) ? 1 : 0,
+                ':detail' => trim((string) ($payload['detail'] ?? '')) ?: null,
+                ':raw'    => json_encode($payload + ['_virtual_demo' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+
+            $pdo->commit();
+            return [
+                'status'  => 0,
+                'msg'     => 'SUCCESS',
+                'balance' => self::formatWalletBalance($after),
+            ];
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if (str_contains($e->getMessage(), '1062') || stripos($e->getMessage(), 'Duplicate') !== false) {
+                try {
+                    $bal = self::ensureDemoWalletBalance($pdo, $userCode);
+                    return ['status' => 0, 'msg' => 'SUCCESS', 'balance' => $bal];
+                } catch (Throwable) {
+                }
+            }
+            throw $e;
+        }
     }
 
     private static function userByCode(PDO $pdo, string $userCode): ?array

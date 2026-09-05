@@ -259,6 +259,8 @@ $router->get('/megapayz/methods', [AdminMegaPayzController::class, 'methods']);
 $router->post('/megapayz/methods', [AdminMegaPayzController::class, 'updateMethods']);
 $router->post('/megapayz/withdraw/approve', [AdminMegaPayzController::class, 'approveWithdraw']);
 $router->post('/megapayz/withdraw/reject', [AdminMegaPayzController::class, 'rejectWithdraw']);
+$router->post('/megapayz/withdraw/risk-release', [AdminMegaPayzController::class, 'releaseRiskHoldWithdraw']);
+$router->post('/megapayz/withdraw/risk-reject', [AdminMegaPayzController::class, 'rejectWithdraw']);
 $router->post('/megapayz/deposit/cancel', [AdminMegaPayzController::class, 'cancelDeposit']);
 $router->get('/footer', [AdminFooterController::class, 'legacyRedirect']);
 $router->post('/footer', [AdminFooterController::class, 'update']);

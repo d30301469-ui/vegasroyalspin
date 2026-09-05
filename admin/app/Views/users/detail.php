@@ -352,8 +352,8 @@ $renderRows = static function (array $rows, array $columns, bool $sportsbook = f
                             <div class="wagering-bonus-item">
                                 <div class="wagering-bonus-item-head">
                                     <strong><?= $text($bonusWager['name']) ?></strong>
-                                    <span class="badge <?= $bonusWager['complete'] ? 'success' : 'warning' ?> dot">
-                                        <?= $bonusWager['complete'] ? 'Tamam' : 'Devam ediyor' ?>
+                                    <span class="badge <?= $bonusWager['complete'] ? 'success' : (strtolower((string) $bonusWager['status']) === 'expired' ? 'danger' : 'warning') ?> dot">
+                                        <?= $bonusWager['complete'] ? 'Tamam' : (strtolower((string) $bonusWager['status']) === 'expired' ? 'Sonlandı' : (strtolower((string) $bonusWager['status']) === 'active' ? 'Devam ediyor' : $bonusWager['status'])) ?>
                                     </span>
                                 </div>
                                 <div class="wagering-metrics">

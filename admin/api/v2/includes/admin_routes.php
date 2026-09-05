@@ -608,8 +608,28 @@ $routes = [
         }
         $success($result);
     }],
+    ['POST', 'withdrawals/{id}/risk-release', static function (array $params, array $payload) use ($validateCsrf, $success, $error): void {
+        if (!AdminAuth::canReleaseRiskHoldWithdraw()) {
+            $error(403, 'Risk çekim onayı yalnızca yetkili süper admin tarafından verilebilir.');
+        }
+        $validateCsrf($payload);
+        $admin = AdminAuth::user();
+        $result = MegaPayzService::releaseRiskHoldWithdraw(
+            AdminDatabase::pdo(),
+            (int) ($params['id'] ?? 0),
+            (string) ($admin['username'] ?? 'Admin'),
+            (string) ($admin['email'] ?? ''),
+            AdminAuth::isSuperAdmin()
+        );
+        if (empty($result['success'])) {
+            $error(422, (string) ($result['message'] ?? 'Risk tutması serbest bırakılamadı.'), $result);
+        }
+        $success($result);
+    }],
     ['POST', 'withdrawals/{id}/reject', static function (array $params, array $payload) use ($requirePermission, $validateCsrf, $success, $error): void {
-        $requirePermission('withdrawals');
+        if (!AdminAuth::can('withdrawals') && !AdminAuth::can('compliance-risk')) {
+            $error(403, 'Bu işlem için yetkiniz yok.');
+        }
         $validateCsrf($payload);
         $reason = trim((string) ($payload['body']['reason'] ?? ''));
         $result = MegaPayzService::rejectWithdraw(AdminDatabase::pdo(), (int) ($params['id'] ?? 0), $reason);

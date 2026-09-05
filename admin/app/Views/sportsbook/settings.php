@@ -6,9 +6,12 @@ $text      = static fn (mixed $value): string => htmlspecialchars((string) ($val
 
 $siteEndpoint = trim((string) ($configRow['site_endpoint'] ?? ''));
 $webhookUrl   = $siteEndpoint !== '' ? rtrim($siteEndpoint, '/') . '/sportsbook_api' : '— site_endpoint ayarlanmamış —';
+$distroHookUrl = $siteEndpoint !== '' ? rtrim($siteEndpoint, '/') . '/api/v2/sportsbook-distro-hook' : 'https://admin.vegasroyalspin.com/api/v2/sportsbook-distro-hook';
 $isActive     = !empty($configRow['is_active']) && $configRow['is_active'] !== '0';
 $apiMode      = strtolower(trim((string) ($configRow['api_mode'] ?? 'seamless')));
 $apiMode      = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 'seamless';
+$apiBase      = strtolower(trim((string) ($configRow['api_base_url'] ?? '')));
+$isDistro     = str_contains($apiBase, '/op/v1') || str_contains($apiBase, 'operator-sportsbook');
 ?>
 <style>
     .sb-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
@@ -25,8 +28,10 @@ $apiMode      = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 
 <section class="hero">
     <div class="hero-text">
         <span class="eyebrow">Spor · Sportsbook</span>
-        <h1 class="hero-title">Sportsbook <span class="accent">(BetBy)</span></h1>
-        <p class="hero-sub">Agent kimlik bilgileri, Ed25519 imzalama anahtarları ve seamless wallet callback endpointi buradan yönetilir.</p>
+        <h1 class="hero-title">Sportsbook <span class="accent"><?= $isDistro ? '(Distro)' : '(BetBy)' ?></span></h1>
+        <p class="hero-sub"><?= $isDistro
+            ? 'Operator API anahtarı, Distro iframe oturumu ve HMAC wallet webhook buradan yönetilir.'
+            : 'Agent kimlik bilgileri, Ed25519 imzalama anahtarları ve seamless wallet callback endpointi buradan yönetilir.' ?></p>
     </div>
     <div class="hero-actions">
         <button class="btn btn--primary" type="submit" form="sportsbookSettingsForm">Ayarları Kaydet</button>
@@ -48,15 +53,19 @@ $apiMode      = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 
             <input id="agent_code" class="input" type="text" name="agent_code"
                    value="<?= $text($configRow['agent_code'] ?? '') ?>"
                    placeholder="Sportsbook agent code" autocomplete="off">
-            <p class="sb-help">Sağlayıcı back-office'ten verilen agent kodu.</p>
+            <p class="sb-help"><?= $isDistro
+                ? 'Distro operatör kodu (ör. vegasroyalspin).'
+                : 'Sağlayıcı back-office\'ten verilen agent kodu.' ?></p>
         </div>
 
         <div class="field">
             <label class="field-label" for="api_base_url">API Endpoint</label>
             <input id="api_base_url" class="input" type="url" name="api_base_url"
                    value="<?= $text($configRow['api_base_url'] ?? '') ?>"
-                   placeholder="https://api.ilomhzji.win" autocomplete="off">
-            <p class="sb-help">Operatör API adresi (GetGameUrl vb. istekler buraya POST edilir).</p>
+                   placeholder="<?= $isDistro ? 'https://operator-sportsbook.site/op/v1' : 'https://api.ilomhzji.win' ?>" autocomplete="off">
+            <p class="sb-help"><?= $isDistro
+                ? 'Distro Operator API kökü. <code>/op/v1</code> ile bitmeli.'
+                : 'Operatör API adresi (GetGameUrl vb. istekler buraya POST edilir).' ?></p>
         </div>
 
         <div class="field">
@@ -65,7 +74,9 @@ $apiMode      = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 
                    value=""
                    placeholder="<?= trim((string) ($configRow['api_token'] ?? '')) !== '' ? 'Mevcut token korunacak' : 'Sportsbook API token' ?>"
                    autocomplete="new-password">
-            <p class="sb-help">API isteklerinde ve wallet callback doğrulamasında kullanılan token. Boş bırakırsanız mevcut değer korunur.</p>
+            <p class="sb-help"><?= $isDistro
+                ? 'Distro <code>X-Operator-Key</code>. Boş bırakırsanız mevcut değer korunur.'
+                : 'API isteklerinde ve wallet callback doğrulamasında kullanılan token. Boş bırakırsanız mevcut değer korunur.' ?></p>
         </div>
 
         <div class="field">
@@ -93,6 +104,15 @@ $apiMode      = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 
                    placeholder="<?= trim((string) ($configRow['verify_public_key'] ?? '')) !== '' ? 'Mevcut anahtar korunacak' : 'base64 (32 byte) public key' ?>"
                    autocomplete="new-password">
             <p class="sb-help">Gelen wallet callback imzalarını doğrulamak için kullanılan Ed25519 public key (base64).</p>
+        </div>
+
+        <div class="field">
+            <label class="field-label" for="callback_secret">Distro Callback Secret (HMAC)</label>
+            <input id="callback_secret" class="input sb-secret" type="password" name="callback_secret"
+                   value=""
+                   placeholder="<?= trim((string) ($configRow['callback_secret'] ?? '')) !== '' ? 'Mevcut secret korunacak' : 'Distro operators.callback_secret ile aynı' ?>"
+                   autocomplete="new-password">
+            <p class="sb-help">Distro <code>X-Distro-Signature</code> doğrulaması. Operatör kaydındaki callback secret ile birebir aynı olmalı.</p>
         </div>
 
         <div class="field">
@@ -152,10 +172,17 @@ $apiMode      = in_array($apiMode, ['seamless', 'transfer'], true) ? $apiMode : 
 
         <div class="sb-card">
             <div style="font-weight:700;margin-bottom:10px">🔗 Callback URL</div>
+            <?php if ($isDistro): ?>
+            <p class="sb-help" style="margin-bottom:8px">
+                Distro operatör kaydındaki <code>callback_url</code> bu adres olmalı:
+            </p>
+            <div class="sb-webhook-url"><?= $text($distroHookUrl) ?></div>
+            <?php else: ?>
             <p class="sb-help" style="margin-bottom:8px">
                 Sağlayıcı back-office'teki agent ayarlarına bu adresi kaydedin:
             </p>
             <div class="sb-webhook-url"><?= $text($webhookUrl) ?></div>
+            <?php endif; ?>
         </div>
 
         <div class="sb-card">

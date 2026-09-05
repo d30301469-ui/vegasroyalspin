@@ -24,8 +24,11 @@ $formAction = $isCreate ? '/user/store' : '/user/update';
 </style>
 <?php endif; ?>
 
-<form id="userEditForm" class="user-edit-form" method="post" action="<?= htmlspecialchars(AdminAuth::url($formAction), ENT_QUOTES, 'UTF-8') ?>">
+<form id="userEditForm" class="user-edit-form" method="post" action="<?= htmlspecialchars(AdminAuth::url($formAction), ENT_QUOTES, 'UTF-8') ?>"<?= $isModal ? ' data-admin-ajax-form="1"' : '' ?>>
     <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+    <?php if ($isModal && !$isCreate): ?>
+        <input type="hidden" name="ajax" value="1">
+    <?php endif; ?>
     <?php if (!$isCreate): ?>
         <input type="hidden" name="user_id" value="<?= $text($userId) ?>">
     <?php endif; ?>
@@ -75,7 +78,7 @@ $formAction = $isCreate ? '/user/store' : '/user/update';
             </div>
             <div class="field">
                 <label class="field-label" for="userEditDob">Doğum tarihi <span class="req">*</span></label>
-                <input id="userEditDob" class="input" type="date" name="dob" value="<?= $text($user['dob'] ?? '') ?>" required>
+                <input id="userEditDob" class="input" type="date" name="dob" value="<?= $text(substr((string) ($user['dob'] ?? ''), 0, 10)) ?>" required>
             </div>
             <div class="field">
                 <label class="field-label" for="userEditCountry">Ülke</label>
@@ -103,12 +106,12 @@ $formAction = $isCreate ? '/user/store' : '/user/update';
         <div class="user-edit-grid">
             <div class="field">
                 <label class="field-label" for="userEditPassword"><?= $isCreate ? 'Şifre' : 'Yeni şifre' ?><?= $isCreate ? ' <span class="req">*</span>' : '' ?></label>
-                <input id="userEditPassword" class="input" type="password" name="password" autocomplete="new-password" minlength="6"<?= $isCreate ? ' required' : '' ?>>
+                <input id="userEditPassword" class="input" type="password" name="password" autocomplete="new-password" minlength="6"<?= $isCreate ? ' required' : '' ?> data-lpignore="true" data-1p-ignore="true"<?= $isCreate ? '' : ' readonly onfocus="this.removeAttribute(\'readonly\')"' ?>>
                 <div class="field-help"><?= $isCreate ? 'En az 6 karakter girin.' : 'Boş bırakırsanız mevcut şifre değişmez.' ?></div>
             </div>
             <div class="field">
                 <label class="field-label" for="userEditPasswordConfirmation"><?= $isCreate ? 'Şifre tekrar' : 'Yeni şifre tekrar' ?><?= $isCreate ? ' <span class="req">*</span>' : '' ?></label>
-                <input id="userEditPasswordConfirmation" class="input" type="password" name="password_confirmation" autocomplete="new-password" minlength="6"<?= $isCreate ? ' required' : '' ?>>
+                <input id="userEditPasswordConfirmation" class="input" type="password" name="password_confirmation" autocomplete="new-password" minlength="6"<?= $isCreate ? ' required' : '' ?> data-lpignore="true" data-1p-ignore="true"<?= $isCreate ? '' : ' readonly onfocus="this.removeAttribute(\'readonly\')"' ?>>
             </div>
             <div class="field span-2">
                 <div class="user-edit-switches">

@@ -374,9 +374,10 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
     $where  = [];
     $params = [];
     if ($search !== '') {
-        $where[]            = '(name LIKE :search OR provider LIKE :search2)';
-        $params[':search']  = '%' . $search . '%';
-        $params[':search2'] = '%' . $search . '%';
+        $where[]            = '(LOWER(CONVERT(COALESCE(name, \'\') USING utf8mb4)) COLLATE utf8mb4_unicode_ci LIKE :search OR LOWER(CONVERT(COALESCE(provider, \'\') USING utf8mb4)) COLLATE utf8mb4_unicode_ci LIKE :search2)';
+        $needle = '%' . mb_strtolower($search, 'UTF-8') . '%';
+        $params[':search']  = $needle;
+        $params[':search2'] = $needle;
     }
     if ($providerList !== []) {
         $filterTerms = $providerList;
@@ -412,10 +413,14 @@ if ($method === 'GET' && in_array($route, ['games.php', 'games'], true)) {
         $countStmt->execute();
         $total = (int) $countStmt->fetchColumn();
 
+        admin_require_project_file('services/SlotGamesQuery.php');
+        $sortKey = strtolower(trim((string) ($_GET['sort'] ?? '')));
+        $orderBy = SlotGamesQuery::catalogOrderBySql($sortKey, $onlyFeatured);
+
         $rowsStmt = $pdo->prepare(
             "SELECT game_id, name, provider, provider_code, image_url, image_fallbacks, is_featured, source, row_id, raw_payload
              FROM {$unionSql}{$whereSql}
-             ORDER BY is_featured DESC, name ASC
+             ORDER BY {$orderBy}
              LIMIT :limit OFFSET :offset"
         );
         foreach ($params as $k => $v) {
@@ -1295,9 +1300,25 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
     $isDemo = in_array($mode, ['fun', 'demo'], true) || !empty($input['demo']) || !empty($input['isDemo']);
     if ($isDemo) {
         $input['mode'] = 'fun';
+        $input['demo'] = true;
+        $input['isDemo'] = true;
     }
     $user = null;
-    if (!$isDemo) {
+    if ($isDemo) {
+        // Demo is public — never pass the real user to GetGameUrl (numeric userCode
+        // would debit real/agent balances). Optional JWT id is kept only for demo
+        // wallet callback routing when the provider echoes the member id.
+        try {
+            if (isset($memberJwtOptionalUserId) && is_callable($memberJwtOptionalUserId)) {
+                $optionalUserId = (int) ($memberJwtOptionalUserId(AdminDatabase::pdo()) ?? 0);
+                if ($optionalUserId > 0) {
+                    $input['demo_member_id'] = $optionalUserId;
+                }
+            }
+        } catch (Throwable) {
+        }
+        $user = null;
+    } else {
         $userId = $memberRequireLogin();
         $user = $memberUserById(AdminDatabase::pdo(), $userId);
         if (!is_array($user)) {
@@ -1402,6 +1423,15 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
             $input['game_id'] = $gameId;
         }
 
+        if ($isDemo && GscPlusService::ownsGameId($gameId)) {
+            $memberEnvelope(422, [
+                'success' => false,
+                'code' => 422,
+                'error' => 'gsc_demo_unsupported',
+                'message' => 'Canlı casino oyunları demo modunda açılamaz. Giriş yaparak oynayın.',
+            ]);
+        }
+
         if (GscPlusService::ownsGameId($gameId)) {
             $result = GscPlusService::launch(AdminDatabase::pdo(), $user, $input);
             $result = $normalizeLaunchResult($result, $requestedOpenMode !== '' ? $requestedOpenMode : 'redirect');
@@ -1456,11 +1486,11 @@ if ($method === 'POST' && in_array($route, ['game_launch.php', 'game-launch'], t
                 $providerLabel = 'BGaming';
             }
         }
+        error_log('[game-launch] ' . $providerLabel . ' failed: ' . $exception->getMessage());
         $memberEnvelope(422, [
             'success' => false,
             'code' => 422,
-            'message' => $providerLabel . ' oyun başlatma hatası: ' . $exception->getMessage(),
-            'error' => $exception->getMessage(),
+            'message' => $providerLabel . ' oyunu şu an başlatılamadı. Lütfen tekrar deneyin.',
         ]);
     }
 }

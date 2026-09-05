@@ -124,6 +124,8 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   </style>
 
   <link rel="stylesheet" href="/assets/css/site-bootstrap-utils.css?v=<?= $ver($assetCssDir . '/site-global.css') ?>">
+  <link rel="preload" href="/assets/BetConstruct-Icons.CPdFP1TD.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/css/fonts-critical.css?v=<?= $ver($assetCssDir . '/fonts-critical.css') ?>">
   <link rel="stylesheet" href="/assets/css/site-global.css?v=<?= $ver($assetCssDir . '/site-global.css') ?>">
   <link rel="stylesheet" href="/assets/css/layout-header.css?v=<?= rawurlencode($assetFingerprint($assetCssDir . '/layout-header.css')) ?>">
   <link rel="stylesheet" href="/assets/css/layout-sidebar.css?v=<?= $ver($assetCssDir . '/layout-sidebar.css') ?>">
@@ -136,8 +138,10 @@ $isSportsbookLightweight = defined('SPORTSBOOK_LIGHTWEIGHT_LAYOUT') && SPORTSBOO
   <?php if ($needsJackpotAssets): ?>
   <?php if ($isLiveCasinoRoute): ?>
   <link rel="stylesheet" href="/assets/css/casino-live.css?v=<?= $ver($assetCssDir . '/casino-live.css') ?>">
+  <link rel="stylesheet" href="/assets/css/casino-live-cm622.css?v=<?= $ver($assetCssDir . '/casino-live-cm622.css') ?>">
   <?php elseif ($isSlotRoute): ?>
   <link rel="stylesheet" href="/assets/css/casino-slots.css?v=<?= $ver($assetCssDir . '/casino-slots.css') ?>">
+  <link rel="stylesheet" href="/assets/css/casino-slots-cm622.css?v=<?= $ver($assetCssDir . '/casino-slots-cm622.css') ?>">
   <?php endif; ?>
   <link rel="stylesheet" href="/assets/css/home-jackpot.css?v=<?= $ver($assetCssDir . '/home-jackpot.css') ?>">
   <link rel="stylesheet" href="/assets/css/home-winners.css?v=<?= $ver($assetCssDir . '/home-winners.css') ?>">

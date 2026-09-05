@@ -81,7 +81,13 @@ function e(string $value): string
  */
 function isMobile(): bool
 {
-    return defined('SURFACE') && SURFACE === 'mobile';
+    if (defined('SURFACE') && SURFACE === 'mobile') {
+        return true;
+    }
+    $ua = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+
+    return $ua !== ''
+        && preg_match('/android|iphone|ipad|ipod|mobile|windows phone|opera mini|iemobile/', $ua) === 1;
 }
 
 /**

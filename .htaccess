@@ -158,9 +158,11 @@
     #     kurulumlarında Apache gerçek api/ klasörüne düşüp 403 üretebilir.
     RewriteRule ^api/ public/index.php [L,QSA]
 
-    # Block leaked diagnostic scripts and third-party license mirror pages.
+    # Block leaked diagnostic scripts.
     RewriteRule ^_tmp_ - [F,L,NC]
-    RewriteRule ^cert\.gcb\.cw(?:/|$) - [F,L,NC]
+
+    # Yerel GCB lisans sertifikası (proje içi cert.gcb.cw/)
+    RewriteRule ^cert\.gcb\.cw/?$ cert.gcb.cw/index.html [L]
 
     # ─── Legacy /guncel-giris SEO landing → home (avoid SE-flagged mirror page) ──
     RewriteRule ^guncel-giris/?$ / [R=301,L]

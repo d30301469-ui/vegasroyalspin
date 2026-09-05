@@ -278,10 +278,21 @@
         /* ignore */
     }
 
-    // 2) API'den taze veriyi cekip guncelle.
-    if (d.readyState === 'loading') {
-        d.addEventListener('DOMContentLoaded', refresh);
-    } else {
-        refresh();
+    // 2) Gomulu ayar yeterliyse gereksiz API turu atla.
+    function hasEmbeddedBranding() {
+        var s = w.__SITE_SETTINGS__;
+        if (!s || typeof s !== 'object') {
+            return false;
+        }
+        var b = (s.branding && typeof s.branding === 'object') ? s.branding : s;
+        return !!(String(b.logo_url || s.logo_url || '').trim() || String(b.site_name || s.site_adi || s.site_name || '').trim());
+    }
+
+    if (!hasEmbeddedBranding()) {
+        if (d.readyState === 'loading') {
+            d.addEventListener('DOMContentLoaded', refresh);
+        } else {
+            refresh();
+        }
     }
 })(window, document);

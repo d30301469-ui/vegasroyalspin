@@ -15,6 +15,9 @@ final class WageringWalletSourceTest extends TestCase
         ]);
         $this->pdo->sqliteCreateFunction('NOW', static fn (): string => '2026-07-29 12:00:00');
         $this->pdo->sqliteCreateFunction('GREATEST', static fn (float $a, float $b): float => max($a, $b));
+        if (!class_exists('WageringService', false)) {
+            require_once dirname(__DIR__, 2) . '/shared/services/WageringService.php';
+        }
         $this->pdo->exec(
             'CREATE TABLE users (
                 id INTEGER PRIMARY KEY,
@@ -63,6 +66,25 @@ final class WageringWalletSourceTest extends TestCase
 
         $this->assertSame(25.0, $this->value('wagering_progress', 'users'));
         $this->assertSame(0.0, $this->value('total_bet_amount', 'user_active_bonuses'));
+        $this->assertSame('active', $this->pdo->query("SELECT status FROM user_active_bonuses LIMIT 1")->fetchColumn());
+    }
+
+    public function testBonusExpiresWhenCashBalanceRunsOutBeforeWagering(): void
+    {
+        $this->pdo->exec('UPDATE users SET balance = 0, bonus_balance = 40 WHERE id = 1');
+        WageringService::registerBet($this->pdo, 1, 10, 'balance');
+
+        $this->assertSame('expired', $this->pdo->query("SELECT status FROM user_active_bonuses LIMIT 1")->fetchColumn());
+        $this->assertSame(0.0, $this->value('current_bonus_balance', 'user_active_bonuses'));
+        $this->assertSame(0.0, $this->value('bonus_balance', 'users'));
+    }
+
+    public function testBonusExpiresWhenBonusBalanceHitsZero(): void
+    {
+        $this->pdo->exec('UPDATE users SET balance = 80, bonus_balance = 0 WHERE id = 1');
+        WageringService::registerBet($this->pdo, 1, 10, 'bonus_balance');
+
+        $this->assertSame('expired', $this->pdo->query("SELECT status FROM user_active_bonuses LIMIT 1")->fetchColumn());
     }
 
     public function testRefundReversesTheOriginalBonusWalletProgress(): void

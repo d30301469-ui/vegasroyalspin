@@ -90,4 +90,90 @@ class AuthController extends Controller
         }
         $this->redirect('/?logout=1');
     }
+
+    /**
+     * Pazarlama e-postası abonelikten çıkma: /unsubscribe?e=...&t=...
+     * One-click (RFC 8058): aynı URL'ye POST List-Unsubscribe=One-Click
+     */
+    public function unsubscribe(): void
+    {
+        if (!headers_sent()) {
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+        }
+
+        require_once BASE_PATH . '/admin/app/Services/Mailer.php';
+        if (!class_exists('AdminDatabase', false)) {
+            require_once BASE_PATH . '/admin/app/Core/AdminDatabase.php';
+        }
+
+        $email = strtolower(trim((string) ($_GET['e'] ?? $_POST['e'] ?? '')));
+        $token = trim((string) ($_GET['t'] ?? $_POST['t'] ?? ''));
+        $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        $oneClick = false;
+        if ($method === 'POST') {
+            $listUnsub = (string) ($_POST['List-Unsubscribe'] ?? $_POST['list-unsubscribe'] ?? '');
+            if (strcasecmp($listUnsub, 'One-Click') === 0) {
+                $oneClick = true;
+            } else {
+                $rawBody = (string) @file_get_contents('php://input');
+                $oneClick = stripos($rawBody, 'List-Unsubscribe=One-Click') !== false;
+            }
+        }
+
+        $valid = mail_verify_unsubscribe_token($email, $token);
+        $done = false;
+        $error = '';
+
+        if ($valid && ($method === 'POST' || $oneClick || isset($_POST['confirm']))) {
+            try {
+                $pdo = AdminDatabase::pdo();
+                $done = mail_mark_unsubscribed($pdo, $email, $oneClick ? 'one-click' : 'link');
+                if (!$done) {
+                    $error = 'Kayıt yapılamadı. Lütfen daha sonra tekrar deneyin.';
+                }
+            } catch (Throwable $e) {
+                $error = 'Sistem geçici olarak kullanılamıyor.';
+            }
+        } elseif (!$valid) {
+            $error = 'Geçersiz veya süresi dolmuş abonelikten çıkma bağlantısı.';
+        }
+
+        // One-click sağlayıcıları için kısa 200 yanıtı yeterli.
+        if ($oneClick) {
+            http_response_code($done ? 200 : ($valid ? 500 : 400));
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo $done ? 'OK' : ($error !== '' ? $error : 'FAILED');
+            return;
+        }
+
+        $safeEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+        $safeToken = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
+        header('Content-Type: text/html; charset=UTF-8');
+        echo '<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            . '<title>Abonelikten Çık</title>'
+            . '<style>body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#0a0719;color:#dcccf3;}'
+            . '.box{max-width:480px;margin:48px auto;padding:28px 22px;background:#12082f;border:1px solid #6b2a78;border-radius:16px;}'
+            . 'h1{margin:0 0 12px;font-size:22px;color:#fff;}p{line-height:1.6;font-size:14px;}'
+            . 'button{margin-top:12px;background:#850f83;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:700;cursor:pointer;width:100%;}'
+            . '.ok{color:#9dffa8;}.err{color:#ffb4c0;}</style></head><body><div class="box">';
+        if ($done) {
+            echo '<h1>Abonelik iptal edildi</h1><p class="ok">'
+                . htmlspecialchars($email !== '' ? ($email . ' için pazarlama e-postaları durduruldu.') : 'Pazarlama e-postaları durduruldu.', ENT_QUOTES, 'UTF-8')
+                . '</p>';
+        } elseif ($error !== '') {
+            echo '<h1>Abonelikten çıkılamadı</h1><p class="err">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</p>';
+        } else {
+            echo '<h1>Abonelikten çık</h1><p>Pazarlama e-postalarını durdurmak için onaylayın'
+                . ($safeEmail !== '' ? ' (<strong>' . $safeEmail . '</strong>)' : '')
+                . '.</p>'
+                . '<form method="post" action="/unsubscribe?e=' . rawurlencode($email) . '&t=' . rawurlencode($token) . '">'
+                . '<input type="hidden" name="e" value="' . $safeEmail . '">'
+                . '<input type="hidden" name="t" value="' . $safeToken . '">'
+                . '<input type="hidden" name="confirm" value="1">'
+                . '<button type="submit">Abonelikten çık</button></form>';
+        }
+        echo '<p style="margin-top:18px;font-size:12px;color:#8f7aa8;">Vegasroyalspin</p></div></body></html>';
+    }
 }

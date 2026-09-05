@@ -23,18 +23,21 @@ $backToTopJsVer = (string) ((is_file($backToTopJsPath) ? filemtime($backToTopJsP
 <script>
 (function () {
   function initGameOverlayTap() {
-    var cards = document.querySelectorAll('.game-item, .game-cta');
-    if (!cards.length) return;
-
-    cards.forEach(function (card) {
+    document.querySelectorAll('.game-item, .game-cta').forEach(function (card) {
       card.addEventListener('click', function (e) {
         // Butona (Oyna/Demo), bilgi veya favori yıldızına tıklandıysa normal çalışsın
-        if (e.target.closest('.play-btn, .demo-btn, a, .game-fav')) return;
+        if (e.target.closest('.play-btn, .demo-btn, .casinoBtnWrp a, a, .game-fav')) return;
+
+        // home.js __homeGameCardActivate owns mobile tap-to-reveal.
+        // A second toggle here would open then immediately close the overlay.
+        if (typeof window.__homeGameCardActivate === 'function') {
+          return;
+        }
 
         var isActive = card.classList.contains('overlay-active');
 
         // Tüm açık overlay'leri kapat
-        document.querySelectorAll('.game-item.overlay-active, .game-cta.overlay-active')
+        document.querySelectorAll('.game-item.overlay-active, .game-cta.overlay-active, .casinoGameItemContent.overlay-active')
           .forEach(function (c) { c.classList.remove('overlay-active'); });
 
         // Bu kart kapalıysa aç
@@ -45,10 +48,10 @@ $backToTopJsVer = (string) ((is_file($backToTopJsPath) ? filemtime($backToTopJsP
       });
     });
 
-    // Dışarı tıklayınca kapat
+    // Dışarı tıklayınca kapat (slot/live CM622 kartları dahil)
     document.addEventListener('click', function (e) {
-      if (!e.target.closest('.game-item, .game-cta')) {
-        document.querySelectorAll('.game-item.overlay-active, .game-cta.overlay-active')
+      if (!e.target.closest('.game-item, .game-cta, .casinoGameItemContent')) {
+        document.querySelectorAll('.game-item.overlay-active, .game-cta.overlay-active, .casinoGameItemContent.overlay-active')
           .forEach(function (c) { c.classList.remove('overlay-active'); });
       }
     });

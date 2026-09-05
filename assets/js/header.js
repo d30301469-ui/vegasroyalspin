@@ -116,6 +116,9 @@
     }
 
     function safeLog(msg, err) {
+        if (typeof window !== 'undefined' && window.__MEMBER_API_CONSOLE__ !== true) {
+            return;
+        }
         if (typeof console !== 'undefined' && console.error) {
             console.error(msg, err !== undefined ? err : '');
         }
@@ -482,6 +485,10 @@
     }
 
     function runtimeLoggedIn() {
+        var Shared = window.BetcoAuthShared || {};
+        if (Shared.runtimeSessionLoggedIn) {
+            return Shared.runtimeSessionLoggedIn();
+        }
         if (window.__MEMBER_BOOTSTRAP_STATE__ && typeof window.__MEMBER_BOOTSTRAP_STATE__ === 'object') {
             return window.__MEMBER_BOOTSTRAP_STATE__.logged_in === true;
         }
@@ -1135,7 +1142,11 @@
     function initMainMenuScroll() {
         var ul = document.querySelector('.mainMenu ul');
         if (!ul) return;
-        var down = false, dragged = false, startX, startScroll;
+        var down = false;
+        var dragged = false;
+        var startX;
+        var startScroll;
+        var dragThreshold = 6;
 
         ul.addEventListener('dragstart', function (e) { e.preventDefault(); });
         ul.addEventListener('mousedown', function (e) {
@@ -1143,19 +1154,42 @@
             dragged = false;
             startX = e.pageX;
             startScroll = ul.scrollLeft;
-            e.preventDefault();
         });
         ul.addEventListener('mouseup', function () { down = false; });
         ul.addEventListener('mouseleave', function () { down = false; });
         ul.addEventListener('mousemove', function (e) {
             if (!down) return;
-            dragged = true;
+            if (!dragged && Math.abs(e.pageX - startX) >= dragThreshold) {
+                dragged = true;
+            }
+            if (!dragged) return;
             ul.scrollLeft = startScroll - (e.pageX - startX);
             e.preventDefault();
         });
         ul.addEventListener('click', function (e) {
-            if (dragged) e.preventDefault(), e.stopPropagation();
+            if (dragged) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             dragged = false;
+        }, true);
+    }
+
+    function initMainMenuPrefetch() {
+        var menu = document.querySelector('.mainMenu');
+        if (!menu) return;
+        var prefetched = Object.create(null);
+        menu.addEventListener('pointerenter', function (e) {
+            var link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+            if (!link) return;
+            var href = (link.getAttribute('href') || '').trim();
+            if (!href || href.charAt(0) !== '/' || prefetched[href]) return;
+            prefetched[href] = true;
+            var hint = document.createElement('link');
+            hint.rel = 'prefetch';
+            hint.href = href;
+            hint.as = 'document';
+            document.head.appendChild(hint);
         }, true);
     }
 
@@ -1216,6 +1250,7 @@
         initLangCodeDisplay();
         initSmartPanel();
         initMainMenuScroll();
+        initMainMenuPrefetch();
         initMainMenuActive();
         initSearchPanel();
 

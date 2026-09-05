@@ -393,7 +393,9 @@ html.is-page-leaving body.mobile-site {
 
 .mobile-site .game-item.overlay-active .game-overlay,
 .mobile-site .game-cta.overlay-active .game-overlay {
-  pointer-events: auto;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .mobile-site .game-item.overlay-active .game-overlay::before,
@@ -402,11 +404,23 @@ html.is-page-leaving body.mobile-site {
 }
 
 .mobile-site .game-item.overlay-active .game-overlay .game-overlay-top,
+.mobile-site .game-item.overlay-active .game-overlay .game-title-wrap,
 .mobile-site .game-item.overlay-active .game-overlay .game-actions,
 .mobile-site .game-cta.overlay-active .game-overlay .game-overlay-top,
+.mobile-site .game-cta.overlay-active .game-overlay .game-title-wrap,
 .mobile-site .game-cta.overlay-active .game-overlay .game-actions {
   opacity: 1 !important;
   transform: translateY(0) !important;
+  pointer-events: auto !important;
+}
+
+.mobile-site .game-item.overlay-active .game-overlay .play-btn,
+.mobile-site .game-item.overlay-active .game-overlay .demo-btn,
+.mobile-site .game-cta.overlay-active .game-overlay .play-btn,
+.mobile-site .game-cta.overlay-active .game-overlay .demo-btn {
+  pointer-events: auto !important;
+  z-index: 3;
+  position: relative;
 }
 
 /* Favori yıldızı — mobilde Font Awesome yüklenmediği için unicode yıldız ile göster */

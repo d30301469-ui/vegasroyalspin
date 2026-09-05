@@ -259,6 +259,11 @@
             modalBody.innerHTML = html;
             document.body.appendChild(activeModal);
             document.body.classList.add('has-admin-modal');
+            // Prevent browser password managers from poisoning edit forms.
+            Array.prototype.slice.call(modalBody.querySelectorAll('#userEditForm input[type="password"]')).forEach(function (input) {
+                input.value = '';
+                input.setAttribute('autocomplete', 'new-password');
+            });
             Array.prototype.slice.call(modalBody.querySelectorAll('script')).forEach(function (script) {
                 var executable = document.createElement('script');
                 Array.prototype.slice.call(script.attributes).forEach(function (attribute) {
@@ -418,6 +423,85 @@
                 event.stopImmediatePropagation();
                 window.AdminToast.info('İşlem iptal edildi.');
             }
+        }, true);
+    }
+
+    function initAjaxForms() {
+        document.addEventListener('submit', function (event) {
+            var form = closest(event.target, 'form[data-admin-ajax-form="1"], .admin-modal-backdrop #userEditForm');
+            if (!form || form.getAttribute('data-admin-ajax-busy') === '1') return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            var action = form.getAttribute('action') || window.location.href;
+            var submitButtons = Array.prototype.slice.call(form.querySelectorAll('button[type="submit"], input[type="submit"]'));
+            var externalButtons = form.id
+                ? Array.prototype.slice.call(document.querySelectorAll('button[type="submit"][form="' + form.id + '"]'))
+                : [];
+            var buttons = submitButtons.concat(externalButtons);
+            buttons.forEach(function (btn) { btn.disabled = true; });
+            form.setAttribute('data-admin-ajax-busy', '1');
+            window.AdminToast.info('Kaydediliyor...');
+
+            var body = new FormData(form);
+            if (!body.has('ajax')) {
+                body.append('ajax', '1');
+            }
+            // Never send browser-autofilled password noise unless both fields are filled.
+            var pwd = String(body.get('password') || '').trim();
+            var pwd2 = String(body.get('password_confirmation') || '').trim();
+            if (!(pwd !== '' && pwd2 !== '')) {
+                body.set('password', '');
+                body.set('password_confirmation', '');
+            }
+
+            fetch(action, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: body
+            })
+                .then(function (response) {
+                    return response.text().then(function (text) {
+                        var data = null;
+                        try { data = text ? JSON.parse(text) : null; } catch (eJson) { data = null; }
+                        return { ok: response.ok, status: response.status, data: data, text: text };
+                    });
+                })
+                .then(function (result) {
+                    var data = result.data || {};
+                    if (result.ok && data.success) {
+                        window.AdminToast.success(data.message || 'Kayıt güncellendi.');
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                            return;
+                        }
+                        window.location.reload();
+                        return;
+                    }
+                    // Fallback: classic HTML redirect response still means server handled POST.
+                    if (!data && result.ok && /Kullanıcı bilgileri güncellendi|user\?id=/i.test(String(result.text || ''))) {
+                        window.AdminToast.success('Kullanıcı bilgileri güncellendi.');
+                        window.location.reload();
+                        return;
+                    }
+                    var message = (data && data.message)
+                        ? data.message
+                        : (result.status === 419
+                            ? 'Oturum doğrulaması başarısız. Sayfayı yenileyip tekrar deneyin.'
+                            : 'Kayıt güncellenemedi.');
+                    window.AdminToast.error(message);
+                })
+                .catch(function () {
+                    window.AdminToast.error('Sunucu hatası. Lütfen tekrar deneyin.');
+                })
+                .then(function () {
+                    form.removeAttribute('data-admin-ajax-busy');
+                    buttons.forEach(function (btn) { btn.disabled = false; });
+                });
         }, true);
     }
 
@@ -698,6 +782,7 @@
             initFlashToast,
             initTableFilters,
             initConfirmForms,
+            initAjaxForms,
             initDashboardPanels,
             initCompactTables
         ].forEach(function (initializer) {

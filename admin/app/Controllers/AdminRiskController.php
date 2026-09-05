@@ -24,11 +24,25 @@ final class AdminRiskController extends AdminController
                         SUM(t.amount) AS total_amount
                  FROM megapayz_transactions t
                  LEFT JOIN users u ON u.id = t.user_id
-                 WHERE t.type = 'withdraw' AND t.status = 'pending'
+                 WHERE t.type = 'withdraw' AND t.status IN ('pending', 'risk_hold')
                  GROUP BY t.user_id
                  HAVING COUNT(*) >= 2
                  ORDER BY total_amount DESC
                  LIMIT 20"
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable) {
+        }
+
+        $riskHoldWithdrawals = [];
+        try {
+            $riskHoldWithdrawals = $pdo->query(
+                "SELECT t.id, t.user_id, t.username, t.fullname, t.amount, t.method, t.trx, t.created_at, t.failure_message,
+                        NULLIF(TRIM(CONCAT(COALESCE(u.name,''),' ',COALESCE(u.surname,''))), '') AS member_name
+                 FROM megapayz_transactions t
+                 LEFT JOIN users u ON u.id = t.user_id
+                 WHERE t.type = 'withdraw' AND t.status = 'risk_hold'
+                 ORDER BY t.amount DESC, t.id DESC
+                 LIMIT 30"
             )->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } catch (Throwable) {
         }
@@ -144,6 +158,7 @@ final class AdminRiskController extends AdminController
             'active' => 'risk-analysis',
             'crumbs' => 'Uyum | Risk Analizi',
             'multiWithdraw' => $multiWithdraw,
+            'riskHoldWithdrawals' => $riskHoldWithdrawals,
             'highDepositors' => $highDepositors,
             'frozenAccounts' => $frozenAccounts,
             'kycPendingHighBalance' => $kycPendingHighBalance,

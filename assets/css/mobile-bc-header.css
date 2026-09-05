@@ -146,65 +146,81 @@ body.mobile-site .hdr-main-content-bc {
   flex-direction: row !important;
   flex-wrap: nowrap !important;
   align-items: center !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
   height: var(--mobile-header-main-section-height, 46px) !important;
   min-height: var(--mobile-header-main-section-height, 46px) !important;
-  padding: 0 var(--padding-page-aside, 10px) !important;
+  overflow: visible !important;
   background: linear-gradient(89deg, #661760 0%, rgb(0 11 36) 50%, #0e005a 100%) !important;
+}
+/* Sağ padding yalnızca site header'da (akıllı menü). Profil modalına sızmasın. */
+body.mobile-site .header-bc > .hdr-main-content-bc {
+  padding: 0 calc(42px + max(8px, env(safe-area-inset-right, 0px))) 0 var(--padding-page-aside, 10px) !important;
 }
 
 body.mobile-site .hdr-main-content-bc .logo-container {
-  flex: 0 1 auto;
-  width: 160px;
-  min-width: 140px;
-  max-width: 170px;
+  flex: 1 1 auto;
+  flex-shrink: 1;
+  width: auto;
+  min-width: 0;
+  max-width: min(172px, 46vw);
   display: flex;
   align-items: center;
-  overflow: visible;
+  overflow: hidden;
 }
 
 body.mobile-site .hdr-main-content-bc .logo {
   display: flex;
   align-items: center;
-  width: 160px;
-  height: 36px;
-  overflow: visible;
+  width: 100%;
+  max-width: min(172px, 46vw);
+  height: 40px;
+  min-height: 40px;
+  overflow: hidden;
 }
 
 /* Mobil: statik logo kutusu */
 body.mobile-site .hdr-main-content-bc .hdr-logo-bc,
 body.mobile-site .hdr-main-content-bc video.hdr-logo-bc {
-  width: 160px !important;
-  height: 36px !important;
-  max-width: 160px !important;
-  max-height: 36px !important;
+  width: 100% !important;
+  height: 40px !important;
+  max-width: 172px !important;
+  max-height: 40px !important;
+  min-width: 0;
   object-fit: contain !important;
   object-position: left center !important;
   display: block;
   background: transparent !important;
   mix-blend-mode: normal !important;
   transform: none !important;
+  border-radius: 2px !important;
 }
-/* Mobil animasyonlu logo: +4 kademe */
+/* Mobil animasyonlu logo — dar ekranda kullanıcı/akıllı menüyü ezmesin */
 body.mobile-site .hdr-main-content-bc .logo-container:has(.hdr-logo-animated) {
-  width: 240px;
-  min-width: 220px;
-  max-width: 260px;
-  overflow: visible;
+  width: auto;
+  min-width: 0;
+  max-width: min(200px, 48vw);
+  overflow: hidden;
 }
 body.mobile-site .hdr-main-content-bc .logo:has(.hdr-logo-animated) {
-  width: 240px;
-  height: 54px;
-  overflow: visible;
+  width: 100%;
+  max-width: min(200px, 48vw);
+  height: 40px;
+  min-height: 40px;
+  overflow: hidden;
 }
 body.mobile-site .hdr-main-content-bc .hdr-logo-animated,
 body.mobile-site .hdr-main-content-bc video.hdr-logo-animated {
-  width: 240px !important;
-  height: 54px !important;
-  max-width: 240px !important;
-  max-height: 54px !important;
+  width: 100% !important;
+  height: 40px !important;
+  max-width: min(200px, 48vw) !important;
+  max-height: 40px !important;
   object-fit: contain !important;
   object-position: left center !important;
   transform: none !important;
+  border-radius: 2px !important;
 }
 
 body.mobile-site .hdr-main-content-bc > .hdr-user-bc {
@@ -212,8 +228,12 @@ body.mobile-site .hdr-main-content-bc > .hdr-user-bc {
   flex-direction: row !important;
   align-items: center !important;
   gap: 8px;
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  flex-shrink: 1;
+  min-width: 0;
   margin-left: auto;
+  margin-right: 0;
+  max-width: calc(100% - 8px);
 }
 
 body.mobile-site .hdr-main-content-bc .user-balance-dropdown {
@@ -352,10 +372,19 @@ body.mobile-site .hdr-main-content-bc .backFace {
 }
 
 body.mobile-site .hdr-main-content-bc .smartPanel-bc {
+  position: absolute !important;
+  top: 50%;
+  right: max(8px, env(safe-area-inset-right, 0px));
+  transform: translateY(-50%);
+  z-index: 6;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  margin-inline-start: 6px;
+  justify-content: center;
+  margin: 0;
+  width: 34px;
+  height: 34px;
+  overflow: visible;
 }
 
 body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc {
@@ -375,7 +404,7 @@ body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc {
   justify-content: center;
   font-size: 0;
   cursor: pointer;
-  position: relative;
+  position: relative !important;
   box-shadow: none !important;
   -webkit-appearance: none;
   appearance: none;
@@ -384,8 +413,8 @@ body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc {
 body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc::after {
   content: attr(data-badge) !important;
   position: absolute !important;
-  top: -3px !important;
-  right: -7px !important;
+  top: -2px !important;
+  right: -2px !important;
   width: 16px !important;
   height: 16px !important;
   border-radius: 50% !important;
@@ -396,6 +425,7 @@ body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc::afte
   line-height: 16px !important;
   text-align: center !important;
   font-family: var(--font-family, sans-serif) !important;
+  z-index: 1;
 }
 
 /* Guest before-login row: target header shows quick icons, not wallet-connect. */

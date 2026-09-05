@@ -34,14 +34,23 @@
     RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/gsc_plus_callback.php -f
     RewriteRule ^v2/(?:gamingsoft-wallet|gamingsoft_wallet)/?(.*)$ ../admin/api/v2/gsc_plus_callback.php?endpoint=$1 [END,QSA]
 
-    # Monorepo deployment: admin/api/v2/index.php exists → route all v2/* requests to it.
-    # Works for any domain (frontend, api subdomain, admin subdomain) without hardcoded names.
+    # Backend hosts only (api.* / admin.*) → admin member API (ADMINSESSID / JWT).
+    # NEVER route frontend public hosts here — that wrote login into ADMINSESSID while
+    # HTML pages read FRONTSESSID, so "login 200 then guest after reload".
+    RewriteCond %{HTTP_HOST} ^(?:api|admin)\. [NC]
     RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/index.php -f
     RewriteRule ^v2/(.+)$ ../admin/api/v2/index.php?route=$1 [END,QSA]
+    RewriteCond %{HTTP_HOST} ^(?:api|admin)\. [NC]
     RewriteCond %{DOCUMENT_ROOT}/admin/api/v2/index.php -f
     RewriteRule ^v2/?$ ../admin/api/v2/index.php [END,QSA]
 
-    # Standalone deployment fallback: no admin panel → use local api/v2/index.php
+    # Frontend public hosts → public front controller (FRONTSESSID + BackendMemberApiProxy).
+    RewriteCond %{DOCUMENT_ROOT}/public/index.php -f
+    RewriteRule ^v2/(.*)$ ../public/index.php [END,QSA]
+    RewriteCond %{DOCUMENT_ROOT}/public/index.php -f
+    RewriteRule ^v2/?$ ../public/index.php [END,QSA]
+
+    # Standalone deployment fallback: no public/index.php → local api/v2/index.php
     RewriteRule ^v2/?$ v2/index.php [L,QSA]
     RewriteRule ^v2/(.+)$ v2/index.php?route=$1 [L,QSA]
 </IfModule>

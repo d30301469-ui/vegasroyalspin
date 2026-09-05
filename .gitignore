@@ -89,3 +89,14 @@ __pycache__/
 # PowerShell artifacts
 # ----------------------------
 *.ps1xml
+
+# ----------------------------
+# Local dumps / PII exports / screenshots
+# ----------------------------
+_shots/
+tools/_cm629/
+tools/_orig_cm625/
+tools/_ortaklik_pull/
+tools/top_depositors.json
+tools/en_yuksek_yatirim_uyeleri.json
+tools/vip.json

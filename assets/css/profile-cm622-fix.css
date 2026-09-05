@@ -106,6 +106,17 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .dropdownI
   pointer-events: auto !important;
 }
 
+/* Faster sidebar accordion; avoid re-animating popup shell on SPA swaps */
+#profileModal .user-profile-nav {
+  transition: max-height 0.12s ease !important;
+}
+#profileModal .user-profile-nav-list {
+  transition: opacity 0.1s ease !important;
+}
+#profileModal.popup-holder-bc.windowed.user-profile-container.is-open > .popup-middleware-bc > .popup-inner-bc {
+  animation: none !important;
+}
+
 /* Kill pink outer glow when modal opens */
 #profileModal > .popup-middleware-bc > .popup-inner-bc {
   box-shadow: 0 12px 48px rgba(0, 0, 0, .55) !important;
@@ -139,6 +150,42 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profilePlayerMain .dropdownI
 #profileModal .u-i-p-amounts-bc.bonuses .u-i-p-a-content-bc {
   background: #aa7f00 !important;
   color: #fff !important;
+}
+
+/*
+ * Desktop sidebar: balance tiles stack vertically. Original CM622 min-height:120px
+ * was for side-by-side equal cards — on stacked layout the bonus tile (title+amount
+ * only) grows into a tall empty block that looks like a gap above Sadakat Puanları.
+ */
+#profileModal .u-i-p-amount-holder-bc {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin: 0 0 8px !important;
+}
+#profileModal .u-i-p-amounts-bc + .u-i-p-amounts-bc {
+  margin-top: 0 !important;
+}
+#profileModal .u-i-p-amounts-bc.withdrawable {
+  min-height: 0 !important;
+  height: auto !important;
+}
+#profileModal .u-i-p-amounts-bc.bonuses {
+  min-height: 0 !important;
+  height: auto !important;
+}
+#profileModal .u-i-p-amounts-bc.bonuses .u-i-p-a-content-bc {
+  height: auto !important;
+  min-height: 0 !important;
+  justify-content: center !important;
+  padding: 10px 15px !important;
+}
+#profileModal .u-i-p-amounts-bc.bonuses .u-i-p-a-amount-bc {
+  margin-bottom: 0 !important;
+}
+#profileModal .u-i-p-a-loyaltyPoint-bc {
+  margin-top: 0 !important;
+  margin-bottom: 10px !important;
 }
 
 /* Bakiye göster / gizle göz ikonu */
@@ -411,7 +458,20 @@ html.is-web:not(.is-mobile) body:not(.mobile-site) #profileModal #profilePlayerM
 #profileModal .dep-w-info-bc > .slider-bc {
   flex: 0 0 auto !important;
   width: 100%;
+  height: auto !important;
+  max-height: none !important;
   margin: 15px 0 0;
+}
+/* home-slider.css sets .slider-bc { height:100% } after profile CSS — kill it here */
+#profileModal .dep-w-info-bc > .slider-bc .carouselWrapper,
+#profileModal .dep-w-info-bc > .slider-bc .swiper,
+#profileModal .dep-w-info-bc > .slider-bc .swiper-wrapper,
+#profileModal .dep-w-info-bc > .slider-bc .swiper-slide,
+#profileModal .dep-w-info-bc > .slider-bc .sdr-item-holder-bc,
+#profileModal .dep-w-info-bc > .slider-bc .sdr-item-bc {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
 }
 #profileModal .dep-w-info-bc > .slider-bc .sdr-image-bc {
   width: 100%;

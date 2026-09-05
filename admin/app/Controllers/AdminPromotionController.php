@@ -521,6 +521,16 @@ final class AdminPromotionController extends AdminController
 
         try {
             $pdo->beginTransaction();
+            $wageringPath = dirname(__DIR__, 2) . '/shared/services/WageringService.php';
+            if (!is_readable($wageringPath)) {
+                $wageringPath = dirname(__DIR__, 3) . '/shared/services/WageringService.php';
+            }
+            if (!class_exists('WageringService', false) && is_readable($wageringPath)) {
+                require_once $wageringPath;
+            }
+            if (class_exists('WageringService', false)) {
+                WageringService::supersedeActiveBonuses($pdo, $userId);
+            }
             $pdo->prepare(
                 "INSERT INTO user_active_bonuses
                  (user_id, promotion_id, name, category, initial_amount, current_bonus_balance,

@@ -98,7 +98,7 @@ $renderSkeletonSection = static function (string $title, string $carouselId, int
     <?php
 };
 
-$slotTileImageOnly = true;
+$slotTileImageOnly = false;
 ?>
 <div class="casinoLobbyContainer" id="casinoLobbySections">
     <div class="hm-row-bc" style="grid-template-columns: 12fr;">

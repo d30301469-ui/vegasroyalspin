@@ -256,10 +256,6 @@ final class AffiliateCommissionEngine
         $cpaPaid = 0.0;
         $cpaCount = 0;
 
-        if ($force) {
-            self::reverseUnpaidAutoCommissions($pdo, $affId, $periodStart, $periodEnd);
-        }
-
         $snapshot = json_encode([
             'plan_id' => $planId,
             'plan_name' => (string) ($aff['plan_name'] ?? ''),
@@ -268,6 +264,14 @@ final class AffiliateCommissionEngine
             'cpa_amount' => $cpaAmount,
             'min_deposit' => $minDeposit,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        if ($force && !self::hasLockedCommission($pdo, $affId, $periodStart, $periodEnd, 'game_bet', 'revshare')) {
+            if (self::hasPaidCommission($pdo, $affId, $periodStart, $periodEnd, 'game_bet', 'revshare')) {
+                $log[] = '  Affiliate #' . $affId . ' RevShare period finalized (paid), force recalc skipped.';
+            } else {
+                self::reverseUnpaidAutoCommissions($pdo, $affId, $periodStart, $periodEnd);
+            }
+        }
 
         if (in_array($planType, ['revshare', 'hybrid'], true) && $revshareRate > 0) {
             $rs = self::processRevShare($pdo, $affId, $revshareRate, $periodStart, $periodEnd, $force);
@@ -280,7 +284,7 @@ final class AffiliateCommissionEngine
         }
 
         if (in_array($planType, ['cpa', 'hybrid'], true) && $cpaAmount > 0) {
-            $cpa = self::processCpa($pdo, $affId, $cpaAmount, $minDeposit, $periodStart, $periodEnd);
+            $cpa = self::processCpa($pdo, $affId, $cpaAmount, $minDeposit, $periodStart, $periodEnd, $force);
             $processed += (int) ($cpa['processed'] ?? 0);
             $total += (float) ($cpa['amount'] ?? 0);
             $cpaPaid = (float) ($cpa['amount'] ?? 0);
@@ -291,6 +295,10 @@ final class AffiliateCommissionEngine
         }
 
         self::upsertPeriodRun($pdo, $affId, $periodStart, $periodEnd, $planId, $snapshot ?: '{}', $revsharePaid, $cpaPaid, $cpaCount);
+
+        if (class_exists('AffiliateService', false) || self::loadAffiliateService()) {
+            AffiliateService::reconcileBalance($pdo, $affId);
+        }
 
         return ['processed' => $processed, 'total' => round($total, 2), 'log' => $log];
     }
@@ -306,7 +314,10 @@ final class AffiliateCommissionEngine
         string $periodEnd,
         bool $force
     ): array {
-        if (!$force && self::hasCommission($pdo, $affId, $periodStart, $periodEnd, 'game_bet', 'revshare')) {
+        if (
+            self::hasCommission($pdo, $affId, $periodStart, $periodEnd, 'game_bet', 'revshare')
+            || self::hasLockedCommission($pdo, $affId, $periodStart, $periodEnd, 'game_bet', 'revshare')
+        ) {
             return ['processed' => 0, 'amount' => 0.0, 'message' => 'RevShare already posted for period, skip.'];
         }
 
@@ -347,6 +358,15 @@ final class AffiliateCommissionEngine
 
         $pdo->beginTransaction();
         try {
+            $pdo->prepare('SELECT id FROM affiliates WHERE id = :id FOR UPDATE')->execute(['id' => $affId]);
+            if (
+                self::hasCommission($pdo, $affId, $periodStart, $periodEnd, 'game_bet', 'revshare')
+                || self::hasLockedCommission($pdo, $affId, $periodStart, $periodEnd, 'game_bet', 'revshare')
+            ) {
+                $pdo->rollBack();
+                return ['processed' => 0, 'amount' => 0.0, 'message' => 'RevShare already posted for period, skip.'];
+            }
+
             $ins = $pdo->prepare(
                 "INSERT INTO affiliate_commissions
                     (affiliate_id, user_id, commission_type, amount, status, description, source, period_start, period_end, approved_at)
@@ -371,6 +391,9 @@ final class AffiliateCommissionEngine
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
+            if (self::isDuplicateCommissionError($e)) {
+                return ['processed' => 0, 'amount' => 0.0, 'message' => 'RevShare already posted for period, skip.'];
+            }
             throw $e;
         }
 
@@ -392,8 +415,11 @@ final class AffiliateCommissionEngine
         float $cpaAmount,
         float $minDeposit,
         string $periodStart,
-        string $periodEnd
+        string $periodEnd,
+        bool $force = false
     ): array {
+        unset($force);
+
         $paid = self::paidStatusSql();
         // First confirmed deposit per referred user; qualify when FTD falls in period
         // and FTD amount meets min_deposit. Lifetime CPA: skip if any non-cancelled CPA exists.
@@ -530,6 +556,61 @@ final class AffiliateCommissionEngine
         return $stmt->fetchColumn() !== false;
     }
 
+    private static function hasPaidCommission(
+        PDO $pdo,
+        int $affId,
+        string $periodStart,
+        string $periodEnd,
+        string $source,
+        string $type
+    ): bool {
+        $stmt = $pdo->prepare(
+            "SELECT 1 FROM affiliate_commissions
+             WHERE affiliate_id = :aid
+               AND period_start = :ps AND period_end = :pe
+               AND source = :source AND commission_type = :ctype
+               AND status = 'paid'
+             LIMIT 1"
+        );
+        $stmt->execute([
+            'aid' => $affId,
+            'ps' => $periodStart,
+            'pe' => $periodEnd,
+            'source' => $source,
+            'ctype' => $type,
+        ]);
+
+        return $stmt->fetchColumn() !== false;
+    }
+
+    private static function hasLockedCommission(
+        PDO $pdo,
+        int $affId,
+        string $periodStart,
+        string $periodEnd,
+        string $source,
+        string $type
+    ): bool {
+        $stmt = $pdo->prepare(
+            "SELECT 1 FROM affiliate_commissions
+             WHERE affiliate_id = :aid
+               AND period_start = :ps AND period_end = :pe
+               AND source = :source AND commission_type = :ctype
+               AND status <> 'cancelled'
+               AND description LIKE '%[locked]%'
+             LIMIT 1"
+        );
+        $stmt->execute([
+            'aid' => $affId,
+            'ps' => $periodStart,
+            'pe' => $periodEnd,
+            'source' => $source,
+            'ctype' => $type,
+        ]);
+
+        return $stmt->fetchColumn() !== false;
+    }
+
     private static function reverseUnpaidAutoCommissions(
         PDO $pdo,
         int $affId,
@@ -543,7 +624,8 @@ final class AffiliateCommissionEngine
                AND period_start = :ps AND period_end = :pe
                AND source IN ('deposit', 'game_bet')
                AND commission_type IN ('revshare', 'cpa')
-               AND status IN ('pending', 'approved')"
+               AND status IN ('pending', 'approved')
+               AND description NOT LIKE '%[locked]%'"
         );
         $stmt->execute(['aid' => $affId, 'ps' => $periodStart, 'pe' => $periodEnd]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -599,11 +681,19 @@ final class AffiliateCommissionEngine
                  ON DUPLICATE KEY UPDATE
                     plan_id = VALUES(plan_id),
                     plan_snapshot = VALUES(plan_snapshot),
-                    revshare_amount = VALUES(revshare_amount),
-                    cpa_amount = VALUES(cpa_amount),
-                    cpa_count = VALUES(cpa_count),
-                    status = 'completed',
-                    created_at = CURRENT_TIMESTAMP"
+                    revshare_amount = CASE
+                        WHEN VALUES(revshare_amount) > 0 THEN VALUES(revshare_amount)
+                        ELSE revshare_amount
+                    END,
+                    cpa_amount = CASE
+                        WHEN VALUES(cpa_amount) > 0 THEN VALUES(cpa_amount)
+                        ELSE cpa_amount
+                    END,
+                    cpa_count = CASE
+                        WHEN VALUES(cpa_count) > 0 THEN VALUES(cpa_count)
+                        ELSE cpa_count
+                    END,
+                    status = 'completed'"
             )->execute([
                 'aid' => $affId,
                 'ps' => $periodStart,
@@ -627,5 +717,32 @@ final class AffiliateCommissionEngine
         }
         $ts = strtotime($date);
         return $ts === false ? '' : date('Y-m-d', $ts);
+    }
+
+    private static function loadAffiliateService(): bool
+    {
+        if (class_exists('AffiliateService', false)) {
+            return true;
+        }
+        foreach ([
+            dirname(__DIR__) . '/services/AffiliateService.php',
+            dirname(__DIR__, 2) . '/services/AffiliateService.php',
+            dirname(__DIR__, 2) . '/admin/services/AffiliateService.php',
+        ] as $path) {
+            if (is_file($path)) {
+                require_once $path;
+                return class_exists('AffiliateService', false);
+            }
+        }
+
+        return false;
+    }
+
+    private static function isDuplicateCommissionError(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+        return str_contains($message, 'duplicate')
+            || str_contains($message, 'uniq_aff')
+            || str_contains($message, '1062');
     }
 }

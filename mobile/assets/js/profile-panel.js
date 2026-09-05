@@ -2739,6 +2739,96 @@
     message.classList.toggle('is-success', type === 'success');
   }
 
+  function setDetailsMessage(panel, type, text) {
+    var message = panel && panel.querySelector('[data-mprofile-details-message]');
+    if (!message) return;
+    message.textContent = text || '';
+    message.classList.toggle('is-error', type === 'error');
+    message.classList.toggle('is-success', type === 'success');
+  }
+
+  function syncDetailsSubmit(panel) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    var password = panel.querySelector('#mprofileDetailsPassword, [data-mprofile-section="details"] [name="password"]');
+    var button = panel.querySelector('#mprofileDetailsSaveBtn');
+    if (!button) return;
+    var filled = !!(password && String(password.value || '').trim());
+    button.disabled = !filled || button.getAttribute('data-busy') === '1';
+  }
+
+  function submitDetailsForm(panel) {
+    panel = panel || getPanel();
+    if (!panel) return;
+    var form = panel.querySelector('#mprofileDetailsForm');
+    if (!form) return;
+    var passwordInput = form.querySelector('[name="password"]');
+    var password = passwordInput && passwordInput.value ? String(passwordInput.value).trim() : '';
+    if (!password) {
+      setDetailsMessage(panel, 'error', 'Değişiklikleri kaydetmek için şifrenizi girin.');
+      syncDetailsSubmit(panel);
+      return;
+    }
+
+    var countryEl = panel.querySelector('[data-mprofile-country]');
+    var countryRaw = countryEl ? String(countryEl.textContent || '').trim() : '';
+    var country = countryRaw;
+    var countryLower = countryRaw.toLowerCase();
+    if (countryRaw.toUpperCase() === 'TR' || countryLower === 'türkiye' || countryLower === 'turkiye') {
+      country = 'TR';
+    }
+
+    var button = panel.querySelector('#mprofileDetailsSaveBtn');
+    if (button) {
+      button.setAttribute('data-busy', '1');
+      button.disabled = true;
+    }
+    setDetailsMessage(panel, '', '');
+
+    fetch(apiUrl('/api/v2/profile/update'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: memberAuthHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+      body: JSON.stringify({
+        current_password: password,
+        city: (form.querySelector('[name="city"]') || {}).value || '',
+        address: (form.querySelector('[name="address"]') || {}).value || '',
+        country: country
+      })
+    })
+      .then(function (res) {
+        return res.json().then(function (env) {
+          return { res: res, env: env };
+        });
+      })
+      .then(function (result) {
+        var env = result.env || {};
+        var root = env.data || {};
+        if (result.res.ok && env.success && root.updated !== false) {
+          setDetailsMessage(panel, 'success', env.message || 'Profil güncellendi.');
+          if (passwordInput) passwordInput.value = '';
+          if (root.user && typeof root.user === 'object') {
+            applyProfileData(panel, root.user);
+            writeProfileSnapshotEntry('profile', profileSnapshotData(root), memberIdentity());
+          } else {
+            fetchMemberData('/api/v2/profile/detail').then(function (data) {
+              applyProfileData(panel, data);
+              writeProfileSnapshotEntry('profile', profileSnapshotData(data), memberIdentity());
+            }).catch(function () {});
+          }
+          return;
+        }
+        setDetailsMessage(panel, 'error', env.message || 'Profil güncellenemedi.');
+      })
+      .catch(function () {
+        setDetailsMessage(panel, 'error', 'Sunucu hatası. Lütfen tekrar deneyin.');
+      })
+      .then(function () {
+        if (button) button.removeAttribute('data-busy');
+        syncDetailsSubmit(panel);
+      });
+  }
+
   function setFreezeMessage(panel, type, text) {
     var message = panel && panel.querySelector('[data-mprofile-freeze-message]');
     if (!message) return;
@@ -3364,6 +3454,13 @@
           return;
         }
 
+        var detailsSubmit = target.closest('#mprofileDetailsSaveBtn');
+        if (detailsSubmit) {
+          e.preventDefault();
+          submitDetailsForm(panel);
+          return;
+        }
+
         var freezeSubmit = target.closest('#mprofileFreezeSaveBtn');
         if (freezeSubmit) {
           e.preventDefault();
@@ -3375,6 +3472,11 @@
         if (e.target && e.target.closest && e.target.closest('[data-mprofile-promo-form]')) {
           e.preventDefault();
           submitSidebarPromo(panel);
+          return;
+        }
+        if (e.target && e.target.closest && e.target.closest('#mprofileDetailsForm')) {
+          e.preventDefault();
+          submitDetailsForm(panel);
           return;
         }
         if (e.target && e.target.closest && e.target.closest('#mprofileChangePasswordForm')) {
@@ -3432,6 +3534,9 @@
       panel.addEventListener('input', function (e) {
         if (e.target && e.target.id === 'mprofilePaymentAmount') syncPaymentSubmitState();
         if (e.target && e.target.id === 'mprofileCryptoSearch') filterCryptoOptions(e.target.value);
+        if (e.target && (e.target.id === 'mprofileDetailsPassword' || (e.target.name === 'password' && e.target.closest('[data-mprofile-section="details"]')))) {
+          syncDetailsSubmit(panel);
+        }
         if (e.target && e.target.closest && e.target.closest('[data-mprofile-promo-input]')) {
           var wrap = e.target.closest('[data-mprofile-promo-wrap]');
           syncSidebarPromoSubmit(wrap);
@@ -3445,6 +3550,9 @@
         if (e.target && e.target.closest && e.target.closest('[data-mprofile-promo-input]')) {
           syncSidebarPromoSubmit(e.target.closest('[data-mprofile-promo-wrap]'));
         }
+        if (e.target && (e.target.id === 'mprofileDetailsPassword' || (e.target.name === 'password' && e.target.closest('[data-mprofile-section="details"]')))) {
+          syncDetailsSubmit(panel);
+        }
       });
       panel.addEventListener('focusout', function (e) {
         if (e.target && e.target.closest && e.target.closest('[data-mprofile-promo-input]')) {
@@ -3452,6 +3560,7 @@
         }
       });
       syncSidebarPromoSubmit();
+      syncDetailsSubmit(panel);
     }
   }
 

@@ -453,47 +453,37 @@ if ($method === 'POST' && $route === 'bonus_claim.php') {
         ]);
     }
 
-    // Mevcut pending talep varsa replace et
-    $replacedPending = false;
-    if ($claimPromotionId > 0) {
-        $existingClaim = $pdo->prepare("SELECT id FROM bonus_claim_requests WHERE user_id = :user_id AND promotion_id = :promotion_id AND status = 'pending' LIMIT 1");
-        $existingClaim->execute(['user_id' => $userId, 'promotion_id' => $claimPromotionId]);
-        $existingClaimRow = $existingClaim->fetch(PDO::FETCH_ASSOC);
-        if (is_array($existingClaimRow)) {
-            $pdo->prepare('DELETE FROM bonus_claim_requests WHERE id = :id')->execute(['id' => (int) $existingClaimRow['id']]);
-            $replacedPending = true;
-        }
+    try {
+        $claimResult = memberInsertBonusClaimRequestV2(
+            $pdo,
+            $userId,
+            $promo,
+            trim((string) ($input['message'] ?? '')) ?: null
+        );
+    } catch (RuntimeException $claimException) {
+        $claimMessage = $claimException->getMessage();
+        $claimCode = str_contains($claimMessage, 'hakk') ? 409 : 422;
+        $memberEnvelope($claimCode, [
+            'success' => false,
+            'code' => $claimCode,
+            'message' => $claimMessage,
+        ]);
+    } catch (Throwable) {
+        $memberEnvelope(500, [
+            'success' => false,
+            'code' => 500,
+            'message' => 'Bonus talebi oluşturulamadı. Lütfen tekrar deneyin.',
+        ]);
     }
-
-    $insert = $pdo->prepare(
-        "INSERT INTO bonus_claim_requests
-        (user_id, promotion_id, bonus_name, category, promotion_type, requested_amount, wagering_multiplier, user_message, status, created_at)
-        VALUES
-        (:user_id, :promotion_id, :bonus_name, :category, :promotion_type, :requested_amount, :wagering_multiplier, :user_message, 'pending', NOW())"
-    );
-    $requestedAmount = memberPromotionResolveClaimAmountV2($pdo, $userId, $promo);
-    if ($requestedAmount <= 0) {
-        $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Promosyon bonus tutarı hesaplanamadı. Lütfen yönetici ile iletişime geçin.']);
-    }
-    $insert->execute([
-        'user_id' => $userId,
-        'promotion_id' => $claimPromotionId,
-        'bonus_name' => (string) ($promo['title'] ?? ''),
-        'category' => (string) ($promo['type'] ?? ''),
-        'promotion_type' => (string) ($promo['bonus_type'] ?? ''),
-        'requested_amount' => number_format($requestedAmount, 2, '.', ''),
-        'wagering_multiplier' => number_format((float) ($promo['wagering_multiplier'] ?? 1), 2, '.', ''),
-        'user_message' => trim((string) ($input['message'] ?? '')) ?: null,
-    ]);
     $memberEnvelope(200, [
         'success' => true,
         'code' => 200,
         'message' => 'Bonus talebi oluşturuldu',
         'data' => [
-            'requestId' => (string) $pdo->lastInsertId(),
-            'requestedAmount' => $requestedAmount,
-            'replacedPending' => $replacedPending,
-            'limit' => $claimLimit,
+            'requestId' => (string) $claimResult['requestId'],
+            'requestedAmount' => $claimResult['requestedAmount'],
+            'replacedPending' => $claimResult['replacedPending'],
+            'limit' => $claimResult['limit'],
         ],
     ]);
 }

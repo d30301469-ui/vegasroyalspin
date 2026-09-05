@@ -255,7 +255,7 @@ return [
     'auth.terms_conditions' => 'Terms and Conditions',
     'auth.privacy_and_terms' => 'Privacy Policy and Terms of Use',
     'auth.register_success_title' => 'Registration Successful',
-    'auth.register_success_msg' => 'Your registration has been created successfully',
+    'auth.register_success_msg' => 'Your registration was successful',
     'auth.send_link' => 'SEND LINK',
     'auth.forgot_link_hint' => 'Enter your email. If an account exists, a reset link will be sent.',
     'auth.forgot_link_caps' => 'FORGOT YOUR PASSWORD?',

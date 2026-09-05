@@ -140,7 +140,6 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/auth-login.css?v=<?= htmlspecialchars($loginCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
     <link href="/assets/css/auth-register-modal.css?v=<?= htmlspecialchars($registerModalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
     <link href="/assets/css/auth-login-modal.css?v=<?= htmlspecialchars($loginModalCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
-  <link href="/assets/css/vendor-daterangepicker.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php if ($requestPath === '/' || $scriptName === 'index.php'): ?>
   <link href="/assets/css/home.css?v=<?= htmlspecialchars($homeCssVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/home-jackpot.css?v=<?= htmlspecialchars($assetVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
@@ -178,8 +177,6 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <link href="/assets/css/promotions.css?v=<?= htmlspecialchars($promoVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <link href="/assets/css/promotions-bonus-modal.css?v=<?= htmlspecialchars($bonusModalVer, ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
   <?php endif; ?>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.min.css">
   <meta name="description" content="<?= htmlspecialchars($headDescription, ENT_QUOTES, 'UTF-8') ?>">
   <meta property="og:title" content="<?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?>">
   <meta property="og:description" content="<?= htmlspecialchars($headDescription, ENT_QUOTES, 'UTF-8') ?>">
@@ -201,11 +198,9 @@ $headThemeColor = (string) ($headMeta['theme_color'] ?? '#120023');
   <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
   <script src="/assets/js/modal-polyfill.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.js" referrerpolicy="no-referrer"></script>
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <?php if (in_array($requestPath, ['/sportbook', '/sportsbook'], true)): ?>
   <script type="text/javascript" id="sportbook" src="https://iceexchange.sptpub.com/bt-renderer.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <?php endif; ?>
   <script type="text/javascript">
     function loadHTMLVideo(sname) {
         var webrtcPlayer = null;

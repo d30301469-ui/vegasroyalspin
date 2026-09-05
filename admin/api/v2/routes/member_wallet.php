@@ -181,11 +181,33 @@ if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && in_array($route, ['prof
         'tc_no' => 'identity_number',
         'identityNumber' => 'identity_number',
         'identity' => 'identity_number',
+        'password' => 'current_password',
     ];
     foreach ($aliases as $from => $to) {
         if (!array_key_exists($to, $input) && array_key_exists($from, $input)) {
             $input[$to] = $input[$from];
         }
+    }
+
+    $currentPassword = trim((string) ($input['current_password'] ?? ''));
+    if ($currentPassword === '') {
+        $memberEnvelope(422, [
+            'success' => false,
+            'code' => 422,
+            'message' => 'Değişiklikleri kaydetmek için mevcut şifrenizi girin.',
+            'errors' => ['current_password' => 'Mevcut şifre gerekli.'],
+        ]);
+    }
+    $pwdStmt = $pdo->prepare('SELECT password FROM users WHERE id = :id LIMIT 1');
+    $pwdStmt->execute(['id' => $userId]);
+    $hash = (string) $pwdStmt->fetchColumn();
+    if (!$memberPasswordMatches($currentPassword, $hash)) {
+        $memberEnvelope(422, [
+            'success' => false,
+            'code' => 422,
+            'message' => 'Mevcut şifre hatalı.',
+            'errors' => ['current_password' => 'Mevcut şifre hatalı.'],
+        ]);
     }
 
     $allowed = ['name', 'surname', 'email', 'phone', 'city', 'country', 'address', 'dob', 'gender', 'identity_number'];
@@ -196,53 +218,121 @@ if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && in_array($route, ['prof
         }
     }
 
-    if (isset($data['gender']) && $data['gender'] !== '') {
-        $g = function_exists('mb_strtolower')
-            ? mb_strtolower($data['gender'], 'UTF-8')
-            : strtolower($data['gender']);
-        $genderMap = [
-            'male' => 'Erkek',
-            'erkek' => 'Erkek',
-            'female' => 'Kadın',
-            'kadin' => 'Kadın',
-            'kadın' => 'Kadın',
-            'other' => 'Diğer',
-            'diger' => 'Diğer',
-            'diğer' => 'Diğer',
-        ];
-        $data['gender'] = $genderMap[$g] ?? $data['gender'];
-    }
-
-    $currentPassword = trim((string) ($input['current_password'] ?? ''));
-    if ($currentPassword !== '') {
-        $pwdStmt = $pdo->prepare('SELECT password FROM users WHERE id = :id LIMIT 1');
-        $pwdStmt->execute(['id' => $userId]);
-        $hash = (string) $pwdStmt->fetchColumn();
-        if (!$memberPasswordMatches($currentPassword, $hash)) {
-            $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Mevcut şifre hatalı.']);
+    if (isset($data['gender'])) {
+        if ($data['gender'] === '') {
+            unset($data['gender']);
+        } else {
+            $g = function_exists('mb_strtolower')
+                ? mb_strtolower($data['gender'], 'UTF-8')
+                : strtolower($data['gender']);
+            $genderMap = [
+                'male' => 'Erkek',
+                'erkek' => 'Erkek',
+                'female' => 'Kadın',
+                'kadin' => 'Kadın',
+                'kadın' => 'Kadın',
+                'other' => 'Diğer',
+                'diger' => 'Diğer',
+                'diğer' => 'Diğer',
+            ];
+            $data['gender'] = $genderMap[$g] ?? $data['gender'];
+            if (!in_array($data['gender'], ['Erkek', 'Kadın', 'Diğer'], true)) {
+                $memberEnvelope(422, [
+                    'success' => false,
+                    'code' => 422,
+                    'message' => 'Geçerli bir cinsiyet seçin.',
+                    'errors' => ['gender' => 'Geçerli bir cinsiyet seçin.'],
+                ]);
+            }
         }
     }
 
+    if (isset($data['dob'])) {
+        if ($data['dob'] === '') {
+            unset($data['dob']);
+        } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $data['dob']) !== 1) {
+            $memberEnvelope(422, [
+                'success' => false,
+                'code' => 422,
+                'message' => 'Doğum tarihi YYYY-AA-GG formatında olmalıdır.',
+                'errors' => ['dob' => 'Doğum tarihi YYYY-AA-GG formatında olmalıdır.'],
+            ]);
+        }
+    }
+
+    if (isset($data['country'])) {
+        $countryRaw = $data['country'];
+        $countryUpper = function_exists('mb_strtoupper')
+            ? mb_strtoupper($countryRaw, 'UTF-8')
+            : strtoupper($countryRaw);
+        $countryLower = function_exists('mb_strtolower')
+            ? mb_strtolower($countryRaw, 'UTF-8')
+            : strtolower($countryRaw);
+        if (in_array($countryUpper, ['TR', 'TUR', 'TURKEY'], true)
+            || in_array($countryLower, ['türkiye', 'turkiye'], true)
+        ) {
+            $data['country'] = 'TR';
+        } elseif (strlen($countryUpper) === 2) {
+            $data['country'] = $countryUpper;
+        }
+    }
+
+    if (isset($data['phone'])) {
+        $data['phone'] = (string) preg_replace('/\D+/', '', $data['phone']);
+        if ($data['phone'] === '') {
+            unset($data['phone']);
+        }
+    }
+
+    if (isset($data['address']) && $data['address'] === '') {
+        $data['address'] = null;
+    }
+
     if (isset($data['email']) && $data['email'] !== '' && filter_var($data['email'], FILTER_VALIDATE_EMAIL) === false) {
-        $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Geçerli bir e-posta adresi girin.']);
+        $memberEnvelope(422, [
+            'success' => false,
+            'code' => 422,
+            'message' => 'Geçerli bir e-posta adresi girin.',
+            'errors' => ['email' => 'Geçerli bir e-posta adresi girin.'],
+        ]);
     }
     if (isset($data['email'])) {
         $dup = $pdo->prepare('SELECT COUNT(*) FROM users WHERE email = :email AND id <> :id');
         $dup->execute(['email' => $data['email'], 'id' => $userId]);
         if ((int) $dup->fetchColumn() > 0) {
-            $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Bu e-posta başka bir kullanıcıya ait.']);
+            $memberEnvelope(422, [
+                'success' => false,
+                'code' => 422,
+                'message' => 'Bu e-posta başka bir kullanıcıya ait.',
+                'errors' => ['email' => 'Bu e-posta başka bir kullanıcıya ait.'],
+            ]);
         }
     }
     if ($data === []) {
-        $memberEnvelope(200, ['success' => true, 'code' => 200, 'message' => 'Güncellenecek alan yok.', 'data' => ['updated' => false]]);
+        $memberEnvelope(422, [
+            'success' => false,
+            'code' => 422,
+            'message' => 'Güncellenecek alan bulunamadı.',
+            'data' => ['updated' => false],
+        ]);
     }
+
     $set = [];
     foreach (array_keys($data) as $field) {
         $set[] = $field . ' = :' . $field;
     }
     $data['id'] = $userId;
-    $stmt = $pdo->prepare('UPDATE users SET ' . implode(', ', $set) . ' WHERE id = :id');
-    $stmt->execute($data);
+    try {
+        $stmt = $pdo->prepare('UPDATE users SET ' . implode(', ', $set) . ' WHERE id = :id');
+        $stmt->execute($data);
+    } catch (Throwable $updateError) {
+        error_log('[member_wallet/profile_update] ' . $updateError->getMessage());
+        $memberEnvelope(500, [
+            'success' => false,
+            'code' => 500,
+            'message' => 'Profil güncellenemedi. Lütfen alanları kontrol edip tekrar deneyin.',
+        ]);
+    }
     $user = $memberUserById($pdo, $userId);
     $memberEnvelope(200, [
         'success' => true,

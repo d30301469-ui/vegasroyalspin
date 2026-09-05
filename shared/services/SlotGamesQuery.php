@@ -32,6 +32,55 @@ final class SlotGamesQuery
     private const CACHE_STALE_SEC = 86400;
 
     /**
+     * Default / popular slot ORDER BY: Pragmatic hits (Gates of Olympus…) then
+     * EGT Digital classics, then other PP/EGT, then featured, then name.
+     */
+    public static function catalogOrderBySql(string $sortKey = '', bool $preferFeatured = false): string
+    {
+        $sortKey = strtolower(trim($sortKey));
+        if ($sortKey === 'new') {
+            return 'CAST(row_id AS UNSIGNED) DESC, is_featured DESC, name ASC';
+        }
+
+        $hay = "LOWER(CONVERT(CONCAT(COALESCE(name,''),' ',COALESCE(provider,''),' ',COALESCE(provider_code,''),' ',COALESCE(game_id,''),' ',COALESCE(raw_payload,'')) USING utf8mb4)) COLLATE utf8mb4_unicode_ci";
+        $prov = "LOWER(CONVERT(CONCAT(COALESCE(provider,''),' ',COALESCE(provider_code,'')) USING utf8mb4)) COLLATE utf8mb4_unicode_ci";
+        $nameOnly = "LOWER(CONVERT(COALESCE(name,'') USING utf8mb4)) COLLATE utf8mb4_unicode_ci";
+        $gameId = "LOWER(CONVERT(COALESCE(game_id,'') USING utf8mb4)) COLLATE utf8mb4_unicode_ci";
+
+        // First viewport: flagship PP + EGT classics, then siblings/variants, then other PP/EGT.
+        $score = "(
+            CASE
+                WHEN {$gameId} LIKE '%:vs20olympx' OR {$nameOnly} = 'gates of olympus 1000' THEN 5200
+                WHEN {$gameId} LIKE '%:vs20olympgate' OR {$nameOnly} = 'gates of olympus' THEN 5150
+                WHEN {$gameId} LIKE '%:vs20fruitswx' OR {$nameOnly} = 'sweet bonanza 1000' THEN 5100
+                WHEN {$gameId} LIKE '%:vs20fruitsw' OR {$nameOnly} = 'sweet bonanza' THEN 5050
+                WHEN {$nameOnly} LIKE '40 super hot%' OR {$nameOnly} LIKE '40 burning hot%' OR {$nameOnly} LIKE '40 burning%' THEN 5000
+                WHEN {$nameOnly} LIKE '20 super hot%' OR {$nameOnly} LIKE '20 burning%' OR {$nameOnly} LIKE 'flaming hot%' OR {$nameOnly} LIKE '5 super hot%' THEN 4950
+                WHEN {$nameOnly} LIKE 'ultimate hot%' OR {$nameOnly} LIKE 'shine bright%' OR {$nameOnly} LIKE 'zodiac wheel%' THEN 4900
+                WHEN {$nameOnly} LIKE 'starlight princess%' OR {$gameId} LIKE '%vs20starlight%' THEN 4800
+                WHEN {$nameOnly} LIKE 'sugar rush%' OR {$gameId} LIKE '%vs20sugarrush%' THEN 4750
+                WHEN {$nameOnly} LIKE 'big bass%' THEN 4700
+                WHEN {$nameOnly} LIKE 'wanted dead%' THEN 4650
+                WHEN {$nameOnly} LIKE 'zeus vs hades%' THEN 4600
+                WHEN {$nameOnly} LIKE '%dog house%' THEN 4550
+                WHEN {$hay} LIKE '%gates of olympus%' OR {$hay} LIKE '%vs20olymp%' THEN 4200
+                WHEN {$hay} LIKE '%sweet bonanza%' OR {$hay} LIKE '%vs20fruit%' OR {$hay} LIKE '%vs20swbon%' OR {$hay} LIKE '%vs20sb%' THEN 4150
+                WHEN {$hay} LIKE '%burning hot%' OR {$hay} LIKE '%super hot%' OR {$hay} LIKE '%flaming hot%' THEN 4100
+                ELSE 0
+            END
+            + CASE
+                WHEN {$prov} LIKE '%pragmatic%' THEN 300
+                WHEN {$prov} LIKE '%egt%' THEN 250
+                ELSE 0
+            END
+            + CASE WHEN COALESCE(is_featured, 0) = 1 THEN 50 ELSE 0 END
+        )";
+
+        // preferFeatured / popular / liked / default empty sort all use the same boost.
+        return "{$score} DESC, is_featured DESC, name ASC";
+    }
+
+    /**
      * API satırını şablon / slot.js için ortak forma çevirir.
      *
      * @param array<string, mixed> $row
@@ -432,6 +481,150 @@ final class SlotGamesQuery
         return $providers;
     }
 
+    /**
+     * Default slot lobby verisi — tek cache anahtarı; 6–8 seri API/DB turunu bir istekte toplar.
+     *
+     * @param array<string, mixed> $extraQuery
+     * @return array{
+     *   allUniqueProviders: list<string>,
+     *   main: array<string, mixed>,
+     *   popular: array<string, mixed>,
+     *   highWins: array<string, mixed>,
+     *   tournaments: array<string, mixed>,
+     *   more: array<string, mixed>,
+     *   live: array<string, mixed>,
+     *   highWinsProviders: list<string>,
+     *   tournamentsProviders: list<string>,
+     *   apiError: bool
+     * }
+     */
+    public static function slotLobbyBundle(array $extraQuery = []): array
+    {
+        $cacheKey = 'lobby_bundle:slot:' . sha1(json_encode($extraQuery, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '');
+        $cached = self::cacheRead($cacheKey);
+        if ($cached !== null && empty($cached['_stale'])) {
+            unset($cached['_stale'], $cached['_cached_at']);
+
+            return $cached;
+        }
+
+        $allUniqueProviders = array_values(array_filter(
+            self::allProviders(),
+            static function (string $provider): bool {
+                return stripos($provider, 'bgaming') === false && stripos($provider, 'b gaming') === false;
+            }
+        ));
+        sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
+
+        $highWinsProviders = [];
+        $tournamentsProviders = [];
+        foreach ($allUniqueProviders as $providerName) {
+            $key = CasinoAggregatorService::providerMatchKey((string) $providerName);
+            if ($key === 'pragmaticplay' || $key === 'pragmatic') {
+                $highWinsProviders[] = (string) $providerName;
+                $tournamentsProviders[] = (string) $providerName;
+                continue;
+            }
+            if ($key === 'egtdigital' || $key === 'egt') {
+                $highWinsProviders[] = (string) $providerName;
+            }
+        }
+        $highWinsProviders = array_values(array_unique($highWinsProviders));
+        $tournamentsProviders = array_values(array_unique($tournamentsProviders));
+
+        $main = self::slotsPage('', [], 30, 1, '', $extraQuery);
+        $popular = self::slotsPage('', [], 18, 1, 'popular', $extraQuery);
+        $highWins = $highWinsProviders !== []
+            ? self::slotsPage('', $highWinsProviders, 24, 1, '', $extraQuery)
+            : self::emptyPageResult(24, 1);
+        $tournaments = $tournamentsProviders !== []
+            ? self::slotsPage('', $tournamentsProviders, 24, 1, '', $extraQuery)
+            : self::emptyPageResult(24, 1);
+        $more = self::slotsPage('', [], 24, 2, '', $extraQuery);
+
+        try {
+            $live = self::gamesPage(1, '', [], 18, 1, '', $extraQuery);
+        } catch (Throwable) {
+            $live = self::emptyPageResult(18, 1);
+        }
+
+        $apiError = !empty($main['apiError'])
+            || !empty($popular['apiError'])
+            || !empty($highWins['apiError'])
+            || !empty($tournaments['apiError'])
+            || !empty($more['apiError'])
+            || !empty($live['apiError']);
+
+        $bundle = [
+            'allUniqueProviders' => $allUniqueProviders,
+            'main' => $main,
+            'popular' => $popular,
+            'highWins' => $highWins,
+            'tournaments' => $tournaments,
+            'more' => $more,
+            'live' => $live,
+            'highWinsProviders' => $highWinsProviders,
+            'tournamentsProviders' => $tournamentsProviders,
+            'apiError' => $apiError,
+        ];
+
+        self::cacheWrite($cacheKey, $bundle);
+
+        return $bundle;
+    }
+
+    /**
+     * @param array<string, mixed> $extraQuery
+     * @return array{
+     *   allUniqueProviders: list<string>,
+     *   main: array<string, mixed>,
+     *   popular: array<string, mixed>,
+     *   highWins: array<string, mixed>,
+     *   tournaments: array<string, mixed>,
+     *   more: array<string, mixed>,
+     *   apiError: bool
+     * }
+     */
+    public static function liveLobbyBundle(array $extraQuery = []): array
+    {
+        $cacheKey = 'lobby_bundle:live:' . sha1(json_encode($extraQuery, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '');
+        $cached = self::cacheRead($cacheKey);
+        if ($cached !== null && empty($cached['_stale'])) {
+            unset($cached['_stale'], $cached['_cached_at']);
+
+            return $cached;
+        }
+
+        $allUniqueProviders = self::providersForGameType(1);
+        sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
+
+        $main = self::gamesPage(1, '', [], 30, 1, '', $extraQuery);
+        $popular = self::gamesPage(1, '', [], 18, 1, 'game-show', $extraQuery);
+        $highWins = self::gamesPage(1, '', [], 24, 1, 'roulette', $extraQuery);
+        $tournaments = self::gamesPage(1, '', [], 24, 1, 'blackjack', $extraQuery);
+        $more = self::gamesPage(1, '', [], 24, 2, '', $extraQuery);
+
+        $apiError = !empty($main['apiError'])
+            || !empty($popular['apiError'])
+            || !empty($highWins['apiError'])
+            || !empty($tournaments['apiError'])
+            || !empty($more['apiError']);
+
+        $bundle = [
+            'allUniqueProviders' => $allUniqueProviders,
+            'main' => $main,
+            'popular' => $popular,
+            'highWins' => $highWins,
+            'tournaments' => $tournaments,
+            'more' => $more,
+            'apiError' => $apiError,
+        ];
+
+        self::cacheWrite($cacheKey, $bundle);
+
+        return $bundle;
+    }
+
     private static function cacheDir(): string
     {
         $base = defined('BASE_PATH') ? (string) BASE_PATH : shared_package_root();
@@ -642,9 +835,10 @@ final class SlotGamesQuery
         $where  = [];
         $params = [];
         if ($search !== '') {
-            $where[]           = '(name LIKE :search OR provider LIKE :search2)';
-            $params[':search']  = '%' . $search . '%';
-            $params[':search2'] = '%' . $search . '%';
+            $where[]           = '(LOWER(CONVERT(COALESCE(name, \'\') USING utf8mb4)) COLLATE utf8mb4_unicode_ci LIKE :search OR LOWER(CONVERT(COALESCE(provider, \'\') USING utf8mb4)) COLLATE utf8mb4_unicode_ci LIKE :search2)';
+            $needle = '%' . mb_strtolower($search, 'UTF-8') . '%';
+            $params[':search']  = $needle;
+            $params[':search2'] = $needle;
         }
         if ($providerList !== []) {
             $filterTerms = $providerList;
@@ -706,12 +900,7 @@ final class SlotGamesQuery
         $where[] = "LOWER(game_id) NOT LIKE '%acceptance%test%'";
         $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
 
-        $orderBy = 'is_featured DESC, name ASC';
-        if ($sortKey === 'new') {
-            $orderBy = 'CAST(row_id AS UNSIGNED) DESC, is_featured DESC, name ASC';
-        } elseif ($preferFeatured || $sortKey === 'popular' || $sortKey === 'liked') {
-            $orderBy = 'is_featured DESC, name ASC';
-        }
+        $orderBy = self::catalogOrderBySql($sortKey, $preferFeatured);
 
         $countStmt = $pdo->prepare("SELECT COUNT(*) FROM {$unionSql}{$whereSql}");
         foreach ($params as $k => $v) {

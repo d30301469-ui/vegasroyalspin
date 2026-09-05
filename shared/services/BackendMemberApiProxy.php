@@ -14,7 +14,21 @@ final class BackendMemberApiProxy
     private static function ensureFrontendSession(): void
     {
         if (!function_exists('frontend_session_start')) {
-            require_once shared_package_root() . '/config/frontend_session.php';
+            $candidates = [];
+            if (defined('BASE_PATH')) {
+                $candidates[] = rtrim((string) BASE_PATH, '/\\') . '/config/frontend_session.php';
+            }
+            $candidates[] = shared_package_root() . '/../config/frontend_session.php';
+            $candidates[] = dirname(__DIR__, 2) . '/config/frontend_session.php';
+            foreach ($candidates as $path) {
+                if (is_readable($path)) {
+                    require_once $path;
+                    break;
+                }
+            }
+        }
+        if (function_exists('frontend_session_start')) {
+            frontend_session_start();
         }
     }
 
@@ -115,7 +129,7 @@ final class BackendMemberApiProxy
             ? frontend_api_proxy_timeout()
             : 30;
 
-        if (preg_match('#^(?:game[-_/]?launch|game_launch)(?:\.php)?$#', $routeNorm) === 1) {
+        if (preg_match('#^(?:game[-_/]?launch|game_launch|sportsbook[-_/]?launch|sportsbook_launch)(?:\.php)?$#', $routeNorm) === 1) {
             $timeout = max($timeout, 45);
         } elseif (in_array($routeNorm, [
             'balance',
@@ -318,6 +332,14 @@ final class BackendMemberApiProxy
             $code = ReferralAttribution::current();
             if ($code !== '' && trim((string) ($decoded['referral_code'] ?? '')) === '') {
                 $decoded['referral_code'] = $code;
+            }
+        }
+
+        // Promo alanındaki ortak kodu da referral olarak ilet (JSON + form proxy).
+        if (trim((string) ($decoded['referral_code'] ?? '')) === '') {
+            $bonusFallback = trim((string) ($decoded['bonus_code'] ?? $decoded['bonusCode'] ?? ''));
+            if ($bonusFallback !== '' && preg_match('/^[A-Za-z0-9_-]{1,64}$/', $bonusFallback) === 1) {
+                $decoded['referral_code'] = $bonusFallback;
             }
         }
 
@@ -581,12 +603,19 @@ final class BackendMemberApiProxy
         $browserJwt = trim((string) ($_SERVER['HTTP_X_APP_MEMBER_JWT'] ?? $_SERVER['HTTP_X_METROPOL_MEMBER_JWT'] ?? ''));
         if ($browserJwt !== '') {
             $headers[] = 'X-App-Member-Jwt: ' . $browserJwt;
+        } elseif (($cookieJwt = self::resolveRestoreCookieJwt()) !== '' && self::memberJwtSignatureValid($cookieJwt)) {
+            $headers[] = 'X-App-Member-Jwt: ' . $cookieJwt;
         }
 
         // Forward visitor IP so providers that bind sessions to launch-game IP
         // do not see the frontend/proxy address (often 127.0.0.1).
         foreach (self::clientIpForwardHeaders() as $ipHeader) {
             $headers[] = $ipHeader;
+        }
+
+        $ua = trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+        if ($ua !== '') {
+            $headers[] = 'User-Agent: ' . $ua;
         }
 
         if ($routeNorm !== '' && self::isMemberAuthProxyRoute($routeNorm)) {
@@ -603,15 +632,21 @@ final class BackendMemberApiProxy
     {
         $ip = '';
         if (!function_exists('cloudflare_client_ip')) {
-            $cf = shared_package_root() . '/config/cloudflare.php';
-            if (is_file($cf)) {
-                require_once $cf;
+            foreach ([
+                shared_package_root() . '/../config/cloudflare.php',
+                dirname(__DIR__, 2) . '/config/cloudflare.php',
+                (defined('BASE_PATH') ? rtrim((string) BASE_PATH, '/\\') . '/config/cloudflare.php' : ''),
+            ] as $cf) {
+                if (is_string($cf) && $cf !== '' && is_readable($cf)) {
+                    require_once $cf;
+                    break;
+                }
             }
         }
         if (function_exists('cloudflare_client_ip')) {
             $ip = cloudflare_client_ip();
         }
-        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false || in_array($ip, ['127.0.0.1', '::1'], true)) {
             foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'] as $key) {
                 $raw = trim((string) ($_SERVER[$key] ?? ''));
                 if ($raw === '') {
@@ -620,10 +655,14 @@ final class BackendMemberApiProxy
                 if (str_contains($raw, ',')) {
                     $raw = trim(explode(',', $raw, 2)[0]);
                 }
-                if (filter_var($raw, FILTER_VALIDATE_IP) !== false) {
-                    $ip = $raw;
-                    break;
+                if (filter_var($raw, FILTER_VALIDATE_IP) === false) {
+                    continue;
                 }
+                if (in_array($raw, ['127.0.0.1', '::1'], true)) {
+                    continue;
+                }
+                $ip = $raw;
+                break;
             }
         }
         if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
@@ -1089,6 +1128,18 @@ final class BackendMemberApiProxy
         exit;
     }
 
+    private static function resolveRestoreCookieJwt(): string
+    {
+        if (!function_exists('frontend_member_restore_cookie_name')) {
+            require_once shared_package_root() . '/config/frontend_session.php';
+        }
+        $cookieName = function_exists('frontend_member_restore_cookie_name')
+            ? frontend_member_restore_cookie_name()
+            : 'app_member_restore';
+
+        return trim((string) ($_COOKIE[$cookieName] ?? $_COOKIE['app_member_restore'] ?? ''));
+    }
+
     private static function resolveProxyAuthorization(bool $sessionOnlyAuth, bool $forceRefresh = false, string $routeNorm = ''): ?string
     {
         require_once shared_package_root() . '/config/frontend_session.php';
@@ -1104,9 +1155,23 @@ final class BackendMemberApiProxy
         $loggedIn = !empty($_SESSION['loggedin']) && $userId > 0;
         $jwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
         $signatureOk = $jwt !== '' && self::memberJwtSignatureValid($jwt);
+        if ($jwt === '' || !$signatureOk) {
+            $cookieJwt = self::resolveRestoreCookieJwt();
+            if ($cookieJwt !== '' && self::memberJwtSignatureValid($cookieJwt)) {
+                $jwt = $cookieJwt;
+                $signatureOk = true;
+                $_SESSION['member_jwt'] = $jwt;
+                self::syncPhpSessionFromRestoreJwt($jwt);
+                $userId = (int) ($_SESSION['user_id'] ?? 0);
+                $loggedIn = !empty($_SESSION['loggedin']) && $userId > 0;
+                self::$lastJwtSyncHint = 'restore-cookie';
+            }
+        }
         $memberAuthRoute = $routeNorm !== '' && self::isMemberAuthProxyRoute($routeNorm);
         $proxySynced = !empty($_SESSION['__member_jwt_proxy_synced']);
-        self::$lastJwtSyncHint = $loggedIn ? 'session' : 'guest';
+        if (self::$lastJwtSyncHint === '' || self::$lastJwtSyncHint === 'guest') {
+            self::$lastJwtSyncHint = $loggedIn ? 'session' : ($jwt !== '' ? 'restore-cookie' : 'guest');
+        }
 
         if ($loggedIn && $memberAuthRoute && ($forceRefresh || !$proxySynced || $jwt === '' || !$signatureOk)) {
             $fresh = self::issueMemberJwtViaInternalTrust($userId);
@@ -1162,6 +1227,29 @@ final class BackendMemberApiProxy
         return null;
     }
 
+    private static function syncPhpSessionFromRestoreJwt(string $jwt): void
+    {
+        if ($jwt === '') {
+            return;
+        }
+        if (is_file(BASE_PATH . '/services/MemberJwtVerify.php')) {
+            require_once BASE_PATH . '/services/MemberJwtVerify.php';
+        } elseif (is_file(shared_package_root() . '/shared/services/MemberJwtVerify.php')) {
+            require_once shared_package_root() . '/shared/services/MemberJwtVerify.php';
+        }
+        if (!class_exists('MemberJwtVerify', false)) {
+            return;
+        }
+        $userId = MemberJwtVerify::userIdFromJwt($jwt);
+        if ($userId <= 0) {
+            return;
+        }
+        if (empty($_SESSION['loggedin']) || (int) ($_SESSION['user_id'] ?? 0) <= 0) {
+            $_SESSION['loggedin'] = true;
+            $_SESSION['user_id'] = $userId;
+        }
+    }
+
     private static function memberJwtSignatureValid(string $jwt): bool
     {
         if ($jwt === '') {
@@ -1211,6 +1299,14 @@ final class BackendMemberApiProxy
         }
 
         $payload = json_encode(['user_id' => $userId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $outbound = array_merge(
+            ['X-Frontend-Trust: ' . $trust],
+            self::clientIpForwardHeaders()
+        );
+        $ua = trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+        if ($ua !== '') {
+            $outbound[] = 'User-Agent: ' . $ua;
+        }
         $result = BackendApiClient::proxyHttp(
             'POST',
             $base,
@@ -1220,7 +1316,7 @@ final class BackendMemberApiProxy
             'application/json',
             null,
             12,
-            ['X-Frontend-Trust: ' . $trust],
+            $outbound,
             false
         );
         if ($result === null) {

@@ -187,13 +187,32 @@ if (in_array($method, ['GET', 'POST'], true) && in_array($route, ['track_visit.p
         }
     }
 
-    $ip = (string) ($_SERVER['HTTP_CLIENT_IP'] ?? '');
+    $ip = '';
+    if (function_exists('cloudflare_client_ip')) {
+        $ip = cloudflare_client_ip();
+    }
+    if ($ip === '') {
+        $ip = (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '');
+    }
     if ($ip === '' && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
         $parts = explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR']);
         $ip = trim((string) ($parts[0] ?? ''));
     }
     if ($ip === '') {
-        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $ip = (string) ($_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '');
+    }
+    if (in_array($ip, ['127.0.0.1', '::1'], true)) {
+        foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP'] as $key) {
+            $raw = trim((string) ($_SERVER[$key] ?? ''));
+            if ($raw === '') {
+                continue;
+            }
+            $cand = trim(explode(',', $raw)[0] ?? '');
+            if ($cand !== '' && filter_var($cand, FILTER_VALIDATE_IP) && !in_array($cand, ['127.0.0.1', '::1'], true)) {
+                $ip = $cand;
+                break;
+            }
+        }
     }
     $input = $memberInput($payload);
     $countryCode = trim((string) ($input['country_code'] ?? $input['countryCode'] ?? ''));

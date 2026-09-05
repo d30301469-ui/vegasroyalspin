@@ -1,6 +1,7 @@
 <?php
 
 $multiWithdraw = is_array($multiWithdraw ?? null) ? $multiWithdraw : [];
+$riskHoldWithdrawals = is_array($riskHoldWithdrawals ?? null) ? $riskHoldWithdrawals : [];
 $highDepositors = is_array($highDepositors ?? null) ? $highDepositors : [];
 $frozenAccounts = is_array($frozenAccounts ?? null) ? $frozenAccounts : [];
 $kycPendingHighBalance = is_array($kycPendingHighBalance ?? null) ? $kycPendingHighBalance : [];
@@ -119,6 +120,47 @@ require __DIR__ . '/_charts-boot.php';
                     <td><a class="risk-link" href="<?= $text(AdminAuth::url('/user?id=' . ($r['user_id'] ?? 0))) ?>"><?= $text($memberLabel($r)) ?></a></td>
                     <td class="risk-num"><?= (int) ($r['pending_count'] ?? 0) ?> adet</td>
                     <td class="risk-num"><?= $text($money($r['total_amount'] ?? 0)) ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <div class="risk-card">
+        <div class="risk-card-head">
+            <h2 class="risk-card-title">Risk Tutma (&gt;10.000₺)</h2>
+            <span class="risk-card-badge danger"><?= count($riskHoldWithdrawals) ?> çekim</span>
+        </div>
+        <?php if (empty($riskHoldWithdrawals)): ?>
+            <div class="risk-empty">Risk tutmasındaki çekim yok.</div>
+        <?php else: ?>
+        <div style="overflow-x:auto">
+        <table class="risk-table">
+            <thead><tr><th>Oyuncu</th><th>Tutar</th><th>TRX</th><th>İşlem</th></tr></thead>
+            <tbody>
+            <?php foreach ($riskHoldWithdrawals as $r): ?>
+                <tr>
+                    <td><a class="risk-link" href="<?= $text(AdminAuth::url('/user?id=' . ($r['user_id'] ?? 0))) ?>"><?= $text($memberLabel($r)) ?></a></td>
+                    <td class="risk-num"><?= $text($money($r['amount'] ?? 0)) ?></td>
+                    <td class="risk-num"><?= $text((string) ($r['trx'] ?? '')) ?></td>
+                    <td>
+                        <?php if (AdminAuth::canReleaseRiskHoldWithdraw()): ?>
+                        <form method="post" action="<?= $text(AdminAuth::url('/megapayz/withdraw/risk-release')) ?>" data-admin-confirm="Finans/MegaPayz’e iletilsin mi?" style="display:inline">
+                            <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
+                            <input type="hidden" name="id" value="<?= $text((string) ($r['id'] ?? '')) ?>">
+                            <button class="btn btn--ghost" type="submit" style="font-size:11px;padding:4px 8px">Finansa ilet</button>
+                        </form>
+                        <?php endif; ?>
+                        <?php if (AdminAuth::can('withdrawals') || AdminAuth::can('compliance-risk')): ?>
+                        <form method="post" action="<?= $text(AdminAuth::url('/megapayz/withdraw/risk-reject')) ?>" data-admin-confirm="Reddedilip bakiye iade edilsin mi?" style="display:inline">
+                            <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
+                            <input type="hidden" name="id" value="<?= $text((string) ($r['id'] ?? '')) ?>">
+                            <button class="btn btn--ghost" type="submit" style="font-size:11px;padding:4px 8px">Red</button>
+                        </form>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

@@ -6,6 +6,56 @@ final class MemberJwtService
 {
     public const TTL = 2592000;
 
+    /**
+     * Admin’de görünen üye IP kaynağı. Proxy header’ları REMOTE_ADDR=127.0.0.1
+     * olsa bile okunur; cloudflare.php yüklenmemiş olsa da aynı zincir çalışır.
+     */
+    public static function resolveClientIp(): string
+    {
+        if (!function_exists('cloudflare_client_ip')) {
+            foreach ([
+                dirname(__DIR__, 2) . '/config/cloudflare.php',
+                dirname(__DIR__) . '/config/cloudflare.php',
+                (defined('BASE_PATH') ? rtrim((string) BASE_PATH, '/\\') . '/config/cloudflare.php' : ''),
+            ] as $path) {
+                if (is_string($path) && $path !== '' && is_readable($path)) {
+                    require_once $path;
+                    break;
+                }
+            }
+        }
+        if (function_exists('cloudflare_client_ip')) {
+            $ip = cloudflare_client_ip();
+            if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP) !== false) {
+                return $ip;
+            }
+        }
+
+        $loopback = '';
+        foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'] as $key) {
+            $raw = trim((string) ($_SERVER[$key] ?? ''));
+            if ($raw === '') {
+                continue;
+            }
+            if (str_contains($raw, ',')) {
+                $raw = trim(explode(',', $raw, 2)[0]);
+            }
+            if (filter_var($raw, FILTER_VALIDATE_IP) === false) {
+                continue;
+            }
+            if (in_array($raw, ['127.0.0.1', '::1'], true)) {
+                if ($loopback === '') {
+                    $loopback = $raw;
+                }
+                continue;
+            }
+
+            return $raw;
+        }
+
+        return $loopback;
+    }
+
     public static function secret(): string
     {
         $fromEnv = self::env('MEMBER_JWT_SECRET');
@@ -68,7 +118,18 @@ final class MemberJwtService
             return;
         }
 
-        $sql = <<<'SQL'
+        try {
+            // SHOW/SELECT first — never run CREATE inside an open transaction.
+            // MySQL treats CREATE TABLE (even IF NOT EXISTS) as DDL and silently
+            // commits the current transaction; register then fails on commit()
+            // with "There is no active transaction" while the user row remains.
+            $exists = $pdo->query("SHOW TABLES LIKE 'member_jwt_tokens'")->fetchColumn();
+            if ($exists !== false) {
+                $ready[$key] = true;
+                return;
+            }
+
+            $sql = <<<'SQL'
 CREATE TABLE IF NOT EXISTS member_jwt_tokens (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -88,7 +149,12 @@ CREATE TABLE IF NOT EXISTS member_jwt_tokens (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL;
 
-        try {
+            if ($pdo->inTransaction()) {
+                throw new RuntimeException(
+                    'member_jwt_tokens tablosu yok ve açık transaction içinde oluşturulamaz.'
+                );
+            }
+
             $pdo->exec($sql);
             $exists = $pdo->query("SHOW TABLES LIKE 'member_jwt_tokens'")->fetchColumn();
             if ($exists === false) {
@@ -146,13 +212,7 @@ SQL;
                 'user_id' => $uid,
                 'token_hash' => hash('sha256', $jwt),
                 'expires_at' => date('Y-m-d H:i:s', $exp),
-                'ip_address' => substr(
-                    function_exists('cloudflare_client_ip')
-                        ? cloudflare_client_ip()
-                        : (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
-                    0,
-                    64
-                ),
+                'ip_address' => substr(self::resolveClientIp(), 0, 64),
                 'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
             ]);
         } catch (Throwable $e) {
@@ -257,13 +317,7 @@ SQL;
                 'token_hash' => hash('sha256', $jwt),
                 'issued_at' => max(0, (int) ($payload['iat'] ?? time())),
                 'expires_at' => date('Y-m-d H:i:s', $exp),
-                'ip_address' => substr(
-                    function_exists('cloudflare_client_ip')
-                        ? cloudflare_client_ip()
-                        : (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
-                    0,
-                    64
-                ),
+                'ip_address' => substr(self::resolveClientIp(), 0, 64),
                 'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
             ]);
         } catch (Throwable $e) {

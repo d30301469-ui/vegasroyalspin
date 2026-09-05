@@ -438,6 +438,8 @@ class ApiAuthController
 
         $referral_code            = '';
         $referred_by_affiliate_id = '';
+        $ip                       = '';
+        $hadExplicitInbound       = false;
 
         try {
             $ip = function_exists('cloudflare_client_ip')
@@ -454,7 +456,9 @@ class ApiAuthController
                 $ref_code = ReferralAttribution::current();
             }
 
+            // Cookie/URL açık kodu: IP'den ÖNCE çöz; çözülemezse IP'ye düşme.
             if ($ref_code !== '') {
+                $hadExplicitInbound = true;
                 self::registerWriteLog("Bilinen ref: $ref_code", 'INFO');
                 $aff = BackendApiClient::request('GET', BackendApiClient::SVC_AFFILIATE, '/affiliate/by-code', ['code' => $ref_code]);
                 $ar  = BackendApiClient::unwrap($aff);
@@ -464,17 +468,7 @@ class ApiAuthController
                 }
             }
 
-            if ($referral_code === '') {
-                $resolve = BackendApiClient::request('GET', BackendApiClient::SVC_AFFILIATE, '/affiliate/resolve-referral', ['ip' => $ip]);
-                $r       = BackendApiClient::unwrap($resolve);
-                if ($r !== [] && !empty($r['referral_code'])) {
-                    $referral_code            = (string) $r['referral_code'];
-                    $referred_by_affiliate_id = (string) ($r['affiliate_id'] ?? '');
-                    self::registerWriteLog("IP'den referral: $referral_code", 'INFO');
-                }
-            }
-
-            self::registerWriteLog("Final referral: $referral_code, affiliate: $referred_by_affiliate_id", 'INFO');
+            self::registerWriteLog("Ön ref (IP yok): $referral_code, affiliate: $referred_by_affiliate_id", 'INFO');
         } catch (Throwable $e) {
             self::registerWriteLog('Referans çözümleme: ' . $e->getMessage(), 'ERROR');
         }
@@ -542,9 +536,72 @@ class ApiAuthController
             }
 
             $refForBody = trim((string) ($inputRow['referral_code'] ?? ''));
+            if ($refForBody !== '') {
+                $hadExplicitInbound = true;
+            }
             if ($refForBody === '') {
                 $refForBody = $referral_code;
             }
+            // Promosyon alanına yazılan ortak kodu da referral olarak dene (cookie yoksa).
+            if ($refForBody === '' && $bonusCode !== '') {
+                $hadExplicitInbound = true;
+                $refForBody = $bonusCode;
+                try {
+                    $aff = BackendApiClient::request('GET', BackendApiClient::SVC_AFFILIATE, '/affiliate/by-code', ['code' => $bonusCode]);
+                    $ar = BackendApiClient::unwrap($aff);
+                    if ($ar !== [] && !empty($ar['affiliate_id'])) {
+                        $referral_code = (string) ($ar['referral_code'] ?? $bonusCode);
+                        $referred_by_affiliate_id = (string) $ar['affiliate_id'];
+                        $refForBody = $referral_code;
+                        self::registerWriteLog("Bonus alanından referral: $referral_code", 'INFO');
+                    } else {
+                        // Promo ortak değilse IP ile yanlış ortak yazma.
+                        $refForBody = '';
+                        $referred_by_affiliate_id = '';
+                        self::registerWriteLog('Bonus alanı ortak kodu değil; IP atıfı atlanacak', 'INFO');
+                    }
+                } catch (Throwable $e) {
+                    $refForBody = '';
+                    $referred_by_affiliate_id = '';
+                    self::registerWriteLog('Bonus→referral çözümleme: ' . $e->getMessage(), 'ERROR');
+                }
+            }
+
+            // Form/cookie kodu var ama affiliate_id henüz yoksa tekrar çöz.
+            if ($refForBody !== '' && $referred_by_affiliate_id === '') {
+                try {
+                    $aff = BackendApiClient::request('GET', BackendApiClient::SVC_AFFILIATE, '/affiliate/by-code', ['code' => $refForBody]);
+                    $ar = BackendApiClient::unwrap($aff);
+                    if ($ar !== [] && !empty($ar['affiliate_id'])) {
+                        $referral_code = (string) ($ar['referral_code'] ?? $refForBody);
+                        $referred_by_affiliate_id = (string) $ar['affiliate_id'];
+                        $refForBody = $referral_code;
+                    } elseif ($hadExplicitInbound) {
+                        // Açık kod geçersiz → IP yedeği yok.
+                        $referred_by_affiliate_id = '';
+                    }
+                } catch (Throwable $e) {
+                    self::registerWriteLog('Referral by-code: ' . $e->getMessage(), 'ERROR');
+                }
+            }
+
+            // IP yedeği yalnız hiçbir açık kod (link/cookie/form/promo) yokken.
+            if ($refForBody === '' && !$hadExplicitInbound && $ip !== '' && $ip !== '0.0.0.0') {
+                try {
+                    $resolve = BackendApiClient::request('GET', BackendApiClient::SVC_AFFILIATE, '/affiliate/resolve-referral', ['ip' => $ip]);
+                    $r       = BackendApiClient::unwrap($resolve);
+                    if ($r !== [] && !empty($r['referral_code'])) {
+                        $referral_code            = (string) $r['referral_code'];
+                        $referred_by_affiliate_id = (string) ($r['affiliate_id'] ?? '');
+                        $refForBody               = $referral_code;
+                        self::registerWriteLog("IP'den referral: $referral_code", 'INFO');
+                    }
+                } catch (Throwable $e) {
+                    self::registerWriteLog('IP referral: ' . $e->getMessage(), 'ERROR');
+                }
+            }
+
+            self::registerWriteLog("Final referral: $refForBody, affiliate: $referred_by_affiliate_id", 'INFO');
 
             $prepared    = MemberRegisterPayload::prepare($inputRow);
             $fieldErrors = MemberRegisterPayload::collectFieldErrors($prepared, $requireTerms);
@@ -587,7 +644,8 @@ class ApiAuthController
                     $prepared,
                     $refForBody,
                     $bonusCode,
-                    $referred_by_affiliate_id
+                    $referred_by_affiliate_id,
+                    $ip
                 );
                 http_response_code((int) ($local['code'] ?? 500));
                 echo json_encode($local, JSON_UNESCAPED_UNICODE);
@@ -1266,7 +1324,7 @@ class ApiAuthController
      * @param array<string, mixed> $prepared
      * @return array<string, mixed>
      */
-    private static function localRegisterAttempt(array $prepared, string $referralCode, string $bonusCode, string $referredByAffiliateId): array
+    private static function localRegisterAttempt(array $prepared, string $referralCode, string $bonusCode, string $referredByAffiliateId, string $clientIp = ''): array
     {
         try {
             $pdo = self::localDbPdo();
@@ -1338,45 +1396,76 @@ class ApiAuthController
             $generatedReferralCode = self::generateUniqueReferralCode($pdo, $username);
             $affiliateId = trim($referredByAffiliateId) !== '' ? (int) $referredByAffiliateId : null;
 
-            $insert = $pdo->prepare(
-                'INSERT INTO users
-                (name, surname, username, email, identity_number, gender, dob, phone, city, country, password, bonus_code, referral_code, referred_by_affiliate_id, address, password_changed_at)
-                VALUES
-                (:name, :surname, :username, :email, :identity_number, :gender, :dob, :phone, :city, :country, :password, :bonus_code, :referral_code, :referred_by_affiliate_id, :address, NOW())'
-            );
-            $insert->execute([
-                'name' => $firstName,
-                'surname' => $surname,
-                'username' => $username,
-                'email' => $email,
-                'identity_number' => $identityNumber !== '' ? $identityNumber : null,
-                'gender' => $gender,
-                'dob' => $birthDate,
-                'phone' => $phone,
-                'city' => $city,
-                'country' => $country,
-                'password' => $passwordHash,
-                'bonus_code' => $bonusCode !== '' ? $bonusCode : null,
-                'referral_code' => $generatedReferralCode !== '' ? $generatedReferralCode : null,
-                'referred_by_affiliate_id' => $affiliateId,
-                'address' => $address !== '' ? $address : null,
-            ]);
+            require_once SERVICE_PATH . '/MemberJwtService.php';
+            // DDL must not run inside the registration transaction.
+            MemberJwtService::ensureTable($pdo);
 
-            $userId = (int) $pdo->lastInsertId();
-
+            $pdo->beginTransaction();
             try {
-                require_once SERVICE_PATH . '/AffiliateService.php';
-                AffiliateService::attributeRegistration($pdo, $userId, $referralCode);
-            } catch (Throwable $affiliateError) {
-                self::registerWriteLog('Referans eşleştirme: ' . $affiliateError->getMessage(), 'ERROR');
+                $insert = $pdo->prepare(
+                    'INSERT INTO users
+                    (name, surname, username, email, identity_number, gender, dob, phone, city, country, password, bonus_code, referral_code, referred_by_affiliate_id, address, password_changed_at)
+                    VALUES
+                    (:name, :surname, :username, :email, :identity_number, :gender, :dob, :phone, :city, :country, :password, :bonus_code, :referral_code, :referred_by_affiliate_id, :address, NOW())'
+                );
+                $insert->execute([
+                    'name' => $firstName,
+                    'surname' => $surname,
+                    'username' => $username,
+                    'email' => $email,
+                    'identity_number' => $identityNumber !== '' ? $identityNumber : null,
+                    'gender' => $gender,
+                    'dob' => $birthDate,
+                    'phone' => $phone,
+                    'city' => $city,
+                    'country' => $country,
+                    'password' => $passwordHash,
+                    'bonus_code' => $bonusCode !== '' ? $bonusCode : null,
+                    'referral_code' => $generatedReferralCode !== '' ? $generatedReferralCode : null,
+                    'referred_by_affiliate_id' => $affiliateId,
+                    'address' => $address !== '' ? $address : null,
+                ]);
+
+                $userId = (int) $pdo->lastInsertId();
+                $resolvedAffiliate = null;
+
+                try {
+                    require_once SERVICE_PATH . '/AffiliateService.php';
+                    $resolvedAffiliate = AffiliateService::attributeRegistration($pdo, $userId, $referralCode, $clientIp);
+                } catch (Throwable $affiliateError) {
+                    self::registerWriteLog('Referans eşleştirme: ' . $affiliateError->getMessage(), 'ERROR');
+                }
+
+                $jwt = MemberJwtService::issue($pdo, [
+                    'id' => $userId,
+                    'username' => $username,
+                    'email' => $email,
+                ]);
+                if ($jwt === '') {
+                    throw new RuntimeException('JWT token üretilemedi.');
+                }
+
+                if ($pdo->inTransaction()) {
+                    $pdo->commit();
+                }
+            } catch (Throwable $inner) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                throw $inner;
             }
 
-            require_once SERVICE_PATH . '/MemberJwtService.php';
-            $jwt = MemberJwtService::issue($pdo, [
-                'id' => $userId,
-                'username' => $username,
-                'email' => $email,
-            ]);
+            try {
+                require_once SERVICE_PATH . '/AffiliateWelcomeFreespinService.php';
+                if (is_array($resolvedAffiliate ?? null)) {
+                    AffiliateWelcomeFreespinService::maybeGrantAfterAttribution($pdo, $userId, $resolvedAffiliate);
+                } else {
+                    AffiliateWelcomeFreespinService::maybeGrantForUserId($pdo, $userId);
+                }
+            } catch (Throwable $welcomeFsError) {
+                self::registerWriteLog('Affiliate welcome freespin: ' . $welcomeFsError->getMessage(), 'ERROR');
+            }
+
             $_SESSION['loggedin'] = true;
             $_SESSION['user_id'] = $userId;
             $_SESSION['username'] = $username;
@@ -1384,6 +1473,19 @@ class ApiAuthController
             $_SESSION['member_jwt'] = $jwt;
             if ($referralCode !== '') {
                 $_SESSION['referral_code'] = $referralCode;
+            }
+
+            try {
+                if (function_exists('admin_member_send_registration_success_mail')) {
+                    admin_member_send_registration_success_mail($pdo, $email, [
+                        'name' => $firstName,
+                        'surname' => $surname,
+                        'username' => $username,
+                        'email' => $email,
+                    ]);
+                }
+            } catch (Throwable $mailError) {
+                self::registerWriteLog('Welcome mail failed: ' . $mailError->getMessage(), 'ERROR');
             }
 
             return [

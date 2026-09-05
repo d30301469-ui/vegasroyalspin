@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
   } catch (e) {
-    console && console.warn && console.warn('Login toast error', e);
+    /* ignore */
   }
 
   (function () {
@@ -73,20 +73,14 @@ document.addEventListener('DOMContentLoaded', function () {
           }
           return resp.json();
         })
-        .then(function (data) {
-          if (console && console.log && data && (data.success === true || data.ok === true)) {
-            // [DEV] console.log('Ziyaretçi kaydedildi', data);
-          }
+        .then(function () {
+          /* ok */
         })
-        .catch(function (err) {
-          if (console && console.warn) {
-            console.warn('Ziyaretçi kaydı hatası', err);
-          }
+        .catch(function () {
+          /* sessiz: ziyaretçi kaydı opsiyonel */
         });
     } catch (err) {
-      if (console && console.warn) {
-        console.warn('Ziyaretçi kaydı beklenmeyen hata', err);
-      }
+      /* ignore */
     }
   })();
 
@@ -110,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
       banners[0].classList.add(ACTIVE_CLASS);
       setInterval(step, 1900);
     } catch (e) {
-      if (typeof console !== 'undefined' && console.warn) console.warn('Ana sayfa banner parlama hatası', e);
+      /* ignore banner rotation failures */
     }
   })();
 });
@@ -121,15 +115,18 @@ function showLoginWarning() {
   }
 }
 
-function openPlayUrl(url) {
-  var isMobileSite = !!(document.body && document.body.classList.contains('mobile-site'));
-  var targetUrl = String(url || '').trim();
-  if (!isMobileSite) {
-    var hasTouch = (navigator.maxTouchPoints || 0) > 0;
-    var narrowViewport = !!(window.matchMedia && window.matchMedia('(max-width: 1024px)').matches);
-    isMobileSite = hasTouch && narrowViewport;
+function isMobilePlayLaunchMode() {
+  if (document.body && document.body.classList.contains('mobile-site')) {
+    return true;
   }
-  if (isMobileSite) {
+  var hasTouch = (navigator.maxTouchPoints || 0) > 0;
+  var narrowViewport = !!(window.matchMedia && window.matchMedia('(max-width: 1024px)').matches);
+  return hasTouch && narrowViewport;
+}
+
+function openPlayUrl(url) {
+  var targetUrl = String(url || '').trim();
+  if (isMobilePlayLaunchMode()) {
     try {
       var parsed = new URL(targetUrl, window.location.origin);
       parsed.searchParams.set('open_mode', 'redirect');
@@ -221,6 +218,22 @@ function handlePlayIntent(event, url) {
 }
 
 window.__homeHandlePlayIntent = handlePlayIntent;
+
+/**
+ * Touch/mobile: launch immediately (two-step overlay was unreliable on phones
+ * without sticky hover / pointer-events). Desktop mouse: same direct launch.
+ * OYNA/DEMO links still use handlePlayIntent and stopPropagation.
+ */
+function activateHomeGameCard(event, url) {
+  if (event && event.target && event.target.closest) {
+    if (event.target.closest('.play-btn, .demo-btn, .game-fav, .game-info-btn, a.play-btn, a.demo-btn')) {
+      return;
+    }
+  }
+  handlePlayIntent(event, url);
+}
+
+window.__homeGameCardActivate = activateHomeGameCard;
 
 function buildHomePlayUrl(gameId, demo) {
   var id = String(gameId || '').trim();

@@ -168,11 +168,36 @@ if (!function_exists('homeGameImageFallbacks')) {
         if ($image === '') {
             return [];
         }
+
+        $placeholder = '/assets/games-img/game-img3.jpg';
+
+        // Aggregator CDN: png/jpg/jpeg varyantlari cogu oyunda 500 — sadece path swap + yerel placeholder.
+        if (preg_match('#(?:mhjbneijrtonline|ohjaieijyg)\.org#i', $image) === 1) {
+            $fallbacks = [$image];
+            $lower = strtolower($image);
+            if (str_contains($lower, '/lobby/')) {
+                $defaultPath = preg_replace('#/lobby/#i', '/default/', $image, 1);
+                if (is_string($defaultPath) && $defaultPath !== '' && !in_array($defaultPath, $fallbacks, true)) {
+                    $fallbacks[] = $defaultPath;
+                }
+            } elseif (str_contains($lower, '/default/')) {
+                $lobbyPath = preg_replace('#/default/#i', '/lobby/', $image, 1);
+                if (is_string($lobbyPath) && $lobbyPath !== '' && !in_array($lobbyPath, $fallbacks, true)) {
+                    $fallbacks[] = $lobbyPath;
+                }
+            }
+            if (!in_array($placeholder, $fallbacks, true)) {
+                $fallbacks[] = $placeholder;
+            }
+
+            return $fallbacks;
+        }
+
         if (preg_match('#\.(avif|webp)(\?|$)#i', $image) !== 1) {
             return [$image];
         }
         $fallbacks = [];
-        // Mobile WebViews / older Safari may fail on AVIF/WebP — try PNG/JPG first.
+        // Mobile WebViews / older Safari may fail on AVIF/WebP — try PNG/JPG first (yerel assetler).
         foreach (['.png', '.jpg', '.jpeg'] as $ext) {
             $candidate = preg_replace('#\.(avif|webp)(\?|$)#i', $ext . '$2', $image, 1);
             if (is_string($candidate) && $candidate !== '' && !in_array($candidate, $fallbacks, true)) {
@@ -181,6 +206,9 @@ if (!function_exists('homeGameImageFallbacks')) {
         }
         if (!in_array($image, $fallbacks, true)) {
             $fallbacks[] = $image;
+        }
+        if (!in_array($placeholder, $fallbacks, true)) {
+            $fallbacks[] = $placeholder;
         }
 
         return $fallbacks;
@@ -209,7 +237,12 @@ if (!function_exists('homeRenderGameCard')) {
         $demoHref = homePlayHref($gameId, true);
         $playHrefJs = homeSectionJs($playHref);
         $demoHrefJs = homeSectionJs($demoHref);
-        // Same intent pattern as views/partials/slot-game-tile.php (full URL, not raw game_id).
+        // Card tap: mobile opens OYNA/DEMO overlay; desktop launches. OYNA uses play intent.
+        $cardActivateJs = $gameId !== ''
+            ? 'if(event){event.preventDefault();event.stopPropagation();}if(window.__homeGameCardActivate){window.__homeGameCardActivate(event,' . $playHrefJs . ');}else if(window.__homeHandlePlayIntent){window.__homeHandlePlayIntent(event,' . $playHrefJs . ');}else{window.location.href=' . $playHrefJs . ';}'
+            : ($link !== ''
+                ? 'if(event){event.preventDefault();event.stopPropagation();}window.location.href=' . $playHrefJs
+                : '');
         $playIntentJs = $gameId !== ''
             ? 'if(event){event.preventDefault();event.stopPropagation();}if(window.__homeHandlePlayIntent){window.__homeHandlePlayIntent(event,' . $playHrefJs . ');}else{window.location.href=' . $playHrefJs . ';}'
             : ($link !== ''
@@ -225,7 +258,7 @@ if (!function_exists('homeRenderGameCard')) {
             : '';
         $onerror = '(function(img){var f=[],i;try{f=JSON.parse(img.getAttribute(\'data-fallbacks\')||\'[]\');}catch(e){}i=parseInt(img.getAttribute(\'data-fallback-idx\')||\'0\',10)+1;if(Array.isArray(f)&&i<f.length){img.setAttribute(\'data-fallback-idx\',String(i));img.src=f[i];return;}img.onerror=null;})(this)';
         ?>
-        <div class="<?= homeSectionH($class) ?>"<?= $playIntentJs !== '' ? ' onclick="' . homeSectionH($playIntentJs) . '"' : '' ?>>
+        <div class="<?= homeSectionH($class) ?>"<?= $cardActivateJs !== '' ? ' onclick="' . homeSectionH($cardActivateJs) . '"' : '' ?>>
             <img loading="lazy" decoding="async" referrerpolicy="no-referrer" src="<?= homeSectionH($image) ?>" alt="<?= homeSectionH($alt) ?>" width="200" height="200" style="object-fit: <?= homeSectionH($imageFit) ?>; --home-image-scale: <?= homeSectionH((string) $imageScale) ?>;"<?= $fallbackJson !== '' ? ' data-fallbacks="' . $fallbackJson . '" data-fallback-idx="0"' : '' ?> onerror="<?= homeSectionH($onerror) ?>">
             <div class="game-overlay">
                 <div class="game-overlay-top">

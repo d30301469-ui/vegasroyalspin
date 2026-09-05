@@ -40,8 +40,9 @@
         if (w.MaltabetToast) {
             w.MaltabetToast.show(msg, { type: type || 'info', title: title });
         } else {
-            // MaltabetToast yoksa alert gosterme, sessizce console'a yaz
-            if (typeof console !== 'undefined' && console.warn) {
+            // MaltabetToast yoksa alert gosterme; debug dışında sessiz
+            if (typeof window !== 'undefined' && window.__MEMBER_API_CONSOLE__ === true
+                && typeof console !== 'undefined' && console.warn) {
                 console.warn('[ProfileAPI] ' + (title ? title + ': ' : '') + msg);
             }
         }

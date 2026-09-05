@@ -15,6 +15,13 @@ if (!defined('APP_API_V2_BOOTSTRAP')) {
 require_once __DIR__ . '/Core/AdminPaths.php';
 admin_paths_bootstrap();
 require_once __DIR__ . '/Core/AdminSessionBootstrap.php';
+// Cloudflare IP helper must load even when API is sessionless (APP_API_NO_SESSION):
+// member JWT writes otherwise fall back to REMOTE_ADDR=127.0.0.1 behind the frontend proxy.
+$__cfConfig = function_exists('admin_project_path') ? admin_project_path('config/cloudflare.php') : '';
+if (is_string($__cfConfig) && $__cfConfig !== '' && is_readable($__cfConfig)) {
+    require_once $__cfConfig;
+}
+unset($__cfConfig);
 admin_session_bootstrap(!(defined('APP_API_NO_SESSION') && APP_API_NO_SESSION));
 
 $adminAutoloader = __DIR__ . '/Core/AdminAutoloader.php';

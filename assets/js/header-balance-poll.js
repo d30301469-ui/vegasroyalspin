@@ -26,9 +26,13 @@
         if (Shared.isLogoutLanding && Shared.isLogoutLanding()) {
             return false;
         }
-        return Shared.phpSessionLoggedIn
-            ? Shared.phpSessionLoggedIn()
-            : window.__USER_LOGGED_IN__ === true;
+        if (Shared.runtimeSessionLoggedIn) {
+            return Shared.runtimeSessionLoggedIn();
+        }
+        if (Shared.phpSessionLoggedIn) {
+            return Shared.phpSessionLoggedIn();
+        }
+        return window.__USER_LOGGED_IN__ === true;
     }
 
     function balanceFetchInit() {
@@ -89,10 +93,10 @@
             });
         });
     }
-    // Bakiye polling aralığı. 1sn çok agresifti (sürekli ağ + DOM güncellemesi
-    // kasmaya yol açıyordu); 5sn yeterli, oyun callbackleri zaten anlık güncelliyor.
-    var INTERVAL_MS = 5000;
-    var MAX_INTERVAL_MS = 30000;
+    // Bakiye polling aralığı. 1–5sn Apache/FPM'i şişiriyordu (özellikle mirror
+    // domainlerde); 15sn + oyun/event tabanlı refresh yeterli.
+    var INTERVAL_MS = 15000;
+    var MAX_INTERVAL_MS = 60000;
     var currentIntervalMs = INTERVAL_MS;
     var balanceFailStreak = 0;
     var LOYALTY_INTERVAL_MS = 30000;
@@ -427,25 +431,26 @@
         if (Shared.isLogoutLanding && Shared.isLogoutLanding()) {
             return;
         }
-        if (!memberLoggedIn()) {
-            // PHP session may not persist in load-balanced setups.
-            // If we have a JWT in localStorage, try hydration first.
-            var storedJwt = Shared.getMemberJwt ? Shared.getMemberJwt() : '';
-            if (storedJwt !== '' && Shared.hydrateMemberJwt) {
-                Shared.hydrateMemberJwt().then(function (token) {
-                    if (token !== '' && memberLoggedIn()) {
-                        window.__HAS_MEMBER_JWT__ = true;
-                    }
-                }).finally(start);
-                return;
+        if (memberLoggedIn()) {
+            if (Shared.hydrateMemberJwt) {
+                Shared.hydrateMemberJwt().finally(start);
+            } else {
+                start();
             }
             return;
         }
-        if (Shared.hydrateMemberJwt) {
-            Shared.hydrateMemberJwt().finally(start);
-            return;
+        if (Shared.shouldAttemptSessionHydrate && Shared.shouldAttemptSessionHydrate() && Shared.hydrateMemberJwt) {
+            Shared.hydrateMemberJwt().then(function (token) {
+                if (token !== '') {
+                    window.__USER_LOGGED_IN__ = true;
+                    window.__HAS_MEMBER_JWT__ = true;
+                    if (window.__MEMBER_BOOTSTRAP_STATE__ && typeof window.__MEMBER_BOOTSTRAP_STATE__ === 'object') {
+                        window.__MEMBER_BOOTSTRAP_STATE__.logged_in = true;
+                        window.__MEMBER_BOOTSTRAP_STATE__.has_session_jwt = true;
+                    }
+                }
+            }).finally(start);
         }
-        start();
     }
 
     if (document.readyState === 'loading') {

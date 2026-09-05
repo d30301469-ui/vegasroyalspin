@@ -71,8 +71,293 @@ if (!function_exists('mail_load_phpmailer')) {
     }
 }
 
+if (!function_exists('mail_from_domain')) {
+    function mail_from_domain(string $from): string
+    {
+        $from = trim($from);
+        if (strpos($from, '@') !== false) {
+            $domain = strtolower(trim(substr($from, strpos($from, '@') + 1)));
+            if ($domain !== '' && preg_match('/^[a-z0-9.-]+$/i', $domain) === 1) {
+                return $domain;
+            }
+        }
+        return 'vegasroyalspin.com';
+    }
+}
+
+if (!function_exists('mail_ehlo_hostname')) {
+    function mail_ehlo_hostname(array $settings, string $from): string
+    {
+        $smtpHost = strtolower(trim((string) preg_replace('/^(ssl|tls):\/\//i', '', (string) ($settings['smtp_host'] ?? ''))));
+        if ($smtpHost !== '' && preg_match('/^[a-z0-9.-]+$/i', $smtpHost) === 1 && $smtpHost !== 'localhost') {
+            return $smtpHost;
+        }
+        return mail_from_domain($from);
+    }
+}
+
+if (!function_exists('mail_unsubscribe_secret')) {
+    function mail_unsubscribe_secret(): string
+    {
+        $env = trim((string) (getenv('MEMBER_JWT_SECRET') ?: getenv('APP_KEY') ?: getenv('APP_SECRET') ?: ''));
+        if ($env !== '' && !preg_match('/^(changeme|secret|null|test)$/i', $env)) {
+            return hash('sha256', 'mail-unsub-v1|' . $env, true);
+        }
+        return hash('sha256', 'vegasroyalspin-mail-unsub-v1', true);
+    }
+}
+
+if (!function_exists('mail_unsubscribe_token')) {
+    function mail_unsubscribe_token(string $email): string
+    {
+        $email = strtolower(trim($email));
+        $raw = hash_hmac('sha256', $email, mail_unsubscribe_secret(), true);
+        return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+    }
+}
+
+if (!function_exists('mail_verify_unsubscribe_token')) {
+    function mail_verify_unsubscribe_token(string $email, string $token): bool
+    {
+        $email = strtolower(trim($email));
+        $token = trim($token);
+        if ($email === '' || $token === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return false;
+        }
+        $expected = mail_unsubscribe_token($email);
+        return hash_equals($expected, $token);
+    }
+}
+
+if (!function_exists('mail_public_base_url')) {
+    /**
+     * Mail içi linkler From alanıyla aynı domainde olmalı.
+     * deploy_domain('frontend_url') bazen ayna host (…119…) döner; Gmail bunu spam sinyali sayar.
+     */
+    function mail_public_base_url(?string $fromEmail = null): string
+    {
+        $mailPublic = trim((string) (getenv('MAIL_PUBLIC_BASE_URL') ?: ''));
+        if ($mailPublic !== '' && preg_match('#^https?://#i', $mailPublic) === 1) {
+            return rtrim($mailPublic, '/');
+        }
+
+        $fromEmail = trim((string) $fromEmail);
+        if ($fromEmail !== '' && strpos($fromEmail, '@') !== false) {
+            $domain = strtolower(trim(substr($fromEmail, strpos($fromEmail, '@') + 1)));
+            if ($domain !== '' && preg_match('/^[a-z0-9.-]+\.[a-z]{2,}$/i', $domain) === 1) {
+                return 'https://' . $domain;
+            }
+        }
+
+        foreach ([getenv('FRONTEND_URL') ?: '', getenv('SITE_URL') ?: ''] as $candidate) {
+            $candidate = trim((string) $candidate);
+            if ($candidate === '' || preg_match('#^https?://#i', $candidate) !== 1) {
+                continue;
+            }
+            $host = strtolower((string) (parse_url($candidate, PHP_URL_HOST) ?: ''));
+            // Ayna / kampanya hostları From: *@vegasroyalspin.com ile çakışmasın.
+            if ($host === '' || preg_match('/(?:^|\.)vegasroyalspin119\.com$/i', $host) === 1) {
+                continue;
+            }
+            return rtrim($candidate, '/');
+        }
+
+        return 'https://vegasroyalspin.com';
+    }
+}
+
+if (!function_exists('mail_unsubscribe_url')) {
+    function mail_unsubscribe_url(string $email, ?string $fromEmail = null): string
+    {
+        $email = strtolower(trim($email));
+        $token = mail_unsubscribe_token($email);
+        return mail_public_base_url($fromEmail) . '/unsubscribe?e=' . rawurlencode($email) . '&t=' . rawurlencode($token);
+    }
+}
+
+if (!function_exists('mail_ensure_unsubscribe_table')) {
+    function mail_ensure_unsubscribe_table(PDO $pdo): void
+    {
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS mail_unsubscribed (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                email VARCHAR(190) NOT NULL,
+                source VARCHAR(40) NOT NULL DEFAULT 'link',
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_mail_unsubscribed_email (email)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+    }
+}
+
+if (!function_exists('mail_is_unsubscribed')) {
+    function mail_is_unsubscribed(PDO $pdo, string $email): bool
+    {
+        $email = strtolower(trim($email));
+        if ($email === '') {
+            return false;
+        }
+        try {
+            mail_ensure_unsubscribe_table($pdo);
+            $stmt = $pdo->prepare('SELECT 1 FROM mail_unsubscribed WHERE email = :email LIMIT 1');
+            $stmt->execute(['email' => $email]);
+            return (bool) $stmt->fetchColumn();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+}
+
+if (!function_exists('mail_mark_unsubscribed')) {
+    function mail_mark_unsubscribed(PDO $pdo, string $email, string $source = 'link'): bool
+    {
+        $email = strtolower(trim($email));
+        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return false;
+        }
+        try {
+            mail_ensure_unsubscribe_table($pdo);
+            $stmt = $pdo->prepare(
+                'INSERT INTO mail_unsubscribed (email, source, created_at) VALUES (:email, :source, NOW())
+                 ON DUPLICATE KEY UPDATE source = VALUES(source)'
+            );
+            $stmt->execute([
+                'email' => $email,
+                'source' => substr(trim($source) !== '' ? trim($source) : 'link', 0, 40),
+            ]);
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+}
+
+if (!function_exists('mail_normalize_send_options')) {
+    /**
+     * @param array<string,mixed> $options
+     * @return array<string,mixed>
+     */
+    function mail_normalize_send_options(string $from, string $to, array $options = []): array
+    {
+        $marketing = !empty($options['marketing']);
+        $options['marketing'] = $marketing;
+        if ($marketing) {
+            if (empty($options['list_unsubscribe_url']) && $to !== '') {
+                $options['list_unsubscribe_url'] = mail_unsubscribe_url($to, $from);
+            }
+            if (empty($options['list_unsubscribe_mailto']) && $from !== '') {
+                $options['list_unsubscribe_mailto'] = 'mailto:' . $from . '?subject=' . rawurlencode('unsubscribe');
+            }
+        }
+        return $options;
+    }
+}
+
+if (!function_exists('mail_append_unsubscribe_footer')) {
+    function mail_append_unsubscribe_footer(string $htmlBody, string $unsubscribeUrl): string
+    {
+        $unsubscribeUrl = trim($unsubscribeUrl);
+        if ($htmlBody === '' || $unsubscribeUrl === '') {
+            return $htmlBody;
+        }
+        if (stripos($htmlBody, 'list-unsubscribe') !== false || stripos($htmlBody, '/unsubscribe?') !== false) {
+            return $htmlBody;
+        }
+        $safeUrl = htmlspecialchars($unsubscribeUrl, ENT_QUOTES, 'UTF-8');
+        $footer = '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #4a2a63;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.6;color:#8f7aa8;text-align:center;">'
+            . 'Bu e-postayı almak istemiyorsanız '
+            . '<a href="' . $safeUrl . '" style="color:#c44bb8;text-decoration:underline;">abonelikten çıkın</a>.'
+            . '</div>';
+        if (stripos($htmlBody, '</body>') !== false) {
+            return (string) preg_replace('/<\/body>/i', $footer . '</body>', $htmlBody, 1);
+        }
+        return $htmlBody . $footer;
+    }
+}
+
+if (!function_exists('mail_apply_phpmailer_deliverability')) {
+    /**
+     * @param array<string,mixed> $options
+     */
+    function mail_apply_phpmailer_deliverability(\PHPMailer\PHPMailer\PHPMailer $mail, array $settings, string $from, array $options = []): void
+    {
+        $domain = mail_from_domain($from);
+        $mail->Hostname = mail_ehlo_hostname($settings, $from);
+        $mail->Sender = $from;
+        $mail->addCustomHeader('X-Mailer', 'Vegasroyalspin-Mailer');
+        $mail->addCustomHeader('X-Entity-Ref-ID', bin2hex(random_bytes(8)));
+
+        if (!empty($options['marketing'])) {
+            $unsubUrl = trim((string) ($options['list_unsubscribe_url'] ?? ''));
+            $unsubMailto = trim((string) ($options['list_unsubscribe_mailto'] ?? ''));
+            $parts = [];
+            if ($unsubUrl !== '') {
+                $parts[] = '<' . $unsubUrl . '>';
+            }
+            if ($unsubMailto !== '') {
+                $parts[] = '<' . $unsubMailto . '>';
+            }
+            if ($parts !== []) {
+                $mail->addCustomHeader('List-Unsubscribe', implode(', ', $parts));
+                if ($unsubUrl !== '') {
+                    $mail->addCustomHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+                }
+            }
+        }
+        // Precedence: bulk yalnızca gerçek toplu gönderimde; tek alıcıda Gmail spam skorunu yükseltir.
+        if (!empty($options['bulk'])) {
+            $mail->addCustomHeader('Precedence', 'bulk');
+            $mail->addCustomHeader('X-Auto-Response-Suppress', 'OOF, AutoReply');
+            $mail->addCustomHeader('List-Id', 'Vegasroyalspin Marketing <marketing.' . $domain . '>');
+        }
+    }
+}
+
+if (!function_exists('mail_deliverability_header_lines')) {
+    /**
+     * @param array<string,mixed> $options
+     * @return list<string>
+     */
+    function mail_deliverability_header_lines(string $from, array $options = []): array
+    {
+        $domain = mail_from_domain($from);
+        $headers = [
+            'Sender: ' . $from,
+            'X-Mailer: Vegasroyalspin-Mailer',
+            'X-Entity-Ref-ID: ' . bin2hex(random_bytes(8)),
+        ];
+        if (!empty($options['marketing'])) {
+            $unsubUrl = trim((string) ($options['list_unsubscribe_url'] ?? ''));
+            $unsubMailto = trim((string) ($options['list_unsubscribe_mailto'] ?? ''));
+            $parts = [];
+            if ($unsubUrl !== '') {
+                $parts[] = '<' . $unsubUrl . '>';
+            }
+            if ($unsubMailto !== '') {
+                $parts[] = '<' . $unsubMailto . '>';
+            }
+            if ($parts !== []) {
+                $headers[] = 'List-Unsubscribe: ' . implode(', ', $parts);
+                if ($unsubUrl !== '') {
+                    $headers[] = 'List-Unsubscribe-Post: List-Unsubscribe=One-Click';
+                }
+            }
+        }
+        if (!empty($options['bulk'])) {
+            $headers[] = 'Precedence: bulk';
+            $headers[] = 'X-Auto-Response-Suppress: OOF, AutoReply';
+            $headers[] = 'List-Id: Vegasroyalspin Marketing <marketing.' . $domain . '>';
+        }
+        return $headers;
+    }
+}
+
 if (!function_exists('mail_send_phpmailer')) {
-    function mail_send_phpmailer(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null, string $toName = ''): bool
+    /**
+     * @param array<string,mixed> $options
+     */
+    function mail_send_phpmailer(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null, string $toName = '', array $options = []): bool
     {
         $host = trim((string) ($settings['smtp_host'] ?? ''));
         $port = (int) ($settings['smtp_port'] ?? 0);
@@ -91,6 +376,10 @@ if (!function_exists('mail_send_phpmailer')) {
         }
         if ($from === '' && $user !== '' && filter_var($user, FILTER_VALIDATE_EMAIL) !== false) {
             $from = $user;
+        }
+        $options = mail_normalize_send_options($from, $to, $options);
+        if ($htmlBody !== null && !empty($options['marketing'])) {
+            $htmlBody = mail_append_unsubscribe_footer($htmlBody, (string) ($options['list_unsubscribe_url'] ?? ''));
         }
 
         $ports = [$port];
@@ -142,8 +431,9 @@ if (!function_exists('mail_send_phpmailer')) {
                         $mail->setFrom($from, 'Vegasroyalspin');
                         $mail->addAddress($to, trim($toName));
                         $mail->addReplyTo($from, 'Vegasroyalspin');
-                        $fromDomainForId = strpos($from, '@') !== false ? substr($from, strpos($from, '@') + 1) : 'vegasroyalspin.com';
+                        $fromDomainForId = mail_from_domain($from);
                         $mail->MessageID = '<' . bin2hex(random_bytes(16)) . '@' . $fromDomainForId . '>';
+                        mail_apply_phpmailer_deliverability($mail, $settings, $from, $options);
                         $mail->Subject = $subject;
                         if ($htmlBody !== null) {
                             $mail->isHTML(true);
@@ -178,7 +468,10 @@ if (!function_exists('mail_send_phpmailer')) {
 }
 
 if (!function_exists('mail_send_raw_smtp')) {
-    function mail_send_raw_smtp(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null, string $toName = ''): bool
+    /**
+     * @param array<string,mixed> $options
+     */
+    function mail_send_raw_smtp(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null, string $toName = '', array $options = []): bool
     {
         $host = trim((string) ($settings['smtp_host'] ?? ''));
         $port = (int) ($settings['smtp_port'] ?? 0);
@@ -193,6 +486,10 @@ if (!function_exists('mail_send_raw_smtp')) {
         }
         if ($from === '' && $user !== '' && filter_var($user, FILTER_VALIDATE_EMAIL) !== false) {
             $from = $user;
+        }
+        $options = mail_normalize_send_options($from, $to, $options);
+        if ($htmlBody !== null && !empty($options['marketing'])) {
+            $htmlBody = mail_append_unsubscribe_footer($htmlBody, (string) ($options['list_unsubscribe_url'] ?? ''));
         }
 
         $read = static function ($fp): string {
@@ -242,7 +539,7 @@ if (!function_exists('mail_send_raw_smtp')) {
                         fclose($fp);
                         continue;
                     }
-                    $ehloHost = (string) (parse_url((string) (getenv('FRONTEND_URL') ?: getenv('SITE_URL') ?: ''), PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+                    $ehloHost = mail_ehlo_hostname($settings, $from);
                     $send = static function (string $cmd) use ($fp, $read): string {
                         fwrite($fp, $cmd . "\r\n");
                         return $read($fp);
@@ -328,13 +625,14 @@ if (!function_exists('mail_send_raw_smtp')) {
                         fclose($fp);
                         continue;
                     }
-                    $fromDomainForId = strpos($from, '@') !== false ? substr($from, strpos($from, '@') + 1) : 'vegasroyalspin.com';
+                    $fromDomainForId = mail_from_domain($from);
                     $messageIdHeader = 'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $fromDomainForId . '>';
                     $toHeader = mail_format_address_header($to, $toName);
+                    $extraHeaders = mail_deliverability_header_lines($from, $options);
 
                     if ($htmlBody !== null) {
                         $boundary = 'metropol-' . bin2hex(random_bytes(12));
-                        $headers = [
+                        $headers = array_merge([
                             'From: Vegasroyalspin <' . $from . '>',
                             'To: ' . $toHeader,
                             'Reply-To: Vegasroyalspin <' . $from . '>',
@@ -343,7 +641,7 @@ if (!function_exists('mail_send_raw_smtp')) {
                             'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
                             'Date: ' . date('r'),
                             $messageIdHeader,
-                        ];
+                        ], $extraHeaders);
                         $plainPart = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $body));
                         $htmlPart = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $htmlBody));
                         $mime = "--{$boundary}\r\n"
@@ -355,7 +653,7 @@ if (!function_exists('mail_send_raw_smtp')) {
                             . "--{$boundary}--";
                         fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $mime . "\r\n.\r\n");
                     } else {
-                        $headers = [
+                        $headers = array_merge([
                             'From: Vegasroyalspin <' . $from . '>',
                             'To: ' . $toHeader,
                             'Reply-To: Vegasroyalspin <' . $from . '>',
@@ -365,7 +663,7 @@ if (!function_exists('mail_send_raw_smtp')) {
                             'Content-Transfer-Encoding: 8bit',
                             'Date: ' . date('r'),
                             $messageIdHeader,
-                        ];
+                        ], $extraHeaders);
                         $data = str_replace("\n.", "\n..", str_replace(["\r\n", "\n"], "\r\n", $body));
                         fwrite($fp, implode("\r\n", $headers) . "\r\n\r\n" . $data . "\r\n.\r\n");
                     }
@@ -417,15 +715,16 @@ if (!function_exists('mail_send')) {
      * PHPMailer önce, ham SMTP fallback. İkisi de başarısızsa false; $error birleşik neden.
      *
      * @param array<string,mixed> $settings mail_settings satırı
+     * @param array<string,mixed> $options marketing, list_unsubscribe_url, list_unsubscribe_mailto
      */
-    function mail_send(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null, string $toName = ''): bool
+    function mail_send(array $settings, string $from, string $to, string $subject, string $body, string &$error = '', ?string $htmlBody = null, string $toName = '', array $options = []): bool
     {
         $phpmailerError = '';
-        if (mail_send_phpmailer($settings, $from, $to, $subject, $body, $phpmailerError, $htmlBody, $toName)) {
+        if (mail_send_phpmailer($settings, $from, $to, $subject, $body, $phpmailerError, $htmlBody, $toName, $options)) {
             return true;
         }
         $rawError = '';
-        if (mail_send_raw_smtp($settings, $from, $to, $subject, $body, $rawError, $htmlBody, $toName)) {
+        if (mail_send_raw_smtp($settings, $from, $to, $subject, $body, $rawError, $htmlBody, $toName, $options)) {
             return true;
         }
         $error = 'phpmailer=' . ($phpmailerError !== '' ? $phpmailerError : 'n/a')
@@ -591,6 +890,14 @@ if (!function_exists('mail_render_template')) {
 
         $addressHtml = nl2br(htmlspecialchars($companyAddress, ENT_QUOTES, 'UTF-8'));
         $year = date('Y');
+        $unsubscribeUrl = trim((string) ($options['unsubscribe_url'] ?? ''));
+        $unsubscribeHtml = '';
+        if ($unsubscribeUrl !== '') {
+            $safeUnsub = htmlspecialchars($unsubscribeUrl, ENT_QUOTES, 'UTF-8');
+            $unsubscribeHtml = '<p style="margin:10px 0 0 0;font-size:11px;line-height:1.6;color:#8f7aa8;font-family:Arial,Helvetica,sans-serif;">'
+                . 'Bu e-postayı almak istemiyorsanız <a href="' . $safeUnsub . '" style="color:#c44bb8;text-decoration:underline;">abonelikten çıkın</a>.'
+                . '</p>';
+        }
 
         $customTemplate = trim((string) ($options['template_html'] ?? ''));
         if ($customTemplate !== '') {
@@ -610,6 +917,8 @@ if (!function_exists('mail_render_template')) {
                 '{{COMPANY_ADDRESS_HTML}}' => $addressHtml,
                 '{{LOGO_HTML}}' => $logoHtml,
                 '{{FALLBACK_URL}}' => $safeCtaUrl,
+                '{{UNSUBSCRIBE_URL}}' => htmlspecialchars($unsubscribeUrl, ENT_QUOTES, 'UTF-8'),
+                '{{UNSUBSCRIBE_HTML}}' => $unsubscribeHtml,
             ];
             return strtr($customTemplate, $tokens);
         }
@@ -679,6 +988,7 @@ if (!function_exists('mail_render_template')) {
         <td align="center" style="padding:16px 18px 22px 18px;background-color:#0a0618;">
             <p style="margin:0 0 6px 0;font-size:11px;line-height:1.6;color:#8f7aa8;font-family:Arial,Helvetica,sans-serif;">&copy; ' . $year . ' ' . $safeCompany . '. Tüm hakları saklıdır.</p>
             <p style="margin:0;font-size:11px;line-height:1.6;color:#8f7aa8;font-family:Arial,Helvetica,sans-serif;">' . $addressHtml . '</p>
+            ' . $unsubscribeHtml . '
         </td>
     </tr>
 </table>

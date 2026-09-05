@@ -4,6 +4,36 @@
 'use strict';
 (function (w) {
     var JWT_KEY = 'app_member_jwt';
+    var JWT_MEMORY_KEY = '__MEMBER_JWT_MEMORY__';
+
+    function readJwtFromMemory() {
+        try {
+            return String(w[JWT_MEMORY_KEY] || '').trim();
+        } catch (eMem) {
+            return '';
+        }
+    }
+
+    function writeJwtToMemory(token) {
+        try {
+            w[JWT_MEMORY_KEY] = String(token || '').trim();
+        } catch (eWrite) {
+            /* ignore */
+        }
+    }
+
+    function migrateLegacyJwtStorage() {
+        try {
+            var legacy = String(w.localStorage.getItem(JWT_KEY) || w.localStorage.getItem('metropol_member_jwt') || '').trim();
+            if (legacy !== '') {
+                writeJwtToMemory(legacy);
+            }
+            w.localStorage.removeItem(JWT_KEY);
+            w.localStorage.removeItem('metropol_member_jwt');
+        } catch (eMigrate) {
+            /* ignore */
+        }
+    }
 
     var BOOTSTRAP_ROUTES = {
         '/auth/login': true,
@@ -34,7 +64,10 @@
         '/loyalty': true,
         '/loyalty.php': true,
         '/game-launch': true,
-        '/game_launch.php': true
+        '/game_launch.php': true,
+        '/sportsbook-launch': true,
+        '/sportsbook_launch.php': true,
+        '/sportsbook/launch': true
     };
 
     function basePath() {
@@ -286,15 +319,51 @@
         if (isLogoutLanding()) {
             return false;
         }
-        // localStorage'daki JWT, PHP session'dan bagimsiz olarak gecerli olabilir.
-        // Once localStorage kontrol et, sonra PHP session'a bak.
         if (Shared.getMemberJwt && Shared.getMemberJwt() !== '') {
+            return true;
+        }
+        if (restoreSessionHintActive()) {
             return true;
         }
         if (!phpSessionLoggedIn()) {
             return false;
         }
         return typeof w.__MEMBER_JWT_BOOTSTRAP__ === 'string' && w.__MEMBER_JWT_BOOTSTRAP__.trim() !== '';
+    }
+
+    function restoreSessionHintActive() {
+        if (isLogoutLanding()) {
+            return false;
+        }
+        var state = w.__MEMBER_BOOTSTRAP_STATE__;
+        if (state && typeof state === 'object') {
+            if (state.logged_in === true || state.has_session_jwt === true || state.has_restore_cookie === true) {
+                return true;
+            }
+        }
+        if (w.__HAS_MEMBER_JWT__ === true) {
+            return true;
+        }
+        var bootstrap = typeof w.__MEMBER_JWT_BOOTSTRAP__ === 'string'
+            ? w.__MEMBER_JWT_BOOTSTRAP__.trim()
+            : '';
+        return bootstrap !== '';
+    }
+
+    function shouldAttemptSessionHydrate() {
+        if (isLogoutLanding()) {
+            return false;
+        }
+        if (phpSessionLoggedIn() || runtimeSessionLoggedIn()) {
+            return true;
+        }
+        if (restoreSessionHintActive()) {
+            return true;
+        }
+        if (typeof w.__MEMBER_LOGIN_AT__ === 'number' && (Date.now() - w.__MEMBER_LOGIN_AT__) < 30000) {
+            return true;
+        }
+        return false;
     }
 
     var memberAuthFailureInFlight = false;
@@ -344,36 +413,33 @@
             }
         },
         getMemberJwt: function () {
-            try {
-                var current = String(w.localStorage.getItem(JWT_KEY) || '').trim();
-                if (current !== '') {
-                    return current;
-                }
-                // Migrate legacy storage key.
-                var legacy = String(w.localStorage.getItem('metropol_member_jwt') || '').trim();
-                if (legacy !== '') {
-                    w.localStorage.setItem(JWT_KEY, legacy);
-                    w.localStorage.removeItem('metropol_member_jwt');
-                    return legacy;
-                }
-                return '';
-            } catch (e) {
-                return '';
+            var fromMemory = readJwtFromMemory();
+            if (fromMemory !== '') {
+                return fromMemory;
             }
+            var bootstrap = typeof w.__MEMBER_JWT_BOOTSTRAP__ === 'string'
+                ? w.__MEMBER_JWT_BOOTSTRAP__.trim()
+                : '';
+            if (bootstrap !== '') {
+                writeJwtToMemory(bootstrap);
+                return bootstrap;
+            }
+            migrateLegacyJwtStorage();
+            return readJwtFromMemory();
         },
         setMemberJwt: function (token) {
             var t = String(token || '').trim();
             var previous = this.getMemberJwt();
             try {
                 if (t === '') {
-                    w.localStorage.removeItem(JWT_KEY);
-                    try { w.localStorage.removeItem('metropol_member_jwt'); } catch (eLegacy) {}
+                    writeJwtToMemory('');
+                    try { w.localStorage.removeItem(JWT_KEY); w.localStorage.removeItem('metropol_member_jwt'); } catch (eLegacy) {}
                     document.documentElement.classList.remove('member-session-hint');
                     w.__HAS_MEMBER_JWT__ = false;
                     persistMemberJwtCookie('');
                 } else {
-                    w.localStorage.setItem(JWT_KEY, t);
-                    try { w.localStorage.removeItem('metropol_member_jwt'); } catch (eLegacy2) {}
+                    writeJwtToMemory(t);
+                    try { w.localStorage.removeItem(JWT_KEY); w.localStorage.removeItem('metropol_member_jwt'); } catch (eLegacy2) {}
                     document.documentElement.classList.add('member-session-hint');
                     w.__MEMBER_LOGIN_AT__ = Date.now();
                     w.__HAS_MEMBER_JWT__ = true;
@@ -508,6 +574,8 @@
             return this.getMemberJwt() !== '';
         },
         runtimeSessionLoggedIn: runtimeSessionLoggedIn,
+        restoreSessionHintActive: restoreSessionHintActive,
+        shouldAttemptSessionHydrate: shouldAttemptSessionHydrate,
         isSessionRequiredPage: sessionRequiredPage,
         ensureSessionForPage: function (urlLike) {
             if (!sessionRequiredPage(urlLike)) {
@@ -681,16 +749,16 @@
                 return Promise.resolve(bootstrap);
             }
 
+            if (!shouldAttemptSessionHydrate()) {
+                self.__hydratePromise = Promise.resolve('');
+                return self.__hydratePromise;
+            }
+
             if (!phpLoggedIn && !sessionHintActive()) {
                 var recentLogin = typeof w.__MEMBER_LOGIN_AT__ === 'number'
                     && (Date.now() - w.__MEMBER_LOGIN_AT__) < 30000;
-                if (!recentLogin && self.getMemberJwt() === '') {
-                    self.clearMemberJwt();
-                }
-                // Only bail out if we have no JWT at all; if we have one
-                // (e.g. just stored by login before reload), try /auth/session.
-                if (!recentLogin && self.getMemberJwt() === '') {
-                    return Promise.resolve('');
+                if (recentLogin && self.getMemberJwt() !== '') {
+                    // keep in-memory token from login before reload
                 }
             }
 
@@ -717,7 +785,10 @@
                         });
                     }
                     if (!phpLoggedIn) {
-                        self.clearMemberJwt();
+                        if (existing !== '') {
+                            return existing;
+                        }
+
                         return '';
                     }
                     return existing;
@@ -881,9 +952,10 @@
         }
 
         if (!phpLoggedIn) {
-            Shared.clearMemberJwt();
-            w.__USER_LOGGED_IN__ = false;
-            w.__HAS_MEMBER_JWT__ = false;
+            // HttpOnly restore cookie may rehydrate via hydrateMemberJwt onReady.
+            if (storedJwt !== '') {
+                w.__HAS_MEMBER_JWT__ = true;
+            }
             return;
         }
 
@@ -950,68 +1022,37 @@
             handleLogoutQuery();
             return;
         }
-        if (!phpSessionLoggedIn()) {
-            // If we have a stored JWT (e.g. just logged in before reload),
-            // try to validate it via /auth/session instead of giving up.
-            if (Shared.getMemberJwt() !== '') {
-                Shared.hydrateMemberJwt().then(function (token) {
-                    if (token !== '') {
-                        // hydrateMemberJwt /auth/session uzerinden oturumu
-                        // dogruladiysa applyLoginEnvelope __USER_LOGGED_IN__=true
-                        // yapmis olabilir. O durumda ezme, koru.
-                        if (phpSessionLoggedIn()) {
-                            w.__HAS_MEMBER_JWT__ = true;
-                            // Tetikle: header upgrade ve balance yenileme
-                            try { w.dispatchEvent(new CustomEvent('app:member-jwt-ready', { detail: { token: token } })); } catch (eEv) {}
-                            if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
-                                w.MetropolMemberConsole.fetchAll();
-                            }
-                            return;
-                        }
-                        // Oturum dogrulanamadi ama JWT var — UI'yi zorlama
-                        w.__USER_LOGGED_IN__ = false;
-                        w.__HAS_MEMBER_JWT__ = true;
-                        if (w.__MEMBER_BOOTSTRAP_STATE__ && typeof w.__MEMBER_BOOTSTRAP_STATE__ === 'object') {
-                            w.__MEMBER_BOOTSTRAP_STATE__.logged_in = false;
-                            w.__MEMBER_BOOTSTRAP_STATE__.has_session_jwt = true;
-                        }
-                        if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
-                            w.MetropolMemberConsole.fetchAll();
-                        }
-                        return;
+        if (shouldAttemptSessionHydrate()) {
+            Shared.hydrateMemberJwt().then(function (token) {
+                if (token !== '') {
+                    w.__USER_LOGGED_IN__ = true;
+                    w.__HAS_MEMBER_JWT__ = true;
+                    if (w.__MEMBER_BOOTSTRAP_STATE__ && typeof w.__MEMBER_BOOTSTRAP_STATE__ === 'object') {
+                        w.__MEMBER_BOOTSTRAP_STATE__.logged_in = true;
+                        w.__MEMBER_BOOTSTRAP_STATE__.has_session_jwt = true;
                     }
-                    w.__USER_LOGGED_IN__ = false;
-                    w.__HAS_MEMBER_JWT__ = false;
-                    Shared.clearMemberJwt();
-                }).catch(function () {
-                    w.__USER_LOGGED_IN__ = false;
-                    w.__HAS_MEMBER_JWT__ = false;
-                    Shared.clearMemberJwt();
-                });
-                return;
-            }
-            w.__USER_LOGGED_IN__ = false;
-            w.__HAS_MEMBER_JWT__ = false;
-            Shared.clearMemberJwt();
-            if (w.MetropolMemberConsole && w.MetropolMemberConsole.dump) {
-                w.MetropolMemberConsole.dump();
-            }
-            return;
-        }
-        Shared.hydrateMemberJwt().then(function (token) {
-            if (token !== '' && phpSessionLoggedIn()) {
-                w.__HAS_MEMBER_JWT__ = true;
-                if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
-                    w.MetropolMemberConsole.fetchAll();
+                    try { w.dispatchEvent(new CustomEvent('app:member-jwt-ready', { detail: { token: token } })); } catch (eEv) {}
+                    if (w.MetropolMemberConsole && w.MetropolMemberConsole.fetchAll) {
+                        w.MetropolMemberConsole.fetchAll();
+                    }
+                    if (typeof w.__refreshHeaderBalance === 'function') {
+                        w.__refreshHeaderBalance();
+                    }
+                    return;
                 }
-                return;
-            }
-            if (!phpSessionLoggedIn()) {
-                w.__USER_LOGGED_IN__ = false;
-                w.__HAS_MEMBER_JWT__ = false;
-                Shared.clearMemberJwt();
-            }
-        });
+                if (restoreSessionHintActive() || phpSessionLoggedIn()) {
+                    w.__USER_LOGGED_IN__ = false;
+                    w.__HAS_MEMBER_JWT__ = false;
+                    Shared.clearMemberJwt();
+                }
+            }).catch(function () {
+                if (restoreSessionHintActive() || phpSessionLoggedIn()) {
+                    w.__USER_LOGGED_IN__ = false;
+                    w.__HAS_MEMBER_JWT__ = false;
+                    Shared.clearMemberJwt();
+                }
+            });
+        }
     });
 
     if (directMemberApiEnabled() && typeof w.fetch === 'function') {
@@ -1098,4 +1139,51 @@
             return nativeFetch(input, init);
         };
     }
+
+    /** Ortaklık ref kodunu URL'den yakala; çerez + localStorage ile kayıt anına kadar taşı. */
+    (function persistAffiliateRef() {
+        var valid = /^[A-Za-z0-9_-]{1,64}$/;
+        var key = 'vrs_ref';
+        var ttlMs = 30 * 86400000;
+        try {
+            var fromUrl = new URLSearchParams(w.location.search).get('ref');
+            if (fromUrl && valid.test(fromUrl)) {
+                w.localStorage.setItem(key, fromUrl);
+                w.localStorage.setItem(key + '_ts', String(Date.now()));
+                var cookie = key + '=' + encodeURIComponent(fromUrl) + ';path=/;max-age=' + (30 * 86400) + ';SameSite=Lax';
+                if (w.location.protocol === 'https:') cookie += ';Secure';
+                document.cookie = cookie;
+                return;
+            }
+            var stored = String(w.localStorage.getItem(key) || '').trim();
+            var ts = parseInt(String(w.localStorage.getItem(key + '_ts') || '0'), 10) || 0;
+            if (stored && valid.test(stored) && ts > 0 && (Date.now() - ts) < ttlMs) {
+                if (!document.cookie.match(/(?:^|;\s*)vrs_ref=/)) {
+                    var restore = key + '=' + encodeURIComponent(stored) + ';path=/;max-age=' + (30 * 86400) + ';SameSite=Lax';
+                    if (w.location.protocol === 'https:') restore += ';Secure';
+                    document.cookie = restore;
+                }
+            }
+        } catch (eRef) { /* ignore */ }
+    })();
+
+    w.readAffiliateReferralCode = function readAffiliateReferralCode() {
+        var valid = /^[A-Za-z0-9_-]{1,64}$/;
+        try {
+            var fromUrl = new URLSearchParams(w.location.search).get('ref');
+            if (fromUrl && valid.test(fromUrl)) return fromUrl;
+        } catch (eUrl) { /* ignore */ }
+        try {
+            var stored = String(w.localStorage.getItem('vrs_ref') || '').trim();
+            if (stored && valid.test(stored)) return stored;
+        } catch (eLs) { /* ignore */ }
+        try {
+            var match = document.cookie.match(/(?:^|;\s*)vrs_ref=([^;]+)/);
+            if (match && match[1]) {
+                var cookieValue = decodeURIComponent(match[1]);
+                if (valid.test(cookieValue)) return cookieValue;
+            }
+        } catch (eCk) { /* ignore */ }
+        return '';
+    };
 })(window);

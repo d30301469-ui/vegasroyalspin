@@ -11,6 +11,11 @@ final class ApiMobileMenu
 {
     public static function fetch(): array
     {
+        static $requestCache = null;
+        if ($requestCache !== null) {
+            return $requestCache;
+        }
+
         $default = self::defaultPayload();
 
         if (!ApiCmsRemote::canUseLocalDatabase()) {
@@ -33,12 +38,16 @@ final class ApiMobileMenu
                     ? $remote['menu']
                     : (is_array($remote['mobile_menu'] ?? null) ? $remote['mobile_menu'] : []);
 
-                return self::applyContactLinks(self::normalizePayload($menu, $default));
+                $requestCache = self::applyContactLinks(self::normalizePayload($menu, $default));
+
+                return $requestCache;
             }
 
             ApiCmsRemote::recordFetch('mobile_menu', 'default');
 
-            return self::applyContactLinks($default);
+            $requestCache = self::applyContactLinks($default);
+
+            return $requestCache;
         }
 
         try {
@@ -52,17 +61,25 @@ final class ApiMobileMenu
             );
             $payload = $stmt !== false ? $stmt->fetchColumn() : false;
             if (!is_string($payload) || trim($payload) === '') {
-                return self::applyContactLinks($default);
+                $requestCache = self::applyContactLinks($default);
+
+                return $requestCache;
             }
 
             $decoded = json_decode($payload, true);
             if (!is_array($decoded)) {
-                return self::applyContactLinks($default);
+                $requestCache = self::applyContactLinks($default);
+
+                return $requestCache;
             }
 
-            return self::applyContactLinks(self::normalizePayload($decoded, $default));
+            $requestCache = self::applyContactLinks(self::normalizePayload($decoded, $default));
+
+            return $requestCache;
         } catch (Throwable) {
-            return self::applyContactLinks($default);
+            $requestCache = self::applyContactLinks($default);
+
+            return $requestCache;
         }
     }
 

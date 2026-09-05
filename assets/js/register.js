@@ -1032,6 +1032,17 @@
             return !!(document.body && document.body.classList.contains('mobile-site'));
         }
 
+        function resolveSuccessNodes() {
+            successModal = document.getElementById('registerSuccessModal');
+            successOverlay = document.getElementById('registerSuccessOverlay');
+            if (successOverlay && successOverlay.parentNode !== document.body) {
+                document.body.appendChild(successOverlay);
+            }
+            if (successModal && successModal.parentNode !== document.body) {
+                document.body.appendChild(successModal);
+            }
+        }
+
         function onRegisterSuccessKeydown(e) {
             if (e.key === 'Escape') {
                 e.preventDefault();
@@ -1040,18 +1051,21 @@
         }
 
         function showRegisterSuccessDialog() {
+            resolveSuccessNodes();
             if (!successModal) {
-                if (typeof window.location !== 'undefined' && window.location.reload) {
-                    window.location.reload();
-                }
+                // Modal yoksa en azından kullanıcıya mesaj göster; sessiz reload yapma.
+                notify('success', 'Kayıt işleminiz başarılıdır', 'Kayıt');
                 return;
             }
             if (successOverlay) {
                 successOverlay.classList.add('is-open');
                 successOverlay.setAttribute('aria-hidden', 'false');
+                successOverlay.style.display = 'block';
             }
             successModal.classList.add('is-open');
             successModal.setAttribute('aria-hidden', 'false');
+            successModal.style.display = 'block';
+            document.body.classList.add('register-success-open');
             document.body.style.overflow = 'hidden';
             document.addEventListener('keydown', onRegisterSuccessKeydown);
             var okBtn = document.getElementById('registerSuccessOk');
@@ -1060,16 +1074,42 @@
             }
         }
 
+        function queueRegisterSuccessDialog() {
+            var opened = false;
+            function openOnce() {
+                if (opened) return;
+                opened = true;
+                showRegisterSuccessDialog();
+            }
+            var jq = getJq();
+            if (jq && registerModal && jq(registerModal).hasClass('show')) {
+                jq(registerModal).one('hidden.bs.modal', openOnce);
+                hideModalByElement(registerModal);
+                // Bootstrap hide bazen event atlayabilir — güvenlik zamanlayıcısı.
+                setTimeout(openOnce, 450);
+                return;
+            }
+            hideModalByElement(registerModal);
+            requestAnimationFrame(function () {
+                requestAnimationFrame(openOnce);
+            });
+            setTimeout(openOnce, 120);
+        }
+
         function hideRegisterSuccessDialog(reloadAfter) {
             document.removeEventListener('keydown', onRegisterSuccessKeydown);
+            resolveSuccessNodes();
             if (successOverlay) {
                 successOverlay.classList.remove('is-open');
                 successOverlay.setAttribute('aria-hidden', 'true');
+                successOverlay.style.display = '';
             }
             if (successModal) {
                 successModal.classList.remove('is-open');
                 successModal.setAttribute('aria-hidden', 'true');
+                successModal.style.display = '';
             }
+            document.body.classList.remove('register-success-open');
             document.body.style.overflow = '';
             if (reloadAfter && typeof window.location !== 'undefined' && window.location.reload) {
                 window.location.reload();
@@ -1114,8 +1154,11 @@
             toast(type, msg, title);
         }
 
-        // Referans kodu: önce URL (?ref=), sonra ReferralAttribution çerezi (vrs_ref).
+        // Referans kodu: URL (?ref=) → localStorage (auth-shared) → çerez (vrs_ref).
         function readReferralCode() {
+            if (typeof window.readAffiliateReferralCode === 'function') {
+                return window.readAffiliateReferralCode();
+            }
             var valid = /^[A-Za-z0-9_-]{1,64}$/;
             try {
                 var fromUrl = new URLSearchParams(window.location.search).get('ref');
@@ -1123,6 +1166,13 @@
                     return fromUrl;
                 }
             } catch (e) { /* URLSearchParams yoksa çereze düş */ }
+
+            try {
+                var stored = String(window.localStorage.getItem('vrs_ref') || '').trim();
+                if (stored && valid.test(stored)) {
+                    return stored;
+                }
+            } catch (eLs) { /* ignore */ }
 
             var match = document.cookie.match(/(?:^|;\s*)vrs_ref=([^;]+)/);
             if (!match) {
@@ -1176,6 +1226,14 @@
             var fd = new FormData(form);
             fd.append('register_submit', '1');
             var referralCode = readReferralCode();
+            // Ortak kodu çoğu kullanıcı "Promosyon Kodu" alanına yazar; cookie yoksa oradan referral_code gönder.
+            if (!referralCode) {
+                var bonusEl = form.querySelector('[name="bonusCode"], [name="bonus_code"]');
+                var bonusVal = bonusEl ? String(bonusEl.value || '').trim() : '';
+                if (/^[A-Za-z0-9_-]{1,64}$/.test(bonusVal)) {
+                    referralCode = bonusVal;
+                }
+            }
             if (referralCode) {
                 fd.set('referral_code', referralCode);
             }
@@ -1239,9 +1297,8 @@
                             window.__HAS_MEMBER_JWT__ = true;
                         }
                         hideRegisterError();
-                        notify('success', data.message || (window.__ ? window.__('auth.register_success', 'Kayıt başarılı.') : 'Kayıt başarılı.'), (window.__ ? window.__('auth.register_title', 'Kayıt') : 'Kayıt'));
-                        hideModalByElement(registerModal);
-                        showRegisterSuccessDialog();
+                        // Birincil geri bildirim: zorunlu başarı modalı (toast değil).
+                        queueRegisterSuccessDialog();
                         return;
                     }
                     var msg = data.message || 'Kayıt başarısız.';
@@ -1402,7 +1459,9 @@
                 }
             })
             .catch(function (error) {
-                console.error('Error:', error);
+                if (window.__MEMBER_API_CONSOLE__ === true) {
+                    console.error('Error:', error);
+                }
             });
     }
 
@@ -1445,7 +1504,9 @@
             }
         }
     } catch (e) {
-        console.error('Register page config parse error:', e);
+        if (window.__MEMBER_API_CONSOLE__ === true) {
+            console.error('Register page config parse error:', e);
+        }
     }
 })();
 

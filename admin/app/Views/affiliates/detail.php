@@ -5,6 +5,7 @@ $money = static fn (mixed $v): string => number_format((float) $v, 2, ',', '.');
 $flash = (string) ($flash ?? '');
 $plans = is_array($plans ?? null) ? $plans : [];
 $referredUsers = is_array($referredUsers ?? null) ? $referredUsers : [];
+$referredUsersMeta = is_array($referredUsersMeta ?? null) ? $referredUsersMeta : [];
 $recentCommissions = is_array($recentCommissions ?? null) ? $recentCommissions : [];
 $payouts = is_array($payouts ?? null) ? $payouts : [];
 $commissionSummary = is_array($commissionSummary ?? null) ? $commissionSummary : [];
@@ -16,10 +17,23 @@ $chartPeriodLabel = (string) ($chartPeriodLabel ?? ($playerCashflow['period_labe
 $playerDeposits = (float) ($playerCashflow['deposits'] ?? 0);
 $playerWithdrawals = (float) ($playerCashflow['withdrawals'] ?? 0);
 $playerNet = round($playerDeposits - $playerWithdrawals, 2);
-$referredTotal = (int) ($playerCashflow['referred_total'] ?? count($referredUsers));
+$affiliateId = (int) ($affiliate['id'] ?? 0);
+$referredTotal = (int) ($playerCashflow['referred_total'] ?? ($referredUsersMeta['total'] ?? count($referredUsers)));
+$usersPage = max(1, (int) ($referredUsersMeta['page'] ?? 1));
+$usersPages = max(1, (int) ($referredUsersMeta['pages'] ?? 1));
+$usersPerPage = (int) ($referredUsersMeta['per_page'] ?? 100);
+$usersListUrl = static function (int $page, ?int $perPage = null) use ($affiliateId, $chartPeriod, $usersPerPage): string {
+    $params = [
+        'id' => $affiliateId,
+        'period' => $chartPeriod,
+        'users_page' => max(1, $page),
+        'users_per_page' => $perPage ?? $usersPerPage,
+    ];
+
+    return AdminAuth::url('/affiliate/detail?' . http_build_query($params));
+};
 $currentPlanId = (int) ($affiliate['commission_plan_id'] ?? 0);
 $netColor = $playerNet >= 0 ? 'var(--success)' : 'var(--danger)';
-$affiliateId = (int) ($affiliate['id'] ?? 0);
 $periodUrl = static function (string $p) use ($affiliateId): string {
     return AdminAuth::url('/affiliate/detail?id=' . $affiliateId . '&period=' . rawurlencode($p));
 };
@@ -453,7 +467,7 @@ $affKpiCards = [
                 <h2 class="card-title">Komisyonu yeniden hesapla</h2>
             </div>
         </div>
-        <form method="post" action="<?= AdminAuth::url('/affiliate/recalculate') ?>" onsubmit="return confirm('Seçili dönemdeki otomatik (CPA/RevShare) komisyonlar iptal edilip plana göre yeniden yazılacak. Devam?');">
+        <form method="post" action="<?= AdminAuth::url('/affiliate/recalculate') ?>" onsubmit="return confirm('Seçili dönemde yalnızca ödenmemiş otomatik komisyonlar iptal edilip plana göre yeniden yazılır. Ödenmiş (paid) dönemler korunur. Devam?');">
             <input type="hidden" name="_token" value="<?= $text(AdminAuth::csrfToken()) ?>">
             <input type="hidden" name="id" value="<?= (int) $affiliate['id'] ?>">
             <div class="user-edit-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 18px">
@@ -541,6 +555,24 @@ $affKpiCards = [
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-top:1px solid var(--border,rgba(255,255,255,.08));font-size:12px;color:var(--t-muted)">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <span><?= (int) $referredTotal ?> oyuncunun tamamı listelenir</span>
+                <span>·</span>
+                <span>Sayfa <?= (int) $usersPage ?> / <?= (int) $usersPages ?></span>
+                <?php foreach ([50, 100, 200, 500] as $size): ?>
+                    <a href="<?= $text($usersListUrl(1, $size)) ?>" style="<?= $usersPerPage === $size ? 'font-weight:700;color:var(--t)' : '' ?>"><?= $size ?>/sayfa</a>
+                <?php endforeach; ?>
+            </div>
+            <div style="display:flex;gap:8px">
+                <?php if ($usersPage > 1): ?>
+                    <a class="btn" href="<?= $text($usersListUrl($usersPage - 1)) ?>">← Önceki</a>
+                <?php endif; ?>
+                <?php if ($usersPage < $usersPages): ?>
+                    <a class="btn" href="<?= $text($usersListUrl($usersPage + 1)) ?>">Sonraki →</a>
+                <?php endif; ?>
+            </div>
         </div>
         <?php endif; ?>
     </section>

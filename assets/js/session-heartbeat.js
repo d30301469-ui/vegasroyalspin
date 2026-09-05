@@ -25,17 +25,21 @@
             : { Accept: 'application/json' };
     }
 
-    function phpSessionActive() {
+    function sessionActive() {
         if (Shared.isLogoutLanding && Shared.isLogoutLanding()) {
             return false;
         }
-        return Shared.phpSessionLoggedIn
-            ? Shared.phpSessionLoggedIn()
-            : window.__USER_LOGGED_IN__ === true;
+        if (Shared.runtimeSessionLoggedIn) {
+            return Shared.runtimeSessionLoggedIn();
+        }
+        if (Shared.phpSessionLoggedIn) {
+            return Shared.phpSessionLoggedIn();
+        }
+        return window.__USER_LOGGED_IN__ === true;
     }
 
     function shouldRunHeartbeat() {
-        return phpSessionActive();
+        return sessionActive();
     }
 
     function withinLoginGrace() {
@@ -114,7 +118,7 @@
             return;
         }
         tryRecoverSession().then(function (ok) {
-            if (!ok && phpSessionActive()) {
+            if (!ok && sessionActive()) {
                 notifyAndLogout(
                     'Oturum doğrulanamadı. Lütfen tekrar giriş yapın.'
                 );
@@ -175,25 +179,23 @@
         if (Shared.isLogoutLanding && Shared.isLogoutLanding()) {
             return;
         }
-        if (!phpSessionActive()) {
-            // PHP session may not persist in load-balanced setups.
-            // If we have a JWT in localStorage, try hydration first.
-            var storedJwt = Shared.getMemberJwt ? Shared.getMemberJwt() : '';
-            if (storedJwt !== '' && Shared.hydrateMemberJwt) {
-                Shared.hydrateMemberJwt().then(function (token) {
-                    if (token !== '' && phpSessionActive()) {
-                        window.__HAS_MEMBER_JWT__ = true;
-                    }
-                }).finally(start);
-                return;
+        if (sessionActive()) {
+            if (Shared.hydrateMemberJwt) {
+                Shared.hydrateMemberJwt().finally(start);
+            } else {
+                start();
             }
             return;
         }
-        if (Shared.hydrateMemberJwt) {
-            Shared.hydrateMemberJwt().finally(start);
+        if (Shared.shouldAttemptSessionHydrate && Shared.shouldAttemptSessionHydrate() && Shared.hydrateMemberJwt) {
+            Shared.hydrateMemberJwt().then(function (token) {
+                if (token !== '') {
+                    window.__USER_LOGGED_IN__ = true;
+                    window.__HAS_MEMBER_JWT__ = true;
+                }
+            }).finally(start);
             return;
         }
-        start();
     }
 
     if (document.readyState === 'loading') {

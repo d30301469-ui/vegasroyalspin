@@ -264,6 +264,9 @@ if (should_run_production_assertions()) {
     frontend_assert_production_secret('MEMBER_JWT_SECRET');
     frontend_assert_production_disabled_flag('ALLOW_RUNTIME_MIGRATIONS');
     frontend_assert_production_disabled_flag('APP_RUNTIME_PROVIDER_BOOTSTRAP');
+    if (function_exists('frontend_is_api_only') && frontend_is_api_only()) {
+        frontend_assert_production_secret('FRONTEND_MEMBER_TRUST_SECRET');
+    }
     if (!frontend_is_api_only() && !defined('APP_ADMIN_PANEL')) {
         frontend_assert_active_provider_secret('BGaming', 'BGAMING_WALLET_SECRET', 'bgaming_config', 'wallet_secret');
         frontend_assert_active_provider_secret('MegaPayz', 'MEGAPAYZ_PRIVATE_KEY', 'megapayz_config', 'private_key');

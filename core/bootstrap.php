@@ -5,6 +5,8 @@ if (defined('APP_CORE_BOOTSTRAP_LOADED')) {
 }
 define('APP_CORE_BOOTSTRAP_LOADED', true);
 
+require_once __DIR__ . '/shell_nav.php';
+
 if (function_exists('date_default_timezone_set')) {
     date_default_timezone_set('Europe/Istanbul');
 }
@@ -95,6 +97,18 @@ if (class_exists('App\Core\ErrorHandler')) {
 
 $host = $_SERVER['HTTP_HOST'] ?? '';
 $surface = (strpos($host, 'm.') === 0) ? 'mobile' : 'desktop';
+// Apex/www hosts (e.g. vegasroyalspin119.com) often receive phone traffic without the
+ // m. subdomain. Treat real mobile UAs as the mobile surface so OYNA overlays,
+ // play redirect, and mobile chrome stay consistent.
+if ($surface === 'desktop' && !$isApiRequest) {
+    $surfaceUa = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+    if (
+        $surfaceUa !== ''
+        && preg_match('/android|iphone|ipad|ipod|mobile|windows phone|opera mini|iemobile/', $surfaceUa) === 1
+    ) {
+        $surface = 'mobile';
+    }
+}
 if (!defined('SURFACE')) {
     define('SURFACE', $surface);
 }
@@ -124,7 +138,8 @@ if (!$isApiRequest) {
 global $ayar, $loggedIn, $siteMeta, $siteBranding, $siteContactLinks, $siteSettingsPayload;
 
 $ayar = [];
-if (!$isApiRequest) {
+$skipRemoteCms = defined('FRONTEND_SKIP_REMOTE_CMS') && FRONTEND_SKIP_REMOTE_CMS;
+if (!$isApiRequest && !$skipRemoteCms) {
     try {
         $settingsTimeout = function_exists('frontend_remote_http_timeout')
             ? frontend_remote_http_timeout()

@@ -192,6 +192,7 @@
   background: transparent !important;
   transform: none !important;
   mix-blend-mode: normal !important;
+  border-radius: 2px !important;
 }
 /* Animasyonlu logo: +4 kademe (GIF iç boşluğu nedeniyle küçük görünür) */
 .headLogo:has(.hdr-logo-animated) {
@@ -211,6 +212,7 @@
   object-fit: contain !important;
   object-position: left center !important;
   transform: none !important;
+  border-radius: 2px !important;
 }
 .headerItem { display: flex; justify-content: flex-end; align-items: center; margin-left: auto; flex: 0 0 auto; }
 .headerItem .loginCol {
@@ -4408,3 +4410,30 @@ header.headBar .disclamer i.fas.fa-times {font-size: 18px;}
   z-index: 2 !important;
 }
 
+/* Logo: çok hafif radius, taşma yok */
+.headLogo,
+.headLogo.logo,
+.hdr-main-content-bc .logo-container,
+.hdr-main-content-bc .logo {
+  overflow: visible !important;
+  border-radius: 2px;
+}
+
+.headLogo img,
+.headLogo img.hdr-logo-bc,
+.headLogo video,
+.headLogo video.hdr-logo-bc,
+.hdr-main-content-bc .hdr-logo-bc,
+.hdr-main-content-bc video.hdr-logo-bc,
+.logo-container img.hdr-logo-bc,
+.logo-container video.hdr-logo-bc {
+  border-radius: 2px !important;
+  overflow: visible !important;
+}
+
+#shellPageHost.is-shell-nav-loading {
+  min-height: 48vh;
+  opacity: 0.72;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}

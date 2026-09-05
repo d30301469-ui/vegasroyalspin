@@ -55,10 +55,10 @@ final class ApiLoyalty
         ];
     }
 
-    public static function publicBadgeForUser(int $userId): array
+    public static function publicBadgeForUser(int $userId, int $timeoutSeconds = 15): array
     {
         if (function_exists('frontend_database_allowed') && !frontend_database_allowed()) {
-            return self::publicBadgeViaApi();
+            return self::publicBadgeViaApi($timeoutSeconds);
         }
 
         try {
@@ -82,7 +82,7 @@ final class ApiLoyalty
     /**
      * @return array<string, mixed>
      */
-    private static function publicBadgeViaApi(): array
+    private static function publicBadgeViaApi(int $timeoutSeconds = 15): array
     {
         $jwt = trim((string) ($_SESSION['member_jwt'] ?? ''));
         if ($jwt === '') {
@@ -94,7 +94,10 @@ final class ApiLoyalty
                 'GET',
                 BackendApiClient::SVC_MAIN,
                 'loyalty.php',
-                $jwt
+                $jwt,
+                [],
+                null,
+                max(1, $timeoutSeconds)
             );
             $data = BackendApiClient::unwrap($response);
             if (isset($data['badge']) && is_array($data['badge'])) {

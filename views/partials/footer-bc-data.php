@@ -66,58 +66,88 @@ $footerLicenceRows = is_array($footerPayload['licence_rows'] ?? null)
     ? $footerPayload['licence_rows']
     : [];
 
-// Lisans bağlantılarını (iframe/external) tamamen kaldır.
-$footerLicenceRows = array_values(array_filter(array_map(
-    static function ($row): array {
-        if (!is_array($row)) {
-            return [];
+$footerLicenceItemBlocked = static function (array $item): bool {
+    $type = strtolower(trim((string) ($item['type'] ?? '')));
+    $blob = strtolower(trim((string) ($item['src'] ?? '')) . ' '
+        . trim((string) ($item['href'] ?? '')) . ' '
+        . trim((string) ($item['html'] ?? '')));
+    foreach (['casinomilyon', 'deluxebahis', 'haleon', 'metropolcasino', 'maltabet'] as $needle) {
+        if ($needle !== '' && str_contains($blob, $needle)) {
+            return true;
         }
+    }
+    if ($type === 'iframe' && trim((string) ($item['src'] ?? '')) === '') {
+        return true;
+    }
 
-        $clean = [];
-        foreach ($row as $item) {
-            if (!is_array($item)) {
-                continue;
+    return false;
+};
+
+$footerSanitizeLicenceRows = static function (array $rows) use ($footerLicenceItemBlocked): array {
+    return array_values(array_filter(array_map(
+        static function ($row) use ($footerLicenceItemBlocked): array {
+            if (!is_array($row)) {
+                return [];
+            }
+            $clean = [];
+            foreach ($row as $item) {
+                if (!is_array($item) || $footerLicenceItemBlocked($item)) {
+                    continue;
+                }
+                $clean[] = $item;
             }
 
-            $type = strtolower(trim((string) ($item['type'] ?? '')));
-            $src = strtolower(trim((string) ($item['src'] ?? '')));
-            $href = strtolower(trim((string) ($item['href'] ?? '')));
+            return $clean;
+        },
+        $rows
+    ), static fn (array $row): bool => $row !== []));
+};
 
-            $isLicenceLink = $src !== '' && (
-                str_contains($src, 'casinomilyon')
-                || str_contains($src, 'asyaslots')
-                || str_contains($src, 'deluxebahis')
-                || str_contains($src, 'cert.gcb.cw')
-                || str_contains($src, 'seal.cgcb.info')
-                || str_contains($src, 'licence-widget.html')
-            );
-            $isLicenceHref = $href !== '' && (
-                str_contains($href, 'casinomilyon')
-                || str_contains($href, 'asyaslots')
-                || str_contains($href, 'deluxebahis')
-                || str_contains($href, 'cert.gcb.cw')
-                || str_contains($href, 'seal.cgcb.info')
-            );
-            $html = strtolower(trim((string) ($item['html'] ?? '')));
-            $isForeignBrandHtml = $html !== '' && (
-                str_contains($html, 'casinomilyon')
-                || str_contains($html, 'asyaslots')
-                || str_contains($html, 'deluxebahis')
-                || str_contains($html, 'haleon')
-                || str_contains($html, 'july sun')
-            );
+$footerLicenceRows = $footerSanitizeLicenceRows($footerLicenceRows);
 
-            if ($type === 'iframe' || $isLicenceLink || $isLicenceHref || $isForeignBrandHtml) {
-                continue;
+if ($footerLicenceRows === []) {
+    $manifestPath = dirname(__DIR__, 2) . '/assets/images/footer/manifest.json';
+    if (is_readable($manifestPath)) {
+        $manifestRaw = file_get_contents($manifestPath);
+        if (is_string($manifestRaw)) {
+            $manifest = json_decode($manifestRaw, true);
+            if (is_array($manifest['licence_rows'] ?? null)) {
+                $footerLicenceRows = $footerSanitizeLicenceRows($manifest['licence_rows']);
             }
-
-            $clean[] = $item;
         }
+    }
+}
 
-        return $clean;
-    },
-    $footerLicenceRows
-), static fn (array $row): bool => $row !== []));
+unset($footerLicenceItemBlocked, $footerSanitizeLicenceRows);
+
+// Yerel GCB mührü: iframe widget yerine doğrudan img — boyut/radius kontrolü için.
+$footerLicenceSealHref = '/cert.gcb.cw/';
+$footerLicenceSealSrc = '/cert.gcb.cw/asset/1c0246df-1aa7-485a-a24c-21ae5e730000';
+foreach ($footerLicenceRows as $rowIndex => $row) {
+    if (!is_array($row)) {
+        continue;
+    }
+    foreach ($row as $itemIndex => $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $licenceType = strtolower(trim((string) ($item['type'] ?? '')));
+        if ($licenceType !== 'iframe') {
+            continue;
+        }
+        $licenceSrc = strtolower(trim((string) ($item['src'] ?? '')));
+        if ($licenceSrc === '' || !str_contains($licenceSrc, 'licence-widget')) {
+            continue;
+        }
+        $footerLicenceRows[$rowIndex][$itemIndex] = [
+            'type' => 'licence_seal',
+            'href' => $footerLicenceSealHref,
+            'src' => $footerLicenceSealSrc,
+            'alt' => 'GCB Digital Seal',
+        ];
+    }
+}
+unset($rowIndex, $row, $itemIndex, $item, $licenceType, $licenceSrc, $footerLicenceSealHref, $footerLicenceSealSrc);
 
 foreach ($footerMenuColumns as $columnIndex => $column) {
     if (!is_array($column)) {

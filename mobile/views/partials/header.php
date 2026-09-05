@@ -68,16 +68,16 @@ $mobileHeaderPartnershipIsExternal = (bool) preg_match('#^https?://#i', $mobileH
           <?php if ($mobileHeaderLogoAnimUrl !== ''): ?>
             <?php $mAnimExt = strtolower(pathinfo((string) parse_url($mobileHeaderLogoAnimUrl, PHP_URL_PATH), PATHINFO_EXTENSION)); ?>
             <?php if ($mAnimExt === 'webm' || $mAnimExt === 'mp4'): ?>
-              <video class="hdr-logo-bc hdr-logo-animated" autoplay loop muted playsinline width="240" height="54" aria-label="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
+              <video class="hdr-logo-bc hdr-logo-animated" autoplay loop muted playsinline width="252" height="56" aria-label="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>">
                 <source src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" type="video/webm">
                 <source src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" type="video/mp4">
-                <?php if ($mobileHeaderLogoUrl !== ''): ?><img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="160" height="36"><?php endif; ?>
+                <?php if ($mobileHeaderLogoUrl !== ''): ?><img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="172" height="40"><?php endif; ?>
               </video>
             <?php else: ?>
-              <img class="hdr-logo-bc hdr-logo-animated" src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="240" height="54">
+              <img class="hdr-logo-bc hdr-logo-animated" src="<?= htmlspecialchars($mobileHeaderLogoAnimUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="252" height="56">
             <?php endif; ?>
           <?php elseif ($mobileHeaderLogoUrl !== ''): ?>
-            <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="160" height="36">
+            <img class="hdr-logo-bc" src="<?= htmlspecialchars($mobileHeaderLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($mobileHeaderSiteName, ENT_QUOTES, 'UTF-8') ?>" width="172" height="40">
           <?php endif; ?>
         </a>
       </div>

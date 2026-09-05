@@ -318,7 +318,7 @@
     const searchClearBtn     = slotPageRoot ? (slotPageRoot.querySelector('#gamesFilterSearchClearBtn') || slotPageRoot.querySelector('.casinoGameProviderFilters .games-search-icon-btn') || slotPageRoot.querySelector('#searchClearBtn')) : document.getElementById('searchClearBtn');
     const gamesSearchExpandEl = slotPageRoot ? slotPageRoot.querySelector('#gamesSearchExpand') : document.getElementById('gamesSearchExpand');
     let searchDebounceTimer  = null;
-    const SEARCH_DEBOUNCE_MS = 600;
+    const SEARCH_DEBOUNCE_MS = document.body.classList.contains('mobile-site') ? 350 : 600;
     const providerSearchInput = document.getElementById('providerSearchInput');
     const providersSidebar   = document.getElementById('providersSidebar');
     const sidebarProvidersList = document.getElementById('sidebarProvidersList');
@@ -498,11 +498,30 @@
 
     function playUrlFun(gameId) {
         if (window.MetropolPlayUrl && typeof window.MetropolPlayUrl.fun === 'function') {
-            return window.MetropolPlayUrl.fun(gameId);
+            var funUrl = String(window.MetropolPlayUrl.fun(gameId) || '');
+            if (funUrl && funUrl.indexOf('demo=') === -1) {
+                funUrl += (funUrl.indexOf('?') === -1 ? '?' : '&') + 'demo=1';
+            }
+            return funUrl;
         }
         var id = String(gameId || '');
-        return '/play?game_id=' + encodeURIComponent(id).replace(/%3A/gi, ':') + '&mode=fun';
+        return '/play?game_id=' + encodeURIComponent(id).replace(/%3A/gi, ':') + '&mode=fun&demo=1';
     }
+
+    function handleDemoIntent(event, url) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        var target = String(url || '').trim();
+        if (!target) {
+            return;
+        }
+        // Demo: no login gate, no wallet picker — same path as home DEMO.
+        openPlayUrl(target);
+    }
+
+    window.__slotHandleDemoIntent = handleDemoIntent;
 
     function playTargetUrl(game) {
         var gameId = resolveLaunchGameId(game);
@@ -586,22 +605,30 @@
         openLoginModal();
     }
 
+    function activateGameCard(event, url) {
+        if (event && event.target && event.target.closest) {
+            if (event.target.closest('.play-btn, .demo-btn, .casinoBtnWrp a, .casinoGameItemFavBc, .casinoGameIconsFavoriteWrapper')) {
+                return;
+            }
+        }
+        // Direct launch on all surfaces — mobile overlay toggle was unstable
+        // (pointer-events / double-handlers / missing mobile-site on apex hosts).
+        handlePlayIntent(event, url);
+    }
+
+    window.__slotGameCardActivate = activateGameCard;
+
     function applyMobileActionButtonSizing() {
-        if (!document.body.classList.contains('mobile-site')) return;
-        var buttons = document.querySelectorAll('.slot-page-root .play-btn, .slot-page-root .demo-btn, .slots-games-container .play-btn, .slots-games-container .demo-btn, .casinoGamesList .play-btn, .casinoGamesList .demo-btn, .casinoCategoryGames .play-btn, .casinoCategoryGames .demo-btn');
-        buttons.forEach(function (btn) {
-            btn.style.width = 'calc(50% - 4px)';
-            btn.style.minWidth = '0';
-            btn.style.maxWidth = 'none';
-            btn.style.padding = '7px 8px';
-            btn.style.fontSize = '10px';
-            btn.style.lineHeight = '1';
-            btn.style.borderRadius = '5px';
-        });
+        // CM622 ds-btn stilleri orijinal CSS'ten gelir; inline override kullanma.
+        return;
     }
 
     function realPlayClickJs(gameUrlJs) {
         return "if(event){event.preventDefault();event.stopPropagation();}window.__slotHandlePlayIntent&&window.__slotHandlePlayIntent(event,'" + gameUrlJs + "')";
+    }
+
+    function demoPlayClickJs(demoUrlJs) {
+        return "if(event){event.preventDefault();event.stopPropagation();}window.__slotHandleDemoIntent&&window.__slotHandleDemoIntent(event,'" + demoUrlJs + "')";
     }
 
     function launchPlayUrl(url) {
@@ -614,6 +641,7 @@
 
     function renderGameItem(game) {
         const name = escapeHtml(game.game_name || '');
+        const providerName = escapeHtml(String(game.provider || game.provider_name || '').trim());
         const fallbacks = expandCoverFormatFallbacks(Array.isArray(game.cover_fallbacks) ? game.cover_fallbacks : (Array.isArray(game.image_fallbacks) ? game.image_fallbacks : []));
         const coverSource = pickBestCoverSource(Object.assign({}, game, {
             cover_fallbacks: fallbacks,
@@ -628,27 +656,48 @@
         const gameUrl = playTargetUrl(game);
         const gameUrlJs = gameUrl.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
         const demoUrl = playUrlFun(gameId);
+        const demoUrlJs = demoUrl.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+        const hasDemo = !(game.has_demo === false || game.has_demo === 0 || game.has_demo === '0');
         window.__slotOpenLoginModal = openLoginModal;
         window.__slotOpenPlayUrl = openPlayUrl;
         window.__slotLaunchPlayUrl = launchPlayUrl;
         window.__slotHandlePlayIntent = handlePlayIntent;
-        const actionsHtml = ACTION_BUTTONS ? (
-            '<div class="game-overlay">' +
-            '<div class="game-overlay-top"></div>' +
-            '<div class="game-title-wrap"><p class="game-title-text">' + name + '</p></div>' +
-            '<div class="game-actions">' +
-            '<a class="play-btn" href="' + escapeHtml(gameUrl) + '" onclick="' + realPlayClickJs(gameUrlJs) + '">OYNA</a>' +
-            '<a class="demo-btn" href="' + escapeHtml(demoUrl) + '" onclick="event.stopPropagation()">DEMO</a>' +
+        window.__slotHandleDemoIntent = handleDemoIntent;
+        const providerHtml = providerName
+            ? '<span class="casinoGameItemProviderBc">' + providerName + '</span>'
+            : '';
+        const buttonsHtml = ACTION_BUTTONS
+            ? (
+                '<div class="casinoGameButtons">' +
+                '<div class="casinoBtnWrp">' +
+                '<a class="play-btn ds-btn ds-btn-variant--secondary ds-btn-size--sm ds-btn-radius--full ds-btn-appearance--filled" href="' + escapeHtml(gameUrl) + '" onclick="' + realPlayClickJs(gameUrlJs) + '">OYNA</a>' +
+                '</div>' +
+                (hasDemo
+                    ? (
+                        '<div class="casinoBtnWrp">' +
+                        '<a class="demo-btn ds-btn ds-btn-variant--transparent ds-btn-size--sm ds-btn-radius--full ds-btn-appearance--filled" href="' + escapeHtml(demoUrl) + '" onclick="' + demoPlayClickJs(demoUrlJs) + '">DEMO</a>' +
+                        '</div>'
+                    )
+                    : '') +
+                '</div>'
+            )
+            : '';
+        const blockHtml =
+            '<div class="casinoGameItemBlock">' +
+            '<div class="casinoGameIconsWrp">' +
+            '<div class="casinoGameIconsLeft"></div>' +
+            '<div class="casinoGameIconsFavoriteWrapper">' +
+            '<i class="casinoGameItemFavBc bc-i-favorite " aria-hidden="true"></i>' +
             '</div>' +
-            '</div>'
-        ) : '';
+            '</div>' +
+            '<div class="casinoGameItemLabelBc">' + name + providerHtml + '</div>' +
+            buttonsHtml +
+            '</div>';
         return (
-            '<div class="casinoGameItemContent " data-favorite-kind="' + escapeHtml(FAVORITE_KIND) + '" data-game-id="' + gameIdEsc + '"' + catalogAttr + ' onclick="' + realPlayClickJs(gameUrlJs) + '">' +
-            '<span class="providerBadgeBlock " data-badge=""></span>' +
+            '<div class="casinoGameItemContent casinoGameItemContent--regular" data-favorite-kind="' + escapeHtml(FAVORITE_KIND) + '" data-game-id="' + gameIdEsc + '"' + catalogAttr + ' onclick="window.__slotGameCardActivate&&window.__slotGameCardActivate(event,\'' + gameUrlJs + '\')">' +
             '<div class="casinoGameItem ">' +
-            '<img alt="' + name + '" loading="lazy" referrerpolicy="no-referrer" src="' + cover + '" data-src="' + cover + '"' + fallbackAttr + ' class="casinoGameItemImage" title="' + name + '" style="aspect-ratio: 44 / 31;" onload="window.__gameThumbLoaded&&window.__gameThumbLoaded(this)" onerror="window.__gameThumbError&&window.__gameThumbError(this)">' +
-            '<i class="casinoGameItemFavBc bc-i-favorite "></i>' +
-            actionsHtml +
+            '<img alt="' + name + '" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="' + cover + '" data-src="' + cover + '"' + fallbackAttr + ' class="casinoGameItemImage casinoGameItemImage--regular" title="' + name + '" onload="window.__gameThumbLoaded&&window.__gameThumbLoaded(this)" onerror="window.__gameThumbError&&window.__gameThumbError(this)">' +
+            blockHtml +
             '</div>' +
             '</div>'
         );
@@ -1073,12 +1122,19 @@
 
     var searchClearBtnIcon = searchClearBtn ? (searchClearBtn.querySelector('#searchClearBtnIcon') || searchClearBtn.querySelector('i')) : null;
     function updateSearchBtnIcon() {
+        var hasText = !!(searchInput && searchInput.value.trim().length > 0);
+        var textField = searchInput && searchInput.closest ? searchInput.closest('.ds-textfield') : null;
+        if (textField) {
+            textField.classList.toggle('is-filled', hasText);
+        }
+        if (searchClearBtn) {
+            searchClearBtn.classList.toggle('is-clearable', hasText);
+            searchClearBtn.title = hasText ? 'Aramayı temizle' : 'Oyun ara';
+            searchClearBtn.setAttribute('aria-label', hasText ? 'Aramayı temizle' : 'Oyun ara');
+        }
         searchClearBtnIcon = searchClearBtn ? (searchClearBtn.querySelector('#searchClearBtnIcon') || searchClearBtn.querySelector('i')) : null;
-        if (!searchClearBtnIcon || !searchClearBtn) return;
-        var hasText = searchInput && searchInput.value.trim().length > 0;
+        if (!searchClearBtnIcon) return;
         searchClearBtnIcon.className = hasText ? 'fas fa-times' : 'fas fa-search';
-        searchClearBtn.title = hasText ? 'Aramayı temizle' : 'Oyun ara';
-        searchClearBtn.setAttribute('aria-label', hasText ? 'Aramayı temizle' : 'Oyun ara');
     }
 
     function scheduleSearch(value) {
@@ -1127,7 +1183,9 @@
         searchClearBtn.addEventListener('click', function(e) {
             var expand = gamesSearchExpandEl;
             var mobileExpand = document.body.classList.contains('mobile-site') && expand;
-            if (mobileExpand) {
+            var cm622Search = !!(slotPageRoot && slotPageRoot.classList.contains('slot-page-root--cm622')
+                && searchClearBtn.closest && searchClearBtn.closest('.casinoGameProviderFilters'));
+            if (mobileExpand && !cm622Search) {
                 if (!expand.classList.contains('is-expanded')) {
                     e.preventDefault();
                     expand.classList.add('is-expanded');
@@ -1139,7 +1197,9 @@
                 }
             }
             if (searchInput && searchInput.value.trim().length > 0) {
+                e.preventDefault();
                 clearSearch();
+                if (searchInput) searchInput.focus();
             }
         });
     }

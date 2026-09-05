@@ -114,22 +114,27 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   animation-name: overlay-sliding-right;
 }
 #mprofilePanel .hdr-main-content-bc {
-  box-sizing: border-box;
+  box-sizing: border-box !important;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  position: relative;
-  height: var(--mprofile-panel-header-height);
-  min-height: var(--mprofile-panel-header-height);
-  padding-top: var(--mprofile-safe-area-top);
-  padding-inline-start: var(--padding-page-aside, 10px);
-  padding-inline-end: calc(var(--padding-page-aside, 10px) + 7px);
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  position: relative !important;
+  height: var(--mprofile-panel-header-height) !important;
+  min-height: var(--mprofile-panel-header-height) !important;
+  padding-top: var(--mprofile-safe-area-top) !important;
+  /* Room for absolute close (28px) so logo/partnership never collide. */
+  padding-right: calc(var(--padding-page-aside, 10px) + 36px + max(0px, env(safe-area-inset-right, 0px))) !important;
+  padding-left: var(--padding-page-aside, 10px) !important;
+  padding-inline-start: var(--padding-page-aside, 10px) !important;
+  padding-inline-end: calc(var(--padding-page-aside, 10px) + 36px + max(0px, env(safe-area-inset-right, 0px))) !important;
   background: rgba(var(--header, 0, 11, 36), 1);
   border-bottom: 1px solid rgba(var(--header-sc, 255, 255, 255), 0.05);
+  overflow: visible !important;
 }
 #mprofilePanel .logo-container {
   display: flex;
@@ -179,11 +184,14 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
 }
 
 #mprofilePanel .hdr-user-close {
-  position: relative !important;
+  position: absolute !important;
+  top: calc(var(--mprofile-safe-area-top) + ((var(--mobile-header-main-section-height, 46px) - 28px) / 2)) !important;
+  right: calc(var(--padding-page-aside, 10px) + max(0px, env(safe-area-inset-right, 0px))) !important;
+  left: auto !important;
+  bottom: auto !important;
   box-sizing: border-box !important;
   flex-shrink: 0;
-  margin-inline-start: auto !important;
-  margin-left: auto !important;
+  margin: 0 !important;
   width: 28px !important;
   height: 28px !important;
   min-width: 28px !important;
@@ -204,6 +212,7 @@ html:not([dir="rtl"]) .overlay-sliding-wrapper-bc.user-profile-container.mprofil
   cursor: pointer;
   isolation: isolate;
   overflow: visible !important;
+  z-index: 2;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 #mprofilePanel .hdr-user-close::after {

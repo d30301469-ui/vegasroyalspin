@@ -40,8 +40,8 @@
             if (type === 'success' && m.success) { m.success(msg, title); return; }
             if (m.show) { m.show(msg, { type: type || 'info', title: title }); return; }
         }
-        // MaltabetToast yoksa alert gosterme, sessizce console'a yaz
-        if (typeof console !== 'undefined' && console.warn) {
+        // MaltabetToast yoksa alert gosterme; debug dışında sessiz
+        if (window.__MEMBER_API_CONSOLE__ === true && typeof console !== 'undefined' && console.warn) {
             console.warn('[Profile] ' + (title ? title + ': ' : '') + msg);
         }
     }
@@ -617,7 +617,7 @@
         return balanceCache.pending;
     }
 
-    var profileShellHtmlCache = {}; /* CM622_PROFILE_CACHE_BUST_20260803x */
+    var profileShellHtmlCache = {}; /* CM622_PROFILE_CACHE_KEEP_20260827 */
     var profileShellFetchPending = {};
     var profileShellPrefetchPending = {};
     var profileShellPrefetchQueued = false;
@@ -1270,6 +1270,10 @@
     }
 
     function schedulePrefetchAllProfileSidebarLinks(forceNow) {
+        if (forceNow === true) {
+            profileShellPrefetchDone = false;
+            profileShellPrefetchQueued = false;
+        }
         if (profileShellPrefetchDone || profileShellPrefetchQueued) return;
         profileShellPrefetchQueued = true;
         var runner = function() {
@@ -1867,9 +1871,9 @@
                 prefetchProfileShellUrl(toModalUrl(candidate));
             };
             if (typeof window.requestIdleCallback === 'function') {
-                window.requestIdleCallback(runner, { timeout: 1500 });
+                window.requestIdleCallback(runner, { timeout: 400 });
             } else {
-                setTimeout(runner, 400);
+                setTimeout(runner, 120);
             }
         }
         prefetchInitialProfileShellOnce();
@@ -1882,10 +1886,9 @@
         });
 
         function openModal() {
-            // Drop any stale SPA shell HTML from previous CM622 markup iterations
-            try {
-                Object.keys(profileShellHtmlCache).forEach(function (k) { delete profileShellHtmlCache[k]; });
-            } catch (eCache) {}
+            // Keep SPA shell HTML cache across opens — wiping it on every open made
+            // sidebar/header transitions refetch every page (prefetch became useless).
+            var alreadyOpen = modal.classList.contains('is-open');
             overlay.classList.add('is-open');
             modal.classList.add('is-open', 'is-web');
             overlay.setAttribute('aria-hidden', 'false');
@@ -1893,6 +1896,7 @@
             document.body.style.overflow = 'hidden';
             document.documentElement.classList.add('is-web');
             document.body.classList.add('is-web', 'profile-modal-body');
+            return !alreadyOpen;
         }
 
         function closeModal() {
@@ -1938,7 +1942,8 @@
             loadProfileShellContent(nextUrl, {
                 shellRoot: contentEl,
                 isFullPage: false,
-                loadingOverlay: loadingEl
+                loadingOverlay: loadingEl,
+                debounceMs: 80
             });
             return true;
         }
@@ -1968,11 +1973,20 @@
             }
 
             hideProfileHeaderFlyouts();
+            var modalUrl = toModalUrl(parsed.pathname + parsed.search + parsed.hash);
+            var currentUrl = String(window.__profileModalContentUrl || '');
+            var alreadyShowing = modal.classList.contains('is-open')
+                && currentUrl
+                && normalizeCacheKey(currentUrl) === normalizeCacheKey(modalUrl);
             openModal();
-            loadProfileShellContent(toModalUrl(parsed.pathname + parsed.search + parsed.hash), {
+            if (alreadyShowing) {
+                return true;
+            }
+            loadProfileShellContent(modalUrl, {
                 shellRoot: contentEl,
                 isFullPage: false,
-                loadingOverlay: loadingEl
+                loadingOverlay: loadingEl,
+                debounceMs: 80
             });
             return true;
         }
@@ -2006,6 +2020,7 @@
         }
 
         window.__openProfileModalInitial = openProfileModalFromHeader;
+        window.__profileModalUrlReal = openProfileModalUrl;
         window.__openProfileModalUrl = openProfileModalUrl;
         maybeOpenProfileModalFromHomeHistoryQuery();
 
@@ -2141,7 +2156,7 @@
             var msg = message || (ok ? 'Değişiklikler kaydedildi.' : 'Kayıt sırasında hata oluştu.');
             if (window.MaltabetToast) {
                 toastNotify(ok ? 'success' : 'error', msg);
-            } else if (typeof console !== 'undefined' && console.warn) {
+            } else if (window.__MEMBER_API_CONSOLE__ === true && typeof console !== 'undefined' && console.warn) {
                 console.warn('[ProfileForm] ' + msg);
             }
         }
@@ -2624,7 +2639,7 @@
                     }
                 })
                 .catch(function(err) {
-                    if (typeof console !== 'undefined' && console.warn) {
+                    if (window.__MEMBER_API_CONSOLE__ === true && typeof console !== 'undefined' && console.warn) {
                         console.warn('[ProfileDetail]', err && err.message ? err.message : err);
                     }
                 });
@@ -2636,15 +2651,25 @@
             form.setAttribute('data-details-submit-bound', '1');
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
+                var currentPassword = String((form.querySelector('#current_password') || {}).value || '').trim();
+                if (!currentPassword) {
+                    notifyProfileFormMessage(false, 'Değişiklikleri kaydetmek için mevcut şifrenizi girin.');
+                    return;
+                }
                 submitBtn.disabled = true;
+                var countryValue = String((form.querySelector('#country') || {}).value || '').trim();
+                var countryNormalized = normalizeCountryLabel(countryValue);
+                if (countryNormalized === 'Türkiye') {
+                    countryNormalized = 'TR';
+                }
                 var payload = {
-                    current_password: (form.querySelector('#current_password') || {}).value || '',
+                    current_password: currentPassword,
                     name: (form.querySelector('#first_name') || {}).value || '',
                     surname: (form.querySelector('#surname') || {}).value || '',
-                    gender: (form.querySelector('#gender') || {}).value || '',
+                    gender: normalizeGenderLabel((form.querySelector('#gender') || {}).value || ''),
                     dob: (form.querySelector('#dob') || {}).value || '',
                     city: (form.querySelector('#city') || {}).value || '',
-                    country: (form.querySelector('#country') || {}).value || '',
+                    country: countryNormalized,
                     address: (form.querySelector('#address') || {}).value || ''
                 };
 
@@ -2669,25 +2694,41 @@
                         });
                     })
                     .then(function(data) {
-                        if (data.success) {
+                        var root = (data && data.data) || {};
+                        if (data.success && root.updated !== false) {
                             notifyProfileFormMessage(true, data.message || 'Profil güncellendi.');
+                            var pwdField = form.querySelector('#current_password');
+                            if (pwdField) pwdField.value = '';
                             Object.keys(profileShellHtmlCache).forEach(function(key) {
                                 if (key.indexOf('/profile/details') === 0 || key.indexOf('/profile/') === 0) {
                                     delete profileShellHtmlCache[key];
                                 }
                             });
-                            var modalContent = form.closest('#profileModalContent');
-                            if (modalContent) {
-                                loadProfileShellContent(toModalUrl('/profile/details?refresh=' + Date.now()), {
-                                    shellRoot: modalContent,
-                                    isFullPage: false,
-                                    loadingOverlay: document.getElementById('profileModalLoading')
-                                });
+                            if (root.user && typeof root.user === 'object') {
+                                var user = root.user;
+                                setIfPresent('#first_name', user.name || user.first_name || '');
+                                setIfPresent('#surname', user.surname || user.last_name || '');
+                                setIfPresent('#city', user.city || '');
+                                setIfPresent('#address', user.address || '');
+                                setDobValue(normalizeDateInput(user.dob || user.birth_date || ''));
+                                var countryWrap = form.querySelector('.cm622-country-select[data-cm622-country]');
+                                var countryVal = normalizeCountryLabel(user.country || '');
+                                if (countryWrap && typeof countryWrap.__cm622CountrySetValue === 'function') {
+                                    countryWrap.__cm622CountrySetValue(countryVal);
+                                } else {
+                                    setIfPresent('#country', countryVal);
+                                }
+                                var genderVal = normalizeGenderLabel(user.gender || '');
+                                if (typeof window.setCm622MultiSelectValue === 'function') {
+                                    window.setCm622MultiSelectValue('gender', genderVal, true);
+                                } else {
+                                    setIfPresent('#gender', genderVal);
+                                }
                             } else {
                                 hydrateDetailsFromApi();
                             }
                         } else {
-                            notifyProfileFormMessage(false, data.message);
+                            notifyProfileFormMessage(false, data.message || 'Profil güncellenemedi.');
                         }
                     })
                     .catch(function(err) {

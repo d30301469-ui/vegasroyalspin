@@ -134,43 +134,55 @@ $footerLangNames = [
                     </div>
 
                     <div class="sliderGroup">
-                        <div class="sliderContent">
-                            <h4 class="sliderTitle"><?= htmlspecialchars(__('footer.regulations'), ENT_QUOTES, 'UTF-8') ?></h4>
-                            <?php foreach ($footerLicenceRows as $row): ?>
-                                <div class="ftr-partners-row-bc">
-                                    <div class="ftr-partners-row-inner-bc">
-                                        <?php foreach ((is_array($row) ? $row : []) as $item): ?>
-                                            <?php if (!is_array($item)) { continue; } ?>
-                                            <?php $itemType = (string) ($item['type'] ?? ''); ?>
-                                            <?php if ($itemType === 'iframe'): ?>
-                                                <div class="ftr-partners-licence-iframe">
-                                                    <iframe src="<?= htmlspecialchars((string) ($item['src'] ?? '')) ?>"
-                                                            title="<?= htmlspecialchars(__('footer.license_verify'), ENT_QUOTES, 'UTF-8') ?>"
-                                                            loading="lazy"
-                                                            scrolling="no"
-                                                            frameborder="0"
-                                                            referrerpolicy="no-referrer"
-                                                            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
-                                                </div>
-                                            <?php elseif ($itemType === 'image'): ?>
-                                                <a href="<?= htmlspecialchars((string) ($item['href'] ?? '#')) ?>"
-                                                   target="_blank"
-                                                   rel="noopener noreferrer"
-                                                   class="ftr-partners-r-img">
-                                                    <img src="<?= htmlspecialchars((string) ($item['src'] ?? '')) ?>"
-                                                         alt=""
-                                                         loading="lazy">
-                                                </a>
-                                            <?php elseif ($itemType === 'text'): ?>
-                                                <div class="ftr-copy-rights-bc"><?= (string) ($item['html'] ?? '') ?></div>
-                                            <?php endif; ?>
-                                        <?php endforeach; ?>
-                                    </div>
+                    <?php if (!empty($footerLicenceRows)): ?>
+                    <div class="sliderContent">
+                        <h4 class="sliderTitle"><?= htmlspecialchars(__('footer.regulations'), ENT_QUOTES, 'UTF-8') ?></h4>
+                        <?php foreach ($footerLicenceRows as $row): ?>
+                            <div class="ftr-partners-row-bc">
+                                <div class="ftr-partners-row-inner-bc">
+                                    <?php foreach ((is_array($row) ? $row : []) as $item): ?>
+                                        <?php if (!is_array($item)) { continue; } ?>
+                                        <?php $itemType = (string) ($item['type'] ?? ''); ?>
+                                        <?php if ($itemType === 'licence_seal'): ?>
+                                            <a href="<?= htmlspecialchars((string) ($item['href'] ?? '/cert.gcb.cw/'), ENT_QUOTES, 'UTF-8') ?>"
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               class="ftr-partners-licence-seal"
+                                               title="<?= htmlspecialchars(__('footer.license_verify'), ENT_QUOTES, 'UTF-8') ?>">
+                                                <img src="<?= htmlspecialchars((string) ($item['src'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                                     alt="<?= htmlspecialchars((string) ($item['alt'] ?? 'GCB Digital Seal'), ENT_QUOTES, 'UTF-8') ?>"
+                                                     loading="lazy">
+                                            </a>
+                                        <?php elseif ($itemType === 'iframe'): ?>
+                                            <div class="ftr-partners-licence-iframe">
+                                                <iframe src="<?= htmlspecialchars((string) ($item['src'] ?? '')) ?>"
+                                                        title="<?= htmlspecialchars(__('footer.license_verify'), ENT_QUOTES, 'UTF-8') ?>"
+                                                        loading="lazy"
+                                                        scrolling="no"
+                                                        frameborder="0"
+                                                        referrerpolicy="no-referrer"
+                                                        sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+                                            </div>
+                                        <?php elseif ($itemType === 'image'): ?>
+                                            <a href="<?= htmlspecialchars((string) ($item['href'] ?? '#')) ?>"
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               class="ftr-partners-r-img">
+                                                <img src="<?= htmlspecialchars((string) ($item['src'] ?? '')) ?>"
+                                                     alt=""
+                                                     loading="lazy">
+                                            </a>
+                                        <?php elseif ($itemType === 'text'): ?>
+                                            <div class="ftr-copy-rights-bc"><?= (string) ($item['html'] ?? '') ?></div>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
 
-                        <div class="sliderContent">
+                    <div class="sliderContent">
                             <h4 class="sliderTitle"><?= htmlspecialchars(__('footer.payments'), ENT_QUOTES, 'UTF-8') ?></h4>
                             <div class="horizontalSliderWrapper horizontalItemsExpanded alignedCenter"
                                  data-footer-slider>

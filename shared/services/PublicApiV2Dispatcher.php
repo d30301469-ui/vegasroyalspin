@@ -41,6 +41,15 @@ final class PublicApiV2Dispatcher
                     ],
                 ]);
             }
+            // forward() always exits; never fall through to local admin routes
+            // (that would start ADMINSESSID on the public frontend host).
+            self::json(502, [
+                'success' => false,
+                'ok' => false,
+                'code' => 502,
+                'message' => 'API proxy yanıt vermedi.',
+                'meta' => ['route' => $route],
+            ]);
         }
 
         if (!class_exists(\App\Core\Response::class, false)) {

@@ -403,8 +403,16 @@ body.mobile-site .hm-row-mobile-sports-shortcuts .product-banner-container-bc.mo
 .hm-row-bc.has-slider {
   margin-top: 0px !important;
 }
-.hdr-logo-bc {
-    max-width: 140px !important;
+/* Mobil header logo: dar ekranda akıllı menüyü ezmesin */
+body.mobile-site .hdr-main-content-bc .hdr-logo-bc,
+body.mobile-site .hdr-main-content-bc video.hdr-logo-bc {
+  max-width: min(172px, 46vw) !important;
+  border-radius: 2px !important;
+}
+body.mobile-site .hdr-main-content-bc .hdr-logo-animated,
+body.mobile-site .hdr-main-content-bc video.hdr-logo-animated {
+  max-width: min(200px, 48vw) !important;
+  border-radius: 2px !important;
 }
 .m-nav-info-w-container-bc .m-nav-icon-bc,
 .m-nav-info-w-container-bc .user-nav-icon {

@@ -508,7 +508,9 @@
 
     setInterval(function() {
         if (isBodyStuckLocked()) {
-            console.warn('[ScrollLockRecovery] Detected stuck scroll lock — recovering');
+            if (window.__MEMBER_API_CONSOLE__ === true) {
+                console.warn('[ScrollLockRecovery] Detected stuck scroll lock — recovering');
+            }
             recoverScrollLock();
         }
     }, RECOVERY_INTERVAL);

@@ -1274,7 +1274,28 @@ label {
 /* Kayıt başarılı — wallet picker / CM622 kart (desktop + mobile) */
 .register-success-overlay.wallet-picker-overlay,
 .register-success-dialog.wallet-picker-dialog {
-  z-index: 100120;
+  z-index: 100120 !important;
+}
+body.register-success-open {
+  overflow: hidden !important;
+}
+.register-success-dialog.app-feedback-dialog.is-open {
+  width: min(400px, calc(100vw - 24px)) !important;
+  max-width: 400px !important;
+  height: auto !important;
+  max-height: min(92vh, calc(100dvh - 24px)) !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translate(-50%, -50%) !important;
+  display: block !important;
+}
+.register-success-overlay.app-feedback-dialog-overlay.is-open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: block !important;
 }
 .register-success-dialog .register-success-message.app-feedback-dialog__message {
   margin: 18px 0 22px !important;

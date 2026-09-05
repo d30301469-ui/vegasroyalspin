@@ -56,57 +56,61 @@ final class BackendApiClient
     }
 
     /**
-     * Split-deploy (API-only frontend): üye JWT / balance / login doğrudan public backend'e gider.
-     * 127.0.0.1 loopback aynı VM'deki frontend proxy'ye düşer → oturum/JWT kaybolur → 401.
+     * Split-deploy member API outbound.
+     *
+     * Prefer loopback (API_BACKEND_INTERNAL_* / auto-detect) with Host: admin.* so origin
+     * PHP never hairpins through Cloudflare. Public HTTPS is fallback only — forwarding
+     * CF-Connecting-IP to the CF edge returns "error code: 1000".
+     *
+     * api/.htaccess routes Host admin|api → admin/api/v2 (ADMINSESSID) and public hosts →
+     * public/index.php (FRONTSESSID proxy), so loopback + Host admin no longer recurses.
      */
     public static function effectiveMemberApiOutboundBaseUrl(): string
     {
-        if (function_exists('frontend_is_api_only') && frontend_is_api_only()) {
-            $public = self::effectiveMainBaseUrl();
-            if ($public !== '') {
-                return $public;
-            }
+        $outbound = self::effectiveOutboundMainBaseUrl();
+        if ($outbound !== '') {
+            return $outbound;
         }
 
-        return self::effectiveOutboundMainBaseUrl();
+        return self::effectiveMainBaseUrl();
     }
 
     /**
-     * Split-deploy proxy: sırayla public api → main backend → loopback dene.
+     * Split-deploy proxy: loopback (Host admin) first, then public CF URL.
      *
      * @return list<string>
      */
     public static function memberApiOutboundBaseCandidates(): array
     {
         $candidates = [];
-        $add = static function (string $url) use (&$candidates): void {
+        $add = static function (string $url, bool $allowLoopback = false) use (&$candidates): void {
             $url = rtrim(trim($url), '/');
             if ($url === '' || in_array($url, $candidates, true)) {
                 return;
             }
             $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
-            if ($host === '' || str_ends_with($host, '.test') || in_array($host, ['localhost', '127.0.0.1'], true)) {
+            if ($host === '' || str_ends_with($host, '.test')) {
+                return;
+            }
+            $isLoopback = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+            if ($isLoopback && !$allowLoopback) {
                 return;
             }
             $candidates[] = $url;
         };
 
-        if (function_exists('frontend_is_api_only') && frontend_is_api_only()) {
-            $add(self::effectiveMemberApiOutboundBaseUrl());
-            $add(self::effectiveMainBaseUrl());
-            if (defined('API_BACKEND_FALLBACK_BASE_URL')) {
-                $add((string) API_BACKEND_FALLBACK_BASE_URL);
-            }
-            if (function_exists('deploy_domain')) {
-                $add(deploy_domain('api_public_base_url'));
-            }
-            if (defined('BACKEND_URL')) {
-                $add(rtrim((string) BACKEND_URL, '/') . '/api/v2');
-            }
-        } else {
-            $add(self::effectiveMemberApiOutboundBaseUrl());
-            $add(self::effectiveMainBaseUrl());
-            $add(self::effectiveOutboundMainBaseUrl());
+        // Same-VM origin: prefer loopback so CF edge headers are never needed.
+        $add(self::effectiveOutboundMainBaseUrl(), true);
+        $add(self::effectiveMemberApiOutboundBaseUrl(), true);
+        $add(self::effectiveMainBaseUrl(), false);
+        if (defined('API_BACKEND_FALLBACK_BASE_URL')) {
+            $add((string) API_BACKEND_FALLBACK_BASE_URL, false);
+        }
+        if (function_exists('deploy_domain')) {
+            $add(deploy_domain('api_public_base_url'), false);
+        }
+        if (defined('BACKEND_URL')) {
+            $add(rtrim((string) BACKEND_URL, '/') . '/api/v2', false);
         }
 
         return $candidates;
@@ -360,7 +364,10 @@ final class BackendApiClient
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_ENCODING, '');
-        $connect = min($timeout, max(2, (int) round($timeout / 2)));
+        // Short SSR budgets (e.g. header 2s) need connect < total so the body has time.
+        $connect = $timeout <= 3
+            ? max(1, $timeout - 1)
+            : min($timeout, max(2, (int) round($timeout / 2)));
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $connect);
         if (defined('CURL_HTTP_VERSION_2TLS')) {
             curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
@@ -658,12 +665,21 @@ final class BackendApiClient
         } elseif ($useBackendAuthFallback && API_BACKEND_AUTH_HEADER !== '') {
             $headers[] = 'Authorization: ' . API_BACKEND_AUTH_HEADER;
         }
-        $headers = self::applyOutboundHostHeader($headers);
+        $loopback = self::isLoopbackBaseUrl($base);
+        if ($loopback) {
+            $headers = self::applyOutboundHostHeader($headers);
+        }
         foreach ($extraHeaders as $headerLine) {
             $headerLine = trim((string) $headerLine);
-            if ($headerLine !== '') {
-                $headers[] = $headerLine;
+            if ($headerLine === '') {
+                continue;
             }
+            // Never send CF visitor IP headers to the Cloudflare edge — CF returns
+            // plain-text "error code: 1000". Only forward them on origin loopback.
+            if (!$loopback && preg_match('/^(?:CF-Connecting-IP|X-Forwarded-For|X-Real-IP)\s*:/i', $headerLine) === 1) {
+                continue;
+            }
+            $headers[] = $headerLine;
         }
 
         $methodU = strtoupper($method);

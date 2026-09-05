@@ -30,6 +30,10 @@ final class WageringService
         }
         self::$schemaEnsured = true;
 
+        if (function_exists('frontend_runtime_migrations_allowed') && !frontend_runtime_migrations_allowed()) {
+            return;
+        }
+
         try {
             $cols = self::tableColumns($pdo, 'users');
             if ($cols !== []) {
@@ -108,6 +112,7 @@ final class WageringService
             self::applyBonusDelta($pdo, $userId, $amount);
         }
 
+        self::expireBustedActiveBonuses($pdo, $userId);
         self::loyaltyEarn($pdo, $userId, $amount, $walletSource);
     }
 
@@ -140,6 +145,7 @@ final class WageringService
             self::applyBonusDelta($pdo, $userId, -$amount);
         }
 
+        self::expireBustedActiveBonuses($pdo, $userId);
         self::loyaltyReverse($pdo, $userId, $amount, $walletSource);
     }
 
@@ -233,7 +239,9 @@ final class WageringService
 
             $stmt = $pdo->prepare(
                 "SELECT id, wagering_target, total_bet_amount, current_bonus_balance FROM user_active_bonuses
-                 WHERE user_id = :user_id AND status = 'active'"
+                 WHERE user_id = :user_id AND status = 'active'
+                 ORDER BY granted_at ASC, id ASC
+                 LIMIT 1"
             );
             $stmt->execute(['user_id' => $userId]);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -268,8 +276,9 @@ final class WageringService
                         "UPDATE user_active_bonuses
                          SET total_bet_amount = :total,
                              current_bonus_balance = 0,
-                             status = 'cancelled',
-                             is_complete = 0
+                             status = 'expired',
+                             is_complete = 0,
+                             completed_at = NOW()
                          WHERE id = :id AND status = 'active'"
                     )->execute([
                         'total' => number_format($newTotal, 2, '.', ''),
@@ -290,7 +299,7 @@ final class WageringService
                 }
             }
 
-            // Aktif bonus kalmadıysa (tamamlandı veya bakiye tükenip iptal),
+            // Aktif bonus kalmadıysa (tamamlandı veya bakiye tükenip sonlandı),
             // kalan bonus_balance ana bakiyeye taşınır ve mod main olur.
             if ($rows !== [] && !$anyStillActive) {
                 $pdo->prepare(
@@ -307,8 +316,130 @@ final class WageringService
     }
 
     /**
-     * @return list<string>
+     * Çevrim bitmeden oynanacak para kalmazsa aktif bonusu sonlandırır.
+     * GSC/slot sağlayıcıları bahsi ana bakiyeden (users.balance) düşer;
+     * bonus_balance sadece izleme alanıdır. Bu yüzden ana bakiye veya bonus
+     * bakiyesi 0 olduğunda kayıt 'expired' (Sonlandı) olur.
      */
+    public static function expireBustedActiveBonuses(PDO $pdo, int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+        self::ensureSchema($pdo);
+
+        try {
+            $balStmt = $pdo->prepare('SELECT balance, bonus_balance FROM users WHERE id = :id LIMIT 1');
+            $balStmt->execute(['id' => $userId]);
+            $wallet = $balStmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($wallet)) {
+                return;
+            }
+
+            $cash = round((float) ($wallet['balance'] ?? 0), 2);
+            $bonus = round((float) ($wallet['bonus_balance'] ?? 0), 2);
+            if ($cash > 0 && $bonus > 0) {
+                return;
+            }
+
+            $open = $pdo->prepare(
+                "SELECT id FROM user_active_bonuses
+                 WHERE user_id = :user_id AND status = 'active' AND is_complete = 0"
+            );
+            $open->execute(['user_id' => $userId]);
+            $ids = $open->fetchAll(PDO::FETCH_COLUMN);
+            if ($ids === []) {
+                return;
+            }
+
+            $inList = implode(',', array_map('intval', $ids));
+            $pdo->exec(
+                "UPDATE user_active_bonuses
+                 SET status = 'expired',
+                     current_bonus_balance = 0,
+                     is_complete = 0,
+                     completed_at = NOW()
+                 WHERE id IN ({$inList}) AND status = 'active'"
+            );
+
+            $left = $pdo->prepare("SELECT COUNT(*) FROM user_active_bonuses WHERE user_id = :uid AND status = 'active'");
+            $left->execute(['uid' => $userId]);
+            if ((int) $left->fetchColumn() === 0) {
+                $pdo->prepare(
+                    'UPDATE users
+                     SET bonus_balance = 0,
+                         active_wallet_mode = "main"
+                     WHERE id = :id'
+                )->execute(['id' => $userId]);
+            }
+        } catch (Throwable $e) {
+            error_log('[WageringService] expireBustedActiveBonuses failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Aktif bonus çevrimi bitmeden çekim engeli.
+     * null = çekime izin; string = kullanıcıya gösterilecek mesaj.
+     */
+    public static function activeBonusWithdrawMessage(PDO $pdo, int $userId): ?string
+    {
+        if ($userId <= 0) {
+            return null;
+        }
+        self::ensureSchema($pdo);
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT id, name, wagering_target, total_bet_amount
+                 FROM user_active_bonuses
+                 WHERE user_id = :user_id AND status = 'active'
+                 ORDER BY granted_at ASC, id ASC"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            while (is_array($row = $stmt->fetch(PDO::FETCH_ASSOC))) {
+                $target = round((float) ($row['wagering_target'] ?? 0), 2);
+                $progress = round((float) ($row['total_bet_amount'] ?? 0), 2);
+                if ($target > 0 && $progress + 0.009 < $target) {
+                    $name = trim((string) ($row['name'] ?? 'Bonus'));
+
+                    return 'Aktif bonus çevrimi tamamlanmadan çekim yapılamaz'
+                        . ($name !== '' ? ' (' . $name . ').' : '.');
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('[WageringService] activeBonusWithdrawMessage failed: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Yeni bonus onayı/atamasından önce eski aktif bonusları kapatır.
+     * Kullanıcının bonus_balance değeri sıfırlanır; yeni tutar tek kaynak olur.
+     */
+    public static function supersedeActiveBonuses(PDO $pdo, int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+        self::ensureSchema($pdo);
+        try {
+            $pdo->prepare(
+                "UPDATE user_active_bonuses
+                 SET status = 'cancelled',
+                     current_bonus_balance = 0,
+                     is_complete = 0,
+                     completed_at = NOW()
+                 WHERE user_id = :user_id AND status = 'active'"
+            )->execute(['user_id' => $userId]);
+            $pdo->prepare(
+                "UPDATE users SET bonus_balance = 0, active_wallet_mode = 'main' WHERE id = :id"
+            )->execute(['id' => $userId]);
+        } catch (Throwable $e) {
+            error_log('[WageringService] supersedeActiveBonuses failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
     private static function tableColumns(PDO $pdo, string $table): array
     {
         try {

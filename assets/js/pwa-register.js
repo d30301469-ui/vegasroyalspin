@@ -164,7 +164,6 @@
 
     var isSecure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     if (!isSecure) {
-      console.warn('PWA install requires HTTPS context.');
       return;
     }
 
@@ -175,12 +174,15 @@
           reg.update().catch(function () { /* ignore */ });
         }
       })
-      .catch(function (error) {
-        console.error('Service worker registration failed:', error);
+      .catch(function () {
+        /* ignore */
       });
   }
 
   window.addEventListener('beforeinstallprompt', function (event) {
+    if (!canUseInstallUx()) {
+      return;
+    }
     event.preventDefault();
     deferredInstallPrompt = event;
     updateInstallButtonVisibility();

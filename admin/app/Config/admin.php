@@ -71,7 +71,21 @@ return [
             'active' => 'datatable',
             'crumbs' => 'Members | Active Bonuses',
             'columns' => ['id', 'user_id', 'full_name', 'name', 'initial_amount', 'current_bonus_balance', 'status', 'deadline', 'created_at'],
-            'search_placeholder' => 'Aktif bonus veya üye adı soyadı ara...',
+            'search_placeholder' => 'Kullanıcı adı, üye adı soyadı veya bonus ara...',
+            'filters' => [
+                'status' => [
+                    'label' => 'Durum',
+                    'type' => 'select',
+                    'mode' => 'exact',
+                    'options' => [
+                        'active' => 'Aktif',
+                        'pending' => 'Beklemede',
+                        'completed' => 'Tamamlandı',
+                        'cancelled' => 'İptal',
+                        'expired' => 'Süresi doldu',
+                    ],
+                ],
+            ],
         ],
         'frozen-accounts' => [
             'title' => 'Dondurulan Hesaplar',

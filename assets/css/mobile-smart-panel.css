@@ -13,13 +13,17 @@ body.mobile-site .hdr-smart-panel-holder-arrow-bc {
  * konumda bırakıyor. Masaüstü header.css bunu düzeltiyor ama mobilde yüklenmiyor.
  * Sarmalayıcıyı relative yap, butonu akışa geri al (badge ::after buton üstünde kalsın).
  */
-body.mobile-site .hdr-main-content-bc .smartPanel-bc {
-  position: relative !important;
-}
-
+/*
+ * Akıllı menü ikonu sağ kenarda sabit: flex overflow + body overflow-x:hidden
+ * yüzünden ekran dışına kaçıp yarım görünmesin. Konum mobile-bc-header.css'te.
+ */
 body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc.count-odd-animation,
 body.mobile-site .hdr-main-content-bc .smartPanel-bc .hdr-toggle-button-bc.bc-i-vertical-toggle {
   position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
 }
 
 /*

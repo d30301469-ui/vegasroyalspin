@@ -27,6 +27,9 @@ $slotMobileOriginalNav = !empty($slotMobileOriginalNav);
 // Desktop CM622 lobby for /slot (gameType 0) and /livecasino (gameType 1).
 $slotDesktopLobby = !empty($slotDesktopLobby) && !$slotMobileOriginalNav;
 $lobbyMode = !empty($lobbyMode) && $slotDesktopLobby;
+$slotUseCm622 = $slotDesktopLobby || $slotMobileOriginalNav;
+// Mobile + desktop: original CM622 pill filters.
+$slotUseCm622Filters = $slotDesktopLobby || $slotMobileOriginalNav;
 $slotPageIsLive = !empty($slotPageIsLive) || (int) $slotGameType === 1;
 $lobbyGames = isset($lobbyGames) && is_array($lobbyGames) ? $lobbyGames : [];
 $lobbyPopularGames = isset($lobbyPopularGames) && is_array($lobbyPopularGames) ? $lobbyPopularGames : [];
@@ -58,8 +61,8 @@ $slotDemoHref = static function (array $game): string {
     $gid = (string) ($game['game_id'] ?? '');
 
     return function_exists('play_url')
-        ? play_url($gid, ['mode' => 'fun'])
-        : '/play?game_id=' . str_ireplace('%3A', ':', rawurlencode($gid)) . '&mode=fun';
+        ? play_url($gid, ['mode' => 'fun', 'demo' => '1'])
+        : '/play?game_id=' . str_ireplace('%3A', ':', rawurlencode($gid)) . '&mode=fun&demo=1';
 };
 
 $slotRepairMojibake = static function (string $value): string {
@@ -398,7 +401,7 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
 <?php include VIEW_PATH . '/layouts/head.php'; ?>
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 
-<div class="bgaming-page-root slot-page-root bgaming-page-root--unified slot-page-root--unified<?= $slotDesktopLobby ? ' bgaming-page-root--cm622 slot-page-root--cm622' : '' ?><?= ((int) $slotGameType === 1) ? ' bgaming-page-root--live slot-page-root--live' : '' ?>" data-slot-game-type="<?= (int) $slotGameType ?>">
+<div class="bgaming-page-root slot-page-root bgaming-page-root--unified slot-page-root--unified<?= $slotUseCm622 ? ' bgaming-page-root--cm622 slot-page-root--cm622' : '' ?><?= ((int) $slotGameType === 1) ? ' bgaming-page-root--live slot-page-root--live' : '' ?>" data-slot-game-type="<?= (int) $slotGameType ?>">
 <section class="slot-top-section" aria-label="BGaming sayfası üst alan">
     <?php $sliderApiCategory = isset($sliderApiCategory) ? (string) $sliderApiCategory : 'bgaming'; include VIEW_PATH . '/partials/slider.php'; ?>
     <?php if (!$slotDesktopLobby): ?>
@@ -461,11 +464,11 @@ $renderOriginalCategorySvg = static function (array $category) use ($slotOrigina
 <?php
 $chipSizeClass = $slotDesktopLobby ? 'ds-chip-size--md' : 'ds-chip-size--sm';
 $chipLabelClass = $slotDesktopLobby ? 'ds-label--medium-regular' : 'ds-label--small-regular';
-$lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '' && $searchTerm === '' && $selectedProviders === []);
+$lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $viewParam !== 'all' && $currentSort === '' && $searchTerm === '' && $selectedProviders === []);
 ?>
 <div class="casino-container<?= $slotDesktopLobby ? ' casino-container--desktop-lobby' : '' ?><?= $lobbyMode ? ' casino-container--lobby-mode' : '' ?><?= $slotPageIsLive ? ' casino-container--live' : '' ?>">
     <div class="casinoProviderContent slots-filter-and-games" id="slotsFilterAndGames"<?= $lobbyMode ? ' data-lobby-mode="1"' : '' ?>>
-        <?php if ($slotMobileOriginalNav || $slotDesktopLobby): ?>
+        <?php if ($slotUseCm622Filters): ?>
         <?= $slotDesktopLobby ? '<div class="casinoGamesContainer">' : '' ?>
         <div class="casinoNavigationAndFilters">
             <?php
@@ -486,13 +489,14 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                 </button>
                 <?php endif; ?>
                 <div class="horizontal-scroll__inner horizontal-scroll__inner--gap-xs" id="bgamingCategoryRailInner" style="transform: translateX(0px);">
-                    <?php if ($slotDesktopLobby && !$slotPageIsLive): ?>
+                    <?php if (($slotDesktopLobby || $slotMobileOriginalNav) && !$slotPageIsLive): ?>
                     <div>
                         <a class="ds-chip <?= $chipSizeClass ?> ds-chip-color--primary<?= $lobbyChipSelected ? ' ds-chip--selected' : '' ?>"
                            href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>"
                            data-lobby-chip="1"
                            data-href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>"
                            draggable="false">
+                            <span class="CMSIconSVGWrapper chip__icon chip__icon--left" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M8.6 2.05c.28-.17.64-.1.84.16.9 1.16 1.42 2.55 1.56 3.99.55-.72 1.28-1.3 2.15-1.65.32-.13.69 0 .84.31.16.32 0 .7-.3.86-.62.32-1.13.8-1.48 1.38 1.55.2 2.74 1.53 2.74 3.15 0 1.77-1.43 3.2-3.2 3.2s-3.2-1.43-3.2-3.2c0-.5.12-.97.32-1.39-.2 1.2-.62 2.3-1.25 3.22-.18.26-.53.33-.8.16-.26-.18-.33-.53-.16-.8C8.2 9.3 8.7 7.8 8.7 6.2c0-1.2-.35-2.35-1-3.35-.17-.27-.1-.63.16-.8.13-.08.28-.1.42-.07-.02-.3-.1-.6-.24-.88-.17-.33-.05-.73.28-.9.08-.04.16-.06.24-.07zM6.85 10.55c0 1.02.83 1.85 1.85 1.85s1.85-.83 1.85-1.85S9.72 8.7 8.7 8.7s-1.85.83-1.85 1.85zm5.05 0c0 1.02.83 1.85 1.85 1.85s1.85-.83 1.85-1.85-.83-1.85-1.85-1.85-1.85.83-1.85 1.85z"/></svg></span>
                             <span class="ds-label <?= $chipLabelClass ?> chip__label">Lobby</span>
                         </a>
                     </div>
@@ -504,17 +508,13 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                         $isAllGamesChip = $catSort === '';
                         $isActive = $isAllGamesChip
                             ? (
-                                $slotDesktopLobby
-                                    ? (
-                                        $slotPageIsLive
-                                            ? ($currentSort === '' && $searchTerm === '' && $selectedProviders === [])
-                                            : ($viewParam === 'all' && $currentSort === '' && $searchTerm === '' && $selectedProviders === [])
-                                    )
-                                    : ($currentSort === '' && $searchTerm === '' && $selectedProviders === [])
+                                $slotPageIsLive
+                                    ? ($currentSort === '' && $searchTerm === '' && $selectedProviders === [] && !$lobbyChipSelected)
+                                    : ($viewParam === 'all' && $currentSort === '' && $searchTerm === '' && $selectedProviders === [])
                             )
                             : ($currentSort !== '' && $catSort === $currentSort);
                         $originalCategoryClass = $slotOriginalCategoryClassBySort[$catSort] ?? preg_replace('/[^A-Za-z0-9]/', '', ucwords((string) $category['slug'], '-_'));
-                        $chipHref = $isAllGamesChip && $slotDesktopLobby && !$slotPageIsLive
+                        $chipHref = $isAllGamesChip && ($slotDesktopLobby || $slotMobileOriginalNav) && !$slotPageIsLive
                             ? ($slotPageBaseUrl . '?view=all')
                             : (string) ($category['href'] ?? $slotPageBaseUrl);
                         ?>
@@ -524,9 +524,7 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                                data-sort="<?= htmlspecialchars($catSort, ENT_QUOTES, 'UTF-8') ?>"
                                data-href="<?= htmlspecialchars($chipHref, ENT_QUOTES, 'UTF-8') ?>"
                                draggable="false">
-                                <?php if ($catSort !== ''): ?>
                                 <span class="CMSIconSVGWrapper chip__icon chip__icon--left"><?= $renderOriginalCategorySvg($category) ?></span>
-                                <?php endif; ?>
                                 <span class="ds-label <?= $chipLabelClass ?> chip__label"><?= htmlspecialchars($category['title'], ENT_QUOTES, 'UTF-8') ?></span>
                             </a>
                         </div>
@@ -565,7 +563,7 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                     </div>
                 </div>
                 <?php if (!$slotHideProviders): ?>
-                <div class="ds-select ds-select-size--md ds-select-layout--fill mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç" role="button" tabindex="0"><div class="ds-select__field" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-disabled="false" tabindex="0"><span class="CMSIconSVGWrapper ds-select__icon ds-select__icon--left"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M12.5001 14.1665C12.9603 14.1665 13.3334 14.5396 13.3334 14.9998C13.3334 15.4601 12.9603 15.8332 12.5001 15.8332H7.50008C7.03984 15.8332 6.66675 15.4601 6.66675 14.9998C6.66675 14.5396 7.03984 14.1665 7.50008 14.1665H12.5001ZM15.0001 9.1665C15.4603 9.1665 15.8334 9.5396 15.8334 9.99984C15.8334 10.4601 15.4603 10.8332 15.0001 10.8332H5.00008C4.53984 10.8332 4.16675 10.4601 4.16675 9.99984C4.16675 9.5396 4.53984 9.1665 5.00008 9.1665H15.0001ZM17.5001 4.1665C17.9603 4.1665 18.3334 4.5396 18.3334 4.99984C18.3334 5.46007 17.9603 5.83317 17.5001 5.83317H2.50008C2.03984 5.83317 1.66675 5.46007 1.66675 4.99984C1.66675 4.5396 2.03984 4.1665 2.50008 4.1665H17.5001Z"></path></svg></span><div class="ds-select__text"><span class="ds-select__label mobile-sidebar-toggle__pill-text">Sağlayıcılar</span><span class="ds-select__value ds-select__value--placeholder"></span></div><div class="ds-select__right"></div></div><span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span></div>
+                <div class="ds-select ds-select-size--md ds-select-layout--fill mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç" role="button" tabindex="0"><div class="ds-select__field" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-disabled="false" tabindex="0"><div class="ds-select__text"><span class="ds-select__label mobile-sidebar-toggle__pill-text">Sağlayıcılar</span><span class="ds-select__value ds-select__value--placeholder"></span></div><div class="ds-select__right"><span class="CMSIconSVGWrapper ds-select__icon ds-select__icon--right"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M12.5001 14.1665C12.9603 14.1665 13.3334 14.5396 13.3334 14.9998C13.3334 15.4601 12.9603 15.8332 12.5001 15.8332H7.50008C7.03984 15.8332 6.66675 15.4601 6.66675 14.9998C6.66675 14.5396 7.03984 14.1665 7.50008 14.1665H12.5001ZM15.0001 9.1665C15.4603 9.1665 15.8334 9.5396 15.8334 9.99984C15.8334 10.4601 15.4603 10.8332 15.0001 10.8332H5.00008C4.53984 10.8332 4.16675 10.4601 4.16675 9.99984C4.16675 9.5396 4.53984 9.1665 5.00008 9.1665H15.0001ZM17.5001 4.1665C17.9603 4.1665 18.3334 4.5396 18.3334 4.99984C18.3334 5.46007 17.9603 5.83317 17.5001 5.83317H2.50008C2.03984 5.83317 1.66675 5.46007 1.66675 4.99984C1.66675 4.5396 2.03984 4.1665 2.50008 4.1665H17.5001Z"></path></svg></span></div></div><span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span></div>
                 <?php endif; ?>
                 <?php if (!$slotPageIsLive): ?>
                 <div class="casinoRandomGameButtonWrapper">
@@ -628,7 +626,12 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
         <i class="horizontalSliderNav bc-i-small-arrow-left cat-tab-arrow cat-tab-arrow-left" id="catArrowLeft"></i>
         <div class="horizontalSliderRow category-tabs-scroll" id="categoryTabsScroll" style="transform: translateX(0px);">
             <?php foreach ($slotCategoryItems as $category): ?>
-                <?php $isActive = $category['sort'] === $currentSort || ($category['sort'] === '' && $currentSort === ''); ?>
+                <?php
+                if ($slotMobileOriginalNav && ($category['sort'] ?? '') === 'special') {
+                    continue;
+                }
+                $isActive = $category['sort'] === $currentSort || ($category['sort'] === '' && $currentSort === '');
+                ?>
                 <a href="<?= htmlspecialchars($category['href'], ENT_QUOTES, 'UTF-8') ?>"
                    class="horizontalCategoryItemWrp <?= $isActive ? 'active ' : '' ?><?= htmlspecialchars($category['slug'], ENT_QUOTES, 'UTF-8') ?> cat-tab<?= $isActive ? ' active' : '' ?>"
                    data-id="<?= htmlspecialchars($category['id'], ENT_QUOTES, 'UTF-8') ?>"
@@ -647,6 +650,7 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
         </div>
         </div>
 
+        <?php if (!$slotMobileOriginalNav): ?>
         <div class="casinoProviderRow<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>">
             <?php if (!$slotHideProviders): ?>
             <p class="casinoProviderBlockTitle" id="lineSidebarToggle" title="Sağlayıcıları aç/kapat"><i class="casinoProviderBlockIcon bc-i-small-arrow-left" id="lineSidebarToggleIcon"></i><span id="lineSidebarToggleLabel">Sağlayıcılar</span></p>
@@ -668,10 +672,11 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
         </div>
         <?php endif; ?>
         <?php endif; ?>
+        <?php endif; ?>
 
         <div class="casinoProviderAndGame slots-layout<?= $slotHideProviders ? ' slots-layout--full-games' : '' ?><?= $lobbyMode ? ' slots-layout--lobby-mode' : '' ?><?= $slotDesktopLobby ? ' slots-layout--desktop-lobby' : '' ?>" id="slotsLayout">
             <?php if (!$slotHideProviders): ?>
-            <div class="<?= ($slotMobileOriginalNav || $slotDesktopLobby) ? 'providers-drawer-wrapper' . ($slotDesktopLobby ? ' bgaming-page-root--cm622 slot-page-root--cm622' : '') : 'casinoProviderBlock providers-sidebar' ?>" id="providersSidebar">
+            <div class="<?= ($slotMobileOriginalNav || $slotDesktopLobby) ? 'providers-drawer-wrapper' . ($slotUseCm622 ? ' bgaming-page-root--cm622 slot-page-root--cm622' : '') : 'casinoProviderBlock providers-sidebar' ?>" id="providersSidebar">
             <?php if ($slotMobileOriginalNav || $slotDesktopLobby): ?>
             <div class="ds-drawer-spring" role="dialog" aria-modal="true" aria-label="Sağlayıcılar">
             <div class="ds-drawer ds-drawer--contained provider-sheet">
@@ -778,7 +783,7 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
 
             <?php if (!$lobbyMode && !$slotDesktopLobby): ?>
             <div class="casinoGameListBlock games-main" id="gamesScrollContainer">
-                <?php if (!$slotMobileOriginalNav): ?>
+                <?php if (!$slotUseCm622Filters): ?>
                 <div class="casinoGameListBlockHeader">
                     <div class="casinoTitleSearch ">
                         <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" title="Tüm Sağlayıcılar" aria-label="Tüm sağlayıcıları aç">
@@ -789,7 +794,7 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                             <span class="mobile-sidebar-toggle__count" id="mobileSidebarToggleCount" aria-hidden="true"></span>
                         </button>
                         <div class="selectedProviderBlock"></div>
-                        <div class="games-search-expand" id="gamesSearchExpand" aria-expanded="false">
+                        <div class="games-search-expand is-expanded" id="gamesSearchExpand" aria-expanded="true">
                             <div class="casinoInputWrp">
                                 <div class="searchInputWrp active games-search-bar">
                                     <input type="text"
@@ -813,7 +818,7 @@ $lobbyChipSelected = $lobbyMode || ($slotMobileOriginalNav && $currentSort === '
                 <?php endif; ?>
 
                 <?php if ($slotMobileOriginalNav): ?>
-                <div class="casinoProviderRow casinoProviderRow--mobile-inline<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>">
+                <div class="casinoProviderRow casinoProviderRow--mobile-inline<?= $slotHideProviders ? ' casinoProviderRow--no-providers' : '' ?>" style="display:none" aria-hidden="true">
                     <p class="casinoGameListTitle"><?= htmlspecialchars($slotGameType === 1 ? 'CANLI CASINO OYUNLARI' : 'CASINO OYUNLARI', ENT_QUOTES, 'UTF-8') ?></p>
                     <a class="casinoGameListAllLink" href="<?= htmlspecialchars($slotPageBaseUrl, ENT_QUOTES, 'UTF-8') ?>">TÜMÜ</a>
                 </div>

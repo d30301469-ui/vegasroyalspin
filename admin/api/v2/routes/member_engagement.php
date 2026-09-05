@@ -65,7 +65,8 @@ if (($route === 'call_me_request.php' || $route === 'call-me-request') && in_arr
         'preferred_time' => $preferredTime !== '' ? $preferredTime : null,
         'message' => $message !== '' ? $message : null,
         'status' => 'pending',
-        'ip_address' => (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+        'ip_address' => (function_exists('cloudflare_client_ip') ? cloudflare_client_ip() : '')
+            ?: (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? ''),
         'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 512),
     ]);
     $memberEnvelope(200, [
@@ -139,20 +140,19 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
         }
         $hasConfirmedDeposit = $viewerUserId > 0 ? memberHasConfirmedDepositV2($pdo, (int) $viewerUserId) : false;
 
-        // Her promosyon için kullanıcının kalan talep hakkını hesapla
+        // Her promosyon için kullanıcının kalan talep hakkını hesapla (POST ile aynı kurallar).
         $promotionClaimRights = [];
         if ($viewerUserId > 0 && $hasConfirmedDeposit) {
-            $approvedDeposits = memberApprovedDepositCountV2($pdo, (int) $viewerUserId);
             foreach ($promotions as $p) {
                 $promoId = (int) ($p['id'] ?? 0);
                 if ($promoId > 0) {
-                    $approvedClaims = memberApprovedClaimCountForPromotionV2($pdo, (int) $viewerUserId, $promoId);
-                    $remaining = max(0, $approvedDeposits - $approvedClaims);
+                    $limit = memberCheckPromotionClaimLimitV2($pdo, (int) $viewerUserId, $promoId);
                     $promotionClaimRights[$promoId] = [
-                        'approvedDeposits' => $approvedDeposits,
-                        'approvedClaims' => $approvedClaims,
-                        'remainingRights' => $remaining,
-                        'canClaim' => $remaining > 0,
+                        'approvedDeposits' => (int) ($limit['approvedDeposits'] ?? 0),
+                        'approvedClaims' => (int) ($limit['approvedClaims'] ?? 0),
+                        'remainingRights' => (int) ($limit['remainingRights'] ?? 0),
+                        'canClaim' => !empty($limit['canClaim']),
+                        'message' => (string) ($limit['message'] ?? ''),
                     ];
                 }
             }
@@ -227,47 +227,38 @@ if (($route === 'promotions.php' || $route === 'content/promotions') && in_array
         ]);
     }
 
-    // Mevcut pending talep varsa replace et
-    $existing = $pdo->prepare("SELECT id FROM bonus_claim_requests WHERE user_id = :user_id AND promotion_id = :promotion_id AND status = 'pending' LIMIT 1");
-    $existing->execute(['user_id' => $userId, 'promotion_id' => $promotionId]);
-    $existingRow = $existing->fetch(PDO::FETCH_ASSOC);
-    $replacedPending = false;
-    if (is_array($existingRow)) {
-        $pdo->prepare('DELETE FROM bonus_claim_requests WHERE id = :id')->execute(['id' => (int) $existingRow['id']]);
-        $replacedPending = true;
+    try {
+        $claimResult = memberInsertBonusClaimRequestV2(
+            $pdo,
+            $userId,
+            $promotion,
+            trim((string) ($input['message'] ?? '')) ?: null
+        );
+    } catch (RuntimeException $claimException) {
+        $claimMessage = $claimException->getMessage();
+        $claimCode = str_contains($claimMessage, 'hakk') ? 409 : 422;
+        $memberEnvelope($claimCode, [
+            'success' => false,
+            'code' => $claimCode,
+            'message' => $claimMessage,
+        ]);
+    } catch (Throwable) {
+        $memberEnvelope(500, [
+            'success' => false,
+            'code' => 500,
+            'message' => 'Bonus talebi oluşturulamadı. Lütfen tekrar deneyin.',
+        ]);
     }
-    $requestedAmount = memberPromotionResolveClaimAmountV2($pdo, $userId, $promotion);
-    if ($requestedAmount <= 0) {
-        $memberEnvelope(422, ['success' => false, 'code' => 422, 'message' => 'Promosyon bonus tutarı hesaplanamadı. Lütfen yönetici ile iletişime geçin.']);
-    }
-    $wagering = round((float) ($promotion['wagering_multiplier'] ?? 1), 2);
-    $userMessage = trim((string) ($input['message'] ?? ''));
-    $insertClaim = $pdo->prepare(
-        "INSERT INTO bonus_claim_requests
-        (user_id, promotion_id, bonus_name, category, promotion_type, requested_amount, wagering_multiplier, user_message, status, created_at)
-        VALUES
-        (:user_id, :promotion_id, :bonus_name, :category, :promotion_type, :requested_amount, :wagering_multiplier, :user_message, 'pending', NOW())"
-    );
-    $insertClaim->execute([
-        'user_id' => $userId,
-        'promotion_id' => (int) ($promotion['id'] ?? 0),
-        'bonus_name' => (string) ($promotion['title'] ?? ''),
-        'category' => (string) ($promotion['type'] ?? ''),
-        'promotion_type' => (string) ($promotion['bonus_type'] ?? ''),
-        'requested_amount' => number_format($requestedAmount, 2, '.', ''),
-        'wagering_multiplier' => number_format($wagering, 2, '.', ''),
-        'user_message' => $userMessage !== '' ? $userMessage : null,
-    ]);
     $memberEnvelope(200, [
         'success' => true,
         'code' => 200,
         'message' => 'Bonus talebi oluşturuldu',
         'data' => [
-            'requestId' => (string) $pdo->lastInsertId(),
-            'requestedAmount' => $requestedAmount,
+            'requestId' => (string) $claimResult['requestId'],
+            'requestedAmount' => $claimResult['requestedAmount'],
             'message' => 'Bonus talebiniz alındı, incelenmeyi bekliyor.',
-            'replacedPending' => $replacedPending,
-            'limit' => $claimLimit,
+            'replacedPending' => $claimResult['replacedPending'],
+            'limit' => $claimResult['limit'],
         ],
     ]);
 }

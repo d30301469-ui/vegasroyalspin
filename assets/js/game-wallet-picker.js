@@ -191,6 +191,14 @@
                 return;
             }
             if (!mainOk && !bonusOk) {
+                if (global.MaltabetToast && typeof global.MaltabetToast.warning === 'function') {
+                    global.MaltabetToast.warning(
+                        t('wallet.empty', 'Oynamak için bakiyeniz yok. Lütfen para yatırın.'),
+                        t('wallet.title', 'BAKIYE SEÇİMİ')
+                    );
+                } else if (typeof global.alert === 'function') {
+                    global.alert(t('wallet.empty', 'Oynamak için bakiyeniz yok. Lütfen para yatırın.'));
+                }
                 resolve(null);
                 return;
             }

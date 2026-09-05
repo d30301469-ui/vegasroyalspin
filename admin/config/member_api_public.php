@@ -154,15 +154,14 @@ if (!function_exists('member_api_public_base')) {
 if (!function_exists('frontend_trust_secret')) {
     function frontend_trust_secret(): string
     {
-        // Üye proxy trust imzası için özel secret; tanımlı değilse geçiş
-        // uyumluluğu adına CMS purge secret'ına düşer. İki sunucuda da
-        // FRONTEND_MEMBER_TRUST_SECRET tanımlayıp fallback'i bırakın.
         $dedicated = trim(frontend_env_string('FRONTEND_MEMBER_TRUST_SECRET', ''));
-        if ($dedicated !== '') {
+        if ($dedicated !== '' && !frontend_env_is_placeholder_secret($dedicated)) {
             return $dedicated;
         }
 
-        return frontend_env_string('FRONTEND_CMS_PURGE_SECRET', '');
+        $legacy = frontend_env_string('FRONTEND_CMS_PURGE_SECRET', '');
+
+        return frontend_env_is_placeholder_secret($legacy) ? '' : $legacy;
     }
 }
 
@@ -340,6 +339,39 @@ if (!function_exists('frontend_restore_member_session_from_request')) {
         $restoreJwt = $cookieJwt !== '' ? $cookieJwt : $headerJwt;
         if ($restoreJwt === '') {
             return false;
+        }
+
+        if (!class_exists('MemberJwtVerify', false)) {
+            $verifyPath = dirname(__DIR__) . '/shared/services/MemberJwtVerify.php';
+            if (is_readable($verifyPath)) {
+                require_once $verifyPath;
+            }
+        }
+
+        $localUserId = class_exists('MemberJwtVerify', false)
+            ? MemberJwtVerify::userIdFromJwt($restoreJwt)
+            : 0;
+        if ($localUserId > 0) {
+            $_SESSION['loggedin'] = true;
+            $_SESSION['user_id'] = $localUserId;
+            $_SESSION['member_jwt'] = $restoreJwt;
+            $_SESSION['__member_jwt_proxy_synced'] = true;
+            if (function_exists('frontend_set_member_restore_cookie')) {
+                frontend_set_member_restore_cookie($restoreJwt);
+            }
+            try {
+                $restore = MemberLoginService::backendSession($restoreJwt);
+                if (MemberLoginService::succeeded($restore)) {
+                    MemberLoginService::applySession($restore, '');
+                    if (empty($_SESSION['member_jwt'])) {
+                        $_SESSION['member_jwt'] = $restoreJwt;
+                    }
+                }
+            } catch (Throwable) {
+                // Local JWT restore is enough for page render; proxy re-validates with backend.
+            }
+
+            return true;
         }
 
         try {

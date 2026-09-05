@@ -44,7 +44,9 @@ $mobileProfileJsVer = $mobileAssetVer('assets/js/profile.js');
 <script src="<?= htmlspecialchars($mobileVersionedUrl('mobile/assets/js/profile-panel.js', $mobileProfilePanelVer), ENT_QUOTES, 'UTF-8') ?>"></script>
 <link rel="stylesheet" href="<?= htmlspecialchars($mobileVersionedUrl('assets/css/game-wallet-picker.css', $mobileWalletPickerCssVer), ENT_QUOTES, 'UTF-8') ?>">
 <script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/game-wallet-picker.js', $mobileWalletPickerVer), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php if (!empty($memberApiConsole)): ?>
 <script src="<?= htmlspecialchars(asset_url('assets/js/member-api-console.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php endif; ?>
 <script src="<?= htmlspecialchars(asset_url('assets/js/site-settings-hydrate.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(asset_url('assets/js/toastify-helper.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars($mobileVersionedUrl('assets/js/header.js', $mobileHeaderSharedVer), ENT_QUOTES, 'UTF-8') ?>"></script>

@@ -12,6 +12,13 @@ $playHref = $slotPlayTarget($game);
 $demoHref = $slotDemoHref($game);
 $playHrefJson = (string) json_encode($playHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
 $runtimePlayIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__bgamingHandlePlayIntent){window.__bgamingHandlePlayIntent(event,' . $playHrefJson . ');}else{window.location.href=' . $playHrefJson . ';}';
+$runtimeCardActivateJs = 'if(window.__bgamingGameCardActivate){window.__bgamingGameCardActivate(event,' . $playHrefJson . ');}else{' . $runtimePlayIntentJs . '}';
+$demoHrefJson = (string) json_encode($demoHref, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
+$runtimeDemoIntentJs = 'if(event){event.preventDefault();event.stopPropagation();}if(window.__bgamingHandleDemoIntent){window.__bgamingHandleDemoIntent(event,' . $demoHrefJson . ');}else{window.location.href=' . $demoHrefJson . ';}';
+$showDemoButton = !array_key_exists('has_demo', $game) || !empty($game['has_demo']);
+if ((int) ($game['game_type'] ?? 0) === 1 || strcasecmp((string) ($game['game_type'] ?? ''), 'live') === 0) {
+    $showDemoButton = !empty($game['has_demo']);
+}
 $coverUrl = (string) ($game['cover'] ?? $game['image_url'] ?? '');
 $coverFallbacks = is_array($game['cover_fallbacks'] ?? null) ? $game['cover_fallbacks'] : [];
 if ($coverUrl === '' && $coverFallbacks !== []) {
@@ -45,7 +52,7 @@ $providerName = (string) ($game['provider'] ?? $game['provider_name'] ?? '');
      data-favorite-kind="<?= htmlspecialchars((string) ($slotFavoriteKind ?? 'bgaming'), ENT_QUOTES, 'UTF-8') ?>"
      data-catalog-id="<?= htmlspecialchars((string) ($game['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
      data-game-id="<?= htmlspecialchars((string) ($game['game_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-     onclick="<?= htmlspecialchars($runtimePlayIntentJs, ENT_QUOTES, 'UTF-8') ?>">
+     onclick="<?= htmlspecialchars($runtimeCardActivateJs, ENT_QUOTES, 'UTF-8') ?>">
     <div class="casinoGameItem ">
         <img alt="<?= htmlspecialchars($gameName, ENT_QUOTES, 'UTF-8') ?>"
              loading="lazy"
@@ -79,11 +86,11 @@ $providerName = (string) ($game['provider'] ?? $game['provider_name'] ?? '');
                        href="<?= htmlspecialchars($playHref, ENT_QUOTES, 'UTF-8') ?>"
                        onclick="<?= htmlspecialchars($runtimePlayIntentJs, ENT_QUOTES, 'UTF-8') ?>">OYNA</a>
                 </div>
-                <?php if (!empty($game['has_demo'])): ?>
+                <?php if ($showDemoButton): ?>
                 <div class="casinoBtnWrp">
                     <a class="demo-btn ds-btn ds-btn-variant--transparent ds-btn-size--sm ds-btn-radius--full ds-btn-appearance--filled"
                        href="<?= htmlspecialchars($demoHref, ENT_QUOTES, 'UTF-8') ?>"
-                       onclick="event.stopPropagation()">DEMO</a>
+                       onclick="<?= htmlspecialchars($runtimeDemoIntentJs, ENT_QUOTES, 'UTF-8') ?>">DEMO</a>
                 </div>
                 <?php endif; ?>
             </div>

@@ -267,7 +267,7 @@ return [
     'auth.terms_conditions' => 'Genel Şartlar ve Koşullar',
     'auth.privacy_and_terms' => 'Gizlilik Politikası ve Kullanım Şartları',
     'auth.register_success_title' => 'Kayıt Başarılı',
-    'auth.register_success_msg' => 'Kayıt İşleminiz Başarılı bir şekilde oluşturulmuştur',
+    'auth.register_success_msg' => 'Kayıt işleminiz başarılıdır',
     'auth.send_link' => 'BAĞLANTI GÖNDER',
     'auth.forgot_link_hint' => 'E-posta adresinizi girin. Hesabınız varsa sıfırlama bağlantısı gönderilir.',
     'auth.forgot_link_caps' => 'ŞİFRENİZİ Mİ UNUTTUNUZ?',

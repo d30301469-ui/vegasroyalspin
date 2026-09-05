@@ -20,23 +20,44 @@ class SlotController extends Controller
         $page              = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 
         $slotSourceExtra = ['source' => 'aggregator'];
-        $result = SlotGamesQuery::slotsPage(
-            $searchTerm,
-            $selectedProviders,
-            $limit,
-            $page,
-            $currentSort === 'all' ? '' : $currentSort,
-            $slotSourceExtra
-        );
-        $games = is_array($result['games'] ?? null) ? array_values($result['games']) : [];
+        $slotDesktopLobby = true;
+        $lobbyMode = $currentSort === ''
+            && $searchTerm === ''
+            && $selectedProviders === []
+            && $viewParam !== 'all';
 
-        $allUniqueProviders = array_values(array_filter(
-            SlotGamesQuery::allProviders(),
-            static function (string $provider): bool {
-                return stripos($provider, 'bgaming') === false && stripos($provider, 'b gaming') === false;
-            }
-        ));
-        sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
+        $lobbyBundle = null;
+        if ($lobbyMode) {
+            $lobbyBundle = SlotGamesQuery::slotLobbyBundle($slotSourceExtra);
+            $result = is_array($lobbyBundle['main'] ?? null) ? $lobbyBundle['main'] : SlotGamesQuery::slotsPage(
+                $searchTerm,
+                $selectedProviders,
+                $limit,
+                $page,
+                $currentSort === 'all' ? '' : $currentSort,
+                $slotSourceExtra
+            );
+            $allUniqueProviders = is_array($lobbyBundle['allUniqueProviders'] ?? null)
+                ? $lobbyBundle['allUniqueProviders']
+                : [];
+        } else {
+            $result = SlotGamesQuery::slotsPage(
+                $searchTerm,
+                $selectedProviders,
+                $limit,
+                $page,
+                $currentSort === 'all' ? '' : $currentSort,
+                $slotSourceExtra
+            );
+            $allUniqueProviders = array_values(array_filter(
+                SlotGamesQuery::allProviders(),
+                static function (string $provider): bool {
+                    return stripos($provider, 'bgaming') === false && stripos($provider, 'b gaming') === false;
+                }
+            ));
+            sort($allUniqueProviders, SORT_NATURAL | SORT_FLAG_CASE);
+        }
+        $games = is_array($result['games'] ?? null) ? array_values($result['games']) : [];
 
         $totalSlots     = (int) ($result['total'] ?? count($games));
         $perPage        = (int) ($result['perPage'] ?? $limit);
@@ -46,7 +67,7 @@ class SlotController extends Controller
         $remainingGames = max(0, $totalSlots - $loadedCount);
         $showLoadMore   = $hasNext && $remainingGames > 0;
         $nextPage       = $currentPage + 1;
-        $apiError       = !empty($result['apiError']);
+        $apiError       = !empty($result['apiError']) || ($lobbyBundle !== null && !empty($lobbyBundle['apiError']));
 
         $providerBadges = $this->getProviderBadges();
         $slotApiParams  = ['source' => 'aggregator'];
@@ -54,12 +75,6 @@ class SlotController extends Controller
         $slotShowActionButtons = true;
         $slotEmptyTitle = 'Slot oyunu bulunamadı';
         $slotEmptyText  = 'Arama teriminizi değiştirmeyi veya filtreleri temizlemeyi deneyin.';
-
-        $slotDesktopLobby = true;
-        $lobbyMode = $currentSort === ''
-            && $searchTerm === ''
-            && $selectedProviders === []
-            && $viewParam !== 'all';
 
         $lobbyGames = $lobbyMode ? array_slice($games, 0, 24) : [];
         $lobbyPopularGames = [];
@@ -75,88 +90,48 @@ class SlotController extends Controller
         $lobbyHighWinsProviders = [];
         $lobbyTournamentsProviders = [];
 
-        if ($lobbyMode) {
-            $popularResult = SlotGamesQuery::slotsPage('', [], 18, 1, 'popular', $slotSourceExtra);
+        if ($lobbyMode && $lobbyBundle !== null) {
+            $popularResult = is_array($lobbyBundle['popular'] ?? null) ? $lobbyBundle['popular'] : [];
             $lobbyPopularGames = is_array($popularResult['games'] ?? null)
                 ? array_values($popularResult['games'])
                 : [];
             $lobbyPopularTotal = (int) ($popularResult['total'] ?? count($lobbyPopularGames));
 
-            foreach ($allUniqueProviders as $providerName) {
-                $key = CasinoAggregatorService::providerMatchKey((string) $providerName);
-                // Catalog labels: "Pragmatic Play", "EGT" (EGT Digital). Skip live / VIP.
-                if ($key === 'pragmaticplay' || $key === 'pragmatic') {
-                    $lobbyHighWinsProviders[] = (string) $providerName;
-                    $lobbyTournamentsProviders[] = (string) $providerName;
-                    continue;
-                }
-                if ($key === 'egtdigital' || $key === 'egt') {
-                    $lobbyHighWinsProviders[] = (string) $providerName;
-                }
-            }
-            $lobbyHighWinsProviders = array_values(array_unique($lobbyHighWinsProviders));
-            $lobbyTournamentsProviders = array_values(array_unique($lobbyTournamentsProviders));
-            if ($lobbyHighWinsProviders !== []) {
-                // Do not use sort=popular here: that forces is_featured=1 and can
-                // hide the whole row when those vendors have no featured flags.
-                $highWinsResult = SlotGamesQuery::slotsPage(
-                    '',
-                    $lobbyHighWinsProviders,
-                    24,
-                    1,
-                    '',
-                    $slotSourceExtra
-                );
-                $lobbyHighWinsGames = is_array($highWinsResult['games'] ?? null)
-                    ? array_values($highWinsResult['games'])
-                    : [];
-                $lobbyHighWinsTotal = (int) ($highWinsResult['total'] ?? count($lobbyHighWinsGames));
-            }
-            if ($lobbyTournamentsProviders !== []) {
-                $tournamentsResult = SlotGamesQuery::slotsPage(
-                    '',
-                    $lobbyTournamentsProviders,
-                    24,
-                    1,
-                    '',
-                    $slotSourceExtra
-                );
-                $lobbyTournamentsGames = is_array($tournamentsResult['games'] ?? null)
-                    ? array_values($tournamentsResult['games'])
-                    : [];
-                $lobbyTournamentsTotal = (int) ($tournamentsResult['total'] ?? count($lobbyTournamentsGames));
-            }
+            $lobbyHighWinsProviders = is_array($lobbyBundle['highWinsProviders'] ?? null)
+                ? $lobbyBundle['highWinsProviders']
+                : [];
+            $lobbyTournamentsProviders = is_array($lobbyBundle['tournamentsProviders'] ?? null)
+                ? $lobbyBundle['tournamentsProviders']
+                : [];
 
-            // OYUNLAR: next catalog page so it differs from the top "CASİNO OYUNLARI" row.
-            $moreResult = SlotGamesQuery::slotsPage('', [], 24, 2, '', $slotSourceExtra);
+            $highWinsResult = is_array($lobbyBundle['highWins'] ?? null) ? $lobbyBundle['highWins'] : [];
+            $lobbyHighWinsGames = is_array($highWinsResult['games'] ?? null)
+                ? array_values($highWinsResult['games'])
+                : [];
+            $lobbyHighWinsTotal = (int) ($highWinsResult['total'] ?? count($lobbyHighWinsGames));
+
+            $tournamentsResult = is_array($lobbyBundle['tournaments'] ?? null) ? $lobbyBundle['tournaments'] : [];
+            $lobbyTournamentsGames = is_array($tournamentsResult['games'] ?? null)
+                ? array_values($tournamentsResult['games'])
+                : [];
+            $lobbyTournamentsTotal = (int) ($tournamentsResult['total'] ?? count($lobbyTournamentsGames));
+
+            $moreResult = is_array($lobbyBundle['more'] ?? null) ? $lobbyBundle['more'] : [];
             $lobbyMoreGames = is_array($moreResult['games'] ?? null)
                 ? array_values($moreResult['games'])
                 : [];
             $lobbyMoreTotal = (int) ($moreResult['total'] ?? $totalSlots);
             if ($lobbyMoreGames === [] && $lobbyGames !== []) {
-                // Fallback if catalog is shorter than one full page.
                 $lobbyMoreGames = $lobbyGames;
                 $lobbyMoreTotal = $totalSlots;
             }
 
-            try {
-                $liveResult = SlotGamesQuery::gamesPage(
-                    1,
-                    '',
-                    [],
-                    18,
-                    1,
-                    '',
-                    ['source' => 'aggregator']
-                );
-                $lobbyLiveGames = is_array($liveResult['games'] ?? null)
-                    ? array_values($liveResult['games'])
-                    : [];
-                $lobbyLiveTotal = (int) ($liveResult['total'] ?? count($lobbyLiveGames));
-            } catch (Throwable $e) {
-                $lobbyLiveGames = [];
-                $lobbyLiveTotal = 0;
-            }
+            $liveResult = is_array($lobbyBundle['live'] ?? null) ? $lobbyBundle['live'] : [];
+            $lobbyLiveGames = is_array($liveResult['games'] ?? null)
+                ? array_values($liveResult['games'])
+                : [];
+            $lobbyLiveTotal = (int) ($liveResult['total'] ?? count($lobbyLiveGames));
+            $apiError = !empty($lobbyBundle['apiError']) || $apiError;
         }
 
         $this->view('pages/slot', compact(

@@ -111,8 +111,9 @@ $badgeClass = static function (string $value): string {
     $value = strtolower($value);
     return match (true) {
         in_array($value, ['active', 'confirmed', 'approved', 'success', '1', 'win', 'kazanç', 'bahis', 'completed'], true) => 'success dot',
-        in_array($value, ['pending', 'waiting_approval', 'draft', 'requested', 'waiting'], true) => 'warning dot',
-        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'banned', '0', 'kayıp'], true) => 'danger dot',
+        in_array($value, ['pending', 'waiting_approval', 'draft', 'requested', 'waiting', 'processing'], true) => 'warning dot',
+        in_array($value, ['risk_hold', 'risk-hold'], true) => 'danger dot',
+        in_array($value, ['rejected', 'inactive', 'failed', 'cancelled', 'expired', 'banned', '0', 'kayıp', 'sonlandı'], true) => 'danger dot',
         in_array($value, ['bet', 'cancel', 'rollback', 'iptal', 'iade'], true) => 'warning dot',
         default => 'primary',
     };
@@ -1113,8 +1114,16 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                         $columnName = (string) $column['name'];
                         $rawValue = $row[$columnName] ?? null;
                         $textValue = $formatValue($columnName, $rawValue);
+                        $filterValue = $textValue;
+                        if (in_array($columnName, ['full_name', 'username'], true)) {
+                            $filterValue = trim($textValue . ' ' . (string) ($row['username'] ?? '') . ' ' . (string) ($row['user_id'] ?? ''));
+                        } elseif (in_array(strtolower((string) ($column['data_type'] ?? '')), ['date', 'datetime', 'timestamp'], true)
+                            || preg_match('/created_at|updated_at|date|deadline|submitted_at|reviewed_at|processed_at/i', $columnName) === 1) {
+                            // Client-side date inputs use YYYY-MM-DD; keep raw + formatted searchable.
+                            $filterValue = trim((string) $rawValue . ' ' . $textValue);
+                        }
                         ?>
-                        <td title="<?= htmlspecialchars($textValue, ENT_QUOTES, 'UTF-8') ?>" data-filter-value="<?= htmlspecialchars($textValue, ENT_QUOTES, 'UTF-8') ?>" data-export-value="<?= htmlspecialchars($textValue, ENT_QUOTES, 'UTF-8') ?>">
+                        <td title="<?= htmlspecialchars($textValue, ENT_QUOTES, 'UTF-8') ?>" data-filter-value="<?= htmlspecialchars($filterValue, ENT_QUOTES, 'UTF-8') ?>" data-export-value="<?= htmlspecialchars($textValue, ENT_QUOTES, 'UTF-8') ?>">
                             <?php if (preg_match('/(^image_url$|thumbnail|banner|cover|logo)/i', $columnName) === 1): ?>
                                 <?php
                                 $imageUrl = trim((string) $rawValue);
@@ -1205,7 +1214,7 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                         <?php if ($primaryKey !== '' && isset($row[$primaryKey])): ?>
                             <?php $id = (string) $row[$primaryKey]; ?>
                             <?php if ($moduleKey === 'withdrawals' && (string) ($row['status'] ?? '') === 'pending'): ?>
-                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/megapayz/withdraw/approve'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu çekim MegaPayz API’ye iletilsin mi?">
+                                <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/megapayz/withdraw/approve'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu çekim MegaPayz API’ye iletilsin mi? (10.000₺ üzeri risk tutmasına düşer, finans’a gitmez)">
                                     <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
                                     <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
                                     <button class="admin-tx-action admin-tx-action--approve" aria-label="Approve withdraw" title="Onayla" type="submit"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Onayla</button>
@@ -1215,6 +1224,24 @@ $scale = $preferredTotal > $availableWidth ? $availableWidth / $preferredTotal :
                                     <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
                                     <button class="admin-tx-action admin-tx-action--reject" aria-label="Reject withdraw" title="Reddet" type="submit"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Red</button>
                                 </form>
+                            <?php elseif ($moduleKey === 'withdrawals' && strtolower((string) ($row['status'] ?? '')) === 'risk_hold'): ?>
+                                <?php if (AdminAuth::canReleaseRiskHoldWithdraw()): ?>
+                                    <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/megapayz/withdraw/risk-release'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Risk tutması kaldırılsın ve çekim MegaPayz/finans birimine iletilsin mi?">
+                                        <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
+                                        <button class="admin-tx-action admin-tx-action--approve" type="submit" title="Finansa ilet">Finansa ilet</button>
+                                    </form>
+                                <?php endif; ?>
+                                <?php if (AdminAuth::can('withdrawals') || AdminAuth::can('compliance-risk')): ?>
+                                    <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/megapayz/withdraw/risk-reject'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Risk tutmasındaki çekim reddedilsin ve bakiye iade edilsin mi?">
+                                        <input type="hidden" name="_token" value="<?= htmlspecialchars(AdminAuth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="id" value="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>">
+                                        <button class="admin-tx-action admin-tx-action--reject" type="submit" title="Reddet">Red</button>
+                                    </form>
+                                <?php endif; ?>
+                                <?php if (!AdminAuth::canReleaseRiskHoldWithdraw()): ?>
+                                    <span class="badge danger" title="Finans onayı yalnızca yetkili süper admin">Risk tutma</span>
+                                <?php endif; ?>
                             <?php endif; ?>
                             <?php if ($moduleKey === 'deposits' && in_array(strtolower((string) ($row['status'] ?? '')), ['pending', 'failed'], true)): ?>
                                 <form class="admin-inline-form" method="post" action="<?= htmlspecialchars(AdminAuth::url('/megapayz/deposit/cancel'), ENT_QUOTES, 'UTF-8') ?>" data-admin-confirm="Bu bekleyen yatırım iptal edilsin mi? (Bakiye değişmez)">
